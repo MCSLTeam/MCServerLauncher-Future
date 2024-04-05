@@ -10,7 +10,7 @@
       Title="CreateInstancePage">
     <Grid>
         <TextBlock Style="{StaticResource TitleTextBlock}" Text="新建实例" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,35,0,0"/>
-        <Grid x:Name="PreCreateInstanceGrid" Visibility="Hidden">
+        <Grid x:Name="PreCreateInstanceGrid">
             <TextBlock Style="{StaticResource MinititleTextBlock}" Text="请选择欲创建的实例类型:" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,80,0,0"/>
             <ui:GridView Margin="35,120,35,60">
                 <Border x:Name="MinecraftJavaServer" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
@@ -23,10 +23,10 @@
                     <TextBlock Style="{StaticResource StrongBodyTextBlock}" Text="其他控制台程序" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="45,15,45,15"/>
                 </Border>
             </ui:GridView>
-            <Button x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False" Style="{DynamicResource AccentButtonStyle}" Content="下一步" Margin="0,0,35,45" Width="90" Height="45" VerticalAlignment="Bottom" HorizontalAlignment="Right"></Button>
+            <Button Click="GoCreateInstance" x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False" Style="{DynamicResource AccentButtonStyle}" Content="下一步" Margin="0,0,35,45" Width="90" Height="45" VerticalAlignment="Bottom" HorizontalAlignment="Right"></Button>
         </Grid>
-        <Grid x:Name="CreateMinecraftJavaServerGrid">
-            <Button Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Top" Tag="1.7 及更早版本仅支持 Java 8 及以前的版本\n1.8.x ~ 1.15.x 可使用 Java 8 ~ 11\n" Margin="35,80,0,0">
+        <Grid x:Name="CreateMinecraftJavaServerGrid" Visibility="Hidden">
+            <Button x:Name="MinecraftJava_Back" Click="GoCreateInstance" Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Top" Tag="1.7 及更早版本仅支持 Java 8 及以前的版本\n1.8.x ~ 1.15.x 可使用 Java 8 ~ 11\n" Margin="35,80,0,0">
                 <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Back}" FontSize="16"/>
             </Button>
             <TextBlock Style="{StaticResource MinititleTextBlock}" Text="完成以下配置后，单击 “继续”。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="85,85,0,0"/>

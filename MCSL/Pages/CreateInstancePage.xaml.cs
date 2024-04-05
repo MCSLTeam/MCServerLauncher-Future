@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.Pages
 {
@@ -21,15 +22,42 @@ namespace MCServerLauncher.Pages
     /// </summary>
     public partial class CreateInstancePage : Page
     {
+        private string CreatingInstanceType = "PreCreating";
         public CreateInstancePage()
         {
             InitializeComponent();
         }
         public void SelectNewInstanceType(object Sender, MouseButtonEventArgs MouseArg)
         {
+            CreatingInstanceType = ((Border)Sender).Name;
             SelectNewInstanceTypeContinueBtn.IsEnabled = true;
         }
+        public void GoCreateInstance(object Sender, RoutedEventArgs Arg)
+        {
+            if (((Button)Sender).Name.Contains("_Back"))
+            {
+                CreatingInstanceType = "PreCreating";
+                CreateMinecraftJavaServerGrid.Visibility = Visibility.Hidden;
+                PreCreateInstanceGrid.Visibility = Visibility.Visible;
+                return;
+            }
+            else
+            {
+                if (CreatingInstanceType == "PreCreating")
+                {
+                    CreateMinecraftJavaServerGrid.Visibility = Visibility.Hidden;
+                    PreCreateInstanceGrid.Visibility = Visibility.Visible;
+                    return;
+                }
+                if (CreatingInstanceType == "MinecraftJavaServer")
+                {
+                    PreCreateInstanceGrid.Visibility = Visibility.Hidden;
+                    CreateMinecraftJavaServerGrid.Visibility = Visibility.Visible;
+                    return;
+                }
+            }
+        }
 
-        
+
     }
 }
