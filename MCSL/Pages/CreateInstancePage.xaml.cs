@@ -36,7 +36,6 @@ namespace MCServerLauncher.Pages
         {
             if (((Button)Sender).Name.Contains("_Back"))
             {
-                CreatingInstanceType = "PreCreating";
                 CreateMinecraftJavaServerGrid.Visibility = Visibility.Hidden;
                 PreCreateInstanceGrid.Visibility = Visibility.Visible;
                 return;
