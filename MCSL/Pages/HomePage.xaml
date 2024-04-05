@@ -10,9 +10,10 @@
       Title="HomePage">
     <Grid>
         <TextBlock Style="{StaticResource TitleTextBlock}" Text="主页" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,35,0,0"/>
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="新征程，新体验。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,80,0,0"/>
         <ui:ScrollViewerEx>
             <StackPanel>
-                <Border x:Name="NoticeBorder" Style="{StaticResource StyledBorder}" Margin="35,80,35,0" VerticalAlignment="Top">
+                <Border x:Name="NoticeBorder" Style="{StaticResource StyledBorder}" Margin="35,120,35,0" VerticalAlignment="Top">
                     <Grid>
                         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="公告" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,15,0,0"/>
                         <TextBlock Style="{StaticResource BodyTextBlock}" Text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="20,45,20,20"/>

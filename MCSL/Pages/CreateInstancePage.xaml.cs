@@ -1,12 +1,13 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using Page = System.Windows.Controls.Page;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -26,7 +27,9 @@ namespace MCServerLauncher.Pages
         }
         public void SelectNewInstanceType(object Sender, MouseButtonEventArgs MouseArg)
         {
-            this.SelectNewInstanceTypeContinueBtn.IsEnabled = true;
+            SelectNewInstanceTypeContinueBtn.IsEnabled = true;
         }
+
+        
     }
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
+using Page = System.Windows.Controls.Page;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;

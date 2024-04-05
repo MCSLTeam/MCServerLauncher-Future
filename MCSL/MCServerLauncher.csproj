@@ -52,7 +52,7 @@
       <HintPath>..\packages\Costura.Fody.5.7.0\lib\netstandard1.0\Costura.dll</HintPath>
     </Reference>
     <Reference Include="iNKORE.UI.WPF, Version=1.2.0.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
-      <HintPath>..\packages\iNKORE.UI.WPF.1.2.2\lib\net452\iNKORE.UI.WPF.dll</HintPath>
+      <HintPath>..\packages\iNKORE.UI.WPF.Modern.0.9.26.3\lib\net452\iNKORE.UI.WPF.dll</HintPath>
     </Reference>
     <Reference Include="iNKORE.UI.WPF.Modern, Version=0.9.26.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
       <HintPath>..\packages\iNKORE.UI.WPF.Modern.0.9.26.3\lib\net452\iNKORE.UI.WPF.Modern.dll</HintPath>

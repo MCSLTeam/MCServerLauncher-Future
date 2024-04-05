@@ -1,5 +1,5 @@
 ﻿using System;
-using System.IO;
+using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
@@ -16,7 +16,7 @@ namespace MCServerLauncher
             // 添加崩溃处理事件
             DispatcherUnhandledException += (s, e) =>
             {
-                MessageBox.Show("程序在运行的时候发生了异常，异常代码：\n" + e.Exception.Message + "\n若软件闪退，请联系作者进行反馈", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("MCServerLauncher 发生了未经处理的异常：\n\n" + e.Exception.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Handled = true; // 设置为已处理，阻止应用程序崩溃
             };
         }
@@ -29,7 +29,7 @@ namespace MCServerLauncher
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out createNew);
             if (!createNew)
             {
-                MessageBox.Show("MCServerLauncher 不支持重复运行", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("MCServerLauncher 已在运行，若与实际不符请检查后台程序。", "提示");
                 Environment.Exit(0);
             }
             base.OnStartup(e);

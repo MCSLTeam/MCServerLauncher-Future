@@ -10,9 +10,6 @@
                 <ui:ThemeResources/>
                 <ui:XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
-            <Style x:Key="AccentButton" TargetType="Button">
-                
-            </Style>
             <Style x:Key="StyledBorder" TargetType="Border">
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"/>
                 <Setter Property="Background" Value="{DynamicResource {x:Static ui:ThemeKeys.LayerFillColorDefaultBrushKey}}"/>
