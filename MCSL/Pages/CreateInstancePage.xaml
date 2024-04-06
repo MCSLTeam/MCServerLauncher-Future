@@ -10,9 +10,9 @@
       Title="CreateInstancePage">
     <Grid>
         <TextBlock Style="{StaticResource TitleTextBlock}" Text="新建实例" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,35,0,0"/>
-        <Grid x:Name="PreCreateInstanceGrid">
-            <TextBlock Style="{StaticResource MinititleTextBlock}" Text="请选择欲创建的实例类型:" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,80,0,0"/>
-            <ui:GridView Margin="35,120,35,60">
+        <Grid x:Name="PreCreateInstanceGrid" Margin="35,0,35,35">
+            <TextBlock Style="{StaticResource MinititleTextBlock}" Text="请选择欲创建的实例类型:" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,0,0"/>
+            <ui:GridView Margin="0,120,0,60">
                 <Border x:Name="MinecraftJavaServer" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
                     <TextBlock Style="{StaticResource StrongBodyTextBlock}" Text="Minecraft Java 版服务器" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="15,15,15,15"/>
                 </Border>
@@ -23,80 +23,138 @@
                     <TextBlock Style="{StaticResource StrongBodyTextBlock}" Text="其他控制台程序" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="45,15,45,15"/>
                 </Border>
             </ui:GridView>
-            <Button Click="GoCreateInstance" x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False" Style="{DynamicResource AccentButtonStyle}" Content="下一步" Margin="0,0,35,45" Width="90" Height="45" VerticalAlignment="Bottom" HorizontalAlignment="Right"></Button>
+            <Button Click="GoCreateInstance" x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False" Style="{DynamicResource AccentButtonStyle}" Content="下一步" Margin="0,0,0,45" Width="90" Height="45" VerticalAlignment="Bottom" HorizontalAlignment="Right"></Button>
         </Grid>
-        <Grid x:Name="CreateMinecraftJavaServerGrid" Visibility="Hidden">
-            <Button x:Name="MinecraftJava_Back" Click="GoCreateInstance" Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Top" Tag="1.7 及更早版本仅支持 Java 8 及以前的版本\n1.8.x ~ 1.15.x 可使用 Java 8 ~ 11\n" Margin="35,80,0,0">
-                <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Back}" FontSize="16"/>
-            </Button>
-            <TextBlock Style="{StaticResource MinititleTextBlock}" Text="完成以下配置后，单击 “继续”。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="85,85,0,0"/>
-            <Grid>
-                <ScrollViewer Margin="35,120,35,35">
-                    <StackPanel>
-                        <Border Grid.Column="1" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                            <Grid Margin="0,0,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition></RowDefinition>
-                                    <RowDefinition></RowDefinition>
-                                    <RowDefinition></RowDefinition>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="Java" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,0,0,20" Style="{StaticResource BodyTextBlock}" Text="Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                <ui:AutoSuggestBox Margin="20,0,20,20" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" PlaceholderText="Java 路径"></ui:AutoSuggestBox>
-                                <Button Margin="0,0,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right" Content="浏览"/>
-
-                                <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Tag="1.7 及更早版本仅支持 Java 8 及以前的版本\n1.8.x ~ 1.15.x 可使用 Java 8 ~ 11\n" Margin="0,15,20,0">
-                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
-                                </Button>
-                            </Grid>
-                        </Border>
-                        <Border Grid.Column="1" Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
-                            <Grid Margin="0,0,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition></RowDefinition>
-                                    <RowDefinition></RowDefinition>
-                                    <RowDefinition></RowDefinition>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="JVM 内存设置" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,0,0,20" Style="{StaticResource BodyTextBlock}" Text="这决定了您的 Minecraft Java 服务器将能使用多少内存。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                
-                                <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
-                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
-                                </Button>
-                            </Grid>
-                        </Border>
-                        <Border Grid.Column="1" Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
-                            <Grid Margin="0,0,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition></RowDefinition>
-                                    <RowDefinition></RowDefinition>
-                                    <RowDefinition></RowDefinition>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="服务器核心设置" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,0,0,20" Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将使用的核心文件。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                <ui:AutoSuggestBox IsEnabled="False" Margin="20,0,20,20" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" PlaceholderText="核心文件名"></ui:AutoSuggestBox>
-                                <Button Margin="0,0,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right" Content="浏览"/>
-
-                                <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
-                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
-                                </Button>
-                            </Grid>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
+        <Grid x:Name="CreateMinecraftJavaServerGrid" Visibility="Hidden" Margin="35,0,35,35">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Button Background="Transparent" BorderBrush="Transparent" Grid.Column="0" Grid.Row="0" x:Name="MinecraftJava_Back" Click="GoCreateInstance" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
+                    <Button.Content>
+                        <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.PageLeft}" FontSize="16"/>
+                    </Button.Content>
+                </Button>
+                <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="完成以下配置后，单击 “继续”。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0"/>
+                <Button Background="Transparent" BorderBrush="Transparent" Grid.Column="2" Grid.Row="0" x:Name="MinecraftJava_Next" Click="GoCreateInstance" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
+                    <Button.Content>
+                        <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.PageRight}" FontSize="16"/>
+                    </Button.Content>
+                </Button>
             </Grid>
+            <ui:ScrollViewerEx Grid.Row="1">
+                <StackPanel>
+                    <Border Grid.Column="1" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                        <Grid Margin="0,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition></RowDefinition>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="Java" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                            <ui:AutoSuggestBox x:Name="JavaSetting" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" PlaceholderText="Java 路径"></ui:AutoSuggestBox>
+                            <ui:DropDownButton Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
+                                <ui:DropDownButton.Content>
+                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.More}" FontSize="16"/>
+                                </ui:DropDownButton.Content>
+                                <ui:DropDownButton.Flyout>
+                                    <ui:MenuFlyout Placement="Bottom">
+                                        <MenuItem Header="手动选择">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.OpenFile}" FontSize="16"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="在本机自动搜索">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.SearchAndApps}" FontSize="16"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="从现有结果中选取">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.SelectAll}" FontSize="16"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ui:MenuFlyout>
+                                </ui:DropDownButton.Flyout>
+                            </ui:DropDownButton>
+                            <Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Top" Tag="1.7 及更早版本仅支持 Java 8 及以前的版本\n1.8.x ~ 1.15.x 可使用 Java 8 ~ 11\n" Margin="0,15,20,0">
+                                <Button.Content>
+                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
+                        <Grid Margin="0,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition></RowDefinition>
+                                <RowDefinition Height="*"></RowDefinition>
+                                <RowDefinition></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="JVM 内存设置" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="这决定了您的 Minecraft Java 服务器将能使用多少内存。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                            <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="20,15,20,20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <ui:NumberBox x:Name="MinMemorySetting" Grid.Column="0" Width="200" Margin="0,0,10,0" SpinButtonPlacementMode="Inline" PlaceholderText="最小内存"/>
+                                <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~"/>
+                                <ui:NumberBox x:Name="MaxMemorySetting" Grid.Column="2" Width="200" Margin="10,0,10,0" SpinButtonPlacementMode="Inline" PlaceholderText="最大内存"/>
+                                <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
+                                    <ComboBoxItem Content="M" IsSelected="True"/>
+                                    <ComboBoxItem Content="G"/>
+                                </ComboBox>
+                            </Grid>
+                            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
+                                <Button.Content>
+                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
+                        <Grid Margin="0,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition></RowDefinition>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="服务器核心设置" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将使用的核心文件。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                            <ui:AutoSuggestBox IsEnabled="False" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" PlaceholderText="核心文件名"></ui:AutoSuggestBox>
+                            <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right" Content="浏览"/>
+
+                            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
+                                <Button.Content>
+                                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ui:ScrollViewerEx>
         </Grid>
     </Grid>
 </Page>

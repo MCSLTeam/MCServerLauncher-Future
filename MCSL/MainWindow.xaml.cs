@@ -5,6 +5,8 @@ using iNKORE.UI.WPF.Modern.Media.Animation;
 using iNKORE.UI.WPF.Modern;
 using System;
 using MCServerLauncher.Pages;
+using Page = System.Windows.Controls.Page;
+using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 
 namespace MCServerLauncher
 {
@@ -14,10 +16,13 @@ namespace MCServerLauncher
     public partial class MainWindow : Window
     {
 
-        private System.Windows.Controls.Page Home = new HomePage();
-        private System.Windows.Controls.Page CreateInstance = new CreateInstancePage();
-        private System.Windows.Controls.Page InstanceManager = new InstanceManagerPage();
-        private System.Windows.Controls.Page ResDownload = new ResDownloadPage();
+        private Page Home = new HomePage();
+        private Page CreateInstance = new CreateInstancePage();
+        private Page InstanceManager = new InstanceManagerPage();
+        private Page ResDownload = new ResDownloadPage();
+        private Page Help = new HelpPage();
+        private Page Settings = new SettingsPage();
+        private Page About = new AboutPage();
 
         public MainWindow()
         {
@@ -62,6 +67,18 @@ namespace MCServerLauncher
                 if (navPageType == typeof(ResDownloadPage))
                 {
                     frame.Content = ResDownload;
+                }
+                if (navPageType == typeof(HelpPage))
+                {
+                    frame.Content = Help;
+                }
+                if (navPageType == typeof(SettingsPage))
+                {
+                    frame.Content = Settings;
+                }
+                if (navPageType == typeof(AboutPage))
+                {
+                    frame.Content = About;
                 }
             }
         }

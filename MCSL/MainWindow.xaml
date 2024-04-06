@@ -26,9 +26,10 @@
         </Grid.ColumnDefinitions>
         <!-- 导航 -->
         <ui:NavigationView x:Name="NavView" 
-                           IsPaneOpen="False" 
+                           IsPaneOpen="False"
                            ItemInvoked="NavigationView_ItemInvoked"
                            IsBackButtonVisible="Collapsed"
+                           PaneDisplayMode="Top"
                            >
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="主页" Tag="MCServerLauncher.Pages.HomePage" IsSelected="True">
@@ -53,7 +54,7 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="帮助" Tag="MCServerLauncher.Pages.HelpsPage">
+                <ui:NavigationViewItem Content="帮助" Tag="MCServerLauncher.Pages.HelpPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
