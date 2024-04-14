@@ -6,7 +6,6 @@ using iNKORE.UI.WPF.Modern;
 using System;
 using MCServerLauncher.View;
 using Page = System.Windows.Controls.Page;
-using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 
 namespace MCServerLauncher
 {
@@ -31,19 +30,19 @@ namespace MCServerLauncher
         }
 
         //导航栏
-        private void NavigationView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+        private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked == true)
             {
-                NavigationView_Navigate(typeof(int), args.RecommendedNavigationTransitionInfo);
+                NavigateTo(typeof(int), args.RecommendedNavigationTransitionInfo);
             }
             else if (args.InvokedItemContainer != null)
             {
-                NavigationView_Navigate(Type.GetType(args.InvokedItemContainer.Tag.ToString()), args.RecommendedNavigationTransitionInfo);
+                NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()), args.RecommendedNavigationTransitionInfo);
             }
         }
 
-        private void NavigationView_Navigate(Type navPageType, NavigationTransitionInfo transitionInfo)
+        private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             Type preNavPageType = frame.Content.GetType();
             if (navPageType is not null && !Type.Equals(navPageType, preNavPageType))

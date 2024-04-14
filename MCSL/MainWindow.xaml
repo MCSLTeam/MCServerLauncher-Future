@@ -8,7 +8,7 @@
         ui:WindowHelper.SystemBackdropType="Mica"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="MCServerLauncher Future"
-        ui:TitleBar.ExtendViewIntoTitleBar="False"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
         ui:TitleBar.IsIconVisible="True"
         ui:TitleBar.Height="40"
         ui:TitleBar.IsBackEnabled="False"
@@ -18,16 +18,25 @@
         Height="600" 
         Width="900">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition Width="0*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="10,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Image Margin="5,-7,0,-10" Grid.Column="0" Source="MCServerLauncher.ico" Width="22" Height="22"/>
+            <TextBlock FontSize="13" Margin="15,15,0,-10" Grid.Column="1" Text="MCServerLauncher Future" Grid.Row="0" Height="40"/>
+        </Grid>
         <!-- 导航 -->
         <ui:NavigationView x:Name="NavView" 
                            IsPaneOpen="False"
-                           ItemInvoked="NavigationView_ItemInvoked"
+                           ItemInvoked="NavigationTriggered"
                            IsBackButtonVisible="Collapsed"
                            PaneDisplayMode="Auto"
+                           Grid.Row="1"
                            >
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="主页" Tag="MCServerLauncher.View.HomePage" IsSelected="True">
