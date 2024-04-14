@@ -19,15 +19,15 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Background="Transparent" BorderBrush="Transparent" Grid.Column="0" Grid.Row="0" x:Name="MinecraftJava_Back" Click="GoCreateInstance" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
+            <Button Grid.Column="0" Grid.Row="0" x:Name="MinecraftJava_Back" Click="GoCreateInstance" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.PageLeft}" FontSize="16"/>
+                    <vc:IconText Icon="{x:Static ui:SegoeIcons.PageLeft}" Text="返回"/>
                 </Button.Content>
             </Button>
             <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="完成以下配置后，单击 “继续”。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0"/>
-            <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Background="Transparent" BorderBrush="Transparent" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
+            <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.PageRight}" FontSize="16"/>
+                    <vc:IconText Icon="{x:Static ui:SegoeIcons.PageRight}" Text="继续"/>
                 </Button.Content>
             </Button>
         </Grid>
@@ -162,14 +162,7 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="(可选) 可在此处添加其他 JVM 参数，一行一个。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <Button Click="AddJVMArgument" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,15,0,0">
                             <Button.Content>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ui:FontIcon Grid.Column="0" Glyph="{x:Static ui:SegoeIcons.AddTo}" FontSize="16"/>
-                                    <TextBlock Margin="5,0,0,0" Grid.Column="1" Text="添加参数" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                </Grid>
+                                <vc:IconText Icon="{x:Static ui:SegoeIcons.AddTo}" Text="添加参数"/>
                             </Button.Content>
                         </Button>
                         <ui:ListView x:Name="JVMArgumentListView" IsSelectionEnabled="False" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="20,15,20,20">

@@ -103,6 +103,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="View\Components\IconText.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\Components\JVMArgumentItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -139,6 +143,9 @@
   <ItemGroup>
     <Compile Include="View\AboutPage.xaml.cs">
       <DependentUpon>AboutPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\IconText.xaml.cs">
+      <DependentUpon>IconText.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\JVMArgumentItem.xaml.cs">
       <DependentUpon>JVMArgumentItem.xaml</DependentUpon>
