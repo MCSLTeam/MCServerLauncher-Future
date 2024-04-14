@@ -4,7 +4,7 @@ using System.Windows;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using iNKORE.UI.WPF.Modern;
 using System;
-using MCServerLauncher.Pages;
+using MCServerLauncher.View;
 using Page = System.Windows.Controls.Page;
 using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 
@@ -27,10 +27,6 @@ namespace MCServerLauncher
         public MainWindow()
         {
             InitializeComponent();
-            //默认主题
-            ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
-
-            //默认页面
             frame.Content = Home;
         }
 

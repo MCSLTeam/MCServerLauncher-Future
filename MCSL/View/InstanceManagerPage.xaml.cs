@@ -1,6 +1,6 @@
 ﻿using Page = System.Windows.Controls.Page;
 
-namespace MCServerLauncher.Pages
+namespace MCServerLauncher.View
 {
     /// <summary>
     /// InstanceManagerPage.xaml 的交互逻辑

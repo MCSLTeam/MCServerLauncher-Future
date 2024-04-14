@@ -29,10 +29,19 @@ namespace MCServerLauncher
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out createNew);
             if (!createNew)
             {
-                MessageBox.Show("MCServerLauncher 已在运行，若与实际不符请检查后台程序。", "提示");
+                MessageBox.Show("MCServerLauncher 不支持重复运行。", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+
                 Environment.Exit(0);
             }
             base.OnStartup(e);
+        }
+        protected override void OnExit(ExitEventArgs e)
+        {
+            if (_mutex != null)
+            {
+                _mutex.ReleaseMutex();
+            }
+            base.OnExit(e);
         }
     }
 }

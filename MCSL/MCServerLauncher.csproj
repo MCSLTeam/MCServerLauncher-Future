@@ -51,8 +51,8 @@
     <Reference Include="Costura, Version=5.7.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Costura.Fody.5.7.0\lib\netstandard1.0\Costura.dll</HintPath>
     </Reference>
-    <Reference Include="iNKORE.UI.WPF, Version=1.2.0.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
-      <HintPath>..\packages\iNKORE.UI.WPF.Modern.0.9.26.3\lib\net452\iNKORE.UI.WPF.dll</HintPath>
+    <Reference Include="iNKORE.UI.WPF, Version=1.2.3.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
+      <HintPath>..\packages\iNKORE.UI.WPF.1.2.3.1\lib\net452\iNKORE.UI.WPF.dll</HintPath>
     </Reference>
     <Reference Include="iNKORE.UI.WPF.Modern, Version=0.9.26.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
       <HintPath>..\packages\iNKORE.UI.WPF.Modern.0.9.26.3\lib\net452\iNKORE.UI.WPF.Modern.dll</HintPath>
@@ -63,6 +63,9 @@
     <Reference Include="netstandard" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=8.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.8.0.1\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\iNKORE.UI.WPF.Modern.0.9.26.3\lib\net452\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -96,55 +99,69 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Pages\AboutPage.xaml">
+    <Page Include="View\AboutPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Pages\CreateInstancePage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Pages\HelpPage.xaml">
+    <Page Include="View\Components\JVMArgumentItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Pages\HomePage.xaml">
+    <Page Include="View\CreateInstancePage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Pages\InstanceManagerPage.xaml">
+    <Page Include="View\CreateInstanceProvider\CreateMinecraftJavaInstanceProvider.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\HelpPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\HomePage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Pages\ResDownloadPage.xaml">
+    <Page Include="View\InstanceManagerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Pages\SettingsPage.xaml">
+    <Page Include="View\ResDownloadPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\SettingsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Pages\AboutPage.xaml.cs">
+    <Compile Include="View\AboutPage.xaml.cs">
       <DependentUpon>AboutPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\CreateInstancePage.xaml.cs">
+    <Compile Include="View\Components\JVMArgumentItem.xaml.cs">
+      <DependentUpon>JVMArgumentItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\CreateInstancePage.xaml.cs">
       <DependentUpon>CreateInstancePage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\HelpPage.xaml.cs">
+    <Compile Include="View\CreateInstanceProvider\CreateMinecraftJavaInstanceProvider.xaml.cs">
+      <DependentUpon>CreateMinecraftJavaInstanceProvider.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\HelpPage.xaml.cs">
       <DependentUpon>HelpPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\HomePage.xaml.cs">
+    <Compile Include="View\HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\InstanceManagerPage.xaml.cs">
+    <Compile Include="View\InstanceManagerPage.xaml.cs">
       <DependentUpon>InstanceManagerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\ResDownloadPage.xaml.cs">
+    <Compile Include="View\ResDownloadPage.xaml.cs">
       <DependentUpon>ResDownloadPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\SettingsPage.xaml.cs">
+    <Compile Include="View\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">

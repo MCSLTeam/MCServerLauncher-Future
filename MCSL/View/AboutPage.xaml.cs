@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MCServerLauncher.Pages
+namespace MCServerLauncher.View
 {
     /// <summary>
     /// About.xaml 的交互逻辑

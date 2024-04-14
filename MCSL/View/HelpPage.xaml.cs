@@ -1,6 +1,7 @@
 ﻿using System.Windows.Controls;
 
-namespace MCServerLauncher.Pages
+namespace MCServerLauncher.View
+
 {
     /// <summary>
     /// HelpPage.xaml 的交互逻辑

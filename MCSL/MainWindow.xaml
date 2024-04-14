@@ -29,42 +29,42 @@
                            IsPaneOpen="False"
                            ItemInvoked="NavigationView_ItemInvoked"
                            IsBackButtonVisible="Collapsed"
-                           PaneDisplayMode="Top"
+                           PaneDisplayMode="Auto"
                            >
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="主页" Tag="MCServerLauncher.Pages.HomePage" IsSelected="True">
+                <ui:NavigationViewItem Content="主页" Tag="MCServerLauncher.View.HomePage" IsSelected="True">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Home}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="新建实例" Tag="MCServerLauncher.Pages.CreateInstancePage" IsSelected="True">
+                <ui:NavigationViewItem Content="新建实例" Tag="MCServerLauncher.View.CreateInstancePage" IsSelected="True">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.AddTo}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="实例管理" Tag="MCServerLauncher.Pages.InstanceManagerPage">
+                <ui:NavigationViewItem Content="实例管理" Tag="MCServerLauncher.View.InstanceManagerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Package}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="资源下载" Tag="MCServerLauncher.Pages.ResDownloadPage">
+                <ui:NavigationViewItem Content="资源下载" Tag="MCServerLauncher.View.ResDownloadPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Download}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="帮助" Tag="MCServerLauncher.Pages.HelpPage">
+                <ui:NavigationViewItem Content="帮助" Tag="MCServerLauncher.View.HelpPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Help}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="设置" Tag="MCServerLauncher.Pages.SettingsPage">
+                <ui:NavigationViewItem Content="设置" Tag="MCServerLauncher.View.SettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Settings}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="关于" Tag="MCServerLauncher.Pages.AboutPage">
+                <ui:NavigationViewItem Content="关于" Tag="MCServerLauncher.View.AboutPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="{x:Static ui:SegoeIcons.Info}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>

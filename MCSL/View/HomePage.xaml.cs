@@ -1,6 +1,6 @@
 ﻿using Page = System.Windows.Controls.Page;
 
-namespace MCServerLauncher.Pages
+namespace MCServerLauncher.View
 {
     /// <summary>
     /// HomePage.xaml 的交互逻辑

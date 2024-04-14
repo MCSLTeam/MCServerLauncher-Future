@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace MCServerLauncher.Pages
+namespace MCServerLauncher.View
 {
     /// <summary>
     /// SettingsPage.xaml 的交互逻辑

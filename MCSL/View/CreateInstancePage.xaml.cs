@@ -6,8 +6,7 @@ using System.Windows.Controls;
 using System;
 using iNKORE.UI.WPF.Modern.Controls;
 
-namespace MCServerLauncher.Pages
-{
+namespace MCServerLauncher.View{
     /// <summary>
     /// CreateInstancePage.xaml 的交互逻辑
     /// </summary>
