@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34723.18
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher", "MCSL\MCServerLauncher.csproj", "{7FA0E42E-38F4-4E99-B149-559708BE409E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.UI", "MCServerLauncher.UI\MCServerLauncher.UI.csproj", "{7FA0E42E-38F4-4E99-B149-559708BE409E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.Daemon", "MCServerLauncher.Daemon\MCServerLauncher.Daemon.csproj", "{C56275CD-67EF-4C6F-B51C-66073956DD77}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{7FA0E42E-38F4-4E99-B149-559708BE409E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FA0E42E-38F4-4E99-B149-559708BE409E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FA0E42E-38F4-4E99-B149-559708BE409E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C56275CD-67EF-4C6F-B51C-66073956DD77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C56275CD-67EF-4C6F-B51C-66073956DD77}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C56275CD-67EF-4C6F-B51C-66073956DD77}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C56275CD-67EF-4C6F-B51C-66073956DD77}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
