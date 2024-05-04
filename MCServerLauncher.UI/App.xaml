@@ -33,15 +33,15 @@
             </Style>
             <Style x:Key="SubtitleTextBlock" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="20"/>
-                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style x:Key="MinititleTextBlock" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="15"/>
-                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="FontWeight" Value="Regular"/>
             </Style>
             <Style x:Key="StrongBodyTextBlock" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
-                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style x:Key="BodyTextBlock" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
