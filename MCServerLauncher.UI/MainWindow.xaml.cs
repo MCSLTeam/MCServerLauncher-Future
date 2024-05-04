@@ -1,10 +1,8 @@
 ﻿
 using iNKORE.UI.WPF.Modern.Controls;
-using System.Windows;
 using iNKORE.UI.WPF.Modern.Media.Animation;
-using iNKORE.UI.WPF.Modern;
-using System;
 using MCServerLauncher.UI.View;
+using System.Windows;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.UI
