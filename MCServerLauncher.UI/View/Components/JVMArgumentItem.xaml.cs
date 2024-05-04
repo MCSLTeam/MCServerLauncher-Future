@@ -7,7 +7,7 @@ namespace MCServerLauncher.UI.View.Components
     /// <summary>
     /// JVMArgumentItem.xaml 的交互逻辑
     /// </summary>
-    
+
 
     public partial class JVMArgumentItem : UserControl
     {

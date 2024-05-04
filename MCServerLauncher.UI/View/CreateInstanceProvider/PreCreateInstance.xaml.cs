@@ -1,9 +1,7 @@
-﻿using static MCServerLauncher.UI.Tools.VisualTreeExtensions;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Text.RegularExpressions;
-using System;
 
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
@@ -32,7 +30,7 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
             }
             else
             {
-                var parent = this.TryFindParent<CreateInstancePage>();
+                var parent = (CreateInstancePage)Parent;
                 switch (CreatingInstanceType)
                 {
                     case "MinecraftJavaServer":
@@ -51,6 +49,6 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
                         break;
                 }
             }
-        }   
+        }
     }
 }
