@@ -4,13 +4,13 @@ namespace MCServerLauncher.Daemon
 {
     public class InstanceManager
     {
-        public void CreateInstance(JObject instanceConfig)
+        async public Task CreateInstance(JObject instanceConfig)
         {
             string instanceType = instanceConfig["instanceType"]!.ToString();
             switch (instanceType)
             {
                 case "MinecraftJavaServer":
-                    CreateMinecraftJavaInstance(instanceType, instanceConfig);
+                    await CreateMinecraftJavaInstance(instanceType, instanceConfig);
                     break;
                 case "MinecraftForgeServer":
                     break;
@@ -22,24 +22,24 @@ namespace MCServerLauncher.Daemon
                     break;
             }
         }
-        private void CreateMinecraftJavaInstance(string instanceType, JObject instanceConfig)
+        async private Task CreateMinecraftJavaInstance(string instanceType, JObject instanceConfig)
         {
             #region InstanceConfig
             string OriginalServerCorePath = instanceConfig["instanceCoreFilePath"].ToString();
-            string JavaRuntimePath = instanceConfig["instanceJavaRuntimePath"].ToString();
-            int JvmMinimumMemory = instanceConfig["instanceJvmMinimumMemory"].ToObject<int>();
-            int JvmMaximumMemory = instanceConfig["instanceJvmMaximumMemory"].ToObject<int>();
-            List<string> JvmArguments = instanceConfig["instanceJvmArguments"].ToObject<List<string>>();
+            //string JavaRuntimePath = instanceConfig["instanceJavaRuntimePath"].ToString();
+            //int JvmMinimumMemory = instanceConfig["instanceJvmMinimumMemory"].ToObject<int>();
+            //int JvmMaximumMemory = instanceConfig["instanceJvmMaximumMemory"].ToObject<int>();
+            //List<string> JvmArguments = instanceConfig["instanceJvmArguments"].ToObject<List<string>>();
             string InstanceName = instanceConfig["instanceName"].ToString();
             #endregion
 
             #region InstanceCreation
             Directory.CreateDirectory(Path.Combine("Data", "InstanceData", InstanceName));
             File.Copy(OriginalServerCorePath,Path.Combine("Data", "InstanceData", InstanceName, Path.GetFileName(OriginalServerCorePath)));
-            WriteMinecraftJavaInstanceConfig(instanceConfig);
+            await WriteMinecraftJavaInstanceConfig(instanceConfig);
             #endregion
         }
-        private void WriteMinecraftJavaInstanceConfig(JObject instanceConfig)
+        async private static Task WriteMinecraftJavaInstanceConfig(JObject instanceConfig)
         {
             MinecraftJavaInstanceConfig Config = new MinecraftJavaInstanceConfig
             {
@@ -50,7 +50,7 @@ namespace MCServerLauncher.Daemon
                 JvmArguments = instanceConfig["instanceJvmArguments"].ToObject<List<string>>(),
                 InstanceName = instanceConfig["instanceName"].ToString()
             };
-            File.WriteAllText(
+            await File.WriteAllTextAsync(
                 Path.Combine("Data", "Configuration", "Instance", instanceConfig["instanceName"].ToString() + ".json"),
                 JsonConvert.SerializeObject(Config, Formatting.Indented)
             );
