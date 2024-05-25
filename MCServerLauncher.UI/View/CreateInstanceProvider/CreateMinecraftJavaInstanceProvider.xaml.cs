@@ -1,6 +1,7 @@
 ﻿using MCServerLauncher.UI.View.Components;
 using System.Windows;
 using System.Windows.Controls;
+using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
 
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
@@ -15,7 +16,7 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
         }
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
-            var parent = (CreateInstancePage)Parent;
+            var parent = this.TryFindParent<CreateInstancePage>();
             parent.CurrentCreateInstance.GoBack();
         }
         private void FinishSetup(object sender, RoutedEventArgs e)
