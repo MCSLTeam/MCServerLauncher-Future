@@ -1,13 +1,16 @@
+using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Http;
+using System.Windows.Media;
+using System.Windows;
 using Newtonsoft.Json;
+
 
 namespace MCServerLauncher.UI.Helpers
 {
     public class Utils
     {
-        public Settings? AppSettings { get; set; }
+        public Settings AppSettings { get; set; }
 
         public static void InitDataDirectory()
         {
@@ -68,11 +71,11 @@ namespace MCServerLauncher.UI.Helpers
                     }
                 };
                 File.WriteAllText(
-                    "Data/Configuration/MCSL/Settings.json", 
+                    "Data/Configuration/MCSL/Settings.json",
                     JsonConvert.SerializeObject(AppSettings, Formatting.Indented)
                 );
             }
-        }   
+        }
         public void InitApp()
         {
             InitDataDirectory();
@@ -137,4 +140,23 @@ public class Settings
     public InstanceCreationSettings InstanceCreation { get; set; }
     public InstanceSettings Instance { get; set; }
     public AppSettings App { get; set; }
+}
+namespace MCServerLauncher.UI.Helpers
+{
+    internal static class VisualTreeExtensions
+    {
+        public static T TryFindParent<T>(this DependencyObject child) where T : DependencyObject
+        {
+            var parent = VisualTreeHelper.GetParent(child);
+            while (parent != null)
+            {
+                if (parent is T parentType)
+                {
+                    return parentType;
+                }
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+            return null;
+        }
+    }
 }

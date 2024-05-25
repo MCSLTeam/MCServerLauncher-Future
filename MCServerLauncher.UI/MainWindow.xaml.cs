@@ -2,6 +2,7 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.UI.View;
+using System;
 using System.Windows;
 using Page = System.Windows.Controls.Page;
 

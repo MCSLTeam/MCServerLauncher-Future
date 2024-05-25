@@ -26,8 +26,7 @@ namespace MCServerLauncher.UI
         protected override void OnStartup(StartupEventArgs e)
         {
             new Utils().InitApp();
-            bool createNew;
-            _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out createNew);
+            _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out bool createNew);
             if (!createNew)
             {
                 MessageBox.Show("MCServerLauncher 不支持重复运行。", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
