@@ -31,8 +31,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource SubtitleTextBlock}" Text="实例类型" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource SubtitleTextBlock}" Text="创建时间" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,15"/>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="实例类型" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="创建时间" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,15"/>
                     <TextBlock Grid.Row="0" Grid.Column="1" x:Name="InstanceTypeTextBlock" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5"/>
                     <TextBlock Grid.Row="1" Grid.Column="2" x:Name="InstanceCreatedTimeTextBlock" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5"/>
                 </Grid>
