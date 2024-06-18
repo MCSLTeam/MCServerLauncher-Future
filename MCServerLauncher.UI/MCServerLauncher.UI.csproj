@@ -189,6 +189,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Modules\Download\AList.cs" />
+    <Compile Include="Modules\Download\FastMirror.cs" />
+    <Compile Include="Modules\Download\MCSLSync.cs" />
+    <Compile Include="Modules\Download\MSL.cs" />
+    <Compile Include="Modules\Download\Polars.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="View\AboutPage.xaml.cs">
       <DependentUpon>AboutPage.xaml</DependentUpon>
@@ -225,6 +230,9 @@
     </Compile>
     <Compile Include="View\InstanceManagerPage.xaml.cs">
       <DependentUpon>InstanceManagerPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\TestPage.xaml.cs">
+      <DependentUpon>TestPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\ResDownloadPage.xaml.cs">
       <DependentUpon>ResDownloadPage.xaml</DependentUpon>
@@ -291,6 +299,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="View\TestPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\ResDownloadPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -331,6 +343,7 @@
   <ItemGroup>
     <Resource Include="Resources\MCServerLauncherFuture.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
