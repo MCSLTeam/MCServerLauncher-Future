@@ -82,6 +82,11 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Test" Tag="MCServerLauncher.UI.View.TestPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
             <ui:Frame x:Name="CurrentPage"/>
         </ui:NavigationView>

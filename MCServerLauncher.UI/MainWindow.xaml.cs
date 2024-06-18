@@ -74,6 +74,10 @@ namespace MCServerLauncher.UI
                 {
                     CurrentPage.Content = About;
                 }
+                if (navPageType == typeof(TestPage))
+                {
+                    CurrentPage.Content = new TestPage();
+                }
             }
         }
     }
