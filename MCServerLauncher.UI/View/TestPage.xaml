@@ -73,7 +73,7 @@
                     <Button Margin="0,0,10,0" Grid.Column="2" Content="Test MSL DownloadUrl" Click="TestMSLDownloadUrl"/>
                 </Grid>
                 
-                <TextBlock Grid.Row="9" Margin="0,0,0,10" Style="{StaticResource MinititleTextBlock}" Text="MCSLSync" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBlock Grid.Row="9" Margin="0,0,0,10" Style="{StaticResource MinititleTextBlock}" Text="MCSLSync (Waiting for Production)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                 <Grid Grid.Row="10" Margin="0,0,0,10" IsEnabled="False">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
