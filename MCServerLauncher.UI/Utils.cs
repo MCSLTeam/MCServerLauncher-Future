@@ -1,31 +1,50 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Net.Http;
 using System.Windows.Media;
 using System.Windows;
+using System.Reflection;
 using Newtonsoft.Json;
+using System.Text;
 
 
 namespace MCServerLauncher.UI.Helpers
 {
-    public class Utils
+    public class NetworkUtils
+    {
+        public string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public async Task<HttpResponseMessage> SendGetRequest(string url)
+        {
+            HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
+            return await client.GetAsync(url);
+        }
+        public async Task<HttpResponseMessage> SendPostRequest(string url, string data)
+        {
+            HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
+            return await client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json"));
+        }
+    }
+
+    public class BasicUtils
     {
         public Settings AppSettings { get; set; }
-
         public static void InitDataDirectory()
         {
-            var dataFolders = new List<string>
+            var DataFolders = new List<string>
             {
                 "Data",
                 Path.Combine("Data", "Configuration"),
                 Path.Combine("Data", "Configuration", "MCSL")
             };
 
-            foreach (string dataFolder in dataFolders)
+            foreach (string DataFolder in DataFolders)
             {
-                if (!Directory.Exists(dataFolder))
+                if (!Directory.Exists(DataFolder))
                 {
-                    Directory.CreateDirectory(dataFolder);
+                    Directory.CreateDirectory(DataFolder);
                 }
             }
         }
@@ -80,20 +99,6 @@ namespace MCServerLauncher.UI.Helpers
         {
             InitDataDirectory();
             InitSettings();
-        }
-        public HttpContent SendGetRequest(string url)
-        {
-            HttpClient client = new();
-            client.DefaultRequestHeaders.Add("User-Agent", "MCServerLauncher");
-            HttpResponseMessage response = client.GetAsync(url).Result;
-            return response.Content;
-        }
-        public HttpContent SendPostRequest(string url, string data)
-        {
-            HttpClient client = new();
-            client.DefaultRequestHeaders.Add("User-Agent", "MCServerLauncher");
-            HttpResponseMessage response = client.PostAsync(url, new StringContent(data)).Result;
-            return response.Content;
         }
     }
 }
