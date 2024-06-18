@@ -17,7 +17,7 @@ namespace MCServerLauncher.UI
             // 添加崩溃处理事件
             DispatcherUnhandledException += (s, e) =>
             {
-                MessageBox.Show("MCServerLauncher 发生了未经处理的异常：\n\n" + e.Exception.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"MCServerLauncher 发生了未经处理的异常：\n\n{e.Exception.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Handled = true; // 设置为已处理，阻止应用程序崩溃
             };
         }
@@ -25,7 +25,7 @@ namespace MCServerLauncher.UI
         private Mutex _mutex;
         protected override void OnStartup(StartupEventArgs e)
         {
-            new Utils().InitApp();
+            new BasicUtils().InitApp();
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out bool createNew);
             if (!createNew)
             {

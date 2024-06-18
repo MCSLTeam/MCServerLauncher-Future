@@ -51,7 +51,7 @@ namespace MCServerLauncher.Daemon
                 InstanceName = instanceConfig["instanceName"].ToString()
             };
             await File.WriteAllTextAsync(
-                Path.Combine("Data", "Configuration", "Instance", instanceConfig["instanceName"].ToString() + ".json"),
+                Path.Combine("Data", "Configuration", "Instance", $"{instanceConfig["instanceName"]}.json"),
                 JsonConvert.SerializeObject(Config, Formatting.Indented)
             );
         }
