@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
+using iNKORE.UI.WPF.Modern.Media.Animation;
 
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
@@ -35,16 +36,16 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
                 switch (CreatingInstanceType)
                 {
                     case "MinecraftJavaServer":
-                        parent.CurrentCreateInstance.Content = parent.NewMinecraftJavaServerPage();
+                        parent.CurrentCreateInstance.Navigate(parent.NewMinecraftJavaServerPage(), new DrillInNavigationTransitionInfo());
                         break;
                     case "MinecraftForgeServer":
-                        parent.CurrentCreateInstance.Content = parent.NewMinecraftForgeServerPage();
+                        parent.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(), new DrillInNavigationTransitionInfo());
                         break;
                     case "MinecraftBedrockServer":
-                        parent.CurrentCreateInstance.Content = parent.NewMinecraftBedrockServerPage();
+                        parent.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(), new DrillInNavigationTransitionInfo());
                         break;
                     case "OtherExecutable":
-                        parent.CurrentCreateInstance.Content = parent.NewOtherExecutablePage();
+                        parent.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(), new DrillInNavigationTransitionInfo());
                         break;
                     default:
                         break;
