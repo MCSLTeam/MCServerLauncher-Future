@@ -1,4 +1,5 @@
 ﻿using Page = System.Windows.Controls.Page;
+using MCServerLauncher.UI.View.ResDownloadProvider;
 
 namespace MCServerLauncher.UI.View
 {
@@ -7,9 +8,11 @@ namespace MCServerLauncher.UI.View
     /// </summary>
     public partial class ResDownloadPage : Page
     {
+        public FastMirrorProvider fastMirror = new();
         public ResDownloadPage()
         {
             InitializeComponent();
+            CurrentResDownloadProvider.Content = fastMirror;
         }
     }
 }
