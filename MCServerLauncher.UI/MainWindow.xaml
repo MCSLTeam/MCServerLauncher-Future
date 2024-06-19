@@ -35,7 +35,8 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,17,0,0" FontWeight="Medium"  Grid.Column="0" Text="MCServerLauncher"/>
                 <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,17,0,0" FontWeight="SemiBold" Grid.Column="1" Text="Future" Foreground="#00E396" HorizontalAlignment="Left"/>
-            </Grid></Grid>
+            </Grid>
+        </Grid>
         <!-- 导航 -->
         <ui:NavigationView x:Name="NavView" 
                            IsPaneOpen="False"

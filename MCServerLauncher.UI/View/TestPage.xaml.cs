@@ -49,7 +49,7 @@ namespace MCServerLauncher.UI.View
             }
             ShowTextResultContentDialog(tmpText);
         }
-        private async void TestFastMirror(object sender, RoutedEventArgs e)
+        private async void TestFastMirrorCore(object sender, RoutedEventArgs e)
         {
             List<FastMirrorCoreDetail> Results = await new FastMirror().GetCoreDetail("Paper", "1.20.1");
             string tmpText = "";

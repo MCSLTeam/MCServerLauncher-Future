@@ -10,7 +10,7 @@ namespace MCServerLauncher.UI.View
 
     public partial class CreateInstancePage : Page
     {
-        public PreCreateInstance preCreateInstance = new PreCreateInstance();
+        public PreCreateInstance preCreateInstance = new();
         public CreateInstancePage()
         {
             InitializeComponent();

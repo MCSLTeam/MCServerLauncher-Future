@@ -38,7 +38,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Button Margin="0,0,10,0" Grid.Column="0" Content="Test FastMirror EndPoint" Click="TestFastMirrorEndPoint"/>
-                    <Button Margin="0,0,10,0" Grid.Column="1" Content="Test FastMirror" Click="TestFastMirror"/>
+                    <Button Margin="0,0,10,0" Grid.Column="1" Content="Test FastMirror Core" Click="TestFastMirrorCore"/>
                 </Grid>
 
                 <TextBlock Grid.Row="3" Margin="0,0,0,10" Style="{StaticResource MinititleTextBlock}" Text="AList" VerticalAlignment="Top" HorizontalAlignment="Left"/>

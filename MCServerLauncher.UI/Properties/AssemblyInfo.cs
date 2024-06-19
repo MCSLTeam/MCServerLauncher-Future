@@ -7,11 +7,11 @@ using System.Windows;
 // 有关程序集的一般信息由以下
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("MCServerLauncher.UI")]
+[assembly: AssemblyTitle("MCServerLauncher Future")]
 [assembly: AssemblyDescription("Future version of MCSL.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MCSLTeam")]
-[assembly: AssemblyProduct("MCServerLauncher.UI")]
+[assembly: AssemblyProduct("MCServerLauncher Future")]
 [assembly: AssemblyCopyright("Copyright © 2022-2024 MCSLTeam. All rights reserved.")]
 [assembly: AssemblyTrademark("MCSL")]
 [assembly: AssemblyCulture("")]
