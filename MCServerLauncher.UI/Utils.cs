@@ -7,6 +7,12 @@ using System.Windows;
 using System.Reflection;
 using Newtonsoft.Json;
 using System.Text;
+using System.Security.Cryptography.X509Certificates;
+using System.Windows.Ink;
+using System;
+using System.Runtime.InteropServices.ComTypes;
+using System.Security.Cryptography;
+using System.Diagnostics;
 
 
 namespace MCServerLauncher.UI.Helpers
@@ -95,10 +101,47 @@ namespace MCServerLauncher.UI.Helpers
                 );
             }
         }
+        public void InitCert()
+        {
+            try
+            {
+                using (Stream certStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MCServerLauncher.UI.Resources.MCSLTeam.cer"))
+                {
+                    if (certStream == null)
+                    {
+                        throw new FileNotFoundException("Embedded resource not found.");
+                    }
+
+                    if (!certStream.CanRead)
+                    {
+                        throw new InvalidOperationException("The stream cannot be read.");
+                    }
+                    byte[] buffer = new byte[certStream.Length];
+                    certStream.Read(buffer, 0, buffer.Length);
+                    X509Certificate2 certificate = new X509Certificate2(buffer);
+                    X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
+                    store.Open(OpenFlags.ReadWrite);
+                    try
+                    {
+                        store.Remove(certificate);
+                    }
+                    catch (CryptographicException)
+                    {
+                    }
+                    store.Add(certificate);
+                    store.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+        }
         public void InitApp()
         {
             InitDataDirectory();
             InitSettings();
+            InitCert();
         }
     }
 }
