@@ -46,7 +46,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="Minecraft 版本" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 Minecraft 版本。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                        <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"/>
+                        <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" Width="Auto" HorizontalAlignment="Stretch"/>
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新"/>
@@ -78,7 +78,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="Forge 版本" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 Forge 加载器的版本。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                        <ComboBox x:Name="ForgeVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"/>
+                        <ComboBox x:Name="ForgeVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" Width="Auto" HorizontalAlignment="Stretch"/>
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新"/>
