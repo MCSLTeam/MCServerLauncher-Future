@@ -8,9 +8,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using System.Text;
 using System.Security.Cryptography.X509Certificates;
-using System.Windows.Ink;
 using System;
-using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Diagnostics;
 
@@ -20,15 +18,14 @@ namespace MCServerLauncher.UI.Helpers
     public class NetworkUtils
     {
         public string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        private HttpClient client = new();
         public async Task<HttpResponseMessage> SendGetRequest(string url)
         {
-            HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
             return await client.GetAsync(url);
         }
         public async Task<HttpResponseMessage> SendPostRequest(string url, string data)
         {
-            HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
             return await client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json"));
         }
@@ -37,6 +34,10 @@ namespace MCServerLauncher.UI.Helpers
     public class BasicUtils
     {
         public Settings AppSettings { get; set; }
+        public async Task OpenUrl(string Url)
+        {
+            await Task.Run(() => Process.Start(Url));
+        }
         public static void InitDataDirectory()
         {
             var DataFolders = new List<string>
