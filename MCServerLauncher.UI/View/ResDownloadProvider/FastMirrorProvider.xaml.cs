@@ -32,7 +32,6 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
             InitializeComponent();
         }
         public async Task<bool> Refresh()
-        public async Task<bool> Refresh()
         {
             if (IsLoading || IsLoaded)
             {
