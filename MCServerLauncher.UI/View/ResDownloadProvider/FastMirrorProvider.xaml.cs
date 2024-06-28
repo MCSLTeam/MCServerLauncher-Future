@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.UI.Modules.Download;
+using MCServerLauncher.UI.Modules.Download;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using static MCServerLauncher.UI.Modules.Download.FastMirror;
@@ -35,7 +35,6 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
         {
             if (IsLoading || IsLoaded)
             {
-                return true;
                 return true;
             }
             try
