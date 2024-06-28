@@ -9,6 +9,13 @@ using System.Windows.Input;
 using MCServerLauncher.UI.Helpers;
 using iNKORE.UI.WPF.Helpers;
 using System.Windows;
+using MCServerLauncher.UI.View.Components;
+using System;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using MCServerLauncher.UI.Helpers;
+using iNKORE.UI.WPF.Helpers;
+using System.Windows;
 
 namespace MCServerLauncher.UI.View.ResDownloadProvider
 {
@@ -25,9 +32,11 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
             InitializeComponent();
         }
         public async Task<bool> Refresh()
+        public async Task<bool> Refresh()
         {
             if (IsLoading || IsLoaded)
             {
+                return true;
                 return true;
             }
             try
