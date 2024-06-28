@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-        WindowStartupLocation="CenterScreen" 
+        WindowStartupLocation="CenterScreen"
         UseLayoutRounding="True"
         ui:ThemeManager.IsThemeAware="True"
         ui:WindowHelper.SystemBackdropType="Mica"
@@ -68,22 +68,22 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="帮助" Tag="MCServerLauncher.UI.View.HelpPage">
+                <ui:NavigationViewItem Content="帮助中心" Tag="MCServerLauncher.UI.View.HelpPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="设置" Tag="MCServerLauncher.UI.View.SettingsPage">
+                <ui:NavigationViewItem Content="程序设置" Tag="MCServerLauncher.UI.View.SettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="关于" Tag="MCServerLauncher.UI.View.AboutPage">
+                <ui:NavigationViewItem Content="关于产品" Tag="MCServerLauncher.UI.View.AboutPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Test" Tag="MCServerLauncher.UI.View.TestPage">
+                <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.UI.View.TestPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>

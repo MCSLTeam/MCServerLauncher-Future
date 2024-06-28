@@ -28,7 +28,6 @@ namespace MCServerLauncher.UI
             CurrentPage.Content = Home;
         }
 
-        //导航栏
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked == true)
@@ -44,39 +43,39 @@ namespace MCServerLauncher.UI
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             Type preNavPageType = CurrentPage.Content.GetType();
-            if (navPageType is not null && !Type.Equals(navPageType, preNavPageType))
+            if (navPageType is not null && !Equals(navPageType, preNavPageType))
             {
                 if (navPageType == typeof(HomePage))
                 {
-                    CurrentPage.Content = Home;
+                    CurrentPage.Navigate(Home);
                 }
                 if (navPageType == typeof(CreateInstancePage))
                 {
-                    CurrentPage.Content = CreateInstance;
+                    CurrentPage.Navigate(CreateInstance);
                 }
                 if (navPageType == typeof(InstanceManagerPage))
                 {
-                    CurrentPage.Content = InstanceManager;
+                    CurrentPage.Navigate(InstanceManager);
                 }
                 if (navPageType == typeof(ResDownloadPage))
                 {
-                    CurrentPage.Content = ResDownload;
+                    CurrentPage.Navigate(ResDownload);
                 }
                 if (navPageType == typeof(HelpPage))
                 {
-                    CurrentPage.Content = Help;
+                    CurrentPage.Navigate(Help);
                 }
                 if (navPageType == typeof(SettingsPage))
                 {
-                    CurrentPage.Content = Settings;
+                    CurrentPage.Navigate(Settings);
                 }
                 if (navPageType == typeof(AboutPage))
                 {
-                    CurrentPage.Content = About;
+                    CurrentPage.Navigate(About);
                 }
                 if (navPageType == typeof(TestPage))
                 {
-                    CurrentPage.Content = new TestPage();
+                    CurrentPage.Navigate(new TestPage());
                 }
             }
         }

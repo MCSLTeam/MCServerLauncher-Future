@@ -193,6 +193,12 @@
     <Compile Include="View\AboutPage.xaml.cs">
       <DependentUpon>AboutPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\FastMirrorResCoreItem.xaml.cs">
+      <DependentUpon>FastMirrorResCoreItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\FastMirrorResCoreVersionItem.xaml.cs">
+      <DependentUpon>FastMirrorResCoreVersionItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\InstanceBorder.xaml.cs">
       <DependentUpon>InstanceBorder.xaml</DependentUpon>
     </Compile>
@@ -253,6 +259,14 @@
     <Page Include="View\AboutPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\FastMirrorResCoreItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\FastMirrorResCoreVersionItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\Components\InstanceBorder.xaml">
       <Generator>MSBuild:Compile</Generator>
