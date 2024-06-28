@@ -1,4 +1,6 @@
-﻿using System.Windows.Controls;
+﻿using MCServerLauncher.UI.Helpers;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.UI.View
 {
@@ -10,6 +12,10 @@ namespace MCServerLauncher.UI.View
         public AboutPage()
         {
             InitializeComponent();
+        }
+        private async void TestButton(object sender, RoutedEventArgs e)
+        {
+            await new BasicUtils().OpenUrl("https://ys.mihoyo.com/cloud");
         }
     }
 }

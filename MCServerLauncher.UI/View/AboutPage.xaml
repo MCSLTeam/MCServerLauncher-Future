@@ -10,15 +10,19 @@
 
     <Grid>
         <TextBlock Style="{StaticResource TitleTextBlock}" Text="关于" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,35,0,0"/>
-        <Grid Margin="35,80,0,0">
+        <Grid Margin="35,80,35,0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="MCServerLauncher Future Project" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,20"/>
             <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="此项目受开源协议 GNU General Public License Version 3.0 保护，一切侵权行为必究。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,20"/>
-            <TextBlock Grid.Row="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="Copyright © 2022-2024 MCSLTeam. All rights reserved." VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+            <TextBlock Grid.Row="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="Copyright © 2022-2024 MCSLTeam. All rights reserved." VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,20,20"/>
+            <TextBlock Grid.Row="3" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="MCServerLauncher Future 使用的数字签名证书序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+            <Button Grid.Row="4" Content="Test Button" Click="TestButton"/>
         </Grid>
     </Grid>
 </Page>
