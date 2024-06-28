@@ -24,6 +24,7 @@ namespace MCServerLauncher.UI.View.Components
         {
             InitializeComponent();
         }
+        public string Core { get; set; }
         public string MinecraftVersion
         {
             get => MinecraftVersionReplacer.Text;
