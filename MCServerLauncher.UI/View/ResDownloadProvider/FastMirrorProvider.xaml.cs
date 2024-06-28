@@ -1,17 +1,8 @@
-﻿using System;
+﻿using MCServerLauncher.UI.Modules.Download;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using static MCServerLauncher.UI.Modules.Download.FastMirror;
+using  MCServerLauncher.UI.View.Components;
 
 namespace MCServerLauncher.UI.View.ResDownloadProvider
 {
@@ -20,9 +11,29 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
     /// </summary>
     public partial class FastMirrorProvider : UserControl
     {
+        private bool IsLoading = false;
+        private bool IsLoaded = false;
+        private List<FastMirrorCoreInfo> FastMirrorInfo = new();
+
         public FastMirrorProvider()
         {
             InitializeComponent();
+        }
+        public async void Refresh()
+        {
+            if (IsLoading || IsLoaded)
+            {
+                return;
+            }
+            FastMirrorInfo = await new FastMirror().GetCoreInfo();
+            foreach (FastMirrorCoreInfo Result in FastMirrorInfo)
+            {
+                FastMirrorResCoreItem CoreItem = new();
+                CoreItem.CoreName = Result.Name;
+                CoreItem.CoreTag = Result.Tag;
+                CoreItem.Recommend = Result.Recommend;
+                CoreGridView.Items.Add(CoreItem);
+            }
         }
     }
 }

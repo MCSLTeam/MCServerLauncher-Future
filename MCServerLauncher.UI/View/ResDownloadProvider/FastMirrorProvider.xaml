@@ -4,34 +4,54 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MCServerLauncher.UI.View.ResDownloadProvider"
+             xmlns:vc="clr-namespace:MCServerLauncher.UI.View.Components"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <Border Grid.Column="0" Margin="0,0,10,0" Style="{DynamicResource StyledBorder}">
-            <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Margin="0,0,10,0" Style="{StaticResource StyledBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="15,15,15,0" Grid.Row="0" Text="服务器核心" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Center"/>
+                    <ui:ScrollViewerEx ScrollViewer.VerticalScrollBarVisibility="Hidden" Margin="10,10,10,15" VerticalAlignment="Stretch" Width="140" Height="Auto" Grid.Row="1">
+                        <ui:GridView Width="130" ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="CoreGridView"/>
+                    </ui:ScrollViewerEx>
+                </Grid>
+            </Border>
+        <Border Width="Auto" Grid.Column="1" Padding="10" HorizontalAlignment="Stretch" Style="{StaticResource StyledBorder}">
+            <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
                 </Grid.RowDefinitions>
-                <TextBlock Margin="15,10,15,20" Grid.Row="0" Text="服务器核心" Style="{DynamicResource SubtitleTextBlock}" HorizontalAlignment="Center"/>
-                <ui:ScrollViewerEx Grid.Row="1" x:Name="CoreScrollViewer"/>
+                <!--Todo: Horizontal Stretch-->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox Grid.Column="0" x:Name="MinecraftVersionComboBox" Width="Auto" HorizontalAlignment="Stretch" ToolTip="Minecraft 版本">
+                        <ComboBoxItem Content="Minecraft 1.21"/>
+                        <ComboBoxItem Content="Minecraft 1.20.6"/>
+                        <ComboBoxItem Content="Minecraft 1.20.5"/>
+                        <ComboBoxItem Content="Minecraft 1.20.4"/>
+                        <ComboBoxItem Content="Minecraft 1.20.3"/>
+                        <ComboBoxItem Content="Minecraft 1.20.2"/>
+                        <ComboBoxItem Content="Minecraft 1.20.1"/>
+                    </ComboBox>
+                    <Button Margin="10,0,0,0" Height="32" Grid.Column="1" x:Name="CoreHomePageButton" Content="前往核心官网"/>
+                </Grid>
+                <ui:ScrollViewerEx Grid.Row="1" Margin="0,10,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Width="Auto">
+                    <ui:SimpleStackPanel x:Name="CoreVersionStackPanel"/>
+                </ui:ScrollViewerEx>
             </Grid>
         </Border>
-        <Border Grid.Column="1" Padding="10" Style="{DynamicResource StyledBorder}">
-            <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-                <!--Todo: Horizontal Stretch-->
-                <ComboBox Grid.Column="1" Grid.Row="0" HorizontalAlignment="Stretch" x:Name="MinecraftVersionComboBox"/>
-                <ui:ScrollViewerEx Grid.Column="1" Grid.Row="1" Margin="20,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" x:Name="CoreVersionScrollViewer"/>
-            </Grid>
-            </Border>
     </Grid>
 </UserControl>

@@ -28,7 +28,24 @@ namespace MCServerLauncher.UI.Modules.Download
             public string CoreVersion { get; set; }
             public string SHA1 { get; set; }
         }
-
+        private string FormatFastMirrorCoreTag(string OriginalTag)
+        {
+            switch (OriginalTag)
+            {
+                case "proxy":
+                    return "代理";
+                case "vanilla":
+                    return "原版";
+                case "pure":
+                    return "纯净";
+                case "mod":
+                    return "模组";
+                case "bedrock":
+                    return "基岩";
+                default:
+                    return OriginalTag;
+            }
+        }
         public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
         {
             NetworkUtils NetworkUtils = new();
@@ -42,7 +59,7 @@ namespace MCServerLauncher.UI.Modules.Download
                     FastMirrorCoreInfoList.Add(new FastMirrorCoreInfo
                     {
                         Name = FastMirrorCoreInfo.SelectToken("name").ToString(),
-                        Tag = FastMirrorCoreInfo.SelectToken("tag").ToString(),
+                        Tag = FormatFastMirrorCoreTag(FastMirrorCoreInfo.SelectToken("tag").ToString()),
                         HomePage = FastMirrorCoreInfo.SelectToken("homepage").ToString(),
                         Recommend = FastMirrorCoreInfo.SelectToken("recommend").ToObject<bool>(),
                         MinecraftVersions = FastMirrorCoreInfo.SelectToken("mc_versions").ToObject<List<string>>()
