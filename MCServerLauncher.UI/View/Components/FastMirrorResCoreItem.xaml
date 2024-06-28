@@ -6,8 +6,8 @@
              xmlns:local="clr-namespace:MCServerLauncher.UI.View.Components"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d" 
-             d:DesignHeight="50" d:DesignWidth="130">
-    <Border Style="{StaticResource StyledBorder}" Width="125" Height="40" x:Name="CoreItemBorder">
+             d:DesignHeight="50" d:DesignWidth="165">
+    <Border Style="{StaticResource StyledBorder}" Width="170" Height="40" x:Name="CoreItemBorder">
         <Grid Width="Auto">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

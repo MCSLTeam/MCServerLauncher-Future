@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Collections.Generic;
 
 namespace MCServerLauncher.UI.View.Components
 {
@@ -37,6 +38,8 @@ namespace MCServerLauncher.UI.View.Components
             get => GetRecommendStatus();
             set => SetRecommendStatus(value);
         }
+        public string HomePage { get; set; }
+        public List<string> MinecraftVersions { get; set; }
         private void SetRecommendStatus(bool RecommendStatus)
         {
             CoreItemBorder.Background = RecommendStatus ? RecommendBrush : null;

@@ -1,8 +1,10 @@
 ﻿using Page = System.Windows.Controls.Page;
 using MCServerLauncher.UI.View.ResDownloadProvider;
 using iNKORE.UI.WPF.Modern.Controls;
-using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
+using IconAndText = iNKORE.UI.WPF.Modern.Controls.IconAndText;
 using System;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using System.Threading.Tasks;
 
 namespace MCServerLauncher.UI.View
 {
@@ -16,19 +18,11 @@ namespace MCServerLauncher.UI.View
         {
             InitializeComponent();
             CurrentResDownloadProvider.Content = FastMirror;
-
+            IsVisibleChanged += (sender, e) => { if (IsVisible) Refresh(); };
         }
-        public void Refresh()
+        public async void Refresh()
         {
-            ContentDialog dialog = new();
-            dialog.FullSizeDesired = false;
-            ProgressRing ProgressRing = new();
-            ProgressRing.IsActive = true;
-            ProgressRing.Width = ProgressRing.Height = 50;
-            dialog.Content = ProgressRing;
-            try { dialog.ShowAsync(); } catch (Exception) { }
-            FastMirror.Refresh();
-            dialog.Hide();
+            await FastMirror.Refresh();
         }
     }
 }
