@@ -11,38 +11,50 @@ using System.Security.Cryptography.X509Certificates;
 using System;
 using System.Security.Cryptography;
 using System.Diagnostics;
-
+using Serilog;
 
 namespace MCServerLauncher.UI.Helpers
 {
     public class NetworkUtils
     {
-        public string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         private HttpClient client = new();
-        public async Task<HttpResponseMessage> SendGetRequest(string url)
+        public async Task<HttpResponseMessage> SendGetRequest(string Url)
         {
+            Log.Information($"[Net] Try to get url \"{Url}\"");
             client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
-            return await client.GetAsync(url);
+            return await client.GetAsync(Url);
         }
-        public async Task<HttpResponseMessage> SendPostRequest(string url, string data)
+        public async Task<HttpResponseMessage> SendPostRequest(string Url, string Data)
         {
+            Log.Information($"[Net] Try to post url \"{Url}\" with data {Data}");
             client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
-            return await client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json"));
+            return await client.PostAsync(Url, new StringContent(Data, Encoding.UTF8, "application/json"));
         }
-    }
-
-    public class BasicUtils
-    {
-        public Settings AppSettings { get; set; }
         public async Task OpenUrl(string Url)
         {
-            await Task.Run(() => Process.Start(Url));
+            try
+            { 
+                await Task.Run(() => Process.Start(Url));
+                Log.Information("[Net] Try to open url \"{Url}\"");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[Net] Failed to open url \"{Url}\". Reason: {ex.Message}");
+            }
         }
+    }
+    public class BasicUtils
+    {
+        public static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public Settings AppSettings { get; set; }
         public static void InitDataDirectory()
         {
             var DataFolders = new List<string>
             {
                 "Data",
+                Path.Combine("Data", "Logs"),
+                Path.Combine("Data", "Logs", "UI"),
                 Path.Combine("Data", "Configuration"),
                 Path.Combine("Data", "Configuration", "MCSL")
             };
@@ -59,10 +71,12 @@ namespace MCServerLauncher.UI.Helpers
         {
             if (File.Exists("Data/Configuration/MCSL/Settings.json"))
             {
+                Log.Information("[Set] Found profile, reading");
                 AppSettings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json"));
             }
             else
             {
+                Log.Information("[Set] Profile not found, creating");
                 AppSettings = new Settings
                 {
                     MinecraftJava = new MinecraftJavaSettings
@@ -106,16 +120,17 @@ namespace MCServerLauncher.UI.Helpers
         {
             try
             {
+                Log.Information("[Cer] Importing certificate");
                 using (Stream certStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MCServerLauncher.UI.Resources.MCSLTeam.cer"))
                 {
                     if (certStream == null)
                     {
-                        throw new FileNotFoundException("Embedded resource not found.");
+                        throw new FileNotFoundException("Embedded resource not found");
                     }
 
                     if (!certStream.CanRead)
                     {
-                        throw new InvalidOperationException("The stream cannot be read.");
+                        throw new InvalidOperationException("The stream cannot be read");
                     }
                     byte[] buffer = new byte[certStream.Length];
                     certStream.Read(buffer, 0, buffer.Length);
@@ -126,20 +141,35 @@ namespace MCServerLauncher.UI.Helpers
                     {
                         store.Remove(certificate);
                     }
-                    catch (CryptographicException)
-                    {
-                    }
+                    catch (CryptographicException) { }
                     store.Add(certificate);
                     store.Close();
+                    Log.Information("[Cer] Certificate successfully imported");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                Log.Error($"[Cer] Failed to import certificate. Reason: {ex.Message}");
             }
+        }
+        public static void InitLogger()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Async(a => a.File("Data/Logs/UI/UILog-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
         }
         public void InitApp()
         {
+            InitLogger();
+            Log.Information($"[Exe] MCServerLauncher Future v{Version}");
+            Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
+            //Log.Information("Test Infomation");
+            //Log.Warning("Test Warning");
+            //Log.Error("Test Error");
+            //Log.Fatal("Test Fatal");
+            //Log.Debug("Test Debug");
             InitDataDirectory();
             InitSettings();
             InitCert();
