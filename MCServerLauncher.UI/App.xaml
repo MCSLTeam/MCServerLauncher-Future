@@ -20,7 +20,7 @@
                 <Setter Property="CornerRadius" Value="5"/>
             </Style>
             <Style x:Key="FastMirrorTag" TargetType="Border">
-                <Setter Property="Background" Value="{StaticResource {x:Static ui:ThemeKeys.AccentAAFillColorDefaultBrushKey}}"/>
+                <Setter Property="Background" Value="{StaticResource {x:Static ui:ThemeKeys.SystemControlHighlightBaseMediumLowRevealAccentBackgroundBrushKey}}"/>
                 <Setter Property="CornerRadius" Value="5"/>
             </Style>
             <Style x:Key="DisplayTextBlock" TargetType="TextBlock">
