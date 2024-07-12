@@ -1,6 +1,7 @@
+using Serilog;
 namespace MCServerLauncher.Daemon.Helpers
 {
-    public class Utils
+    public class BasicUtils
     {
         public Settings AppSettings { get; set; }
 
@@ -9,6 +10,8 @@ namespace MCServerLauncher.Daemon.Helpers
             var dataFolders = new List<string>
             {
                 "Data",
+                Path.Combine("Data", "Logs"),
+                Path.Combine("Data", "Logs", "Daemon"),
                 Path.Combine("Data", "InstanceData"),
                 Path.Combine("Data", "Configuration"),
                 Path.Combine("Data", "Configuration", "Instance"),
@@ -22,8 +25,17 @@ namespace MCServerLauncher.Daemon.Helpers
                 }
             }
         }
-        public void InitApp()
+        public static void InitLogger()
         {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Async(a => a.File("Data/Logs/Daemon/DaemonLog-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
+        }
+        public static void InitApp()
+        {
+            InitLogger();
             InitDataDirectory();
         }
     }
