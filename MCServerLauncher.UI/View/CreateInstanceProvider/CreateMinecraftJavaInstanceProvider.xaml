@@ -100,7 +100,7 @@
                             </ui:DropDownButton.Content>
                             <ui:DropDownButton.Flyout>
                                 <ui:Flyout Placement="TopEdgeAlignedRight">
-                                    <TextBlock TextWrapping="Wrap" Text="1.12+ 要求 Java 8&#x000A;1.17+ 要求 Java 16&#x000A;1.18+ 要求 Java 17&#x000A;1.20.5+ 要求 Java 21"/>
+                                    <TextBlock TextWrapping="Wrap" Text="1.12+ 要求 Java 8&#x000A;1.17+ 要求 Java 16&#x000A;1.18+ 要求 Java 17&#x000A;1.20.6+ 要求 Java 21"/>
                                 </ui:Flyout>
                             </ui:DropDownButton.Flyout>
                         </ui:DropDownButton>
