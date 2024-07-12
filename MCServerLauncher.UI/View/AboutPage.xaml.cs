@@ -15,7 +15,7 @@ namespace MCServerLauncher.UI.View
         }
         private async void TestButton(object sender, RoutedEventArgs e)
         {
-            await new BasicUtils().OpenUrl("https://ys.mihoyo.com/cloud");
+            await new NetworkUtils().OpenUrl("https://ys.mihoyo.com/cloud");
         }
     }
 }
