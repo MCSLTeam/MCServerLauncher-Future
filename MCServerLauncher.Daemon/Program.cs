@@ -8,10 +8,11 @@ namespace MCServerLauncher.Daemon
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            Console.WriteLine("MCServerLauncher.Daemon");
             BasicUtils.InitApp();
+            TestJavaScanner();
         }
-        public async void TestJavaScanner()
+        public static async void TestJavaScanner()
         {
             JavaScanner Scanner = new();
             await Scanner.ScanJava();

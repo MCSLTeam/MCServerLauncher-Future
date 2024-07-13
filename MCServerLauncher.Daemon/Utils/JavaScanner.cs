@@ -49,43 +49,6 @@ namespace MCServerLauncher.Daemon.Utils
                 return JsonConvert.SerializeObject(this, Formatting.Indented);
             }
         }
-        private List<JavaInfo> FoundedJava = new();
-        //public static string GetJavaVersion(string JavaPath)
-        //{
-        //    string JavaVersion;
-        //    try
-        //    {
-        //        ProcessStartInfo JavaInfo = new()
-        //        {
-        //            FileName = JavaPath,
-        //            Arguments = "-version",
-        //            RedirectStandardOutput = true,
-        //            RedirectStandardError = true,
-        //            UseShellExecute = false,
-        //            CreateNoWindow = true
-        //        };
-        //        Process JavaProcess = new() { StartInfo = JavaInfo };
-        //        JavaProcess.Start();
-        //        JavaProcess.WaitForExit();
-        //        var JavaOutput = JavaProcess.StandardError.ReadToEnd();
-        //        var VersionPattern = @"(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[._](\d+))?(?:-(.+))?";
-        //        var ReMatch = Regex.Match(JavaOutput, VersionPattern);
-
-        //        if (ReMatch.Success)
-        //        {
-        //            JavaVersion = string.Join(".", ReMatch.Groups.Values.Skip(1).Where(g => g.Success).Select(g => g.Value));
-        //        }
-        //        else
-        //        {
-        //            JavaVersion = "Unknown";
-        //        }
-        //    }
-        //    catch (Exception)
-        //    {
-        //        JavaVersion = "Unknown";
-        //    }
-        //    return JavaVersion;
-        //}
         private Process TryStartJava(string Path)
         {
             ProcessStartInfo JavaInfo = new()
@@ -111,7 +74,7 @@ namespace MCServerLauncher.Daemon.Utils
             }
             return "Unknown";
         }
-        //private async Task<bool> CheckJavaAvailability(JavaInfo javaInfo)
+        //public async Task<bool> CheckJavaAvailability(JavaInfo javaInfo)
         //{
         //    if (File.Exists(javaInfo.Path))
         //    {
@@ -174,7 +137,6 @@ namespace MCServerLauncher.Daemon.Utils
         {
             List<Process> JavaProcesses = new();
             if (File.Exists(WorkingPath)) {
-                Log.Information($"[JVM] \"{WorkingPath}\" is a file, skipping");
                 return JavaProcesses; // Skip if it is a file
             }
             try
@@ -186,19 +148,19 @@ namespace MCServerLauncher.Daemon.Utils
                     {
                         if (Matcher(Path.GetFileName(PossibleFile)))
                         {
-                            Log.Information($"[JVM] Found possible Java \"{AbsoluteFilePath}\", plan to check it");
+                            Log.Debug($"[JVM] Found possible Java \"{AbsoluteFilePath}\", plan to check it");
                             JavaProcesses.Add(TryStartJava(AbsoluteFilePath));
                         }
                         else { }
                     }
                     else if (IsMatchedKey(Path.GetFileName(PossibleFile).ToLower()))  // Deliver a deeper search
                     {
-                        Log.Information($"[JVM] Found possible Java path \"{AbsoluteFilePath}\", deliver a deeper search");
                         JavaProcesses.AddRange(await SingleScanJob(AbsoluteFilePath, Matcher));
                     }
                     else { }
                 }
             }
+            catch (UnauthorizedAccessException) {  }
             catch (Exception ex) { Log.Error($"[JVM] A error occured while searching dir \"{WorkingPath}\", Reason: {ex.Message}"); }
             return JavaProcesses;
         }
@@ -215,6 +177,13 @@ namespace MCServerLauncher.Daemon.Utils
                     PossibleJavaPathList.AddRange(await StartScan(drive));
                 }
             }
+            int cnt = 0;
+            foreach (JavaInfo PossibleJavaPath in PossibleJavaPathList)
+            {
+                Log.Information($"[JVM] Found certain Java at: {PossibleJavaPath.Path} (Version: {PossibleJavaPath.Version})");
+                cnt++;
+            }
+            Console.WriteLine($"Total: {cnt}");
             return PossibleJavaPathList;
         }
     }
