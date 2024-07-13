@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
@@ -31,7 +32,7 @@
             </Button>
         </Grid>
         <ui:ScrollViewerEx x:Name="GeneralSettingsScroll" Grid.Row="1">
-            <ui:SimpleStackPanel>
+            <ikw:SimpleStackPanel>
                 <Border Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
                     <Grid Margin="0,0,0,0">
                         <Grid.RowDefinitions>
@@ -123,7 +124,7 @@
 
                     </Grid>
                 </Border>
-            </ui:SimpleStackPanel>
+            </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>
 </UserControl>
