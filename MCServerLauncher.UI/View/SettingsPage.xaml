@@ -4,12 +4,136 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:MCServerLauncher.UI.View"
+      xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+      xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+      xmlns:vc="clr-namespace:MCServerLauncher.UI.View.Components"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="SettingsPage">
+    <FrameworkElement.Resources>
+        <ResourceDictionary>
 
-    <Grid>
-        <TextBlock Style="{StaticResource TitleTextBlock}" Text="设置" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,35,0,0"/>
-        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="你的 MCSL，你的选择。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="35,80,0,0"/>
+            <Style TargetType="Expander" BasedOn="{StaticResource {x:Static ui:ThemeKeys.ExpanderCardStyleKey}}">
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            </Style>
+
+            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static ui:ThemeKeys.DefaultComboBoxStyleKey}}">
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            </Style>
+
+            <Style TargetType="ui:FontIcon">
+                <Setter Property="FontSize" Value="20"/>
+            </Style>
+
+            <Style TargetType="ui:ToggleSwitch">
+                <Setter Property="MinWidth" Value="0"/>
+            </Style>
+
+        </ResourceDictionary>
+    </FrameworkElement.Resources>
+    <Grid Margin="35,35,35,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="设置" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="你的 MCSL，你的选择。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+
+        <ui:ScrollViewerEx Grid.Column="0" Grid.Row="2" Margin="0,15,0,35">
+            <ikw:SimpleStackPanel Spacing="10" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+
+                <TextBlock Text="新建实例" FontSize="18"/>
+                <vc:SwitchSettingCard
+                    Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
+                    Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
+                    Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
+                />
+                <vc:SwitchSettingCard
+                    Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
+                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
+                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
+                />
+                <vc:SwitchSettingCard
+                    Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
+                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
+                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
+                />
+
+                <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0"/>
+                <vc:SwitchSettingCard
+                    Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
+                    Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
+                    Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
+                />
+                <vc:SwitchSettingCard
+                    Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
+                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
+                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
+                />
+                <vc:SwitchSettingCard
+                    Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
+                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
+                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
+                />
+
+                <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0"/>
+                <Expander IsExpanded="True">
+                    <Expander.Header>
+                        <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Margin="5,15,20,15"/>
+                            <TextBlock Text="关于 MCServerLauncher Future" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,2"/>
+
+                        </Grid>
+                    </Expander.Header>
+
+                    <Grid Margin="5,0,5,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="MCServerLauncher Future Project" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+                        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序（或其中任何部分），将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+                        <Grid Grid.Row="2" VerticalAlignment="Center" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <ui:HyperlinkButton Grid.Column="1" Padding="0" NavigateUri="https://github.com/MCSLTeam/MCServerLauncher-Future">GitHub</ui:HyperlinkButton>
+                            <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="。" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <TextBlock Grid.Row="3" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,20,10"/>
+                        <Grid Grid.Row="4" VerticalAlignment="Center" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="Copyright © 2022-2024 " VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <ui:HyperlinkButton Grid.Column="1" Padding="0" NavigateUri="https://mcsl.com.cn">MCSLTeam</ui:HyperlinkButton>
+                            <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text=". All rights reserved." VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Grid>
+
+                </Expander>
+            </ikw:SimpleStackPanel>
+        </ui:ScrollViewerEx>
     </Grid>
 </Page>

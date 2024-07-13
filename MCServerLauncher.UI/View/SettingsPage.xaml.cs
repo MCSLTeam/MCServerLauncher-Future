@@ -1,4 +1,6 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
+using MCServerLauncher.UI.Helpers;
 
 namespace MCServerLauncher.UI.View
 {
