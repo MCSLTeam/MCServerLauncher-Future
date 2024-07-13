@@ -43,6 +43,9 @@ namespace MCServerLauncher.UI.View.Components
         private void SetRecommendStatus(bool RecommendStatus)
         {
             CoreItemBorder.Background = RecommendStatus ? RecommendBrush : null;
+            if (RecommendStatus) {
+                CoreNameReplacer.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ffffff"));
+            }
         }
         private bool GetRecommendStatus()
         {
