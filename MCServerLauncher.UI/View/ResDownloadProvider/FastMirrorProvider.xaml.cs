@@ -18,8 +18,8 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
     /// </summary>
     public partial class FastMirrorProvider : UserControl
     {
-        private bool IsLoading = false;
-        private bool IsLoaded = false;
+        private bool IsDataLoading = false;
+        private bool IsDataLoaded = false;
 
         public FastMirrorProvider()
         {
@@ -27,14 +27,14 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
         }
         public async Task<bool> Refresh()
         {
-            if (IsLoading || IsLoaded)
+            if (IsDataLoading || IsDataLoaded)
             {
                 return true;
             }
             try
             {
                 Log.Information("[Res] [FastMirror] Loading core info");
-                IsLoading = true;
+                IsDataLoading = true;
                 List<FastMirrorCoreInfo> FastMirrorInfo = await new FastMirror().GetCoreInfo();
                 foreach (FastMirrorCoreInfo Result in FastMirrorInfo)
                 {
@@ -46,8 +46,8 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
                     CoreItem.MinecraftVersions = Result.MinecraftVersions;
                     CoreGridView.Items.Add(CoreItem);
                 }
-                IsLoading = false;
-                IsLoaded = true;
+                IsDataLoading = false;
+                IsDataLoaded = true;
                 Log.Information($"[Res] [FastMirror] Core info loaded. Count: {FastMirrorInfo.Count}");
                 return true;
             } catch (Exception ex)
@@ -76,9 +76,9 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
             CoreHomePageButton.IsEnabled = true;
 
         }
-        private async void OpenHomePage(object Sender, RoutedEventArgs e)
+        private void OpenHomePage(object Sender, RoutedEventArgs e)
         {
-            await new NetworkUtils().OpenUrl((string)(Sender.GetProperty("HomePage")));
+            NetworkUtils.OpenUrl((string)Sender.GetProperty("HomePage"));
         }
 
 
