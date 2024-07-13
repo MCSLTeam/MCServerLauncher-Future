@@ -68,7 +68,7 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="帮助中心" Tag="MCServerLauncher.UI.View.HelpPage">
+                <ui:NavigationViewItem Content="帮助中心" Tag="MCServerLauncher.UI.View.HelpPage" IsEnabled="False">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
@@ -76,11 +76,6 @@
                 <ui:NavigationViewItem Content="程序设置" Tag="MCServerLauncher.UI.View.SettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16"/>
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="关于产品" Tag="MCServerLauncher.UI.View.AboutPage">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.UI.View.TestPage">

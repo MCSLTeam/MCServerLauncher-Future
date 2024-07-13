@@ -31,11 +31,11 @@ namespace MCServerLauncher.UI.Helpers
             client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
             return await client.PostAsync(Url, new StringContent(Data, Encoding.UTF8, "application/json"));
         }
-        public async Task OpenUrl(string Url)
+        public static void OpenUrl(string Url)
         {
             try
             { 
-                await Task.Run(() => Process.Start(Url));
+                Process.Start(Url);
                 Log.Information("[Net] Try to open url \"{Url}\"");
             }
             catch (Exception ex)

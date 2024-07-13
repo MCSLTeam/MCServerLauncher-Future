@@ -20,7 +20,6 @@ namespace MCServerLauncher.UI
         private Page ResDownload = new ResDownloadPage();
         private Page Help = new HelpPage();
         private Page Settings = new SettingsPage();
-        private Page About = new AboutPage();
 
         public MainWindow()
         {
@@ -68,10 +67,6 @@ namespace MCServerLauncher.UI
                 if (navPageType == typeof(SettingsPage))
                 {
                     CurrentPage.Navigate(Settings);
-                }
-                if (navPageType == typeof(AboutPage))
-                {
-                    CurrentPage.Navigate(About);
                 }
                 if (navPageType == typeof(TestPage))
                 {
