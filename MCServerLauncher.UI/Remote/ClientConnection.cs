@@ -7,40 +7,48 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.UI.Remote
 {
     internal class ClientConnection
     {
+        private const int ProtocolVersion = 1;
+        private const int BufferSize = 1024;
 
-        public const int ProtocolVersion = 1;
-        public const int BufferSize = 1024;
+        private readonly ClientWebSocket _ws = new();
 
-        protected readonly ClientWebSocket _ws = new();
+        private readonly ConcurrentQueue<Tuple<string, TaskCompletionSource<JObject>>>
+            _pendingRequests = new();
 
-        private readonly ConcurrentQueue<Tuple<Action, String, TaskCompletionSource<Dictionary<String, Object>>>> _pendingRequests = new();
         private CancellationTokenSource _cts;
 
 
-        public static async Task OpenAsync(String address, int port, String token)
+        public static async Task<ClientConnection> OpenAsync(string address, int port, string token)
         {
             // create instance
             ClientConnection connection = new();
             connection._cts = new CancellationTokenSource();
 
-            var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}/{token}");
+            // set http header
+            connection._ws.Options.SetRequestHeader("x-token", token);
+
+            // connect ws
+            var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}");
             await connection._ws.ConnectAsync(uri, CancellationToken.None);
 
             // start receive loop
-            _ = Task.Run(() => connection.ReceiveLoop(connection._ws, token));
+            _ = Task.Run(connection.ReceiveLoop);
+            return connection;
         }
 
-        private async static Task SendAsync(ClientWebSocket ws, Action action, Dictionary<String, Object> args, String echo = null)
+        private static async Task SendAsync(ClientWebSocket ws, Action action, Dictionary<string, object> args,
+            string echo = null)
         {
-            Dictionary<String, Object> data = new()
+            Dictionary<string, object> data = new()
             {
-                {"action", action.ToString().ToLower()},
-                {"params",args},
+                { "action", action.ToString().ToLower() },
+                { "params", args },
             };
 
             if (!string.IsNullOrEmpty(echo))
@@ -52,45 +60,57 @@ namespace MCServerLauncher.UI.Remote
             await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public async Task<Dictionary<String, Object>> RequestAsync(Action action, Dictionary<String, Object> args, String echo = null)
+        public async Task SendAsync(Action action, Dictionary<string, object> args, string echo = null)
         {
             await SendAsync(_ws, action, args, echo);
-            return await ExpectAsync(action, echo);
         }
+
+        public async Task<JObject> RequestAsync(Action action, Dictionary<string, object> args,
+            string echo = null)
+        {
+            await SendAsync(_ws, action, args, echo);
+            return await ExpectAsync(echo);
+        }
+        
 
         public async Task CloseAsync()
         {
-            _cts.Cancel();
+            try
+            {
+                _cts.Cancel();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+
             await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
         }
 
-        private async Task<Dictionary<String, Object>> ExpectAsync(Action action, String echo = null)
+        private async Task<JObject> ExpectAsync(String echo = null)
         {
-            var tcs = new TaskCompletionSource<Dictionary<String, Object>>();
+            var tcs = new TaskCompletionSource<JObject>();
 
             // enqueue
-            _pendingRequests.Enqueue(new Tuple<Action, String, TaskCompletionSource<Dictionary<String, Object>>>(action, echo, tcs));
+            _pendingRequests.Enqueue(
+                new Tuple<String, TaskCompletionSource<JObject>>(echo, tcs));
 
             return await tcs.Task;
         }
 
-        private async Task ReceiveLoop(ClientWebSocket ws, String echo = null)
+        private async Task ReceiveLoop()
         {
-            String json;
-            WebSocketReceiveResult result;
-
             var ms = new MemoryStream();
             var buffer = new byte[BufferSize];
-
-
-            while (!_cts.IsCancellationRequested)
+            
+            while (!_cts.Token.IsCancellationRequested)
             {
-                while (true)
+                while (!_cts.Token.IsCancellationRequested)
                 {
-
+                    WebSocketReceiveResult result;
                     try
                     {
-                        result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cts.Token);
+                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     }
                     catch (WebSocketException e)
                     {
@@ -112,32 +132,67 @@ namespace MCServerLauncher.UI.Remote
                     }
                 }
 
-                json = Encoding.UTF8.GetString(ms.ToArray());
-
-                Dispatch(json);
+                if (_cts.Token.IsCancellationRequested)
+                {
+                    ms.Dispose();
+                    return;
+                }
+                
+                Dispatch(Encoding.UTF8.GetString(ms.ToArray()));
 
                 ms.SetLength(0); // reset
             }
         }
 
-        private void Dispatch(String json)
+        private void Dispatch(string json)
         {
-            var data = JsonConvert.DeserializeObject<Dictionary<String, Object>>(json);
-            var action = (Action)Enum.Parse(typeof(Action), data["action"].ToString(), true);
-            var echo = data.ContainsKey("echo") ? data["echo"].ToString() : null;
-
+            var data = JObject.Parse(json);
+            data.TryGetValue("echo", out var echo);
+            
+            
+            
             if (_pendingRequests.TryDequeue(out var pending))
             {
-                if (action == pending.Item1 && echo == pending.Item2)
+                if (echo?.ToString() == pending.Item1)
                 {
-                    pending.Item3.SetResult(data);
+                    pending.Item2.SetResult(data["data"] as JObject);
                 }
-                else throw new Exception("Received unexpect message: mismatched message.");
+                else throw new Exception("Received unexpect message: mismatched echo.");
             }
             else
             {
                 throw new Exception("Received unexpect message: redundant message.");
             }
+        }
+
+        public static void Test()
+        {
+            Task.Run(async () =>
+            {
+                var connection = await OpenAsync("127.0.0.1", 11451, "123456");
+                // sleep
+                await Task.Delay(1000);
+                await connection.SendAsync(
+                    Action.Message,
+                    new Dictionary<string, object>
+                    {
+                        { "message", "Hello World!" },
+                        { "time", DateTime.Now }
+                    }
+                );
+
+                var rv = await connection.RequestAsync(
+                    Action.Ping,
+                    new Dictionary<string, object>
+                    {
+                        { "ping_time", DateTime.Now },
+                    },
+                    "halo"
+                );
+                var data = rv["pong_time"];
+                Console.WriteLine($"Received Pong: {data}");
+                await connection.CloseAsync();
+            });
         }
     }
 }

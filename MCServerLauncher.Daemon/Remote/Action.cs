@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.UI.Remote
+﻿namespace MCServerLauncher.Daemon.Remote
 {   
 
     internal enum Action
