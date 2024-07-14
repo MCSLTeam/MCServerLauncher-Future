@@ -273,6 +273,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Remote\Action.cs" />
+    <Compile Include="Remote\ClientConnection.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="View\Components\FastMirrorResCoreItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreItem.xaml</DependentUpon>
