@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MCServerLauncher.UI.View.CreateInstanceProvider.CreateMinecraftForgeInstanceProvider"
+<UserControl x:Class="MCServerLauncher.UI.View.CreateInstanceProvider.CreateMinecraftForgeInstanceProvider"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -118,7 +118,7 @@
                             </ui:DropDownButton.Content>
                             <ui:DropDownButton.Flyout>
                                 <ui:MenuFlyout Placement="Bottom">
-                                    <MenuItem Header="手动选择">
+                                    <MenuItem Click="SelectJavaFromFile" Header="手动选择">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}" FontSize="16"/>
                                         </MenuItem.Icon>

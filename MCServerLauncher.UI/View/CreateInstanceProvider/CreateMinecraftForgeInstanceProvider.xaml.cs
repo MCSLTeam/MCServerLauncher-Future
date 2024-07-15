@@ -1,8 +1,8 @@
-﻿using MCServerLauncher.UI.View.Components;
+using MCServerLauncher.UI.View.Components;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
-
+using MCServerLauncher.UI.Helpers;
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
     /// <summary>
@@ -22,6 +22,12 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
         private void FinishSetup(object sender, RoutedEventArgs e)
         {
             return;
+        }
+        private void SelectJavaFromFile(object sender, RoutedEventArgs e)
+        {
+            BasicUtils basicUtils = new BasicUtils();
+            string FileName = basicUtils.SelectFile("Executeble Java (java.exe)|java.exe");
+            this.JavaSetting.Text = FileName;
         }
         private void AddJVMArgument(object sender, RoutedEventArgs e)
         {

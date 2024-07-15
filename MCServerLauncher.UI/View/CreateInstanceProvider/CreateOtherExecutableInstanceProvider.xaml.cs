@@ -1,6 +1,6 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
-using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
+using MCServerLauncher.UI.Helpers;
 
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
@@ -17,6 +17,12 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
         {
             var parent = this.TryFindParent<CreateInstancePage>();
             parent.CurrentCreateInstance.GoBack();
+        }
+        private void SelectArchive(object sender, RoutedEventArgs e)
+        {
+            BasicUtils basicUtils = new BasicUtils();
+            string FileName = basicUtils.SelectFile("Archive files (*.zip)|*.zip"); 
+            this.DepensSetting.Text = FileName;
         }
         private void FinishSetup(object sender, RoutedEventArgs e)
         {

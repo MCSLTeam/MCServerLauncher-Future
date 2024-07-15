@@ -1,8 +1,11 @@
-﻿using MCServerLauncher.UI.View.Components;
+using MCServerLauncher.UI.View.Components;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
-
+using MCServerLauncher.UI.Helpers;
+using Microsoft.Win32;
+using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Helpers;
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
     /// <summary>
@@ -14,6 +17,7 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
         {
             InitializeComponent();
         }
+        
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
@@ -22,6 +26,22 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
         private void FinishSetup(object sender, RoutedEventArgs e)
         {
             return;
+        }
+        private void SelectCore(object sender, RoutedEventArgs e) {
+            BasicUtils basicUtils = new BasicUtils();
+            string FileName = basicUtils.SelectFile("Jar files (*.jar)|*.jar");
+            this.CoreFileSetting.Text = FileName;
+        }
+        private void SelectJavaFromFile(object sender, RoutedEventArgs e)
+        {
+            BasicUtils basicUtils = new BasicUtils();
+            string FileName = basicUtils.SelectFile("Executeble Java (java.exe)|java.exe");
+            this.JavaSetting.Text = FileName;
+        }
+        private void GoResDownloadPage(object sender, RoutedEventArgs e)
+        {
+            var mainWindow = this.TryFindParent<MainWindow>();
+            mainWindow.CurrentPage.Navigate(new ResDownloadPage());
         }
         private void AddJVMArgument(object sender, RoutedEventArgs e)
         {

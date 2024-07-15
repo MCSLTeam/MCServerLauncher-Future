@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MCServerLauncher.UI.View.CreateInstanceProvider.CreateOtherExecutableInstanceProvider"
+<UserControl x:Class="MCServerLauncher.UI.View.CreateInstanceProvider.CreateOtherExecutableInstanceProvider"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -46,8 +46,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="部署依赖" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="请选择该实例所需的文件/文件夹/压缩包。压缩包仅支持 ZIP 格式。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                        <ui:AutoSuggestBox IsEnabled="False" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" PlaceholderText="文件名"/>
-                        <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right" Content="浏览"/>
+                        <ui:AutoSuggestBox Name="DepensSetting" IsEnabled="False" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" PlaceholderText="文件名"/>
+                        <Button Click="SelectArchive" Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right" Content="浏览"/>
 
                         <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                             <Button.Content>

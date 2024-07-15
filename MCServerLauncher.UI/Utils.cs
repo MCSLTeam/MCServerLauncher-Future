@@ -12,6 +12,7 @@ using System;
 using System.Security.Cryptography;
 using System.Diagnostics;
 using Serilog;
+using Microsoft.Win32;
 
 namespace MCServerLauncher.UI.Helpers
 {
@@ -173,6 +174,16 @@ namespace MCServerLauncher.UI.Helpers
             InitDataDirectory();
             InitSettings();
             InitCert();
+        }
+        public string SelectFile(string filter, string initDirectory="C:\\")
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.InitialDirectory = initDirectory;
+            dialog.Filter = filter;
+            dialog.FilterIndex = 2;
+            dialog.RestoreDirectory = true;
+            dialog.ShowDialog();
+            return dialog.FileName;
         }
     }
 }

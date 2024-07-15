@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using static MCServerLauncher.UI.Helpers.VisualTreeExtensions;
+using MCServerLauncher.UI.Helpers;
 
 namespace MCServerLauncher.UI.View.CreateInstanceProvider
 {
@@ -24,6 +24,17 @@ namespace MCServerLauncher.UI.View.CreateInstanceProvider
         private void FinishSetup(object sender, RoutedEventArgs e)
         {
             return;
+        }
+        private void SelectArchive(object sender, RoutedEventArgs e)
+        {
+            BasicUtils basicUtils = new BasicUtils();
+            string FileName = basicUtils.SelectFile("Archive files (*.*)|*.*"); //idk what the archive format is
+            this.ArchiveSetting.Text = FileName;
+        }
+        private void GoResDownloadPage(object sender, RoutedEventArgs e)
+        {
+            var mainWindow = this.TryFindParent<MainWindow>();
+            mainWindow.CurrentPage.Navigate(new ResDownloadPage());
         }
     }
 }
