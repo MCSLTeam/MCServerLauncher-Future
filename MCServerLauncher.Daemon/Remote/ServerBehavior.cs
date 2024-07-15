@@ -13,7 +13,7 @@ public class ServerBehavior : WebSocketBehavior
 
     protected override void OnOpen()
     {
-        var token = Context.Headers["x-token"];
+        var token = Context.QueryString["token"];
 
         if (token != Token)
         {
