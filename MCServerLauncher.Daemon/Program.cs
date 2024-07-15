@@ -12,6 +12,41 @@ namespace MCServerLauncher.Daemon
             BasicUtils.InitApp();
             TestJavaScanner();
         }
+        class Downloader
+        {
+            /// <summary>
+            /// Download Test
+            /// TEMP VERSION
+            /// </summary>
+            public static async Task TestFileDownloader()
+            {
+                int downloadSpeedLimit = 0; // SpeedLimits(B/s)
+                FileDownloader downloader = new FileDownloader(downloadSpeedLimit);
+                downloader.ProgressChanged += OnProgressChanged;
+                downloader.DownloadCompleted += OnDownloadCompleted;
+                downloader.SpeedChanged += OnSpeedChanged;
+
+                string url = "https://cdn.polars.cc/minecraft-server-1.19.2.jar";
+                string destinationPath = "D:\\minecraft-server-1.19.2.jar";
+
+                await downloader.DownloadFileAsync(url, destinationPath);
+            }
+
+            private static void OnProgressChanged(int progressPercentage)
+            {
+                Console.WriteLine($"Progress: {progressPercentage}%");
+            }
+
+            private static void OnDownloadCompleted()
+            {
+                Console.WriteLine("Complete!");
+            }
+
+            private static void OnSpeedChanged(double speed)
+            {
+                Console.WriteLine($"Current Speed: {speed / 1024:F2} KB/s");
+            }
+        }
         public static async void TestJavaScanner()
         {
             JavaScanner Scanner = new();
