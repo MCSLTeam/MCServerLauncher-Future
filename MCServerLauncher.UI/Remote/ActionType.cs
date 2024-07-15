@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.UI.Remote
 {   
 
-    internal enum Action
+    internal enum ActionType
     {
         Message,
         Ping,

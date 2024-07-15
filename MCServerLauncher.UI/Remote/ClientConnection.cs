@@ -42,12 +42,12 @@ namespace MCServerLauncher.UI.Remote
             return connection;
         }
 
-        private static async Task SendAsync(ClientWebSocket ws, Action action, Dictionary<string, object> args,
+        private static async Task SendAsync(ClientWebSocket ws, ActionType ActionType, Dictionary<string, object> args,
             string echo = null)
         {
             Dictionary<string, object> data = new()
             {
-                { "action", action.ToString().ToLower() },
+                { "action", ActionType.ToString().ToLower() },
                 { "params", args },
             };
 
@@ -60,15 +60,15 @@ namespace MCServerLauncher.UI.Remote
             await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public async Task SendAsync(Action action, Dictionary<string, object> args, string echo = null)
+        public async Task SendAsync(ActionType ActionType, Dictionary<string, object> args, string echo = null)
         {
-            await SendAsync(_ws, action, args, echo);
+            await SendAsync(_ws, ActionType, args, echo);
         }
 
-        public async Task<JObject> RequestAsync(Action action, Dictionary<string, object> args,
+        public async Task<JObject> RequestAsync(ActionType ActionType, Dictionary<string, object> args,
             string echo = null)
         {
-            await SendAsync(_ws, action, args, echo);
+            await SendAsync(_ws, ActionType, args, echo);
             return await ExpectAsync(echo);
         }
         
@@ -173,7 +173,7 @@ namespace MCServerLauncher.UI.Remote
                 // sleep
                 await Task.Delay(1000);
                 await connection.SendAsync(
-                    Action.Message,
+                    ActionType.Message,
                     new Dictionary<string, object>
                     {
                         { "message", "Hello World!" },
@@ -182,7 +182,7 @@ namespace MCServerLauncher.UI.Remote
                 );
 
                 var rv = await connection.RequestAsync(
-                    Action.Ping,
+                    ActionType.Ping,
                     new Dictionary<string, object>
                     {
                         { "ping_time", DateTime.Now },
