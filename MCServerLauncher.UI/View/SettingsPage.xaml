@@ -65,21 +65,40 @@
                 />
 
                 <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0"/>
-                <vc:SwitchSettingCard
-                    Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
-                    Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
-                    Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
-                />
-                <vc:SwitchSettingCard
-                    Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
-                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
-                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
-                />
-                <vc:SwitchSettingCard
-                    Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
-                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
-                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
-                />
+                <Expander IsExpanded="True">
+                    <Expander.Header>
+                        <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ProvisioningPackage}" Grid.RowSpan="2" Grid.Column="0" Margin="5,15,20,15"/>
+                            <TextBlock Text="下载源" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,2" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
+                            <TextBlock Text="选择在 “资源下载” 页面使用的下载提供方。" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,2,20,5" Opacity="0.615" FontSize="12"  TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
+                        </Grid>
+                    </Expander.Header>
+                    <Grid Margin="5,0,5,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <ui:RadioButtons>
+                            <RadioButton Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" IsChecked="True"/>
+                            <RadioButton Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )"/>
+                            <RadioButton Margin="0,0,0,10" Content="极星云镜像站 ( 由 极星网络 提供支持 )"/>
+                            <RadioButton Margin="0,0,0,10" Content="MCSL-Sync 镜像站"/>
+                            <RadioButton Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )"/>
+                        </ui:RadioButtons>
+                    </Grid>
+                </Expander>
+                <vc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.IOT}" Title="下载引擎线程数" Description="线程数越多，在计算机性能足够的情况下，文件下载越快，反之会造成严重的卡顿。一般来说，设置为16线程即可满足需求。" MinValue="1" MaxValue="256" Value="16"/>
 
                 <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0"/>
                 <Expander IsExpanded="True">
@@ -94,10 +113,8 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Margin="5,15,20,15"/>
                             <TextBlock Text="关于 MCServerLauncher Future" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,2"/>
-
                         </Grid>
                     </Expander.Header>
-
                     <Grid Margin="5,0,5,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>

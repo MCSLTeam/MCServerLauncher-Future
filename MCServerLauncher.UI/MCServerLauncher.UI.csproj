@@ -288,6 +288,9 @@
     <Compile Include="View\Components\JVMArgumentItem.xaml.cs">
       <DependentUpon>JVMArgumentItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\RangeSettingCard.xaml.cs">
+      <DependentUpon>RangeSettingCard.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\SwitchSettingCard.xaml.cs">
       <DependentUpon>SwitchSettingCard.xaml</DependentUpon>
     </Compile>
@@ -357,6 +360,10 @@
     <Page Include="View\Components\JVMArgumentItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\RangeSettingCard.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\Components\SwitchSettingCard.xaml">
       <SubType>Designer</SubType>

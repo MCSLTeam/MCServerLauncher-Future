@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # VSCode project settings
 .vscode/
+
+# JetBrains Rider
+.idea/
