@@ -2,15 +2,14 @@
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using System.Threading;
 
 namespace MCServerLauncher.Daemon.Utils
 {
     internal class FileDownloader
     {
-        public event Action<int> ProgressChanged;
+        public event Action<int, double, long, long> ProgressChanged;
         public event Action DownloadCompleted;
-        public event Action<double> SpeedChanged;
+        public event Action<string> DownloadError;
 
         private int _downloadSpeedLimit;
 
@@ -21,59 +20,76 @@ namespace MCServerLauncher.Daemon.Utils
 
         public async Task DownloadFileAsync(string url, string destinationPath)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            request.AllowAutoRedirect = true;
-
-            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
+            try
             {
-                long totalBytes = response.ContentLength;
-                long receivedBytes = 0;
-                long bytesReceivedThisSecond = 0;
-                DateTime start = DateTime.Now;
-                DateTime lastSpeedReportTime = DateTime.Now;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.AllowAutoRedirect = true;
 
-                using (Stream responseStream = response.GetResponseStream())
+                using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
                 {
-                    using (FileStream fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
+                        DownloadError?.Invoke($"Error: HTTP {response.StatusCode}");
+                        return;
+                    }
 
-                        while ((bytesRead = await responseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    long totalBytes = response.ContentLength;
+                    long receivedBytes = 0;
+                    long bytesReceivedThisSecond = 0;
+                    DateTime start = DateTime.Now;
+                    DateTime lastSpeedReportTime = DateTime.Now;
+
+                    using (Stream responseStream = response.GetResponseStream())
+                    {
+                        using (FileStream fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
                         {
-                            await fileStream.WriteAsync(buffer, 0, bytesRead);
-                            receivedBytes += bytesRead;
-                            bytesReceivedThisSecond += bytesRead;
-                            int progressPercentage = (int)((receivedBytes * 100) / totalBytes);
-                            ProgressChanged?.Invoke(progressPercentage);
+                            byte[] buffer = new byte[4096];
+                            int bytesRead;
 
-                            DateTime now = DateTime.Now;
-                            if ((now - lastSpeedReportTime).TotalSeconds >= 1)
+                            while ((bytesRead = await responseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                             {
-                                double speed = bytesReceivedThisSecond / (now - lastSpeedReportTime).TotalSeconds;
-                                SpeedChanged?.Invoke(speed);
-                                bytesReceivedThisSecond = 0;
-                                lastSpeedReportTime = now;
-                            }
+                                await fileStream.WriteAsync(buffer, 0, bytesRead);
+                                receivedBytes += bytesRead;
+                                bytesReceivedThisSecond += bytesRead;
 
-                            if (_downloadSpeedLimit > 0)
-                            {
-                                double elapsedSeconds = (now - start).TotalSeconds;
-                                start = now;
-                                double expectedElapsedSeconds = bytesRead / (double)_downloadSpeedLimit;
-
-                                if (expectedElapsedSeconds > elapsedSeconds)
+                                DateTime now = DateTime.Now;
+                                if ((now - lastSpeedReportTime).TotalSeconds >= 1)
                                 {
-                                    int delay = (int)((expectedElapsedSeconds - elapsedSeconds) * 1000);
-                                    await Task.Delay(delay);
+                                    double speed = bytesReceivedThisSecond / (now - lastSpeedReportTime).TotalSeconds;
+                                    ProgressChanged?.Invoke(
+                                        (int)((receivedBytes * 100) / totalBytes),
+                                        speed,
+                                        receivedBytes,
+                                        totalBytes
+                                    );
+
+                                    bytesReceivedThisSecond = 0;
+                                    lastSpeedReportTime = now;
+                                }
+
+                                if (_downloadSpeedLimit > 0)
+                                {
+                                    double elapsedSeconds = (now - start).TotalSeconds;
+                                    start = now;
+                                    double expectedElapsedSeconds = bytesRead / (double)_downloadSpeedLimit;
+
+                                    if (expectedElapsedSeconds > elapsedSeconds)
+                                    {
+                                        int delay = (int)((expectedElapsedSeconds - elapsedSeconds) * 1000);
+                                        await Task.Delay(delay);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            DownloadCompleted?.Invoke();
+                DownloadCompleted?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                DownloadError?.Invoke($"Error: {ex.Message}");
+            }
         }
     }
 }

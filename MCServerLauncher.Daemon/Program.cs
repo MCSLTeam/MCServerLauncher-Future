@@ -10,7 +10,8 @@ namespace MCServerLauncher.Daemon
         {
             Console.WriteLine("MCServerLauncher.Daemon");
             BasicUtils.InitApp();
-            TestJavaScanner();
+            Downloader.TestFileDownloader().Wait();
+            //TestJavaScanner();
         }
         class Downloader
         {
@@ -24,7 +25,7 @@ namespace MCServerLauncher.Daemon
                 FileDownloader downloader = new FileDownloader(downloadSpeedLimit);
                 downloader.ProgressChanged += OnProgressChanged;
                 downloader.DownloadCompleted += OnDownloadCompleted;
-                downloader.SpeedChanged += OnSpeedChanged;
+                downloader.DownloadError += OnDownloadError;
 
                 string url = "https://cdn.polars.cc/minecraft-server-1.19.2.jar";
                 string destinationPath = "D:\\minecraft-server-1.19.2.jar";
@@ -32,9 +33,12 @@ namespace MCServerLauncher.Daemon
                 await downloader.DownloadFileAsync(url, destinationPath);
             }
 
-            private static void OnProgressChanged(int progressPercentage)
+            private static void OnProgressChanged(int progressPercentage, double speed, long receivedBytes, long totalBytes)
             {
-                Console.WriteLine($"Progress: {progressPercentage}%");
+                double speedKB = speed / 1024; 
+                double receivedMB = receivedBytes / (1024 * 1024); 
+                double totalMB = totalBytes / (1024 * 1024); 
+                Console.WriteLine($"Progress: {progressPercentage}% | Download Speed: {speedKB:F2} KB/s | {receivedMB:F2} MB / {totalMB:F2} MB");
             }
 
             private static void OnDownloadCompleted()
@@ -42,10 +46,11 @@ namespace MCServerLauncher.Daemon
                 Console.WriteLine("Complete!");
             }
 
-            private static void OnSpeedChanged(double speed)
+            private static void OnDownloadError(string errorMessage)
             {
-                Console.WriteLine($"Current Speed: {speed / 1024:F2} KB/s");
+                Console.WriteLine($"Error: {errorMessage}");
             }
+
         }
         public static async void TestJavaScanner()
         {
