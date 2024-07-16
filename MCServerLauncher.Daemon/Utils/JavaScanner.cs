@@ -10,6 +10,7 @@ using Serilog;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using MCServerLauncher.Daemon.Helpers;
 
 namespace MCServerLauncher.Daemon.Utils
 {
@@ -20,13 +21,14 @@ namespace MCServerLauncher.Daemon.Utils
             "1.", "bin", "cache", "client", "craft", "data", "download", "eclipse", "mine", "mc", "launch",
             "hotspot", "java", "jdk", "jre", "zulu", "dragonwell", "jvm", "microsoft", "corretto", "sigma",
             "mod", "mojang", "net", "netease", "forge", "liteloader", "fabric", "game", "vanilla", "server",
-            "optifine", "oracle", "path", "program", "roaming", "local", "run", "runtime", "software", "daemon",
+            "opt", "oracle", "path", "program", "roaming", "local", "run", "runtime", "software", "daemon",
             "temp", "users", "users", "x64", "x86", "lib", "usr", "env", "ext", "file", "data", "green",
             "我的", "世界", "前置", "原版", "启动", "启动", "国服", "官启", "官方", "客户", "应用", "整合", "组件",
             Environment.UserName, "新建文件夹", "服务", "游戏", "环境", "程序", "网易", "软件", "运行", "高清",
             "badlion", "blc", "lunar", "tlauncher", "soar", "cheatbreaker", "hmcl", "pcl", "bakaxl", "fsm", "vape",
             "jetbrains", "intellij", "idea", "pycharm", "webstorm", "clion", "goland", "rider", "datagrip",
             "rider", "appcode", "phpstorm", "rubymine", "jbr", "android", "mcsm", "msl", "mcsl", "3dmark", "arctime",
+            "library", "content", "home"
         };
         private readonly List<string> ExcludedKeys = new() { "$", "{", "}", "__", "office" };
         public class JavaInfo
@@ -112,7 +114,7 @@ namespace MCServerLauncher.Daemon.Utils
         }
         private async Task<List<JavaInfo>> StartScan(string Path)
         {
-            Func<string, bool> Matcher = Environment.OSVersion.Platform == PlatformID.Win32NT ? IsMatchedWindows : IsMatchedUnix;
+            Func<string, bool> Matcher = BasicUtils.IsWindows() ? IsMatchedWindows : IsMatchedUnix;
             List<Process> JavaProcesses = await SingleScanJob(Path, Matcher);
             List<JavaInfo> javaInfos = new();
             foreach (Process JavaProcess in JavaProcesses)
@@ -169,14 +171,17 @@ namespace MCServerLauncher.Daemon.Utils
             Log.Information("[JVM] Start scanning available Java");
 
             List<JavaInfo> PossibleJavaPathList = new();
-            for (var i = 65; i <= 90; i++)
-            {
-                string drive = $"{(char)i}:\\";
-                if (Directory.Exists(drive))
+            if(BasicUtils.IsWindows())
+                for (var i = 65; i <= 90; i++)
                 {
-                    PossibleJavaPathList.AddRange(await StartScan(drive));
+                    string drive = $"{(char)i}:\\";
+                    if (Directory.Exists(drive))
+                    {
+                        PossibleJavaPathList.AddRange(await StartScan(drive));
+                    }
                 }
-            }
+            else
+                PossibleJavaPathList.AddRange(await StartScan("/"));
             int cnt = 0;
             foreach (JavaInfo PossibleJavaPath in PossibleJavaPathList)
             {
