@@ -30,11 +30,8 @@ namespace MCServerLauncher.UI.Remote
             ClientConnection connection = new();
             connection._cts = new CancellationTokenSource();
 
-            // set http header
-            connection._ws.Options.SetRequestHeader("x-token", token);
-
             // connect ws
-            var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}");
+            var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}?token={token}");
             await connection._ws.ConnectAsync(uri, CancellationToken.None);
 
             // start receive loop
