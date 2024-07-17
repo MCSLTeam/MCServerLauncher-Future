@@ -82,7 +82,7 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
         }
         private void OpenHomePage(object Sender, RoutedEventArgs e)
         {
-            NetworkUtils.OpenUrl(Sender.GetProperty("HomePage").ToString());
+            NetworkUtils.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString());
         }
 
 
