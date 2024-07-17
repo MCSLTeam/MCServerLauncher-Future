@@ -9,7 +9,6 @@ using MCServerLauncher.UI.Helpers;
 using iNKORE.UI.WPF.Helpers;
 using System.Windows;
 using Serilog;
-using iNKORE.UI.WPF.DragDrop.Utilities;
 
 namespace MCServerLauncher.UI.View.ResDownloadProvider
 {
@@ -25,17 +24,18 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
         {
             InitializeComponent();
         }
-        public async Task<bool> Refresh()
+        public async Task<bool> Refresh(Func<List<string>, List<string>> SequenceFunc)
         {
             if (IsDataLoading || IsDataLoaded)
             {
                 return true;
             }
-            try
-            {
+            //try
+            //{
                 Log.Information("[Res] [FastMirror] Loading core info");
                 IsDataLoading = true;
                 List<FastMirrorCoreInfo> FastMirrorInfo = await new FastMirror().GetCoreInfo();
+
                 foreach (FastMirrorCoreInfo Result in FastMirrorInfo)
                 {
                     FastMirrorResCoreItem CoreItem = new();
@@ -43,18 +43,15 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
                     CoreItem.CoreTag = Result.Tag;
                     CoreItem.Recommend = Result.Recommend;
                     CoreItem.HomePage = Result.HomePage;
-                    CoreItem.MinecraftVersions = Result.MinecraftVersions;
+                    CoreItem.MinecraftVersions = SequenceFunc(Result.MinecraftVersions);
                     CoreGridView.Items.Add(CoreItem);
                 }
+
                 IsDataLoading = false;
                 IsDataLoaded = true;
                 Log.Information($"[Res] [FastMirror] Core info loaded. Count: {FastMirrorInfo.Count}");
                 return true;
-            } catch (Exception ex)
-            {
-                Log.Error($"[Res] [FastMirror] Failed to load core info. Reason: {ex.Message}");
-                return false;
-            }
+            //}
         }
         private void SetCore(object sender, SelectionChangedEventArgs e)
         {
