@@ -1,9 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using iNKORE.UI.WPF.Modern.Themes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -17,15 +13,14 @@ using System.Windows.Shapes;
 namespace MCServerLauncher.UI.View.Components
 {
     /// <summary>
-    /// SwitchSettingCard.xaml 的交互逻辑
+    /// ActionSettingCard.xaml 的交互逻辑
     /// </summary>
-    public partial class SwitchSettingCard : UserControl
+    public partial class ActionSettingCard : UserControl
     {
-        public SwitchSettingCard()
+        public ActionSettingCard()
         {
             InitializeComponent();
         }
-
         public string Title
         {
             get => SettingTitle.Text;
@@ -36,15 +31,20 @@ namespace MCServerLauncher.UI.View.Components
             get => SettingDescription.Text;
             set => SettingDescription.Text = value;
         }
+        public bool IsAccentButtonStyle
+        {
+            get => SettingButton.Style == (Style)FindResource("AccentButtonStyle");
+            set => SettingButton.Style = value ? (Style)FindResource("AccentButtonStyle") : null;
+        }
         public FontIconData? Icon
         {
             get => SettingIcon.Icon;
             set => SettingIcon.Icon = value;
         }
-        public bool Status
-                    {
-            get => SettingSwitch.IsOn;
-            set => SettingSwitch.IsOn = value;
+        public string ButtonContent
+        {
+            get => SettingButton.Content.ToString();
+            set => SettingButton.Content = value;
         }
     }
 }

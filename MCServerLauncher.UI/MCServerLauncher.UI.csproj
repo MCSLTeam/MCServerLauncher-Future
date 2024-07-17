@@ -276,6 +276,12 @@
     <Compile Include="Remote\ActionType.cs" />
     <Compile Include="Remote\ClientConnection.cs" />
     <Compile Include="Utils.cs" />
+    <Compile Include="View\Components\ActionSettingCard.xaml.cs">
+      <DependentUpon>ActionSettingCard.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\ComboSettingCard.xaml.cs">
+      <DependentUpon>ComboSettingCard.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\FastMirrorResCoreItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreItem.xaml</DependentUpon>
     </Compile>
@@ -345,6 +351,14 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="View\Components\ActionSettingCard.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\ComboSettingCard.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\Components\FastMirrorResCoreItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
