@@ -96,10 +96,10 @@
                         </Grid.RowDefinitions>
                         <ui:RadioButtons>
                             <RadioButton Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" IsChecked="True"/>
-                            <RadioButton Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )"/>
                             <RadioButton Margin="0,0,0,10" Content="极星云镜像站 ( 由 极星网络 提供支持 )"/>
-                            <RadioButton Margin="0,0,0,10" Content="MCSL-Sync 镜像站"/>
+                            <RadioButton Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )"/>
                             <RadioButton Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )"/>
+                            <RadioButton Margin="0,0,0,10" Content="MCSL-Sync 镜像站" IsEnabled="False"/>
                         </ui:RadioButtons>
                     </Grid>
                 </Expander>

@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <TextBlock Style="{StaticResource TitleTextBlock}" Text="资源下载" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,35,0,0"/>
-            <TextBlock Style="{StaticResource MinititleTextBlock}" Text="你想要的，这里都有。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,0,0"/>
+            <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}" Text="你想要的，这里都有。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,10,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
         </Grid>
         <ui:Frame Grid.Row="1" Margin="0,20,35,35" x:Name="CurrentResDownloadProvider"/>
     </Grid>

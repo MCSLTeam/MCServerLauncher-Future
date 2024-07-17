@@ -7,7 +7,7 @@ using System.Windows.Controls;
 using System;
 using static MCServerLauncher.UI.Modules.Download.FastMirror;
 using static MCServerLauncher.UI.Modules.Download.AList;
-using static MCServerLauncher.UI.Modules.Download.Polars;
+using static MCServerLauncher.UI.Modules.Download.PolarsMirror;
 using static MCServerLauncher.UI.Modules.Download.MSL;
 using static MCServerLauncher.UI.Modules.Download.MCSLSync;
 
@@ -81,7 +81,7 @@ namespace MCServerLauncher.UI.View
         #region Polars
         private async void TestPolars(object sender, RoutedEventArgs e)
         {
-            List<PolarsCoreInfo> Results = await new Polars().GetCoreInfo();
+            List<PolarsMirrorCoreInfo> Results = await new PolarsMirror().GetCoreInfo();
             string tmpText = "";
             foreach (var Result in Results)
             {
@@ -91,11 +91,11 @@ namespace MCServerLauncher.UI.View
         }
         private async void TestPolarsCore(object sender, RoutedEventArgs e)
         {
-            List<PolarsCoreDetail> Results = await new Polars().GetCoreDetail(1);
+            List<PolarsMirrorCoreDetail> Results = await new PolarsMirror().GetCoreDetail(1);
             string tmpText = "";
             foreach (var Result in Results)
             {
-                tmpText += $"Name: {Result.Name}\nDownloadUrl: {Result.DownloadUrl}\n\n";
+                tmpText += $"Name: {Result.FileName}\nDownloadUrl: {Result.DownloadUrl}\n\n";
             }
             ShowTextResultContentDialog(tmpText);
         }

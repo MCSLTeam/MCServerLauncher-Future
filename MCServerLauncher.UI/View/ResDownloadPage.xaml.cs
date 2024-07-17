@@ -17,15 +17,20 @@ namespace MCServerLauncher.UI.View
     public partial class ResDownloadPage : Page
     {
         public FastMirrorProvider FastMirror = new();
+        public PolarsMirrorProvider PolarsMirror = new();
         public ResDownloadPage()
         {
             InitializeComponent();
-            CurrentResDownloadProvider.Content = FastMirror;
+            //CurrentResDownloadProvider.Content = FastMirror;
+            //Subtitle.Text += $" ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";
+            CurrentResDownloadProvider.Content = PolarsMirror;
+            Subtitle.Text += $" ( 当前正在使用 {PolarsMirror.ResProviderName} 下载源 )";
             IsVisibleChanged += (sender, e) => { if (IsVisible) Refresh(); };
         }
         public async void Refresh()
         {
-            await FastMirror.Refresh(SequenceMinecraftVersion);
+            //await FastMirror.Refresh(SequenceMinecraftVersion);
+            await PolarsMirror.Refresh();
         }
         public List<string> SequenceMinecraftVersion(List<string> OriginalList)
         {
