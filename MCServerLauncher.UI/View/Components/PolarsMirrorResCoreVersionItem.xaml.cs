@@ -11,7 +11,6 @@ namespace MCServerLauncher.UI.View.Components
         {
             InitializeComponent();
         }
-        public string Core { get; set; }
         public string FileName
         {
             get => FileNameReplacer.Text;

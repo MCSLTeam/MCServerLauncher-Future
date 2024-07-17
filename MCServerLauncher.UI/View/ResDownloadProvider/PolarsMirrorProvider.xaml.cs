@@ -70,9 +70,9 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
             CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(CurrentCore.CoreIconUrl), BitmapCreateOptions.None, BitmapCacheOption.Default);
             try
             {
-                List<PolarsMirrorCoreDetail> FastMirrorCoreDetails = await new PolarsMirror().GetCoreDetail(CurrentCore.CoreId);
+                List<PolarsMirrorCoreDetail> PolarsMirrorCoreDetails = await new PolarsMirror().GetCoreDetail(CurrentCore.CoreId);
                 CoreVersionStackPanel.Children.Clear();
-                foreach (PolarsMirrorCoreDetail Detail in FastMirrorCoreDetails)
+                foreach (PolarsMirrorCoreDetail Detail in PolarsMirrorCoreDetails)
                 {
                     PolarsMirrorResCoreVersionItem CoreDetailItem = new()
                     { 
@@ -80,7 +80,7 @@ namespace MCServerLauncher.UI.View.ResDownloadProvider
                     };
                     CoreVersionStackPanel.Children.Add(CoreDetailItem);
                 }
-                Log.Information($"[Res] [PolarsMirror] Core detail loaded. Count: {FastMirrorCoreDetails.Count}");
+                Log.Information($"[Res] [PolarsMirror] Core detail loaded. Count: {PolarsMirrorCoreDetails.Count}");
             }
             catch (Exception ex)
             {

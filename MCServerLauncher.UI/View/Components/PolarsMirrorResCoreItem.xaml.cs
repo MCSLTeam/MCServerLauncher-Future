@@ -10,15 +10,6 @@ namespace MCServerLauncher.UI.View.Components
     /// </summary>
     public partial class PolarsMirrorResCoreItem : UserControl
     {
-        private LinearGradientBrush RecommendBrush = new LinearGradientBrush(
-            new GradientStopCollection()
-            {
-                new GradientStop((Color)ColorConverter.ConvertFromString("#f3bc00"), 0),
-                new GradientStop((Color)ColorConverter.ConvertFromString("#ef9500"), 1)
-            },
-            new Point(0, 0),
-            new Point(0.5, 0.85)
-        );
         public PolarsMirrorResCoreItem()
         {
             InitializeComponent();

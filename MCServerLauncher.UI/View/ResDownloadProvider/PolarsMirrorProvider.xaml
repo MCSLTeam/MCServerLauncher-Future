@@ -32,7 +32,6 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
-                <!--Todo: Horizontal Stretch-->
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -42,8 +41,8 @@
                         <RowDefinition/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Image x:Name="CurrentCoreIcon" Margin="0,0,10,0" Height="50" Width="50" Grid.RowSpan="2" Grid.Column="0"/>
-                    <TextBlock Style="{StaticResource MinititleTextBlock}" x:Name="CurrentCoreName" Grid.Row="0" Grid.Column="1" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
+                    <Image x:Name="CurrentCoreIcon" Margin="0,0,10,0" Height="55" Width="55" Grid.RowSpan="2" Grid.Column="0"/>
+                    <TextBlock Style="{StaticResource SubtitleTextBlock}" Margin="0,0,0,5" x:Name="CurrentCoreName" Grid.Row="0" Grid.Column="1" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
                     <TextBlock Style="{StaticResource BodyTextBlock}" x:Name="CurrentCoreDescription" Grid.Row="1" Grid.Column="1" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
                 </Grid>
                 <ui:ScrollViewerEx Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Width="Auto">

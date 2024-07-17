@@ -8,7 +8,7 @@ using System;
 using static MCServerLauncher.UI.Modules.Download.FastMirror;
 using static MCServerLauncher.UI.Modules.Download.AList;
 using static MCServerLauncher.UI.Modules.Download.PolarsMirror;
-using static MCServerLauncher.UI.Modules.Download.MSL;
+using static MCServerLauncher.UI.Modules.Download.MSLAPI;
 using static MCServerLauncher.UI.Modules.Download.MCSLSync;
 
 namespace MCServerLauncher.UI.View
@@ -103,7 +103,7 @@ namespace MCServerLauncher.UI.View
         #region MSL
         private async void TestMSL(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MSL().GetCoreInfo();
+            List<string> Results = await new MSLAPI().GetCoreInfo();
             string tmpText = "";
             foreach (var Result in Results)
             {
@@ -113,7 +113,7 @@ namespace MCServerLauncher.UI.View
         }
         private async void TestMSLCore(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MSL().GetMinecraftVersions("paper");
+            List<string> Results = await new MSLAPI().GetMinecraftVersions("paper");
             string tmpText = "Name: paper\n\n";
             foreach (var Result in Results)
             {
@@ -123,7 +123,7 @@ namespace MCServerLauncher.UI.View
         }
         private async void TestMSLDownloadUrl(object sender, RoutedEventArgs e)
         {
-            string Result = await new MSL().GetDownloadUrl("paper", "1.21");
+            string Result = await new MSLAPI().GetDownloadUrl("paper", "1.21");
             string tmpText = $"Name: paper\nVersion:1.21\n{Result}\n";
             ShowTextResultContentDialog(tmpText);
         }

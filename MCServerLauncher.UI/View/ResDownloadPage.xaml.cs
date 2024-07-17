@@ -1,13 +1,11 @@
 ﻿using Page = System.Windows.Controls.Page;
 using MCServerLauncher.UI.View.ResDownloadProvider;
-using iNKORE.UI.WPF.Modern.Controls;
-using IconAndText = iNKORE.UI.WPF.Modern.Controls.IconAndText;
 using System;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
-using Serilog;
+using System.Windows.Controls;
+using System.Windows;
+using iNKORE.UI.WPF.Modern.Media.Animation;
 
 namespace MCServerLauncher.UI.View
 {
@@ -18,19 +16,44 @@ namespace MCServerLauncher.UI.View
     {
         public FastMirrorProvider FastMirror = new();
         public PolarsMirrorProvider PolarsMirror = new();
+        public MSLAPIProvider MSLAPI = new();
         public ResDownloadPage()
         {
             InitializeComponent();
-            //CurrentResDownloadProvider.Content = FastMirror;
-            //Subtitle.Text += $" ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";
-            CurrentResDownloadProvider.Content = PolarsMirror;
-            Subtitle.Text += $" ( 当前正在使用 {PolarsMirror.ResProviderName} 下载源 )";
+            CurrentResDownloadProvider.Content = FastMirror;
+            Subtitle.Text += $" ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";
+            //CurrentResDownloadProvider.Content = PolarsMirror;
+            //Subtitle.Text += $" ( 当前正在使用 {PolarsMirror.ResProviderName} 下载源 )";
+            //CurrentResDownloadProvider.Content = MSLAPI;
+            //Subtitle.Text += $" ( 当前正在使用 {MSLAPI.ResProviderName} 下载源 )";
             IsVisibleChanged += (sender, e) => { if (IsVisible) Refresh(); };
         }
         public async void Refresh()
         {
-            //await FastMirror.Refresh(SequenceMinecraftVersion);
-            await PolarsMirror.Refresh();
+            await FastMirror.Refresh(SequenceMinecraftVersion);
+            //await PolarsMirror.Refresh();
+            //await MSLAPI.Refresh();
+        }
+        private async void ChResDownloadSrc(object sender, RoutedEventArgs e)
+        {
+            switch ((sender as Button).Content)
+                {
+                case "FastMirror":
+                    CurrentResDownloadProvider.Navigate(FastMirror, new DrillInNavigationTransitionInfo());
+                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";
+                    await FastMirror.Refresh(SequenceMinecraftVersion);
+                    break;
+                case "PolarsMirror":
+                    CurrentResDownloadProvider.Navigate(PolarsMirror, new DrillInNavigationTransitionInfo());
+                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {PolarsMirror.ResProviderName} 下载源 )";
+                    await PolarsMirror.Refresh();
+                    break;
+                case "MSLAPI":
+                    CurrentResDownloadProvider.Navigate(MSLAPI, new DrillInNavigationTransitionInfo());
+                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MSLAPI.ResProviderName} 下载源 )";
+                    await MSLAPI.Refresh();
+                    break;
+            }
         }
         public List<string> SequenceMinecraftVersion(List<string> OriginalList)
         {
