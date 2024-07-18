@@ -23,5 +23,8 @@ namespace MCServerLauncher.Daemon.Remote
     {
         Message,
         Ping,
+        FileUploadRequest,
+        FileUploadChunk,
+        NewToken,
     }
 }

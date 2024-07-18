@@ -12,13 +12,15 @@ namespace MCServerLauncher.Daemon.Tests
 
             TestCreateInstance();
         }
+
         public static void TestCreateInstance()
         {
             InstanceManager instanceManager = new();
             JObject instanceConfig = new()
             {
                 ["instanceType"] = "MinecraftJavaServer",
-                ["instanceCoreFilePath"] = "E:\\Desktop\\MCSL2-2.2.5.1-Windows-x64\\MCSL2\\Downloads\\Arclight-Whisper-forge-1.0.3.jar",
+                ["instanceCoreFilePath"] =
+                    "E:\\Desktop\\MCSL2-2.2.5.1-Windows-x64\\MCSL2\\Downloads\\Arclight-Whisper-forge-1.0.3.jar",
                 ["instanceJavaRuntimePath"] = "C:\\Program Files\\Java\\jre1.8.0_291\\bin\\java.exe",
                 ["instanceJvmMinimumMemory"] = 1024,
                 ["instanceJvmMaximumMemory"] = 2048,
@@ -46,5 +48,6 @@ namespace MCServerLauncher.Daemon.Tests
             Console.WriteLine(JsonConvert.SerializeObject(instanceConfig, Formatting.Indented));
             instanceManager.CreateInstance(instanceConfig);
         }
+        
     }
 }

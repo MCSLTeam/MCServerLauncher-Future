@@ -275,6 +275,7 @@
     </ApplicationDefinition>
     <Compile Include="Remote\ActionType.cs" />
     <Compile Include="Remote\ClientConnection.cs" />
+    <Compile Include="Remote\Utils.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="View\Components\FastMirrorResCoreItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreItem.xaml</DependentUpon>
