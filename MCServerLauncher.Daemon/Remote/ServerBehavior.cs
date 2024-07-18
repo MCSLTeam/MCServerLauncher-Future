@@ -54,7 +54,7 @@ public class ServerBehavior : WebSocketBehavior
             data["echo"] = echo;
         }
 
-        // TODO 生产环境应把缩进取消
+        // TODO:生产环境应把缩进取消
         var text = JsonConvert.SerializeObject(data, Formatting.Indented);
         Log.Info($"Sending message: \n{text}\n");
         Send(text);
