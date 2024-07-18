@@ -19,6 +19,7 @@ namespace MCServerLauncher.WPF.Remote
         private const int BufferSize = 1024;
 
         private readonly ClientWebSocket _ws = new();
+        public ClientWebSocket WebSocket => _ws;
 
         private readonly ConcurrentQueue<Tuple<string, TaskCompletionSource<JObject>>>
             _pendingRequests = new();
@@ -159,7 +160,7 @@ namespace MCServerLauncher.WPF.Remote
                     {
                         Log.Information(e.ToString());
                     }
-                    
+
                     offset += bytesRead;
                 }
 
@@ -240,6 +241,9 @@ namespace MCServerLauncher.WPF.Remote
                 var connection = await OpenAsync("127.0.0.1", 11451, "8e648c37-677f-43a5-8cd1-792668fc7e29");
                 // sleep
                 await Task.Delay(1000);
+
+                #region Message
+
                 await connection.SendAsync(
                     ActionType.Message,
                     new Dictionary<string, object>
@@ -248,6 +252,11 @@ namespace MCServerLauncher.WPF.Remote
                         { "time", DateTime.Now }
                     }
                 );
+
+                #endregion
+
+
+                #region Ping
 
                 var rv = await connection.RequestAsync(
                     ActionType.Ping,
@@ -259,6 +268,12 @@ namespace MCServerLauncher.WPF.Remote
                 );
                 var data = rv["pong_time"];
                 Console.WriteLine($"Received Pong: {data}");
+
+                #endregion
+
+
+                #region UploadFile
+
                 var err = await connection.UploadFile(
                     "D:\\workspace\\MCServerLauncher-Future\\MCServerLauncher.WPF\\bin\\Debug\\test.txt", "test.txt",
                     1024);
@@ -270,6 +285,52 @@ namespace MCServerLauncher.WPF.Remote
                 {
                     Console.WriteLine($"Upload Failed:{err}");
                 }
+
+                #endregion
+
+
+                #region NewToken
+
+                rv = await connection.RequestAsync(
+                    ActionType.NewToken,
+                    new Dictionary<string, object>
+                    {
+                        { "seconds", 5 },
+                        { "type", "temporary" },
+                        { "permissions", new bool[] { } }
+                    }
+                );
+                var newToken = rv["token"]!.ToString();
+                var expired = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1))
+                    .AddSeconds(Convert.ToInt64(rv["expired"]!));
+                Console.WriteLine($"New Token: {newToken}, Expired: {expired}");
+
+                var tempConn1 = await OpenAsync("127.0.0.1", 11451, newToken);
+                Console.WriteLine("Temp Token conn state: " + tempConn1.WebSocket.State);
+                await tempConn1.SendAsync(
+                    ActionType.Message,
+                    new Dictionary<string, object>
+                    {
+                        { "message", $"New temporary token: {newToken}" },
+                    }
+                );
+                await tempConn1.CloseAsync();
+
+                await Task.Delay(6000);
+                Console.WriteLine("6s elapsed, new Token supposed to be expired.");
+                var tempConn2 = await OpenAsync("127.0.0.1", 11451, newToken);
+                await tempConn2.SendAsync(
+                    ActionType.Message,
+                    new Dictionary<string, object>
+                    {
+                        { "message", $"New temporary token: {newToken}" },
+                    }
+                );
+                Console.WriteLine("Temp Token conn state: " + tempConn2.WebSocket.State);
+                await tempConn2.CloseAsync();
+
+                #endregion
+
 
                 await Task.Delay(5000);
                 await connection.CloseAsync();
