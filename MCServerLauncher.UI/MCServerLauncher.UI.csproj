@@ -277,8 +277,26 @@
     <Compile Include="Remote\ClientConnection.cs" />
     <Compile Include="Remote\Utils.cs" />
     <Compile Include="Utils.cs" />
+    <Compile Include="View\Components\ActionSettingCard.xaml.cs">
+      <DependentUpon>ActionSettingCard.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\ComboSettingCard.xaml.cs">
+      <DependentUpon>ComboSettingCard.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\MSLAPIResCoreItem.xaml.cs">
+      <DependentUpon>MSLAPIResCoreItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\PolarsMirrorResCoreItem.xaml.cs">
+      <DependentUpon>PolarsMirrorResCoreItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\FastMirrorResCoreItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\MSLAPIResCoreVersionItem.xaml.cs">
+      <DependentUpon>MSLAPIResCoreVersionItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\PolarsMirrorResCoreVersionItem.xaml.cs">
+      <DependentUpon>PolarsMirrorResCoreVersionItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\FastMirrorResCoreVersionItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreVersionItem.xaml</DependentUpon>
@@ -328,6 +346,12 @@
     <Compile Include="View\ResDownloadProvider\FastMirrorProvider.xaml.cs">
       <DependentUpon>FastMirrorProvider.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\ResDownloadProvider\MSLAPIProvider.xaml.cs">
+      <DependentUpon>MSLAPIProvider.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\ResDownloadProvider\PolarsMirrorProvider.xaml.cs">
+      <DependentUpon>PolarsMirrorProvider.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
@@ -346,9 +370,33 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="View\Components\ActionSettingCard.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\ComboSettingCard.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\MSLAPIResCoreItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\PolarsMirrorResCoreItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\Components\FastMirrorResCoreItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\MSLAPIResCoreVersionItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\PolarsMirrorResCoreVersionItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="View\Components\FastMirrorResCoreVersionItem.xaml">
       <SubType>Designer</SubType>
@@ -414,6 +462,14 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="View\ResDownloadProvider\MSLAPIProvider.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\ResDownloadProvider\PolarsMirrorProvider.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -427,8 +483,8 @@
     <Compile Include="Modules\Download\AList.cs" />
     <Compile Include="Modules\Download\FastMirror.cs" />
     <Compile Include="Modules\Download\MCSLSync.cs" />
-    <Compile Include="Modules\Download\MSL.cs" />
-    <Compile Include="Modules\Download\Polars.cs" />
+    <Compile Include="Modules\Download\MSLAPI.cs" />
+    <Compile Include="Modules\Download\PolarsMirror.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

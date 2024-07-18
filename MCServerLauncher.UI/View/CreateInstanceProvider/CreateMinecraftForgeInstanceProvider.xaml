@@ -111,7 +111,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="Java 运行时" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                        <ui:AutoSuggestBox x:Name="JavaSetting" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" PlaceholderText="Java 路径"/>
+                        <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="Java 路径"/>
                         <ui:DropDownButton ShowChevronArrow="False" Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.More}" FontSize="16"/>
@@ -232,7 +232,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,0,0" Style="{StaticResource SubtitleTextBlock}" Text="服务器名称" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Style="{StaticResource BodyTextBlock}" Text="请勿包含特殊符号或使用非法名称。" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                        <ui:AutoSuggestBox x:Name="ServerNameSetting" Grid.Row="2" Grid.Column="0" Margin="20,15,20,20" PlaceholderText="服务器名称"/>
+                        <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="ServerNameSetting" Grid.Row="2" Grid.Column="0" Margin="20,15,20,20" ui:ControlHelper.PlaceholderText="服务器名称"/>
 
                     </Grid>
                 </Border>

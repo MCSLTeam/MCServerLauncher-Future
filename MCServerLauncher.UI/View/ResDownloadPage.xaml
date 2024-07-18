@@ -13,12 +13,23 @@
     <Grid Margin="35,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <TextBlock Style="{StaticResource TitleTextBlock}" Text="资源下载" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,35,0,0"/>
-            <TextBlock Style="{StaticResource MinititleTextBlock}" Text="你想要的，这里都有。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,0,0"/>
+            <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}" Text="你想要的，这里都有。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,10,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
         </Grid>
-        <ui:Frame Grid.Row="1" Margin="0,20,35,35" x:Name="CurrentResDownloadProvider"/>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="FastMirror" Click="ChResDownloadSrc"/>
+            <Button Grid.Column="1" Content="PolarsMirror" Click="ChResDownloadSrc"/>
+            <Button Grid.Column="2" Content="MSLAPI" Click="ChResDownloadSrc"/>
+        </Grid>
+        <ui:Frame Grid.Row="2" Margin="0,20,35,35" x:Name="CurrentResDownloadProvider"/>
     </Grid>
 </Page>

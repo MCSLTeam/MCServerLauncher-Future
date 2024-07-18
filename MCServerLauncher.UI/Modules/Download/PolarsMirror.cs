@@ -7,20 +7,21 @@ using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.UI.Modules.Download
 {
-    internal class Polars
+    internal class PolarsMirror
     {
         private readonly string EndPoint = "https://mirror.polars.cc/api/query/minecraft";
 
-        public class PolarsCoreInfo
+        public class PolarsMirrorCoreInfo
         {
             public string Name { get; set; }
             public int Id { get; set; }
             public string Description { get; set; }
+            public string IconUrl { get; set; }
         }
 
-        public class PolarsCoreDetail
+        public class PolarsMirrorCoreDetail
         {
-            public string Name { get; set; }
+            public string FileName { get; set; }
             public string DownloadUrl { get; set; }
         }
 
@@ -34,21 +35,22 @@ namespace MCServerLauncher.UI.Modules.Download
         //    public string MinecraftVersion { get; set; }
         //}
 
-        public async Task<List<PolarsCoreInfo>> GetCoreInfo()
+        public async Task<List<PolarsMirrorCoreInfo>> GetCoreInfo()
         {
             NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/core");
             if (Response.IsSuccessStatusCode)
             {
                 JToken RemotePolarsCoreInfoList = JsonConvert.DeserializeObject<JToken>(await Response.Content.ReadAsStringAsync());
-                List<PolarsCoreInfo> PolarsCoreInfoList = new();
+                List<PolarsMirrorCoreInfo> PolarsCoreInfoList = new();
                 foreach (JToken PolarsCoreInfo in RemotePolarsCoreInfoList)
                 {
-                    PolarsCoreInfoList.Add(new PolarsCoreInfo
+                    PolarsCoreInfoList.Add(new PolarsMirrorCoreInfo
                     {
                         Name = PolarsCoreInfo.SelectToken("name").ToString(),
                         Id = PolarsCoreInfo.SelectToken("id").ToObject<int>(),
-                        Description = PolarsCoreInfo.SelectToken("description").ToString()
+                        Description = PolarsCoreInfo.SelectToken("description").ToString(),
+                        IconUrl = PolarsCoreInfo.SelectToken("icon").ToString()
                     });
                 }
                 return PolarsCoreInfoList;
@@ -57,19 +59,19 @@ namespace MCServerLauncher.UI.Modules.Download
             }
         }
 
-        public async Task<List<PolarsCoreDetail>> GetCoreDetail(int CoreId)
+        public async Task<List<PolarsMirrorCoreDetail>> GetCoreDetail(int CoreId)
         {
             NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/core/{CoreId}");
             if (Response.IsSuccessStatusCode)
             {
                 JToken RemotePolarsCoreDetailList = JsonConvert.DeserializeObject<JToken>(await Response.Content.ReadAsStringAsync());
-                List<PolarsCoreDetail> PolarsCoreDetailList = new();
+                List<PolarsMirrorCoreDetail> PolarsCoreDetailList = new();
                 foreach (JToken PolarsCoreDetail in RemotePolarsCoreDetailList)
                 {
-                    PolarsCoreDetailList.Add(new PolarsCoreDetail
+                    PolarsCoreDetailList.Add(new PolarsMirrorCoreDetail
                     {
-                        Name = PolarsCoreDetail.SelectToken("name").ToString(),
+                        FileName = PolarsCoreDetail.SelectToken("name").ToString(),
                         DownloadUrl = PolarsCoreDetail.SelectToken("downloadUrl").ToString()
                     });
                 }
@@ -78,6 +80,7 @@ namespace MCServerLauncher.UI.Modules.Download
                 return null;
             }
         }
+        // Unavailable service for now
         //public async Task<List<PolarsServerPackInfo>> GetServerPackInfo()
         //{
 

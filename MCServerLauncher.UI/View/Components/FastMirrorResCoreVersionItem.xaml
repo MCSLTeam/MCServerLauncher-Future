@@ -24,8 +24,8 @@
             </Grid.RowDefinitions>
                 <TextBlock Margin="20,16,5,5" Grid.Column="0" Grid.Row="0" Text="Minecraft 版本：" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"/>
                 <TextBlock Margin="20,5,5,10" Grid.Column="0" Grid.Row="1" Text="构建版本：" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"/>
-                <TextBlock Margin="20,16,5,5" Grid.Column="1" Grid.Row="0" x:Name="MinecraftVersionReplacer" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"/>
-                <TextBlock Margin="20,5,5,10" Grid.Column="1" Grid.Row="1" x:Name="CoreVersionReplacer" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"/>
+                <TextBlock Margin="20,16,5,5" Grid.Column="1" Grid.Row="0" x:Name="MinecraftVersionReplacer" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
+                <TextBlock Margin="20,5,5,10" Grid.Column="1" Grid.Row="1" x:Name="CoreVersionReplacer" Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
         </Grid>
         <Button Height="50" Width="50" Margin="15,15,15,15" Grid.Column="1" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center">
             <Button.Content>
