@@ -123,7 +123,7 @@
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}" FontSize="16"/>
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <MenuItem Header="在本机自动搜索">
+                                    <MenuItem Header="在 Daemon 宿主机自动搜索">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SearchAndApps}" FontSize="16"/>
                                         </MenuItem.Icon>
