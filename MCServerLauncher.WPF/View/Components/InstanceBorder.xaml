@@ -1,0 +1,50 @@
+﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.InstanceBorder"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             mc:Ignorable="d" 
+             d:DesignHeight="160" d:DesignWidth="300">
+    <Border x:Name="InstanceItem" Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="160" Width="300">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" x:Name="InstanceNameTextBlock" Style="{StaticResource SubtitleTextBlock}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,15,15,0"/>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="实例类型" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="创建时间" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,15"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="InstanceTypeTextBlock" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" x:Name="InstanceCreatedTimeTextBlock" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5"/>
+            </Grid>
+            <Grid Grid.Row="2" HorizontalAlignment="Right" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Style="{StaticResource AccentButtonStyle}" Margin="20,0,0,20">
+                    <Button.Content>
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="启动"/>
+                    </Button.Content>
+                </Button>
+                <Button Grid.Column="1" Margin="20,0,20,20">
+                    <Button.Content>
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.More}" Content="更多"/>
+                    </Button.Content>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
