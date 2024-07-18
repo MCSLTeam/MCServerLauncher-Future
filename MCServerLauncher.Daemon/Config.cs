@@ -41,7 +41,26 @@ namespace MCServerLauncher.Daemon
 
         private static Config Load(string path = "config.json")
         {
-            return JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            var deletes = new HashSet<string>();
+            
+            
+            // scan and remove expired temporary tokens
+            if (config.TemporaryTokens != null)
+            {
+                foreach (var (token, expired) in config.TemporaryTokens)
+                {
+                    if (expired < DateTime.Now) deletes.Add(token);
+                }
+
+                foreach (var token in deletes)
+                {
+                    config.TemporaryTokens.Remove(token);
+                }
+            }
+
+            if (deletes.Count > 0) config.TrySave(path);
+            return config;
         }
 
         public bool TryCreateTemporaryToken(long seconds, out string token, out DateTime expired)

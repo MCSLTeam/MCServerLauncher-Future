@@ -21,7 +21,7 @@ namespace MCServerLauncher.Daemon.FileManagement
         public static Guid FileUploadRequest(string path, long size, long chunkSize, string sha1)
         {
             // 由于FileStream.WriteAsync只支持int,故提前检查,若大于2G,则返回空
-            if ((int)size != size || (int)chunkSize != chunkSize || size < 0 || chunkSize < 0 || chunkSize > size)
+            if ((int)size != size || (int)chunkSize != chunkSize || size < 0 || chunkSize < 0)
             {
                 return Guid.Empty;
             }
@@ -65,7 +65,7 @@ namespace MCServerLauncher.Daemon.FileManagement
         public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, string strData)
         {
             var info = _uploadSessions[id]!;
-            if (offset >= info.Size) throw new Exception("offset out of range");
+            if (offset >= 0L || offset >= info.Size) throw new Exception("offset out of range");
 
             var data = Encoding.BigEndianUnicode.GetBytes(strData);
             int remain;
@@ -91,7 +91,7 @@ namespace MCServerLauncher.Daemon.FileManagement
             // file upload complete
             var sha1 = await FileSha1(info.File);
             info.File.Close();
-            
+
             // rename tmp file to its origin name
             File.Move(info.FileName + ".tmp", info.FileName);
 
