@@ -39,8 +39,11 @@ namespace MCServerLauncher.Daemon.FileManagement
             {
                 // ensure directory exists
                 Directory.CreateDirectory(Path.GetDirectoryName(fileName)!);
+                var tmp = fileName + ".tmp";
+                // delete file if exists
+                if (File.Exists(tmp)) File.Delete(tmp);
 
-                FileStream fs = new(fileName + ".tmp", FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+                FileStream fs = new(tmp, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
                 fs.SetLength(size);
                 fs.Seek(0, SeekOrigin.Begin);
                 var guid = Guid.NewGuid();
@@ -65,7 +68,7 @@ namespace MCServerLauncher.Daemon.FileManagement
         public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, string strData)
         {
             var info = _uploadSessions[id]!;
-            if (offset >= 0L || offset >= info.Size) throw new Exception("offset out of range");
+            if (offset < 0L || offset >= info.Size) throw new Exception("offset out of range");
 
             var data = Encoding.BigEndianUnicode.GetBytes(strData);
             int remain;
@@ -93,7 +96,7 @@ namespace MCServerLauncher.Daemon.FileManagement
             info.File.Close();
 
             // rename tmp file to its origin name
-            File.Move(info.FileName + ".tmp", info.FileName);
+            File.Move(info.FileName + ".tmp", info.FileName, true);
 
             if (sha1 == info.Sha1)
             {
