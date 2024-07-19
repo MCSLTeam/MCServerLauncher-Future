@@ -27,12 +27,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 return type switch
                 {
                     ActionType.FileUploadChunk => await FileUploadChunk(
-                        Deserialize<ActionRequestTemplate.FileUploadChunk>(data)),
+                        Deserialize<ActionRequests.FileUploadChunk>(data)),
                     ActionType.FileUploadRequest => FileUploadRequest(
-                        Deserialize<ActionRequestTemplate.FileUploadRequest>(data)),
-                    ActionType.Message => Message(Deserialize<ActionRequestTemplate.Empty>(data)),
-                    ActionType.Ping => Ping(Deserialize<ActionRequestTemplate.Empty>(data)),
-                    ActionType.NewToken => NewToken(Deserialize<ActionRequestTemplate.NewToken>(data)),
+                        Deserialize<ActionRequests.FileUploadRequest>(data)),
+                    ActionType.Message => Message(Deserialize<ActionRequests.Empty>(data)),
+                    ActionType.Ping => Ping(Deserialize<ActionRequests.Empty>(data)),
+                    ActionType.NewToken => NewToken(Deserialize<ActionRequests.NewToken>(data)),
 
                     _ => throw new NotImplementedException()
                 };
@@ -43,7 +43,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             }
         }
 
-        private async Task<Dictionary<string, object>> FileUploadChunk(ActionRequestTemplate.FileUploadChunk data)
+        private async Task<Dictionary<string, object>> FileUploadChunk(ActionRequests.FileUploadChunk data)
         {
             if (data.FileId == Guid.Empty) return Error("Invalid file id", ActionType.FileUploadChunk);
 
@@ -55,7 +55,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             });
         }
 
-        private Dictionary<string, object> NewToken(ActionRequestTemplate.NewToken data)
+        private Dictionary<string, object> NewToken(ActionRequests.NewToken data)
         {
             // TODO 实现data.Permission
             return data.Type switch
@@ -72,7 +72,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             };
         }
 
-        private Dictionary<string, object> FileUploadRequest(ActionRequestTemplate.FileUploadRequest data)
+        private Dictionary<string, object> FileUploadRequest(ActionRequests.FileUploadRequest data)
         {
             var fileId = FileManager.FileUploadRequest(
                 data.Path,
@@ -86,12 +86,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 : Ok(new Dictionary<string, object> { { "file_id", fileId } });
         }
 
-        private Dictionary<string, object> Message(ActionRequestTemplate.Empty data)
+        private Dictionary<string, object> Message(ActionRequests.Empty data)
         {
             return null;
         }
 
-        private Dictionary<string, object> Ping(ActionRequestTemplate.Empty data)
+        private Dictionary<string, object> Ping(ActionRequests.Empty data)
         {
             return Ok(new Dictionary<string, object> { { "pong_time", DateTime.Now } });
         }
@@ -139,7 +139,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         private static T Deserialize<T>(JObject data)
         {
-            var settings = ActionRequestTemplate.GetJsonSerializerSettings();
+            var settings = ActionRequests.GetJsonSerializerSettings();
             return JsonConvert.DeserializeObject<T>(data.ToString(), settings);
         }
     }
