@@ -3,7 +3,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Remote.Action
 {
-    internal abstract class ActionRequestTemplate
+    internal abstract class ActionRequests
     {
         private static JsonSerializerSettings _jsonSerializerSettings;
 
