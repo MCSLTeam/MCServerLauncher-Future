@@ -12,7 +12,6 @@ namespace MCServerLauncher.WPF.Modules.Download
 
         public async Task<List<string>> GetCoreInfo()
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/query/available_server_types");
             if (Response.IsSuccessStatusCode)
             {
@@ -25,7 +24,6 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
         public async Task<string> GetCoreDescription(string Core)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/query/servers_description/{Core}");
             if (Response.IsSuccessStatusCode)
             {
@@ -38,7 +36,6 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
         public async Task<List<string>> GetMinecraftVersions(string Core)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/query/available_versions/{Core}");
             if (Response.IsSuccessStatusCode)
             {
@@ -51,7 +48,6 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
         public async Task<string> GetDownloadUrl(string Core, string MinecraftVersion)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/download/server/{Core}/{MinecraftVersion}");
             if (Response.IsSuccessStatusCode)
             {

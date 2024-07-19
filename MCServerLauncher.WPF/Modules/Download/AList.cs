@@ -22,7 +22,6 @@ namespace MCServerLauncher.WPF.Modules.Download
 
         public async Task<List<AListFileStructure>> GetFileList(string Host, string Path)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{Host}{FileListAPI}?path={Path}");
             if (Response.IsSuccessStatusCode)
             {
@@ -46,7 +45,6 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
         public async Task<string> GetFileUrl(string Host, string Path)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{Host}{FileUrlAPI}?path={Path}");
             if (Response.IsSuccessStatusCode)
             {
