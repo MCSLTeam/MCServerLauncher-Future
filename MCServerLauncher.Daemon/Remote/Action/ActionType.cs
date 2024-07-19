@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace MCServerLauncher.Daemon.Remote
+namespace MCServerLauncher.Daemon.Remote.Action
 {
     internal static class ActionTypeExtensions
     {

@@ -1,10 +1,10 @@
 using MCServerLauncher.Daemon.FileManagement;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using WebSocketSharp;
 using WebSocketSharp.Net.WebSockets;
 
-namespace MCServerLauncher.Daemon.Remote
+namespace MCServerLauncher.Daemon.Remote.Action
 {
     internal class ActionHandlers
     {

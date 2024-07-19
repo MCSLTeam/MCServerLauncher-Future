@@ -1,8 +1,7 @@
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace MCServerLauncher.Daemon.Remote
+namespace MCServerLauncher.Daemon.Remote.Action
 {
     internal abstract class ActionRequestTemplate
     {
