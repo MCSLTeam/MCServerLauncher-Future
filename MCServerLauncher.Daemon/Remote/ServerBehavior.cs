@@ -1,7 +1,6 @@
 ﻿using MCServerLauncher.Daemon.Remote.Action;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Serilog;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
@@ -11,6 +10,7 @@ namespace MCServerLauncher.Daemon.Remote;
 public class ServerBehavior : WebSocketBehavior
 {
     internal static Config Config { get; private set; }
+    private static WebSocketServer _server;
     private static string IpAddress { get; set; }
     private readonly ActionHandlers _handlers;
 
@@ -30,7 +30,7 @@ public class ServerBehavior : WebSocketBehavior
             Log.Info($"Rejected connection from {IpAddress} for invalid token.");
             return;
         }
-        
+
         Log.Info($"{IpAddress} connected.");
     }
 
@@ -54,7 +54,7 @@ public class ServerBehavior : WebSocketBehavior
             data["echo"] = echo;
         }
 
-        // TODO 生产环境应把缩进取消
+        // TODO:生产环境应把缩进取消
         var text = JsonConvert.SerializeObject(data, Formatting.Indented);
         Log.Info($"Sending message: \n{text}\n");
         Send(text);
@@ -80,20 +80,62 @@ public class ServerBehavior : WebSocketBehavior
         );
     }
 
+    public static void Broadcast(string message)
+    {
+        _server?.WebSocketServices.Broadcast(message);
+        _server.Log.Info($"Broadcasting message: \n{message}\n");
+    }
+
+    public static void BroadcastEvent(string eventType, JObject data)
+    {
+        BroadcastEvent(DateTime.Now, eventType, data);
+    }
+
+    public static void BroadcastEvent(DateTime dateTime, string eventType, JObject data)
+    {
+        var messageJson = new JObject();
+        messageJson["time"] = new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
+        messageJson["event_type"] = eventType;
+        messageJson["data"] = data;
+
+        // TODO 生产环境应把缩进取消
+        var message = JsonConvert.SerializeObject(messageJson, Formatting.Indented);
+        _server?.WebSocketServices.Broadcast(message);
+    }
+
+    private class HeartbeatSender : ITickingCallback
+    {
+        private static DateTime _lastHeartbeat = DateTime.Now;
+        private static readonly int HeartbeatInterval = 60;
+
+        public void Tick()
+        {
+            var now = DateTime.Now;
+            if (now - _lastHeartbeat > TimeSpan.FromSeconds(HeartbeatInterval))
+            {
+                _lastHeartbeat = now;
+                JObject data = new JObject();
+                data["interval"] = HeartbeatInterval;
+                BroadcastEvent(now, "meta_heartbeat", data);
+            }
+        }
+    }
 
     public static void Test()
     {
         Config.TryLoadOrDefault("config.json", out var config);
         Config = config;
 
-        var server = new WebSocketServer(config.Port);
-        server.Log.Level = LogLevel.Info;
+        _server = new WebSocketServer(config.Port);
+        _server.Log.Level = LogLevel.Info;
 
-        server.AddWebSocketService<ServerBehavior>($"/api/v1");
-        server.Start();
+        _server.AddWebSocketService<ServerBehavior>($"/api/v1");
+        _server.Start();
 
-        Console.WriteLine($"Server started at ws://{server.Address}:{config.Port}/api/v1");
+        ITickingCallback.AddTickingCallback(new HeartbeatSender());
+
+        Console.WriteLine($"Server started at ws://{_server.Address}:{config.Port}/api/v1");
         Console.ReadKey();
-        server.Stop();
+        _server.Stop();
     }
 }
