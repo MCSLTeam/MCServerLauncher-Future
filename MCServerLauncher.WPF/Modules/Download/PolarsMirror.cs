@@ -37,7 +37,6 @@ namespace MCServerLauncher.WPF.Modules.Download
 
         public async Task<List<PolarsMirrorCoreInfo>> GetCoreInfo()
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/core");
             if (Response.IsSuccessStatusCode)
             {
@@ -61,7 +60,6 @@ namespace MCServerLauncher.WPF.Modules.Download
 
         public async Task<List<PolarsMirrorCoreDetail>> GetCoreDetail(int CoreId)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/core/{CoreId}");
             if (Response.IsSuccessStatusCode)
             {

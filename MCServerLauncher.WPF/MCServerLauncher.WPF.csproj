@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3D9D6DE5-AC60-4004-8E6A-59828BFCE95F}</ProjectGuid>
+    <ProjectGuid>{50682C9F-7845-4074-8DB5-25C1DAE55395}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>MCServerLauncher.WPF</RootNamespace>
     <AssemblyName>MCServerLauncher.WPF</AssemblyName>
@@ -44,6 +44,15 @@
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>Resources\MCServerLauncherFuture.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>false</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Costura, Version=5.7.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -84,8 +93,8 @@
       <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.Console, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Console.4.3.0\lib\net46\System.Console.dll</HintPath>
+    <Reference Include="System.Console, Version=4.0.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Console.4.3.1\lib\net46\System.Console.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=8.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -116,8 +125,8 @@
     <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net.Http, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Net.Http.4.3.0\lib\net46\System.Net.Http.dll</HintPath>
+    <Reference Include="System.Net.Http, Version=4.1.1.3, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Net.Http.4.3.4\lib\net46\System.Net.Http.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Sockets, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Net.Sockets.4.3.0\lib\net46\System.Net.Sockets.dll</HintPath>
@@ -207,6 +216,12 @@
     <Compile Include="View\Components\JVMArgumentItem.xaml.cs">
       <DependentUpon>JVMArgumentItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\MCSLSyncResCoreItem.xaml.cs">
+      <DependentUpon>MCSLSyncResCoreItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\MCSLSyncResCoreVersionItem.xaml.cs">
+      <DependentUpon>MCSLSyncResCoreVersionItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\MSLAPIResCoreItem.xaml.cs">
       <DependentUpon>MSLAPIResCoreItem.xaml</DependentUpon>
     </Compile>
@@ -264,6 +279,9 @@
     <Compile Include="View\ResDownloadProvider\FastMirrorProvider.xaml.cs">
       <DependentUpon>FastMirrorProvider.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\ResDownloadProvider\MCSLSyncProvider.xaml.cs">
+      <DependentUpon>MCSLSyncProvider.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\ResDownloadProvider\MSLAPIProvider.xaml.cs">
       <DependentUpon>MSLAPIProvider.xaml</DependentUpon>
     </Compile>
@@ -312,6 +330,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\Components\JVMArgumentItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\MCSLSyncResCoreItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\MCSLSyncResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -388,6 +414,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\ResDownloadProvider\FastMirrorProvider.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\ResDownloadProvider\MCSLSyncProvider.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -32,7 +32,7 @@
             <Button Grid.Column="1" Content="PolarsMirror" Click="ChResDownloadSrc"/>
             <Button Grid.Column="2" Content="MSLAPI" Click="ChResDownloadSrc"/>
             <Button Grid.Column="3" Content="ZCloudFile" Click="ChResDownloadSrc"/>
-            <Button Grid.Column="4" Content="MCSL-Sync" IsEnabled="False"/>
+            <Button Grid.Column="4" Content="MCSL-Sync" Click="ChResDownloadSrc"/>
         </Grid>
         <ui:Frame Grid.Row="2" Margin="0,20,35,35" x:Name="CurrentResDownloadProvider"/>
     </Grid>

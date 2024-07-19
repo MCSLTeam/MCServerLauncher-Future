@@ -48,7 +48,6 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
         public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest(EndPoint);
             if (Response.IsSuccessStatusCode)
             {
@@ -72,7 +71,6 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
         public async Task<List<FastMirrorCoreDetail>> GetCoreDetail(string Core, string MinecraftVersion)
         {
-            NetworkUtils NetworkUtils = new();
             HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/{Core}/{MinecraftVersion}?offset=0&limit=25");
             if (Response.IsSuccessStatusCode)
             {

@@ -25,7 +25,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         {
             InitializeComponent();
         }
-        public async Task<bool> Refresh(Func<List<string>, List<string>> SequenceFunc)
+        public async Task<bool> Refresh()
         {
             if (IsDataLoading || IsDataLoaded)
             {
@@ -45,7 +45,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                         CoreTag = Result.Tag,
                         Recommend = Result.Recommend,
                         HomePage = Result.HomePage,
-                        MinecraftVersions = SequenceFunc(Result.MinecraftVersions)
+                        MinecraftVersions = ResDownloadUtils.SequenceMinecraftVersion(Result.MinecraftVersions)
                     };
                     CoreGridView.Items.Add(CoreItem);
                 }
@@ -66,7 +66,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 return;
             }
-            var SelectedCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
+            FastMirrorResCoreItem SelectedCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
             Log.Information($"[Res] [FastMirror] Selected core \"{SelectedCore.CoreName}\"");
             MinecraftVersionComboBox.SelectionChanged -= new SelectionChangedEventHandler(GetCoreDetail);
             MinecraftVersionComboBox.Items.Clear();
