@@ -26,13 +26,11 @@ namespace MCServerLauncher.Daemon.Remote.Action
             {
                 return type switch
                 {
-                    ActionType.FileUploadChunk => await FileUploadChunk(
-                        Deserialize<ActionRequests.FileUploadChunk>(data)),
-                    ActionType.FileUploadRequest => FileUploadRequest(
-                        Deserialize<ActionRequests.FileUploadRequest>(data)),
-                    ActionType.Message => Message(Deserialize<ActionRequests.Empty>(data)),
-                    ActionType.Ping => Ping(Deserialize<ActionRequests.Empty>(data)),
-                    ActionType.NewToken => NewToken(Deserialize<ActionRequests.NewToken>(data)),
+                    ActionType.FileUploadChunk => await FileUploadChunkHandler(Actions.FileUploadChunk.RequestOf(data)),
+                    ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
+                    ActionType.Message => MessageHandler(Actions.Empty.RequestOf(data)),
+                    ActionType.Ping => PingHandler(Actions.Empty.RequestOf(data)),
+                    ActionType.NewToken => NewTokenHandler(Actions.NewToken.RequestOf(data)),
 
                     _ => throw new NotImplementedException()
                 };
@@ -43,11 +41,11 @@ namespace MCServerLauncher.Daemon.Remote.Action
             }
         }
 
-        private async Task<Dictionary<string, object>> FileUploadChunk(ActionRequests.FileUploadChunk data)
+        private async Task<Dictionary<string, object>> FileUploadChunkHandler(Actions.FileUploadChunk.Request data)
         {
             if (data.FileId == Guid.Empty) return Error("Invalid file id", ActionType.FileUploadChunk);
 
-            var (done, received) = await FileManager.FileUploadChunk(data.FileId,data.Offset ,data.Data);
+            var (done, received) = await FileManager.FileUploadChunk(data.FileId, data.Offset, data.Data);
             return Ok(new Dictionary<string, object>
             {
                 { "done", done },
@@ -55,7 +53,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             });
         }
 
-        private Dictionary<string, object> NewToken(ActionRequests.NewToken data)
+        private Dictionary<string, object> NewTokenHandler(Actions.NewToken.Request data)
         {
             // TODO 实现data.Permission
             return data.Type switch
@@ -72,7 +70,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             };
         }
 
-        private Dictionary<string, object> FileUploadRequest(ActionRequests.FileUploadRequest data)
+        private Dictionary<string, object> FileUploadRequestHandler(Actions.FileUploadRequest.Request data)
         {
             var fileId = FileManager.FileUploadRequest(
                 data.Path,
@@ -86,12 +84,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 : Ok(new Dictionary<string, object> { { "file_id", fileId } });
         }
 
-        private Dictionary<string, object> Message(ActionRequests.Empty data)
+        private Dictionary<string, object> MessageHandler(Actions.Empty.Request data)
         {
             return null;
         }
 
-        private Dictionary<string, object> Ping(ActionRequests.Empty data)
+        private Dictionary<string, object> PingHandler(Actions.Empty.Request data)
         {
             return Ok(new Dictionary<string, object> { { "pong_time", DateTime.Now } });
         }
@@ -111,8 +109,8 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 }
             };
         }
-        
-        private Dictionary<string, object> Error(string message,int code = 1400)
+
+        private Dictionary<string, object> Error(string message, int code = 1400)
         {
             return new Dictionary<string, object>
             {
@@ -135,12 +133,6 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 { "retcode", 0 },
                 { "data", data }
             };
-        }
-
-        private static T Deserialize<T>(JObject data)
-        {
-            var settings = ActionRequests.GetJsonSerializerSettings();
-            return JsonConvert.DeserializeObject<T>(data.ToString(), settings);
         }
     }
 }

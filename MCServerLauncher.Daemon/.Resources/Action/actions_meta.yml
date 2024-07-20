@@ -1,0 +1,30 @@
+actions: 
+  - file_upload_request:
+      req:
+        path: string
+        sha1: string
+        chunk_size: long
+        size: long
+        
+      resp:
+        file_id: Guid
+        
+  - file_upload_chunk:
+      req:
+        file_id: Guid
+        offset: long
+        data: string
+        
+      resp:
+        done: bool
+        received: long
+        
+  - new_token:
+      req:
+        type: TokenType
+        seconds: long
+        permission: bool[]
+      
+      resp:
+        token: Guid
+        expired: long

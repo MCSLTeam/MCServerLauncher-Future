@@ -275,7 +275,7 @@ namespace MCServerLauncher.WPF.Remote
                 #region UploadFile
 
                 var err = await connection.UploadFile(
-                    "D:\\workspace\\MCServerLauncher-Future\\MCServerLauncher.WPF\\bin\\Debug\\test.txt", "test.txt",
+                    "Newtonsoft.Json.xml", "Newtonsoft.Json.xml",
                     1024);
                 if (err == null)
                 {
