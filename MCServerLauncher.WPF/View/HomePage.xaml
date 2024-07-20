@@ -17,13 +17,7 @@
                 <Border x:Name="NoticeBorder" Style="{StaticResource StyledBorder}" Margin="35,120,35,0" VerticalAlignment="Top">
                     <Grid>
                         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="公告" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,15,0,0"/>
-                        <TextBlock Style="{StaticResource BodyTextBlock}" Text="MCServerLauncher Future 是 MCSL开发组 全新的项目！" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,45,20,20"/>
-                    </Grid>
-                </Border>
-                <Border x:Name="SystemInfoBorder" Style="{StaticResource StyledBorder}" Margin="35,15,35,0" VerticalAlignment="Top">
-                    <Grid>
-                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="系统信息" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,15,0,0"/>
-                        
+                        <TextBlock Style="{StaticResource BodyTextBlock}" LineHeight="22" Text="MCServerLauncher Future 是 MCSL开发组 全新的项目！&#13;本 WPF 程序仅仅是其中的一部分，需要 Daemon 配合使用！&#13;同时我们也在制作 Web 版，可作为本 WPF 版的替代！" TextWrapping="Wrap" FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,45,20,20"/>
                     </Grid>
                 </Border>
             </ikw:SimpleStackPanel>

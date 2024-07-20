@@ -43,6 +43,13 @@ namespace MCServerLauncher.WPF
             }
             base.OnExit(e);
         }
+        public static Version AppVersion
+        {
+            get
+            {
+                return Assembly.GetExecutingAssembly().GetName().Version;
+            }
+        }
     }
 }
 

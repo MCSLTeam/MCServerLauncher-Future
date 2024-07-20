@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Diagnostics;
 using Serilog;
 using System.Linq;
+using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Helpers
 {
@@ -80,18 +81,17 @@ namespace MCServerLauncher.WPF.Helpers
     }
     public class NetworkUtils
     {
-        public static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         private static HttpClient client = new();
         public static async Task<HttpResponseMessage> SendGetRequest(string Url)
         {
             Log.Information($"[Net] Try to get url \"{Url}\"");
-            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
+            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{AppVersion}");
             return await client.GetAsync(Url);
         }
         public static async Task<HttpResponseMessage> SendPostRequest(string Url, string Data)
         {
             Log.Information($"[Net] Try to post url \"{Url}\" with data {Data}");
-            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{Version}");
+            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{AppVersion}");
             return await client.PostAsync(Url, new StringContent(Data, Encoding.UTF8, "application/json"));
         }
         public static void OpenUrl(string Url)
@@ -109,7 +109,6 @@ namespace MCServerLauncher.WPF.Helpers
     }
     public class BasicUtils
     {
-        public static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         public Settings AppSettings { get; set; }
         public static void InitDataDirectory()
         {
@@ -226,7 +225,7 @@ namespace MCServerLauncher.WPF.Helpers
         public void InitApp()
         {
             InitLogger();
-            Log.Information($"[Exe] MCServerLauncher Future v{Version}");
+            Log.Information($"[Exe] MCServerLauncher Future v{AppVersion}");
             Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
             //Log.Information("Test Infomation");
             //Log.Warning("Test Warning");

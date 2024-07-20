@@ -27,14 +27,21 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Image Margin="5,-6,0,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality" Source="Resources/MCServerLauncherFuture.ico" Width="20" Height="20"/>
+            <Image Margin="1,-5,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality" Source="Resources/MCServerLauncherFuture.ico" Width="30" Height="30"/>
             <Grid Grid.Column="1" Margin="10,0,0,0" Grid.Row="0" Height="50">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,17,0,0" FontWeight="Medium"  Grid.Column="0" Text="MCServerLauncher"/>
-                <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,17,0,0" FontWeight="SemiBold" Grid.Column="1" Text="Future" Foreground="#00E396" HorizontalAlignment="Left"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="6*"/>
+                    <RowDefinition Height="5*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,7,0,0" FontWeight="Medium"  Grid.Column="0" Text="MCServerLauncher" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                    <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,7,0,0" FontWeight="SemiBold" Grid.Column="1" Text="Future" Foreground="#00E396" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                </Grid>
+                <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,2,0,0" FontWeight="Medium" Grid.Row="1" FontSize="10" Text="WPF (Only for Windows)" Opacity="0.515" HorizontalAlignment="Left" VerticalAlignment="Top"/>
             </Grid>
         </Grid>
         <!-- 导航 -->
