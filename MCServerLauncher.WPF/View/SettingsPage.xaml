@@ -137,7 +137,7 @@
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Grid.RowSpan="2" Margin="5,15,20,15"/>
-                            <TextBlock Text="关于 MCServerLauncher Future" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                            <TextBlock Text="关于 MCServerLauncher Future (WPF)" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                             <TextBlock x:Name="AboutVersionReplacer" Grid.Column="1" VerticalAlignment="Top" Grid.Row="1" Margin="0,2,20,5" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
                         </Grid>
                     </Expander.Header>
