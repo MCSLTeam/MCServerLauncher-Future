@@ -1,6 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 

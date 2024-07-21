@@ -43,8 +43,8 @@ namespace MCServerLauncher.Daemon
         {
             var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
             var deletes = new HashSet<string>();
-            
-            
+
+
             // scan and remove expired temporary tokens
             if (config.TemporaryTokens != null)
             {

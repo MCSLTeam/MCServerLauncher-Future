@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace MCServerLauncher.WPF.Remote
-{   
+{
     internal static class ActionTypeExtensions
     {
         public static string ToShakeCase(this ActionType actionType)

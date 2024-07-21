@@ -1,20 +1,20 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using System.Net.Http;
-using System.Windows.Media;
-using System.Windows;
-using System.Reflection;
 using Newtonsoft.Json;
-using System.Text;
-using System.Security.Cryptography.X509Certificates;
-using System;
-using System.Security.Cryptography;
-using System.Diagnostics;
 using Serilog;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using static MCServerLauncher.WPF.App;
+using System.Net.Http;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media;
+using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Helpers
 {
@@ -131,7 +131,7 @@ namespace MCServerLauncher.WPF.Helpers
         public static void OpenUrl(string Url)
         {
             try
-            { 
+            {
                 Process.Start(Url);
                 Log.Information("[Net] Try to open url \"{Url}\"");
             }

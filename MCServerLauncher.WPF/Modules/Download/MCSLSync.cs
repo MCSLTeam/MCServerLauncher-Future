@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Net.Http;
-using MCServerLauncher.WPF.Helpers;
+﻿using MCServerLauncher.WPF.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.Modules.Download
 {
@@ -25,7 +25,9 @@ namespace MCServerLauncher.WPF.Modules.Download
             if (Response.IsSuccessStatusCode)
             {
                 return JsonConvert.DeserializeObject<JToken>(await Response.Content.ReadAsStringAsync()).SelectToken("data").ToObject<List<string>>();
-            } else {
+            }
+            else
+            {
                 return null;
             }
         }

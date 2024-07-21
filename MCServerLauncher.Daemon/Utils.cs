@@ -1,4 +1,3 @@
-using System.Collections;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Helpers
@@ -93,7 +92,7 @@ namespace MCServerLauncher.Daemon.Helpers
         public InstanceSettings Instance { get; set; }
         public AppSettings App { get; set; }
     }
-    
+
     // TODO 可将链表优化成树
     public class LongRemain
     {

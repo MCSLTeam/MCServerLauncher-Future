@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
-using System.Windows;
 using System.Windows.Controls;
-using MCServerLauncher.WPF.Helpers;
 
 namespace MCServerLauncher.WPF.View
 {

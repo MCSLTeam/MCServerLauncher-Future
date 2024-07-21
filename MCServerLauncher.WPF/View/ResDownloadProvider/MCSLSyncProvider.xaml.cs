@@ -1,11 +1,11 @@
-using MCServerLauncher.WPF.Modules.Download;
-using System.Collections.Generic;
-using System.Windows.Controls;
-using MCServerLauncher.WPF.View.Components;
-using System;
-using System.Threading.Tasks;
-using Serilog;
 using MCServerLauncher.WPF.Helpers;
+using MCServerLauncher.WPF.Modules.Download;
+using MCServerLauncher.WPF.View.Components;
+using Serilog;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -47,7 +47,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsDataLoaded = true;
                 Log.Information($"[Res] [MCSL-Sync] Core info loaded. Count: {MCSLSyncCoreInfo.Count}");
                 return true;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Log.Error($"[Res] [MCSL-Sync] Failed to load core info. Reason: {ex.Message}");
                 return false;
@@ -81,7 +82,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         private async void GetCoreDetail(object sender, SelectionChangedEventArgs e)
         {
             MCSLSyncResCoreItem CurrentCore = (MCSLSyncResCoreItem)CoreGridView.SelectedItem;
-            string CurrentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ","");
+            string CurrentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
             if (CurrentCore.CoreName == null || CurrentMinecraftVersion == null)
             {
                 return;
@@ -104,7 +105,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     CoreVersionStackPanel.Children.Add(CoreDetailItem);
                 }
                 Log.Information($"[Res] [MCSL-Sync] Core list loaded. Count: {MCSLSyncCoreVersions.Count}");
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Log.Error($"[Res] [MCSL-Sync] Failed to get core list of \"{CurrentCore.CoreName}\" with Minecraft version \"{CurrentMinecraftVersion}\". Reason: {ex.Message}");
             }

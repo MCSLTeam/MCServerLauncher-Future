@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Net.Http;
-using MCServerLauncher.WPF.Helpers;
+﻿using MCServerLauncher.WPF.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.Modules.Download
 {
@@ -53,7 +53,9 @@ namespace MCServerLauncher.WPF.Modules.Download
                     });
                 }
                 return PolarsCoreInfoList;
-            } else {
+            }
+            else
+            {
                 return null;
             }
         }
@@ -74,7 +76,9 @@ namespace MCServerLauncher.WPF.Modules.Download
                     });
                 }
                 return PolarsCoreDetailList;
-            } else {
+            }
+            else
+            {
                 return null;
             }
         }

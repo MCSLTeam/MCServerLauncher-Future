@@ -1,8 +1,8 @@
-﻿using Page = System.Windows.Controls.Page;
+﻿using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Media.Animation;
+using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View
 {
@@ -42,7 +42,7 @@ namespace MCServerLauncher.WPF.View
         private async void ChResDownloadSrc(object sender, RoutedEventArgs e)
         {
             switch ((sender as Button).Content)
-                {
+            {
                 case "FastMirror":
                     CurrentResDownloadProvider.Navigate(FastMirror, new DrillInNavigationTransitionInfo());
                     Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";

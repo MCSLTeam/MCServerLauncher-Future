@@ -1,9 +1,9 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Helpers;
+using System;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
 using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
-using MCServerLauncher.WPF.Helpers;
 
 namespace MCServerLauncher.WPF
 {

@@ -1,15 +1,14 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules.Download;
-using Page = System.Windows.Controls.Page;
-using System.Windows;
-using System.Collections.Generic;
-using System.Windows.Controls;
 using System;
-using static MCServerLauncher.WPF.Modules.Download.FastMirror;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Download.AList;
-using static MCServerLauncher.WPF.Modules.Download.PolarsMirror;
-using static MCServerLauncher.WPF.Modules.Download.MSLAPI;
+using static MCServerLauncher.WPF.Modules.Download.FastMirror;
 using static MCServerLauncher.WPF.Modules.Download.MCSLSync;
+using static MCServerLauncher.WPF.Modules.Download.PolarsMirror;
+using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View
 {

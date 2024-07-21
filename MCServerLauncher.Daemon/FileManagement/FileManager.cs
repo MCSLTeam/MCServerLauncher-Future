@@ -1,7 +1,7 @@
+using Serilog;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
-using Serilog;
 
 namespace MCServerLauncher.Daemon.FileManagement
 {

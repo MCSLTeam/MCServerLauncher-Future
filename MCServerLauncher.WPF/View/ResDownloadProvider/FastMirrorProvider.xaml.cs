@@ -1,14 +1,14 @@
+using iNKORE.UI.WPF.Helpers;
+using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.Modules.Download;
+using MCServerLauncher.WPF.View.Components;
+using Serilog;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Download.FastMirror;
-using MCServerLauncher.WPF.View.Components;
-using System;
-using System.Threading.Tasks;
-using MCServerLauncher.WPF.Helpers;
-using iNKORE.UI.WPF.Helpers;
-using System.Windows;
-using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -54,7 +54,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsDataLoaded = true;
                 Log.Information($"[Res] [FastMirror] Core info loaded. Count: {FastMirrorInfo.Count}");
                 return true;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Log.Error($"[Res] [FastMirror] Failed to load core info. Reason: {ex.Message}");
                 return false;
@@ -93,7 +94,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         private async void GetCoreDetail(object sender, SelectionChangedEventArgs e)
         {
             FastMirrorResCoreItem CurrentCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
-            string CurrentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ","");
+            string CurrentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
             if (CurrentCore.CoreName == null || CurrentMinecraftVersion == null)
             {
                 return;
@@ -116,7 +117,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     CoreVersionStackPanel.Children.Add(CoreDetailItem);
                 }
                 Log.Information($"[Res] [FastMirror] Core detail loaded. Count: {FastMirrorCoreDetails.Count}");
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Log.Error($"[Res] [FastMirror] Failed to get core detail of \"{CurrentCore.CoreName}\" with Minecraft version \"{CurrentMinecraftVersion}\". Reason: {ex.Message}");
             }

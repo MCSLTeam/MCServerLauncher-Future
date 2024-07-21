@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using MCServerLauncher.WPF.Helpers;
-using System.Threading.Tasks;
-using System.Net.Http;
+﻿using MCServerLauncher.WPF.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 
 namespace MCServerLauncher.WPF.Modules.Download

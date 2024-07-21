@@ -1,9 +1,9 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Media.Animation;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using static MCServerLauncher.WPF.Helpers.VisualTreeExtensions;
-using iNKORE.UI.WPF.Modern.Media.Animation;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {

@@ -1,7 +1,7 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Collections.Generic;
 
 namespace MCServerLauncher.WPF.View.Components
 {
@@ -43,7 +43,8 @@ namespace MCServerLauncher.WPF.View.Components
         private void SetRecommendStatus(bool RecommendStatus)
         {
             CoreItemBorder.Background = RecommendStatus ? RecommendBrush : null;
-            if (RecommendStatus) {
+            if (RecommendStatus)
+            {
                 CoreNameReplacer.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ffffff"));
             }
         }

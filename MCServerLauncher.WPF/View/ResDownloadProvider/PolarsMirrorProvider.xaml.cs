@@ -31,26 +31,27 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [PolarsMirror] Loading core info");
-            IsDataLoading = true;
-            List<PolarsMirrorCoreInfo> PolarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
+                IsDataLoading = true;
+                List<PolarsMirrorCoreInfo> PolarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
 
-            foreach (PolarsMirrorCoreInfo Result in PolarsMirrorInfo)
-            {
-                PolarsMirrorResCoreItem CoreItem = new()
+                foreach (PolarsMirrorCoreInfo Result in PolarsMirrorInfo)
                 {
-                    CoreName = Result.Name,
-                    CoreId = Result.Id,
-                    CoreDescription = Result.Description,
-                    CoreIconUrl = Result.IconUrl,
-                };
-                CoreGridView.Items.Add(CoreItem);
-            }
+                    PolarsMirrorResCoreItem CoreItem = new()
+                    {
+                        CoreName = Result.Name,
+                        CoreId = Result.Id,
+                        CoreDescription = Result.Description,
+                        CoreIconUrl = Result.IconUrl,
+                    };
+                    CoreGridView.Items.Add(CoreItem);
+                }
 
-            IsDataLoading = false;
-            IsDataLoaded = true;
-            Log.Information($"[Res] [PolarsMirror] Core info loaded. Count: {PolarsMirrorInfo.Count}");
-            return true;
-            } catch (Exception ex)
+                IsDataLoading = false;
+                IsDataLoaded = true;
+                Log.Information($"[Res] [PolarsMirror] Core info loaded. Count: {PolarsMirrorInfo.Count}");
+                return true;
+            }
+            catch (Exception ex)
             {
                 Log.Error($"[Res] [PolarsMirror] Failed to load core info. Reason: {ex.Message}");
                 return false;
@@ -76,7 +77,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 foreach (PolarsMirrorCoreDetail Detail in PolarsMirrorCoreDetails)
                 {
                     PolarsMirrorResCoreVersionItem CoreDetailItem = new()
-                    { 
+                    {
                         FileName = Detail.FileName,
                     };
                     CoreVersionStackPanel.Children.Add(CoreDetailItem);
