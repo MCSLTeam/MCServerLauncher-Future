@@ -14,9 +14,43 @@ using System.Diagnostics;
 using Serilog;
 using System.Linq;
 using static MCServerLauncher.WPF.App;
+using System.Windows.Forms;
 
 namespace MCServerLauncher.WPF.Helpers
 {
+    public class CreateInstanceUtils
+    {
+        public static string SelectFile(string Title, string Filter)
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Title = Title,
+                Filter = Filter
+            };
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                return dialog.FileName;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public static string SelectFolder(string Title)
+        {
+            FolderBrowserDialog folderBrowserDialog = new();
+            folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+            folderBrowserDialog.ShowDialog();
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+                return folderBrowserDialog.SelectedPath;
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
     public class ResDownloadUtils
     {
         public static List<string> SequenceMinecraftVersion(List<string> OriginalList)
