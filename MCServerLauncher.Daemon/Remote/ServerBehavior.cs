@@ -42,23 +42,26 @@ public class ServerBehavior : WebSocketBehavior
 
     protected override async void OnMessage(MessageEventArgs e)
     {
-        Log.Info($"Received message: \n{e.Data}\n");
-
-        var (actionType, echo, parameters) = ParseMessage(e.Data);
-
-        var data = await _handlers.Routine(actionType, parameters);
-
-        if (data == null) return; // empty data will not be sent
-
-        if (echo != null)
+        if (e.IsText)
         {
-            data["echo"] = echo;
-        }
+            Log.Info($"Received message: \n{e.Data}\n");
 
-        // TODO:生产环境应把缩进取消
-        var text = JsonConvert.SerializeObject(data, Formatting.Indented);
-        Log.Info($"Sending message: \n{text}\n");
-        Send(text);
+            var (actionType, echo, parameters) = ParseMessage(e.Data);
+
+            var data = await _handlers.Routine(actionType, parameters);
+
+            if (data == null) return; // empty data will not be sent
+
+            if (echo != null)
+            {
+                data["echo"] = echo;
+            }
+
+            // TODO:生产环境应把缩进取消
+            var text = JsonConvert.SerializeObject(data, Formatting.Indented);
+            Log.Info($"Sending message: \n{text}\n");
+            Send(text);
+        }
     }
 
     protected override void OnError(ErrorEventArgs e)
@@ -133,7 +136,7 @@ public class ServerBehavior : WebSocketBehavior
         _server.AddWebSocketService<ServerBehavior>($"/api/v1");
         _server.Start();
 
-        ITickingCallback.AddTickingCallback(new HeartbeatSender());
+        // ITickingCallback.AddTickingCallback(new HeartbeatSender());
 
         Console.WriteLine($"Server started at ws://{_server.Address}:{config.Port}/api/v1");
         Console.ReadKey();
