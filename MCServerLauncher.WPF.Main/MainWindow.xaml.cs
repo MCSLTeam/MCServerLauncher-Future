@@ -13,7 +13,6 @@ namespace MCServerLauncher.WPF.Main
     /// </summary>
     public partial class MainWindow : Window
     {
-
         private Page Home = new HomePage();
         private Page CreateInstance = new CreateInstancePage();
         private Page InstanceManager = new InstanceManagerPage();
@@ -24,7 +23,7 @@ namespace MCServerLauncher.WPF.Main
         public MainWindow()
         {
             InitializeComponent();
-            CurrentPage.Content = Home;
+            CurrentPage.Navigate(Home, new DrillInNavigationTransitionInfo());
         }
 
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
