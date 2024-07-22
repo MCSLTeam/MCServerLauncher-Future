@@ -24,12 +24,12 @@
                             <RowDefinition/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Margin="15,15,15,10" Grid.Column="0" Grid.Row="0" Text="实例 RAM 占用" VerticalAlignment="Top"/>
-                        <TextBlock Margin="15,15,15,10" Grid.Column="1" Grid.Row="0" x:Name="MemoryStatusTextBlock" Text="0.00 MB / 1145.14 MB" TextAlignment="Right"/>
-                        <ui:ProgressBar Grid.ColumnSpan="2" Grid.Row="1" Value="50" x:Name="MemoryStatusProgressBar" VerticalAlignment="Bottom"/>
+                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="实例 RAM 占用" VerticalAlignment="Top"/>
+                        <TextBlock Margin="15,15,15,12" Grid.Column="1" Grid.Row="0" x:Name="MemoryStatusTextBlock" Text="114.51 MB / 1145.14 MB" TextAlignment="Right"/>
+                        <ui:ProgressBar Grid.ColumnSpan="2" Grid.Row="1" Value="9.99" x:Name="MemoryStatusProgressBar" VerticalAlignment="Bottom"/>
                     </Grid>
                 </Border>
-                <Border Style="{StaticResource StyledBorder}" Padding="15">
+                <Border Style="{StaticResource StyledBorder}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -40,19 +40,19 @@
                             <RowDefinition/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Column="0" Grid.Row="0" Text="实例 CPU 占用" Margin="0,0,10,0" VerticalAlignment="Top"/>
-                        <ui:ProgressBar Grid.Column="1" Grid.Row="0" Value="50" x:Name="CPUStatusProgressBar" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Grid.Row="1" x:Name="CPUStatusTextBlock" Text="11.45 %" TextAlignment="Right"/>
+                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="实例 CPU 占用" VerticalAlignment="Top"/>
+                        <TextBlock Margin="15,15,15,12" Grid.Column="1" Grid.Row="0" x:Name="CPUStatusTextBlock" Text="11.45 %" TextAlignment="Right"/>
+                        <ui:ProgressBar Grid.ColumnSpan="2" Grid.Row="1" Value="11.45" x:Name="CPUStatusProgressBar" VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
-                <Border Style="{StaticResource StyledBorder}" Padding="15">
+                <Border Style="{StaticResource StyledBorder}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="当前 WebSocket 延迟" Margin="0,0,10,0" VerticalAlignment="Top"/>
-                        <TextBlock Grid.Column="1" x:Name="WebSocketPingStatusTextBlock" Text="11 ms" TextAlignment="Right"/>
+                        <TextBlock Margin="15,15,15,10" Grid.Column="0" Text="当前 WebSocket 延迟" VerticalAlignment="Top"/>
+                        <TextBlock Margin="15,15,15,15" Grid.Column="1" x:Name="WebSocketPingStatusTextBlock" Text="11 ms" TextAlignment="Right"/>
                     </Grid>
                 </Border>
             </ikw:SimpleStackPanel>
