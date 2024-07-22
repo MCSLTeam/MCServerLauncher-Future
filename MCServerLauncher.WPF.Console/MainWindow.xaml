@@ -7,26 +7,28 @@
         ui:ThemeManager.IsThemeAware="True"
         ui:WindowHelper.SystemBackdropType="Mica"
         ui:WindowHelper.UseModernWindowStyle="True"
-        ui:TitleBar.ExtendViewIntoTitleBar="False"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
         ui:TitleBar.IsIconVisible="True"
         ui:TitleBar.Height="40"
         ui:TitleBar.IsBackEnabled="False"
         ui:TitleBar.IsBackButtonVisible="False"
-        Title=" 控制台 - "
+        Title="控制台 - "
         MinHeight="600"
         MinWidth="330"
-        Height="600" 
-        Width="900">
+        Height="700" 
+        Width="1000">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Margin="10,0,0,0">
+        <Grid Grid.Row="0" Margin="10,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality" Source="Resources/MCServerLauncherFuture.ico" Width="20" Height="20"/>
+            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="控制台 - " HorizontalAlignment="Left"/>
         </Grid>
         <!-- 导航 -->
         <ui:NavigationView x:Name="NavView" 
@@ -54,6 +56,11 @@
                 <ui:NavigationViewItem Content="计划任务" Tag="MCServerLauncher.WPF.Console.View.SchedulePage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SetHistoryStatus2}" FontSize="16"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="组件管理" Tag="MCServerLauncher.WPF.Console.View.SchedulePage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Puzzle}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="其他功能" Tag="MCServerLauncher.WPF.Console.View.OthersPage">

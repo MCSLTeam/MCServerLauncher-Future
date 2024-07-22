@@ -115,6 +115,21 @@
     <Compile Include="View\BoardPage.xaml.cs">
       <DependentUpon>BoardPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\MinecraftBedrockInstancePlayerList.xaml.cs">
+      <DependentUpon>MinecraftBedrockInstancePlayerList.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\MinecraftBedrockInstanceAddress.xaml.cs">
+      <DependentUpon>MinecraftBedrockInstanceAddress.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\MinecraftJavaInstanceAddress.xaml.cs">
+      <DependentUpon>MinecraftJavaInstanceAddress.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\MinecraftJavaInstancePlayerList.xaml.cs">
+      <DependentUpon>MinecraftJavaInstancePlayerList.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\PlayerItem.xaml.cs">
+      <DependentUpon>PlayerItem.xaml</DependentUpon>
+    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -130,6 +145,26 @@
     <Page Include="View\BoardPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\MinecraftBedrockInstancePlayerList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\MinecraftBedrockInstanceAddress.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\MinecraftJavaInstanceAddress.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\MinecraftJavaInstancePlayerList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\PlayerItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
