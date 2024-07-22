@@ -35,7 +35,7 @@ namespace MCServerLauncher.Daemon
 
             #region InstanceCreation
             Directory.CreateDirectory(Path.Combine("Data", "InstanceData", InstanceName));
-            File.Copy(OriginalServerCorePath,Path.Combine("Data", "InstanceData", InstanceName, Path.GetFileName(OriginalServerCorePath)));
+            File.Copy(OriginalServerCorePath, Path.Combine("Data", "InstanceData", InstanceName, Path.GetFileName(OriginalServerCorePath)));
             await WriteMinecraftJavaInstanceConfig(instanceConfig);
             #endregion
         }

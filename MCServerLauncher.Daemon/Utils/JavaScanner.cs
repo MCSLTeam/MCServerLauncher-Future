@@ -5,12 +5,12 @@
    otherwise you may be prosecuted for violating the law.
    Copyright (c) 2022-2024 MCSLTeam. All rights reserved.
 --------------------------------------------------------------------------------------------- */
+using MCServerLauncher.Daemon.Helpers;
 using Newtonsoft.Json;
 using Serilog;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using MCServerLauncher.Daemon.Helpers;
 
 namespace MCServerLauncher.Daemon.Utils
 {
@@ -89,7 +89,7 @@ namespace MCServerLauncher.Daemon.Utils
         private bool IsMatchedKey(string Path)
         {
             foreach (string excludedKey in ExcludedKeys)
-            { 
+            {
                 if (Path.Contains(excludedKey))
                 {
                     return false;
@@ -98,7 +98,7 @@ namespace MCServerLauncher.Daemon.Utils
             foreach (string matchedKey in MatchedKeys)
             {
                 if (Path.Contains(matchedKey))
-                { 
+                {
                     return true;
                 }
             }
@@ -138,7 +138,8 @@ namespace MCServerLauncher.Daemon.Utils
         private async Task<List<Process>> SingleScanJob(string WorkingPath, Func<string, bool> Matcher)
         {
             List<Process> JavaProcesses = new();
-            if (File.Exists(WorkingPath)) {
+            if (File.Exists(WorkingPath))
+            {
                 return JavaProcesses; // Skip if it is a file
             }
             try
@@ -162,7 +163,7 @@ namespace MCServerLauncher.Daemon.Utils
                     else { }
                 }
             }
-            catch (UnauthorizedAccessException) {  }
+            catch (UnauthorizedAccessException) { }
             catch (Exception ex) { Log.Error($"[JVM] A error occured while searching dir \"{WorkingPath}\", Reason: {ex.Message}"); }
             return JavaProcesses;
         }
@@ -171,7 +172,7 @@ namespace MCServerLauncher.Daemon.Utils
             Log.Information("[JVM] Start scanning available Java");
 
             List<JavaInfo> PossibleJavaPathList = new();
-            if(BasicUtils.IsWindows())
+            if (BasicUtils.IsWindows())
                 for (var i = 65; i <= 90; i++)
                 {
                     string drive = $"{(char)i}:\\";

@@ -36,9 +36,9 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         internal class Empty
         {
-            public class Request {}
+            public class Request { }
 
-            public class Response {}
+            public class Response { }
 
             public static Request RequestOf(JObject data)
             {
@@ -73,7 +73,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
             public static Response ResponseOf(Guid FileId)
             {
-                return new Response { FileId = FileId  };
+                return new Response { FileId = FileId };
             }
         }
 
@@ -99,7 +99,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
             public static Response ResponseOf(bool Done, long Received)
             {
-                return new Response { Done = Done, Received = Received  };
+                return new Response { Done = Done, Received = Received };
             }
         }
 
@@ -125,11 +125,11 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
             public static Response ResponseOf(Guid Token, long Expired)
             {
-                return new Response { Token = Token, Expired = Expired  };
+                return new Response { Token = Token, Expired = Expired };
             }
         }
     }
-    
+
     /// <summary>
     /// Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
     /// </summary>
@@ -176,7 +176,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 i > 0 && char.IsUpper(x) ? "_" + x.ToString().ToLowerInvariant() : x.ToString().ToLowerInvariant()));
         }
     }
-    
+
     /// <summary>
     /// 解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
     /// </summary>
