@@ -1,13 +1,15 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.FileManagement
 {
-    internal class FileManager
+    internal static class FileManager
     {
-        public static readonly string ROOT = "mcsl_future";
+        public const string Root = "mcsl_future";
         private static ConcurrentDictionary<Guid, FileUploadInfo> _uploadSessions = new();
 
         /// <summary>
@@ -26,7 +28,7 @@ namespace MCServerLauncher.Daemon.FileManagement
                 return Guid.Empty;
             }
 
-            var fileName = Path.Combine(ROOT, path);
+            var fileName = Path.Combine(Root, path);
 
             // check if file is uploading
             foreach (var info in _uploadSessions.Values)
@@ -51,7 +53,7 @@ namespace MCServerLauncher.Daemon.FileManagement
                 _uploadSessions.TryAdd(guid, new FileUploadInfo(fileName, size, chunkSize, sha1, fs));
                 return guid;
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 return Guid.Empty;
             }
@@ -132,6 +134,61 @@ namespace MCServerLauncher.Daemon.FileManagement
                     return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                 }
             });
+        }
+
+        /// <summary>
+        ///  读取文件，读取成功后创建备份
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private static string ReadTextAndBackup([NotNull] string path)
+        {
+            var text = File.ReadAllText(path!);
+            if (File.Exists(path)) File.Copy(path, path + ".bak", true);
+            return text;
+        }
+
+        /// <summary>
+        /// 读取json，读取成功后创建备份。可能会抛出IO异常和Json异常
+        /// </summary>
+        /// <param name="path"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T ReadJsonAndBackup<T>([NotNull] string path)
+        {
+            return JsonConvert.DeserializeObject<T>(ReadTextAndBackup(path));
+        }
+
+        /// <summary>
+        /// 读取json，读取成功后创建备份。如果文件不存在，则调用defaultFactory, 并写入文件
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="defaultFactory"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T ReadJsonAndBackupOr<T>([NotNull] string path, Func<T> defaultFactory)
+        {
+            try
+            {
+                return ReadJsonAndBackup<T>(path);
+            }
+            catch (FileNotFoundException)
+            {
+                var invoke = defaultFactory.Invoke();
+                File.WriteAllText(path!, JsonConvert.SerializeObject(invoke));
+                return invoke;
+            }
+        }
+
+        private static void BackupAndWriteText([NotNull] string path, string text)
+        {
+            if (File.Exists(path)) File.Copy(path, path + ".bak", true);
+            File.WriteAllText(path!, text);
+        }
+
+        public static void WriteJsonAndBackup([NotNull] string path, object obj)
+        {
+            BackupAndWriteText(path, JsonConvert.SerializeObject(obj));
         }
     }
 }

@@ -30,8 +30,6 @@ namespace MCServerLauncher.Daemon.Remote.Action
                     ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
                     ActionType.Message => MessageHandler(Actions.Empty.RequestOf(data)),
                     ActionType.Ping => PingHandler(Actions.Empty.RequestOf(data)),
-                    ActionType.NewToken => NewTokenHandler(Actions.NewToken.RequestOf(data)),
-
                     _ => throw new NotImplementedException()
                 };
             }
@@ -51,23 +49,6 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 { "done", done },
                 { "received", received }
             });
-        }
-
-        private Dictionary<string, object> NewTokenHandler(Actions.NewToken.Request data)
-        {
-            // TODO 实现data.Permission
-            return data.Type switch
-            {
-                TokenType.Temporary =>
-                    ServerBehavior.Config.TryCreateTemporaryToken(data.Seconds, out var token, out var expired)
-                        ? Ok(new Dictionary<string, object>
-                        {
-                            { "token", token },
-                            { "expired", new DateTimeOffset(expired).ToUnixTimeSeconds() }
-                        })
-                        : Error("Failed to create temporary token", ActionType.NewToken, 1402),
-                _ => Error($"Token Type {data.Type} is not implemented", ActionType.NewToken, 1403)
-            };
         }
 
         private Dictionary<string, object> FileUploadRequestHandler(Actions.FileUploadRequest.Request data)

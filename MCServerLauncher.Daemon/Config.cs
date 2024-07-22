@@ -1,26 +1,30 @@
+using MCServerLauncher.Daemon.FileManagement;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace MCServerLauncher.Daemon
 {
     internal class Config
     {
-        public readonly UInt16 Port;
-        public readonly string PersistentToken;
-        private Dictionary<string, DateTime> TemporaryTokens;
+        [JsonIgnore] private static Config _config;
 
-        public Config(UInt16 Port, string PersistentToken, Dictionary<string, DateTime> TemporaryTokens)
+        public readonly ushort Port;
+        public readonly string Secret;
+        public readonly string Token;
+
+        public Config(ushort Port, string Secret, string Token)
         {
             this.Port = Port;
-            this.PersistentToken = PersistentToken;
-            this.TemporaryTokens = TemporaryTokens;
+            this.Secret = Secret;
+            this.Token = Token;
         }
 
-        public static Config Default()
+        private static Config GetDefault()
         {
-            return new Config(11451, GetRandomToken(), new Dictionary<string, DateTime>());
+            return new Config(11451, GetRandomSecret(),Guid.NewGuid().ToString());
         }
 
-        private static string GetRandomToken()
+        private static string GetRandomSecret()
         {
             return Guid.NewGuid().ToString();
         }
@@ -33,75 +37,21 @@ namespace MCServerLauncher.Daemon
                 File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
                 return true;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Log.Fatal($"Failed to save config file: {e.Message}");
                 return false;
             }
         }
 
-        private static Config Load(string path = "config.json")
+        private static Config LoadOrDefault(string path = "config.json")
         {
-            var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
-            var deletes = new HashSet<string>();
-            
-            
-            // scan and remove expired temporary tokens
-            if (config.TemporaryTokens != null)
-            {
-                foreach (var (token, expired) in config.TemporaryTokens)
-                {
-                    if (expired < DateTime.Now) deletes.Add(token);
-                }
-
-                foreach (var token in deletes)
-                {
-                    config.TemporaryTokens.Remove(token);
-                }
-            }
-
-            if (deletes.Count > 0) config.TrySave(path);
-            return config;
+            return FileManager.ReadJsonAndBackupOr(path, GetDefault);
         }
 
-        public bool TryCreateTemporaryToken(long seconds, out string token, out DateTime expired)
+        public static Config Get()
         {
-            return TryUpdateTemporaryTokens(token = GetRandomToken(), seconds, out expired);
-        }
-
-        public bool TryUpdateTemporaryTokens(string Token, long seconds, out DateTime expired)
-        {
-            expired = DateTime.Now.AddSeconds(seconds);
-            TemporaryTokens[Token] = expired;
-            return TrySave();
-        }
-
-        public bool ValidateTemporaryToken(string token)
-        {
-            if (TemporaryTokens.ContainsKey(token))
-            {
-                if (TemporaryTokens[token] > DateTime.Now) return true;
-
-                TemporaryTokens.Remove(token);
-                TrySave();
-            }
-
-            return false;
-        }
-
-        public static bool TryLoadOrDefault(string path, out Config config)
-        {
-            try
-            {
-                config = Load(path);
-                config.TemporaryTokens = config.TemporaryTokens ?? new Dictionary<string, DateTime>();
-                return true;
-            }
-            catch (Exception)
-            {
-                config = Default();
-                config.TrySave(path);
-                return false;
-            }
+            return _config ??= LoadOrDefault();
         }
     }
 }
