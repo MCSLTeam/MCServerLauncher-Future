@@ -52,6 +52,7 @@ public class JwtUtils
             IssuerSigningKey = SecurityKey,
             ValidIssuer = "MCServerLauncher.Daemon",
             ValidAudience = "MCServerLauncher.Daemon",
+            ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
         };
         var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(token, tokenValidationParameters, out _);
         return (claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value, claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
