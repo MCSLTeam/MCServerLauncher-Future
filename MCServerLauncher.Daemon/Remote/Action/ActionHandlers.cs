@@ -8,12 +8,10 @@ namespace MCServerLauncher.Daemon.Remote.Action
 {
     internal class ActionHandlers
     {
-        private readonly Logger _log;
         private readonly WebSocketContext _ctx;
 
-        public ActionHandlers(WebSocketContext ctx, Logger logger)
+        public ActionHandlers(WebSocketContext ctx)
         {
-            _log = logger;
             _ctx = ctx;
         }
 
@@ -77,7 +75,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         private Dictionary<string, object> Error(string message, ActionType type, int code = 1400)
         {
-            _log.Error($"Error while handling Action {type}: {message}");
+            LogHelper.Error($"Error while handling Action {type}: {message}");
             return new Dictionary<string, object>
             {
                 { "status", "error" },

@@ -28,7 +28,7 @@ public class Server
                     e.Response.ContentLength64 = buffer.Length;
                     e.Response.StatusCode = 200;
                     e.Response.OutputStream.Write(buffer, 0, buffer.Length);
-                    Console.WriteLine($"Login Success: {usr}, token will expire in {expired}s");
+                    LogHelper.Info($"Login Success: {usr}, token will expire in {expired}s");
                 }
                 else
                 {
@@ -66,7 +66,6 @@ public class Server
     {
         // ws
         var server = new HttpServer(Config.Get().Port);
-        server.Log.Level = LogLevel.Info;
         server.AddWebSocketService<ServerBehavior>("/api/v1");
 
         // http
@@ -77,8 +76,8 @@ public class Server
 
         // start
         server.Start();
-        Console.WriteLine($"Ws Server started at ws://{server.Address}:{server.Port}/api/v1");
-        Console.WriteLine($"Http Server started at http://{server.Address}:{server.Port}/");
+        LogHelper.Info($"Ws Server started at ws://{server.Address}:{server.Port}/api/v1");
+        LogHelper.Info($"Http Server started at http://{server.Address}:{server.Port}/");
         Console.ReadKey();
         server.Stop();
     }

@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Daemon.FileManagement;
-using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
@@ -113,7 +112,7 @@ public static class Users
             ["admin"] = new(PasswordHasher.HashPassword(pwd = Guid.NewGuid().ToString()), PermissionGroups.Admin, null),
         };
 
-        Console.WriteLine($"*** Default user created: admin, password: {pwd} ***", pwd);
+        LogHelper.Info($"*** Default user created: admin, password: {pwd} ***");
         return defaultUserMap;
     }
 

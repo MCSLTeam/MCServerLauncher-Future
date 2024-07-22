@@ -16,9 +16,10 @@ public class ServerBehavior : WebSocketBehavior
     private readonly ActionHandlers _handlers;
     private User User;
 
+    
     public ServerBehavior()
     {
-        _handlers = new ActionHandlers(Context, Log);
+        _handlers = new ActionHandlers(Context);
     }
 
     protected override void OnOpen()
@@ -34,17 +35,17 @@ public class ServerBehavior : WebSocketBehavior
         }
         catch (Exception e)
         {
-            Log.Error($"Failed to authenticate user: {e.Message}");
+            LogHelper.Error($"Failed to authenticate user: {e.Message}");
         }
 
         if (!authenticated)
         {
             Sessions.CloseSession(ID, CloseStatusCode.ProtocolError, "Authentication failed");
-            Log.Info($"Rejected connection from {IpAddress} for invalid token.");
+            LogHelper.Info($"Rejected connection from {IpAddress} for invalid token.");
             return;
         }
 
-        Log.Info($"{IpAddress} connected:\n With info: {User}");
+        LogHelper.Info($"{IpAddress} connected:\n With info: {User}");
     }
 
     private static bool ValidateToken(string token)
@@ -57,7 +58,7 @@ public class ServerBehavior : WebSocketBehavior
     {
         if (e.IsText)
         {
-            Log.Info($"Received message: \n{e.Data}\n");
+            LogHelper.Info($"Received message: \n{e.Data}\n");
 
             var (actionType, echo, parameters) = ParseMessage(e.Data);
 
@@ -72,19 +73,19 @@ public class ServerBehavior : WebSocketBehavior
 
             // TODO:生产环境应把缩进取消
             var text = JsonConvert.SerializeObject(data, Formatting.Indented);
-            Log.Info($"Sending message: \n{text}\n");
+            LogHelper.Info($"Sending message: \n{text}\n");
             Send(text);
         }
     }
 
     protected override void OnError(ErrorEventArgs e)
     {
-        Log.Error($"Exception encountered: \n{e.Exception}\n");
+        LogHelper.Error($"Exception encountered: \n{e.Exception}\n");
     }
 
     protected override void OnClose(CloseEventArgs e)
     {
-        Log.Info($"Connection({IpAddress}) closed");
+        LogHelper.Info($"Connection({IpAddress}) closed");
     }
 
     private static (ActionType, string, JObject) ParseMessage(string message)
