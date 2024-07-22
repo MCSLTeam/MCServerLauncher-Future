@@ -13,7 +13,7 @@ namespace MCServerLauncher.Daemon
             Console.WriteLine("MCServerLauncher.Daemon");
             BasicUtils.InitApp();
             TestJavaScanner();
-            ServerBehavior.Test();
+            Server.Start();
         }
 
         public static async void TestJavaScanner()

@@ -8,12 +8,10 @@ namespace MCServerLauncher.Daemon.Remote.Action
 {
     internal class ActionHandlers
     {
-        private readonly Logger _log;
         private readonly WebSocketContext _ctx;
 
-        public ActionHandlers(WebSocketContext ctx, Logger logger)
+        public ActionHandlers(WebSocketContext ctx)
         {
-            _log = logger;
             _ctx = ctx;
         }
 
@@ -30,8 +28,6 @@ namespace MCServerLauncher.Daemon.Remote.Action
                     ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
                     ActionType.Message => MessageHandler(Actions.Empty.RequestOf(data)),
                     ActionType.Ping => PingHandler(Actions.Empty.RequestOf(data)),
-                    ActionType.NewToken => NewTokenHandler(Actions.NewToken.RequestOf(data)),
-
                     _ => throw new NotImplementedException()
                 };
             }
@@ -51,23 +47,6 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 { "done", done },
                 { "received", received }
             });
-        }
-
-        private Dictionary<string, object> NewTokenHandler(Actions.NewToken.Request data)
-        {
-            // TODO 实现data.Permission
-            return data.Type switch
-            {
-                TokenType.Temporary =>
-                    ServerBehavior.Config.TryCreateTemporaryToken(data.Seconds, out var token, out var expired)
-                        ? Ok(new Dictionary<string, object>
-                        {
-                            { "token", token },
-                            { "expired", new DateTimeOffset(expired).ToUnixTimeSeconds() }
-                        })
-                        : Error("Failed to create temporary token", ActionType.NewToken, 1402),
-                _ => Error($"Token Type {data.Type} is not implemented", ActionType.NewToken, 1403)
-            };
         }
 
         private Dictionary<string, object> FileUploadRequestHandler(Actions.FileUploadRequest.Request data)
@@ -96,7 +75,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         private Dictionary<string, object> Error(string message, ActionType type, int code = 1400)
         {
-            _log.Error($"Error while handling Action {type}: {message}");
+            LogHelper.Error($"Error while handling Action {type}: {message}");
             return new Dictionary<string, object>
             {
                 { "status", "error" },

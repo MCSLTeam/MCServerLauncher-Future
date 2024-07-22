@@ -25,6 +25,5 @@ namespace MCServerLauncher.Daemon.Remote.Action
         Ping,
         FileUploadRequest,
         FileUploadChunk,
-        NewToken,
     }
 }
