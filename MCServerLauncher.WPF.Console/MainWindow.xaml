@@ -12,6 +12,7 @@
         ui:TitleBar.Height="40"
         ui:TitleBar.IsBackEnabled="False"
         ui:TitleBar.IsBackButtonVisible="False"
+        Title=" 控制台 - "
         MinHeight="600"
         MinWidth="330"
         Height="600" 
@@ -30,6 +31,7 @@
         <!-- 导航 -->
         <ui:NavigationView x:Name="NavView" 
                            IsPaneOpen="False"
+                           ItemInvoked="NavigationTriggered"
                            IsBackButtonVisible="Collapsed"
                            PaneDisplayMode="Top"
                            Grid.Row="1">
@@ -39,7 +41,7 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AllApps}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="实时终端" Tag="MCServerLauncher.WPF.Console.View.ConsolePage" IsSelected="True">
+                <ui:NavigationViewItem Content="实时终端" Tag="MCServerLauncher.WPF.Console.View.ConsolePage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CommandPrompt}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
@@ -54,8 +56,6 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SetHistoryStatus2}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-            </ui:NavigationView.MenuItems>
-            <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="其他功能" Tag="MCServerLauncher.WPF.Console.View.OthersPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16"/>
@@ -66,7 +66,7 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-            </ui:NavigationView.FooterMenuItems>
+            </ui:NavigationView.MenuItems>
             <ui:Frame x:Name="CurrentPage"/>
         </ui:NavigationView>
     </Grid>
