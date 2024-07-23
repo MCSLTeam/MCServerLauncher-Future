@@ -13,6 +13,7 @@ namespace MCServerLauncher.WPF.Console
     public partial class MainWindow : Window
     {
         private Page Board = new BoardPage();
+        private Page Command = new CommandPage();
         public MainWindow()
         {
             InitializeComponent();
@@ -34,11 +35,16 @@ namespace MCServerLauncher.WPF.Console
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             Type preNavPageType = CurrentPage.Content.GetType();
-            if (navPageType is not null && !Equals(navPageType, preNavPageType))
+            if (navPageType is not null && navPageType != preNavPageType)
             {
-                if (navPageType == typeof(BoardPage))
+                switch (navPageType)
                 {
-                    CurrentPage.Navigate(Board);
+                    case Type t when t == typeof(BoardPage):
+                        CurrentPage.Navigate(Board, new SlideNavigationTransitionInfo());
+                        break;
+                    case Type t when t == typeof(CommandPage):
+                        CurrentPage.Navigate(Command, new SlideNavigationTransitionInfo());
+                        break;
                 }
             }
         }

@@ -41,7 +41,7 @@ namespace MCServerLauncher.WPF.Main
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             Type preNavPageType = CurrentPage.Content.GetType();
-            if (navPageType is not null && !Equals(navPageType, preNavPageType))
+            if (navPageType is not null && navPageType != preNavPageType)
             {
                 switch (navPageType)
                 {
