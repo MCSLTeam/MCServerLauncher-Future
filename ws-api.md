@@ -32,7 +32,7 @@
 | chunk_size | long | 分块传输的分块大小       |
 | size       | long | 文件总大小               |
 
-##### 应答
+##### 响应
 
 ```json
 {
@@ -80,7 +80,7 @@
 | offset  | long | 分块偏移量          |
 | data    | str  | 字符串形式的bytes[] |
 
-##### 应答
+##### 响应
 
 ```json
 {
@@ -100,44 +100,38 @@
 
 
 
-### NewToken
+### FileUploadCancel
 
-新建token的请求，包括创建临时，永久以及带自定义权限的token
+通过file_id取消上传的任务
+
+后端接受到此请求后:
+
+1. 从uploadSessions取出该上传info
+2. 关闭文件指针，并删除临时文件
 
 ##### 请求
 
 ```json
 {
-    "action": "new_token",
+    "action": "file_upload_cancel",
     "params":{
-        "type": "temporary",
-        "seconds":86400,
-        "permissions":[]
+        "file_id": "..."
     }
 }
 ```
 
-| 参数名      | 值                             | 含义                                               |
-| ----------- | ------------------------------ | -------------------------------------------------- |
-| type        | enum("temporary", "permanent") | 创建的Token类型                                    |
-| seconds     | long                           | 临时token的过期时长(s) (若类型为永久,该参数无意义) |
-| permissions | list[bool]                     | 权限                                               |
+| 参数名  | 值   | 含义                    |
+| ------- | ---- | ----------------------- |
+| file_id | str  | 要取消上传任务的file_id |
 
-##### 应答
+##### 响应
 
 ```json
 {
     "status": "ok",
     "retcode": 0,
-    "data": {
-        "token": "巴拉巴拉",
-        "expired": 16777777777
-    }
+    "data": {}
 }
 ```
 
-| 参数名  | 值     | 含义                |
-| ------- | ------ | ------------------- |
-| token   | string | 请求的token         |
-| expired | long   | 到期的unix时间戳(s) |
-
+该响应无参数

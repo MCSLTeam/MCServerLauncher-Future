@@ -19,12 +19,8 @@ actions:
         done: bool
         received: long
         
-  - new_token:
+  - file_upload_cancel:
       req:
-        type: TokenType
-        seconds: long
-        permission: bool[]
+        file_id: Guid
       
       resp:
-        token: Guid
-        expired: long

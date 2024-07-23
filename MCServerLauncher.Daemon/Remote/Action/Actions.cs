@@ -36,9 +36,9 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         internal class Empty
         {
-            public class Request { }
+            public class Request {}
 
-            public class Response { }
+            public class Response {}
 
             public static Request RequestOf(JObject data)
             {
@@ -73,7 +73,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
             public static Response ResponseOf(Guid FileId)
             {
-                return new Response { FileId = FileId };
+                return new Response { FileId = FileId  };
             }
         }
 
@@ -99,23 +99,20 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
             public static Response ResponseOf(bool Done, long Received)
             {
-                return new Response { Done = Done, Received = Received };
+                return new Response { Done = Done, Received = Received  };
             }
         }
 
-        public class NewToken
+        public class FileUploadCancel
         {
             public class Request
             {
-                public TokenType Type;
-                public long Seconds;
-                public bool[] Permission;
+                public Guid FileId;
             }
 
             public class Response
             {
-                public Guid Token;
-                public long Expired;
+
             }
 
             public static Request RequestOf(JObject data)
@@ -123,11 +120,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 return Deserialize<Request>(data);
             }
 
-            public static Response ResponseOf(Guid Token, long Expired)
+            public static Response ResponseOf()
             {
-                return new Response { Token = Token, Expired = Expired };
+                return new Response {   };
             }
         }
+
     }
 
     /// <summary>
@@ -176,7 +174,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 i > 0 && char.IsUpper(x) ? "_" + x.ToString().ToLowerInvariant() : x.ToString().ToLowerInvariant()));
         }
     }
-
+    
     /// <summary>
     /// 解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
     /// </summary>

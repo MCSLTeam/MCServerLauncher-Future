@@ -169,6 +169,17 @@ field_pattern = """                public {T} {field_name};"""
 func_arg_pattern = """{T} {field_name}"""
 struct_decl_pattern = """{field_name} = {arg_name}"""
 
+action_type_pattern = """namespace {namespace}
+{
+    internal enum ActionType
+    {
+        Message,
+        Ping,
+{action_types}
+    }
+}"""
+
+
 def snake2big_camel(name:str):
     return ''.join([x.capitalize() for x in name.split('_')])
 
@@ -184,7 +195,7 @@ def yml2cs(actions:list[dict[str,dict[str,str]]], namespace:str, outer_class_nam
 
         request_fields = []
         # request fields
-        request = class_data['req']
+        request = class_data['req'] or []
         for field in request:
             request_fields.append(field_pattern.replace('{T}',request[field]).replace('{field_name}',_(field)))
         request_fields_str = '\n'.join(request_fields)
@@ -192,7 +203,7 @@ def yml2cs(actions:list[dict[str,dict[str,str]]], namespace:str, outer_class_nam
 
         response_fields = []
         # response fields
-        response = class_data['resp']
+        response = class_data['resp'] or []
         for field in response:
             response_fields.append(field_pattern.replace('{T}',response[field]).replace('{field_name}',_(field)))
         response_fields_str = '\n'.join(response_fields)
@@ -210,6 +221,20 @@ def yml2cs(actions:list[dict[str,dict[str,str]]], namespace:str, outer_class_nam
     
     classes_str = ''.join(classes)
     return cs.replace('{namespace}',namespace).replace('{class_name}',_(outer_class_name)).replace('{classes}',classes_str)
+
+def yml2enum(actions:list[dict[str,dict[str,str]]], namespace:str):
+    _ = snake2big_camel
+
+    action_types = []
+
+    for action in actions:
+        class_name = list(action.keys())[0]
+        action_types.append(f"        {_(class_name)}")
+
+    action_types_str = ',\n'.join(action_types)
+
+    return action_type_pattern.replace('{namespace}',namespace).replace('{action_types}',action_types_str)
+
 
 
 def main():
@@ -234,6 +259,15 @@ def main():
         p = proj_root.joinpath(out_path)
         p.parent.mkdir(parents=True,exist_ok=True)
         p.write_text(source,encoding='utf-8')
+
+    enum_source = yml2enum(actions["actions"],namespace)
+    print(enum_source)
+    out_path_enum = out_path.parent / "ActionType.cs"
+    r = input(f"\n### Write to {out_path_enum.as_posix()} (y/n)\n")
+    if r.lower() == 'y':
+        p = proj_root.joinpath(out_path_enum)
+        p.parent.mkdir(parents=True,exist_ok=True)
+        p.write_text(enum_source,encoding='utf-8')
 
 
 if __name__ == '__main__':

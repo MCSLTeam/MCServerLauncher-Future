@@ -1,20 +1,10 @@
 using MCServerLauncher.Daemon.FileManagement;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using WebSocketSharp;
-using WebSocketSharp.Net.WebSockets;
 
 namespace MCServerLauncher.Daemon.Remote.Action
 {
-    internal class ActionHandlers
+    internal class ActionService : IActionService
     {
-        private readonly WebSocketContext _ctx;
-
-        public ActionHandlers(WebSocketContext ctx)
-        {
-            _ctx = ctx;
-        }
-
         public async Task<Dictionary<string, object>> Routine(
             ActionType type,
             JObject data
@@ -28,6 +18,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                     ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
                     ActionType.Message => MessageHandler(Actions.Empty.RequestOf(data)),
                     ActionType.Ping => PingHandler(Actions.Empty.RequestOf(data)),
+                    ActionType.FileUploadCancel => FileUploadCancelHandler(Actions.FileUploadCancel.RequestOf(data)),
                     _ => throw new NotImplementedException()
                 };
             }
@@ -39,7 +30,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         private async Task<Dictionary<string, object>> FileUploadChunkHandler(Actions.FileUploadChunk.Request data)
         {
-            if (data.FileId == Guid.Empty) return Error("Invalid file id", ActionType.FileUploadChunk);
+            if (data.FileId == Guid.Empty) return Err("Invalid file id", ActionType.FileUploadChunk);
 
             var (done, received) = await FileManager.FileUploadChunk(data.FileId, data.Offset, data.Data);
             return Ok(new Dictionary<string, object>
@@ -58,8 +49,8 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 data.Sha1
             );
 
-            return (fileId == Guid.Empty)
-                ? Error("Failed to pre-allocate space", ActionType.FileUploadRequest, 1401)
+            return fileId == Guid.Empty
+                ? Err("Failed to pre-allocate space", ActionType.FileUploadRequest, 1401)
                 : Ok(new Dictionary<string, object> { { "file_id", fileId } });
         }
 
@@ -73,7 +64,14 @@ namespace MCServerLauncher.Daemon.Remote.Action
             return Ok(new Dictionary<string, object> { { "pong_time", DateTime.Now } });
         }
 
-        private Dictionary<string, object> Error(string message, ActionType type, int code = 1400)
+        private Dictionary<string, object> FileUploadCancelHandler(Actions.FileUploadCancel.Request data)
+        {
+            return FileManager.FileUploadCancel(data.FileId)
+                ? Ok()
+                : Err("Failed to cancel file upload", ActionType.FileUploadCancel, 1402);
+        }
+
+        private Dictionary<string, object> Err(string message, ActionType type, int code = 1400)
         {
             LogHelper.Error($"Error while handling Action {type}: {message}");
             return new Dictionary<string, object>
@@ -111,6 +109,16 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 { "status", "ok" },
                 { "retcode", 0 },
                 { "data", data }
+            };
+        }
+
+        private Dictionary<string, object> Ok()
+        {
+            return new Dictionary<string, object>
+            {
+                { "status", "ok" },
+                { "retcode", 0 },
+                { "data", new Dictionary<string, object>() }
             };
         }
     }
