@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
-using Serilog;
 
 namespace MCServerLauncher.Daemon.FileManagement
 {
@@ -70,7 +69,9 @@ namespace MCServerLauncher.Daemon.FileManagement
         /// <exception cref="Exception"></exception>
         public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, string strData)
         {
-            var info = _uploadSessions[id]!;
+            if (!_uploadSessions.TryGetValue(id, out var info))
+                throw  new Exception("file not found");
+            
             if (offset < 0L || offset >= info.Size) throw new Exception("offset out of range");
 
             var data = Encoding.BigEndianUnicode.GetBytes(strData);
@@ -101,14 +102,24 @@ namespace MCServerLauncher.Daemon.FileManagement
             // rename tmp file to its origin name
             File.Move(info.FileName + ".tmp", info.FileName, true);
 
-            if (sha1 == info.Sha1)
-            {
-                _uploadSessions.TryRemove(id, out _);
-                Log.Debug($"[FileUploadChunk] file upload complete, sha1 matched, accepted.");
-                return (true, info.Size - info.RemainLength);
-            }
+            if (sha1 != info.Sha1) throw new Exception("SHA1 mismatch");
 
-            throw new Exception("SHA1 mismatch");
+            _uploadSessions.TryRemove(id, out _);
+            Log.Debug($"[FileUploadChunk] file upload complete, sha1 matched, accepted.");
+            return (true, info.Size - info.RemainLength);
+        }
+
+        public static bool FileUploadCancel(Guid id)
+        {
+            if (_uploadSessions.TryRemove(id, out var info))
+            {
+                info.File.Close();
+                // delete tmp file 
+                if (File.Exists(info.FileName + ".tmp"))
+                    File.Delete(info.FileName + ".tmp");
+                return true;
+            }
+            return false;
         }
 
         private static Task<string> FileSha1(FileStream fs, uint bufferSize = 16384)
