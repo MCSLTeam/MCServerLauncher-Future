@@ -43,7 +43,7 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AllApps}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="实时终端" Tag="MCServerLauncher.WPF.Console.View.ConsolePage">
+                <ui:NavigationViewItem Content="实时终端" Tag="MCServerLauncher.WPF.Console.View.CommandPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CommandPrompt}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>

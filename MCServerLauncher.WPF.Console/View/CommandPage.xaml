@@ -1,0 +1,54 @@
+﻿<Page x:Class="MCServerLauncher.WPF.Console.View.CommandPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+      xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+      xmlns:vc="clr-namespace:MCServerLauncher.WPF.Console.View.Components"
+      mc:Ignorable="d"
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="CommandPage">
+
+    <Grid Margin="35,0,35,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ui:CommandBar Grid.Row="0" Margin="0,15,0,0">
+            <ui:CommandBar.PrimaryCommands>
+                <ui:AppBarButton Label="打开全屏终端">
+                    <ui:AppBarButton.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.FullScreen}"/>
+                    </ui:AppBarButton.Icon>
+                </ui:AppBarButton>
+            </ui:CommandBar.PrimaryCommands>
+            <ui:CommandBar.SecondaryCommands>
+                <ui:AppBarButton Label="停止实例">
+                    <ui:AppBarButton.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.PowerButton}"/>
+                    </ui:AppBarButton.Icon>
+                </ui:AppBarButton>
+                <ui:AppBarButton Label="重启实例">
+                    <ui:AppBarButton.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
+                    </ui:AppBarButton.Icon>
+                </ui:AppBarButton>
+            </ui:CommandBar.SecondaryCommands>
+        </ui:CommandBar>
+        <TextBox Grid.Row="1" IsReadOnly="True" Margin="0,15,0,0"/>
+        <Grid Grid.Row="2" Margin="0,15,0,35">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" ui:ControlHelper.PlaceholderText="在此处输入命令，然后按下 Enter" Height="32"/>
+            <Button Grid.Column="1" Height="32" Margin="10,0,0,0">
+                <Button.Content>
+                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Send}" FontSize="16"/>
+                </Button.Content>
+            </Button>
+        </Grid>
+    </Grid>
+</Page>

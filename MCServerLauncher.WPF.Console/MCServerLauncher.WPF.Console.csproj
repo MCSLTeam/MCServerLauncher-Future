@@ -115,6 +115,9 @@
     <Compile Include="View\BoardPage.xaml.cs">
       <DependentUpon>BoardPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\CommandPage.xaml.cs">
+      <DependentUpon>CommandPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\MinecraftBedrockInstancePlayerList.xaml.cs">
       <DependentUpon>MinecraftBedrockInstancePlayerList.xaml</DependentUpon>
     </Compile>
@@ -145,6 +148,10 @@
     <Page Include="View\BoardPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\CommandPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\Components\MinecraftBedrockInstancePlayerList.xaml">
       <SubType>Designer</SubType>
