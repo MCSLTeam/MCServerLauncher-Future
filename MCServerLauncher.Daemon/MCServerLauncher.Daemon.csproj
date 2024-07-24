@@ -25,13 +25,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove=".Resources\**" />
-    <EmbeddedResource Remove=".Resources\**" />
-    <None Remove=".Resources\**" />
+    <Content Include="Resources\MCServerLauncherFutureDaemon.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Resources\MCServerLauncherFutureDaemon.ico" />
+    <None Include=".Resources\Action\actions_meta.py" />
+    <None Include=".Resources\Action\actions_meta.yml" />
+    <None Include=".Resources\Todo.md" />
   </ItemGroup>
 
   <ItemGroup>
