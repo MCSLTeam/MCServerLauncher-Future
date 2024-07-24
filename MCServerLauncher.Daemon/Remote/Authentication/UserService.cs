@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Daemon.FileManagement;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
@@ -11,9 +12,10 @@ public class UsersException : Exception
     }
 }
 
-public static class Users
+public class UserService : IUserService
 {
-    private static ConcurrentDictionary<string, UserMeta> _userMap;
+    private readonly ConcurrentDictionary<string, UserMeta> _userMap = CheckInternalAdmin(LoadUsers());
+
 
     /// <summary>
     /// 创建用户,并创建用户目录
@@ -23,7 +25,7 @@ public static class Users
     /// <param name="group">权限组</param>
     /// <param name="permissions">权限列表(PermissionGroup.Custom时才有意义)</param>
     /// <exception cref="UsersException"></exception>
-    public static void AddUser(string name, string password, PermissionGroups group, Permission[] permissions = null)
+    public void AddUser(string name, string password, PermissionGroups group, Permission[] permissions = null)
     {
         if (_userMap.ContainsKey(name)) throw new UsersException("User already exists");
 
@@ -31,6 +33,7 @@ public static class Users
             name,
             new UserMeta(PasswordHasher.HashPassword(password), group, permissions ?? Array.Empty<Permission>())
         );
+        SaveUsers();
 
         // make user directory
         Directory.CreateDirectory(Path.Combine(FileManager.Root, "users", name));
@@ -41,11 +44,12 @@ public static class Users
     /// </summary>
     /// <param name="name">用户名</param>
     /// <exception cref="UsersException"></exception>
-    public static void RemoveUser(string name)
+    public void RemoveUser(string name)
     {
         if (!_userMap.ContainsKey(name)) throw new UsersException("User does not exist");
 
         _userMap.TryRemove(name, out _);
+        SaveUsers();
 
         // delete user directory
         Directory.Delete(Path.Combine(FileManager.Root, "users", name), true);
@@ -55,12 +59,12 @@ public static class Users
     /// 获取所有用户信息的快照
     /// </summary>
     /// <returns></returns>
-    public static Dictionary<string, UserMeta> GetUsers()
+    public Dictionary<string, UserMeta> GetUsers()
     {
         return _userMap.ToDictionary(x => x.Key, x => x.Value);
     }
 
-    private static bool VerifyPassword(string name, string password)
+    private bool VerifyPassword(string name, string password)
     {
         return PasswordHasher.VerifyPassword(password,
             _userMap.TryGetValue(name, out var userMeta) ? userMeta.PasswordHash : null);
@@ -73,7 +77,7 @@ public static class Users
     /// <param name="password">密码</param>
     /// <param name="user">用户信息</param>
     /// <returns>是否登录成功</returns>
-    public static bool Authenticate([NotNull] string name, string password, [AllowNull] out UserMeta user)
+    public bool Authenticate([NotNull] string name, string password, [AllowNull] out UserMeta user)
     {
         if (VerifyPassword(name, password))
         {
@@ -84,40 +88,59 @@ public static class Users
         user = null;
         return false;
     }
-    
+
     /// <summary>
     /// 验证JWT,若验证成功则返回用户信息
     /// </summary>
     /// <param name="jwt"></param>
     /// <param name="user"></param>
     /// <returns></returns>
-    public static bool Authenticate([NotNull] string jwt, [AllowNull] out User user)
+    public bool Authenticate([NotNull] string jwt, [AllowNull] out User user)
     {
-
         var (usr, pwd) = JwtUtils.ValidateToken(jwt);
         var rv = Authenticate(usr, pwd, out var userMeta);
         user = rv ? new User(usr, userMeta) : null;
         return rv;
     }
 
-    /// <summary>
-    /// 创建包含默认管理员的UserMap,用于创建默认的users.json
-    /// </summary>
-    /// <returns></returns>
-    private static ConcurrentDictionary<string, UserMeta> GetDefault()
+    private void SaveUsers()
     {
-        string pwd;
-        var defaultUserMap = new ConcurrentDictionary<string, UserMeta>
-        {
-            ["admin"] = new(PasswordHasher.HashPassword(pwd = Guid.NewGuid().ToString()), PermissionGroups.Admin, null),
-        };
-
-        LogHelper.Info($"*** Default user created: admin, password: {pwd} ***");
-        return defaultUserMap;
+        FileManager.WriteJsonAndBackup("users.json", _userMap);
     }
 
-    public static void Init()
+    /// <summary>
+    /// 从文件加载用户信息
+    /// </summary>
+    /// <returns></returns>
+    private static ConcurrentDictionary<string, UserMeta> LoadUsers()
     {
-        _userMap = FileManager.ReadJsonAndBackupOr("users.json", GetDefault);
+        return FileManager.ReadJsonAndBackupOr("users.json", () => new ConcurrentDictionary<string, UserMeta>());
+    }
+    
+    
+    /// <summary>
+    /// 检查默认admin用户，若不存在则创建
+    /// </summary>
+    /// <param name="userMap"></param>
+    /// <returns></returns>
+    private static ConcurrentDictionary<string, UserMeta> CheckInternalAdmin(
+        ConcurrentDictionary<string, UserMeta> userMap)
+    {
+        if (!userMap.ContainsKey("admin"))
+        {
+            string pwd;
+            userMap.TryAdd(
+                "admin",
+                new UserMeta(PasswordHasher.HashPassword(pwd = Guid.NewGuid().ToString()),
+                    PermissionGroups.Admin,
+                    null)
+            );
+            
+            FileManager.WriteJsonAndBackup("users.json", userMap);
+
+            Log.Information($" [Users] *** Internal user created: admin, password: {pwd} ***");
+        }
+
+        return userMap;
     }
 }

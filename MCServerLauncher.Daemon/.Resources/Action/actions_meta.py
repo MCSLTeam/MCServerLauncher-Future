@@ -18,29 +18,9 @@ namespace {namespace}
     /// </summary>
     internal static class {class_name}
     {
-        private static JsonSerializerSettings _jsonSerializerSettings;
-
-        public static JsonSerializerSettings GetJsonSerializerSettings()
-        {
-            if (_jsonSerializerSettings == null)
-            {
-                _jsonSerializerSettings = new JsonSerializerSettings()
-                {
-                    ContractResolver = new DefaultContractResolver()
-                    {
-                        NamingStrategy = new SnakeCaseNamingStrategy()
-                    }
-                }; // snake case
-                _jsonSerializerSettings.Converters.Add(new SnakeCaseEnumConverter<TokenType>());
-                _jsonSerializerSettings.Converters.Add(new GuidJsonConverter());
-            }
-
-            return _jsonSerializerSettings;
-        }
-
         public static T Deserialize<T>(JObject data)
         {
-            return JsonConvert.DeserializeObject<T>(data.ToString(), GetJsonSerializerSettings());
+            return JsonConvert.DeserializeObject<T>(data.ToString(), JsonService.Settings);
         }
 
         internal class Empty

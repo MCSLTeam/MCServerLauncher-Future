@@ -1,13 +1,23 @@
 using System.Text;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using WebSocketSharp.Server;
 using WebSocketSharp;
 
+
 namespace MCServerLauncher.Daemon.Remote;
 
-public class Server
+public class Server : IServer
 {
-    private static void HandleHttpRequest(object sender, HttpRequestEventArgs e)
+    private readonly IServiceProvider _container;
+
+    public Server(IServiceProvider Container)
+    {
+        _container = Container;
+    }
+
+    private void HandleHttpRequest(object _, HttpRequestEventArgs e)
     {
         var request = e.Request;
         e.Response.KeepAlive = false;
@@ -19,7 +29,9 @@ public class Server
                 var pwd = request.QueryString["pwd"];
                 var expired = request.QueryString.Contains("expired") ? int.Parse(request.QueryString["expired"]!) : 30;
 
-                if (Users.Authenticate(usr, pwd, out var userMeta))
+                var userService = _container.GetRequiredService<IUserService>();
+
+                if (userService.Authenticate(usr, pwd, out var userMeta))
                 {
                     var token = JwtUtils.GenerateToken(usr, pwd, expired);
                     var buffer = Encoding.UTF8.GetBytes(token);
@@ -28,7 +40,7 @@ public class Server
                     e.Response.ContentLength64 = buffer.Length;
                     e.Response.StatusCode = 200;
                     e.Response.OutputStream.Write(buffer, 0, buffer.Length);
-                    LogHelper.Info($"Login Success: {usr}, token will expire in {expired}s");
+                    Log.Information($" [Authenticator] Login Success: {usr}, token will expire in {expired}s");
                 }
                 else
                 {
@@ -61,23 +73,30 @@ public class Server
             e.Response.OutputStream.Close();
         }
     }
+    
 
-    public static void Start()
+    public void Start()
     {
+        // logger
+        var logger = _container.GetRequiredService<RemoteLogHelper>();
+
         // ws
         var server = new HttpServer(Config.Get().Port);
-        server.AddWebSocketService<ServerBehavior>("/api/v1");
+        // server.AddWebSocketService<ServerBehavior>("/api/v1");
+        server.AddWebSocketService("/api/v1", () =>
+        {
+            var scoped = _container.CreateScope();
+            var behavior = scoped.ServiceProvider.GetRequiredService<ServerBehavior>();
+            return behavior;
+        });
 
         // http
         server.OnGet += HandleHttpRequest;
 
-        // init Users
-        Users.Init();
-
         // start
         server.Start();
-        LogHelper.Info($"Ws Server started at ws://{server.Address}:{server.Port}/api/v1");
-        LogHelper.Info($"Http Server started at http://{server.Address}:{server.Port}/");
+        logger.Info($"Ws Server started at ws://{server.Address}:{server.Port}/api/v1");
+        logger.Info($"Http Server started at http://{server.Address}:{server.Port}/");
         Console.ReadKey();
         server.Stop();
     }
