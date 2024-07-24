@@ -28,7 +28,7 @@ namespace MCServerLauncher.WPF.Main
 
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
-            if (args.IsSettingsInvoked == true)
+            if (args.IsSettingsInvoked)
             {
                 NavigateTo(typeof(int), args.RecommendedNavigationTransitionInfo);
             }
