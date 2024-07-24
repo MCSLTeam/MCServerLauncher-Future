@@ -19,10 +19,10 @@ MCServerLauncher Future 是新一代的服务器管理软件，提供直观的�
 
 [WPF桌面启动器](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF.Main)：针对 Windows 用户的最优解决方案。  
 
-[网页面板](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)：可以通过浏览器访问的仪表板，非常适合非 Windows 用户。
+[网页面板](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)：可以通过浏览器访问的仪表板，非常适合非 Windows 用户，当然 Windows 用户也可使用。
 
 ## 系统需求
-守护进程：需要 [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+守护进程：需要 [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)  
 WPF桌面启动器：需要 [.NET Framework 4.6.2+](http://go.microsoft.com/fwlink/?linkid=780600)
 
 ## 贡献

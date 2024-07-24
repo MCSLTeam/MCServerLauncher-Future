@@ -22,7 +22,7 @@ MCServerLauncher Future is the next generation of server management software, pr
 [Web Panel](https://github.com/MCSLTeam/MCServerLauncher-Future-Web): A browser-accessible dashboard, ideal for non-Windows users.
 
 ## System Requirements
-Daemon: Requires [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+Daemon: Requires [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)  
 WPF Desktop Launcher: Requires [.NET Framework 4.6.2+](http://go.microsoft.com/fwlink/?linkid=780600)
 
 ## Contribute
