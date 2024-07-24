@@ -153,8 +153,6 @@ action_type_pattern = """namespace {namespace}
 {
     internal enum ActionType
     {
-        Message,
-        Ping,
 {action_types}
     }
 }"""

@@ -1,4 +1,9 @@
 actions: 
+  - heart_beat:
+      req:
+      resp:
+        time: long
+    
   - file_upload_request:
       req:
         path: string
