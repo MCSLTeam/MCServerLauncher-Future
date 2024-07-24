@@ -27,7 +27,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality" Source="Resources/MCServerLauncherFuture.ico" Width="20" Height="20"/>
+            <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality" Source="Resources/MCServerLauncherFutureConsole.ico" Width="20" Height="20"/>
             <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="控制台 - " HorizontalAlignment="Left"/>
         </Grid>
         <!-- 导航 -->

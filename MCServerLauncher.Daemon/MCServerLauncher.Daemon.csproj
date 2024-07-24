@@ -6,12 +6,17 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputType>Exe</OutputType>
     <Platforms>AnyCPU</Platforms>
+    <ApplicationIcon>Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove=".Resources\**" />
     <EmbeddedResource Remove=".Resources\**" />
     <None Remove=".Resources\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\MCServerLauncherFutureDaemon.ico" />
   </ItemGroup>
 
   <ItemGroup>

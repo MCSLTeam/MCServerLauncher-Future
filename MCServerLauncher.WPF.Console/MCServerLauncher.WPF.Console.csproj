@@ -40,7 +40,7 @@
     <StartupObject>MCServerLauncher.WPF.Console.App</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Resources\MCServerLauncherFuture.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\MCServerLauncherFutureConsole.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="iNKORE.UI.WPF, Version=1.2.8.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
@@ -209,8 +209,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\MCServerLauncherFuture.ico" />
+    <Resource Include="Resources\MCServerLauncherFutureConsole.ico" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
