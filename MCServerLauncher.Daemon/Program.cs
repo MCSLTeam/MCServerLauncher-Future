@@ -1,6 +1,10 @@
 ﻿using MCServerLauncher.Daemon.Helpers;
 using MCServerLauncher.Daemon.Remote;
+using MCServerLauncher.Daemon.Remote.Action;
+using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Utils;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -13,7 +17,7 @@ namespace MCServerLauncher.Daemon
             Console.WriteLine("MCServerLauncher.Daemon");
             BasicUtils.InitApp();
             TestJavaScanner();
-            Server.Start();
+            Serve();
         }
 
         public static async void TestJavaScanner()
@@ -68,6 +72,53 @@ namespace MCServerLauncher.Daemon
             };
             Console.WriteLine(JsonConvert.SerializeObject(InstanceConfig, Formatting.Indented));
             await Manager.CreateInstance(InstanceConfig);
+        }
+
+        public static void TestServer()
+        {
+            BasicUtils.InitApp();
+            Serve();
+        }
+        
+        static void Serve()
+        {
+            // DI
+            var containerBuilder = new ServiceCollection();
+
+            ConfigureServices(containerBuilder);
+
+            var container = containerBuilder.BuildServiceProvider(
+#if DEBUG
+                new ServiceProviderOptions() // TODO 生产模式应删去
+                {
+                    ValidateOnBuild = true,
+                    ValidateScopes = true
+                }
+#endif
+            );
+
+            var server = container.GetRequiredService<IServer>();
+            server.Start();
+        }
+
+        /// <summary>
+        /// 配置DI服务
+        /// </summary>
+        /// <param name="services"></param>
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            services.AddTransient<IServer, Server>();
+
+            services.AddScoped<ServerBehavior>();
+
+            services.AddScoped<IActionService, ActionService>();
+            services.AddScoped<IEventService, EventService>();
+
+            services.AddSingleton<IJsonService, JsonService>();
+            services.AddSingleton<IUserService, UserService>();
+
+            // logger
+            services.AddSingleton<RemoteLogHelper>();
         }
     }
 }

@@ -1,10 +1,20 @@
 using MCServerLauncher.Daemon.FileManagement;
+using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action
 {
     internal class ActionService : IActionService
     {
+        // DI
+        private readonly ILogHelper _logger;
+
+        // DI constructor
+        public ActionService(RemoteLogHelper logger)
+        {
+            _logger = logger;
+        }
+
         public async Task<Dictionary<string, object>> Routine(
             ActionType type,
             JObject data
@@ -24,7 +34,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             }
             catch (Exception e)
             {
-                return Error(e.Message);
+                return Err(e.Message);
             }
         }
 
@@ -73,7 +83,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         private Dictionary<string, object> Err(string message, ActionType type, int code = 1400)
         {
-            LogHelper.Error($"Error while handling Action {type}: {message}");
+            _logger.Error($"Error while handling Action {type}: {message}");
             return new Dictionary<string, object>
             {
                 { "status", "error" },
@@ -87,7 +97,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             };
         }
 
-        private Dictionary<string, object> Error(string message, int code = 1400)
+        public Dictionary<string, object> Err(string message, int code = 1400)
         {
             return new Dictionary<string, object>
             {
@@ -102,23 +112,13 @@ namespace MCServerLauncher.Daemon.Remote.Action
             };
         }
 
-        private Dictionary<string, object> Ok(Dictionary<string, object> data)
+        public Dictionary<string, object> Ok(Dictionary<string, object> data = null)
         {
             return new Dictionary<string, object>
             {
                 { "status", "ok" },
                 { "retcode", 0 },
                 { "data", data }
-            };
-        }
-
-        private Dictionary<string, object> Ok()
-        {
-            return new Dictionary<string, object>
-            {
-                { "status", "ok" },
-                { "retcode", 0 },
-                { "data", new Dictionary<string, object>() }
             };
         }
     }
