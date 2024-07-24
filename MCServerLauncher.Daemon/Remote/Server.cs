@@ -92,6 +92,9 @@ public class Server : IServer
 
         // http
         server.OnGet += HandleHttpRequest;
+        
+        // load users
+        _container.GetRequiredService<IUserService>();
 
         // start
         server.Start();
