@@ -7,6 +7,21 @@
     <OutputType>Exe</OutputType>
     <Platforms>AnyCPU</Platforms>
     <ApplicationIcon>Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
+	<Company>MCSLTeam</Company>
+	<Authors>MCSLTeam</Authors>
+	<FileVersion>1.0.0.0</FileVersion>
+	<Copyright>Copyright © 2022-2024 MCSLTeam. All rights reserved.</Copyright>
+	<Product>MCServerLauncher Future Daemon</Product>
+	<Description>Daemon for MCServerLauncher Future.</Description>
+  
+</PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
