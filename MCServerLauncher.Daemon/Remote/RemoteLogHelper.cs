@@ -8,6 +8,6 @@ public class RemoteLogHelper : LogHelperBase
 {
     protected override string Format(string message)
     {
-        return " [Remote] " + message;
+        return "[Remote] " + message;
     }
 }
