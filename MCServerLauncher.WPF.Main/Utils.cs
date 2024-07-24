@@ -20,12 +20,12 @@ namespace MCServerLauncher.WPF.Main.Helpers
 {
     public class CreateInstanceUtils
     {
-        public static string SelectFile(string Title, string Filter)
+        public static string SelectFile(string title, string filter)
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
-                Title = Title,
-                Filter = Filter
+                Title = title,
+                Filter = filter
             };
             if (dialog.ShowDialog() == DialogResult.OK)
             {
@@ -36,29 +36,23 @@ namespace MCServerLauncher.WPF.Main.Helpers
                 return null;
             }
         }
-        public static string SelectFolder(string Title)
+        public static string SelectFolder(string title)
         {
             FolderBrowserDialog folderBrowserDialog = new();
             folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
             folderBrowserDialog.ShowDialog();
-            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
-            {
-                return folderBrowserDialog.SelectedPath;
-            }
-            else
-            {
-                return null;
-            }
+            return folderBrowserDialog.ShowDialog() == DialogResult.OK ? folderBrowserDialog.SelectedPath : null;
         }
     }
     public class ResDownloadUtils
     {
-        public static List<string> SequenceMinecraftVersion(List<string> OriginalList)
+        public static List<string> SequenceMinecraftVersion(List<string> originalList)
         {
-            return OriginalList.OrderByDescending(VersionComparator).ToList();
+            return originalList.OrderByDescending(VersionComparator).ToList();
 
         }
-        static Func<string, (int, int, int, int)> VersionToTuple = version =>
+
+        private static readonly Func<string, (int, int, int, int)> VersionToTuple = version =>
         {
             if (!version.Contains(".") && !version.Contains("-"))
             {
@@ -106,8 +100,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
                 return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), int.Parse(parts[3]));
             };
         };
-
-        static Func<string, string> VersionComparator = version =>
+        private static readonly Func<string, string> VersionComparator = version =>
         {
             var versionTuple = VersionToTuple(version);
             return $"{versionTuple.Item1:D3}.{versionTuple.Item2:D3}.{versionTuple.Item3:D3}";
@@ -115,29 +108,29 @@ namespace MCServerLauncher.WPF.Main.Helpers
     }
     public class NetworkUtils
     {
-        private static HttpClient client = new();
-        public static async Task<HttpResponseMessage> SendGetRequest(string Url)
+        private static readonly HttpClient Client = new();
+        public static async Task<HttpResponseMessage> SendGetRequest(string url)
         {
-            Log.Information($"[Net] Try to get url \"{Url}\"");
-            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{AppVersion}");
-            return await client.GetAsync(Url);
+            Log.Information($"[Net] Try to get url \"{url}\"");
+            Client.DefaultRequestHeaders.Add(name:"User-Agent", $"MCServerLauncher/{AppVersion}");
+            return await Client.GetAsync(url);
         }
-        public static async Task<HttpResponseMessage> SendPostRequest(string Url, string Data)
+        public static async Task<HttpResponseMessage> SendPostRequest(string url, string data)
         {
-            Log.Information($"[Net] Try to post url \"{Url}\" with data {Data}");
-            client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{AppVersion}");
-            return await client.PostAsync(Url, new StringContent(Data, Encoding.UTF8, "application/json"));
+            Log.Information($"[Net] Try to post url \"{url}\" with data {data}");
+            Client.DefaultRequestHeaders.Add(name: "User-Agent", $"MCServerLauncher/{AppVersion}");
+            return await Client.PostAsync(url, new StringContent(data, encoding: Encoding.UTF8, mediaType: "application/json"));
         }
-        public static void OpenUrl(string Url)
+        public static void OpenUrl(string url)
         {
             try
             {
-                Process.Start(Url);
-                Log.Information("[Net] Try to open url \"{Url}\"");
+                Process.Start(url);
+                Log.Information($"[Net] Try to open url \"{url}\"");
             }
             catch (Exception ex)
             {
-                Log.Error($"[Net] Failed to open url \"{Url}\". Reason: {ex.Message}");
+                Log.Error($"[Net] Failed to open url \"{url}\". Reason: {ex.Message}");
             }
         }
     }
@@ -146,7 +139,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
         public Settings AppSettings { get; set; }
         public static void InitDataDirectory()
         {
-            var DataFolders = new List<string>
+            var dataFolders = new List<string>
             {
                 "Data",
                 Path.Combine("Data", "Logs"),
@@ -155,20 +148,17 @@ namespace MCServerLauncher.WPF.Main.Helpers
                 Path.Combine("Data", "Configuration", "MCSL")
             };
 
-            foreach (string DataFolder in DataFolders)
+            foreach (string dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
             {
-                if (!Directory.Exists(DataFolder))
-                {
-                    Directory.CreateDirectory(DataFolder);
-                }
+                Directory.CreateDirectory(dataFolder);
             }
         }
         public void InitSettings()
         {
-            if (File.Exists("Data/Configuration/MCSL/Settings.json"))
+            if (File.Exists(path: "Data/Configuration/MCSL/Settings.json"))
             {
                 Log.Information("[Set] Found profile, reading");
-                AppSettings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json"));
+                AppSettings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(path: "Data/Configuration/MCSL/Settings.json"));
             }
             else
             {
@@ -177,7 +167,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
                 {
                     MinecraftJava = new MinecraftJavaSettings
                     {
-                        AutoAcceptEULA = false,
+                        AutoAcceptEula = false,
                         AutoSwitchOnlineMode = false,
                         QuickMenu = true
                     },
@@ -197,7 +187,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
                         Input = "UTF-8",
                         Output = "UTF-8",
                         CleanConsoleWhenStopped = true,
-                        FollowStart = new List<string> { }
+                        FollowStart = new List<string> ()
                     },
                     App = new AppSettings
                     {
@@ -207,8 +197,8 @@ namespace MCServerLauncher.WPF.Main.Helpers
                     }
                 };
                 File.WriteAllText(
-                    "Data/Configuration/MCSL/Settings.json",
-                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented)
+                    path: "Data/Configuration/MCSL/Settings.json",
+                    contents: JsonConvert.SerializeObject(AppSettings, Formatting.Indented)
                 );
             }
         }
@@ -217,31 +207,29 @@ namespace MCServerLauncher.WPF.Main.Helpers
             try
             {
                 Log.Information("[Cer] Importing certificate");
-                using (Stream certStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MCServerLauncher.WPF.Resources.MCSLTeam.cer"))
+                using Stream certStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MCServerLauncher.WPF.Resources.MCSLTeam.cer");
+                if (certStream == null)
                 {
-                    if (certStream == null)
-                    {
-                        throw new FileNotFoundException("Embedded resource not found");
-                    }
-
-                    if (!certStream.CanRead)
-                    {
-                        throw new InvalidOperationException("The stream cannot be read");
-                    }
-                    byte[] buffer = new byte[certStream.Length];
-                    certStream.Read(buffer, 0, buffer.Length);
-                    X509Certificate2 certificate = new X509Certificate2(buffer);
-                    X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
-                    store.Open(OpenFlags.ReadWrite);
-                    try
-                    {
-                        store.Remove(certificate);
-                    }
-                    catch (CryptographicException) { }
-                    store.Add(certificate);
-                    store.Close();
-                    Log.Information("[Cer] Certificate successfully imported");
+                    throw new FileNotFoundException("Embedded resource not found");
                 }
+
+                if (!certStream.CanRead)
+                {
+                    throw new InvalidOperationException("The stream cannot be read");
+                }
+                byte[] buffer = new byte[certStream.Length];
+                certStream.Read(buffer, offset: 0, count: buffer.Length);
+                X509Certificate2 certificate = new X509Certificate2(buffer);
+                X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
+                store.Open(OpenFlags.ReadWrite);
+                try
+                {
+                    store.Remove(certificate);
+                }
+                catch (CryptographicException) { }
+                store.Add(certificate);
+                store.Close();
+                Log.Information("[Cer] Certificate successfully imported");
             }
             catch (Exception ex)
             {
@@ -252,7 +240,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.Async(a => a.File("Data/Logs/WPF/WPFLog-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
+                .WriteTo.Async(configure: a => a.File(path: "Data/Logs/WPF/WPFLog-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
         }
@@ -261,11 +249,11 @@ namespace MCServerLauncher.WPF.Main.Helpers
             InitLogger();
             Log.Information($"[Exe] MCServerLauncher Future v{AppVersion}");
             Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
-            //Log.Information("Test Infomation");
-            //Log.Warning("Test Warning");
-            //Log.Error("Test Error");
-            //Log.Fatal("Test Fatal");
-            //Log.Debug("Test Debug");
+            //Log.Information("");
+            //Log.Warning("");
+            //Log.Error("");
+            //Log.Fatal("");
+            //Log.Debug("");
             InitDataDirectory();
             InitSettings();
             InitCert();
@@ -275,7 +263,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
 
 public class MinecraftJavaSettings
 {
-    public bool AutoAcceptEULA { get; set; }
+    public bool AutoAcceptEula { get; set; }
     public bool AutoSwitchOnlineMode { get; set; }
     public bool QuickMenu { get; set; }
 }
@@ -322,7 +310,7 @@ namespace MCServerLauncher.WPF.Main.Helpers
     {
         public static T TryFindParent<T>(this DependencyObject child) where T : DependencyObject
         {
-            var parent = VisualTreeHelper.GetParent(child);
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
             while (parent != null)
             {
                 if (parent is T parentType)

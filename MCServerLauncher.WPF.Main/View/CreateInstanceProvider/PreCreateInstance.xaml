@@ -23,6 +23,9 @@
             <Border x:Name="MinecraftBedrockServer" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
                 <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft 基岩版服务器" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="18,15,18,15"/>
             </Border>
+            <Border x:Name="FastReverseProxyClient" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="FRP 客户端程序" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="18,15,18,15"/>
+            </Border>
             <Border x:Name="OtherExecutable" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
                 <TextBlock Style="{StaticResource BodyTextBlock}" Text="其他控制台程序" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="44,15,44,15"/>
             </Border>

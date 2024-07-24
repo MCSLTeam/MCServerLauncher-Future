@@ -3,17 +3,16 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:MCServerLauncher.WPF.Console.View"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
       xmlns:vc="clr-namespace:MCServerLauncher.WPF.Console.View.Components"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800">
 
-    <Grid Margin="35,35,35,0">
+    <Grid Margin="35,0,35,0">
         <ui:ScrollViewerEx>
             <ikw:SimpleStackPanel Spacing="10">
-                <Border Style="{StaticResource StyledBorder}">
+                <Border Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
