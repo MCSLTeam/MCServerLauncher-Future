@@ -8,35 +8,46 @@
       d:DesignHeight="450" d:DesignWidth="800"
       Title="CommandPage">
 
-    <Grid Margin="35,0,35,0">
+    <Grid Margin="25,15,25,25">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ui:CommandBar Grid.Row="0" Margin="0,15,0,0">
-            <ui:CommandBar.PrimaryCommands>
-                <ui:AppBarButton Label="打开全屏终端">
-                    <ui:AppBarButton.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.FullScreen}"/>
-                    </ui:AppBarButton.Icon>
-                </ui:AppBarButton>
-            </ui:CommandBar.PrimaryCommands>
-            <ui:CommandBar.SecondaryCommands>
-                <ui:AppBarButton Label="停止实例">
-                    <ui:AppBarButton.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.PowerButton}"/>
-                    </ui:AppBarButton.Icon>
-                </ui:AppBarButton>
-                <ui:AppBarButton Label="重启实例">
-                    <ui:AppBarButton.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
-                    </ui:AppBarButton.Icon>
-                </ui:AppBarButton>
-            </ui:CommandBar.SecondaryCommands>
-        </ui:CommandBar>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="反馈错误请带上详细错误日志，否则一切行为无异于闭眼开车。" VerticalAlignment="Center"/>
+            <Button Height="30" Background="Transparent" BorderThickness="0" Grid.Column="1" Margin="0,0,10,0">
+                <Button.Content>
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.FullScreen}" Content="进入全屏终端"/>
+                </Button.Content>
+            </Button>
+            <ui:DropDownButton Height="30" Background="Transparent" BorderThickness="0" ShowChevronArrow="False" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
+                <ui:DropDownButton.Content>
+                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.More}" FontSize="16"/>
+                </ui:DropDownButton.Content>
+                <ui:DropDownButton.Flyout>
+                    <ui:MenuFlyout Placement="Bottom">
+                        <MenuItem Header="停止实例">
+                            <MenuItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.PowerButton}" FontSize="16"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="重启实例">
+                            <MenuItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" FontSize="16"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ui:MenuFlyout>
+                </ui:DropDownButton.Flyout>
+            </ui:DropDownButton>
+        </Grid>
         <TextBox Grid.Row="1" IsReadOnly="True" Margin="0,15,0,0"/>
-        <Grid Grid.Row="2" Margin="0,15,0,35">
+        <Grid Grid.Row="2" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
