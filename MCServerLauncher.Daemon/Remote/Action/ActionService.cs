@@ -26,8 +26,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 {
                     ActionType.FileUploadChunk => await FileUploadChunkHandler(Actions.FileUploadChunk.RequestOf(data)),
                     ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
-                    ActionType.Message => MessageHandler(Actions.Empty.RequestOf(data)),
-                    ActionType.Ping => PingHandler(Actions.Empty.RequestOf(data)),
+                    ActionType.HeartBeat => HeartBeatHandler(Actions.Empty.RequestOf(data)),
                     ActionType.FileUploadCancel => FileUploadCancelHandler(Actions.FileUploadCancel.RequestOf(data)),
                     _ => throw new NotImplementedException()
                 };
@@ -64,14 +63,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 : Ok(new Dictionary<string, object> { { "file_id", fileId } });
         }
 
-        private Dictionary<string, object> MessageHandler(Actions.Empty.Request data)
+        private Dictionary<string, object> HeartBeatHandler(Actions.Empty.Request data)
         {
-            return null;
-        }
-
-        private Dictionary<string, object> PingHandler(Actions.Empty.Request data)
-        {
-            return Ok(new Dictionary<string, object> { { "pong_time", DateTime.Now } });
+            return Ok(new Dictionary<string, object>
+            {
+                ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
+            });
         }
 
         private Dictionary<string, object> FileUploadCancelHandler(Actions.FileUploadCancel.Request data)
