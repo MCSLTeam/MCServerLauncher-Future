@@ -14,16 +14,16 @@ namespace MCServerLauncher.Daemon
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("MCServerLauncher.Daemon");
+            Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
             BasicUtils.InitApp();
-            TestJavaScanner();
+            //TestJavaScanner();
             Serve();
         }
 
         public static async void TestJavaScanner()
         {
-            JavaScanner Scanner = new();
-            await Scanner.ScanJava();
+            JavaScanner scanner = new();
+            await scanner.ScanJava();
         }
 
         public static void WriteTestJavaInfo()

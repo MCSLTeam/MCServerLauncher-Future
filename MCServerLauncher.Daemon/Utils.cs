@@ -1,11 +1,12 @@
 using Serilog;
+using System.Reflection;
 
 namespace MCServerLauncher.Daemon.Helpers
 {
     public class BasicUtils
     {
         public Settings AppSettings { get; set; }
-
+        public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version;
         public static void InitDataDirectory()
         {
             var dataFolders = new List<string>
