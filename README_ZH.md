@@ -1,5 +1,5 @@
 ![大头图](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=MCSL%E7%9A%84%E5%85%A8%E6%96%B0%E7%89%88%E6%9C%AC%E3%80%82%E5%AE%8C%E5%85%A8%E9%87%8D%E6%96%B0%E8%AE%BE%E8%AE%A1%EF%BC%8C%E5%8A%9F%E8%83%BD%E5%85%A8%E9%9D%A2%EF%BC%8C%E7%AE%80%E5%8D%95%E4%B8%8A%E6%89%8B%E3%80%82&font=Jost&forks=1&language=1&logo=https%3A%2F%2Fimg.fastmirror.net%2Fs%2F2024%2F07%2F24%2F66a0f36d0242c.png&name=1&pattern=Circuit%20Board&stargazers=1&theme=Auto)  
-中文 | [English](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/README.md)  
+中文 | [English](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/main#readme)  
 </br>
 此仓库仅包含 守护进程 和 WPF桌面启动器 的源码。若想了解更多关于 Web面板 的信息，请点击[这里](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)。
 
