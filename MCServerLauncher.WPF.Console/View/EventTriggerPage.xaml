@@ -25,7 +25,7 @@
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
                         <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="触发器" HorizontalAlignment="Left"/>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.GroupList}" Content="事件" HorizontalAlignment="Left"/>
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.BulletedList}" Content="事件" HorizontalAlignment="Left"/>
                     </ui:MenuFlyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>
