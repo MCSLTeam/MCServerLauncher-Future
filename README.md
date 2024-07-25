@@ -30,7 +30,7 @@ WPF Desktop Launcher: Requires [.NET Framework 4.6.2+](http://go.microsoft.com/f
 
 ## Contribute
 
-To report issues or suggest improvements, please [open an issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose) or [submit a pull request](https://github.com/MCSLTeam/MCServerLauncher-Future/compare).zz
+To report issues or suggest improvements, please [open an issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose) or [submit a pull request](https://github.com/MCSLTeam/MCServerLauncher-Future/compare).
 
 ## Contact
 
