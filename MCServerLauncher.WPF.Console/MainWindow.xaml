@@ -53,9 +53,9 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.FileExplorer}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="计划任务" Tag="MCServerLauncher.WPF.Console.View.SchedulePage">
+                <ui:NavigationViewItem Content="触发事件" Tag="MCServerLauncher.WPF.Console.View.EventTriggerPage">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SetHistoryStatus2}" FontSize="16"/>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Event12}" FontSize="16"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="组件管理" Tag="MCServerLauncher.WPF.Console.View.SchedulePage">

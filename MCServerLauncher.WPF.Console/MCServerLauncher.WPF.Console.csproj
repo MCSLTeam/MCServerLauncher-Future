@@ -209,6 +209,9 @@
     <Compile Include="View\FileManagerPage.xaml.cs">
       <DependentUpon>FileManagerPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\EventTriggerPage.xaml.cs">
+      <DependentUpon>EventTriggerPage.xaml</DependentUpon>
+    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -250,6 +253,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\FileManagerPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\EventTriggerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
