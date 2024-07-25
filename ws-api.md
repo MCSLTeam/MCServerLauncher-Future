@@ -135,3 +135,69 @@
 ```
 
 该响应无参数
+
+
+
+### GetJavaList
+
+获取java列表不一定是实时的，他是基于时间缓存的，一次请求后最多**<u>60s</u>**就会使得下次请求重新扫描java列表（由于人们并不会频繁的为计算机增减jre，故使用IAsyncTimedCacheable去缓存java扫描结果以优化整体性能，尤其是请求高峰期）。
+
+具体代码细节参考Daemon\Program.cs的ConfigureService中IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>单例。
+
+##### 请求
+
+```json
+{
+    "action": "get_java_list",
+    "params":{
+        "file_id": "..."
+    }
+}
+```
+
+该请求无参数
+
+##### 响应
+
+```json
+{
+    "status": "ok",
+    "retcode": 0,
+    "data": {
+        "java_list": [
+            {
+                "path": "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath\\java.exe",
+                "version": "21.0.1",
+                "architecture": "x64"
+            },
+            {
+                "path": "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath_target_233021531\\java.exe",
+                "version": "21.0.1",
+                "architecture": "x64"
+            },
+            ...
+        ]
+    }
+}
+```
+
+| 参数名    | 值         | 含义               |
+| --------- | ---------- | ------------------ |
+| java_list | JavaInfo[] | 包含java信息的列表 |
+
+其中JavaInfo定义如下
+
+```c#
+public struct JavaInfo
+{
+    public string Path { get; set; }
+    public string Version { get; set; }
+    public string Architecture { get; set; }
+
+    public override string ToString()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
+}
+```
+

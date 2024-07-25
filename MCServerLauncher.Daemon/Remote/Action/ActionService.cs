@@ -1,5 +1,7 @@
 using MCServerLauncher.Daemon.FileManagement;
+using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.Daemon.Utils.Cache;
 using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action
@@ -9,10 +11,13 @@ namespace MCServerLauncher.Daemon.Remote.Action
         // DI
         private readonly ILogHelper _logger;
 
+        private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
+
         // DI constructor
-        public ActionService(RemoteLogHelper logger)
+        public ActionService(RemoteLogHelper logger, IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> JavaScannerCache)
         {
             _logger = logger;
+            _javaScannerCache = JavaScannerCache;
         }
 
         public async Task<Dictionary<string, object>> Routine(
@@ -28,6 +33,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                     ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
                     ActionType.HeartBeat => HeartBeatHandler(Actions.Empty.RequestOf(data)),
                     ActionType.FileUploadCancel => FileUploadCancelHandler(Actions.FileUploadCancel.RequestOf(data)),
+                    ActionType.GetJavaList => await GetJavaListHandler(Actions.Empty.RequestOf(data)),
                     _ => throw new NotImplementedException()
                 };
             }
@@ -46,6 +52,14 @@ namespace MCServerLauncher.Daemon.Remote.Action
             {
                 { "done", done },
                 { "received", received }
+            });
+        }
+
+        private async Task<Dictionary<string, object>> GetJavaListHandler(Actions.Empty.Request data)
+        {
+            return Ok(new Dictionary<string, object>
+            {
+                ["java_list"] = await _javaScannerCache.Value
             });
         }
 

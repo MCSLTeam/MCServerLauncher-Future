@@ -4,6 +4,7 @@ using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -115,6 +116,13 @@ namespace MCServerLauncher.Daemon
 
             services.AddSingleton<IJsonService, JsonService>();
             services.AddSingleton<IUserService, UserService>();
+            services.AddSingleton<
+                IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>,
+                AsyncTimedCache<List<JavaScanner.JavaInfo>>
+            >(_ => new AsyncTimedCache<List<JavaScanner.JavaInfo>>(
+                JavaScanner.ScanJavaAsync,
+                TimeSpan.FromSeconds(60))
+            ); // add java scanner cache
 
             // logger
             services.AddSingleton<RemoteLogHelper>();

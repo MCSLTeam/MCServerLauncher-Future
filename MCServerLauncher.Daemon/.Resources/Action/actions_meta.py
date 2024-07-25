@@ -7,9 +7,9 @@ file_dir = Path(__file__).parent.absolute()
 proj_root = file_dir.parent.parent.parent
 
 
-cs_pattern = """using Newtonsoft.Json;
+cs_pattern = """using MCServerLauncher.Daemon.Storage;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 
 namespace {namespace}
 {
