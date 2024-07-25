@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MCServerLauncher.Daemon": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}
