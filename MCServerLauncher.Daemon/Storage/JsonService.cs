@@ -3,7 +3,7 @@ using MCServerLauncher.Daemon.Remote.Event;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace MCServerLauncher.Daemon.Remote;
+namespace MCServerLauncher.Daemon.Storage;
 
 public class JsonService : IJsonService
 {

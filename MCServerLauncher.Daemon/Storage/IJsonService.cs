@@ -1,4 +1,4 @@
-namespace MCServerLauncher.Daemon.Remote;
+namespace MCServerLauncher.Daemon.Storage;
 
 public interface IJsonService
 {
