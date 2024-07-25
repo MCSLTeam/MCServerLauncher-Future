@@ -3,7 +3,7 @@ using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
-using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.Daemon.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,14 +16,13 @@ namespace MCServerLauncher.Daemon
         {
             Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
             BasicUtils.InitApp();
-            //TestJavaScanner();
             Serve();
         }
 
-        public static async void TestJavaScanner()
+        public static void TestJavaScanner()
         {
-            JavaScanner scanner = new();
-            await scanner.ScanJava();
+            BasicUtils.InitApp();
+            JavaScanner.ScanJava();
         }
 
         public static void WriteTestJavaInfo()
