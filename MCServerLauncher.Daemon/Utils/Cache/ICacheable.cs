@@ -8,3 +8,8 @@ public interface ICacheable<out T>
 {
     public  T Value { get; }
 }
+
+public interface IAsyncCacheable<T>
+{
+    public Task<T> Value { get; }
+}

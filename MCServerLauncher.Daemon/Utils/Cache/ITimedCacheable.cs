@@ -11,3 +11,11 @@ public interface ITimedCacheable<out T> : ICacheable<T>
     bool IsExpired();
     void Update();
 }
+
+public interface IAsyncTimedCacheable<T> : IAsyncCacheable<T>
+{
+    DateTime LastUpdated { get;}
+    TimeSpan CacheDuration { get; }
+    bool IsExpired();
+    Task Update();
+}
