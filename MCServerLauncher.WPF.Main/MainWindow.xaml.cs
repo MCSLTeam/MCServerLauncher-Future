@@ -41,32 +41,30 @@ namespace MCServerLauncher.WPF.Main
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             Type preNavPageType = CurrentPage.Content.GetType();
-            if (navPageType is not null && navPageType != preNavPageType)
+            if (navPageType == preNavPageType) return;
+            switch (navPageType)
             {
-                switch (navPageType)
-                {
-                    case Type t when t == typeof(HomePage):
-                        CurrentPage.Navigate(Home);
-                        break;
-                    case Type t when t == typeof(CreateInstancePage):
-                        CurrentPage.Navigate(CreateInstance);
-                        break;
-                    case Type t when t == typeof(InstanceManagerPage):
-                        CurrentPage.Navigate(InstanceManager);
-                        break;
-                    case Type t when t == typeof(ResDownloadPage):
-                        CurrentPage.Navigate(ResDownload);
-                        break;
-                    case Type t when t == typeof(HelpPage):
-                        CurrentPage.Navigate(Help);
-                        break;
-                    case Type t when t == typeof(SettingsPage):
-                        CurrentPage.Navigate(Settings);
-                        break;
-                    case Type t when t == typeof(TestPage):
-                        CurrentPage.Navigate(new TestPage());
-                        break;
-                }
+                case not null when navPageType == typeof(HomePage):
+                    CurrentPage.Navigate(Home);
+                    break;
+                case not null when navPageType == typeof(CreateInstancePage):
+                    CurrentPage.Navigate(CreateInstance);
+                    break;
+                case not null when navPageType == typeof(InstanceManagerPage):
+                    CurrentPage.Navigate(InstanceManager);
+                    break;
+                case not null when navPageType == typeof(ResDownloadPage):
+                    CurrentPage.Navigate(ResDownload);
+                    break;
+                case not null when navPageType == typeof(HelpPage):
+                    CurrentPage.Navigate(Help);
+                    break;
+                case not null when navPageType == typeof(SettingsPage):
+                    CurrentPage.Navigate(Settings);
+                    break;
+                case not null when navPageType == typeof(TestPage):
+                    CurrentPage.Navigate(new TestPage());
+                    break;
             }
         }
     }
