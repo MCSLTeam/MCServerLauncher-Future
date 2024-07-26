@@ -31,7 +31,7 @@
                            HorizontalAlignment="Left" Margin="17,15,17,15" />
             </Border>
             <Border x:Name="MinecraftQuiltServer" MouseLeftButtonDown="SelectNewInstanceType"
-                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
                 <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Quilt 服务器" VerticalAlignment="Top"
                            HorizontalAlignment="Left" Margin="17,15,17,15" />
             </Border>
