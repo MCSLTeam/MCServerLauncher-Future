@@ -48,19 +48,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
             if (data.FileId == Guid.Empty) return Err("Invalid file id", ActionType.FileUploadChunk);
 
             var (done, received) = await FileManager.FileUploadChunk(data.FileId, data.Offset, data.Data);
-            return Ok(new Dictionary<string, object>
-            {
-                { "done", done },
-                { "received", received }
-            });
+            return Ok(Actions.FileUploadChunk.ResponseOf(done,received).Into());
         }
 
         private async Task<Dictionary<string, object>> GetJavaListHandler(Actions.Empty.Request data)
         {
-            return Ok(new Dictionary<string, object>
-            {
-                ["java_list"] = await _javaScannerCache.Value
-            });
+            return Ok(Actions.GetJavaList.ResponseOf(await _javaScannerCache.Value).Into());
         }
 
         private Dictionary<string, object> FileUploadRequestHandler(Actions.FileUploadRequest.Request data)
@@ -74,15 +67,12 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
             return fileId == Guid.Empty
                 ? Err("Failed to pre-allocate space", ActionType.FileUploadRequest, 1401)
-                : Ok(new Dictionary<string, object> { { "file_id", fileId } });
+                : Ok(Actions.FileUploadRequest.ResponseOf(fileId).Into());
         }
 
         private Dictionary<string, object> HeartBeatHandler(Actions.Empty.Request data)
         {
-            return Ok(new Dictionary<string, object>
-            {
-                ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
-            });
+            return Ok(Actions.HeartBeat.ResponseOf(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()).Into());
         }
 
         private Dictionary<string, object> FileUploadCancelHandler(Actions.FileUploadCancel.Request data)
@@ -123,7 +113,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
             };
         }
 
-        public Dictionary<string, object> Ok(Dictionary<string, object> data = null)
+        public Dictionary<string, object> Ok(JObject data = null)
         {
             return new Dictionary<string, object>
             {

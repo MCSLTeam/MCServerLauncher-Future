@@ -7,7 +7,7 @@ actions:
   - get_java_list:
       req:
       resp:
-        java_list: JavaScanner.JavaInfo[]
+        java_list: List<JavaScanner.JavaInfo>
 
   - file_upload_request:
       req:

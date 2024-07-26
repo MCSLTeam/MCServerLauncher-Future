@@ -9,23 +9,28 @@ namespace MCServerLauncher.Daemon.Remote.Action
     /// </summary>
     internal static class Actions
     {
-        public static T Deserialize<T>(JObject data)
+        private static T Deserialize<T>(JObject data)
         {
             return JsonConvert.DeserializeObject<T>(data.ToString(), JsonService.Settings);
+        }
+
+        internal interface IActionResponse
+        {
+            JObject Into() => JObject.FromObject(this);
         }
 
         internal class Empty
         {
             public class Request {}
 
-            public class Response {}
+            public class Response : IActionResponse {}
 
-            public static Request RequestOf(JObject data)
+            public static Request RequestOf()
             {
                 return new Request();
             }
 
-            public static Response ResponseOf(Guid FileId)
+            public static IActionResponse ResponseOf()
             {
                 return new Response();
             }
@@ -33,22 +38,17 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         public class HeartBeat
         {
-            public class Request
-            {
-
-            }
-
-            public class Response
+            private class Response : IActionResponse
             {
                 public long Time;
             }
 
-            public static Request RequestOf(JObject data)
+            public static Empty.Request RequestOf(JObject data)
             {
-                return Deserialize<Request>(data);
+                return new Empty.Request();
             }
 
-            public static Response ResponseOf(long Time)
+            public static IActionResponse ResponseOf(long Time)
             {
                 return new Response { Time = Time  };
             }
@@ -56,22 +56,17 @@ namespace MCServerLauncher.Daemon.Remote.Action
 
         public class GetJavaList
         {
-            public class Request
+            private class Response : IActionResponse
             {
-
+                public List<JavaScanner.JavaInfo> JavaList;
             }
 
-            public class Response
+            public static Empty.Request RequestOf(JObject data)
             {
-                public JavaScanner.JavaInfo[] JavaList;
+                return new Empty.Request();
             }
 
-            public static Request RequestOf(JObject data)
-            {
-                return Deserialize<Request>(data);
-            }
-
-            public static Response ResponseOf(JavaScanner.JavaInfo[] JavaList)
+            public static IActionResponse ResponseOf(List<JavaScanner.JavaInfo> JavaList)
             {
                 return new Response { JavaList = JavaList  };
             }
@@ -87,7 +82,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 public long Size;
             }
 
-            public class Response
+            private class Response : IActionResponse
             {
                 public Guid FileId;
             }
@@ -97,7 +92,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 return Deserialize<Request>(data);
             }
 
-            public static Response ResponseOf(Guid FileId)
+            public static IActionResponse ResponseOf(Guid FileId)
             {
                 return new Response { FileId = FileId  };
             }
@@ -112,7 +107,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 public string Data;
             }
 
-            public class Response
+            private class Response : IActionResponse
             {
                 public bool Done;
                 public long Received;
@@ -123,7 +118,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 return Deserialize<Request>(data);
             }
 
-            public static Response ResponseOf(bool Done, long Received)
+            public static IActionResponse ResponseOf(bool Done, long Received)
             {
                 return new Response { Done = Done, Received = Received  };
             }
@@ -136,7 +131,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 public Guid FileId;
             }
 
-            public class Response
+            private class Response : IActionResponse
             {
 
             }
@@ -146,7 +141,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
                 return Deserialize<Request>(data);
             }
 
-            public static Response ResponseOf()
+            public static IActionResponse ResponseOf()
             {
                 return new Response {   };
             }

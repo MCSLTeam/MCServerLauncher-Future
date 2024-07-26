@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace MCServerLauncher.Daemon.Storage;
 
 public interface IJsonService

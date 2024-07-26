@@ -7,7 +7,7 @@ namespace MCServerLauncher.Daemon.Storage;
 
 public class JsonService : IJsonService
 {
-    public readonly static JsonSerializerSettings Settings = new()
+    public static readonly JsonSerializerSettings Settings = new()
     {
         ContractResolver = new DefaultContractResolver
         {
@@ -20,6 +20,8 @@ public class JsonService : IJsonService
             new GuidJsonConverter()
         }
     };
+    
+    public static readonly JsonSerializer Serializer = JsonSerializer.Create(Settings);
 
     public string Serialize(object obj)
     {
