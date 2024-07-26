@@ -1,21 +1,21 @@
-﻿using System.Windows.Controls;
-
-namespace MCServerLauncher.WPF.Main.View.Components
+﻿namespace MCServerLauncher.WPF.Main.View.Components
 {
     /// <summary>
-    /// MSLAPIResCoreItem.xaml 的交互逻辑
+    ///     MSLAPIResCoreItem.xaml 的交互逻辑
     /// </summary>
-    public partial class MSLAPIResCoreItem : UserControl
+    public partial class MSLAPIResCoreItem
     {
         public MSLAPIResCoreItem()
         {
             InitializeComponent();
         }
+
         public string CoreName
         {
             get => CoreNameReplacer.Text;
             set => CoreNameReplacer.Text = value;
         }
-        public string APIActualName { get; set; }
+
+        public string ApiActualName { get; set; }
     }
 }

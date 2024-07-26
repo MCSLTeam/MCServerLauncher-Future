@@ -1,177 +1,209 @@
 ﻿<Page x:Class="MCServerLauncher.WPF.Main.View.SettingsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:MCServerLauncher.WPF.Main.View"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
       xmlns:vc="clr-namespace:MCServerLauncher.WPF.Main.View.Components"
-      mc:Ignorable="d" 
+      mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="SettingsPage">
     <FrameworkElement.Resources>
         <ResourceDictionary>
 
             <Style TargetType="Expander" BasedOn="{StaticResource {x:Static ui:ThemeKeys.ExpanderCardStyleKey}}">
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
             </Style>
 
             <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static ui:ThemeKeys.DefaultComboBoxStyleKey}}">
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
             </Style>
 
             <Style TargetType="ui:FontIcon">
-                <Setter Property="FontSize" Value="20"/>
+                <Setter Property="FontSize" Value="20" />
             </Style>
 
             <Style TargetType="ui:ToggleSwitch">
-                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="MinWidth" Value="0" />
             </Style>
 
         </ResourceDictionary>
     </FrameworkElement.Resources>
     <Grid Margin="35,35,35,0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="设置" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="你的 MCSL，你的选择。" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="设置" VerticalAlignment="Top"
+                   HorizontalAlignment="Left" />
+        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="你的 MCSL，你的选择。"
+                   VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0" />
 
         <ui:ScrollViewerEx Grid.Column="0" Grid.Row="2" Margin="0,15,0,35">
             <ikw:SimpleStackPanel Spacing="10" VerticalAlignment="Top" HorizontalAlignment="Stretch">
 
-                <TextBlock Text="新建实例" FontSize="18"/>
+                <TextBlock Text="新建实例" FontSize="18" />
                 <vc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoAgreeEula"
-                    Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
-                    Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
-                    Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
-                />
+                                      Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
+                                      Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
+                                      Icon="{x:Static ui:SegoeFluentIcons.Handwriting}" />
                 <vc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoDisableOnlineMode"
-                    Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
-                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
-                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
-                />
+                                      Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
+                                      Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
+                                      Icon="{x:Static ui:SegoeFluentIcons.VPN}" />
                 <vc:SwitchSettingCard x:Name="InstanceCreation_MinecraftBedrockAutoDisableOnlineMode"
-                    Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
-                    Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
-                    Icon="{x:Static ui:SegoeFluentIcons.VPN}"
-                />
+                                      Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
+                                      Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
+                                      Icon="{x:Static ui:SegoeFluentIcons.VPN}" />
                 <vc:ComboSettingCard x:Name="InstanceCreation_MinecraftForgeInstallerSource"
                                      Icon="{x:Static ui:SegoeFluentIcons.Processing}"
-                                     Title="Forge 依赖下载源 ( Minecraft Forge 服务器 实例 )" Description="选择合适的下载源可显著提升 Forge 依赖下载速度。"
-                                     ComboBoxItems="{Binding Path=MinecraftForgeInstallerSource}"/>
+                                     Title="Forge 依赖下载源 ( Minecraft Forge 服务器 实例 )"
+                                     Description="选择合适的下载源可显著提升 Forge 依赖下载速度。"
+                                     ComboBoxItems="{Binding Path=MinecraftForgeInstallerSource}" />
 
 
-                <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0"/>
+                <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0" />
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
                             <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
+                                <RowDefinition />
+                                <RowDefinition />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
                             </Grid.ColumnDefinitions>
-                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ProvisioningPackage}" Grid.RowSpan="2" Grid.Column="0" Margin="5,15,20,15"/>
-                            <TextBlock Text="下载源" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,2" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
-                            <TextBlock Text="选择在 “资源下载” 页面使用的下载提供方。" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,2,20,5" Opacity="0.615" FontSize="12"  TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
+                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ProvisioningPackage}" Grid.RowSpan="2"
+                                         Grid.Column="0" Margin="5,15,20,15" />
+                            <TextBlock Text="下载源" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
+                                       Margin="0,0,0,2" TextTrimming="CharacterEllipsis"
+                                       TextWrapping="WrapWithOverflow" />
+                            <TextBlock Text="选择在 “资源下载” 页面使用的下载提供方。" Grid.Row="1" Grid.Column="1"
+                                       VerticalAlignment="Center" Margin="0,2,20,5" Opacity="0.615" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <Grid Margin="5,0,5,0">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <ui:RadioButtons>
-                            <RadioButton Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" IsChecked="True"/>
-                            <RadioButton Margin="0,0,0,10" Content="极星云镜像 ( 由 极星网络 提供支持 )"/>
-                            <RadioButton Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )"/>
-                            <RadioButton Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )"/>
-                            <RadioButton Margin="0,0,0,10" Content="MCSL-Sync 同步镜像"/>
+                            <RadioButton Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" IsChecked="True" />
+                            <RadioButton Margin="0,0,0,10" Content="极星云镜像 ( 由 极星网络 提供支持 )" />
+                            <RadioButton Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )" />
+                            <RadioButton Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )" />
+                            <RadioButton Margin="0,0,0,10" Content="MCSL-Sync 同步镜像" />
                         </ui:RadioButtons>
                     </Grid>
                 </Expander>
-                <vc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数" Description="线程数越多，在计算机性能足够的情况下，文件下载越快，反之会造成严重的卡顿。一般来说，设置为16线程即可满足需求。" MinValue="1" MaxValue="256" Value="16"/>
+                <vc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数"
+                                     Description="线程数越多，在计算机性能足够的情况下，文件下载越快，反之会造成严重的卡顿。一般来说，设置为16线程即可满足需求。"
+                                     MinValue="1" MaxValue="256" Value="16" />
                 <vc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
-                                     Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="下载失败处理方式" Description="当文件下载失败时，应当进行的操作。"
-                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}"/>
+                                     Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="下载失败处理方式"
+                                     Description="当文件下载失败时，应当进行的操作。"
+                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}" />
 
-                <TextBlock Text="实例管理" FontSize="18" Margin="0,10,0,0"/>
+                <TextBlock Text="实例管理" FontSize="18" Margin="0,10,0,0" />
                 <vc:ComboSettingCard x:Name="InstanceManage_ActionWhenDeleteConfirm"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="删除实例确认方式" Description="此功能可防止误操作导致实例被删除。"
-                                     ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}"/>
+                                     Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="删除实例确认方式"
+                                     Description="此功能可防止误操作导致实例被删除。"
+                                     ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}" />
 
-                <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0"/>
+                <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0" />
                 <vc:ComboSettingCard x:Name="More_LauncherTheme"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="应用主题" Description="默认跟随系统变化，当然也可以自己设置。"
-                                     ComboBoxItems="{Binding Path=ThemeForApp}"/>
+                                     Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="应用主题"
+                                     Description="默认跟随系统变化，当然也可以自己设置。"
+                                     ComboBoxItems="{Binding Path=ThemeForApp}" />
                 <vc:ActionSettingCard x:Name="More_CheckUpdateForLauncher"
-                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="检查更新 ( MCServerLauncher.WPF )" Description="检查本图形化程序的更新。"
+                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="检查更新 ( MCServerLauncher.WPF )"
+                                      Description="检查本图形化程序的更新。"
                                       IsAccentButtonStyle="True"
-                                      ButtonContent="检查更新"/>
+                                      ButtonContent="检查更新" />
                 <vc:ActionSettingCard x:Name="More_CheckUpdateForDaemon" IsEnabled="False"
-                                      Icon="{x:Static ui:SegoeFluentIcons.Processing}" Title="检查更新 ( MCServerLauncher.Daemon )" Description="检查守护进程的更新。"
+                                      Icon="{x:Static ui:SegoeFluentIcons.Processing}"
+                                      Title="检查更新 ( MCServerLauncher.Daemon )" Description="检查守护进程的更新。"
                                       IsAccentButtonStyle="True"
-                                      ButtonContent="检查更新"/>
+                                      ButtonContent="检查更新" />
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
                             <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
+                                <RowDefinition />
+                                <RowDefinition />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
                             </Grid.ColumnDefinitions>
-                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Grid.RowSpan="2" Margin="5,15,20,15"/>
-                            <TextBlock Text="关于 MCServerLauncher Future (WPF)" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
-                            <TextBlock x:Name="AboutVersionReplacer" Grid.Column="1" VerticalAlignment="Top" Grid.Row="1" Margin="0,2,20,5" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"/>
+                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Grid.RowSpan="2"
+                                         Margin="5,15,20,15" />
+                            <TextBlock Text="关于 MCServerLauncher Future (WPF)" TextTrimming="CharacterEllipsis"
+                                       TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1"
+                                       VerticalAlignment="Bottom" Margin="0,0,0,2" />
+                            <TextBlock x:Name="AboutVersionReplacer" Grid.Column="1" VerticalAlignment="Top"
+                                       Grid.Row="1" Margin="0,2,20,5" Opacity="0.615" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <Grid Margin="5,0,5,0">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="MCServerLauncher Future Project" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10"/>
-                        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序（或其中任何部分），将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+                        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                   Text="MCServerLauncher Future Project" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                   Text="此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序（或其中任何部分），将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10" />
                         <Grid Grid.Row="2" VerticalAlignment="Center" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                            <ui:HyperlinkButton Grid.Column="1" Padding="0" NavigateUri="https://github.com/MCSLTeam/MCServerLauncher-Future">GitHub</ui:HyperlinkButton>
-                            <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="。" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                       Text="此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至"
+                                       VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <ui:HyperlinkButton Grid.Column="1" Padding="0"
+                                                NavigateUri="https://github.com/MCSLTeam/MCServerLauncher-Future">
+                                GitHub
+                            </ui:HyperlinkButton>
+                            <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                       Text="。" VerticalAlignment="Center" HorizontalAlignment="Left" />
                         </Grid>
 
-                        <TextBlock Grid.Row="3" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,20,10"/>
+                        <TextBlock Grid.Row="3" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                   Text="MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,20,10" />
                         <Grid Grid.Row="4" VerticalAlignment="Center" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text="Copyright © 2022-2024 " VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                       Text="Copyright © 2022-2024 " VerticalAlignment="Center"
+                                       HorizontalAlignment="Left" />
                             <ui:HyperlinkButton Grid.Column="1" Padding="0" NavigateUri="https://mcsl.com.cn">MCSLTeam</ui:HyperlinkButton>
-                            <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap" Text=". All rights reserved." VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
+                                       Text=". All rights reserved." VerticalAlignment="Center"
+                                       HorizontalAlignment="Left" />
                         </Grid>
                     </Grid>
 

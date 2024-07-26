@@ -1,28 +1,23 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Main.Modules.Download;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using static MCServerLauncher.WPF.Main.Modules.Download.AList;
-using static MCServerLauncher.WPF.Main.Modules.Download.FastMirror;
-using static MCServerLauncher.WPF.Main.Modules.Download.MCSLSync;
-using static MCServerLauncher.WPF.Main.Modules.Download.PolarsMirror;
-using Page = System.Windows.Controls.Page;
+using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Main.Modules.Download;
 
 namespace MCServerLauncher.WPF.Main.View
 {
     /// <summary>
-    /// TestPage.xaml 的交互逻辑
+    ///     TestPage.xaml 的交互逻辑
     /// </summary>
-    public partial class TestPage : Page
+    public partial class TestPage
     {
         public TestPage()
         {
             InitializeComponent();
         }
 
-        private async void ShowTextResultContentDialog(string Result)
+        private static async void ShowTextResultContentDialog(string result)
         {
             ContentDialog dialog = new();
             ScrollViewerEx scroll = new();
@@ -30,140 +25,144 @@ namespace MCServerLauncher.WPF.Main.View
             dialog.PrimaryButtonText = "OK";
             dialog.DefaultButton = ContentDialogButton.Primary;
             dialog.FullSizeDesired = false;
-            TextBlock textBlock = new();
-            textBlock.TextWrapping = TextWrapping.WrapWithOverflow;
-            textBlock.Text = Result;
+            TextBlock textBlock = new()
+            {
+                TextWrapping = TextWrapping.WrapWithOverflow,
+                Text = result
+            };
             scroll.Content = textBlock;
             dialog.Content = scroll;
-            try { await dialog.ShowAsync(); } catch (Exception) { return; }
+            try
+            {
+                await dialog.ShowAsync();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
+
         #region FastMirror
+
         private async void TestFastMirrorEndPoint(object sender, RoutedEventArgs e)
         {
-            List<FastMirrorCoreInfo> Results = await new FastMirror().GetCoreInfo();
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Name: {Result.Name}\nTag: {Result.Tag}\nHomePage: {Result.HomePage}\nRecommend: {Result.Recommend}\nMinecraftVersions: {string.Join(", ", Result.MinecraftVersions)}\n\n";
-            }
+            var results = await new FastMirror().GetCoreInfo();
+            var tmpText = results.Aggregate("",
+                (current, result) =>
+                    current +
+                    $"Name: {result.Name}\nTag: {result.Tag}\nHomePage: {result.HomePage}\nRecommend: {result.Recommend}\nMinecraftVersions: {string.Join(", ", result.MinecraftVersions)}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestFastMirrorCore(object sender, RoutedEventArgs e)
         {
-            List<FastMirrorCoreDetail> Results = await new FastMirror().GetCoreDetail("Paper", "1.20.1");
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Name: {Result.Name}\nMinecraftVersion: {Result.MinecraftVersion}\nCoreVersion: {Result.CoreVersion}\nSHA1: {Result.SHA1}\n\n";
-            }
+            var results = await new FastMirror().GetCoreDetail("Paper", "1.20.1");
+            var tmpText = results.Aggregate("",
+                (current, result) =>
+                    current +
+                    $"Name: {result.Name}\nMinecraftVersion: {result.MinecraftVersion}\nCoreVersion: {result.CoreVersion}\nSHA1: {result.Sha1}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         #endregion
+
         #region AList
+
         private async void TestZTsinAList(object sender, RoutedEventArgs e)
         {
-            List<AListFileStructure> Results = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI/Paper");
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"FileName: {Result.FileName}\nFileSize: {Result.FileSize}\nIsDirectory: {Result.IsDirectory}\n\n";
-            }
+            var results = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI/Paper");
+            var tmpText = results.Aggregate("",
+                (current, result) =>
+                    current +
+                    $"FileName: {result.FileName}\nFileSize: {result.FileSize}\nIsDirectory: {result.IsDirectory}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestZTsinAListFile(object sender, RoutedEventArgs e)
         {
-            string Result = await new AList().GetFileUrl("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI/Paper/paper-1.20.2-318.jar");
-            string tmpText = $"RawUrl: {Result}\n";
-            ShowTextResultContentDialog(tmpText);
+            var result = await new AList().GetFileUrl("https://jn.sv.ztsin.cn:5244",
+                "MCSL2/MCSLAPI/Paper/paper-1.20.2-318.jar");
+            ShowTextResultContentDialog($"RawUrl: {result}\n");
         }
+
         #endregion
+
         #region Polars
+
         private async void TestPolars(object sender, RoutedEventArgs e)
         {
-            List<PolarsMirrorCoreInfo> Results = await new PolarsMirror().GetCoreInfo();
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Name: {Result.Name}\nId: {Result.Id}\nDescription: {Result.Description}\n\n";
-            }
+            var results = await new PolarsMirror().GetCoreInfo();
+            var tmpText = results.Aggregate("",
+                (current, result) =>
+                    current + $"Name: {result.Name}\nId: {result.Id}\nDescription: {result.Description}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestPolarsCore(object sender, RoutedEventArgs e)
         {
-            List<PolarsMirrorCoreDetail> Results = await new PolarsMirror().GetCoreDetail(1);
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Name: {Result.FileName}\nDownloadUrl: {Result.DownloadUrl}\n\n";
-            }
+            var results = await new PolarsMirror().GetCoreDetail(1);
+            var tmpText = results.Aggregate("",
+                (current, result) => current + $"Name: {result.FileName}\nDownloadUrl: {result.DownloadUrl}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         #endregion
+
         #region MSL
+
         private async void TestMSL(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MSLAPI().GetCoreInfo();
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Name: {Result}\n";
-            }
+            var results = await new MSLAPI().GetCoreInfo();
+            var tmpText = results.Aggregate("", (current, result) => current + $"Name: {result}\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestMSLCore(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MSLAPI().GetMinecraftVersions("paper");
-            string tmpText = "Name: paper\n\n";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Version: {Result}\n";
-            }
+            var results = await new MSLAPI().GetMinecraftVersions("paper");
+            var tmpText = results.Aggregate("Name: paper\n\n", (current, result) => current + $"Version: {result}\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestMSLDownloadUrl(object sender, RoutedEventArgs e)
         {
-            string Result = await new MSLAPI().GetDownloadUrl("paper", "1.21");
-            string tmpText = $"Name: paper\nVersion:1.21\n{Result}\n";
-            ShowTextResultContentDialog(tmpText);
+            var result = await new MSLAPI().GetDownloadUrl("paper", "1.21");
+            ShowTextResultContentDialog($"Name: paper\nVersion:1.21\n{result}\n");
         }
+
         #endregion
+
         #region MCSLSync
+
         private async void TestMCSLSync(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MCSLSync().GetCoreInfo();
-            string tmpText = "";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Name: {Result}\n";
-            }
+            var results = await new MCSLSync().GetCoreInfo();
+            var tmpText = results.Aggregate("", (current, result) => current + $"Name: {result}\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestMCSLSyncCore(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MCSLSync().GetMinecraftVersions("Paper");
-            string tmpText = "Name: Paper\n\n";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Version: {Result}\n\n";
-            }
+            var results = await new MCSLSync().GetMinecraftVersions("Paper");
+            var tmpText = results.Aggregate("Name: Paper\n\n", (current, result) => current + $"Version: {result}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestMCSLSyncCoreVersion(object sender, RoutedEventArgs e)
         {
-            List<string> Results = await new MCSLSync().GetCoreVersions("Paper", "1.20.6");
-            string tmpText = "Name: Paper\nVersion: 1.20.6\n\n";
-            foreach (var Result in Results)
-            {
-                tmpText += $"Version: {Result}\n\n";
-            }
+            var results = await new MCSLSync().GetCoreVersions("Paper", "1.20.6");
+            var tmpText = results.Aggregate("Name: Paper\nVersion: 1.20.6\n\n",
+                (current, result) => current + $"Version: {result}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
+
         private async void TestMCSLSyncCoreDetail(object sender, RoutedEventArgs e)
         {
-            MCSLSyncCoreDetail Result = await new MCSLSync().GetCoreDetail("Paper", "1.20.6", "build30");
-            string tmpText = $"Core: {Result.Core}\nMinecraftVersion: {Result.MinecraftVersion}\nCoreVersion: {Result.CoreVersion}\nDownloadUrl: {Result.DownloadUrl}\n";
-            ShowTextResultContentDialog(tmpText);
+            var result = await new MCSLSync().GetCoreDetail("Paper", "1.20.6", "build30");
+            ShowTextResultContentDialog(
+                $"Core: {result.Core}\nMinecraftVersion: {result.MinecraftVersion}\nCoreVersion: {result.CoreVersion}\nDownloadUrl: {result.DownloadUrl}\n");
         }
+
         #endregion
     }
 }

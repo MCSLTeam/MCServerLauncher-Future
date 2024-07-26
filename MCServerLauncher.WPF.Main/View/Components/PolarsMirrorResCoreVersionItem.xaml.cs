@@ -1,16 +1,15 @@
-﻿using System.Windows.Controls;
-
-namespace MCServerLauncher.WPF.Main.View.Components
+﻿namespace MCServerLauncher.WPF.Main.View.Components
 {
     /// <summary>
-    /// PolarsMirrorResCoreVersionItem.xaml 的交互逻辑
+    ///     PolarsMirrorResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
-    public partial class PolarsMirrorResCoreVersionItem : UserControl
+    public partial class PolarsMirrorResCoreVersionItem
     {
         public PolarsMirrorResCoreVersionItem()
         {
             InitializeComponent();
         }
+
         public string FileName
         {
             get => FileNameReplacer.Text;

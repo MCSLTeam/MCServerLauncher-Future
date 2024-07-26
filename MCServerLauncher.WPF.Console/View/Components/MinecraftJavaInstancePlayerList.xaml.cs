@@ -1,27 +1,26 @@
-﻿using System.Windows.Controls;
-
-namespace MCServerLauncher.WPF.Console.View.Components
+﻿namespace MCServerLauncher.WPF.Console.View.Components
 {
     /// <summary>
-    /// MinecraftJavaInstancePlayerList.xaml 的交互逻辑
+    ///     MinecraftJavaInstancePlayerList.xaml 的交互逻辑
     /// </summary>
-    public partial class MinecraftJavaInstancePlayerList : UserControl
+    public partial class MinecraftJavaInstancePlayerList
     {
         public MinecraftJavaInstancePlayerList()
         {
             InitializeComponent();
         }
+
         public string PlayerList
         {
             get => string.Join(",", PlayerListView.Items.ToString());
             set
             {
                 PlayerListView.Items.Clear();
-                string[] CurrentPlayers = value.Split(',');
-                foreach (string Player in CurrentPlayers)
+                var currentPlayers = value.Split(',');
+                foreach (var player in currentPlayers)
                 {
-                    string[] PlayerInfo = Player.Split('@');
-                    PlayerListView.Items.Add(new PlayerItem() { PlayerName = PlayerInfo[0], PlayerIP = PlayerInfo[1] });
+                    var playerInfo = player.Split('@');
+                    PlayerListView.Items.Add(new PlayerItem { PlayerName = playerInfo[0], PlayerIP = playerInfo[1] });
                 }
             }
         }

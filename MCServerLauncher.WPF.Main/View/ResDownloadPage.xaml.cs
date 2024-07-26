@@ -1,21 +1,21 @@
-﻿using iNKORE.UI.WPF.Modern.Media.Animation;
-using MCServerLauncher.WPF.Main.View.ResDownloadProvider;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using Page = System.Windows.Controls.Page;
+using iNKORE.UI.WPF.Modern.Media.Animation;
+using MCServerLauncher.WPF.Main.View.ResDownloadProvider;
 
 namespace MCServerLauncher.WPF.Main.View
 {
     /// <summary>
-    /// ResDownloadPage.xaml 的交互逻辑
+    ///     ResDownloadPage.xaml 的交互逻辑
     /// </summary>
-    public partial class ResDownloadPage : Page
+    public partial class ResDownloadPage
     {
-        public FastMirrorProvider FastMirror = new();
-        public PolarsMirrorProvider PolarsMirror = new();
-        public MSLAPIProvider MSLAPI = new();
-        public ZCloudFileProvider ZCloudFile = new();
-        public MCSLSyncProvider MCSLSync = new();
+        public readonly FastMirrorProvider FastMirror = new();
+        public readonly MCSLSyncProvider MCSLSync = new();
+        public readonly MSLAPIProvider MSLAPI = new();
+        public readonly PolarsMirrorProvider PolarsMirror = new();
+        public readonly ZCloudFileProvider ZCloudFile = new();
+
         public ResDownloadPage()
         {
             InitializeComponent();
@@ -29,8 +29,12 @@ namespace MCServerLauncher.WPF.Main.View
             //Subtitle.Text += $" ( 当前正在使用 {ZCloudFile.ResProviderName} 下载源 )";
             //CurrentResDownloadProvider.Content = MCSLSync;
             //Subtitle.Text += $" ( 当前正在使用 {MCSLSync.ResProviderName} 下载源 )";
-            IsVisibleChanged += (sender, e) => { if (IsVisible) Refresh(); };
+            IsVisibleChanged += (sender, e) =>
+            {
+                if (IsVisible) Refresh();
+            };
         }
+
         public async void Refresh()
         {
             await FastMirror.Refresh();
@@ -39,9 +43,10 @@ namespace MCServerLauncher.WPF.Main.View
             //await ZCloudFile.Refresh();
             //await MCSLSync.Refresh();
         }
+
         private async void ChResDownloadSrc(object sender, RoutedEventArgs e)
         {
-            switch ((sender as Button).Content)
+            switch (((Button)sender).Content)
             {
                 case "FastMirror":
                     CurrentResDownloadProvider.Navigate(FastMirror, new DrillInNavigationTransitionInfo());
@@ -55,7 +60,7 @@ namespace MCServerLauncher.WPF.Main.View
                     break;
                 case "MSLAPI":
                     CurrentResDownloadProvider.Navigate(MSLAPI, new DrillInNavigationTransitionInfo());
-                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MSLAPI.ResProviderName} 下载源 )";
+                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MSLAPIProvider.ResProviderName} 下载源 )";
                     await MSLAPI.Refresh();
                     break;
                 case "ZCloudFile":

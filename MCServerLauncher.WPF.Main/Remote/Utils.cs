@@ -19,9 +19,7 @@ namespace MCServerLauncher.WPF.Main.Remote
                     var buffer = new byte[bufferSize];
                     int bytesRead;
                     while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
-                    {
                         sha1.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-                    }
 
                     sha1.TransformFinalBlock(buffer, 0, 0);
 

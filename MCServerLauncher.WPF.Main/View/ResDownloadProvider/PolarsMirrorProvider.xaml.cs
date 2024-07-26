@@ -1,54 +1,49 @@
-﻿using MCServerLauncher.WPF.Main.Modules.Download;
-using MCServerLauncher.WPF.Main.View.Components;
-using Serilog;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using static MCServerLauncher.WPF.Main.Modules.Download.PolarsMirror;
+using MCServerLauncher.WPF.Main.Modules.Download;
+using MCServerLauncher.WPF.Main.View.Components;
+using Serilog;
 
 namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
 {
     /// <summary>
-    /// PolarsMirrorProvider.xaml 的交互逻辑
+    ///     PolarsMirrorProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class PolarsMirrorProvider : UserControl
+    public partial class PolarsMirrorProvider
     {
-        private bool IsDataLoading = false;
-        private bool IsDataLoaded = false;
-        public string ResProviderName = "极星云镜像";
+        public readonly string ResProviderName = "极星云镜像";
+        private bool _isDataLoaded;
+        private bool _isDataLoading;
+
         public PolarsMirrorProvider()
         {
             InitializeComponent();
         }
+
         public async Task<bool> Refresh()
         {
-            if (IsDataLoading || IsDataLoaded)
-            {
-                return true;
-            }
+            if (_isDataLoading || _isDataLoaded) return true;
             try
             {
                 Log.Information("[Res] [PolarsMirror] Loading core info");
-                IsDataLoading = true;
-                List<PolarsMirrorCoreInfo> PolarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
+                _isDataLoading = true;
+                var polarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
 
-                foreach (PolarsMirrorCoreInfo Result in PolarsMirrorInfo)
-                {
-                    PolarsMirrorResCoreItem CoreItem = new()
-                    {
-                        CoreName = Result.Name,
-                        CoreId = Result.Id,
-                        CoreDescription = Result.Description,
-                        CoreIconUrl = Result.IconUrl,
-                    };
-                    CoreGridView.Items.Add(CoreItem);
-                }
+                foreach (var coreItem in polarsMirrorInfo.Select(result => new PolarsMirrorResCoreItem
+                         {
+                             CoreName = result.Name,
+                             CoreId = result.Id,
+                             CoreDescription = result.Description,
+                             CoreIconUrl = result.IconUrl
+                         }))
+                    CoreGridView.Items.Add(coreItem);
 
-                IsDataLoading = false;
-                IsDataLoaded = true;
-                Log.Information($"[Res] [PolarsMirror] Core info loaded. Count: {PolarsMirrorInfo.Count}");
+                _isDataLoading = false;
+                _isDataLoaded = true;
+                Log.Information($"[Res] [PolarsMirror] Core info loaded. Count: {polarsMirrorInfo.Count}");
                 return true;
             }
             catch (Exception ex)
@@ -57,39 +52,38 @@ namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
                 return false;
             }
         }
+
         private async void SetCore(object sender, SelectionChangedEventArgs e)
         {
-            if (CoreGridView.SelectedIndex == -1)
-            {
-                return;
-            }
-            var SelectedCore = (PolarsMirrorResCoreItem)CoreGridView.SelectedItem;
-            Log.Information($"[Res] [PolarsMirror] Selected core \"{SelectedCore.CoreName}\"");
-            CurrentCoreName.Text = SelectedCore.CoreName;
-            CurrentCoreDescription.Text = SelectedCore.CoreDescription;
-            CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(SelectedCore.CoreIconUrl), BitmapCreateOptions.None, BitmapCacheOption.Default);
+            if (CoreGridView.SelectedIndex == -1) return;
+            var selectedCore = (PolarsMirrorResCoreItem)CoreGridView.SelectedItem;
+            Log.Information($"[Res] [PolarsMirror] Selected core \"{selectedCore.CoreName}\"");
+            CurrentCoreName.Text = selectedCore.CoreName;
+            CurrentCoreDescription.Text = selectedCore.CoreDescription;
+            CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(selectedCore.CoreIconUrl), BitmapCreateOptions.None,
+                BitmapCacheOption.Default);
             CoreGridView.IsEnabled = false;
             try
             {
-                List<PolarsMirrorCoreDetail> PolarsMirrorCoreDetails = await new PolarsMirror().GetCoreDetail(SelectedCore.CoreId);
+                var polarsMirrorCoreDetails = await new PolarsMirror().GetCoreDetail(selectedCore.CoreId);
                 CoreVersionStackPanel.Children.Clear();
                 CoreGridView.IsEnabled = false;
-                foreach (PolarsMirrorCoreDetail Detail in PolarsMirrorCoreDetails)
-                {
-                    PolarsMirrorResCoreVersionItem CoreDetailItem = new()
-                    {
-                        FileName = Detail.FileName,
-                    };
-                    CoreVersionStackPanel.Children.Add(CoreDetailItem);
-                }
-                Log.Information($"[Res] [PolarsMirror] Core detail loaded. Count: {PolarsMirrorCoreDetails.Count}");
+                foreach (var coreDetailItem in polarsMirrorCoreDetails.Select(detail =>
+                             new PolarsMirrorResCoreVersionItem
+                             {
+                                 FileName = detail.FileName
+                             }))
+                    CoreVersionStackPanel.Children.Add(coreDetailItem);
+
+                Log.Information($"[Res] [PolarsMirror] Core detail loaded. Count: {polarsMirrorCoreDetails.Count}");
             }
             catch (Exception ex)
             {
-                Log.Error($"[Res] [PolarsMirror] Failed to get core detail of \"{SelectedCore.CoreName}\". Reason: {ex.Message}");
+                Log.Error(
+                    $"[Res] [PolarsMirror] Failed to get core detail of \"{selectedCore.CoreName}\". Reason: {ex.Message}");
             }
+
             CoreGridView.IsEnabled = true;
         }
-
     }
 }

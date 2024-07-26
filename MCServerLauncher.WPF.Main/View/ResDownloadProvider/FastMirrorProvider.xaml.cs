@@ -1,58 +1,52 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using iNKORE.UI.WPF.Helpers;
 using MCServerLauncher.WPF.Main.Helpers;
 using MCServerLauncher.WPF.Main.Modules.Download;
 using MCServerLauncher.WPF.Main.View.Components;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using static MCServerLauncher.WPF.Main.Modules.Download.FastMirror;
 
 namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
 {
     /// <summary>
-    /// FastMirrorProvider.xaml 的交互逻辑
+    ///     FastMirrorProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class FastMirrorProvider : UserControl
+    public partial class FastMirrorProvider
     {
-        private bool IsDataLoading = false;
-        private bool IsDataLoaded = false;
-        public string ResProviderName = "无极镜像";
+        public readonly string ResProviderName = "无极镜像";
+        private bool _isDataLoaded;
+        private bool _isDataLoading;
 
         public FastMirrorProvider()
         {
             InitializeComponent();
         }
+
         public async Task<bool> Refresh()
         {
-            if (IsDataLoading || IsDataLoaded)
-            {
-                return true;
-            }
+            if (_isDataLoading || _isDataLoaded) return true;
             try
             {
                 Log.Information("[Res] [FastMirror] Loading core info");
-                IsDataLoading = true;
-                List<FastMirrorCoreInfo> FastMirrorInfo = await new FastMirror().GetCoreInfo();
+                _isDataLoading = true;
+                var fastMirrorInfo = await new FastMirror().GetCoreInfo();
 
-                foreach (FastMirrorCoreInfo Result in FastMirrorInfo)
-                {
-                    FastMirrorResCoreItem CoreItem = new()
-                    {
-                        CoreName = Result.Name,
-                        CoreTag = Result.Tag,
-                        Recommend = Result.Recommend,
-                        HomePage = Result.HomePage,
-                        MinecraftVersions = ResDownloadUtils.SequenceMinecraftVersion(Result.MinecraftVersions)
-                    };
-                    CoreGridView.Items.Add(CoreItem);
-                }
+                foreach (var coreItem in fastMirrorInfo.Select(result => new FastMirrorResCoreItem
+                         {
+                             CoreName = result.Name,
+                             CoreTag = result.Tag,
+                             Recommend = result.Recommend,
+                             HomePage = result.HomePage,
+                             MinecraftVersions = ResDownloadUtils.SequenceMinecraftVersion(result.MinecraftVersions)
+                         }))
+                    CoreGridView.Items.Add(coreItem);
 
-                IsDataLoading = false;
-                IsDataLoaded = true;
-                Log.Information($"[Res] [FastMirror] Core info loaded. Count: {FastMirrorInfo.Count}");
+                _isDataLoading = false;
+                _isDataLoaded = true;
+                Log.Information($"[Res] [FastMirror] Core info loaded. Count: {fastMirrorInfo.Count}");
                 return true;
             }
             catch (Exception ex)
@@ -61,70 +55,64 @@ namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
                 return false;
             }
         }
+
         private void SetCore(object sender, SelectionChangedEventArgs e)
         {
-            if (CoreGridView.SelectedIndex == -1)
-            {
-                return;
-            }
-            FastMirrorResCoreItem SelectedCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
-            Log.Information($"[Res] [FastMirror] Selected core \"{SelectedCore.CoreName}\"");
-            MinecraftVersionComboBox.SelectionChanged -= new SelectionChangedEventHandler(GetCoreDetail);
+            if (CoreGridView.SelectedIndex == -1) return;
+            var selectedCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
+            Log.Information($"[Res] [FastMirror] Selected core \"{selectedCore.CoreName}\"");
+            MinecraftVersionComboBox.SelectionChanged -= GetCoreDetail;
             MinecraftVersionComboBox.Items.Clear();
             CoreGridView.IsEnabled = false;
             CoreHomePageButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            foreach (string MinecraftVersion in SelectedCore.MinecraftVersions)
-            {
-                MinecraftVersionComboBox.Items.Add($"Minecraft {MinecraftVersion}");
-            }
-            MinecraftVersionComboBox.SelectionChanged += new SelectionChangedEventHandler(GetCoreDetail);
+            foreach (var minecraftVersion in selectedCore.MinecraftVersions)
+                MinecraftVersionComboBox.Items.Add($"Minecraft {minecraftVersion}");
+            MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;
             MinecraftVersionComboBox.SelectedIndex = 0;
-            CoreHomePageButton.SetProperty("HomePage", SelectedCore.HomePage);
+            CoreHomePageButton.SetProperty("HomePage", selectedCore.HomePage);
             CoreHomePageButton.IsEnabled = true;
             CoreGridView.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
-
         }
-        private void OpenHomePage(object Sender, RoutedEventArgs e)
+
+        private void OpenHomePage(object sender, RoutedEventArgs e)
         {
             NetworkUtils.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString());
         }
 
         private async void GetCoreDetail(object sender, SelectionChangedEventArgs e)
         {
-            FastMirrorResCoreItem CurrentCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
-            string CurrentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
-            if (CurrentCore.CoreName == null || CurrentMinecraftVersion == null)
-            {
-                return;
-            }
+            var currentCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
+            var currentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
+            if (currentCore.CoreName == null || currentMinecraftVersion == null) return;
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            Log.Information($"[Res] [FastMirror] Selected core \"{CurrentCore.CoreName}\" with Minecraft version \"{CurrentMinecraftVersion}\"");
+            Log.Information(
+                $"[Res] [FastMirror] Selected core \"{currentCore.CoreName}\" with Minecraft version \"{currentMinecraftVersion}\"");
             try
             {
-                List<FastMirrorCoreDetail> FastMirrorCoreDetails = await new FastMirror().GetCoreDetail(CurrentCore.CoreName, CurrentMinecraftVersion);
+                var fastMirrorCoreDetails =
+                    await new FastMirror().GetCoreDetail(currentCore.CoreName, currentMinecraftVersion);
                 CoreVersionStackPanel.Children.Clear();
-                foreach (FastMirrorCoreDetail Detail in FastMirrorCoreDetails)
-                {
-                    FastMirrorResCoreVersionItem CoreDetailItem = new()
-                    {
-                        Core = Detail.Name,
-                        CoreVersion = Detail.CoreVersion,
-                        MinecraftVersion = Detail.MinecraftVersion
-                    };
-                    CoreVersionStackPanel.Children.Add(CoreDetailItem);
-                }
-                Log.Information($"[Res] [FastMirror] Core detail loaded. Count: {FastMirrorCoreDetails.Count}");
+                foreach (var coreDetailItem in fastMirrorCoreDetails.Select(detail => new FastMirrorResCoreVersionItem
+                         {
+                             Core = detail.Name,
+                             CoreVersion = detail.CoreVersion,
+                             MinecraftVersion = detail.MinecraftVersion
+                         }))
+                    CoreVersionStackPanel.Children.Add(coreDetailItem);
+
+                Log.Information($"[Res] [FastMirror] Core detail loaded. Count: {fastMirrorCoreDetails.Count}");
             }
             catch (Exception ex)
             {
-                Log.Error($"[Res] [FastMirror] Failed to get core detail of \"{CurrentCore.CoreName}\" with Minecraft version \"{CurrentMinecraftVersion}\". Reason: {ex.Message}");
+                Log.Error(
+                    $"[Res] [FastMirror] Failed to get core detail of \"{currentCore.CoreName}\" with Minecraft version \"{currentMinecraftVersion}\". Reason: {ex.Message}");
             }
+
             CoreGridView.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
         }
-
     }
 }

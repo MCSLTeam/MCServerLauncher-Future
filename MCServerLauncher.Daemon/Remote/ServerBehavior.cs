@@ -1,13 +1,11 @@
 ﻿using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
-using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon.Remote;
 
@@ -16,13 +14,9 @@ internal class ServerBehavior : WebSocketBehavior
     // Injected dependencies
     private readonly IActionService _actionService;
     private readonly IEventService _eventService;
+    private readonly IJsonService _jsonService;
     private readonly ILogHelper _logHelper;
     private readonly IUserService _userService;
-    private readonly IJsonService _jsonService;
-
-    internal static Config Config => Config.Get();
-
-    private static string IpAddress { get; set; }
     private User User;
 
     // DI
@@ -50,6 +44,10 @@ internal class ServerBehavior : WebSocketBehavior
         ));
     }
 
+    internal static Config Config => Config.Get();
+
+    private static string IpAddress { get; set; }
+
     protected override void OnOpen()
     {
         var token = Context.QueryString["token"];
@@ -65,11 +63,11 @@ internal class ServerBehavior : WebSocketBehavior
         {
             _logHelper.Error($"Failed to authenticate user: {e.Message}");
         }
-        
+
 #if DEBUG
         authenticated = true;
 #endif
-        
+
         if (!authenticated)
         {
             Sessions.CloseSession(ID, CloseStatusCode.ProtocolError, "Authentication failed");
@@ -84,7 +82,6 @@ internal class ServerBehavior : WebSocketBehavior
     {
         if (e.IsText)
         {
-
             // var (actionType, echo, parameters) = ParseMessage(e.Data);
             if (!TryParseMessage(e.Data, out var result))
             {
@@ -92,19 +89,16 @@ internal class ServerBehavior : WebSocketBehavior
                 Send(_jsonService.Serialize(_actionService.Err("Invalid action packet")));
                 return;
             }
-            
+
             _logHelper.Info($"Received message: \n{e.Data}\n");
-            
+
             var (actionType, echo, parameters) = result;
 
             var data = await _actionService.Routine(actionType, parameters);
 
             if (data == null) return; // empty data will not be sent
 
-            if (echo != null)
-            {
-                data["echo"] = echo;
-            }
+            if (echo != null) data["echo"] = echo;
 
             var text = _jsonService.Serialize(data);
 

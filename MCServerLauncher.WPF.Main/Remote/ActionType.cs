@@ -20,12 +20,13 @@ namespace MCServerLauncher.WPF.Main.Remote
             return (ActionType)Enum.Parse(typeof(ActionType), bigCamelCase);
         }
     }
+
     internal enum ActionType
     {
         Message,
         Ping,
         FileUploadRequest,
         FileUploadChunk,
-        NewToken,
+        NewToken
     }
 }

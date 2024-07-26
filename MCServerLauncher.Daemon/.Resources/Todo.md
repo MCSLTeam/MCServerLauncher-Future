@@ -1,6 +1,7 @@
 # TODO
 
 ### 近期
+
 - [ ] Daemon: Logger(Serilog)
 - [ ] Daemon: TestCase
 - [ ] Daemon: 多用户登录支持
@@ -9,6 +10,7 @@
 - [ ] Daemon: 传输数据压缩
 
 ### 远期
+
 - [ ] Daemon: 权限/权限组划分
 - [ ] Daemon: 功能模块设计
 - [ ] ...

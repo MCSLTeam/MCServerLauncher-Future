@@ -18,7 +18,7 @@ public class UserService : IUserService
 
 
     /// <summary>
-    /// 创建用户,并创建用户目录
+    ///     创建用户,并创建用户目录
     /// </summary>
     /// <param name="name">用户名</param>
     /// <param name="password">密码</param>
@@ -40,7 +40,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// 删除用户和用户目录
+    ///     删除用户和用户目录
     /// </summary>
     /// <param name="name">用户名</param>
     /// <exception cref="UsersException"></exception>
@@ -56,7 +56,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// 获取所有用户信息的快照
+    ///     获取所有用户信息的快照
     /// </summary>
     /// <returns></returns>
     public Dictionary<string, UserMeta> GetUsers()
@@ -64,14 +64,8 @@ public class UserService : IUserService
         return _userMap.ToDictionary(x => x.Key, x => x.Value);
     }
 
-    private bool VerifyPassword(string name, string password)
-    {
-        return PasswordHasher.VerifyPassword(password,
-            _userMap.TryGetValue(name, out var userMeta) ? userMeta.PasswordHash : null);
-    }
-
     /// <summary>
-    /// 用户登录,若登录成功则返回用户信息
+    ///     用户登录,若登录成功则返回用户信息
     /// </summary>
     /// <param name="name">用户名</param>
     /// <param name="password">密码</param>
@@ -90,7 +84,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// 验证JWT,若验证成功则返回用户信息
+    ///     验证JWT,若验证成功则返回用户信息
     /// </summary>
     /// <param name="jwt"></param>
     /// <param name="user"></param>
@@ -103,23 +97,29 @@ public class UserService : IUserService
         return rv;
     }
 
+    private bool VerifyPassword(string name, string password)
+    {
+        return PasswordHasher.VerifyPassword(password,
+            _userMap.TryGetValue(name, out var userMeta) ? userMeta.PasswordHash : null);
+    }
+
     private void SaveUsers()
     {
         FileManager.WriteJsonAndBackup("users.json", _userMap);
     }
 
     /// <summary>
-    /// 从文件加载用户信息
+    ///     从文件加载用户信息
     /// </summary>
     /// <returns></returns>
     private static ConcurrentDictionary<string, UserMeta> LoadUsers()
     {
         return FileManager.ReadJsonAndBackupOr("users.json", () => new ConcurrentDictionary<string, UserMeta>());
     }
-    
-    
+
+
     /// <summary>
-    /// 检查默认admin用户，若不存在则创建
+    ///     检查默认admin用户，若不存在则创建
     /// </summary>
     /// <param name="userMap"></param>
     /// <returns></returns>
@@ -135,7 +135,7 @@ public class UserService : IUserService
                     PermissionGroups.Admin,
                     null)
             );
-            
+
             FileManager.WriteJsonAndBackup("users.json", userMap);
 
             Log.Information($" [Users] *** Internal user created: admin, password: {pwd} ***");

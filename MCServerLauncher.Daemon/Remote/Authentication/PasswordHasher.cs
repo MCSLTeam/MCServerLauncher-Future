@@ -1,9 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
-
-using System;
-using System.Security.Cryptography;
 
 public static class PasswordHasher
 {
@@ -13,7 +11,7 @@ public static class PasswordHasher
     private static readonly HashAlgorithmName HashAlgorithm = HashAlgorithmName.SHA256;
 
     /// <summary>
-    /// 使用PBKDF2 生成密码哈希，用于密码存储
+    ///     使用PBKDF2 生成密码哈希，用于密码存储
     /// </summary>
     /// <param name="password"></param>
     /// <returns></returns>
@@ -36,7 +34,7 @@ public static class PasswordHasher
     }
 
     /// <summary>
-    /// 验证密码
+    ///     验证密码
     /// </summary>
     /// <param name="password"></param>
     /// <param name="hashedPassword"></param>
@@ -57,12 +55,8 @@ public static class PasswordHasher
 
         // 比较新生成的哈希和存储的哈希
         for (var i = 0; i < KeySize; i++)
-        {
             if (hashBytes[i + SaltSize] != hash[i])
-            {
                 return false;
-            }
-        }
 
         return true;
     }

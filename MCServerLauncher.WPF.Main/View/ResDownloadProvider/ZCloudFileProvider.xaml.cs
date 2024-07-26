@@ -1,49 +1,45 @@
-﻿using MCServerLauncher.WPF.Main.Modules.Download;
-using MCServerLauncher.WPF.Main.View.Components;
-using Serilog;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using static MCServerLauncher.WPF.Main.Modules.Download.AList;
+using MCServerLauncher.WPF.Main.Modules.Download;
+using MCServerLauncher.WPF.Main.View.Components;
+using Serilog;
 
 namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
 {
     /// <summary>
-    /// ZCloudFileProvider.xaml 的交互逻辑
+    ///     ZCloudFileProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class ZCloudFileProvider : UserControl
+    public partial class ZCloudFileProvider
     {
-        private bool IsDataLoading = false;
-        private bool IsDataLoaded = false;
-        public string ResProviderName = "ZCloud File";
+        public readonly string ResProviderName = "ZCloud File";
+        private bool _isDataLoaded;
+        private bool _isDataLoading;
+
         public ZCloudFileProvider()
         {
             InitializeComponent();
         }
+
         public async Task<bool> Refresh()
         {
-            if (IsDataLoading || IsDataLoaded)
-            {
-                return true;
-            }
+            if (_isDataLoading || _isDataLoaded) return true;
             try
             {
                 Log.Information("[Res] [ZCloudFile] Loading core info");
-                IsDataLoading = true;
-                List<AListFileStructure> ZCloudFileInfo = await new AList().GetFileList(Host: "https://jn.sv.ztsin.cn:5244", Path: "MCSL2/MCSLAPI");
+                _isDataLoading = true;
+                var zCloudFileInfo = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI");
 
-                foreach (AListFileStructure Result in ZCloudFileInfo)
-                {
-                    ZCloudFileResCoreItem CoreItem = new()
-                    {
-                        CoreName = Result.FileName,
-                    };
-                    CoreGridView.Items.Add(CoreItem);
-                }
-                IsDataLoading = false;
-                IsDataLoaded = true;
-                Log.Information($"[Res] [ZCloudFile] Core info loaded. Count: {ZCloudFileInfo.Count}");
+                foreach (var coreItem in zCloudFileInfo.Select(result => new ZCloudFileResCoreItem
+                         {
+                             CoreName = result.FileName
+                         }))
+                    CoreGridView.Items.Add(coreItem);
+
+                _isDataLoading = false;
+                _isDataLoaded = true;
+                Log.Information($"[Res] [ZCloudFile] Core info loaded. Count: {zCloudFileInfo.Count}");
                 return true;
             }
             catch (Exception ex)
@@ -52,37 +48,36 @@ namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
                 return false;
             }
         }
+
         private async void SetCore(object sender, SelectionChangedEventArgs e)
         {
-            if (CoreGridView.SelectedIndex == -1)
-            {
-                return;
-            }
-            var SelectedCore = (ZCloudFileResCoreItem)CoreGridView.SelectedItem;
-            Log.Information($"[Res] [ZCloudFile] Selected core \"{SelectedCore.CoreName}\"");
-            CurrentCoreName.Text = SelectedCore.CoreName;
+            if (CoreGridView.SelectedIndex == -1) return;
+            var selectedCore = (ZCloudFileResCoreItem)CoreGridView.SelectedItem;
+            Log.Information($"[Res] [ZCloudFile] Selected core \"{selectedCore.CoreName}\"");
+            CurrentCoreName.Text = selectedCore.CoreName;
             CoreGridView.IsEnabled = false;
             try
             {
-                List<AListFileStructure> ZCloudFileInfo = await new AList().GetFileList(Host: "https://jn.sv.ztsin.cn:5244", Path: $"MCSL2/MCSLAPI/{SelectedCore.CoreName}");
-                ZCloudFileInfo.Reverse();
+                var zCloudFileInfo = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244",
+                    $"MCSL2/MCSLAPI/{selectedCore.CoreName}");
+                zCloudFileInfo.Reverse();
                 CoreVersionStackPanel.Children.Clear();
-                foreach (AListFileStructure Detail in ZCloudFileInfo)
-                {
-                    ZCloudFileResCoreVersionItem CoreDetailItem = new()
-                    {
-                        Core = SelectedCore.CoreName,
-                        FileName = Detail.FileName,
-                        FileSize = $"{(int.Parse(Detail.FileSize) / 1024.00 / 1024.00).ToString("0.00")} MB",
-                    };
-                    CoreVersionStackPanel.Children.Add(CoreDetailItem);
-                }
-                Log.Information($"[Res] [ZCloudFile] Core list loaded. Count: {ZCloudFileInfo.Count}");
+                foreach (var coreDetailItem in zCloudFileInfo.Select(detail => new ZCloudFileResCoreVersionItem
+                         {
+                             Core = selectedCore.CoreName,
+                             FileName = detail.FileName,
+                             FileSize = $"{int.Parse(detail.FileSize) / 1024.00 / 1024.00:0.00} MB"
+                         }))
+                    CoreVersionStackPanel.Children.Add(coreDetailItem);
+
+                Log.Information($"[Res] [ZCloudFile] Core list loaded. Count: {zCloudFileInfo.Count}");
             }
             catch (Exception ex)
             {
-                Log.Error($"[Res] [ZCloudFile] Failed to get core list of \"{SelectedCore.CoreName}\". Reason: {ex.Message}");
+                Log.Error(
+                    $"[Res] [ZCloudFile] Failed to get core list of \"{selectedCore.CoreName}\". Reason: {ex.Message}");
             }
+
             CoreGridView.IsEnabled = true;
         }
     }

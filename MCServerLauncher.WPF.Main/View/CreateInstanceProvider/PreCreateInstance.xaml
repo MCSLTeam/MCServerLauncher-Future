@@ -1,38 +1,53 @@
 ﻿<UserControl x:Class="MCServerLauncher.WPF.Main.View.CreateInstanceProvider.PreCreateInstance"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="请选择欲操作的方式:" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,0,0"/>
+        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="请选择欲操作的方式:" VerticalAlignment="Top"
+                   HorizontalAlignment="Left" Margin="0,80,0,0" />
         <ui:GridView Grid.Row="1" Margin="0,15,0,60">
-            <Border x:Name="MinecraftJavaServer" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Java 版服务器" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="15,15,15,15"/>
+            <Border x:Name="MinecraftJavaServer" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Java 版服务器" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="15,15,15,15" />
             </Border>
-            <Border x:Name="MinecraftForgeServer" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Forge 服务器" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,15,17,15"/>
+            <Border x:Name="MinecraftForgeServer" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Forge 服务器" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="17,15,17,15" />
             </Border>
-            <Border x:Name="MinecraftBedrockServer" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft 基岩版服务器" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="18,15,18,15"/>
+            <Border x:Name="MinecraftBedrockServer" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft 基岩版服务器" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
             </Border>
-            <Border x:Name="FastReverseProxyClient" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="FRP 客户端程序" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="18,15,18,15"/>
+            <Border x:Name="FastReverseProxyClient" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="FRP 客户端程序" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
             </Border>
-            <Border x:Name="OtherExecutable" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="其他控制台程序" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="44,15,44,15"/>
+            <Border x:Name="OtherExecutable" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="其他控制台程序" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="44,15,44,15" />
             </Border>
-            <Border x:Name="ImportInstance" MouseLeftButtonDown="SelectNewInstanceType" Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="或者，导入？" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="51,15,51,15"/>
+            <Border x:Name="ImportInstance" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="或者，导入？" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="51,15,51,15" />
             </Border>
         </ui:GridView>
-        <Button Grid.Row="2" Click="GoCreateInstance" x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Content="下一步" Margin="0,0,0,30" Width="90" Height="45" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+        <Button Grid.Row="2" Click="GoCreateInstance" x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False"
+                Style="{StaticResource AccentButtonStyle}" Content="下一步" Margin="0,0,0,30" Width="90" Height="45"
+                VerticalAlignment="Bottom" HorizontalAlignment="Right" />
     </Grid>
 </UserControl>

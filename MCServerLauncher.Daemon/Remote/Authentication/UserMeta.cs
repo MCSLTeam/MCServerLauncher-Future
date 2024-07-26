@@ -2,16 +2,16 @@ namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 public class UserMeta
 {
-    public string PasswordHash { get; private set; }
-    public PermissionGroups Group { get; private set; }
-    public Permission[] Permissions { get; private set; }
-
     public UserMeta(string passwordHash, PermissionGroups group, Permission[] permissions)
     {
         PasswordHash = passwordHash;
         Group = group;
         Permissions = permissions;
     }
+
+    public string PasswordHash { get; private set; }
+    public PermissionGroups Group { get; }
+    public Permission[] Permissions { get; private set; }
 
     public override string ToString()
     {
@@ -21,14 +21,14 @@ public class UserMeta
 
 public class User
 {
-    public string Name { get; private set; }
-    public UserMeta Meta { get; private set; }
-
     public User(string name, UserMeta meta)
     {
         Name = name;
         Meta = meta;
     }
+
+    public string Name { get; }
+    public UserMeta Meta { get; }
 
     public override string ToString()
     {

@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 
-
 public class MinecraftJavaInstanceConfig
 {
     public string CoreName { get; set; }

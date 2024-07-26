@@ -1,55 +1,53 @@
-﻿using MCServerLauncher.WPF.Main.Modules.Download;
-using MCServerLauncher.WPF.Main.View.Components;
-using Serilog;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.Main.Modules.Download;
+using MCServerLauncher.WPF.Main.View.Components;
+using Serilog;
 
 namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
 {
     /// <summary>
-    /// MSLAPIProvider.xaml 的交互逻辑
+    ///     MSLAPIProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class MSLAPIProvider : UserControl
+    public partial class MSLAPIProvider
     {
-        private bool IsDataLoading = false;
-        private bool IsDataLoaded = false;
-        public string ResProviderName = "MSL";
+        public const string ResProviderName = "MSL";
+        private bool _isDataLoaded;
+        private bool _isDataLoading;
+
         public MSLAPIProvider()
         {
             InitializeComponent();
         }
+
         public async Task<bool> Refresh()
         {
-            if (IsDataLoading || IsDataLoaded)
-            {
-                return true;
-            }
+            if (_isDataLoading || _isDataLoaded) return true;
             try
             {
                 Log.Information("[Res] [MSLAPI] Loading core info");
-                IsDataLoading = true;
-                List<string> MSLAPIInfo = await new MSLAPI().GetCoreInfo();
-                if (MSLAPIInfo == null)
+                _isDataLoading = true;
+                var mslapiInfo = await new MSLAPI().GetCoreInfo();
+                if (mslapiInfo == null)
                 {
                     Log.Error("[Res] [MSLAPI] Failed to load core info.");
                     return false;
                 }
-                foreach (string Result in MSLAPIInfo)
-                {
+
+                foreach (var result in mslapiInfo)
                     CoreGridView.Items.Add(
-                        new MSLAPIResCoreItem()
+                        new MSLAPIResCoreItem
                         {
-                            CoreName = new MSLAPI().SerializeCoreName(Result),
-                            APIActualName = Result
+                            CoreName = MSLAPI.SerializeCoreName(result),
+                            ApiActualName = result
                         }
                     );
-                }
 
-                IsDataLoading = false;
-                IsDataLoaded = true;
-                Log.Information($"[Res] [MSLAPI] Core info loaded. Count: {MSLAPIInfo.Count}");
+                _isDataLoading = false;
+                _isDataLoaded = true;
+                Log.Information($"[Res] [MSLAPI] Core info loaded. Count: {mslapiInfo.Count}");
                 return true;
             }
             catch (Exception ex)
@@ -58,35 +56,33 @@ namespace MCServerLauncher.WPF.Main.View.ResDownloadProvider
                 return false;
             }
         }
+
         private async void SetCore(object sender, SelectionChangedEventArgs e)
         {
-            if (CoreGridView.SelectedIndex == -1)
-            {
-                return;
-            }
-            var SelectedCore = (MSLAPIResCoreItem)CoreGridView.SelectedItem;
-            Log.Information($"[Res] [MSLAPI] Selected core \"{SelectedCore.CoreName}\"");
-            CurrentCoreName.Text = SelectedCore.CoreName;
-            CurrentCoreDescription.Text = await new MSLAPI().GetCoreDescription(SelectedCore.APIActualName);
+            if (CoreGridView.SelectedIndex == -1) return;
+            var selectedCore = (MSLAPIResCoreItem)CoreGridView.SelectedItem;
+            Log.Information($"[Res] [MSLAPI] Selected core \"{selectedCore.CoreName}\"");
+            CurrentCoreName.Text = selectedCore.CoreName;
+            CurrentCoreDescription.Text = await new MSLAPI().GetCoreDescription(selectedCore.ApiActualName);
             CoreGridView.IsEnabled = false;
             try
             {
-                List<string> MSLAPICoreDetails = await new MSLAPI().GetMinecraftVersions(SelectedCore.APIActualName);
+                var mslapiCoreDetails = await new MSLAPI().GetMinecraftVersions(selectedCore.ApiActualName);
                 CoreVersionStackPanel.Children.Clear();
-                foreach (string Detail in MSLAPICoreDetails)
-                {
-                    MSLAPIResCoreVersionItem CoreDetailItem = new()
-                    {
-                        MinecraftVersion = Detail
-                    };
-                    CoreVersionStackPanel.Children.Add(CoreDetailItem);
-                }
-                Log.Information($"[Res] [MSLAPI] Core detail loaded. Count: {MSLAPICoreDetails.Count}");
+                foreach (var coreDetailItem in mslapiCoreDetails.Select(detail => new MSLAPIResCoreVersionItem
+                         {
+                             MinecraftVersion = detail
+                         }))
+                    CoreVersionStackPanel.Children.Add(coreDetailItem);
+
+                Log.Information($"[Res] [MSLAPI] Core detail loaded. Count: {mslapiCoreDetails.Count}");
             }
             catch (Exception ex)
             {
-                Log.Error($"[Res] [MSLAPI] Failed to get core detail of \"{SelectedCore.CoreName}\". Reason: {ex.Message}");
+                Log.Error(
+                    $"[Res] [MSLAPI] Failed to get core detail of \"{selectedCore.CoreName}\". Reason: {ex.Message}");
             }
+
             CoreGridView.IsEnabled = true;
         }
     }

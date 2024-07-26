@@ -1,55 +1,55 @@
-﻿using iNKORE.UI.WPF.Modern.Media.Animation;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using iNKORE.UI.WPF.Modern.Media.Animation;
 using static MCServerLauncher.WPF.Main.Helpers.VisualTreeExtensions;
 
 namespace MCServerLauncher.WPF.Main.View.CreateInstanceProvider
 {
     /// <summary>
-    /// PreCreateInstance.xaml 的交互逻辑
+    ///     PreCreateInstance.xaml 的交互逻辑
     /// </summary>
-    public partial class PreCreateInstance : UserControl
+    public partial class PreCreateInstance
     {
-        public string CreatingInstanceType = "PreCreating";
+        private string _creatingInstanceType = "PreCreating";
+
         public PreCreateInstance()
         {
             InitializeComponent();
         }
-        public void SelectNewInstanceType(object Sender, MouseButtonEventArgs MouseArg)
+
+        private void SelectNewInstanceType(object sender, MouseButtonEventArgs mouseArg)
         {
-            Console.WriteLine(((Border)Sender).Name);
-            CreatingInstanceType = ((Border)Sender).Name;
-            Console.WriteLine(CreatingInstanceType);
+            Console.WriteLine(((Border)sender).Name);
+            _creatingInstanceType = ((Border)sender).Name;
+            Console.WriteLine(_creatingInstanceType);
             SelectNewInstanceTypeContinueBtn.IsEnabled = true;
         }
-        public void GoCreateInstance(object Sender, RoutedEventArgs e)
+
+        private void GoCreateInstance(object sender, RoutedEventArgs e)
         {
-            if (CreatingInstanceType == "PreCreating")
+            if (_creatingInstanceType == "PreCreating") return;
+
+            var parent = this.TryFindParent<CreateInstancePage>();
+            switch (_creatingInstanceType)
             {
-                return;
-            }
-            else
-            {
-                var parent = this.TryFindParent<CreateInstancePage>();
-                switch (CreatingInstanceType)
-                {
-                    case "MinecraftJavaServer":
-                        parent.CurrentCreateInstance.Navigate(parent.NewMinecraftJavaServerPage(), new DrillInNavigationTransitionInfo());
-                        break;
-                    case "MinecraftForgeServer":
-                        parent.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(), new DrillInNavigationTransitionInfo());
-                        break;
-                    case "MinecraftBedrockServer":
-                        parent.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(), new DrillInNavigationTransitionInfo());
-                        break;
-                    case "OtherExecutable":
-                        parent.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(), new DrillInNavigationTransitionInfo());
-                        break;
-                    default:
-                        break;
-                }
+                case "MinecraftJavaServer":
+                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftJavaServerPage(),
+                        new DrillInNavigationTransitionInfo());
+                    break;
+                case "MinecraftForgeServer":
+                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(),
+                        new DrillInNavigationTransitionInfo());
+                    break;
+                case "MinecraftBedrockServer":
+                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(),
+                        new DrillInNavigationTransitionInfo());
+                    break;
+                case "OtherExecutable":
+                    parent.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(),
+                        new DrillInNavigationTransitionInfo());
+                    break;
             }
         }
     }

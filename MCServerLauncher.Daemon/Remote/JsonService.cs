@@ -7,7 +7,7 @@ namespace MCServerLauncher.Daemon.Remote;
 
 public class JsonService : IJsonService
 {
-    public readonly static JsonSerializerSettings Settings = new()
+    public static readonly JsonSerializerSettings Settings = new()
     {
         ContractResolver = new DefaultContractResolver
         {
@@ -32,7 +32,7 @@ public class JsonService : IJsonService
     }
 
     /// <summary>
-    /// Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
+    ///     Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
     /// </summary>
     /// <typeparam name="T"></typeparam>
     private class SnakeCaseEnumConverter<T> : JsonConverter where T : struct, Enum
@@ -51,10 +51,7 @@ public class JsonService : IJsonService
             {
                 var snakeCase = reader.Value!.ToString();
                 var pascalCase = ConvertSnakeCaseToPascalCase(snakeCase);
-                if (Enum.TryParse(pascalCase, out T result))
-                {
-                    return result;
-                }
+                if (Enum.TryParse(pascalCase, out T result)) return result;
             }
 
             throw new JsonSerializationException($"Cannot convert {reader.Value} to {typeof(T)}");
@@ -79,7 +76,7 @@ public class JsonService : IJsonService
     }
 
     /// <summary>
-    /// 解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
+    ///     解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
     /// </summary>
     private class GuidJsonConverter : JsonConverter
     {

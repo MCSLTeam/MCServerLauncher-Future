@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Serilog;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +6,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Serilog;
 
 namespace MCServerLauncher.WPF.Main.Remote
 {
@@ -17,13 +17,11 @@ namespace MCServerLauncher.WPF.Main.Remote
         private const int ProtocolVersion = 1;
         private const int BufferSize = 1024;
 
-        private readonly ClientWebSocket _ws = new();
-        public ClientWebSocket WebSocket => _ws;
-
         private readonly ConcurrentQueue<Tuple<string, TaskCompletionSource<JObject>>>
             _pendingRequests = new();
 
         private CancellationTokenSource _cts;
+        public ClientWebSocket WebSocket { get; } = new();
 
 
         public static async Task<ClientConnection> OpenAsync(string address, int port, string token)
@@ -34,40 +32,37 @@ namespace MCServerLauncher.WPF.Main.Remote
 
             // connect ws
             var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}?token={token}");
-            await connection._ws.ConnectAsync(uri, CancellationToken.None);
+            await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
 
             // start receive loop
             _ = Task.Run(connection.ReceiveLoop);
             return connection;
         }
 
-        private static async Task SendAsync(ClientWebSocket ws, ActionType ActionType, Dictionary<string, object> args,
+        private static async Task SendAsync(ClientWebSocket ws, ActionType actionType, Dictionary<string, object> args,
             string echo = null)
         {
             Dictionary<string, object> data = new()
             {
-                { "action", ActionType.ToShakeCase() },
-                { "params", args },
+                { "action", actionType.ToShakeCase() },
+                { "params", args }
             };
 
-            if (!string.IsNullOrEmpty(echo))
-            {
-                data.Add("echo", echo);
-            }
+            if (!string.IsNullOrEmpty(echo)) data.Add("echo", echo);
 
             var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.Indented));
             await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public async Task SendAsync(ActionType ActionType, Dictionary<string, object> args, string echo = null)
+        public async Task SendAsync(ActionType actionType, Dictionary<string, object> args, string echo = null)
         {
-            await SendAsync(_ws, ActionType, args, echo);
+            await SendAsync(WebSocket, actionType, args, echo);
         }
 
-        public async Task<JObject> RequestAsync(ActionType ActionType, Dictionary<string, object> args,
+        public async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
             string echo = null)
         {
-            await SendAsync(_ws, ActionType, args, echo);
+            await SendAsync(WebSocket, actionType, args, echo);
             return await ExpectAsync(echo);
         }
 
@@ -83,7 +78,7 @@ namespace MCServerLauncher.WPF.Main.Remote
                 Console.WriteLine(e.ToString());
             }
 
-            await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+            await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
         }
 
         private async Task<JObject> ExpectAsync(string echo = null)
@@ -103,7 +98,7 @@ namespace MCServerLauncher.WPF.Main.Remote
             {
                 "ok" => received["data"]! as JObject,
                 "error" => throw new Exception(received["data"]!["message"]?.ToString() ?? "unknown error"),
-                _ => throw new Exception($"unknown status: {status}"),
+                _ => throw new Exception($"unknown status: {status}")
             };
         }
 
@@ -113,58 +108,61 @@ namespace MCServerLauncher.WPF.Main.Remote
             {
                 { "file_id", fileId },
                 { "offset", offset },
-                { "data", strData },
+                { "data", strData }
             };
-            await SendAsync(_ws, ActionType.FileUploadChunk, data);
+            await SendAsync(WebSocket, ActionType.FileUploadChunk, data);
             data = null; // 释放
             return await ExpectAsync();
         }
 
         public async Task<string> UploadFile(string path, string dst, int chunkSize)
         {
-            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var sha1 = await Utils.FileSha1(fs);
+            var size = new FileInfo(path).Length;
+            var fileId = (await RequestAsync(ActionType.FileUploadRequest, new Dictionary<string, object>
             {
-                var sha1 = await Utils.FileSha1(fs);
-                var size = new FileInfo(path).Length;
-                var fileId = (await RequestAsync(ActionType.FileUploadRequest, new Dictionary<string, object>
+                { "path", dst },
+                { "sha1", sha1 },
+                { "chunk_size", chunkSize },
+                { "size", size }
+            }))["file_id"]!.ToString();
+
+            var tasks = new List<Task<JObject>>();
+
+            var buffer = new byte[chunkSize];
+            var offset = 0;
+            int bytesRead;
+            while ((bytesRead = fs.Read(buffer, 0, chunkSize)) > 0)
+            {
+                string strData;
+                if (bytesRead == chunkSize)
                 {
-                    { "path", dst },
-                    { "sha1", sha1 },
-                    { "chunk_size", chunkSize },
-                    { "size", size },
-                }))["file_id"]!.ToString();
-
-                var tasks = new List<Task<JObject>>();
-
-                var buffer = new byte[chunkSize];
-                var offset = 0;
-                int bytesRead;
-                while ((bytesRead = fs.Read(buffer, 0, chunkSize)) > 0)
+                    strData = Encoding.BigEndianUnicode.GetString(buffer, 0, chunkSize);
+                }
+                else if (bytesRead % 2 != 0) // 末尾补0x00
                 {
-                    string strData;
-                    if (bytesRead == chunkSize)
-                        strData = Encoding.BigEndianUnicode.GetString(buffer, 0, chunkSize);
-                    else if (bytesRead % 2 != 0) // 末尾补0x00
-                    {
-                        buffer[bytesRead] = 0x00;
-                        strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead + 1);
-                    }
-                    else strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead);
-
-                    try
-                    {
-                        Log.Information((await UploadFileChunk(fileId, offset, strData)).ToString());
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Information(e.ToString());
-                    }
-
-                    offset += bytesRead;
+                    buffer[bytesRead] = 0x00;
+                    strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead + 1);
+                }
+                else
+                {
+                    strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead);
                 }
 
-                return null;
+                try
+                {
+                    Log.Information((await UploadFileChunk(fileId, offset, strData)).ToString());
+                }
+                catch (Exception e)
+                {
+                    Log.Information(e.ToString());
+                }
+
+                offset += bytesRead;
             }
+
+            return null;
         }
 
         private async Task ReceiveLoop()
@@ -179,7 +177,7 @@ namespace MCServerLauncher.WPF.Main.Remote
                     WebSocketReceiveResult result;
                     try
                     {
-                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     }
                     catch (WebSocketException e)
                     {
@@ -195,10 +193,7 @@ namespace MCServerLauncher.WPF.Main.Remote
                     }
 
                     ms.Write(buffer, 0, result.Count);
-                    if (result.EndOfMessage)
-                    {
-                        break;
-                    }
+                    if (result.EndOfMessage) break;
                 }
 
                 if (_cts.Token.IsCancellationRequested)
@@ -222,9 +217,7 @@ namespace MCServerLauncher.WPF.Main.Remote
             if (_pendingRequests.TryDequeue(out var pending))
             {
                 if (echo?.ToString() == pending.Item1)
-                {
                     pending.Item2.SetResult(data);
-                }
                 else throw new Exception("Received unexpect message: mismatched echo.");
             }
             else
@@ -261,12 +254,12 @@ namespace MCServerLauncher.WPF.Main.Remote
                     ActionType.Ping,
                     new Dictionary<string, object>
                     {
-                        { "ping_time", DateTime.Now },
+                        { "ping_time", DateTime.Now }
                     },
                     "halo"
                 );
                 var data = rv["pong_time"];
-                Console.WriteLine($"Received Pong: {data}");
+                Console.WriteLine($@"Received Pong: {data}");
 
                 #endregion
 
@@ -277,13 +270,9 @@ namespace MCServerLauncher.WPF.Main.Remote
                     "Newtonsoft.Json.xml", "Newtonsoft.Json.xml",
                     1024);
                 if (err == null)
-                {
-                    Console.WriteLine("Upload Success");
-                }
+                    Console.WriteLine(@"Upload Success");
                 else
-                {
-                    Console.WriteLine($"Upload Failed:{err}");
-                }
+                    Console.WriteLine($@"Upload Failed:{err}");
 
                 #endregion
 
@@ -302,30 +291,30 @@ namespace MCServerLauncher.WPF.Main.Remote
                 var newToken = rv["token"]!.ToString();
                 var expired = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1))
                     .AddSeconds(Convert.ToInt64(rv["expired"]!));
-                Console.WriteLine($"New Token: {newToken}, Expired: {expired}");
+                Console.WriteLine($@"New Token: {newToken}, Expired: {expired}");
 
                 var tempConn1 = await OpenAsync("127.0.0.1", 11451, newToken);
-                Console.WriteLine("Temp Token conn state: " + tempConn1.WebSocket.State);
+                Console.WriteLine(@"Temp Token conn state: " + tempConn1.WebSocket.State);
                 await tempConn1.SendAsync(
                     ActionType.Message,
                     new Dictionary<string, object>
                     {
-                        { "message", $"New temporary token: {newToken}" },
+                        { "message", $"New temporary token: {newToken}" }
                     }
                 );
                 await tempConn1.CloseAsync();
 
                 await Task.Delay(6000);
-                Console.WriteLine("6s elapsed, new Token supposed to be expired.");
+                Console.WriteLine(@"6s elapsed, new Token supposed to be expired.");
                 var tempConn2 = await OpenAsync("127.0.0.1", 11451, newToken);
                 await tempConn2.SendAsync(
                     ActionType.Message,
                     new Dictionary<string, object>
                     {
-                        { "message", $"New temporary token: {newToken}" },
+                        { "message", $"New temporary token: {newToken}" }
                     }
                 );
-                Console.WriteLine("Temp Token conn state: " + tempConn2.WebSocket.State);
+                Console.WriteLine(@"Temp Token conn state: " + tempConn2.WebSocket.State);
                 await tempConn2.CloseAsync();
 
                 #endregion

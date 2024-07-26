@@ -1,5 +1,3 @@
-using Serilog;
-
 namespace MCServerLauncher.Daemon.Utils;
 
 public interface ILogHelper

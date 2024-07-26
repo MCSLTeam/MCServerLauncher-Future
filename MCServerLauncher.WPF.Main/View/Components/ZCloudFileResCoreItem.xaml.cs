@@ -1,16 +1,15 @@
-﻿using System.Windows.Controls;
-
-namespace MCServerLauncher.WPF.Main.View.Components
+﻿namespace MCServerLauncher.WPF.Main.View.Components
 {
     /// <summary>
-    /// ZCloudFileResCoreItem.xaml 的交互逻辑
+    ///     ZCloudFileResCoreItem.xaml 的交互逻辑
     /// </summary>
-    public partial class ZCloudFileResCoreItem : UserControl
+    public partial class ZCloudFileResCoreItem
     {
         public ZCloudFileResCoreItem()
         {
             InitializeComponent();
         }
+
         public string CoreName
         {
             get => CoreNameReplacer.Text;

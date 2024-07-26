@@ -2,9 +2,8 @@ using System.Text;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using WebSocketSharp.Server;
 using WebSocketSharp;
-
+using WebSocketSharp.Server;
 
 namespace MCServerLauncher.Daemon.Remote;
 
@@ -15,6 +14,36 @@ public class Server : IServer
     public Server(IServiceProvider Container)
     {
         _container = Container;
+    }
+
+
+    public void Start()
+    {
+        // logger
+        var logger = _container.GetRequiredService<RemoteLogHelper>();
+
+        // ws
+        var server = new HttpServer(Config.Get().Port);
+        // server.AddWebSocketService<ServerBehavior>("/api/v1");
+        server.AddWebSocketService("/api/v1", () =>
+        {
+            var scoped = _container.CreateScope();
+            var behavior = scoped.ServiceProvider.GetRequiredService<ServerBehavior>();
+            return behavior;
+        });
+
+        // http
+        server.OnGet += HandleHttpRequest;
+
+        // load users
+        _container.GetRequiredService<IUserService>();
+
+        // start
+        server.Start();
+        logger.Info($"Ws Server started at ws://{server.Address}:{server.Port}/api/v1");
+        logger.Info($"Http Server started at http://{server.Address}:{server.Port}/");
+        Console.ReadKey();
+        server.Stop();
     }
 
     private void HandleHttpRequest(object _, HttpRequestEventArgs e)
@@ -72,35 +101,5 @@ public class Server : IServer
         {
             e.Response.OutputStream.Close();
         }
-    }
-    
-
-    public void Start()
-    {
-        // logger
-        var logger = _container.GetRequiredService<RemoteLogHelper>();
-
-        // ws
-        var server = new HttpServer(Config.Get().Port);
-        // server.AddWebSocketService<ServerBehavior>("/api/v1");
-        server.AddWebSocketService("/api/v1", () =>
-        {
-            var scoped = _container.CreateScope();
-            var behavior = scoped.ServiceProvider.GetRequiredService<ServerBehavior>();
-            return behavior;
-        });
-
-        // http
-        server.OnGet += HandleHttpRequest;
-        
-        // load users
-        _container.GetRequiredService<IUserService>();
-
-        // start
-        server.Start();
-        logger.Info($"Ws Server started at ws://{server.Address}:{server.Port}/api/v1");
-        logger.Info($"Http Server started at http://{server.Address}:{server.Port}/");
-        Console.ReadKey();
-        server.Stop();
     }
 }

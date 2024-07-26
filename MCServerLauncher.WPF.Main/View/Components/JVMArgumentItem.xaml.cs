@@ -1,20 +1,18 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
 using ListView = iNKORE.UI.WPF.Modern.Controls.ListView;
 
 namespace MCServerLauncher.WPF.Main.View.Components
 {
     /// <summary>
-    /// JVMArgumentItem.xaml 的交互逻辑
+    ///     JVMArgumentItem.xaml 的交互逻辑
     /// </summary>
-
-
-    public partial class JVMArgumentItem : UserControl
+    public partial class JVMArgumentItem
     {
         public JVMArgumentItem()
         {
             InitializeComponent();
         }
+
         public string Argument
         {
             get => ArgumentTextBox.Text;

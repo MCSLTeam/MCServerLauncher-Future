@@ -1,15 +1,67 @@
-﻿using MCServerLauncher.WPF.Main.Helpers;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MCServerLauncher.WPF.Main.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.Main.Modules.Download
 {
     internal class FastMirror
     {
-        private readonly string EndPoint = "https://download.fastmirror.net/api/v3";
+        private readonly string _endPoint = "https://download.fastmirror.net/api/v3";
+
+        private static string FormatFastMirrorCoreTag(string originalTag)
+        {
+            return originalTag switch
+            {
+                "proxy" => "代理",
+                "vanilla" => "原版",
+                "pure" => "纯净",
+                "mod" => "模组",
+                "bedrock" => "基岩",
+                _ => originalTag
+            };
+        }
+
+        public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
+        {
+            var response = await NetworkUtils.SendGetRequest(_endPoint);
+            if (!response.IsSuccessStatusCode) return null;
+            var remoteFastMirrorCoreInfoList = JsonConvert
+                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data");
+            return remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
+                {
+                    Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
+                    Tag = FormatFastMirrorCoreTag(fastMirrorCoreInfo.SelectToken("tag")!.ToString()),
+                    HomePage = fastMirrorCoreInfo.SelectToken("homepage")!.ToString(),
+                    Recommend = fastMirrorCoreInfo.SelectToken("recommend")!.ToObject<bool>(),
+                    MinecraftVersions = fastMirrorCoreInfo.SelectToken("mc_versions")!.ToObject<List<string>>()
+                })
+                .ToList();
+        }
+
+        public async Task<List<FastMirrorCoreDetail>> GetCoreDetail(string core, string minecraftVersion)
+        {
+            var response =
+                await NetworkUtils.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
+            if (!response.IsSuccessStatusCode) return null;
+            var remoteFastMirrorCoreDetailList = JsonConvert
+                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!
+                .SelectToken("builds");
+            return remoteFastMirrorCoreDetailList!.Select(remoteFastMirrorCoreDetail => new FastMirrorCoreDetail
+            {
+                Name = remoteFastMirrorCoreDetail.SelectToken("name")!.ToString(),
+                MinecraftVersion = remoteFastMirrorCoreDetail.SelectToken("mc_version")!.ToString(),
+                CoreVersion = remoteFastMirrorCoreDetail.SelectToken("core_version")!.ToString(),
+                Sha1 = remoteFastMirrorCoreDetail.SelectToken("sha1")!.ToString()
+            }).ToList();
+        }
+
+        public string CombineDownloadUrl(string core, string minecraftVersion, string coreVersion)
+        {
+            return $"https://download.fastmirror.net/download/{core}/{minecraftVersion}/{coreVersion}";
+        }
 
         public class FastMirrorCoreInfo
         {
@@ -22,82 +74,10 @@ namespace MCServerLauncher.WPF.Main.Modules.Download
 
         public class FastMirrorCoreDetail
         {
-
             public string Name { get; set; }
             public string MinecraftVersion { get; set; }
             public string CoreVersion { get; set; }
-            public string SHA1 { get; set; }
-        }
-        private string FormatFastMirrorCoreTag(string OriginalTag)
-        {
-            switch (OriginalTag)
-            {
-                case "proxy":
-                    return "代理";
-                case "vanilla":
-                    return "原版";
-                case "pure":
-                    return "纯净";
-                case "mod":
-                    return "模组";
-                case "bedrock":
-                    return "基岩";
-                default:
-                    return OriginalTag;
-            }
-        }
-        public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
-        {
-            HttpResponseMessage Response = await NetworkUtils.SendGetRequest(EndPoint);
-            if (Response.IsSuccessStatusCode)
-            {
-                JToken RemoteFastMirrorCoreInfoList = JsonConvert.DeserializeObject<JToken>(await Response.Content.ReadAsStringAsync()).SelectToken("data");
-                List<FastMirrorCoreInfo> FastMirrorCoreInfoList = new();
-                foreach (JToken FastMirrorCoreInfo in RemoteFastMirrorCoreInfoList)
-                {
-                    FastMirrorCoreInfoList.Add(new FastMirrorCoreInfo
-                    {
-                        Name = FastMirrorCoreInfo.SelectToken("name").ToString(),
-                        Tag = FormatFastMirrorCoreTag(FastMirrorCoreInfo.SelectToken("tag").ToString()),
-                        HomePage = FastMirrorCoreInfo.SelectToken("homepage").ToString(),
-                        Recommend = FastMirrorCoreInfo.SelectToken("recommend").ToObject<bool>(),
-                        MinecraftVersions = FastMirrorCoreInfo.SelectToken("mc_versions").ToObject<List<string>>()
-                    });
-                }
-                return FastMirrorCoreInfoList;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        public async Task<List<FastMirrorCoreDetail>> GetCoreDetail(string Core, string MinecraftVersion)
-        {
-            HttpResponseMessage Response = await NetworkUtils.SendGetRequest($"{EndPoint}/{Core}/{MinecraftVersion}?offset=0&limit=25");
-            if (Response.IsSuccessStatusCode)
-            {
-                JToken RemoteFastMirrorCoreDetailList = JsonConvert.DeserializeObject<JToken>(await Response.Content.ReadAsStringAsync()).SelectToken("data").SelectToken("builds");
-                List<FastMirrorCoreDetail> FastMirrorCoreDetailList = new();
-                foreach (JToken RemoteFastMirrorCoreDetail in RemoteFastMirrorCoreDetailList)
-                {
-                    FastMirrorCoreDetailList.Add(new FastMirrorCoreDetail
-                    {
-                        Name = RemoteFastMirrorCoreDetail.SelectToken("name").ToString(),
-                        MinecraftVersion = RemoteFastMirrorCoreDetail.SelectToken("mc_version").ToString(),
-                        CoreVersion = RemoteFastMirrorCoreDetail.SelectToken("core_version").ToString(),
-                        SHA1 = RemoteFastMirrorCoreDetail.SelectToken("sha1").ToString()
-                    });
-                }
-                return FastMirrorCoreDetailList;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        public string CombineDownloadUrl(string Core, string MinecraftVersion, string CoreVersion)
-        {
-            return $"https://download.fastmirror.net/download/{Core}/{MinecraftVersion}/{CoreVersion}";
+            public string Sha1 { get; set; }
         }
     }
 }
