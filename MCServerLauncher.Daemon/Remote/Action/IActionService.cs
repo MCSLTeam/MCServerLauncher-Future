@@ -7,5 +7,5 @@ internal interface IActionService
 {
     public Task<Dictionary<string, object>> Routine(ActionType type, JObject data);
     Dictionary<string, object> Err([AllowNull] string message, int code = 1400);
-    Dictionary<string, object> Ok([AllowNull] Dictionary<string, object> data = null);
+    Dictionary<string, object> Ok([AllowNull] JObject data = null);
 }

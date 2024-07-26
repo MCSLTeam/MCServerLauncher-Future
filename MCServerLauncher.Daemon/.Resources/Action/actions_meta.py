@@ -18,23 +18,28 @@ namespace {namespace}
     /// </summary>
     internal static class {class_name}
     {
-        public static T Deserialize<T>(JObject data)
+        private static T Deserialize<T>(JObject data)
         {
             return JsonConvert.DeserializeObject<T>(data.ToString(), JsonService.Settings);
+        }
+
+        internal interface IActionResponse
+        {
+            JObject Into() => JObject.FromObject(this);
         }
 
         internal class Empty
         {
             public class Request {}
 
-            public class Response {}
+            public class Response : IActionResponse {}
 
-            public static Request RequestOf(JObject data)
+            public static Request RequestOf()
             {
                 return new Request();
             }
 
-            public static Response ResponseOf(Guid FileId)
+            public static IActionResponse ResponseOf()
             {
                 return new Response();
             }
@@ -127,21 +132,28 @@ class_pattern = """
 {req_fields}
             }
 
-            public class Response
+            private class Response : IActionResponse
             {
 {resp_fields}
             }
 
-            public static Request RequestOf(JObject data)
+            public static {request} RequestOf(JObject data)
             {
-                return Deserialize<Request>(data);
+                return {request_ret};
             }
 
-            public static Response ResponseOf({func_args})
+            public static IActionResponse ResponseOf({func_args})
             {
                 return new Response { {struct_decl}  };
             }
         }
+"""
+
+empty_request_class_pattern = """            public class Request
+            {
+
+            }
+
 """
 
 field_pattern = """                public {T} {field_name};"""
@@ -195,7 +207,16 @@ def yml2cs(actions:list[dict[str,dict[str,str]]], namespace:str, outer_class_nam
         struct_decls_str = ', '.join(struct_decls)
 
         # classes += class_pattern.replace('{class_name}',_(class_name)).replace('{req_fields}',request_fields).replace('{resp_fields}',response_fields)
-        classes.append(class_pattern.replace('{class_name}',_(class_name)).replace('{req_fields}',request_fields_str).replace('{resp_fields}',response_fields_str).replace('{func_args}',func_args_str).replace('{struct_decl}',struct_decls_str))
+        class_pattern_str = class_pattern\
+            .replace('{class_name}',_(class_name))\
+            .replace('{req_fields}',request_fields_str)\
+            .replace('{resp_fields}',response_fields_str)\
+            .replace('{func_args}',func_args_str)\
+            .replace('{struct_decl}',struct_decls_str)\
+            .replace('{request}','Empty.Request' if not request_fields else 'Request')\
+            .replace('{request_ret}','new Empty.Request()' if not request_fields else 'Deserialize<Request>(data)')\
+            .replace(empty_request_class_pattern,'') # delete empty request class
+        classes.append(class_pattern_str)
     
     classes_str = ''.join(classes)
     return cs.replace('{namespace}',namespace).replace('{class_name}',_(outer_class_name)).replace('{classes}',classes_str)

@@ -3,7 +3,7 @@ using MCServerLauncher.Daemon.Remote.Event;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace MCServerLauncher.Daemon.Remote;
+namespace MCServerLauncher.Daemon.Storage;
 
 public class JsonService : IJsonService
 {
@@ -21,6 +21,8 @@ public class JsonService : IJsonService
         }
     };
 
+    public static readonly JsonSerializer Serializer = JsonSerializer.Create(Settings);
+
     public string Serialize(object obj)
     {
         return JsonConvert.SerializeObject(obj, Formatting.Indented, Settings);
@@ -32,7 +34,7 @@ public class JsonService : IJsonService
     }
 
     /// <summary>
-    ///     Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
+    /// Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
     /// </summary>
     /// <typeparam name="T"></typeparam>
     private class SnakeCaseEnumConverter<T> : JsonConverter where T : struct, Enum
@@ -51,7 +53,10 @@ public class JsonService : IJsonService
             {
                 var snakeCase = reader.Value!.ToString();
                 var pascalCase = ConvertSnakeCaseToPascalCase(snakeCase);
-                if (Enum.TryParse(pascalCase, out T result)) return result;
+                if (Enum.TryParse(pascalCase, out T result))
+                {
+                    return result;
+                }
             }
 
             throw new JsonSerializationException($"Cannot convert {reader.Value} to {typeof(T)}");
@@ -76,7 +81,7 @@ public class JsonService : IJsonService
     }
 
     /// <summary>
-    ///     解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
+    /// 解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
     /// </summary>
     private class GuidJsonConverter : JsonConverter
     {
