@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Daemon.Helpers;
+﻿using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
@@ -114,7 +114,7 @@ public class Program
         services.AddScoped<IActionService, ActionService>();
         services.AddScoped<IEventService, EventService>();
 
-        services.AddSingleton<IJsonService, JsonService>();
+        services.AddSingleton<IWebJsonConverter, WebJsonConverter>();
         services.AddSingleton<IUserService, UserService>();
         services.AddSingleton<
             IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>,

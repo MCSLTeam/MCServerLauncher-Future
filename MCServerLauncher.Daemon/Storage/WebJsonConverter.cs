@@ -5,7 +5,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Storage;
 
-public class JsonService : IJsonService
+public class WebJsonConverter : IWebJsonConverter
 {
     public static readonly JsonSerializerSettings Settings = new()
     {

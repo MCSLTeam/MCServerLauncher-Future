@@ -8,7 +8,7 @@
 
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using MCServerLauncher.Daemon.Helpers;
+using MCServerLauncher.Daemon;
 using Newtonsoft.Json;
 using Serilog;
 
@@ -153,7 +153,7 @@ public static class JavaScanner
     /// <returns></returns>
     public static async Task<List<JavaInfo>> ScanJavaAsync()
     {
-        Log.Information("[JVM] Start scanning available Java");
+        Log.Debug("[JVM] Start scanning available Java");
 
         List<JavaInfo> possibleJavaPathList = new();
         if (BasicUtils.IsWindows())
@@ -168,7 +168,7 @@ public static class JavaScanner
         var cnt = 0;
         foreach (var possibleJavaPath in possibleJavaPathList)
         {
-            Log.Information(
+            Log.Debug(
                 $"[JVM] Found certain Java at: {possibleJavaPath.Path} (Version: {possibleJavaPath.Version})");
             cnt++;
         }

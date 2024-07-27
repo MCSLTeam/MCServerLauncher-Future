@@ -17,7 +17,7 @@ internal class ServerBehavior : WebSocketBehavior
     private readonly IEventService _eventService;
     private readonly ILogHelper _logHelper;
     private readonly IUserService _userService;
-    private readonly IJsonService _jsonService;
+    private readonly IWebJsonConverter _webJsonConverter;
 
     internal static Config Config => Config.Get();
 
@@ -29,7 +29,7 @@ internal class ServerBehavior : WebSocketBehavior
         IActionService actionService,
         IEventService eventService,
         IUserService userService,
-        IJsonService jsonService,
+        IWebJsonConverter WebJsonConverter,
         RemoteLogHelper logHelper
     )
     {
@@ -37,9 +37,9 @@ internal class ServerBehavior : WebSocketBehavior
         _eventService = eventService;
         _userService = userService;
         _logHelper = logHelper;
-        _jsonService = jsonService;
+        _webJsonConverter = WebJsonConverter;
 
-        _eventService.Signal += (type, data) => Context.WebSocket.Send(_jsonService.Serialize(
+        _eventService.Signal += (type, data) => Context.WebSocket.Send(_webJsonConverter.Serialize(
             new Dictionary<string, object>
             {
                 ["event_type"] = type,
@@ -88,11 +88,11 @@ internal class ServerBehavior : WebSocketBehavior
             if (!TryParseMessage(e.Data, out var result))
             {
                 _logHelper.Warn($"Parse message failed: \n{e.Data}");
-                Send(_jsonService.Serialize(_actionService.Err("Invalid action packet")));
+                Send(_webJsonConverter.Serialize(_actionService.Err("Invalid action packet")));
                 return;
             }
 
-            _logHelper.Info($"Received message: \n{e.Data}\n");
+            _logHelper.Debug($"Received message: \n{e.Data}\n");
 
             var (actionType, echo, parameters) = result;
 
@@ -105,9 +105,9 @@ internal class ServerBehavior : WebSocketBehavior
                 data["echo"] = echo;
             }
 
-            var text = _jsonService.Serialize(data);
+            var text = _webJsonConverter.Serialize(data);
 
-            _logHelper.Info($"Sending message: \n{text}");
+            _logHelper.Debug($"Sending message: \n{text}");
             Send(text);
         }
     }
