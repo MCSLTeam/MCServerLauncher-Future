@@ -19,16 +19,9 @@ namespace MCServerLauncher.WPF.Main.View.CreateInstanceProvider
             InitializeComponent();
         }
 
-        private void SelectNewInstanceType(object sender, MouseButtonEventArgs mouseArg)
+        private void GoCreateNewInstance(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine(((Border)sender).Name);
-            _creatingInstanceType = ((Border)sender).Name;
-            Console.WriteLine(_creatingInstanceType);
-            SelectNewInstanceTypeContinueBtn.IsEnabled = true;
-        }
-
-        private void GoCreateInstance(object sender, RoutedEventArgs e)
-        {
+            _creatingInstanceType = ((Button)sender).Name;
             if (_creatingInstanceType == "PreCreating") return;
 
             var parent = this.TryFindParent<CreateInstancePage>();
