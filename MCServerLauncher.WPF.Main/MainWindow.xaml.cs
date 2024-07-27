@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
@@ -22,9 +23,16 @@ namespace MCServerLauncher.WPF.Main
         public MainWindow()
         {
             InitializeComponent();
-            CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
+            InitializeView();
         }
-
+        private async void InitializeView()
+        {
+            CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
+            await Task.Delay(1500);
+            LoadingScreen.Visibility = Visibility.Hidden;
+            TitleBarGrid.Visibility = Visibility.Visible;
+            NavView.Visibility = Visibility.Visible;
+        }
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
