@@ -142,40 +142,39 @@ internal static class FileManager
     }
 
     /// <summary>
-    ///     读取文件，读取成功后创建备份
+    ///     读取文件。
     /// </summary>
-    /// <param name="path"></param>
+    /// <param name="path">需要读取的文件路径</param>
     /// <returns></returns>
-    private static string ReadTextAndBackup([NotNull] string path)
+    private static string ReadText([NotNull] string path)
     {
         var text = File.ReadAllText(path!);
-        if (File.Exists(path)) File.Copy(path, path + ".bak", true);
         return text;
     }
 
     /// <summary>
-    ///     读取json，读取成功后创建备份。可能会抛出IO异常和Json异常
+    ///     读取json。可能会抛出IO异常和Json异常
     /// </summary>
-    /// <param name="path"></param>
+    /// <param name="path">需要读取的json文件路径</param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static T ReadJsonAndBackup<T>([NotNull] string path)
+    public static T ReadJson<T>([NotNull] string path)
     {
-        return JsonConvert.DeserializeObject<T>(ReadTextAndBackup(path));
+        return JsonConvert.DeserializeObject<T>(ReadText(path));
     }
 
     /// <summary>
-    ///     读取json，读取成功后创建备份。如果文件不存在，则调用defaultFactory, 并写入文件
+    ///     读取json。如果文件不存在，则调用defaultFactory, 并写入文件
     /// </summary>
-    /// <param name="path"></param>
-    /// <param name="defaultFactory"></param>
+    /// <param name="path">需要读取的json文件路径</param>
+    /// <param name="defaultFactory">默认配置项</param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static T ReadJsonAndBackupOr<T>([NotNull] string path, Func<T> defaultFactory)
+    public static T ReadJsonOr<T>([NotNull] string path, Func<T> defaultFactory)
     {
         try
         {
-            return ReadJsonAndBackup<T>(path);
+            return ReadJson<T>(path);
         }
         catch (FileNotFoundException)
         {
