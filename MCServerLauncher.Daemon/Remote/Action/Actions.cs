@@ -11,7 +11,7 @@ namespace MCServerLauncher.Daemon.Remote.Action
     {
         private static T Deserialize<T>(JObject data)
         {
-            return JsonConvert.DeserializeObject<T>(data.ToString(), JsonService.Settings);
+            return JsonConvert.DeserializeObject<T>(data.ToString(), WebJsonConverter.Settings);
         }
 
         internal interface IActionResponse

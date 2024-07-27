@@ -32,7 +32,7 @@ namespace {namespace}
         {
             public class Request {}
 
-            public class Response : IActionResponse {}
+            private class Response : IActionResponse {}
 
             public static Request RequestOf()
             {

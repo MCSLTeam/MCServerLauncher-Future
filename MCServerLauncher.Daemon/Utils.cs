@@ -1,7 +1,7 @@
 using System.Reflection;
 using Serilog;
 
-namespace MCServerLauncher.Daemon.Helpers;
+namespace MCServerLauncher.Daemon;
 
 public class BasicUtils
 {
