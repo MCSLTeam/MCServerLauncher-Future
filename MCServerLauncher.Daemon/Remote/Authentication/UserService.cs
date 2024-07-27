@@ -114,7 +114,7 @@ public class UserService : IUserService
     /// <returns></returns>
     private static ConcurrentDictionary<string, UserMeta> LoadUsers()
     {
-        return FileManager.ReadJsonAndBackupOr("users.json", () => new ConcurrentDictionary<string, UserMeta>());
+        return FileManager.ReadJsonOr("users.json", () => new ConcurrentDictionary<string, UserMeta>());
     }
 
 

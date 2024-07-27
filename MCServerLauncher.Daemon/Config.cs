@@ -46,7 +46,7 @@ internal class Config
 
     private static Config LoadOrDefault(string path = "config.json")
     {
-        return FileManager.ReadJsonAndBackupOr(path, GetDefault);
+        return FileManager.ReadJsonOr(path, GetDefault);
     }
 
     public static Config Get()

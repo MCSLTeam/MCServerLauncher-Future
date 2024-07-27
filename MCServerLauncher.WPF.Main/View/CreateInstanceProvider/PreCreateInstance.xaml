@@ -25,25 +25,65 @@
                 <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Forge 服务器" VerticalAlignment="Top"
                            HorizontalAlignment="Left" Margin="17,15,17,15" />
             </Border>
+            <Border x:Name="MinecraftNeoForgeServer" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft NeoForge 服务器" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="17,15,17,15" />
+            </Border>
+            <Border x:Name="MinecraftQuiltServer" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft Quilt 服务器" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="17,15,17,15" />
+            </Border>
             <Border x:Name="MinecraftBedrockServer" MouseLeftButtonDown="SelectNewInstanceType"
                     Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
                 <TextBlock Style="{StaticResource BodyTextBlock}" Text="Minecraft 基岩版服务器" VerticalAlignment="Top"
                            HorizontalAlignment="Left" Margin="18,15,18,15" />
             </Border>
+            <Border x:Name="MinecraftGeyserStandalone" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Geyser互通 独立端" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
+            </Border>
+            <Border x:Name="MinecraftBungeeCord" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="BungeeCord 群组端" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
+            </Border>
+            <Border x:Name="MinecraftWaterfall" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Waterfall 群组端" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
+            </Border>
+            <Border x:Name="MinecraftVelocity" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Velocity 群组端" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
+            </Border>
+            <Border x:Name="MinecraftTravertine" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Travertine 群组端" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
+            </Border>
             <Border x:Name="FastReverseProxyClient" MouseLeftButtonDown="SelectNewInstanceType"
-                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="FRP 客户端程序" VerticalAlignment="Top"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Frp 客户端程序" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
+            </Border>
+            <Border x:Name="TerrariaServer" MouseLeftButtonDown="SelectNewInstanceType"
+                    Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="Terraria 服务器" VerticalAlignment="Top"
                            HorizontalAlignment="Left" Margin="18,15,18,15" />
             </Border>
             <Border x:Name="OtherExecutable" MouseLeftButtonDown="SelectNewInstanceType"
                     Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
                 <TextBlock Style="{StaticResource BodyTextBlock}" Text="其他控制台程序" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Margin="44,15,44,15" />
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
             </Border>
             <Border x:Name="ImportInstance" MouseLeftButtonDown="SelectNewInstanceType"
                     Style="{StaticResource StyledBorder}" Margin="0,0,0,0" ToolTip="没做完呢，别急">
-                <TextBlock Style="{StaticResource BodyTextBlock}" Text="或者，导入？" VerticalAlignment="Top"
-                           HorizontalAlignment="Left" Margin="51,15,51,15" />
+                <TextBlock Style="{StaticResource BodyTextBlock}" Text="导入现有实例" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" Margin="18,15,18,15" />
             </Border>
         </ui:GridView>
         <Button Grid.Row="2" Click="GoCreateInstance" x:Name="SelectNewInstanceTypeContinueBtn" IsEnabled="False"
