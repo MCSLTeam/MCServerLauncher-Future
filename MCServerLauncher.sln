@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MCServerLauncher.Daemon", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MCServerLauncher.Common", "MCServerLauncher.Common\MCServerLauncher.Common.csproj", "{DC5410B2-C6F2-4F6B-B567-10EE77173832}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.WPF.Main", "MCServerLauncher.WPF.Main\MCServerLauncher.WPF.Main.csproj", "{50682C9F-7845-4074-8DB5-25C1DAE55395}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.WPF", "MCServerLauncher.WPF\MCServerLauncher.WPF.csproj", "{50682C9F-7845-4074-8DB5-25C1DAE55395}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.WPF.Console", "MCServerLauncher.WPF.Console\MCServerLauncher.WPF.Console.csproj", "{6E828629-B994-426B-A522-924290561174}"
 EndProject
