@@ -13,10 +13,9 @@
                    Margin="35,35,0,0" />
         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="新征程，新体验。" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
-        <ui:ScrollViewerEx>
+        <ui:ScrollViewerEx Margin="35,120,35,0">
             <ikw:SimpleStackPanel>
-                <Border x:Name="NoticeBorder" Style="{StaticResource StyledBorder}" Margin="35,120,35,0"
-                        VerticalAlignment="Top">
+                <Border x:Name="NoticeBorder" Style="{StaticResource StyledBorder}" VerticalAlignment="Top">
                     <Grid>
                         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="公告" VerticalAlignment="Top"
                                    HorizontalAlignment="Left" Margin="20,15,0,0" />
