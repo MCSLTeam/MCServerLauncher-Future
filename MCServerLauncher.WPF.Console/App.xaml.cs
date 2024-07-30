@@ -13,8 +13,8 @@ namespace MCServerLauncher.WPF.Console
             // 添加崩溃处理事件
             DispatcherUnhandledException += (s, e) =>
             {
-                MessageBox.Show($"MCServerLauncher 发生了未经处理的异常：\n\n{e.Exception}", "错误", MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                Clipboard.SetText(e.Exception.ToString());
+                MessageBox.Show($"堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。\n\n{e.Exception}", "MCServerLauncher WPF 遇到错误", MessageBoxButton.OK);
                 e.Handled = true; // 设置为已处理，阻止应用程序崩溃
             };
         }
