@@ -61,6 +61,9 @@ namespace MCServerLauncher.WPF
                 case not null when navPageType == typeof(ResDownloadPage):
                     CurrentPage.Navigate(_resDownload);
                     break;
+                case not null when navPageType == typeof(NotificationCenterPage):
+                    CurrentPage.Navigate(_notificationCenter);
+                    break;
                 case not null when navPageType == typeof(HelpPage):
                     CurrentPage.Navigate(_help);
                     break;

@@ -3,11 +3,32 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+      xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="NotificationCenterPage">
 
     <Grid>
-        
+        <TextBlock Style="{StaticResource TitleTextBlock}" Text="通知中心" VerticalAlignment="Top" HorizontalAlignment="Left"
+                   Margin="35,35,0,0" />
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="四面八方，使命必达。" VerticalAlignment="Top"
+                   HorizontalAlignment="Left" Margin="35,80,0,0" />
+        <ui:ScrollViewerEx Margin="35,120,35,20">
+            <ikw:SimpleStackPanel Spacing="10" x:Name="NotificationContainer">
+                <ui:InfoBar Title="Infomational Message" IsOpen="True" IsClosable="True" Severity="Informational"
+                            Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit."/>
+
+                <ui:InfoBar Title="Warning Message" IsOpen="True" IsClosable="True" Severity="Warning"
+                            Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit."/>
+
+                <ui:InfoBar Title="Success Message" IsOpen="True" IsClosable="True" Severity="Success"
+                            Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit."/>
+
+                <ui:InfoBar Title="Error Message" IsOpen="True" IsClosable="True" Severity="Error"
+                            Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit."/>
+
+            </ikw:SimpleStackPanel>
+        </ui:ScrollViewerEx>
     </Grid>
 </Page>
