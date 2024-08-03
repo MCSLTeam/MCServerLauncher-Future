@@ -10,6 +10,7 @@
       Title="NotificationCenterPage">
 
     <Grid>
+        <Button Click="TestNotification"/>
         <TextBlock Style="{StaticResource TitleTextBlock}" Text="通知中心" VerticalAlignment="Top" HorizontalAlignment="Left"
                    Margin="35,35,0,0" />
         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="四面八方，使命必达。" VerticalAlignment="Top"
