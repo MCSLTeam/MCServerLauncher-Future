@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:vc="clr-namespace:MCServerLauncher.WPF.View.Components"
+        xmlns:fs="clr-namespace:MCServerLauncher.WPF.View.FirstSetupHelper"
         WindowStartupLocation="CenterScreen"
         UseLayoutRounding="True"
         ui:ThemeManager.IsThemeAware="True"
@@ -51,6 +52,7 @@
                            VerticalAlignment="Top" />
             </Grid>
         </Grid>
+        <fs:FirstSetup Grid.Row="1" Visibility="Hidden" x:Name="SetupView"/>
         <ui:NavigationView Visibility="Hidden" x:Name="NavView"
                            IsPaneOpen="False"
                            ItemInvoked="NavigationTriggered"

@@ -13,13 +13,13 @@ namespace MCServerLauncher.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly Page _createInstance = new CreateInstancePage();
-        private readonly Page _help = new HelpPage();
         private readonly Page _home = new HomePage();
+        private readonly Page _createInstance = new CreateInstancePage();
         private readonly Page _instanceManager = new InstanceManagerPage();
         private readonly Page _resDownload = new ResDownloadPage();
-        private readonly Page _settings = new SettingsPage();
+        private readonly Page _help = new HelpPage();
         private readonly Page _notificationCenter = new NotificationCenterPage();
+        private readonly Page _settings = new SettingsPage();
 
         public MainWindow()
         {
@@ -32,7 +32,7 @@ namespace MCServerLauncher.WPF
             await Task.Delay(1500);
             LoadingScreen.Visibility = Visibility.Hidden;
             TitleBarGrid.Visibility = Visibility.Visible;
-            NavView.Visibility = Visibility.Visible;
+            SetupView.Visibility = Visibility.Visible;
         }
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {

@@ -74,7 +74,7 @@
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Serilog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
-      <HintPath>..\packages\Serilog.4.0.0\lib\net462\Serilog.dll</HintPath>
+      <HintPath>..\packages\Serilog.4.0.1\lib\net462\Serilog.dll</HintPath>
     </Reference>
     <Reference Include="Serilog.Sinks.Async, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
       <HintPath>..\packages\Serilog.Sinks.Async.2.0.0\lib\net462\Serilog.Sinks.Async.dll</HintPath>
@@ -211,6 +211,12 @@
     <Compile Include="View\Components\FastMirrorResCoreVersionItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreVersionItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\FirstSetupHelper\DaemonSetupPage.xaml.cs">
+      <DependentUpon>DaemonSetupPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\FirstSetupHelper\FirstSetup.xaml.cs">
+      <DependentUpon>FirstSetup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\InstanceBorder.xaml.cs">
       <DependentUpon>InstanceBorder.xaml</DependentUpon>
     </Compile>
@@ -267,6 +273,12 @@
     </Compile>
     <Compile Include="View\Components\LoadingScreen.xaml.cs">
       <DependentUpon>LoadingScreen.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\FirstSetupHelper\EulaSetupPage.xaml.cs">
+      <DependentUpon>EulaSetupPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\FirstSetupHelper\WelcomeSetupPage.xaml.cs">
+      <DependentUpon>WelcomeSetupPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\HelpPage.xaml.cs">
       <DependentUpon>HelpPage.xaml</DependentUpon>
@@ -331,6 +343,14 @@
     <Page Include="View\Components\FastMirrorResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\FirstSetupHelper\DaemonSetupPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\FirstSetupHelper\FirstSetup.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\Components\InstanceBorder.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -406,6 +426,14 @@
     </Page>
     <Page Include="View\Components\LoadingScreen.xaml">
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\FirstSetupHelper\EulaSetupPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\FirstSetupHelper\WelcomeSetupPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\HelpPage.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -497,6 +525,7 @@
   <ItemGroup>
     <Resource Include="Resources\MCServerLauncherFuture.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
