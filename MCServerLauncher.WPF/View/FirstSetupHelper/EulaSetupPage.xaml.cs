@@ -27,7 +27,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 Content = new TextBlock()
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = "您拒绝了用户协议，本软件将无法继续使用。"
+                    Text = "若您拒绝用户协议，本软件将退出。"
                 }
             };
             dialog.SecondaryButtonClick += (o, args) => Application.Current.Shutdown();

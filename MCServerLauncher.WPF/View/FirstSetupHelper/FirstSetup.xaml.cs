@@ -95,7 +95,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                     item.IsEnabled = false;
                 }
             }
-            NavigateTo(_pageList[newIdx], new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(_pageList[newIdx]) });
+            NavigateTo(_pageList[newIdx], new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(_pageList[newIdx])});
         }
     }
 }
