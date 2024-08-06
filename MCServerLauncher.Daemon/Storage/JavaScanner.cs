@@ -20,17 +20,15 @@ public static class JavaScanner
 
     private static readonly List<string> MatchedKeys = new()
     {
-        "1.", "bin", "cache", "client", "craft", "data", "download", "eclipse", "mine", "mc", "launch",
-        "hotspot", "java", "jdk", "jre", "zulu", "dragonwell", "jvm", "microsoft", "corretto", "sigma",
-        "mod", "mojang", "net", "netease", "forge", "liteloader", "fabric", "game", "vanilla", "server",
-        "opt", "oracle", "path", "program", "roaming", "local", "run", "runtime", "software", "daemon",
-        "temp", "users", "users", "x64", "x86", "lib", "usr", "env", "ext", "file", "data", "green",
-        "我的", "世界", "前置", "原版", "启动", "启动", "国服", "官启", "官方", "客户", "应用", "整合", "组件",
-        Environment.UserName, "新建文件夹", "服务", "游戏", "环境", "程序", "网易", "软件", "运行", "高清",
-        "badlion", "blc", "lunar", "tlauncher", "soar", "cheatbreaker", "hmcl", "pcl", "bakaxl", "fsm", "vape",
-        "jetbrains", "intellij", "idea", "pycharm", "webstorm", "clion", "goland", "rider", "datagrip",
-        "rider", "appcode", "phpstorm", "rubymine", "jbr", "android", "mcsm", "msl", "mcsl", "3dmark", "arctime",
-        "library", "content", "home"
+        "intellij", "cache", "官启", "vape", "组件", "我的", "liteloader", "运行", "pcl", "bin", "appcode", "untitled folder",
+        "content", "microsoft", "program", "lunar", "goland", "download", "corretto", "dragonwell", "客户", "client",
+        "新建文件夹", "badlion", "usr", "temp", "ext", "run", "server", "软件", "software", "arctime", "jdk", "phpstorm",
+        "eclipse", "rider", "x64", "jbr", "环境", "jre", "env", "jvm", "启动", "未命名文件夹", "sigma", "mojang", "daemon",
+        "craft", "oracle", "vanilla", "lib", "file", "msl", "x86", "bakaxl", "高清", "local", "mod", "原版", "webstorm",
+        "应用", "hotspot", "fabric", "整合", "net", "mine", "服务", "opt", "home", "idea", "clion", "path", "android",
+        "green", "zulu", "官方", "forge", "游戏", "blc", "user", "国服", "pycharm", "3dmark", "data", "roaming", "程序", "java",
+        "前置", "soar", "1.", "mc", "世界", "jetbrains", "cheatbreaker", "game", "网易", "launch", "fsm", "root",
+        Environment.UserName
     };
 
     private static readonly List<string> ExcludedKeys = new() { "$", "{", "}", "__", "office" };
