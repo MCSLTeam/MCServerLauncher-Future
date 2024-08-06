@@ -23,7 +23,7 @@ of [MCServerLauncher 2](https://github.com/MCSLTeam/MCSL2), offering enhanced co
 [Daemon](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon): The core service
 built with .NET 6.0 C#, delivering robust performance and flexibility.
 
-[WPF Desktop Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF.Main): A
+[WPF Desktop Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF): A
 Windows-specific interface for connecting to daemons.
 
 [Web Panel](https://github.com/MCSLTeam/MCServerLauncher-Future-Web): A browser-accessible dashboard, ideal for

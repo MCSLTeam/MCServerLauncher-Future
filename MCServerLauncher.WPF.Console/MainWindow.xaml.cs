@@ -71,9 +71,7 @@ namespace MCServerLauncher.WPF.Console
                 typeof(BoardPage), typeof(CommandPage), typeof(FileManagerPage), typeof(EventTriggerPage),
                 typeof(ComponentManagerPage)
             };
-            if (pages.IndexOf(current.GetType()) < pages.IndexOf(navPageType))
-                return SlideNavigationTransitionEffect.FromRight;
-            return SlideNavigationTransitionEffect.FromLeft;
+            return pages.IndexOf(current.GetType()) < pages.IndexOf(navPageType) ? SlideNavigationTransitionEffect.FromRight : SlideNavigationTransitionEffect.FromLeft;
         }
     }
 }
