@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
 
 namespace MCServerLauncher.WPF.View
 {
@@ -21,31 +20,28 @@ namespace MCServerLauncher.WPF.View
             InitializeComponent();
             DataContext = this;
 
+            InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectedIndex = MinecraftForgeInstallerSource.ToList().IndexOf(BasicUtils.AppSettings.InstanceCreation.MinecraftForgeInstallerSource);
+            InitDownloadSourceSelection();
+            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError);
+            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm);
+            More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(BasicUtils.AppSettings.App.Theme);
+
             InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.Toggled += OnMinecraftJavaAutoAcceptEulaChanged;
             InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.Toggled += OnMinecraftJavaAutoSwitchOnlineModeChanged;
             InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.Toggled += OnMinecraftBedrockAutoSwitchOnlineModeChanged;
             InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectionChanged += OnMinecraftForgeInstallerSourceSelectionChanged;
 
-            ResDownload_DownloadSource.SelectionChanged += OnResDownloadSourceSelectionChanged;
-            ResDownload_DownloadThread.SettingSlider.ValueChanged += OnDownloadThreadValueChanged;
+            ResDownload_DownloadThreadCnt.SettingSlider.ValueChanged += OnDownloadThreadValueChanged;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged += OnActionWhenDownloadErrorSelectionChanged;
 
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectionChanged += OnActionWhenDeleteConfirmIndexSelectionChanged;
 
-            InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectedIndex = MinecraftForgeInstallerSource.ToList().IndexOf(BasicUtils.AppSettings.InstanceCreation.MinecraftForgeInstallerSource);
-            ResDownload_DownloadSource.SelectedIndex = _downloadSourceList.IndexOf(BasicUtils.AppSettings.Download.DownloadSource);
-            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError);
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm);
-            More_LauncherTheme.SettingComboBox.SelectedIndex = 0;
+            More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
+            More_FollowStartupForLauncher.SettingSwitch.Toggled += OnFollowStartupForLauncherChanged;
+            More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += OnAutoCheckUpdateForLauncherChanged;
+
             AboutVersionReplacer.Text = $"Developer Version {Assembly.GetExecutingAssembly().GetName().Version}";
         }
-
-        public static IEnumerable<string> ThemeForApp { get; } = new List<string>
-        {
-            "跟随系统",
-            "浅色",
-            "深色"
-        };
 
         # region MinecraftJavaAutoAcceptEula
         public bool MinecraftJavaAutoAcceptEula
@@ -129,14 +125,20 @@ namespace MCServerLauncher.WPF.View
         # endregion
 
         # region ResDownloadSource
-        private static readonly List<string> _downloadSourceList = new() { "FastMirror", "PolarsMirror", "ZCloudFile", "MSLAPI", "MCSL-Sync" };
-        private void OnResDownloadSourceSelectionChanged(object sender, SelectionChangedEventArgs e)
+
+        private void InitDownloadSourceSelection()
         {
-            Console.WriteLine(11);
-            Console.WriteLine(_downloadSourceList[((RadioButtons)sender).SelectedIndex]);
+            FastMirrorSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "FastMirror";
+            PolarsMirrorSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "PolarsMirror";
+            ZCloudFileSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "ZCloudFile";
+            MSLAPISrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "MSLAPI";
+            MCSLSyncSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "MCSLSync";
+        }
+        private void OnResDownloadSourceSelectionChanged(object sender, RoutedEventArgs e)
+        {
             try
             {
-                BasicUtils.SaveSetting("ResDownload.DownloadSource", _downloadSourceList[((RadioButtons)sender).SelectedIndex]);
+                BasicUtils.SaveSetting("ResDownload.DownloadSource", ((RadioButton)sender).GetType().GetProperty("Name")?.GetValue(sender).ToString().Replace("Src", ""));
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -156,11 +158,11 @@ namespace MCServerLauncher.WPF.View
                 "DownloadThreadValue",
                 typeof(int),
                 typeof(RangeSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.Download.Thread)
+                new PropertyMetadata(BasicUtils.AppSettings.Download.ThreadCnt)
             );
         private void OnDownloadThreadValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            BasicUtils.SaveSetting("ResDownload.Thread", (int)ResDownload_DownloadThread.SettingSlider.Value);
+            BasicUtils.SaveSetting("ResDownload.ThreadCnt", (int)ResDownload_DownloadThreadCnt.SettingSlider.Value);
         }
         #endregion
 
@@ -182,7 +184,7 @@ namespace MCServerLauncher.WPF.View
                 "ActionWhenDownloadErrorIndex",
                 typeof(int),
                 typeof(ComboSettingCard),
-                new PropertyMetadata(ActionWhenDownloadError.ToList().IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError))
+                new PropertyMetadata(_actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError))
             );
         private void OnActionWhenDownloadErrorSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -218,7 +220,6 @@ namespace MCServerLauncher.WPF.View
             );
         private void OnActionWhenDeleteConfirmIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Console.WriteLine(1232132);
             try
             {
                 BasicUtils.SaveSetting("Instance.ActionWhenDeleteConfirm", _actionWhenDeleteConfirmList[Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex]);
@@ -229,6 +230,77 @@ namespace MCServerLauncher.WPF.View
             }
         }
         #endregion
+
+        #region LauncherTheme
+        public static IEnumerable<string> ThemeForApp { get; } = new List<string>
+        {
+            "跟随系统",
+            "浅色",
+            "深色"
+        };
+        private static readonly List<string> _themeList = new() { "auto", "light", "dark" };
+        public int LauncherThemeIndex
+        {
+            get => (int)GetValue(LauncherThemeIndexProperty);
+            set => SetValue(LauncherThemeIndexProperty, value);
+        }
+        public static readonly DependencyProperty LauncherThemeIndexProperty =
+            DependencyProperty.Register(
+                "LauncherThemeIndex",
+                typeof(int),
+                typeof(ComboSettingCard),
+                new PropertyMetadata(_themeList.IndexOf(BasicUtils.AppSettings.App.Theme))
+            );
+        private void OnLauncherThemeIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                BasicUtils.SaveSetting("App.Theme", _themeList[More_LauncherTheme.SettingComboBox.SelectedIndex]);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // ignored due to mtfk error
+            }
+        }
+        #endregion
+
+        # region FollowStartupForLauncher
+        public bool FollowStartupForLauncher
+        {
+            get => (bool)GetValue(FollowStartupForLauncherProperty);
+            set => SetValue(FollowStartupForLauncherProperty, value);
+        }
+        public static readonly DependencyProperty FollowStartupForLauncherProperty =
+            DependencyProperty.Register(
+                "FollowStartupForLauncher",
+                typeof(bool),
+                typeof(SwitchSettingCard),
+                new PropertyMetadata(BasicUtils.AppSettings.App.FollowStartup)
+            );
+        private void OnFollowStartupForLauncherChanged(object sender, RoutedEventArgs e)
+        {
+            BasicUtils.SaveSetting("App.FollowStartup", More_FollowStartupForLauncher.SettingSwitch.IsOn);
+        }
+        #endregion
+
+        #region AutoCheckUpdateForLauncher
+        public bool AutoCheckUpdateForLauncher
+        {
+            get => (bool)GetValue(AutoCheckUpdateForLauncherProperty);
+            set => SetValue(AutoCheckUpdateForLauncherProperty, value);
+        }
+        public static readonly DependencyProperty AutoCheckUpdateForLauncherProperty =
+            DependencyProperty.Register(
+                "AutoCheckUpdateForLauncher",
+                typeof(bool),
+                typeof(SwitchSettingCard),
+                new PropertyMetadata(BasicUtils.AppSettings.App.AutoCheckUpdate)
+            );
+        private void OnAutoCheckUpdateForLauncherChanged(object sender, RoutedEventArgs e)
+        {
+            BasicUtils.SaveSetting("App.AutoCheckUpdate", More_AutoCheckUpdateForLauncher.SettingSwitch.IsOn);
+        }
+        # endregion
 
     }
 
