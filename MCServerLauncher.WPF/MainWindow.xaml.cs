@@ -28,11 +28,12 @@ namespace MCServerLauncher.WPF
         }
         private async void InitializeView()
         {
+            SetupView.Visibility = Visibility.Hidden;
             CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
             await Task.Delay(1500);
             LoadingScreen.Visibility = Visibility.Hidden;
             TitleBarGrid.Visibility = Visibility.Visible;
-            SetupView.Visibility = Visibility.Visible;
+            NavView.Visibility = Visibility.Visible;
         }
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {

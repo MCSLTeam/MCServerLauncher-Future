@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -58,12 +60,8 @@ namespace MCServerLauncher.WPF.Helpers
                     _ => (0, 0, 0, 0)
                 };
 
-            if (version.Contains("-"))
-                version = version.ToLower().Replace("-", ".").Replace("rc", "").Replace("pre", "")
-                    .Replace("snapshot", "0");
-            Console.WriteLine(version);
+            if (version.Contains("-")) version = version.ToLower().Replace("-", ".").Replace("rc", "").Replace("pre", "").Replace("snapshot", "0");
             var parts = version.Split('.');
-            Console.WriteLine(string.Join(", ", parts));
             if (parts.Length == 2)
                 return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
             if (parts.Length == 3)
@@ -118,8 +116,9 @@ namespace MCServerLauncher.WPF.Helpers
 
     public class BasicUtils
     {
-        public Settings AppSettings { get; set; }
-
+        public static Settings AppSettings { get; set; }
+        private static Task _writeTask = Task.CompletedTask;
+        private static readonly ConcurrentQueue<KeyValuePair<string, string>> _queue = new ConcurrentQueue<KeyValuePair<string, string>>();
         private static void InitDataDirectory()
         {
             var dataFolders = new List<string>
@@ -140,36 +139,29 @@ namespace MCServerLauncher.WPF.Helpers
             if (File.Exists("Data/Configuration/MCSL/Settings.json"))
             {
                 Log.Information("[Set] Found profile, reading");
-                AppSettings =
-                    JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json"));
+                AppSettings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json", Encoding.UTF8));
             }
             else
             {
                 Log.Information("[Set] Profile not found, creating");
                 AppSettings = new Settings
                 {
-                    MinecraftJava = new MinecraftJavaSettings
-                    {
-                        AutoAcceptEula = false,
-                        AutoSwitchOnlineMode = false,
-                        QuickMenu = true
-                    },
-                    Download = new DownloadSettings
-                    {
-                        Thread = 8,
-                        SpeedLimit = 0,
-                        DownloadSource = "FastMirror"
-                    },
                     InstanceCreation = new InstanceCreationSettings
                     {
-                        KeepDataWhenBack = false,
-                        ShowCreationConfirm = true
+                        MinecraftJavaAutoAcceptEula = false,
+                        MinecraftJavaAutoSwitchOnlineMode = false,
+                        MinecraftBedrockAutoSwitchOnlineMode = false,
+                        MinecraftForgeInstallerSource = "BMCLAPI"
+                    },
+                    Download = new ResDownloadSettings
+                    {
+                        DownloadSource = "FastMirror",
+                        Thread = 8,
+                        ActionWhenDownloadError = "stop"
                     },
                     Instance = new InstanceSettings
                     {
-                        Input = "UTF-8",
-                        Output = "UTF-8",
-                        CleanConsoleWhenStopped = true,
+                        ActionWhenDeleteConfirm = "name",
                         FollowStart = new List<string>()
                     },
                     App = new AppSettings
@@ -181,9 +173,77 @@ namespace MCServerLauncher.WPF.Helpers
                 };
                 File.WriteAllText(
                     "Data/Configuration/MCSL/Settings.json",
-                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented)
+                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented),
+                    Encoding.UTF8
                 );
             }
+        }
+
+        public static void SaveSetting<T>(string settingPath, T value)
+        {
+            // example:
+            // SaveSettings("Download.Thread", 100);
+            var settingParts = settingPath.Split('.');
+            if (settingParts.Length != 2)
+            {
+                throw new ArgumentException("Invalid setting object format. Expected format: 'Class.Property'");
+            }
+
+            var settingClass = settingParts[0];
+            var settingTarget = settingParts[1];
+
+            object settings = settingClass switch
+            {
+                "InstanceCreation" => AppSettings.InstanceCreation,
+                "ResDownload" => AppSettings.Download,
+                "Instance" => AppSettings.Instance,
+                "App" => AppSettings.App,
+                _ => throw new ArgumentOutOfRangeException(nameof(settingClass), settingClass, "Invalid setting class.")
+            };
+
+            var property = settings.GetType().GetProperty(settingTarget);
+            if (property == null || property.PropertyType != typeof(T))
+            {
+                throw new InvalidOperationException($"Property {settingTarget} not found or type mismatch.");
+            }
+
+            property.SetValue(settings, value);
+
+            Task.Run(() =>
+            {
+                lock (_queue)
+                {
+                    _queue.Enqueue(new KeyValuePair<string, string>(settingClass, settingTarget));
+                    if (_writeTask.IsCompleted)
+                    {
+                        _writeTask = Task.Run(() =>
+                        {
+                            while (_queue.TryDequeue(out var setting))
+                            {
+                                object settingClass = setting.Key switch
+                                {
+                                    "InstanceCreation" => AppSettings.InstanceCreation,
+                                    "ResDownload" => AppSettings.Download,
+                                    "Instance" => AppSettings.Instance,
+                                    "App" => AppSettings.App,
+                                    _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key, @"Invalid setting class.")
+                                };
+                                var settingProperty = settingClass.GetType().GetProperty(setting.Value);
+                                if (settingProperty == null || settingProperty.PropertyType != typeof(T))
+                                {
+                                    throw new InvalidOperationException($"Property {setting.Value} not found or type mismatch.");
+                                }
+                                settingProperty.SetValue(settingClass, value);
+                                File.WriteAllText(
+                                    "Data/Configuration/MCSL/Settings.json",
+                                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented),
+                                    Encoding.UTF8
+                                );
+                            }
+                        });
+                    }
+                }
+            });
         }
 
         private void InitCert()
@@ -194,7 +254,6 @@ namespace MCServerLauncher.WPF.Helpers
                 using var certStream = Assembly.GetExecutingAssembly()
                     .GetManifestResourceStream("MCServerLauncher.WPF.Resources.MCSLTeam.cer");
                 if (certStream == null) throw new FileNotFoundException("Embedded resource not found");
-
                 if (!certStream.CanRead) throw new InvalidOperationException("The stream cannot be read");
                 var buffer = new byte[certStream.Length];
                 certStream.Read(buffer, 0, buffer.Length);
@@ -246,31 +305,24 @@ namespace MCServerLauncher.WPF.Helpers
     }
 }
 
-public class MinecraftJavaSettings
-{
-    public bool AutoAcceptEula { get; set; }
-    public bool AutoSwitchOnlineMode { get; set; }
-    public bool QuickMenu { get; set; }
-}
-
-public class DownloadSettings
-{
-    public int Thread { get; set; }
-    public int SpeedLimit { get; set; }
-    public string DownloadSource { get; set; }
-}
-
 public class InstanceCreationSettings
 {
-    public bool KeepDataWhenBack { get; set; }
-    public bool ShowCreationConfirm { get; set; }
+    public bool MinecraftJavaAutoAcceptEula { get; set; }
+    public bool MinecraftJavaAutoSwitchOnlineMode { get; set; }
+    public bool MinecraftBedrockAutoSwitchOnlineMode { get; set; }
+    public string MinecraftForgeInstallerSource { get; set; }
+}
+
+public class ResDownloadSettings
+{
+    public string DownloadSource { get; set; }
+    public int Thread { get; set; }
+    public string ActionWhenDownloadError { get; set; }
 }
 
 public class InstanceSettings
 {
-    public string Input { get; set; }
-    public string Output { get; set; }
-    public bool CleanConsoleWhenStopped { get; set; }
+    public string ActionWhenDeleteConfirm { get; set; }
     public List<string> FollowStart { get; set; }
 }
 
@@ -283,9 +335,8 @@ public class AppSettings
 
 public class Settings
 {
-    public MinecraftJavaSettings MinecraftJava { get; set; }
-    public DownloadSettings Download { get; set; }
     public InstanceCreationSettings InstanceCreation { get; set; }
+    public ResDownloadSettings Download { get; set; }
     public InstanceSettings Instance { get; set; }
     public AppSettings App { get; set; }
 }

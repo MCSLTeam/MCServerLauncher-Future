@@ -1,4 +1,7 @@
-﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+﻿using iNKORE.UI.WPF.Helpers;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using System.Collections.Generic;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components
 {
@@ -32,8 +35,18 @@ namespace MCServerLauncher.WPF.View.Components
 
         public bool Status
         {
-            get => SettingSwitch.IsOn;
-            set => SettingSwitch.IsOn = value;
+            get => (bool)GetValue(StatusProperty);
+            set => SetValue(StatusProperty, value);
+        }
+
+        public static readonly DependencyProperty StatusProperty =
+            DependencyProperty.Register("Status", typeof(bool), typeof(SwitchSettingCard), new PropertyMetadata(false, OnStatusChanged));
+
+        private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not SwitchSettingCard control) return;
+            if (e.NewValue is not bool status) return;
+            control.SettingSwitch.IsOn = status;
         }
     }
 }

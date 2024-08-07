@@ -1,4 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components
 {
@@ -36,12 +37,20 @@ namespace MCServerLauncher.WPF.View.Components
             set => SettingSlider.Maximum = value;
         }
 
-        public int Value
+        public int SliderValue
         {
             get => (int)SettingSlider.Value;
             set => SettingSlider.Value = value;
         }
 
+        public static readonly DependencyProperty SliderValueProperty =
+            DependencyProperty.Register("SliderValue", typeof(int), typeof(RangeSettingCard), new PropertyMetadata(1, OnSliderValueChanged));
+
+        private static void OnSliderValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not RangeSettingCard control) return;
+            control.SettingSlider.Value = (int)e.NewValue;
+        }
         public FontIconData? Icon
         {
             get => SettingIcon.Icon;
