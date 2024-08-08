@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class MSLAPIProvider
     {
-        public const string ResProviderName = "MSL";
+        public readonly string ResProviderName = "MSL";
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
