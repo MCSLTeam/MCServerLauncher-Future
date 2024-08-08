@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -119,6 +118,9 @@ namespace MCServerLauncher.WPF.Helpers
         public static Settings AppSettings { get; set; }
         private static Task _writeTask = Task.CompletedTask;
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
+        /// <summary>
+        /// 初始化数据目录。
+        /// </summary>
         private static void InitDataDirectory()
         {
             var dataFolders = new List<string>
@@ -133,7 +135,9 @@ namespace MCServerLauncher.WPF.Helpers
             foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
                 Directory.CreateDirectory(dataFolder);
         }
-
+        /// <summary>
+        /// 初始化程序设置。
+        /// </summary>
         private void InitSettings()
         {
             if (File.Exists("Data/Configuration/MCSL/Settings.json"))
@@ -178,15 +182,21 @@ namespace MCServerLauncher.WPF.Helpers
                 );
             }
         }
-
+        /// <summary>
+        /// 保存 MCServerLauncher.WPF 设置。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="settingPath">要设置的项目，格式例如 App.Theme 。</param>
+        /// <param name="value">项目的值。</param>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public static void SaveSetting<T>(string settingPath, T value)
         {
-            // example:
-            // SaveSettings("Download.ThreadCnt", 32);
             var settingParts = settingPath.Split('.');
             if (settingParts.Length != 2)
             {
-                throw new ArgumentException("Invalid setting object format. Expected format: 'Class.Property'");
+                throw new ArgumentException("Invalid setting path format. Expected format: 'Class.Property'");
             }
 
             var settingClass = settingParts[0];
@@ -209,40 +219,46 @@ namespace MCServerLauncher.WPF.Helpers
 
             property.SetValue(settings, value);
 
-            Task.Run(() =>
+            lock (Queue)
             {
-                lock (Queue)
+                Queue.Enqueue(new KeyValuePair<string, string>(settingClass, settingTarget));
+                if (_writeTask.IsCompleted)
                 {
-                    Queue.Enqueue(new KeyValuePair<string, string>(settingClass, settingTarget));
-                    if (_writeTask.IsCompleted)
-                    {
-                        _writeTask = Task.Run(() =>
-                        {
-                            while (Queue.TryDequeue(out var setting))
-                            {
-                                object settingClass = setting.Key switch
-                                {
-                                    "InstanceCreation" => AppSettings.InstanceCreation,
-                                    "ResDownload" => AppSettings.Download,
-                                    "Instance" => AppSettings.Instance,
-                                    "App" => AppSettings.App,
-                                    _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key, @"Invalid setting class.")
-                                };
-                                PropertyInfo settingProperty = settingClass.GetType().GetProperty(setting.Value);
-                                settingProperty.SetValue(settingClass, value);
-                                File.WriteAllText(
-                                    "Data/Configuration/MCSL/Settings.json",
-                                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented),
-                                    Encoding.UTF8
-                                );
-                            }
-                        });
-                    }
+                    _writeTask = Task.Run(ProcessQueue);
                 }
-            });
+            }
         }
+        /// <summary>
+        /// 保存设置的队列实现。
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        private static void ProcessQueue()
+        {
+            while (Queue.TryDequeue(out var setting))
+            {
+                object settingClass = setting.Key switch
+                {
+                    "InstanceCreation" => AppSettings.InstanceCreation,
+                    "ResDownload" => AppSettings.Download,
+                    "Instance" => AppSettings.Instance,
+                    "App" => AppSettings.App,
+                    _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key, "Invalid setting class.")
+                };
 
-        private void InitCert()
+                var property = settingClass.GetType().GetProperty(setting.Value);
+                if (property == null) continue;
+                var value = property.GetValue(settingClass);
+                File.WriteAllText(
+                    "Data/Configuration/MCSL/Settings.json",
+                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented),
+                    Encoding.UTF8
+                );
+            }
+        }
+        /// <summary>
+        /// 导入证书。
+        /// </summary>
+        private static void InitCert()
         {
             try
             {
@@ -273,7 +289,9 @@ namespace MCServerLauncher.WPF.Helpers
                 Log.Error($"[Cer] Failed to import certificate. Reason: {ex.Message}");
             }
         }
-
+        /// <summary>
+        /// 初始化日志记录器。
+        /// </summary>
         private static void InitLogger()
         {
             Log.Logger = new LoggerConfiguration()
@@ -283,7 +301,9 @@ namespace MCServerLauncher.WPF.Helpers
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
         }
-
+        /// <summary>
+        /// 程序初始化。
+        /// </summary>
         public void InitApp()
         {
             InitLogger();
