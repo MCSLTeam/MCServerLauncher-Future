@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using MCServerLauncher.Daemon.FileManagement;
+using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
@@ -12,6 +12,9 @@ public class UsersException : Exception
     }
 }
 
+/// <summary>
+/// 用户服务实现类
+/// </summary>
 public class UserService : IUserService
 {
     private readonly ConcurrentDictionary<string, UserMeta> _userMap = CheckInternalAdmin(LoadUsers());

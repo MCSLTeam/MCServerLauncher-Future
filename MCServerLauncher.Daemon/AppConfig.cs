@@ -1,27 +1,39 @@
-using MCServerLauncher.Daemon.FileManagement;
+using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
 using Serilog;
 
 namespace MCServerLauncher.Daemon;
 
-internal class Config
+/// <summary>
+/// app配置文件
+/// </summary>
+internal class AppConfig
 {
-    [JsonIgnore] private static Config _config;
+    /// <summary>
+    ///  不可变单例
+    /// </summary>
+    [JsonIgnore] private static AppConfig _appConfig;
 
+    /// <summary>
+    ///   端口
+    /// </summary>
     public readonly ushort Port;
-    public readonly string Secret;
-    public readonly string Token;
 
-    public Config(ushort Port, string Secret, string Token)
+
+    /// <summary>
+    ///   Jwt-secret
+    /// </summary>
+    public readonly string Secret;
+
+    public AppConfig(ushort Port, string Secret)
     {
         this.Port = Port;
         this.Secret = Secret;
-        this.Token = Token;
     }
 
-    private static Config GetDefault()
+    private static AppConfig GetDefault()
     {
-        return new Config(11451, GetRandomSecret(), Guid.NewGuid().ToString());
+        return new AppConfig(11451, GetRandomSecret());
     }
 
     private static string GetRandomSecret()
@@ -44,13 +56,13 @@ internal class Config
         }
     }
 
-    private static Config LoadOrDefault(string path = "config.json")
+    private static AppConfig LoadOrDefault(string path = "config.json")
     {
         return FileManager.ReadJsonOr(path, GetDefault);
     }
 
-    public static Config Get()
+    public static AppConfig Get()
     {
-        return _config ??= LoadOrDefault();
+        return _appConfig ??= LoadOrDefault();
     }
 }

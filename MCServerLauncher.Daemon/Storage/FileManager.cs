@@ -5,7 +5,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Serilog;
 
-namespace MCServerLauncher.Daemon.FileManagement;
+namespace MCServerLauncher.Daemon.Storage;
 
 internal static class FileManager
 {

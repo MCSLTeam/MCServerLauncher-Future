@@ -3,6 +3,9 @@ using System.Security.Cryptography;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
+/// <summary>
+/// 密码本地化存储:使用PBKDF2加密密码，避免明文存储
+/// </summary>
 public static class PasswordHasher
 {
     private const int SaltSize = 16;

@@ -5,11 +5,15 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
+
+/// <summary>
+///    JWT生成和解析验证工具
+/// </summary>
 public class JwtUtils
 {
     private static readonly SymmetricSecurityKey SecurityKey = new(Encoding.UTF8.GetBytes(Secret));
     private static readonly SigningCredentials SigningCredentials = new(SecurityKey, SecurityAlgorithms.HmacSha256);
-    private static string Secret => Config.Get().Secret;
+    private static string Secret => AppConfig.Get().Secret;
 
     /// <summary>
     ///     生成Token(验证pwd 防止出现pwd已更改但token依然有效的情况)

@@ -1,4 +1,3 @@
-using MCServerLauncher.Daemon.FileManagement;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
@@ -6,6 +5,10 @@ using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
+/// <summary>
+/// Action(rpc)处理器。
+/// Action是ws交互格式的一种，他代表的是一个远程过程调用: C->S,处理后返回json数据给C
+/// </summary>
 internal class ActionService : IActionService
 {
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
@@ -19,7 +22,14 @@ internal class ActionService : IActionService
         _logger = logger;
         _javaScannerCache = javaScannerCache;
     }
-
+    
+    /// <summary>
+    /// Action(rpc)处理中枢
+    /// </summary>
+    /// <param name="type">Action类型</param>
+    /// <param name="data">Action数据</param>
+    /// <returns>Action响应</returns>
+    /// <exception cref="NotImplementedException">未实现的Action</exception>
     public async Task<Dictionary<string, object>> Routine(
         ActionType type,
         JObject data
