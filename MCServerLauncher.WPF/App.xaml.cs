@@ -12,7 +12,7 @@ namespace MCServerLauncher.WPF
     /// </summary>
     public partial class App
     {
-        //以创建Mutex的方式防止同目录多开，避免奇奇怪怪的文件占用错误
+        //以创建Mutex的方式防止同目录多开
         private Mutex _mutex;
 
         public App()
