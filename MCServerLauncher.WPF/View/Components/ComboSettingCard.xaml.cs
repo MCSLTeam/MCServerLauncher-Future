@@ -52,14 +52,9 @@ namespace MCServerLauncher.WPF.View.Components
             foreach (var item in items)
                 control.SettingComboBox.Items.Add(item);
         }
-        public int Index
-        {
-            get => (int)GetValue(IndexProperty);
-            set => SetValue(IndexProperty, value);
-        }
 
         public static readonly DependencyProperty IndexProperty = DependencyProperty.Register(
-            nameof(Index),
+            "Index",
             typeof(int),
             typeof(ComboSettingCard),
             new PropertyMetadata(0, OnIndexChanged));

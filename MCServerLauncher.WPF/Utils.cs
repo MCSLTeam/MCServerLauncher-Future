@@ -118,7 +118,7 @@ namespace MCServerLauncher.WPF.Helpers
     {
         public static Settings AppSettings { get; set; }
         private static Task _writeTask = Task.CompletedTask;
-        private static readonly ConcurrentQueue<KeyValuePair<string, string>> _queue = new ConcurrentQueue<KeyValuePair<string, string>>();
+        private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
         private static void InitDataDirectory()
         {
             var dataFolders = new List<string>
@@ -156,7 +156,7 @@ namespace MCServerLauncher.WPF.Helpers
                     Download = new ResDownloadSettings
                     {
                         DownloadSource = "FastMirror",
-                        Thread = 8,
+                        ThreadCnt = 16,
                         ActionWhenDownloadError = "stop"
                     },
                     Instance = new InstanceSettings
@@ -182,7 +182,7 @@ namespace MCServerLauncher.WPF.Helpers
         public static void SaveSetting<T>(string settingPath, T value)
         {
             // example:
-            // SaveSettings("Download.Thread", 100);
+            // SaveSettings("Download.ThreadCnt", 32);
             var settingParts = settingPath.Split('.');
             if (settingParts.Length != 2)
             {
@@ -211,14 +211,14 @@ namespace MCServerLauncher.WPF.Helpers
 
             Task.Run(() =>
             {
-                lock (_queue)
+                lock (Queue)
                 {
-                    _queue.Enqueue(new KeyValuePair<string, string>(settingClass, settingTarget));
+                    Queue.Enqueue(new KeyValuePair<string, string>(settingClass, settingTarget));
                     if (_writeTask.IsCompleted)
                     {
                         _writeTask = Task.Run(() =>
                         {
-                            while (_queue.TryDequeue(out var setting))
+                            while (Queue.TryDequeue(out var setting))
                             {
                                 object settingClass = setting.Key switch
                                 {
@@ -228,11 +228,7 @@ namespace MCServerLauncher.WPF.Helpers
                                     "App" => AppSettings.App,
                                     _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key, @"Invalid setting class.")
                                 };
-                                var settingProperty = settingClass.GetType().GetProperty(setting.Value);
-                                if (settingProperty == null || settingProperty.PropertyType != typeof(T))
-                                {
-                                    throw new InvalidOperationException($"Property {setting.Value} not found or type mismatch.");
-                                }
+                                PropertyInfo settingProperty = settingClass.GetType().GetProperty(setting.Value);
                                 settingProperty.SetValue(settingClass, value);
                                 File.WriteAllText(
                                     "Data/Configuration/MCSL/Settings.json",
@@ -316,7 +312,7 @@ public class InstanceCreationSettings
 public class ResDownloadSettings
 {
     public string DownloadSource { get; set; }
-    public int Thread { get; set; }
+    public int ThreadCnt { get; set; }
     public string ActionWhenDownloadError { get; set; }
 }
 

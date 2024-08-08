@@ -69,8 +69,7 @@
                                      Icon="{x:Static ui:SegoeFluentIcons.Processing}"
                                      Title="Forge 依赖下载源 ( Minecraft Forge 服务器 实例 )"
                                      Description="选择合适的下载源可显著提升 Forge 依赖下载速度。"
-                                     ComboBoxItems="{Binding Path=MinecraftForgeInstallerSource}"
-                                     Index="{Binding Path=MinecraftForgeInstallerSourceIndex}"/>
+                                     ComboBoxItems="{Binding Path=MinecraftForgeInstallerSource}"/>
 
 
                 <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0" />
@@ -95,51 +94,44 @@
                                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
-                    <Grid Margin="5,0,5,0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <ui:RadioButtons x:Name="ResDownload_DownloadSource">
-                            <RadioButton Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" />
-                            <RadioButton Margin="0,0,0,10" Content="极星云镜像 ( 由 极星网络 提供支持 )" />
-                            <RadioButton Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )" />
-                            <RadioButton Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )" />
-                            <RadioButton Margin="0,0,0,10" Content="MCSL-Sync 同步镜像" />
-                        </ui:RadioButtons>
-                    </Grid>
+                    <ui:RadioButtons Margin="5,0,5,0">
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" x:Name="FastMirrorSrc"/>
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="极星云镜像 ( 由 极星网络 提供支持 )" x:Name="PolarsMirrorSrc"/>
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )" x:Name="ZCloudFileSrc"/>
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )" x:Name="MSLAPISrc"/>
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="MCSL-Sync 同步镜像" x:Name="MCSLSyncSrc"/>
+                    </ui:RadioButtons>
                 </Expander>
-                <vc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数" x:Name="ResDownload_DownloadThread"
+                <vc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数" x:Name="ResDownload_DownloadThreadCnt"
                                      Description="线程数越多，在计算机性能足够的情况下，文件下载越快；反之会造成严重的卡顿。一般来说，设置为 16 线程即可满足需求。"
                                      MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}"/>
                 <vc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
                                      Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="下载失败处理方式"
                                      Description="当文件下载失败时，应当进行的操作。"
-                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}"
-                                     Index="{Binding Path=MinecraftForgeInstallerSourceIndex}"/>
+                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}"/>
                 <TextBlock Text="实例管理" FontSize="18" Margin="0,10,0,0" />
                 <vc:ComboSettingCard x:Name="Instance_ActionWhenDeleteConfirm"
                                      Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="删除实例确认方式"
                                      Description="此功能可防止误操作导致实例被删除。"
-                                     ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}"
-                                     Index="{Binding Path=ActionWhenDeleteConfirmIndex}"/>
+                                     ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}"/>
                 <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0" />
                 <vc:ComboSettingCard x:Name="More_LauncherTheme"
                                      Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="应用主题"
                                      Description="默认跟随系统变化，当然也可以自己设置。"
                                      ComboBoxItems="{Binding Path=ThemeForApp}" />
+                <vc:SwitchSettingCard x:Name="More_FollowStartupForLauncher"
+                                      Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}" Title="开机自启动 ( MCServerLauncher.WPF )"
+                                      Description="在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。"
+                                      Status="{Binding Path=AutoCheckUpdateForLauncher}"/>
                 <vc:ActionSettingCard x:Name="More_CheckUpdateForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="检查更新 ( MCServerLauncher.WPF )"
                                       Description="检查本图形化程序的更新。"
                                       IsAccentButtonStyle="True"
                                       ButtonContent="检查更新" />
                 <vc:SwitchSettingCard x:Name="More_AutoCheckUpdateForLauncher"
-                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="自动检查更新检查更新 ( MCServerLauncher.WPF )"
+                                      Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}" Title="自动检查更新 ( MCServerLauncher.WPF )"
                                       Description="在每次启动时，检查本图形化程序的更新。"
-                                      Status="True"/>
+                                      Status="{Binding Path=AutoCheckUpdateForLauncher}"/>
                 <vc:ActionSettingCard x:Name="More_CheckUpdateForDaemon" IsEnabled="False"
                                       Icon="{x:Static ui:SegoeFluentIcons.Processing}"
                                       Title="检查更新 ( MCServerLauncher.Daemon )" Description="检查守护进程的更新。"
