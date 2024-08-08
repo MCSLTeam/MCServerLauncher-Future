@@ -1,19 +1,21 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MCServerLauncher.WPF.Helpers;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.WPF.Modules.Download
 {
     internal class MSLAPI
     {
-        private readonly string _endPoint = "https://api.mslmc.cn/v2";
+        private readonly string _endPoint = "https://api.mslmc.cn/v3";
 
         public async Task<List<string>> GetCoreInfo()
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_server_types");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
+                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("types")!.ToObject<List<string>>();
             return null;
         }
 
@@ -21,7 +23,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
             if (response.IsSuccessStatusCode)
-                return await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("description")!.ToString();
             return "获取核心介绍失败！";
         }
 
@@ -29,7 +31,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
             return response.IsSuccessStatusCode
-                ? JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync())
+                ? JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("versionList")!.ToObject<List<string>>()
                 : null;
         }
 
@@ -37,7 +39,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
-                return await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("url")!.ToString();
             return null;
         }
 
