@@ -21,9 +21,10 @@ namespace MCServerLauncher.WPF.View
             InitializeComponent();
             DataContext = this;
 
-            # region 初始化ComboBox
+            # region 初始化数值
             InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectedIndex = MinecraftForgeInstallerSource.ToList().IndexOf(BasicUtils.AppSettings.InstanceCreation.MinecraftForgeInstallerSource);
             InitDownloadSourceSelection();
+            ResDownload_DownloadThreadCnt.SettingSlider.Value = BasicUtils.AppSettings.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError);
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm);
             More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(BasicUtils.AppSettings.App.Theme);
