@@ -3,7 +3,7 @@
     {
       "src": [
         {
-          "src": "../../MCServerLauncher.Daemon/",
+          "src": "../../../MCServerLauncher.Daemon/",
           "files": [
             "**/*.csproj"
           ]
@@ -36,8 +36,8 @@
       "modern"
     ],
     "globalMetadata": {
-      "_appName": "MCSLFuture.Daemon",
-      "_appTitle": "MCSLFuture.Daemon",
+      "_appName": "MCSLFuture-Daemon",
+      "_appTitle": "MCSLFuture-Daemon",
       "_enableSearch": true,
       "pdf": true
     }
