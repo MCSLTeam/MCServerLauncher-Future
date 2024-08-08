@@ -1,6 +1,6 @@
 using MCServerLauncher.Daemon;
 
-namespace MCServerLauncher.Daemon.FileManagement;
+namespace MCServerLauncher.Daemon.Storage;
 
 public class FileUploadInfo
 {

@@ -3,6 +3,9 @@ using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
+/// <summary>
+///  Action处理接口
+/// </summary>
 internal interface IActionService
 {
     public Task<Dictionary<string, object>> Routine(ActionType type, JObject data);

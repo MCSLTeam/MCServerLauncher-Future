@@ -91,12 +91,15 @@ public class Settings
 }
 
 // TODO 可将链表优化成树
+/// <summary>
+///  -2^63 ~ 2^63 - 1内的整数区间(只支持减去某一子区间)，用于上传文件数据的记录
+/// </summary>
 public class LongRemain
 {
     private LongRemainNode _head;
 
     /// <summary>
-    ///     [Begin, End)
+    ///     整数区间: [Begin, End)
     /// </summary>
     /// <param name="begin"></param>
     /// <param name="end"></param>
@@ -109,7 +112,13 @@ public class LongRemain
 
     public long Begin { get; private set; }
     public long End { get; private set; }
-
+    
+    /// <summary>
+    ///  减去[from, to)
+    /// </summary>
+    /// <param name="from">闭区间</param>
+    /// <param name="to">开区间</param>
+    /// <returns>自身,用于链式操作</returns>
     public LongRemain Reduce(long from, long to)
     {
         LongRemainNode lastNode = null;
@@ -157,7 +166,11 @@ public class LongRemain
 
         return this;
     }
-
+    
+    /// <summary>
+    ///  获取剩余区间
+    /// </summary>
+    /// <returns></returns>
     public IEnumerable<(long Begin, long End)> GetRemains()
     {
         var node = _head;
@@ -167,29 +180,32 @@ public class LongRemain
             node = node.Next;
         }
     }
-
+    
+    
+    /// <summary>
+    ///  获取剩余区间的总长度
+    /// </summary>
+    /// <returns></returns>
     public long GetRemain()
     {
         long remain = 0;
         foreach (var (begin, end) in GetRemains()) remain += end - begin;
         return remain;
     }
-
+    
+    /// <summary>
+    ///  判断是否完成
+    /// </summary>
+    /// <returns></returns>
     public bool Done()
     {
         return _head == null;
     }
-
-    public static void Test()
-    {
-        var remain = new LongRemain(0, 100);
-        remain = remain.Reduce(0, 20).Reduce(50, 60).Reduce(80, 100).Reduce(70, 75);
-        Console.WriteLine(remain.Done());
-        foreach (var (begin, end) in remain.GetRemains()) Console.WriteLine($"{begin},{end}");
-
-        Console.WriteLine(remain.GetRemain());
-    }
-
+    
+    
+    /// <summary>
+    ///  节点
+    /// </summary>
     private class LongRemainNode
     {
         public LongRemainNode(long begin, long end)

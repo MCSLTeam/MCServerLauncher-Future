@@ -5,6 +5,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Storage;
 
+/// <summary>
+/// 添加C#的BigCamelCase与Json的snake_case的互转，以及多种自定义Json转换器
+/// </summary>
 public class WebJsonConverter : IWebJsonConverter
 {
     public static readonly JsonSerializerSettings Settings = new()
