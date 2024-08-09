@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +15,7 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using Newtonsoft.Json;
 using Serilog;
+using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Helpers
@@ -119,7 +120,7 @@ namespace MCServerLauncher.WPF.Helpers
         private static Task _writeTask = Task.CompletedTask;
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
         /// <summary>
-        /// ³õÊ¼»¯Êı¾İÄ¿Â¼¡£
+        /// åˆå§‹åŒ–æ•°æ®ç›®å½•ã€‚
         /// </summary>
         private static void InitDataDirectory()
         {
@@ -136,7 +137,7 @@ namespace MCServerLauncher.WPF.Helpers
                 Directory.CreateDirectory(dataFolder);
         }
         /// <summary>
-        /// ³õÊ¼»¯³ÌĞòÉèÖÃ¡£
+        /// åˆå§‹åŒ–ç¨‹åºè®¾ç½®ã€‚
         /// </summary>
         private void InitSettings()
         {
@@ -183,11 +184,11 @@ namespace MCServerLauncher.WPF.Helpers
             }
         }
         /// <summary>
-        /// ±£´æ MCServerLauncher.WPF ÉèÖÃ¡£
+        /// ä¿å­˜ MCServerLauncher.WPF è®¾ç½®ã€‚
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="settingPath">ÒªÉèÖÃµÄÏîÄ¿£¬¸ñÊ½ÀıÈç App.Theme ¡£</param>
-        /// <param name="value">ÏîÄ¿µÄÖµ¡£</param>
+        /// <param name="settingPath">è¦è®¾ç½®çš„é¡¹ç›®ï¼Œæ ¼å¼ä¾‹å¦‚ App.Theme ã€‚</param>
+        /// <param name="value">é¡¹ç›®çš„å€¼ã€‚</param>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
@@ -229,7 +230,7 @@ namespace MCServerLauncher.WPF.Helpers
             }
         }
         /// <summary>
-        /// ±£´æÉèÖÃµÄ¶ÓÁĞÊµÏÖ¡£
+        /// ä¿å­˜è®¾ç½®çš„é˜Ÿåˆ—å®ç°ã€‚
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private static void ProcessQueue()
@@ -256,7 +257,7 @@ namespace MCServerLauncher.WPF.Helpers
             }
         }
         /// <summary>
-        /// µ¼ÈëÖ¤Êé¡£
+        /// å¯¼å…¥è¯ä¹¦ã€‚
         /// </summary>
         private static void InitCert()
         {
@@ -283,6 +284,7 @@ namespace MCServerLauncher.WPF.Helpers
                 store.Add(certificate);
                 store.Close();
                 Log.Information("[Cer] Certificate successfully imported");
+                SaveSetting("App.IsCertImported", true);
             }
             catch (Exception ex)
             {
@@ -290,7 +292,7 @@ namespace MCServerLauncher.WPF.Helpers
             }
         }
         /// <summary>
-        /// ³õÊ¼»¯ÈÕÖ¾¼ÇÂ¼Æ÷¡£
+        /// åˆå§‹åŒ–æ—¥å¿—è®°å½•å™¨ã€‚
         /// </summary>
         private static void InitLogger()
         {
@@ -302,7 +304,29 @@ namespace MCServerLauncher.WPF.Helpers
                 .CreateLogger();
         }
         /// <summary>
-        /// ³ÌĞò³õÊ¼»¯¡£
+        /// å®‰è£…å­—ä½“ã€‚
+        /// </summary>
+        private static void InitFont()
+        {
+            using (var fontsKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"))
+            {
+                var fontNames = fontsKey!.GetValueNames();
+                if (fontNames.Any(fontName => fontName.Equals("Segoe Fluent Icons (TrueType)", StringComparison.OrdinalIgnoreCase)))
+                {
+                    SaveSetting("App.IsFontInstalled", true);
+                    return;
+                }
+            }
+            using var fontStream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
+            if (fontStream == null) throw new FileNotFoundException("Embedded resource not found");
+            if (!fontStream.CanRead) throw new InvalidOperationException("The stream cannot be read");
+            using var fileStream = File.Create(Path.Combine(Environment.CurrentDirectory, "SegoeIcons.ttf"));
+            fontStream.CopyTo(fileStream);
+            MessageBox.Show($"è¯·é€‰ä¸­åŒç›®å½•ä¸‹çš„ Segoeicons.ttf å­—ä½“->å³é”®->å®‰è£…", "MCServerLauncher WPF éœ€è¦å®‰è£…å­—ä½“", MessageBoxButton.OK);
+        }
+        /// <summary>
+        /// ç¨‹åºåˆå§‹åŒ–ã€‚
         /// </summary>
         public void InitApp()
         {
@@ -316,9 +340,11 @@ namespace MCServerLauncher.WPF.Helpers
             //Log.Debug("");
             InitDataDirectory();
             InitSettings();
-            InitCert();
+            if (!AppSettings.App.IsCertImported) InitCert();
+            if (!AppSettings.App.IsFontInstalled) InitFont();
         }
     }
+    
 }
 
 public class InstanceCreationSettings
@@ -347,6 +373,8 @@ public class AppSettings
     public string Theme { get; set; }
     public bool FollowStartup { get; set; }
     public bool AutoCheckUpdate { get; set; }
+    public bool IsCertImported { get; set; }
+    public bool IsFontInstalled { get; set; }
 }
 
 public class Settings
