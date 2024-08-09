@@ -17,6 +17,9 @@ using Newtonsoft.Json;
 using Serilog;
 using static MCServerLauncher.WPF.App;
 using System.Runtime.InteropServices;
+using System.Net;
+using Downloader;
+using System.ComponentModel;
 
 namespace MCServerLauncher.WPF.Helpers
 {
@@ -41,7 +44,7 @@ namespace MCServerLauncher.WPF.Helpers
         }
     }
 
-    public static class ResDownloadUtils
+    public class ResDownloadUtils
     {
         private static readonly Func<string, (int, int, int, int)> VersionToTuple = version =>
         {
@@ -80,23 +83,59 @@ namespace MCServerLauncher.WPF.Helpers
         {
             return originalList.OrderByDescending(VersionComparator).ToList();
         }
+        /// <summary>
+        /// 下载常规文件。
+        /// </summary>
+        /// <param name="url">Download url.</param>
+        /// <param name="savePath">Where to save the file.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="startHandler">Event handler of Start</param>
+        /// <param name="progressHandler">Event handler of Progress</param>
+        /// <param name="finishHandler">Event handler of Finish</param>
+        /// <returns></returns>
+        public DownloadService DownloadFile(
+            string url,
+            string savePath,
+            EventHandler<DownloadStartedEventArgs> startHandler,
+            EventHandler<Downloader.DownloadProgressChangedEventArgs> progressHandler,
+            EventHandler<AsyncCompletedEventArgs> finishHandler,
+            string fileName = null
+        )
+        {
+            DownloadConfiguration downloaderOption = new()
+            {
+                Timeout = 5000,
+                ChunkCount = BasicUtils.AppSettings.Download.ThreadCnt,
+                ParallelDownload = true,
+                RequestConfiguration =
+                {
+                    UserAgent = NetworkUtils.CommonUserAgent
+                }
+            };
+            DownloadService downloader = new(downloaderOption);
+            downloader.DownloadStarted += startHandler;
+            downloader.DownloadProgressChanged += progressHandler;
+            downloader.DownloadFileCompleted += finishHandler;
+            return downloader;
+        }
     }
 
     public static class NetworkUtils
     {
         private static readonly HttpClient Client = new();
+        public static string CommonUserAgent = $"MCServerLauncher/{AppVersion}";
 
         public static async Task<HttpResponseMessage> SendGetRequest(string url)
         {
             Log.Information($"[Net] Try to get url \"{url}\"");
-            Client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{AppVersion}");
+            Client.DefaultRequestHeaders.Add("User-Agent", CommonUserAgent);
             return await Client.GetAsync(url);
         }
 
         public static async Task<HttpResponseMessage> SendPostRequest(string url, string data)
         {
             Log.Information($"[Net] Try to post url \"{url}\" with data {data}");
-            Client.DefaultRequestHeaders.Add("User-Agent", $"MCServerLauncher/{AppVersion}");
+            Client.DefaultRequestHeaders.Add("User-Agent", CommonUserAgent);
             return await Client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json"));
         }
 

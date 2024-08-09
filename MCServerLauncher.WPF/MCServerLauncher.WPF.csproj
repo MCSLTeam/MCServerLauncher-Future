@@ -58,6 +58,9 @@
     <Reference Include="Costura, Version=5.7.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Costura.Fody.5.7.0\lib\netstandard1.0\Costura.dll</HintPath>
     </Reference>
+    <Reference Include="Downloader, Version=3.1.2.0, Culture=neutral, PublicKeyToken=844973e732f6cdf4, processorArchitecture=MSIL">
+      <HintPath>..\packages\Downloader.3.1.2\lib\net462\Downloader.dll</HintPath>
+    </Reference>
     <Reference Include="iNKORE.UI.WPF, Version=1.2.8.0, Culture=neutral, PublicKeyToken=cd19e634b9706635, processorArchitecture=MSIL">
       <HintPath>..\packages\iNKORE.UI.WPF.Modern.0.9.30\lib\net452\iNKORE.UI.WPF.dll</HintPath>
     </Reference>
