@@ -323,7 +323,7 @@ namespace MCServerLauncher.WPF.Helpers
             if (!fontStream.CanRead) throw new InvalidOperationException("The stream cannot be read");
             using var fileStream = File.Create(Path.Combine(Environment.CurrentDirectory, "SegoeIcons.ttf"));
             fontStream.CopyTo(fileStream);
-            MessageBox.Show($"请选中同目录下的 Segoeicons.ttf 字体->右键->安装", "MCServerLauncher WPF 需要安装字体", MessageBoxButton.OK);
+            MessageBox.Show($"请选中同目录下的 SegoeIcons.ttf 字体->右键->安装", "MCServerLauncher WPF 需要安装字体", MessageBoxButton.OK);
         }
         /// <summary>
         /// 程序初始化。
