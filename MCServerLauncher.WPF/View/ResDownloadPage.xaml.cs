@@ -50,7 +50,7 @@ namespace MCServerLauncher.WPF.View
                     Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MSLAPI.ResProviderName} 下载源 )";
                     await MSLAPI.Refresh();
                     break;
-                case "MCSL-Sync":
+                case "MCSLSync":
                     CurrentResDownloadProvider.Content = MCSLSync;
                     Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MCSLSync.ResProviderName} 下载源 )";
                     await MCSLSync.Refresh();
