@@ -15,8 +15,8 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using Newtonsoft.Json;
 using Serilog;
-using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 using static MCServerLauncher.WPF.App;
+using System.Runtime.InteropServices;
 
 namespace MCServerLauncher.WPF.Helpers
 {
@@ -116,6 +116,10 @@ namespace MCServerLauncher.WPF.Helpers
 
     public class BasicUtils
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern int WriteProfileString(string lpszSection, string lpszKeyName, string lpszString);
+        [DllImport("gdi32")]
+        static extern int AddFontResource(string lpFileName);
         public static Settings AppSettings { get; set; }
         private static Task _writeTask = Task.CompletedTask;
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
@@ -308,22 +312,25 @@ namespace MCServerLauncher.WPF.Helpers
         /// </summary>
         private static void InitFont()
         {
+            string fontFileName = "SegoeIcons.ttf";
+            string fontRegistryKey = "Segoe Fluent Icons (TrueType)";
+            string fontSysPath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR")!, "fonts", fontFileName);
+
             using (var fontsKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"))
             {
                 var fontNames = fontsKey!.GetValueNames();
-                if (fontNames.Any(fontName => fontName.Equals("Segoe Fluent Icons (TrueType)", StringComparison.OrdinalIgnoreCase)))
+                if (fontNames.Any(fontName => fontName.Equals(fontRegistryKey, StringComparison.OrdinalIgnoreCase)))
                 {
                     SaveSetting("App.IsFontInstalled", true);
                     return;
                 }
             }
-            using var fontStream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
+            using var fontStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
             if (fontStream == null) throw new FileNotFoundException("Embedded resource not found");
-            if (!fontStream.CanRead) throw new InvalidOperationException("The stream cannot be read");
-            using var fileStream = File.Create(Path.Combine(Environment.CurrentDirectory, "SegoeIcons.ttf"));
+            using var fileStream = File.Create(fontSysPath);
             fontStream.CopyTo(fileStream);
-            MessageBox.Show($"请选中同目录下的 SegoeIcons.ttf 字体->右键->安装", "MCServerLauncher WPF 需要安装字体", MessageBoxButton.OK);
+            AddFontResource(fontSysPath);
+            WriteProfileString("fonts", fontRegistryKey, fontFileName);
         }
         /// <summary>
         /// 程序初始化。
