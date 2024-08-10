@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.Helpers;
+﻿using iNKORE.UI.WPF.Modern;
+using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View.Components;
 using Newtonsoft.Json.Linq;
 using System;
@@ -20,12 +21,16 @@ namespace MCServerLauncher.WPF.View
             InitializeComponent();
             DataContext = this;
 
+            # region 初始化数值
             InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectedIndex = MinecraftForgeInstallerSource.ToList().IndexOf(BasicUtils.AppSettings.InstanceCreation.MinecraftForgeInstallerSource);
             InitDownloadSourceSelection();
+            ResDownload_DownloadThreadCnt.SettingSlider.Value = BasicUtils.AppSettings.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError);
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm);
             More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(BasicUtils.AppSettings.App.Theme);
+            #endregion
 
+            # region 事件处理绑定
             InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.Toggled += OnMinecraftJavaAutoAcceptEulaChanged;
             InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.Toggled += OnMinecraftJavaAutoSwitchOnlineModeChanged;
             InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.Toggled += OnMinecraftBedrockAutoSwitchOnlineModeChanged;
@@ -39,6 +44,7 @@ namespace MCServerLauncher.WPF.View
             More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
             More_FollowStartupForLauncher.SettingSwitch.Toggled += OnFollowStartupForLauncherChanged;
             More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += OnAutoCheckUpdateForLauncherChanged;
+            # endregion
 
             AboutVersionReplacer.Text = $"Developer Version {Assembly.GetExecutingAssembly().GetName().Version}";
         }
@@ -256,6 +262,19 @@ namespace MCServerLauncher.WPF.View
             try
             {
                 BasicUtils.SaveSetting("App.Theme", _themeList[More_LauncherTheme.SettingComboBox.SelectedIndex]);
+                switch (More_LauncherTheme.SettingComboBox.SelectedIndex)
+                {
+                    case 0:
+                        ThemeManager.Current.ApplicationTheme = null;
+                        break;
+                    case 1:
+                        ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
+                        break;
+                    case 2:
+                        ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
+                        break;
+                }
+                ThemeManager.Current.ApplicationTheme = More_LauncherTheme.SettingComboBox.SelectedIndex == 1 ? ApplicationTheme.Light :ApplicationTheme.Dark;
             }
             catch (ArgumentOutOfRangeException)
             {
