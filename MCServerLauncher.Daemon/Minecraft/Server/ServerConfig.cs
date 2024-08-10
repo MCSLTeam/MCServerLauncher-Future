@@ -13,11 +13,11 @@ public class ServerConfig
     public Encoding InputEncoding;
     public ServerType ServerType;
 
-    public string GetLaunchScript()
+    public string GetLaunchArguments()
     {
         return TargetType switch
         {
-            TargetType.Jar => $"{string.Join(" ", JavaArgs)} -jar {Target}",
+            TargetType.Jar => $"java {string.Join(" ", JavaArgs)} -jar {Target} nogui",
             TargetType.Script => $"{string.Join(" ", JavaArgs)}"
         };
     }
