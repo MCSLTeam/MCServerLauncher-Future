@@ -13,7 +13,7 @@
         <Copyright>Copyright © 2022-2024 MCSLTeam. All rights reserved.</Copyright>
         <Product>MCServerLauncher Future Daemon</Product>
         <Description>Daemon for MCServerLauncher Future.</Description>
-
+		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
