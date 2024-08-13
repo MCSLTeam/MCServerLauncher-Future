@@ -62,8 +62,7 @@ namespace MCServerLauncher.WPF.Helpers
                     "release" => (0, 0, 0, 0),
                     _ => (0, 0, 0, 0)
                 };
-
-            if (version.Contains("-")) version = version.ToLower().Replace("-", ".").Replace("rc", "").Replace("pre", "").Replace("snapshot", "0");
+            version = version.ToLower().Replace("-", ".").Replace("_", ".").Replace("rc", "").Replace("pre", "").Replace("snapshot", "0");
             var parts = version.Split('.');
             if (parts.Length == 2)
                 return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
@@ -124,18 +123,19 @@ namespace MCServerLauncher.WPF.Helpers
     {
         private static readonly HttpClient Client = new();
         public static string CommonUserAgent = $"MCServerLauncher/{AppVersion}";
+        public static string BrowserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
 
-        public static async Task<HttpResponseMessage> SendGetRequest(string url)
+        public static async Task<HttpResponseMessage> SendGetRequest(string url, bool useBrowserUserAgent = false)
         {
             Log.Information($"[Net] Try to get url \"{url}\"");
-            Client.DefaultRequestHeaders.Add("User-Agent", CommonUserAgent);
+            Client.DefaultRequestHeaders.Add("User-Agent", useBrowserUserAgent ? BrowserUserAgent : CommonUserAgent);
             return await Client.GetAsync(url);
         }
 
-        public static async Task<HttpResponseMessage> SendPostRequest(string url, string data)
+        public static async Task<HttpResponseMessage> SendPostRequest(string url, string data, bool useBrowserUserAgent = false)
         {
             Log.Information($"[Net] Try to post url \"{url}\" with data {data}");
-            Client.DefaultRequestHeaders.Add("User-Agent", CommonUserAgent);
+            Client.DefaultRequestHeaders.Add("User-Agent", useBrowserUserAgent ? BrowserUserAgent : CommonUserAgent);
             return await Client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json"));
         }
 
@@ -216,7 +216,10 @@ namespace MCServerLauncher.WPF.Helpers
                     {
                         Theme = "auto",
                         FollowStartup = false,
-                        AutoCheckUpdate = true
+                        AutoCheckUpdate = true,
+                        IsCertImported = false,
+                        IsFontInstalled = false,
+                        IsFirstSetupFinished = false
                     }
                 };
                 File.WriteAllText(
@@ -421,6 +424,7 @@ public class AppSettings
     public bool AutoCheckUpdate { get; set; }
     public bool IsCertImported { get; set; }
     public bool IsFontInstalled { get; set; }
+    public bool IsFirstSetupFinished { get; set; }
 }
 
 public class Settings
