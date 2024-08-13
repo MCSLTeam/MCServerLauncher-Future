@@ -197,3 +197,32 @@ public struct JavaInfo
 }
 ```
 
+### HeartBeat
+
+最简单的请求：客户端发送一个包，服务端返回一个应答。
+
+##### 请求
+
+```json
+{
+    "action": "get_java_list",
+    "params":{}
+}
+```
+
+##### 应答
+
+```json
+{
+  "status": "ok",
+  "retcode": 0,
+  "data": {
+    "time": 1723550404
+  }
+}
+```
+
+| 参数名 | 值   | 含义                             |
+| ------ | ---- | -------------------------------- |
+| time   | long | heartbeat请求应答的Unix时间戳(s) |
+

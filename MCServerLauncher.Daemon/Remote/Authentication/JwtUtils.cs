@@ -5,9 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
-
 /// <summary>
-///    JWT生成和解析验证工具
+///     JWT生成和解析验证工具
 /// </summary>
 public class JwtUtils
 {

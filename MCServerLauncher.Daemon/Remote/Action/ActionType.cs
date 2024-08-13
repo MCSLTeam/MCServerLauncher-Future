@@ -1,7 +1,7 @@
 namespace MCServerLauncher.Daemon.Remote.Action;
 
 /// <summary>
-/// Action types
+///     Action types
 /// </summary>
 internal enum ActionType
 {
