@@ -42,7 +42,32 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
         private async void AcceptEula(object sender, RoutedEventArgs e)
         {
+            bool isEulaReadFinished = (EulaScrollViewer.VerticalOffset == EulaScrollViewer.ScrollableHeight);
             var parent = this.TryFindParent<FirstSetup>();
+            if (!isEulaReadFinished)
+            {
+                ContentDialog fakeFinishedDialog = new()
+                {
+                    Title = "你认真的吗 ?!",
+                    PrimaryButtonText = "明白",
+                    DefaultButton = ContentDialogButton.Primary,
+                    FullSizeDesired = false,
+                    Content = new TextBlock
+                    {
+                        TextWrapping = TextWrapping.WrapWithOverflow,
+                        Text = "请确保您已完整阅读后再点击同意。"
+                    }
+                };
+                try
+                {
+                    await fakeFinishedDialog.ShowAsync();
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+                return;
+            }
             ContentDialog dialog = new()
             {
                 Title = "确定？",
@@ -50,7 +75,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 SecondaryButtonText = "还没读完",
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
-                Content = new TextBlock()
+                Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
                     Text = "请确保您已完整阅读并同意用户协议后再继续使用本软件。"

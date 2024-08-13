@@ -16,7 +16,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="请先阅读用户许可协议。" HorizontalAlignment="Left"/>
-        <ui:ScrollViewerEx Grid.Row="1" Margin="40,20,40,0">
+        <ui:ScrollViewerEx Grid.Row="1" Margin="40,20,40,0" x:Name="EulaScrollViewer">
             <ikw:SimpleStackPanel>
                 <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
 Text="欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，请在使用本软件前，详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。
