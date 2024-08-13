@@ -218,6 +218,12 @@
     <Compile Include="View\Components\FastMirrorResCoreVersionItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreVersionItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\CreateInstanceProvider\CreateMinecraftQuiltInstanceProvider.xaml.cs">
+      <DependentUpon>CreateMinecraftQuiltInstanceProvider.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\CreateInstanceProvider\CreateMinecraftNeoForgeInstanceProvider.xaml.cs">
+      <DependentUpon>CreateMinecraftNeoForgeInstanceProvider.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\FirstSetupHelper\DaemonSetupPage.xaml.cs">
       <DependentUpon>DaemonSetupPage.xaml</DependentUpon>
     </Compile>
@@ -352,6 +358,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\Components\FastMirrorResCoreVersionItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\CreateInstanceProvider\CreateMinecraftQuiltInstanceProvider.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\CreateInstanceProvider\CreateMinecraftNeoForgeInstanceProvider.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

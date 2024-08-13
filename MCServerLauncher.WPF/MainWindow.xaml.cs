@@ -6,6 +6,7 @@ using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View;
+using MCServerLauncher.WPF.View.FirstSetupHelper;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF
@@ -47,6 +48,11 @@ namespace MCServerLauncher.WPF
             await Task.Delay(1500);
             LoadingScreen.Visibility = Visibility.Hidden;
             TitleBarGrid.Visibility = Visibility.Visible;
+            if (!BasicUtils.AppSettings.App.IsFirstSetupFinished)
+            {
+                SetupView.Visibility = Visibility.Visible;
+                return;
+            }
             NavView.Visibility = Visibility.Visible;
         }
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)

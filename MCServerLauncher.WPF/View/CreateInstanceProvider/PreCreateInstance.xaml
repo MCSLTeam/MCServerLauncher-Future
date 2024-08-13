@@ -18,18 +18,18 @@
             <ikw:SimpleStackPanel Spacing="10">
                 <Button x:Name="MinecraftJavaServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="Minecraft Java 版服务器"/>
                 <Button x:Name="MinecraftForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Forge 服务器"/>
-                <Button x:Name="MinecraftNeoForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft NeoForge 服务器" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="MinecraftNeoForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft NeoForge 服务器" ToolTip="没做完呢，别急"/>
                 <Button x:Name="MinecraftQuiltServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Quilt 服务器" ToolTip="没做完呢，别急"/>
                 <Button x:Name="MinecraftBedrockServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft 基岩版服务器"/>
-                <Button x:Name="MinecraftGeyserStandalone" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Geyser互通 独立端" ToolTip="没做完呢，别急"/>
-                <Button x:Name="MinecraftBungeeCord" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft BungeeCord 群组端" ToolTip="没做完呢，别急"/>
-                <Button x:Name="MinecraftWaterfall" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Waterfall 群组端" ToolTip="没做完呢，别急"/>
-                <Button x:Name="MinecraftVelocity" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Velocity 群组端" ToolTip="没做完呢，别急"/>
-                <Button x:Name="MinecraftTravertine" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Travertine 群组端" ToolTip="没做完呢，别急"/>
-                <Button x:Name="FastReverseProxyClient" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="FRP 客户端程序 ( FRPC )" ToolTip="没做完呢，别急"/>
-                <Button x:Name="TerrariaGameServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Terraria 游戏服务器" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="MinecraftGeyserStandalone" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Geyser互通 独立端" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="MinecraftBungeeCord" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft BungeeCord 群组端" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="MinecraftWaterfall" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Waterfall 群组端" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="MinecraftVelocity" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Velocity 群组端" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="MinecraftTravertine" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Travertine 群组端" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="FastReverseProxyClient" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="FRP 客户端程序 ( FRPC )" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="TerrariaGameServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Terraria 游戏服务器" ToolTip="没做完呢，别急"/>
                 <Button x:Name="OtherExecutable" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="其他控制台程序"/>
-                <Button x:Name="ImportInstance" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="导入现有实例" ToolTip="没做完呢，别急"/>
+                <Button IsEnabled="False" x:Name="ImportInstance" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="导入现有实例" ToolTip="没做完呢，别急"/>
 
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
