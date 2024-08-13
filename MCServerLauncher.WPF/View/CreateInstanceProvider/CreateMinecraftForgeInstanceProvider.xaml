@@ -58,7 +58,7 @@
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right">
+                                HorizontalAlignment="Right" Click="FetchMinecraftVersions" x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
@@ -96,9 +96,9 @@
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <ComboBox x:Name="ForgeVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
-                                  Width="Auto" HorizontalAlignment="Stretch" />
+                                  Width="Auto" HorizontalAlignment="Stretch" IsEnabled="False"/>
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right">
+                                HorizontalAlignment="Right" x:Name="FetchForgeVersionButton" Click="FetchForgeVersions" IsEnabled="False">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
@@ -171,7 +171,7 @@
                             <ui:DropDownButton.Flyout>
                                 <ui:Flyout Placement="TopEdgeAlignedRight">
                                     <TextBlock TextWrapping="Wrap"
-                                               Text="1.12+ 要求 Java 8&#x000A;1.17+ 要求 Java 16&#x000A;1.18+ 要求 Java 17&#x000A;1.20.6+ 要求 Java 21" />
+                                               Text="1.12+ 要求 Java 8&#x000A;1.17+ 要求 Java 16&#x000A;1.18+ 要求 Java 17&#x000A;1.20.5+ 要求 Java 21" />
                                 </ui:Flyout>
                             </ui:DropDownButton.Flyout>
                         </ui:DropDownButton>
@@ -254,7 +254,6 @@
                         </Button>
                         <ui:ListView x:Name="JVMArgumentListView" IsSelectionEnabled="False" Grid.Row="3"
                                      Grid.Column="0" Grid.ColumnSpan="3" Margin="20,15,20,20">
-                            <vc:JVMArgumentItem Argument="nogui" />
                             <vc:JVMArgumentItem Argument="-Dfile.encoding=UTF-8" />
                             <vc:JVMArgumentItem />
                         </ui:ListView>
