@@ -5,23 +5,23 @@ using Serilog;
 namespace MCServerLauncher.Daemon;
 
 /// <summary>
-/// app配置文件
+///     app配置文件
 /// </summary>
 internal class AppConfig
 {
     /// <summary>
-    ///  不可变单例
+    ///     不可变单例
     /// </summary>
     [JsonIgnore] private static AppConfig _appConfig;
 
     /// <summary>
-    ///   端口
+    ///     端口
     /// </summary>
     public readonly ushort Port;
 
 
     /// <summary>
-    ///   Jwt-secret
+    ///     Jwt-secret
     /// </summary>
     public readonly string Secret;
 

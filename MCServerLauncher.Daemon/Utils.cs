@@ -92,7 +92,7 @@ public class Settings
 
 // TODO 可将链表优化成树
 /// <summary>
-///  -2^63 ~ 2^63 - 1内的整数区间(只支持减去某一子区间)，用于上传文件数据的记录
+///     -2^63 ~ 2^63 - 1内的整数区间(只支持减去某一子区间)，用于上传文件数据的记录
 /// </summary>
 public class LongRemain
 {
@@ -112,9 +112,9 @@ public class LongRemain
 
     public long Begin { get; private set; }
     public long End { get; private set; }
-    
+
     /// <summary>
-    ///  减去[from, to)
+    ///     减去[from, to)
     /// </summary>
     /// <param name="from">闭区间</param>
     /// <param name="to">开区间</param>
@@ -166,9 +166,9 @@ public class LongRemain
 
         return this;
     }
-    
+
     /// <summary>
-    ///  获取剩余区间
+    ///     获取剩余区间
     /// </summary>
     /// <returns></returns>
     public IEnumerable<(long Begin, long End)> GetRemains()
@@ -180,10 +180,10 @@ public class LongRemain
             node = node.Next;
         }
     }
-    
-    
+
+
     /// <summary>
-    ///  获取剩余区间的总长度
+    ///     获取剩余区间的总长度
     /// </summary>
     /// <returns></returns>
     public long GetRemain()
@@ -192,19 +192,19 @@ public class LongRemain
         foreach (var (begin, end) in GetRemains()) remain += end - begin;
         return remain;
     }
-    
+
     /// <summary>
-    ///  判断是否完成
+    ///     判断是否完成
     /// </summary>
     /// <returns></returns>
     public bool Done()
     {
         return _head == null;
     }
-    
-    
+
+
     /// <summary>
-    ///  节点
+    ///     节点
     /// </summary>
     private class LongRemainNode
     {

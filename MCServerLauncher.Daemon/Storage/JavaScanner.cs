@@ -9,7 +9,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using MCServerLauncher.Daemon;
 using Newtonsoft.Json;
 using Serilog;
 
@@ -216,9 +215,9 @@ public static class JavaScanner
         else
             pending.AddRange(StartScan("/"));
 
-        
+
         Log.Debug("[JVM] Scanning disk finished, start scanning PATH");
-        
+
         // PATH
         SplitEnvPath().ForEach(path =>
         {

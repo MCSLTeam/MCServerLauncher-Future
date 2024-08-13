@@ -29,9 +29,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include=".Resources\Action\actions_meta.py" />
-        <None Include=".Resources\Action\actions_meta.yml" />
-        <None Include=".Resources\Todo.md" />
+        <None Include=".Resources\Action\actions_meta.py"/>
+        <None Include=".Resources\Action\actions_meta.yml"/>
+        <None Include=".Resources\Todo.md"/>
     </ItemGroup>
 
     <ItemGroup>

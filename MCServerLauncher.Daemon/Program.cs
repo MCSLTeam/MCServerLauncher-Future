@@ -1,5 +1,4 @@
-﻿using MCServerLauncher.Daemon;
-using MCServerLauncher.Daemon.Remote;
+﻿using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -79,9 +78,9 @@ public class Program
         BasicUtils.InitApp();
         Serve();
     }
-    
+
     /// <summary>
-    /// app开始服务,包含配置DI和HttpServer启动
+    ///     app开始服务,包含配置DI和HttpServer启动
     /// </summary>
     private static void Serve()
     {

@@ -6,8 +6,8 @@ using Newtonsoft.Json.Linq;
 namespace MCServerLauncher.Daemon.Remote.Action;
 
 /// <summary>
-/// Action(rpc)处理器。
-/// Action是ws交互格式的一种，他代表的是一个远程过程调用: C->S,处理后返回json数据给C
+///     Action(rpc)处理器。
+///     Action是ws交互格式的一种，他代表的是一个远程过程调用: C->S,处理后返回json数据给C
 /// </summary>
 internal class ActionService : IActionService
 {
@@ -15,16 +15,19 @@ internal class ActionService : IActionService
 
     // DI
     private readonly ILogHelper _logger;
+    private readonly IWebJsonConverter _webJsonConverter;
 
     // DI constructor
-    public ActionService(RemoteLogHelper logger, IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache)
+    public ActionService(RemoteLogHelper logger, IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
+        IWebJsonConverter webJsonConverter)
     {
         _logger = logger;
         _javaScannerCache = javaScannerCache;
+        _webJsonConverter = webJsonConverter;
     }
-    
+
     /// <summary>
-    /// Action(rpc)处理中枢
+    ///     Action(rpc)处理中枢
     /// </summary>
     /// <param name="type">Action类型</param>
     /// <param name="data">Action数据</param>
@@ -68,13 +71,13 @@ internal class ActionService : IActionService
         };
     }
 
-    public Dictionary<string, object> Ok(JObject data = null)
+    public Dictionary<string, object> Ok(Actions.ActionResponse data = null)
     {
         return new Dictionary<string, object>
         {
             { "status", "ok" },
             { "retcode", 0 },
-            { "data", data }
+            { "data", data?.Into(_webJsonConverter.getSerializer()) ?? new JObject() }
         };
     }
 
@@ -83,12 +86,12 @@ internal class ActionService : IActionService
         if (data.FileId == Guid.Empty) return Err("Invalid file id", ActionType.FileUploadChunk);
 
         var (done, received) = await FileManager.FileUploadChunk(data.FileId, data.Offset, data.Data);
-        return Ok(Actions.FileUploadChunk.ResponseOf(done, received).Into());
+        return Ok(Actions.FileUploadChunk.ResponseOf(done, received));
     }
 
     private async Task<Dictionary<string, object>> GetJavaListHandler(Actions.Empty.Request data)
     {
-        return Ok(Actions.GetJavaList.ResponseOf(await _javaScannerCache.Value).Into());
+        return Ok(Actions.GetJavaList.ResponseOf(await _javaScannerCache.Value));
     }
 
     private Dictionary<string, object> FileUploadRequestHandler(Actions.FileUploadRequest.Request data)
@@ -102,12 +105,12 @@ internal class ActionService : IActionService
 
         return fileId == Guid.Empty
             ? Err("Failed to pre-allocate space", ActionType.FileUploadRequest, 1401)
-            : Ok(Actions.FileUploadRequest.ResponseOf(fileId).Into());
+            : Ok(Actions.FileUploadRequest.ResponseOf(fileId));
     }
 
     private Dictionary<string, object> HeartBeatHandler(Actions.Empty.Request data)
     {
-        return Ok(Actions.HeartBeat.ResponseOf(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()).Into());
+        return Ok(Actions.HeartBeat.ResponseOf(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()));
     }
 
     private Dictionary<string, object> FileUploadCancelHandler(Actions.FileUploadCancel.Request data)
