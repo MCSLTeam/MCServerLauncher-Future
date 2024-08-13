@@ -37,7 +37,7 @@ public class Server : IServer
         });
 
         // http
-        server.OnGet += HandleHttpRequest;
+        server.OnPost += HandleHttpRequest;
 
         // load users
         _container.GetRequiredService<IUserService>();
