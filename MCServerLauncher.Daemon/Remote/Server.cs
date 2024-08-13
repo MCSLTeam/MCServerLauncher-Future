@@ -37,7 +37,8 @@ public class Server : IServer
         });
 
         // http
-        server.OnPost += HandleHttpRequest;
+        server.OnPost += HandlePostRequest;
+        server.OnHead += HandleHeadRequest;
 
         // load users
         _container.GetRequiredService<IUserService>();
@@ -49,7 +50,7 @@ public class Server : IServer
         Console.ReadKey();
         server.Stop();
     }
-    
+
     /// <summary>
     /// 路由/login处理逻辑，注册为event handler，用于验证用户名密码，生成验证凭证（jwt），方便网页记忆用户，过期时长可根据参数设定。
     /// 验证失败直接401.
@@ -57,7 +58,7 @@ public class Server : IServer
     /// </summary>
     /// <param name="_">Event发出者</param>
     /// <param name="e">Event参数</param>
-    private void HandleHttpRequest(object _, HttpRequestEventArgs e)
+    private void HandlePostRequest(object _, HttpRequestEventArgs e)
     {
         var request = e.Request;
         e.Response.KeepAlive = false;
@@ -112,5 +113,10 @@ public class Server : IServer
         {
             e.Response.OutputStream.Close();
         }
+    }
+
+    private static void HandleHeadRequest(object _, HttpRequestEventArgs e)
+    {
+        e.Response.AddHeader("x-application","mcsl_daemon_csharp");
     }
 }
