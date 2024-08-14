@@ -158,7 +158,7 @@ namespace MCServerLauncher.WPF.View
 
         private async void TestMCSLSyncCoreDetail(object sender, RoutedEventArgs e)
         {
-            var result = await new MCSLSync().GetCoreDetail("Paper", "1.20.6", "build30");
+            var result = await new MCSLSync().GetCoreDetail("Paper", "1.20.6", "build148");
             ShowTextResultContentDialog(
                 $"Core: {result.Core}\nMinecraftVersion: {result.MinecraftVersion}\nCoreVersion: {result.CoreVersion}\nDownloadUrl: {result.DownloadUrl}\n");
         }
