@@ -58,10 +58,10 @@
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" IsEnabled="False" Grid.Row="2"
                                  Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="核心文件名" />
-                        <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
+                        <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" Content="浏览" />
 
-                        <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="2"
+                        <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="1"
                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Go}" FontSize="16" />
@@ -90,7 +90,7 @@
                         <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2"
                                  Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="Java 路径" />
                         <ui:DropDownButton ShowChevronArrow="False" Height="32" Margin="0,15,20,0" Grid.Row="2"
-                                           Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
+                                           Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.More}" FontSize="16" />
                             </ui:DropDownButton.Content>
@@ -115,7 +115,7 @@
                                 </ui:MenuFlyout>
                             </ui:DropDownButton.Flyout>
                         </ui:DropDownButton>
-                        <ui:DropDownButton Grid.Row="0" Grid.Column="3" ShowChevronArrow="False"
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="1" ShowChevronArrow="False"
                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
@@ -168,7 +168,7 @@
                                 <ComboBoxItem Content="G" />
                             </ComboBox>
                         </Grid>
-                        <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="2"
+                        <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="1"
                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
@@ -207,7 +207,7 @@
                             </Button.Content>
                         </Button>
                         <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JVMArgumentListView"
-                                     IsSelectionEnabled="False" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+                                     IsSelectionEnabled="False" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                                      Margin="20,15,20,20">
                             <vc:JVMArgumentItem Argument="-Dfile.encoding=UTF-8" />
                             <vc:JVMArgumentItem />
