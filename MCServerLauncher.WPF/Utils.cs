@@ -123,7 +123,7 @@ namespace MCServerLauncher.WPF.Helpers
     {
         private static readonly HttpClient Client = new();
         public static string CommonUserAgent = $"MCServerLauncher/{AppVersion}";
-        public static string BrowserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
+        public static string BrowserUserAgent = $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3 MCServerLauncher/{AppVersion}";
 
         public static async Task<HttpResponseMessage> SendGetRequest(string url, bool useBrowserUserAgent = false)
         {
