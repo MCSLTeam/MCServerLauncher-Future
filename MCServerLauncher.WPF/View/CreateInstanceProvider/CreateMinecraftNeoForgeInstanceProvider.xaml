@@ -58,13 +58,13 @@
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right" Click="FetchMinecraftVersions" x:Name="FetchMinecraftVersionsButton">
+                                HorizontalAlignment="Right" Click="FetchNeoForgeData" x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
                         </Button>
 
-                        <ui:DropDownButton Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right"
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"
                                            VerticalAlignment="Top" Margin="0,15,20,0" ShowChevronArrow="False">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
@@ -89,22 +89,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                                   Style="{StaticResource SubtitleTextBlock}" Text="Forge 版本" VerticalAlignment="Top"
+                                   Style="{StaticResource SubtitleTextBlock}" Text="NeoForge 版本" VerticalAlignment="Top"
                                    HorizontalAlignment="Left" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
                                    Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 NeoForge 加载器的版本。"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <ComboBox x:Name="ForgeVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
+                        <ComboBox x:Name="NeoForgeVersionComboBox" Grid.Row="2" Grid.ColumnSpan="2" Margin="20,15,20,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
-                        <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right" x:Name="FetchNeoForgeVersionButton" Click="FetchNeoForgeVersions">
-                            <Button.Content>
-                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
-                            </Button.Content>
-                        </Button>
 
-                        <ui:DropDownButton Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right"
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"
                                            VerticalAlignment="Top" Margin="0,15,20,0" ShowChevronArrow="False">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
@@ -138,7 +132,7 @@
                         <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2"
                                  Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="Java 路径" />
                         <ui:DropDownButton ShowChevronArrow="False" Height="32" Margin="0,15,20,0" Grid.Row="2"
-                                           Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
+                                           Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.More}" FontSize="16" />
                             </ui:DropDownButton.Content>
@@ -163,7 +157,7 @@
                                 </ui:MenuFlyout>
                             </ui:DropDownButton.Flyout>
                         </ui:DropDownButton>
-                        <ui:DropDownButton Grid.Row="0" Grid.Column="3" ShowChevronArrow="False"
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="1" ShowChevronArrow="False"
                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
@@ -214,7 +208,7 @@
                                 <ComboBoxItem Content="G" />
                             </ComboBox>
                         </Grid>
-                        <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="2"
+                        <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="1"
                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                             <ui:DropDownButton.Content>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
@@ -253,7 +247,7 @@
                             </Button.Content>
                         </Button>
                         <ui:ListView x:Name="JVMArgumentListView" IsSelectionEnabled="False" Grid.Row="3"
-                                     Grid.Column="0" Grid.ColumnSpan="3" Margin="20,15,20,20">
+                                     Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,20,20">
                             <vc:JVMArgumentItem Argument="-Dfile.encoding=UTF-8" />
                             <vc:JVMArgumentItem />
                         </ui:ListView>

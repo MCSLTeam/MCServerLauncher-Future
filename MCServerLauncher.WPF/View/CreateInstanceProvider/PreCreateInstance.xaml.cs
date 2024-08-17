@@ -33,6 +33,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     parent.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
+                case "MinecraftNeoForgeServer":
+                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftNeoForgeServerPage(),
+                        new DrillInNavigationTransitionInfo());
+                    break;
                 case "MinecraftQuiltServer":
                     parent.CurrentCreateInstance.Navigate(parent.NewMinecraftQuiltServerPage(),
                         new DrillInNavigationTransitionInfo());

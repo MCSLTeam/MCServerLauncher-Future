@@ -25,6 +25,10 @@ namespace MCServerLauncher.WPF.View
         {
             return new CreateMinecraftForgeInstanceProvider();
         }
+        public UserControl NewMinecraftNeoForgeServerPage()
+        {
+            return new CreateMinecraftNeoForgeInstanceProvider();
+        }
         public UserControl NewMinecraftQuiltServerPage()
         {
             return new CreateMinecraftQuiltInstanceProvider();
