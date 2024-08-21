@@ -98,7 +98,7 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.WPF.View.TestPage">
+                <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.WPF.View.TestPage" Visibility="Collapsed">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
