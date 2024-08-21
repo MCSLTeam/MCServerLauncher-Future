@@ -10,6 +10,9 @@
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Online players list.
+        /// </summary>
         public string PlayerList
         {
             get => string.Join(",", PlayerListView.Items.ToString());

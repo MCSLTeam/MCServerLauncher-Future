@@ -9,6 +9,9 @@ namespace MCServerLauncher.WPF.View.Components
     /// </summary>
     public partial class FastMirrorResCoreItem
     {
+        /// <summary>
+        /// Recommend brush
+        /// </summary>
         private readonly LinearGradientBrush _recommendBrush = new(
             new GradientStopCollection
             {
@@ -24,25 +27,41 @@ namespace MCServerLauncher.WPF.View.Components
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Core name.
+        /// </summary>
         public string CoreName
         {
             get => CoreNameReplacer.Text;
             set => CoreNameReplacer.Text = value;
         }
 
+        /// <summary>
+        /// Tag of core.
+        /// </summary>
         public string CoreTag
         {
             get => CoreTagReplacer.Text;
             set => CoreTagReplacer.Text = value;
         }
 
+        /// <summary>
+        /// Recommend status.
+        /// </summary>
         public bool Recommend
         {
             get => GetRecommendStatus();
             set => SetRecommendStatus(value);
         }
 
+        /// <summary>
+        /// Homepage of core.
+        /// </summary>
         public string HomePage { get; set; }
+
+        /// <summary>
+        /// Support Minecraft versions.
+        /// </summary>
         public List<string> MinecraftVersions { get; set; }
 
         private void SetRecommendStatus(bool recommendStatus)

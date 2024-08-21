@@ -13,30 +13,54 @@ namespace MCServerLauncher.WPF.View.Components
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Setting title.
+        /// </summary>
         public string Title
         {
             get => SettingTitle.Text;
             set => SettingTitle.Text = value;
         }
 
+        /// <summary>
+        /// Setting description.
+        /// </summary>
         public string Description
         {
             get => SettingDescription.Text;
             set => SettingDescription.Text = value;
         }
 
+        /// <summary>
+        /// Setting icon.
+        /// </summary>
+        public FontIconData? Icon
+        {
+            get => SettingIcon.Icon;
+            set => SettingIcon.Icon = value;
+        }
+
+        /// <summary>
+        /// Minimum value of slider.
+        /// </summary>
         public int MinValue
         {
             get => (int)SettingSlider.Minimum;
             set => SettingSlider.Minimum = value;
         }
 
+        /// <summary>
+        /// Maximum value of slider.
+        /// </summary>
         public int MaxValue
         {
             get => (int)SettingSlider.Maximum;
             set => SettingSlider.Maximum = value;
         }
 
+        /// <summary>
+        /// Value of slider.
+        /// </summary>
         public int SliderValue
         {
             get => (int)SettingSlider.Value;
@@ -50,11 +74,6 @@ namespace MCServerLauncher.WPF.View.Components
         {
             if (d is not RangeSettingCard control) return;
             control.SettingSlider.Value = (int)e.NewValue;
-        }
-        public FontIconData? Icon
-        {
-            get => SettingIcon.Icon;
-            set => SettingIcon.Icon = value;
         }
     }
 }

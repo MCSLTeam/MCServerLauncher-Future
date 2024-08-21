@@ -10,6 +10,9 @@
             InitializeComponent();
         }
 
+        /// <summary>
+        /// File name.
+        /// </summary>
         public string FileName
         {
             get => FileNameReplacer.Text;

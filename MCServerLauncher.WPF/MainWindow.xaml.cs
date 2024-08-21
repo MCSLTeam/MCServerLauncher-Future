@@ -25,6 +25,7 @@ namespace MCServerLauncher.WPF
 
         public MainWindow()
         {
+            // Set correct theme
             ThemeManager.Current.ApplicationTheme = BasicUtils.AppSettings.App.Theme switch
             {
                 "light" => ApplicationTheme.Light,
@@ -34,6 +35,9 @@ namespace MCServerLauncher.WPF
             InitializeComponent();
             InitializeView();
         }
+        /// <summary>
+        /// Determine which component to show.
+        /// </summary>
         private async void InitializeView()
         {
             SetupView.Visibility = Visibility.Hidden;
@@ -48,6 +52,11 @@ namespace MCServerLauncher.WPF
             }
             NavView.Visibility = Visibility.Visible;
         }
+        /// <summary>
+        /// Navigation trigger handler.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
@@ -56,7 +65,11 @@ namespace MCServerLauncher.WPF
                 NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()),
                     args.RecommendedNavigationTransitionInfo);
         }
-
+        /// <summary>
+        /// Navigation to a specified page.
+        /// </summary>
+        /// <param name="navPageType">Type of the page.</param>
+        /// <param name="transitionInfo">Transition animation.</param>
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             var preNavPageType = CurrentPage.Content.GetType();

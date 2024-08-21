@@ -14,18 +14,27 @@ namespace MCServerLauncher.WPF.View.Components
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Setting title.
+        /// </summary>
         public string Title
         {
             get => SettingTitle.Text;
             set => SettingTitle.Text = value;
         }
 
+        /// <summary>
+        /// Setting description.
+        /// </summary>
         public string Description
         {
             get => SettingDescription.Text;
             set => SettingDescription.Text = value;
         }
 
+        /// <summary>
+        /// Setting icon.
+        /// </summary>
         public FontIconData? Icon
         {
             get => SettingIcon.Icon;

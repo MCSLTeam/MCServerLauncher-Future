@@ -31,6 +31,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             public bool IsStable { get; set; }
         }
 
+        /// <summary>
+        /// Go back.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();

@@ -10,6 +10,9 @@
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Minecraft version.
+        /// </summary>
         public string MinecraftVersion
         {
             get => MinecraftVersionReplacer.Text;

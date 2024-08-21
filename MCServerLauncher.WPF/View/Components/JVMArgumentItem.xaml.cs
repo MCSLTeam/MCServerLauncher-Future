@@ -13,12 +13,20 @@ namespace MCServerLauncher.WPF.View.Components
             InitializeComponent();
         }
 
+        /// <summary>
+        /// JVM argument.
+        /// </summary>
         public string Argument
         {
             get => ArgumentTextBox.Text;
             set => ArgumentTextBox.Text = value;
         }
 
+        /// <summary>
+        /// Delete self.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DeleteArgument(object sender, RoutedEventArgs e)
         {
             ((ListView)Parent).Items.Remove(this);

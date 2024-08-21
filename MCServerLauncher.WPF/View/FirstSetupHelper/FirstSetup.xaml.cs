@@ -30,6 +30,11 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             CurrentPage.Navigate(_eula);
         }
 
+        /// <summary>
+        /// Navigation trigger handler.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
@@ -39,6 +44,11 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                     args.RecommendedNavigationTransitionInfo);
         }
 
+        /// <summary>
+        /// Navigation to a specified page.
+        /// </summary>
+        /// <param name="navPageType">Type of the page.</param>
+        /// <param name="transitionInfo">Transition animation.</param>
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             var preNavPageType = CurrentPage.Content.GetType();
@@ -60,6 +70,12 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
+
+        /// <summary>
+        /// Determine the transition animation.
+        /// </summary>
+        /// <param name="navPageType">Type of the page.</param>
+        /// <returns>Transition info.</returns>
         private SlideNavigationTransitionEffect DetermineSlideDirection(Type navPageType)
         {
             var current = (Page)CurrentPage.Content;
@@ -80,6 +96,10 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             RefreshNavMenu(newIdx: 2);
         }
 
+        /// <summary>
+        /// Refresh the navigation menu.
+        /// </summary>
+        /// <param name="newIdx"></param>
         private void RefreshNavMenu(int newIdx)
         {
             NavView.SelectedItem = NavView.MenuItems[newIdx];

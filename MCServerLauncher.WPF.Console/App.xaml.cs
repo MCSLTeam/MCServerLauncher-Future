@@ -10,12 +10,12 @@ namespace MCServerLauncher.WPF.Console
     {
         public App()
         {
-            // 添加崩溃处理事件
+            // Crash handler
             DispatcherUnhandledException += (s, e) =>
             {
                 Clipboard.SetText(e.Exception.ToString());
                 MessageBox.Show($"堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。\n\n{e.Exception}", "MCServerLauncher WPF 遇到错误", MessageBoxButton.OK);
-                e.Handled = true; // 设置为已处理，阻止应用程序崩溃
+                e.Handled = true; // Set `Handled` to `true` to prevent from exiting
             };
         }
     }

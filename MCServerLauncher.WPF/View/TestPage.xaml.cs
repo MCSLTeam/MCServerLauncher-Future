@@ -16,7 +16,10 @@ namespace MCServerLauncher.WPF.View
         {
             InitializeComponent();
         }
-
+        /// <summary>
+        /// Show debug dialog.
+        /// </summary>
+        /// <param name="result">Text to show.</param>
         private static async void ShowTextResultContentDialog(string result)
         {
             ContentDialog dialog = new();

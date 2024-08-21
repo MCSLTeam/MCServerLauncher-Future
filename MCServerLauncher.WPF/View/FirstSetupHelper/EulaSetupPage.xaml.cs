@@ -15,6 +15,11 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             InitializeComponent();
         }
+        /// <summary>
+        /// Refuse Eula, then close app.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void RefuseEula(object sender, RoutedEventArgs e)
         {
             ContentDialog dialog = new()
@@ -40,6 +45,12 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 // ignored
             }
         }
+
+        /// <summary>
+        /// Accept Eula with a scroll checker.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void AcceptEula(object sender, RoutedEventArgs e)
         {
             bool isEulaReadFinished = (EulaScrollViewer.VerticalOffset == EulaScrollViewer.ScrollableHeight);

@@ -18,25 +18,30 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftForgeInstanceProvider
     {
-        private List<BmclapiForgeBuild> CurrentForgeBuilds { get; set; }
+        private List<ForgeBuild> CurrentForgeBuilds { get; set; }
         public CreateMinecraftForgeInstanceProvider()
         {
             InitializeComponent();
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
-        private class BmclapiForgeAttachment
+        private class ForgeAttachment
         {
             public string Format { get; set; }
             public string Category { get; set; }
             public string Hash { get; set; }
         }
-        private class BmclapiForgeBuild
+        private class ForgeBuild
         {
             public string MinecraftVersion { get; set; }
             public string ForgeVersion { get; set; }
-            public List<BmclapiForgeAttachment> Attachments { get; set; }
+            public List<ForgeAttachment> Attachments { get; set; }
         }
 
+        /// <summary>
+        /// Go back.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
@@ -51,8 +56,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             JVMArgumentListView.Items.Add(new JVMArgumentItem());
         }
+
         /// <summary>
-        /// 通过官方获取 Forge 加载器支持的 Minecraft 版本的方法。
+        /// Main method to get specific version of Minecraft supported by Forge through Official source.
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByOfficial()
         {
@@ -64,16 +70,18 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             minecraftVersions.Add("1.2.4");
             return minecraftVersions;
         }
+
         /// <summary>
-        /// 通过 BMCLAPI 获取 Forge 加载器支持的 Minecraft 版本的方法。
+        /// Main method to get specific version of Minecraft supported by Forge through BMCLAPI source.
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByBmclapi()
         {
             var response = await NetworkUtils.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
             return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
         }
+
         /// <summary>
-        /// 获取 Forge 加载器支持的 Minecraft 版本的主方法。
+        /// Main method to get specific version of Minecraft supported by Forge.
         /// </summary>
         private async void FetchMinecraftVersions(object sender, RoutedEventArgs e)
         {
@@ -93,28 +101,27 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             FetchForgeVersionButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
+
         /// <summary>
-        /// 通过官方获取特定 Minecraft 版本支持的 Forge 加载器版本的方法。
+        /// Get version of Forge with a particular Minecraft version through Official source.
         /// </summary>
-        private static async Task<List<BmclapiForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
+        private static async Task<List<ForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
         {
-            var results = new List<BmclapiForgeBuild>();
+            var results = new List<ForgeBuild>();
             var response = await NetworkUtils.SendGetRequest($"https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_{mcVersion.Replace("-", "_")}.html", useBrowserUserAgent: true);
             var html = await response.Content.ReadAsStringAsync();
-            // 分割版本信息
+            // Split version info
             var versionInfos = html.Substring(0, html.LastIndexOf("</table>", StringComparison.Ordinal)).Split(new[] { "<td class=\"download-version" }, StringSplitOptions.None);
-            // 获取所有版本信息
             for (int i = 1; i < versionInfos.Length; i++)
             {
                 var forgeVersion = versionInfos[i];
-                // 基础信息获取
                 string preParsingForgeVersion = RegexSeek(forgeVersion, "(?<=[^(0-9)]+)[0-9\\.]+");
-                List<BmclapiForgeAttachment> forgeAttachments = new();
+                List<ForgeAttachment> forgeAttachments = new();
                 if (forgeVersion.Contains("classifier-installer\""))
                 {
-                    // 类型为 installer.jar，支持范围 ~753 (~ 1.6.1 部分), 738~684 (1.5.2 全部)
+                    // installer.jar，support range: ~753 (~ part of 1.6.1), 738~684 (all of 1.5.2)
                     forgeVersion = forgeVersion.Substring(forgeVersion.IndexOf("installer.jar", StringComparison.Ordinal));
-                    forgeAttachments.Add(new BmclapiForgeAttachment
+                    forgeAttachments.Add(new ForgeAttachment
                     {
                         Format = "jar",
                         Category = "installer",
@@ -123,9 +130,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }
                 else if (forgeVersion.Contains("classifier-universal\""))
                 {
-                    // 类型为 universal.zip，支持范围 751~449 (1.6.1 部分), 682~183 (1.5.1 ~ 1.3.2 部分)
+                    // universal.zip，support range: 751~449 (part of 1.6.1), 682~183 (part of 1.5.1 ~ part of 1.3.2)
                     forgeVersion = forgeVersion.Substring(forgeVersion.IndexOf("universal.zip", StringComparison.Ordinal));
-                    forgeAttachments.Add(new BmclapiForgeAttachment
+                    forgeAttachments.Add(new ForgeAttachment
                     {
                         Format = "zip",
                         Category = "universal",
@@ -134,9 +141,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }
                 else if (forgeVersion.Contains("client.zip"))
                 {
-                    // 类型为 client.zip，支持范围 182~ (1.3.2 部分 ~)
+                    // client.zip，support range: 182~ (part of 1.3.2 ~)
                     forgeVersion = forgeVersion.Substring(forgeVersion.IndexOf("client.zip", StringComparison.Ordinal));
-                    forgeAttachments.Add(new BmclapiForgeAttachment
+                    forgeAttachments.Add(new ForgeAttachment
                     {
                         Format = "zip",
                         Category = "client",
@@ -145,10 +152,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }
                 else
                 {
-                    // 没有任何下载（1.6.4 有一部分这种情况）
+                    // Empty (part of 1.6.4)
                     continue;
                 }
-                results.Add(new BmclapiForgeBuild
+                results.Add(new ForgeBuild
                 {
                     MinecraftVersion = mcVersion,
                     ForgeVersion = preParsingForgeVersion,
@@ -157,18 +164,19 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             }
             return results;
         }
+
         /// <summary>
-        /// 通过 BMCLAPI 获取特定 Minecraft 版本支持的 Forge 加载器版本的方法。
+        /// Get version of Forge with a particular Minecraft version through BMCLAPI source.
         /// </summary>
-        private static async Task<List<BmclapiForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
+        private static async Task<List<ForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
         {
             var response = await NetworkUtils.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return apiData!.Select(forgeBuild => new BmclapiForgeBuild
+            return apiData!.Select(forgeBuild => new ForgeBuild
             {
                 MinecraftVersion = forgeBuild.SelectToken("mcversion")!.ToString(),
                 ForgeVersion = forgeBuild.SelectToken("version")!.ToString(),
-                Attachments = forgeBuild.SelectToken("files")!.Select(forgeAttachment => new BmclapiForgeAttachment
+                Attachments = forgeBuild.SelectToken("files")!.Select(forgeAttachment => new ForgeAttachment
                 {
                     Format = forgeAttachment.SelectToken("format")!.ToString(),
                     Category = forgeAttachment.SelectToken("category")!.ToString(),
@@ -176,8 +184,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }).ToList()
             }).ToList();
         }
+
         /// <summary>
-        /// 获取特定 Minecraft 版本支持的 Forge 加载器版本的主方法。
+        /// Main method for getting version of Forge with a particular Minecraft version.
         /// </summary>
         private async void FetchForgeVersions(object sender, RoutedEventArgs e)
         {
@@ -194,6 +203,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchForgeVersionButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
         }
+
         /// <summary>
         /// Generated from Plain Craft Launcher 2.
         /// </summary>

@@ -21,6 +21,10 @@ namespace MCServerLauncher.WPF.Modules.Download
         //    public string MinecraftVersion { get; set; }
         //}
 
+        /// <summary>
+        /// Get core info from Polars Mirror.
+        /// </summary>
+        /// <returns>List of core name.</returns>
         public async Task<List<PolarsMirrorCoreInfo>> GetCoreInfo()
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core");
@@ -36,6 +40,11 @@ namespace MCServerLauncher.WPF.Modules.Download
             }).ToList();
         }
 
+        /// <summary>
+        /// Get core detail from Polars Mirror.
+        /// </summary>
+        /// <param name="coreId">Index of core.</param>
+        /// <returns>List of core.</returns>
         public async Task<List<PolarsMirrorCoreDetail>> GetCoreDetail(int coreId)
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core/{coreId}");

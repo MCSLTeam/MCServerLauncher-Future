@@ -12,6 +12,12 @@ namespace MCServerLauncher.WPF.Modules.Download
         private readonly string _fileListApi = "/api/fs/list";
         private readonly string _fileUrlApi = "/api/fs/get";
 
+        /// <summary>
+        /// Get AList file list.
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public async Task<List<AListFileStructure>> GetFileList(string host, string path)
         {
             var response = await NetworkUtils.SendGetRequest($"{host}{_fileListApi}?path={path}");
@@ -25,6 +31,12 @@ namespace MCServerLauncher.WPF.Modules.Download
             }).ToList();
         }
 
+        /// <summary>
+        /// Get download url.
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public async Task<string> GetFileUrl(string host, string path)
         {
             var response = await NetworkUtils.SendGetRequest($"{host}{_fileUrlApi}?path={path}");

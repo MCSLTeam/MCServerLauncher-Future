@@ -25,6 +25,10 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Refresh core list.
+        /// </summary>
+        /// <returns>Status, true or false.</returns>
         public async Task<bool> Refresh()
         {
             if (_isDataLoading || _isDataLoaded) return true;
@@ -56,6 +60,11 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             }
         }
 
+        /// <summary>
+        /// Handler for core selection changed, load Minecraft version list.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SetCore(object sender, SelectionChangedEventArgs e)
         {
             if (CoreGridView.SelectedIndex == -1) return;
@@ -76,11 +85,21 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             MinecraftVersionComboBox.IsEnabled = true;
         }
 
+        /// <summary>
+        /// Open core home page.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void OpenHomePage(object sender, RoutedEventArgs e)
         {
             NetworkUtils.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString());
         }
 
+        /// <summary>
+        /// Get core version detail.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void GetCoreDetail(object sender, SelectionChangedEventArgs e)
         {
             var currentCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;

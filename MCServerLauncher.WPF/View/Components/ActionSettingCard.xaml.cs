@@ -13,30 +13,45 @@ namespace MCServerLauncher.WPF.View.Components
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Setting title.
+        /// </summary>
         public string Title
         {
             get => SettingTitle.Text;
             set => SettingTitle.Text = value;
         }
 
+        /// <summary>
+        /// Setting description.
+        /// </summary>
         public string Description
         {
             get => SettingDescription.Text;
             set => SettingDescription.Text = value;
         }
 
-        public bool IsAccentButtonStyle
-        {
-            get => SettingButton.Style == (Style)FindResource("AccentButtonStyle");
-            set => SettingButton.Style = value ? (Style)FindResource("AccentButtonStyle") : null;
-        }
-
+        /// <summary>
+        /// Setting icon.
+        /// </summary>
         public FontIconData? Icon
         {
             get => SettingIcon.Icon;
             set => SettingIcon.Icon = value;
         }
 
+        /// <summary>
+        /// Controls the accent color of the button.
+        /// </summary>
+        public bool IsAccentButtonStyle
+        {
+            get => SettingButton.Style == (Style)FindResource("AccentButtonStyle");
+            set => SettingButton.Style = value ? (Style)FindResource("AccentButtonStyle") : null;
+        }
+
+        /// <summary>
+        /// Text of the button.
+        /// </summary>
         public string ButtonContent
         {
             get => SettingButton.Content.ToString();

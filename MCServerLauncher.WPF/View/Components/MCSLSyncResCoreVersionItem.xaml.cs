@@ -1,4 +1,5 @@
 ﻿using MCServerLauncher.WPF.Modules.Download;
+using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.View.Components
 {
@@ -12,28 +13,36 @@ namespace MCServerLauncher.WPF.View.Components
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Core name.
+        /// </summary>
         public string Core { get; set; }
 
+        /// <summary>
+        /// Minecraft version.
+        /// </summary>
         public string MinecraftVersion
         {
             get => MinecraftVersionReplacer.Text;
             set => MinecraftVersionReplacer.Text = value;
         }
 
+        /// <summary>
+        /// Core version.
+        /// </summary>
         public string CoreVersion
         {
             get => CoreVersionReplacer.Text;
             set => CoreVersionReplacer.Text = value;
         }
 
-        public string RawUrl { get; set; }
-
-        //public string SHA1 { get; set; }
-        public async void FetchCoreDetail()
+        /// <summary>
+        /// Download URL.
+        /// </summary>
+        public async Task<string> GetDownloadUrl()
         {
-            var CoreDetail = await new MCSLSync().GetCoreDetail(Core, MinecraftVersion, CoreVersion);
-            RawUrl = CoreDetail.DownloadUrl;
-            //SHA1 = CoreDetail.SHA1;
+            var coreDetail = await new MCSLSync().GetCoreDetail(Core, MinecraftVersion, CoreVersion);
+            return coreDetail.DownloadUrl;
         }
     }
 }

@@ -17,6 +17,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Trigger for navigating to the creation page.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void GoCreateNewInstance(object sender, RoutedEventArgs e)
         {
             _creatingInstanceType = ((Button)sender).Name;

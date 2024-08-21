@@ -10,14 +10,23 @@
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Core name.
+        /// </summary>
         public string Core { get; set; }
 
+        /// <summary>
+        /// Minecraft version.
+        /// </summary>
         public string MinecraftVersion
         {
             get => MinecraftVersionReplacer.Text;
             set => MinecraftVersionReplacer.Text = value;
         }
 
+        /// <summary>
+        /// Core version.
+        /// </summary>
         public string CoreVersion
         {
             get => CoreVersionReplacer.Text;

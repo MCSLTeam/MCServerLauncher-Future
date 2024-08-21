@@ -12,6 +12,13 @@ namespace MCServerLauncher.WPF.View
         {
             InitializeComponent();
         }
+        /// <summary>
+        /// Send a notification.
+        /// </summary>
+        /// <param name="title">Title of the notification.</param>
+        /// <param name="message">Content of the notification.</param>
+        /// <param name="isClosable">Controls whether notifications can be turned off.</param>
+        /// <param name="severity">Level.</param>
         public void PushNotification(string title, string message, bool isClosable, InfoBarSeverity severity)
         {
             NotificationContainer.Children.Insert(

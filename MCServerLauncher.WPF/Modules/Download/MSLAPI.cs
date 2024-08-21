@@ -11,6 +11,10 @@ namespace MCServerLauncher.WPF.Modules.Download
     {
         private readonly string _endPoint = "https://api.mslmc.cn/v3";
 
+        /// <summary>
+        /// Get core info from MSL API.
+        /// </summary>
+        /// <returns>List of core name.</returns>
         public async Task<List<string>> GetCoreInfo()
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_server_types");
@@ -19,6 +23,11 @@ namespace MCServerLauncher.WPF.Modules.Download
             return null;
         }
 
+        /// <summary>
+        /// Get specific core description from MSL API.
+        /// </summary>
+        /// <param name="Core">Raw name of the core.</param>
+        /// <returns>String of the description.</returns>
         public async Task<string> GetCoreDescription(string Core)
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
@@ -27,6 +36,11 @@ namespace MCServerLauncher.WPF.Modules.Download
             return "获取核心介绍失败！";
         }
 
+        /// <summary>
+        /// Get Minecraft versions of specific core from MSL API.
+        /// </summary>
+        /// <param name="core">Raw name of the core.</param>
+        /// <returns>List of Minecraft version.</returns>
         public async Task<List<string>> GetMinecraftVersions(string core)
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
@@ -35,6 +49,12 @@ namespace MCServerLauncher.WPF.Modules.Download
                 : null;
         }
 
+        /// <summary>
+        /// Get download URL of specific file from MSL API.
+        /// </summary>
+        /// <param name="core">Raw name of the core.</param>
+        /// <param name="minecraftVersion">Minecraft version.</param>
+        /// <returns>String of the url.</returns>
         public async Task<string> GetDownloadUrl(string core, string minecraftVersion)
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
@@ -43,6 +63,11 @@ namespace MCServerLauncher.WPF.Modules.Download
             return null;
         }
 
+        /// <summary>
+        /// Prettier the core name.
+        /// </summary>
+        /// <param name="core"></param>
+        /// <returns></returns>
         public static string SerializeCoreName(string core)
         {
             return core switch

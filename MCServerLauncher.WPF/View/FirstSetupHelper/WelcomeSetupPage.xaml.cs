@@ -12,7 +12,11 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             InitializeComponent();
         }
-
+        /// <summary>
+        /// Hide FirstSetupHelper
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Next(object sender, RoutedEventArgs e)
         {
             BasicUtils.SaveSetting("App.IsFirstSetupFinished", true);

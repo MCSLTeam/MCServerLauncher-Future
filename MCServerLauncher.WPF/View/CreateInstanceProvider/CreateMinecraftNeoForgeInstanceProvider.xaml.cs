@@ -23,6 +23,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
+        /// <summary>
+        /// Go back.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
@@ -37,6 +42,12 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             JVMArgumentListView.Items.Add(new JVMArgumentItem());
         }
+
+        /// <summary>
+        /// Get NeoForge info, including Minecraft versions and NeoForge versions.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void FetchNeoForgeData(object sender, RoutedEventArgs e)
         {
             FetchMinecraftVersionsButton.IsEnabled = false;
@@ -66,6 +77,12 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = true;
             MinecraftVersionComboBox.SelectionChanged += MinecraftVersionChanged;
         }
+
+        /// <summary>
+        /// Reload NeoForge versions.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void MinecraftVersionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (MinecraftVersionComboBox.SelectedItem == null) return;

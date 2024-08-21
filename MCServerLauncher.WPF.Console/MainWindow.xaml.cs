@@ -25,6 +25,11 @@ namespace MCServerLauncher.WPF.Console
             CurrentPage.Navigate(_board);
         }
 
+        /// <summary>
+        /// Navigation trigger handler.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
@@ -34,6 +39,11 @@ namespace MCServerLauncher.WPF.Console
                     args.RecommendedNavigationTransitionInfo);
         }
 
+        /// <summary>
+        /// Navigation to a specified page.
+        /// </summary>
+        /// <param name="navPageType">Type of the page.</param>
+        /// <param name="transitionInfo">Transition animation.</param>
         private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             var preNavPageType = CurrentPage.Content.GetType();
@@ -63,6 +73,11 @@ namespace MCServerLauncher.WPF.Console
             }
         }
 
+        /// <summary>
+        /// Determine the transition animation.
+        /// </summary>
+        /// <param name="navPageType">Type of the page.</param>
+        /// <returns>Transition info.</returns>
         private SlideNavigationTransitionEffect DetermineSlideDirection(Type navPageType)
         {
             var current = (Page)CurrentPage.Content;

@@ -10,6 +10,10 @@ namespace MCServerLauncher.WPF.Modules.Download
     {
         private readonly string _endPoint = "https://sync.mcsl.com.cn/api";
 
+        /// <summary>
+        /// Get core info from MCSL-Sync
+        /// </summary>
+        /// <returns>List of core name.</returns>
         public async Task<List<string>> GetCoreInfo()
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core");
@@ -19,6 +23,11 @@ namespace MCServerLauncher.WPF.Modules.Download
             return null;
         }
 
+        /// <summary>
+        /// Get Minecraft versions of specific core from MCSL-Sync
+        /// </summary>
+        /// <param name="core"></param>
+        /// <returns></returns>
         public async Task<List<string>> GetMinecraftVersions(string core)
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core/{core}");
@@ -28,6 +37,12 @@ namespace MCServerLauncher.WPF.Modules.Download
             return null;
         }
 
+        /// <summary>
+        /// Get core versions of specific Minecraft version from MCSL-Sync
+        /// </summary>
+        /// <param name="core"></param>
+        /// <param name="minecraftVersion"></param>
+        /// <returns></returns>
         public async Task<List<string>> GetCoreVersions(string core, string minecraftVersion)
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}");
@@ -37,6 +52,13 @@ namespace MCServerLauncher.WPF.Modules.Download
             return null;
         }
 
+        /// <summary>
+        /// Get core detail from MCSL-Sync
+        /// </summary>
+        /// <param name="core"></param>
+        /// <param name="minecraftVersion"></param>
+        /// <param name="coreVersion"></param>
+        /// <returns></returns>
         public async Task<MCSLSyncCoreDetail> GetCoreDetail(string core, string minecraftVersion, string coreVersion)
         {
             var response =

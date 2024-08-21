@@ -16,6 +16,12 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             InitializeComponent();
         }
+
+        /// <summary>
+        /// Skip adding daemons.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void Skip(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<FirstSetup>();

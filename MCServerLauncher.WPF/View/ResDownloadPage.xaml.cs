@@ -20,12 +20,16 @@ namespace MCServerLauncher.WPF.View
         public ResDownloadPage()
         {
             InitializeComponent();
+            // Refresh trigger when page is visible
             IsVisibleChanged += (s, e) =>
             {
                 if (IsVisible) Refresh();
             };
         }
 
+        /// <summary>
+        /// Refresh current download provider
+        /// </summary>
         public async void Refresh()
         {
             switch (BasicUtils.AppSettings.Download.DownloadSource)
