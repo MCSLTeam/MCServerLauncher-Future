@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -45,16 +46,34 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Get NeoForge info, including Minecraft versions and NeoForge versions.
+        /// Method to get NeoForge data through Official source.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void FetchNeoForgeData(object sender, RoutedEventArgs e)
+        private async Task FetchNeoForgeDataByOfficial()
         {
-            FetchMinecraftVersionsButton.IsEnabled = false;
-            MinecraftVersionComboBox.IsEnabled = false;
-            MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
-            NeoForgeVersionComboBox.IsEnabled = false;
+            // Legacy version (1.20.1)
+            var legacyMavenResponse = await NetworkUtils.SendGetRequest("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", useBrowserUserAgent: true);
+            var legacyMavenData = JsonConvert.DeserializeObject<JToken>(await legacyMavenResponse.Content.ReadAsStringAsync()).SelectToken("versions")!.ToObject<List<string>>().Select(version => version.ToString().Replace("1.20.1-", "")).ToList();
+            // Bad version 47.1.82 should be removed
+            legacyMavenData.Remove("47.1.82");
+            NeoForgeVersions = legacyMavenData;
+            // NeoForge
+            var response = await NetworkUtils.SendGetRequest("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", useBrowserUserAgent: true);
+            var mavenData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("versions")!.ToObject<List<string>>();
+            NeoForgeVersions.AddRange(mavenData);
+            // "1." + the first four digits of mavenData = list of Minecraft versions.
+            MinecraftVersions = mavenData.Select(version => "1." + version.Substring(0, 4)).Distinct().ToList();
+            // Add 1.20.1 to MinecraftVersions
+            MinecraftVersions.Add("1.20.1");
+            // Replace 1.21.0 with 1.21
+            MinecraftVersions.Remove("1.21.0");
+            MinecraftVersions.Add("1.21");
+        }
+
+        /// <summary>
+        /// Method to get NeoForge data through BMCLAPI source.
+        /// </summary>
+        private async Task FetchNeoForgeDataByBmclapi()
+        {
             // Legacy version (1.20.1)
             var legacyMavenResponse = await NetworkUtils.SendGetRequest("https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/forge", useBrowserUserAgent: true);
             var legacyMavenData = JObject.Parse(await legacyMavenResponse.Content.ReadAsStringAsync()).SelectToken("files")!.Select(version => version.SelectToken("name")!.ToString().Replace("1.20.1-", "")).ToList();
@@ -65,15 +84,35 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             var mavenData = JObject.Parse(await response.Content.ReadAsStringAsync()).SelectToken("files")!.Select(version => version.SelectToken("name")!.ToString()).ToList();
             mavenData.RemoveAll(version => version.Contains("maven-metadata"));
             NeoForgeVersions.AddRange(mavenData);
-            // 1.前缀 加 mavenData前四位整理成 Minecraft 版本列表
+            // "1." + the first four digits of mavenData = list of Minecraft versions.
             MinecraftVersions = mavenData.Select(version => "1." + version.Substring(0, 4)).Distinct().ToList();
-            // 1.20.1 版本加到 Minecraft 版本列表
+            // Add 1.20.1 to MinecraftVersions
             MinecraftVersions.Add("1.20.1");
-            // 1.21.0 替换为 1.21
+            // Replace 1.21.0 with 1.21
             MinecraftVersions.Remove("1.21.0");
             MinecraftVersions.Add("1.21");
-            MinecraftVersions = ResDownloadUtils.SequenceMinecraftVersion(MinecraftVersions);
-            MinecraftVersionComboBox.ItemsSource = MinecraftVersions;
+        }
+
+        /// <summary>
+        /// Get NeoForge info, including Minecraft versions and NeoForge versions.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void FetchNeoForgeData(object sender, RoutedEventArgs e)
+        {
+            FetchMinecraftVersionsButton.IsEnabled = false;
+            MinecraftVersionComboBox.IsEnabled = false;
+            MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
+            NeoForgeVersionComboBox.IsEnabled = false;
+            if (BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+            {
+                await FetchNeoForgeDataByBmclapi();
+            }
+            else
+            {
+                await FetchNeoForgeDataByOfficial();
+            }
+            MinecraftVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(MinecraftVersions);
             FetchMinecraftVersionsButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
             MinecraftVersionComboBox.SelectionChanged += MinecraftVersionChanged;
