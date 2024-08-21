@@ -199,7 +199,10 @@ namespace MCServerLauncher.WPF.Helpers
                         MinecraftJavaAutoAcceptEula = false,
                         MinecraftJavaAutoSwitchOnlineMode = false,
                         MinecraftBedrockAutoSwitchOnlineMode = false,
-                        MinecraftForgeInstallerSource = "BMCLAPI"
+                        UseMirrorForMinecraftForgeInstall = true,
+                        UseMirrorForMinecraftNeoForgeInstall = true,
+                        UseMirrorForMinecraftFabricInstall = true,
+                        UseMirrorForMinecraftQuiltInstall = true
                     },
                     Download = new ResDownloadSettings
                     {
@@ -272,6 +275,7 @@ namespace MCServerLauncher.WPF.Helpers
                 if (_writeTask.IsCompleted)
                 {
                     _writeTask = Task.Run(ProcessQueue);
+                    Log.Information($"[Set] Saved Setting: {settingPath} = {value.ToString()}");
                 }
             }
         }
@@ -401,7 +405,10 @@ public class InstanceCreationSettings
     public bool MinecraftJavaAutoAcceptEula { get; set; }
     public bool MinecraftJavaAutoSwitchOnlineMode { get; set; }
     public bool MinecraftBedrockAutoSwitchOnlineMode { get; set; }
-    public string MinecraftForgeInstallerSource { get; set; }
+    public bool UseMirrorForMinecraftForgeInstall { get; set; }
+    public bool UseMirrorForMinecraftNeoForgeInstall { get; set; }
+    public bool UseMirrorForMinecraftFabricInstall { get; set; }
+    public bool UseMirrorForMinecraftQuiltInstall { get; set; }
 }
 
 public class ResDownloadSettings

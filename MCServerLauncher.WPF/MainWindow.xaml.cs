@@ -6,7 +6,6 @@ using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View;
-using MCServerLauncher.WPF.View.FirstSetupHelper;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF
@@ -26,18 +25,12 @@ namespace MCServerLauncher.WPF
 
         public MainWindow()
         {
-            switch (BasicUtils.AppSettings.App.Theme)
+            ThemeManager.Current.ApplicationTheme = BasicUtils.AppSettings.App.Theme switch
             {
-                case "auto":
-                    ThemeManager.Current.ApplicationTheme = null;
-                    break;
-                case "light":
-                    ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
-                    break;
-                case "dark":
-                    ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
-                    break;
-            }
+                "light" => ApplicationTheme.Light,
+                "dark" => ApplicationTheme.Dark,
+                _ => null
+            };
             InitializeComponent();
             InitializeView();
         }

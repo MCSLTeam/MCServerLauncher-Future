@@ -1,10 +1,8 @@
 ﻿using iNKORE.UI.WPF.Modern;
 using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View.Components;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,7 +20,6 @@ namespace MCServerLauncher.WPF.View
             DataContext = this;
 
             # region 初始化数值
-            InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectedIndex = MinecraftForgeInstallerSource.ToList().IndexOf(BasicUtils.AppSettings.InstanceCreation.MinecraftForgeInstallerSource);
             InitDownloadSourceSelection();
             ResDownload_DownloadThreadCnt.SettingSlider.Value = BasicUtils.AppSettings.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError);
@@ -34,7 +31,10 @@ namespace MCServerLauncher.WPF.View
             InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.Toggled += OnMinecraftJavaAutoAcceptEulaChanged;
             InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.Toggled += OnMinecraftJavaAutoSwitchOnlineModeChanged;
             InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.Toggled += OnMinecraftBedrockAutoSwitchOnlineModeChanged;
-            InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectionChanged += OnMinecraftForgeInstallerSourceSelectionChanged;
+            InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.Toggled += OnUseMirrorForMinecraftForgeInstallChanged;
+            InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.Toggled += OnUseMirrorForMinecraftNeoForgeInstallChanged;
+            InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.Toggled += OnUseMirrorForMinecraftFabricInstallChanged;
+            InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.Toggled += OnUseMirrorForMinecraftQuiltInstallChanged;
 
             ResDownload_DownloadThreadCnt.SettingSlider.ValueChanged += OnDownloadThreadValueChanged;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged += OnActionWhenDownloadErrorSelectionChanged;
@@ -104,29 +104,81 @@ namespace MCServerLauncher.WPF.View
         {
             BasicUtils.SaveSetting("InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode", InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.IsOn);
         }
+        #endregion
+
+        #region UseMirrorForMinecraftForgeInstall
+        public bool UseMirrorForMinecraftForgeInstall
+        {
+            get => (bool)GetValue(UseMirrorForMinecraftForgeInstallProperty);
+            set => SetValue(UseMirrorForMinecraftForgeInstallProperty, value);
+        }
+        public static readonly DependencyProperty UseMirrorForMinecraftForgeInstallProperty =
+            DependencyProperty.Register(
+                "UseMirrorForMinecraftForgeInstall",
+                typeof(bool),
+                typeof(SwitchSettingCard),
+                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall)
+            );
+        private void OnUseMirrorForMinecraftForgeInstallChanged(object sender, RoutedEventArgs e)
+        {
+            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftForgeInstall", InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.IsOn);
+        }
         # endregion
 
-        # region MinecraftForgeInstallerSource
-        public static IEnumerable<string> MinecraftForgeInstallerSource { get; } = new List<string>
+        #region UseMirrorForMinecraftNeoForgeInstall
+        public bool UseMirrorForMinecraftNeoForgeInstall
         {
-            "BMCLAPI",
-            "Mojang/Microsoft"
-        };
-        public int MinecraftForgeInstallerSourceIndex
-        {
-            get => (int)GetValue(MinecraftForgeInstallerSourceIndexProperty);
-            set => SetValue(MinecraftForgeInstallerSourceIndexProperty, value);
+            get => (bool)GetValue(UseMirrorForMinecraftNeoForgeInstallProperty);
+            set => SetValue(UseMirrorForMinecraftNeoForgeInstallProperty, value);
         }
-        public static readonly DependencyProperty MinecraftForgeInstallerSourceIndexProperty =
+        public static readonly DependencyProperty UseMirrorForMinecraftNeoForgeInstallProperty =
             DependencyProperty.Register(
-                "MinecraftForgeInstallerSourceIndex",
-                typeof(int),
-                typeof(ComboSettingCard),
-                new PropertyMetadata(MinecraftForgeInstallerSource.ToList().IndexOf(BasicUtils.AppSettings.InstanceCreation.MinecraftForgeInstallerSource))
+                "UseMirrorForMinecraftNeoForgeInstall",
+                typeof(bool),
+                typeof(SwitchSettingCard),
+                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
             );
-        private void OnMinecraftForgeInstallerSourceSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void OnUseMirrorForMinecraftNeoForgeInstallChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.MinecraftForgeInstallerSource", InstanceCreation_MinecraftForgeInstallerSource.SettingComboBox.SelectedValue.ToString());
+            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftNeoForgeInstall", InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.IsOn);
+        }
+        # endregion
+
+        #region UseMirrorForMinecraftFabricInstall
+        public bool UseMirrorForMinecraftFabricInstall
+        {
+            get => (bool)GetValue(UseMirrorForMinecraftFabricInstallProperty);
+            set => SetValue(UseMirrorForMinecraftFabricInstallProperty, value);
+        }
+        public static readonly DependencyProperty UseMirrorForMinecraftFabricInstallProperty =
+            DependencyProperty.Register(
+                "UseMirrorForMinecraftFabricInstall",
+                typeof(bool),
+                typeof(SwitchSettingCard),
+                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall)
+            );
+        private void OnUseMirrorForMinecraftFabricInstallChanged(object sender, RoutedEventArgs e)
+        {
+            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftFabricInstall", InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.IsOn);
+        }
+        # endregion
+
+        #region UseMirrorForMinecraftQuiltInstall
+        public bool UseMirrorForMinecraftQuiltInstall
+        {
+            get => (bool)GetValue(UseMirrorForMinecraftQuiltInstallProperty);
+            set => SetValue(UseMirrorForMinecraftQuiltInstallProperty, value);
+        }
+        public static readonly DependencyProperty UseMirrorForMinecraftQuiltInstallProperty =
+            DependencyProperty.Register(
+                "UseMirrorForMinecraftQuiltInstall",
+                typeof(bool),
+                typeof(SwitchSettingCard),
+                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall)
+            );
+        private void OnUseMirrorForMinecraftQuiltInstallChanged(object sender, RoutedEventArgs e)
+        {
+            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftQuiltInstall", InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.IsOn);
         }
         # endregion
 
@@ -262,19 +314,13 @@ namespace MCServerLauncher.WPF.View
             try
             {
                 BasicUtils.SaveSetting("App.Theme", _themeList[More_LauncherTheme.SettingComboBox.SelectedIndex]);
-                switch (More_LauncherTheme.SettingComboBox.SelectedIndex)
+                ThemeManager.Current.ApplicationTheme = More_LauncherTheme.SettingComboBox.SelectedIndex switch
                 {
-                    case 0:
-                        ThemeManager.Current.ApplicationTheme = null;
-                        break;
-                    case 1:
-                        ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
-                        break;
-                    case 2:
-                        ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
-                        break;
-                }
-                ThemeManager.Current.ApplicationTheme = More_LauncherTheme.SettingComboBox.SelectedIndex == 1 ? ApplicationTheme.Light :ApplicationTheme.Dark;
+                    0 => null,
+                    1 => ApplicationTheme.Light,
+                    2 => ApplicationTheme.Dark,
+                    _ => ThemeManager.Current.ApplicationTheme
+                };
             }
             catch (ArgumentOutOfRangeException)
             {

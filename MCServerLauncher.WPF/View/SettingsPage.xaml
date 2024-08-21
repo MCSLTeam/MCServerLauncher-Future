@@ -65,11 +65,26 @@
                                       Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
                                       Status="{Binding Path=MinecraftBedrockAutoSwitchOnlineMode}"/>
-                <vc:ComboSettingCard x:Name="InstanceCreation_MinecraftForgeInstallerSource"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Processing}"
-                                     Title="Forge 依赖下载源 ( Minecraft Forge 服务器 实例 )"
-                                     Description="选择合适的下载源可显著提升 Forge 依赖下载速度。"
-                                     ComboBoxItems="{Binding Path=MinecraftForgeInstallerSource}"/>
+                <vc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftForgeInstall"
+                                      Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
+                                      Title="使用镜像源进行部署 ( Minecraft Forge 服务器 实例 )"
+                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Status="{Binding Path=UseMirrorForMinecraftForgeInstall}"/>
+                <vc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftNeoForgeInstall"
+                                      Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
+                                      Title="使用镜像源进行部署 ( Minecraft NeoForge 服务器 实例 )"
+                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Status="{Binding Path=UseMirrorForMinecraftNeoForgeInstall}"/>
+                <vc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftFabricInstall"
+                                      Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
+                                      Title="使用镜像源进行部署 ( Minecraft Fabric 服务器 实例 )"
+                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Status="{Binding Path=UseMirrorForMinecraftFabricInstall}"/>
+                <vc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftQuiltInstall"
+                                      Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
+                                      Title="使用镜像源进行部署 ( Minecraft Quilt 服务器 实例 )"
+                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Status="{Binding Path=UseMirrorForMinecraftQuiltInstall}"/>
 
 
                 <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0" />
