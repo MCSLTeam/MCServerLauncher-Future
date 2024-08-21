@@ -52,6 +52,7 @@ namespace MCServerLauncher.WPF.Modules.Download
                 "leaves" => "Leaves",
                 "spigot" => "Spigot",
                 "arclight" => "Arclight",
+                "arclight-forge" => "ArclightForge",
                 "arclight-fabric" => "ArclightFabric",
                 "arclight-neoforge" => "ArclightNeoForge",
                 "spongevanilla" => "SpongeVanilla",
