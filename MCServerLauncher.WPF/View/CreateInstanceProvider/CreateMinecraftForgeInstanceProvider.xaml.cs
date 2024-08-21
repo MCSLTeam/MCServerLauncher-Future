@@ -59,7 +59,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Main method to get specific version of Minecraft supported by Forge through Official source.
+        /// Method to get specific version of Minecraft with Forge through Official source.
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByOfficial()
         {
@@ -73,7 +73,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Main method to get specific version of Minecraft supported by Forge through BMCLAPI source.
+        /// Method to get specific version of Minecraft with Forge through BMCLAPI source.
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByBmclapi()
         {
@@ -82,7 +82,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Main method to get specific version of Minecraft supported by Forge.
+        /// Main method to get specific version of Minecraft with Forge.
         /// </summary>
         private async void FetchMinecraftVersions(object sender, RoutedEventArgs e)
         {
@@ -104,7 +104,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Get version of Forge with a particular Minecraft version through Official source.
+        /// Method to get version of Forge with a particular Minecraft version through Official source.
         /// </summary>
         private static async Task<List<ForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
         {
@@ -167,7 +167,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Get version of Forge with a particular Minecraft version through BMCLAPI source.
+        /// Method to get version of Forge with a particular Minecraft version through BMCLAPI source.
         /// </summary>
         private static async Task<List<ForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
         {
@@ -187,7 +187,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Main method for getting version of Forge with a particular Minecraft version.
+        /// Main method to get version of Forge with a particular Minecraft version.
         /// </summary>
         private async void FetchForgeVersions(object sender, RoutedEventArgs e)
         {

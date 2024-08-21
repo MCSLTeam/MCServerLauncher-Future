@@ -37,7 +37,7 @@ namespace MCServerLauncher.WPF.View.Components
         public string CoreIconUrl { get; set; }
 
         /// <summary>
-        /// Minecraft versions supported by the core.
+        /// Supported Minecraft versions for the core.
         /// </summary>
         public List<string> MinecraftVersions { get; set; }
     }
