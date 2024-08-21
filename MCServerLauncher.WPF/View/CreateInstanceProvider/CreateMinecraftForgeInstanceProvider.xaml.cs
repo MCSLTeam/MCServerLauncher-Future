@@ -54,7 +54,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         /// 通过官方获取 Forge 加载器支持的 Minecraft 版本的方法。
         /// </summary>
-        private async Task<List<string>> FetchMinecraftVersionsByOfficial()
+        private static async Task<List<string>> FetchMinecraftVersionsByOfficial()
         {
             var response = await NetworkUtils.SendGetRequest("https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_1.2.4.html", useBrowserUserAgent: true);
             List<string> minecraftVersions = Regex.Matches(await response.Content.ReadAsStringAsync(), "(?<=a href=\"index_)[0-9.]+(_pre[0-9]?)?(?=.html)")
@@ -67,7 +67,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         /// 通过 BMCLAPI 获取 Forge 加载器支持的 Minecraft 版本的方法。
         /// </summary>
-        private async Task<List<string>> FetchMinecraftVersionsByBmclapi()
+        private static async Task<List<string>> FetchMinecraftVersionsByBmclapi()
         {
             var response = await NetworkUtils.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
             return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
@@ -96,7 +96,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         /// 通过官方获取特定 Minecraft 版本支持的 Forge 加载器版本的方法。
         /// </summary>
-        private async Task<List<BmclapiForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
+        private static async Task<List<BmclapiForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
         {
             var results = new List<BmclapiForgeBuild>();
             var response = await NetworkUtils.SendGetRequest($"https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_{mcVersion.Replace("-", "_")}.html", useBrowserUserAgent: true);
@@ -151,7 +151,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 results.Add(new BmclapiForgeBuild
                 {
                     MinecraftVersion = mcVersion,
-                    ForgeVersion = unParsedforgeVersion,
+                    ForgeVersion = preParsingForgeVersion,
                     Attachments = forgeAttachments
                 });
             }
@@ -160,7 +160,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         /// 通过 BMCLAPI 获取特定 Minecraft 版本支持的 Forge 加载器版本的方法。
         /// </summary>
-        private async Task<List<BmclapiForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
+        private static async Task<List<BmclapiForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
         {
             var response = await NetworkUtils.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
