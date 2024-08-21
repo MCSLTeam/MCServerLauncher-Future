@@ -1,7 +1,7 @@
 ﻿using System.Windows.Controls;
 using MCServerLauncher.WPF.View.CreateInstanceProvider;
 
-namespace MCServerLauncher.WPF.View
+namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///     CreateInstancePage.xaml 的交互逻辑

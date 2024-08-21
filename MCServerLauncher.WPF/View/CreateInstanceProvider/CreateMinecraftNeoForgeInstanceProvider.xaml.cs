@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View.Components;
+using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

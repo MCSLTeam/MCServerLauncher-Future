@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MCServerLauncher.WPF.View
+namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///     SettingsPage.xaml 的交互逻辑

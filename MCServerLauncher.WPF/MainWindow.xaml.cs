@@ -5,7 +5,7 @@ using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.View;
+using MCServerLauncher.WPF.View.Pages;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF
@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF
     /// <summary>
     ///     MainWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private readonly Page _home = new HomePage();
         private readonly Page _createInstance = new CreateInstancePage();
@@ -66,7 +66,7 @@ namespace MCServerLauncher.WPF
                     args.RecommendedNavigationTransitionInfo);
         }
         /// <summary>
-        /// Navigation to a specified page.
+        /// Navigation to a specific page.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>

@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
+using MCServerLauncher.WPF.View.Pages;
 using static MCServerLauncher.WPF.Helpers.VisualTreeExtensions;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider

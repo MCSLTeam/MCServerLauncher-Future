@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules.Download;
 
-namespace MCServerLauncher.WPF.View
+namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///     TestPage.xaml 的交互逻辑

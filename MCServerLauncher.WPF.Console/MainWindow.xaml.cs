@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
-using MCServerLauncher.WPF.Console.View;
+using MCServerLauncher.WPF.Console.View.Pages;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.Console
@@ -11,7 +11,7 @@ namespace MCServerLauncher.WPF.Console
     /// <summary>
     ///     MainWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private readonly Page _board = new BoardPage();
         private readonly Page _command = new CommandPage();
@@ -40,7 +40,7 @@ namespace MCServerLauncher.WPF.Console
         }
 
         /// <summary>
-        /// Navigation to a specified page.
+        /// Navigation to a specific page.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>

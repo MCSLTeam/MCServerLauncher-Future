@@ -266,7 +266,7 @@
     <Compile Include="View\Components\ZCloudFileResCoreVersionItem.xaml.cs">
       <DependentUpon>ZCloudFileResCoreVersionItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\CreateInstancePage.xaml.cs">
+    <Compile Include="View\Pages\CreateInstancePage.xaml.cs">
       <DependentUpon>CreateInstancePage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\CreateInstanceProvider\CreateMinecraftBedrockInstanceProvider.xaml.cs">
@@ -293,19 +293,19 @@
     <Compile Include="View\FirstSetupHelper\WelcomeSetupPage.xaml.cs">
       <DependentUpon>WelcomeSetupPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\HelpPage.xaml.cs">
+    <Compile Include="View\Pages\HelpPage.xaml.cs">
       <DependentUpon>HelpPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\HomePage.xaml.cs">
+    <Compile Include="View\Pages\HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\InstanceManagerPage.xaml.cs">
+    <Compile Include="View\Pages\InstanceManagerPage.xaml.cs">
       <DependentUpon>InstanceManagerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\NotificationCenterPage.xaml.cs">
+    <Compile Include="View\Pages\NotificationCenterPage.xaml.cs">
       <DependentUpon>NotificationCenterPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\ResDownloadPage.xaml.cs">
+    <Compile Include="View\Pages\ResDownloadPage.xaml.cs">
       <DependentUpon>ResDownloadPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\ResDownloadProvider\FastMirrorProvider.xaml.cs">
@@ -323,10 +323,10 @@
     <Compile Include="View\ResDownloadProvider\ZCloudFileProvider.xaml.cs">
       <DependentUpon>ZCloudFileProvider.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\SettingsPage.xaml.cs">
+    <Compile Include="View\Pages\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\TestPage.xaml.cs">
+    <Compile Include="View\Pages\TestPage.xaml.cs">
       <DependentUpon>TestPage.xaml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
@@ -425,7 +425,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\CreateInstancePage.xaml">
+    <Page Include="View\Pages\CreateInstancePage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -460,23 +460,23 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\HelpPage.xaml">
+    <Page Include="View\Pages\HelpPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\HomePage.xaml">
+    <Page Include="View\Pages\HomePage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\InstanceManagerPage.xaml">
+    <Page Include="View\Pages\InstanceManagerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\NotificationCenterPage.xaml">
+    <Page Include="View\Pages\NotificationCenterPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\ResDownloadPage.xaml">
+    <Page Include="View\Pages\ResDownloadPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -500,11 +500,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\SettingsPage.xaml">
+    <Page Include="View\Pages\SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\TestPage.xaml">
+    <Page Include="View\Pages\TestPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

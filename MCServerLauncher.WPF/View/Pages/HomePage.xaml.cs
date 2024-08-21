@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View
+﻿namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///     HomePage.xaml 的交互逻辑

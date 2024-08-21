@@ -4,7 +4,7 @@ using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
 
-namespace MCServerLauncher.WPF.View
+namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///     ResDownloadPage.xaml 的交互逻辑

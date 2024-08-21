@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using iNKORE.UI.WPF.Modern.Controls;
 
-namespace MCServerLauncher.WPF.View
+namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///     NotificationCenterPage.xaml 的交互逻辑

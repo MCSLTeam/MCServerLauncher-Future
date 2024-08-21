@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using MCServerLauncher.WPF.View.Components;
+using MCServerLauncher.WPF.View.Pages;
 using static MCServerLauncher.WPF.Helpers.VisualTreeExtensions;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider

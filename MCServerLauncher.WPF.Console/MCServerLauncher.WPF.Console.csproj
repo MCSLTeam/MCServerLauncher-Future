@@ -185,13 +185,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="View\BoardPage.xaml.cs">
+    <Compile Include="View\Pages\BoardPage.xaml.cs">
       <DependentUpon>BoardPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\CommandPage.xaml.cs">
+    <Compile Include="View\Pages\CommandPage.xaml.cs">
       <DependentUpon>CommandPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\ComponentManagerPage.xaml.cs">
+    <Compile Include="View\Pages\ComponentManagerPage.xaml.cs">
       <DependentUpon>ComponentManagerPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\InstanceComponentItem.xaml.cs">
@@ -212,10 +212,10 @@
     <Compile Include="View\Components\PlayerItem.xaml.cs">
       <DependentUpon>PlayerItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\FileManagerPage.xaml.cs">
+    <Compile Include="View\Pages\FileManagerPage.xaml.cs">
       <DependentUpon>FileManagerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\EventTriggerPage.xaml.cs">
+    <Compile Include="View\Pages\EventTriggerPage.xaml.cs">
       <DependentUpon>EventTriggerPage.xaml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
@@ -230,15 +230,15 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="View\BoardPage.xaml">
+    <Page Include="View\Pages\BoardPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\CommandPage.xaml">
+    <Page Include="View\Pages\CommandPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\ComponentManagerPage.xaml">
+    <Page Include="View\Pages\ComponentManagerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -266,11 +266,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\FileManagerPage.xaml">
+    <Page Include="View\Pages\FileManagerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\EventTriggerPage.xaml">
+    <Page Include="View\Pages\EventTriggerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -305,6 +305,7 @@
   <ItemGroup>
     <Resource Include="Resources\MCServerLauncherFutureConsole.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

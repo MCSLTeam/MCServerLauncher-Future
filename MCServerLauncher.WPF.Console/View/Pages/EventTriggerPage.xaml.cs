@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.Console.View
+﻿namespace MCServerLauncher.WPF.Console.View.Pages
 {
     /// <summary>
     ///     EventTriggerPage.xaml 的交互逻辑
