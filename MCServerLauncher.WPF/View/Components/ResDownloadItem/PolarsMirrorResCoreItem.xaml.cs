@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///     PolarsMirrorResCoreItem.xaml 的交互逻辑

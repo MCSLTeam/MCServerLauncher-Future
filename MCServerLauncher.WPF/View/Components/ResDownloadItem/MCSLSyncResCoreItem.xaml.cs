@@ -1,11 +1,11 @@
-﻿namespace MCServerLauncher.WPF.View.Components
+﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     ZCloudFileResCoreItem.xaml 的交互逻辑
+    ///     MCSLSyncResCoreItem.xaml 的交互逻辑
     /// </summary>
-    public partial class ZCloudFileResCoreItem
+    public partial class MCSLSyncResCoreItem
     {
-        public ZCloudFileResCoreItem()
+        public MCSLSyncResCoreItem()
         {
             InitializeComponent();
         }

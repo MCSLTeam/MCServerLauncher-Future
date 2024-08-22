@@ -1,7 +1,7 @@
 ﻿using MCServerLauncher.WPF.Modules.Download;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///     ZCloudFileResCoreVersionItem.xaml 的交互逻辑

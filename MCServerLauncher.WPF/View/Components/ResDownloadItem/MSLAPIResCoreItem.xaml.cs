@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View.Components
+﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///     MSLAPIResCoreItem.xaml 的交互逻辑

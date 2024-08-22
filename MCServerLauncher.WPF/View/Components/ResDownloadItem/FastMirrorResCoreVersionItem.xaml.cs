@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View.Components
+﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///     FastMirrorResCoreVersionItem.xaml 的交互逻辑

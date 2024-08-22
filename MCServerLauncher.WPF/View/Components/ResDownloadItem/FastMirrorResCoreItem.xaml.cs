@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///     FastMirrorResCoreItem.xaml 的交互逻辑

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using MCServerLauncher.WPF.Modules.Download;
-using MCServerLauncher.WPF.View.Components;
+using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
