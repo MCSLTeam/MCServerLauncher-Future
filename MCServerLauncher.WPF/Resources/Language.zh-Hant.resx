@@ -58,27 +58,27 @@
 			: using a System.ComponentModel.TypeConverter
 			: and then encoded with base64 encoding.
 	-->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xsd:schema xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root">
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
         <xsd:choice maxOccurs="unbounded">
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -112,14 +112,14 @@
   <data name="FirstSetup_EulaMenu" xml:space="preserve">
     <value>用戶協議</value>
   </data>
-  <data name="Continue" xml:space="preserve">
-    <value>繼續</value>
-  </data>
   <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
     <value>連接守護進程</value>
   </data>
   <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
     <value>開始使用</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>繼續</value>
   </data>
   <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
     <value> 設置語言</value>
@@ -145,11 +145,11 @@
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
     <value>訊息中心</value>
   </data>
-  <data name="Main_SettingsNavMenu" xml:space="preserve">
-    <value>程序設置</value>
-  </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
     <value>調試頁面</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>程序設置</value>
   </data>
   <data name="Tip" xml:space="preserve">
     <value>訊息</value>
