@@ -44,9 +44,12 @@ namespace MCServerLauncher.WPF.View.Pages
             More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
             More_FollowStartupForLauncher.SettingSwitch.Toggled += OnFollowStartupForLauncherChanged;
             More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += OnAutoCheckUpdateForLauncherChanged;
-            # endregion
+            #endregion
 
+            AboutVersionReplacer.Text = $"Release Version {Assembly.GetExecutingAssembly().GetName().Version}";
+            #if DEBUG
             AboutVersionReplacer.Text = $"Developer Version {Assembly.GetExecutingAssembly().GetName().Version}";
+            #endif
         }
 
         # region MinecraftJavaAutoAcceptEula
