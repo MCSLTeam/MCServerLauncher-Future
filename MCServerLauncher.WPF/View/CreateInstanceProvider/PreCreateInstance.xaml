@@ -16,7 +16,7 @@
                    HorizontalAlignment="Left" Margin="0,80,0,0" />
         <ui:ScrollViewerEx Grid.Row="1" Margin="0,15,0,60">
             <ikw:SimpleStackPanel Spacing="10">
-                <Button x:Name="MinecraftJavaServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="Minecraft Java 版服务器"/>
+                <Button x:Name="MinecraftJavaServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="通用 Minecraft Java 版服务器"/>
                 <Button x:Name="MinecraftForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Forge 服务器"/>
                 <Button x:Name="MinecraftNeoForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft NeoForge 服务器"/>
                 <Button x:Name="MinecraftQuiltServer" Padding="20,10,0,10" Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"  Content="Minecraft Quilt 服务器"/>

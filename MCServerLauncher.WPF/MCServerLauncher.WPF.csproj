@@ -203,6 +203,27 @@
     <Compile Include="Remote\ClientConnection.cs" />
     <Compile Include="Remote\Utils.cs" />
     <Compile Include="Utils.cs" />
+    <Compile Include="View\Components\CreateInstance\SelectMinecraftBedrockArchive.xaml.cs">
+      <DependentUpon>SelectMinecraftBedrockArchive.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\CreateInstance\SelectMinecraftJavaCore.xaml.cs">
+      <DependentUpon>SelectMinecraftJavaCore.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\CreateInstance\SelectMinecraftJavaJvm.xaml.cs">
+      <DependentUpon>SelectMinecraftJavaJvm.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\CreateInstance\SelectOtherExecutableInstanceDependency.xaml.cs">
+      <DependentUpon>SelectOtherExecutableInstanceDependency.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\CreateInstance\SetInstanceName.xaml.cs">
+      <DependentUpon>SetInstanceName.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\CreateInstance\SetMinecraftJavaJvmArgument.xaml.cs">
+      <DependentUpon>SetMinecraftJavaJvmArgument.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\CreateInstance\SetMinecraftJvmRam.xaml.cs">
+      <DependentUpon>SetMinecraftJvmRam.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\SettingCard\ActionSettingCard.xaml.cs">
       <DependentUpon>ActionSettingCard.xaml</DependentUpon>
     </Compile>
@@ -224,6 +245,9 @@
     <Compile Include="View\CreateInstanceProvider\CreateMinecraftNeoForgeInstanceProvider.xaml.cs">
       <DependentUpon>CreateMinecraftNeoForgeInstanceProvider.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\CreateInstance\SetCreateOtherExecutableInstanceRunCommand.xaml.cs">
+      <DependentUpon>SetCreateOtherExecutableInstanceRunCommand.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\FirstSetupHelper\DaemonSetupPage.xaml.cs">
       <DependentUpon>DaemonSetupPage.xaml</DependentUpon>
     </Compile>
@@ -233,8 +257,8 @@
     <Compile Include="View\Components\InstanceBorder.xaml.cs">
       <DependentUpon>InstanceBorder.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\JVMArgumentItem.xaml.cs">
-      <DependentUpon>JVMArgumentItem.xaml</DependentUpon>
+    <Compile Include="View\Components\JvmArgumentItem.xaml.cs">
+      <DependentUpon>JvmArgumentItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\ResDownloadItem\MCSLSyncResCoreItem.xaml.cs">
       <DependentUpon>MCSLSyncResCoreItem.xaml</DependentUpon>
@@ -341,6 +365,34 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="View\Components\CreateInstance\SelectMinecraftBedrockArchive.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\CreateInstance\SelectMinecraftJavaCore.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\CreateInstance\SelectMinecraftJavaJvm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\CreateInstance\SelectOtherExecutableInstanceDependency.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\CreateInstance\SetInstanceName.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\CreateInstance\SetMinecraftJavaJvmArgument.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\CreateInstance\SetMinecraftJvmRam.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\Components\SettingCard\ActionSettingCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -369,6 +421,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="View\Components\CreateInstance\SetCreateOtherExecutableInstanceRunCommand.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\FirstSetupHelper\DaemonSetupPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -381,7 +437,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\JVMArgumentItem.xaml">
+    <Page Include="View\Components\JvmArgumentItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -552,7 +608,7 @@
     <Resource Include="Resources\MCServerLauncherFuture.png" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="View\Components\CreateInstance\" />
+    <Folder Include="Modules\CreateInstance\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

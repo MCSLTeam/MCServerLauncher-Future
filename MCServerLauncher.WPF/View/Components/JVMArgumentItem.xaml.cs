@@ -4,11 +4,11 @@ using ListView = iNKORE.UI.WPF.Modern.Controls.ListView;
 namespace MCServerLauncher.WPF.View.Components
 {
     /// <summary>
-    ///     JVMArgumentItem.xaml 的交互逻辑
+    ///     JvmArgumentItem.xaml 的交互逻辑
     /// </summary>
-    public partial class JVMArgumentItem
+    public partial class JvmArgumentItem
     {
-        public JVMArgumentItem()
+        public JvmArgumentItem()
         {
             InitializeComponent();
         }

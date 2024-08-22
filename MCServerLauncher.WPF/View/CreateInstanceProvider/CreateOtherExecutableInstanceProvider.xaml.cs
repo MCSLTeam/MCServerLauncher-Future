@@ -25,8 +25,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             parent.CurrentCreateInstance.GoBack();
         }
 
-        private void FinishSetup(object sender, RoutedEventArgs e)
-        {
-        }
+        //private void FinishSetup(object sender, RoutedEventArgs e)
+        //{
+        //}
     }
 }

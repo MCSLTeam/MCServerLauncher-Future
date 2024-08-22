@@ -26,13 +26,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             parent.CurrentCreateInstance.GoBack();
         }
 
-        private void FinishSetup(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void AddJvmArgument(object sender, RoutedEventArgs e)
-        {
-            JVMArgumentListView.Items.Add(new JVMArgumentItem());
-        }
+        //private void FinishSetup(object sender, RoutedEventArgs e)
+        //{
+        //}
     }
 }
