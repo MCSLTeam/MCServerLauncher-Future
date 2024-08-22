@@ -23,7 +23,7 @@
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             RenderOptions.BitmapScalingMode="HighQuality"
-            Source="../../Resources/MCServerLauncherFuture.png"
+            Source="../../../Resources/MCServerLauncherFuture.png"
             Height="128">
         </Image>
         <ui:ProgressRing
