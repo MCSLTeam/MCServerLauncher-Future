@@ -1,4 +1,4 @@
-﻿<Page x:Class="MCServerLauncher.WPF.View.FirstSetupHelper.WelcomeSetupPage"
+﻿<Page x:Class="MCServerLauncher.WPF.View.FirstSetupHelper.LanguageSetupPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -25,23 +25,19 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" VerticalAlignment="Center" Style="{StaticResource LargeTitleTextBlock}"
-                           Text="欢迎使用" />
+                <ui:IconAndText Grid.Row="0" VerticalAlignment="Center" FontSize="40" FontWeight="SemiBold" Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" IconSize="40" 
+                           Content="{Binding [FirstSetup_SetLanguageHint], Source={x:Static h:LanguageManager.Instance}}"/>
                 <TextBlock Grid.Row="1" VerticalAlignment="Center" FontSize="46"
                            FontFamily="{StaticResource Montserrat}" Style="{StaticResource LargeTitleTextBlock}"
-                           Text="MCServerLauncher" />
-                <TextBlock Grid.Row="2" VerticalAlignment="Center" FontSize="46" Foreground="#00E396"
-                           FontFamily="{StaticResource Montserrat}" Style="{StaticResource LargeTitleTextBlock}"
-                           Text="Future" />
+                           Text="{Binding [FirstSetup_SetLanguageHintReverse], Source={x:Static h:LanguageManager.Instance}}" />
             </Grid>
-            <Image
-                Grid.Column="1"
-                Margin="20,0,50,0"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                RenderOptions.BitmapScalingMode="HighQuality"
-                Source="../../Resources/MCServerLauncherFuture.png"
-                Height="256" />
+            <Grid Grid.Column="1">
+                <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageChanged" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ComboBoxItem Content="简体中文 (中国)" />
+                    <ComboBoxItem Content="繁体中文 (中国)" />
+                    <ComboBoxItem Content="English (United States)" />
+                </ComboBox>
+            </Grid>
         </Grid>
         <Border Grid.Row="1" Style="{StaticResource StyledBorder}" Height="80">
             <Grid>
@@ -49,9 +45,9 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="Next">
+                <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="Next" Style="{StaticResource AccentButtonStyle}">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="继续" />
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static h:LanguageManager.Instance}}" />
                     </Button.Content>
                 </Button>
             </Grid>

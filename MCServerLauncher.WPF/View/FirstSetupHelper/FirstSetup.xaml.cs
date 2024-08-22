@@ -13,12 +13,14 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
     /// </summary>
     public partial class FirstSetup
     {
+        private readonly Page _language = new LanguageSetupPage();
         private readonly Page _eula = new EulaSetupPage();
         private readonly Page _daemon = new DaemonSetupPage();
         private readonly Page _welcome = new WelcomeSetupPage();
 
         private readonly List<Type> _pageList = new()
         {
+            typeof(LanguageSetupPage),
             typeof(EulaSetupPage),
             typeof(DaemonSetupPage),
             typeof(WelcomeSetupPage)
@@ -27,7 +29,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         public FirstSetup()
         {
             InitializeComponent();
-            CurrentPage.Navigate(_eula);
+            CurrentPage.Navigate(_language);
         }
 
         /// <summary>
@@ -55,6 +57,10 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             if (navPageType == preNavPageType) return;
             switch (navPageType)
             {
+                case not null when navPageType == typeof(LanguageSetupPage):
+                    CurrentPage.Navigate(_language,
+                        new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(navPageType) });
+                    break;
                 case not null when navPageType == typeof(EulaSetupPage):
                     CurrentPage.Navigate(_eula,
                         new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(navPageType) });
@@ -90,15 +96,18 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var parent = this.TryFindParent<MainWindow>();
             parent.NavView.Visibility = Visibility.Visible;
         }
-
-        public void GoDaemonSetup()
+        public void GoEulaSetup()
         {
             RefreshNavMenu(1);
+        }
+        public void GoDaemonSetup()
+        {
+            RefreshNavMenu(2);
         }
 
         public void GoWelcomeSetup()
         {
-            RefreshNavMenu(2);
+            RefreshNavMenu(3);
         }
 
         /// <summary>

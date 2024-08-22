@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="100" d:DesignWidth="800">
     <Border Style="{StaticResource SettingsStyledBorder}">
@@ -23,7 +24,7 @@
             <TextBlock x:Name="SettingDescription" Grid.Column="1" VerticalAlignment="Top" Grid.Row="1"
                        Margin="0,2,20,5" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis"
                        TextWrapping="WrapWithOverflow" />
-            <ui:ToggleSwitch x:Name="SettingSwitch" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center" />
+            <ui:ToggleSwitch x:Name="SettingSwitch" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center" OffContent="关" OnContent="开" />
         </Grid>
     </Border>
 </UserControl>

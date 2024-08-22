@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:fs="clr-namespace:MCServerLauncher.WPF.View.FirstSetupHelper"
         xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
+        xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
         WindowStartupLocation="CenterScreen"
         UseLayoutRounding="True"
         ui:ThemeManager.IsThemeAware="True"
@@ -48,7 +49,7 @@
                                VerticalAlignment="Bottom" />
                 </Grid>
                 <TextBlock FontFamily="{StaticResource Montserrat}" Margin="5,2,0,0" FontWeight="Medium" Grid.Row="1"
-                           FontSize="10" Text="WPF (Only for Windows)" Opacity="0.515" HorizontalAlignment="Left"
+                           FontSize="10" Text="{Binding [OnlyForWindows], Source={x:Static h:LanguageManager.Instance}}" Opacity="0.515" HorizontalAlignment="Left"
                            VerticalAlignment="Top" />
             </Grid>
         </Grid>
@@ -60,45 +61,53 @@
                            PaneDisplayMode="Auto"
                            Grid.Row="1">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="主页" Tag="MCServerLauncher.WPF.View.Pages.HomePage" IsSelected="True">
+                <ui:NavigationViewItem Content="{Binding [Main_HomeNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.HomePage" IsSelected="True">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Home}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="新建实例" Tag="MCServerLauncher.WPF.View.Pages.CreateInstancePage"
+                <ui:NavigationViewItem Content="{Binding [Main_CreateInstanceNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.CreateInstancePage"
                                        IsSelected="True">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AddTo}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="实例管理" Tag="MCServerLauncher.WPF.View.Pages.InstanceManagerPage">
+                <ui:NavigationViewItem Content="{Binding [Main_InstanceManagerNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.InstanceManagerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Package}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="资源下载" Tag="MCServerLauncher.WPF.View.Pages.ResDownloadPage">
+                <ui:NavigationViewItem Content="{Binding [Main_ResDownloadNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.ResDownloadPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Download}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="帮助中心" Tag="MCServerLauncher.WPF.View.Pages.HelpPage" IsEnabled="False">
+                <ui:NavigationViewItem Content="{Binding [Main_HelpCenterNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.HelpPage" IsEnabled="False">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="通知中心" Tag="MCServerLauncher.WPF.View.Pages.NotificationCenterPage">
+                <ui:NavigationViewItem Content="{Binding [Main_NotificationCenterNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.NotificationCenterPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ActionCenterNotification}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="程序设置" Tag="MCServerLauncher.WPF.View.Pages.SettingsPage">
+                <ui:NavigationViewItem Content="{Binding [Main_SettingsNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.SettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.WPF.View.Pages.TestPage"
+                <ui:NavigationViewItem Content="{Binding [Main_DebugNavMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.DebugPage"
                                        Visibility="Collapsed">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />

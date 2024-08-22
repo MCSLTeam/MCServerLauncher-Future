@@ -3,10 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -230,6 +232,7 @@ namespace MCServerLauncher.WPF.Helpers
                     App = new AppSettings
                     {
                         Theme = "auto",
+                        Language = "zh-CN",
                         FollowStartup = false,
                         AutoCheckUpdate = true,
                         IsCertImported = false,
@@ -415,6 +418,33 @@ namespace MCServerLauncher.WPF.Helpers
             if (!AppSettings.App.IsFontInstalled) InitFont();
         }
     }
+    internal class LanguageManager : INotifyPropertyChanged
+    {
+
+        private readonly ResourceManager _resourceManager = new("MCServerLauncher.WPF.Resources.Language", typeof(LanguageManager).Assembly);
+        private static readonly Lazy<LanguageManager> Lazy = new(() => new LanguageManager());
+        public static LanguageManager Instance => Lazy.Value;
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string this[string name]
+        {
+            get
+            {
+                if (name == null)
+                {
+                    throw new ArgumentNullException(nameof(name));
+                }
+                return _resourceManager.GetString(name);
+            }
+        }
+
+        public void ChangeLanguage(CultureInfo cultureInfo)
+        {
+            CultureInfo.CurrentCulture = cultureInfo;
+            CultureInfo.CurrentUICulture = cultureInfo;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("item[]"));
+        }
+    }
 }
 
 public class InstanceCreationSettings
@@ -444,6 +474,7 @@ public class InstanceSettings
 public class AppSettings
 {
     public string Theme { get; set; }
+    public string Language { get; set; }
     public bool FollowStartup { get; set; }
     public bool AutoCheckUpdate { get; set; }
     public bool IsCertImported { get; set; }

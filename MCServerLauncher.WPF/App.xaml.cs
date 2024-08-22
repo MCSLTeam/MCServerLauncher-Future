@@ -21,7 +21,7 @@ namespace MCServerLauncher.WPF
             DispatcherUnhandledException += (s, e) =>
             {
                 Clipboard.SetText(e.Exception.ToString());
-                MessageBox.Show($"堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。\n\n{e.Exception}", "MCServerLauncher WPF 遇到错误",
+                MessageBox.Show($"{LanguageManager.Instance["ErrorDialogStackCopiedTip"]}\n\n{e.Exception}", LanguageManager.Instance["ErrorDialogTitle"],
                     MessageBoxButton.OK);
                 e.Handled = true; // Set `Handled` to `true` to prevent from exiting
             };
@@ -35,7 +35,7 @@ namespace MCServerLauncher.WPF
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
-                MessageBox.Show("MCServerLauncher WPF 不支持重复运行。", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+                MessageBox.Show(LanguageManager.Instance["NotAllowedOverOpening"], LanguageManager.Instance["Tip"], MessageBoxButton.OK, MessageBoxImage.Asterisk);
 
                 Environment.Exit(0);
             }
