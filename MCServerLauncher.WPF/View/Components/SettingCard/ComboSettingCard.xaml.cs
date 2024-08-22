@@ -2,7 +2,7 @@
 using System.Windows;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
     ///     ComboSettingCard.xaml 的交互逻辑

@@ -1,7 +1,7 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using System.Windows;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
     ///     RangeSettingCard.xaml 的交互逻辑

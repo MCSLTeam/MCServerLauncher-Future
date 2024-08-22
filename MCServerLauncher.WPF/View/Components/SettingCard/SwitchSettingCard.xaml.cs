@@ -1,9 +1,7 @@
-﻿using iNKORE.UI.WPF.Helpers;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using System.Collections.Generic;
+﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using System.Windows;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
     ///     SwitchSettingCard.xaml 的交互逻辑

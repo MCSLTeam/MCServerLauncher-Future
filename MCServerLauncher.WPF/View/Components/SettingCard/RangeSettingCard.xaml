@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.SwitchSettingCard"
+﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.SettingCard.RangeSettingCard"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,7 +15,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="180" />
             </Grid.ColumnDefinitions>
             <ui:FontIcon x:Name="SettingIcon" Grid.RowSpan="2" Margin="5,15,20,15" />
             <TextBlock x:Name="SettingTitle" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
@@ -23,7 +23,16 @@
             <TextBlock x:Name="SettingDescription" Grid.Column="1" VerticalAlignment="Top" Grid.Row="1"
                        Margin="0,2,20,5" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis"
                        TextWrapping="WrapWithOverflow" />
-            <ui:ToggleSwitch x:Name="SettingSwitch" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center"/>
+            <Grid Grid.Column="2" Grid.RowSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Slider TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" x:Name="SettingSlider"
+                        Grid.Column="0" Margin="0,0,10,0" />
+                <TextBlock VerticalAlignment="Center" Grid.Column="1"
+                           Text="{Binding ElementName=SettingSlider, Path=Value}" />
+            </Grid>
         </Grid>
     </Border>
 </UserControl>

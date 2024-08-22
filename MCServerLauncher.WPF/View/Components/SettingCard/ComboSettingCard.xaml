@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.RangeSettingCard"
+﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.SettingCard.ComboSettingCard"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,7 +15,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition />
-                <ColumnDefinition Width="180" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <ui:FontIcon x:Name="SettingIcon" Grid.RowSpan="2" Margin="5,15,20,15" />
             <TextBlock x:Name="SettingTitle" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
@@ -23,16 +23,7 @@
             <TextBlock x:Name="SettingDescription" Grid.Column="1" VerticalAlignment="Top" Grid.Row="1"
                        Margin="0,2,20,5" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis"
                        TextWrapping="WrapWithOverflow" />
-            <Grid Grid.Column="2" Grid.RowSpan="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Slider TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" x:Name="SettingSlider"
-                        Grid.Column="0" Margin="0,0,10,0" />
-                <TextBlock VerticalAlignment="Center" Grid.Column="1"
-                           Text="{Binding ElementName=SettingSlider, Path=Value}" />
-            </Grid>
+            <ComboBox x:Name="SettingComboBox" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center"/>
         </Grid>
     </Border>
 </UserControl>

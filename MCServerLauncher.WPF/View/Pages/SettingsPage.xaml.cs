@@ -1,11 +1,11 @@
 ﻿using iNKORE.UI.WPF.Modern;
 using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.View.Components;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.View.Components.SettingCard;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
