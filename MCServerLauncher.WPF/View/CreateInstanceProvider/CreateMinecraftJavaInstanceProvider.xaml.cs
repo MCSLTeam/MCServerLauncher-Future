@@ -1,12 +1,11 @@
 ﻿using System.Windows;
-using MCServerLauncher.WPF.View.Components;
 using MCServerLauncher.WPF.View.Pages;
 using static MCServerLauncher.WPF.Helpers.VisualTreeExtensions;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
     /// <summary>
-    ///     CreateMinecraftJavaInstanceProvider.xaml 的交互逻辑
+    ///    CreateMinecraftJavaInstanceProvider.xaml 的交互逻辑
     /// </summary>
     public partial class CreateMinecraftJavaInstanceProvider
     {
@@ -16,7 +15,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Go back.
+        ///    Go back.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

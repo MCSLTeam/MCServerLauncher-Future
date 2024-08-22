@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.Console.View.Components
 {
     /// <summary>
-    ///     PlayerItem.xaml 的交互逻辑
+    ///    PlayerItem.xaml 的交互逻辑
     /// </summary>
     public partial class PlayerItem
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Player name.
+        ///    Player name.
         /// </summary>
         public string PlayerName
         {
@@ -20,7 +20,7 @@
         }
 
         /// <summary>
-        /// Player login IP address.
+        ///    Player login IP address.
         /// </summary>
         public string PlayerIP
         {

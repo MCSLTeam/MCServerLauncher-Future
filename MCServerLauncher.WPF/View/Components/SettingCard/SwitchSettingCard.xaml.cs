@@ -1,20 +1,24 @@
-﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using System.Windows;
+﻿using System.Windows;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 
 namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
-    ///     SwitchSettingCard.xaml 的交互逻辑
+    ///    SwitchSettingCard.xaml 的交互逻辑
     /// </summary>
     public partial class SwitchSettingCard
     {
+        public static readonly DependencyProperty StatusProperty =
+            DependencyProperty.Register("Status", typeof(bool), typeof(SwitchSettingCard),
+                new PropertyMetadata(false, OnStatusChanged));
+
         public SwitchSettingCard()
         {
             InitializeComponent();
         }
 
         /// <summary>
-        /// Setting title.
+        ///    Setting title.
         /// </summary>
         public string Title
         {
@@ -23,7 +27,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting description.
+        ///    Setting description.
         /// </summary>
         public string Description
         {
@@ -32,7 +36,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting icon.
+        ///    Setting icon.
         /// </summary>
         public FontIconData? Icon
         {
@@ -41,16 +45,13 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Status of ToggleSwitch.
+        ///    Status of ToggleSwitch.
         /// </summary>
         public bool Status
         {
             get => (bool)GetValue(StatusProperty);
             set => SetValue(StatusProperty, value);
         }
-
-        public static readonly DependencyProperty StatusProperty =
-            DependencyProperty.Register("Status", typeof(bool), typeof(SwitchSettingCard), new PropertyMetadata(false, OnStatusChanged));
 
         private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {

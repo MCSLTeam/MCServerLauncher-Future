@@ -1,13 +1,13 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
+﻿using System;
 using System.Windows;
-using System;
 using System.Windows.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Helpers;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
     /// <summary>
-    ///     EulaSetupPage.xaml 的交互逻辑
+    ///    EulaSetupPage.xaml 的交互逻辑
     /// </summary>
     public partial class EulaSetupPage
     {
@@ -15,8 +15,9 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             InitializeComponent();
         }
+
         /// <summary>
-        /// Refuse Eula, then close app.
+        ///    Refuse Eula, then close app.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -29,7 +30,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 SecondaryButtonText = "拒绝",
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
-                Content = new TextBlock()
+                Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
                     Text = "若您拒绝用户协议，本软件将退出。"
@@ -47,13 +48,13 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
 
         /// <summary>
-        /// Accept Eula with a scroll checker.
+        ///    Accept Eula with a scroll checker.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private async void AcceptEula(object sender, RoutedEventArgs e)
         {
-            bool isEulaReadFinished = (EulaScrollViewer.VerticalOffset == EulaScrollViewer.ScrollableHeight);
+            var isEulaReadFinished = EulaScrollViewer.VerticalOffset == EulaScrollViewer.ScrollableHeight;
             var parent = this.TryFindParent<FirstSetup>();
             if (!isEulaReadFinished)
             {
@@ -77,8 +78,10 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 {
                     // ignored
                 }
+
                 return;
             }
+
             ContentDialog dialog = new()
             {
                 Title = "确定？",

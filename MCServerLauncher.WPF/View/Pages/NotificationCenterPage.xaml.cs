@@ -4,7 +4,7 @@ using iNKORE.UI.WPF.Modern.Controls;
 namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
-    ///     NotificationCenterPage.xaml 的交互逻辑
+    ///    NotificationCenterPage.xaml 的交互逻辑
     /// </summary>
     public partial class NotificationCenterPage
     {
@@ -12,8 +12,9 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             InitializeComponent();
         }
+
         /// <summary>
-        /// Send a notification.
+        ///    Send a notification.
         /// </summary>
         /// <param name="title">Title of the notification.</param>
         /// <param name="message">Content of the notification.</param>
@@ -22,22 +23,21 @@ namespace MCServerLauncher.WPF.View.Pages
         public void PushNotification(string title, string message, bool isClosable, InfoBarSeverity severity)
         {
             NotificationContainer.Children.Insert(
-                index: 0,
-                element: new InfoBar
-                    {
-                        Title = title,
-                        Message = message,
-                        Severity = severity,
-                        IsClosable = isClosable,
-                        IsOpen = true
-                    }
-                );
-
+                0,
+                new InfoBar
+                {
+                    Title = title,
+                    Message = message,
+                    Severity = severity,
+                    IsClosable = isClosable,
+                    IsOpen = true
+                }
+            );
         }
 
         private void TestNotification(object sender, RoutedEventArgs e)
         {
-            PushNotification(title: "Test", message: "Test", isClosable: true, severity: InfoBarSeverity.Success);
+            PushNotification("Test", "Test", true, InfoBarSeverity.Success);
         }
     }
 }

@@ -3,7 +3,7 @@
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     PolarsMirrorResCoreItem.xaml 的交互逻辑
+    ///    PolarsMirrorResCoreItem.xaml 的交互逻辑
     /// </summary>
     public partial class PolarsMirrorResCoreItem
     {
@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string CoreName
         {
@@ -22,22 +22,22 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Description of the core.
+        ///    Description of the core.
         /// </summary>
         public string CoreDescription { get; set; }
 
         /// <summary>
-        /// Index of the core.
+        ///    Index of the core.
         /// </summary>
         public int CoreId { get; set; }
 
         /// <summary>
-        /// Raw icon URL of the core.
+        ///    Raw icon URL of the core.
         /// </summary>
         public string CoreIconUrl { get; set; }
 
         /// <summary>
-        /// Supported Minecraft versions for the core.
+        ///    Supported Minecraft versions for the core.
         /// </summary>
         public List<string> MinecraftVersions { get; set; }
     }

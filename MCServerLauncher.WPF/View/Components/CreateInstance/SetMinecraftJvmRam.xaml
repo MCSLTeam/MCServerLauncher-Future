@@ -1,10 +1,10 @@
 ﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.CreateInstance.SetMinecraftJavaJvmRam"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Border Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
         <Grid Margin="0,0,0,0">
@@ -18,12 +18,12 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                   Style="{StaticResource SubtitleTextBlock}" Text="JVM 内存堆" VerticalAlignment="Top"
-                   HorizontalAlignment="Left" />
+                       Style="{StaticResource SubtitleTextBlock}" Text="JVM 内存堆" VerticalAlignment="Top"
+                       HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                   Style="{StaticResource BodyTextBlock}" Text="这决定了您的 Minecraft Java 服务器将能使用多少内存。"
-                   TextWrapping="Wrap"
-                   VerticalAlignment="Top" HorizontalAlignment="Left" />
+                       Style="{StaticResource BodyTextBlock}" Text="这决定了您的 Minecraft Java 服务器将能使用多少内存。"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Top" HorizontalAlignment="Left" />
             <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="20,15,20,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -32,21 +32,21 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
-                          InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
-                          Width="200" Margin="0,0,10,0" SpinButtonPlacementMode="Inline"
-                          PlaceholderText="最小内存" />
+                              InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
+                              Width="200" Margin="0,0,10,0" SpinButtonPlacementMode="Inline"
+                              PlaceholderText="最小内存" />
                 <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~" />
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
-                          InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
-                          Width="200" Margin="10,0,10,0" SpinButtonPlacementMode="Inline"
-                          PlaceholderText="最大内存" />
+                              InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
+                              Width="200" Margin="10,0,10,0" SpinButtonPlacementMode="Inline"
+                              PlaceholderText="最大内存" />
                 <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
                     <ComboBoxItem Content="M" IsSelected="True" />
                     <ComboBoxItem Content="G" />
                 </ComboBox>
             </Grid>
             <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="1"
-                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
+                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                 <ui:DropDownButton.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
                 </ui:DropDownButton.Content>

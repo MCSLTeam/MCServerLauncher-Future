@@ -13,7 +13,7 @@ internal static class FileManager
     private static readonly ConcurrentDictionary<Guid, FileUploadInfo> _uploadSessions = new();
 
     /// <summary>
-    ///     请求上传文件:首先检查是否有同名文件正在上传,若没有,则预分配空间并添加后缀.tmp,返回file_id
+    ///    请求上传文件:首先检查是否有同名文件正在上传,若没有,则预分配空间并添加后缀.tmp,返回file_id
     /// </summary>
     /// <param name="path">文件路径</param>
     /// <param name="size">文件总大小</param>
@@ -56,7 +56,7 @@ internal static class FileManager
     }
 
     /// <summary>
-    ///     写入文件分片
+    ///    写入文件分片
     /// </summary>
     /// <param name="id">file_id</param>
     /// <param name="offset">分片文件偏移量</param>
@@ -142,7 +142,7 @@ internal static class FileManager
     }
 
     /// <summary>
-    ///     读取文件。
+    ///    读取文件。
     /// </summary>
     /// <param name="path">需要读取的文件路径</param>
     /// <returns></returns>
@@ -153,7 +153,7 @@ internal static class FileManager
     }
 
     /// <summary>
-    ///     读取json。可能会抛出IO异常和Json异常
+    ///    读取json。可能会抛出IO异常和Json异常
     /// </summary>
     /// <param name="path">需要读取的json文件路径</param>
     /// <typeparam name="T"></typeparam>
@@ -164,7 +164,7 @@ internal static class FileManager
     }
 
     /// <summary>
-    ///     读取json。如果文件不存在，则调用defaultFactory, 并写入文件
+    ///    读取json。如果文件不存在，则调用defaultFactory, 并写入文件
     /// </summary>
     /// <param name="path">需要读取的json文件路径</param>
     /// <param name="defaultFactory">默认配置项</param>

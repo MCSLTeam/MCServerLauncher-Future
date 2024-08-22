@@ -11,9 +11,9 @@ using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
 namespace MCServerLauncher.Daemon.Remote;
 
 /// <summary>
-///     ws服务类,继承自websocketsharp的WebSocketBehavior。
-///     ws处理的消息格式为json，分为两个大类Action,Event。
-///     Action(远程过程调用): C->S,处理后返回json数据给C。Event(服务端事件): S->C,由服务端主动发送，C不会响应数据。
+///    ws服务类,继承自websocketsharp的WebSocketBehavior。
+///    ws处理的消息格式为json，分为两个大类Action,Event。
+///    Action(远程过程调用): C->S,处理后返回json数据给C。Event(服务端事件): S->C,由服务端主动发送，C不会响应数据。
 /// </summary>
 internal class ServerBehavior : WebSocketBehavior
 {
@@ -142,32 +142,32 @@ internal class ServerBehavior : WebSocketBehavior
     #region DenpendencyInject
 
     /// <summary>
-    ///     Action处理服务
+    ///    Action处理服务
     /// </summary>
     private readonly IActionService _actionService;
 
     /// <summary>
-    ///     Event处理服务
+    ///    Event处理服务
     /// </summary>
     private readonly IEventService _eventService;
 
     /// <summary>
-    ///     专属日志，(至于为什么不用WebSocketBehavior自带的Log,自己去看#8)
+    ///    专属日志，(至于为什么不用WebSocketBehavior自带的Log,自己去看#8)
     /// </summary>
     private readonly ILogHelper _logHelper;
 
     /// <summary>
-    ///     用户服务，用于验证token，获取用户权限
+    ///    用户服务，用于验证token，获取用户权限
     /// </summary>
     private readonly IUserService _userService;
 
     /// <summary>
-    ///     ws消息格式Json的序列化器
+    ///    ws消息格式Json的序列化器
     /// </summary>
     private readonly IWebJsonConverter _webJsonConverter;
 
     /// <summary>
-    ///     保存的该连接的用户信息
+    ///    保存的该连接的用户信息
     /// </summary>
     private User User;
 

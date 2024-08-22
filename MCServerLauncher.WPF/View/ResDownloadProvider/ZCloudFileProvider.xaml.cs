@@ -9,7 +9,7 @@ using Serilog;
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
     /// <summary>
-    ///     ZCloudFileProvider.xaml 的交互逻辑
+    ///    ZCloudFileProvider.xaml 的交互逻辑
     /// </summary>
     public partial class ZCloudFileProvider
     {
@@ -23,7 +23,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         }
 
         /// <summary>
-        /// Refresh core list.
+        ///    Refresh core list.
         /// </summary>
         /// <returns>Status, true or false.</returns>
         public async Task<bool> Refresh()
@@ -54,7 +54,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         }
 
         /// <summary>
-        /// Handler for core selection changed, load Minecraft version list.
+        ///    Handler for core selection changed, load Minecraft version list.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

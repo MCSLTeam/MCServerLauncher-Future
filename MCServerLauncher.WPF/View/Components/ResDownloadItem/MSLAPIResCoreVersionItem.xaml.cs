@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     MSLAPIResCoreVersionItem.xaml 的交互逻辑
+    ///    MSLAPIResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
     public partial class MSLAPIResCoreVersionItem
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Minecraft version.
+        ///    Minecraft version.
         /// </summary>
         public string MinecraftVersion
         {

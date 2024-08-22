@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.View.Components;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,31 +14,20 @@ using Newtonsoft.Json.Linq;
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
     /// <summary>
-    ///     CreateMinecraftForgeInstanceProvider.xaml 的交互逻辑
+    ///    CreateMinecraftForgeInstanceProvider.xaml 的交互逻辑
     /// </summary>
     public partial class CreateMinecraftForgeInstanceProvider
     {
-        private List<ForgeBuild> CurrentForgeBuilds { get; set; }
         public CreateMinecraftForgeInstanceProvider()
         {
             InitializeComponent();
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
-        private class ForgeAttachment
-        {
-            public string Format { get; set; }
-            public string Category { get; set; }
-            public string Hash { get; set; }
-        }
-        private class ForgeBuild
-        {
-            public string MinecraftVersion { get; set; }
-            public string ForgeVersion { get; set; }
-            public List<ForgeAttachment> Attachments { get; set; }
-        }
+
+        private List<ForgeBuild> CurrentForgeBuilds { get; set; }
 
         /// <summary>
-        /// Go back.
+        ///    Go back.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -54,12 +42,15 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         //}
 
         /// <summary>
-        /// Method to get specific version of Minecraft with Forge through Official source.
+        ///    Method to get specific version of Minecraft with Forge through Official source.
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByOfficial()
         {
-            var response = await NetworkUtils.SendGetRequest("https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_1.2.4.html", useBrowserUserAgent: true);
-            List<string> minecraftVersions = Regex.Matches(await response.Content.ReadAsStringAsync(), "(?<=a href=\"index_)[0-9.]+(_pre[0-9]?)?(?=.html)")
+            var response =
+                await NetworkUtils.SendGetRequest(
+                    "https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_1.2.4.html", true);
+            var minecraftVersions = Regex.Matches(await response.Content.ReadAsStringAsync(),
+                    "(?<=a href=\"index_)[0-9.]+(_pre[0-9]?)?(?=.html)")
                 .Cast<Match>()
                 .Select(match => match.Value)
                 .ToList();
@@ -68,7 +59,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Method to get specific version of Minecraft with Forge through BMCLAPI source.
+        ///    Method to get specific version of Minecraft with Forge through BMCLAPI source.
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByBmclapi()
         {
@@ -77,7 +68,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Main method to get specific version of Minecraft with Forge.
+        ///    Main method to get specific version of Minecraft with Forge.
         /// </summary>
         private async void FetchMinecraftVersions(object sender, RoutedEventArgs e)
         {
@@ -86,37 +77,42 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.SelectionChanged -= PreFetchForgeVersions;
             MinecraftVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(
                 BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
-                ? await FetchMinecraftVersionsByBmclapi()
-                : await FetchMinecraftVersionsByOfficial()
+                    ? await FetchMinecraftVersionsByBmclapi()
+                    : await FetchMinecraftVersionsByOfficial()
             );
             MinecraftVersionComboBox.SelectionChanged += PreFetchForgeVersions;
             FetchMinecraftVersionsButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
         }
+
         private void PreFetchForgeVersions(object sender, SelectionChangedEventArgs e)
         {
             FetchForgeVersionButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
         /// <summary>
-        /// Method to get version of Forge with a particular Minecraft version through Official source.
+        ///    Method to get version of Forge with a particular Minecraft version through Official source.
         /// </summary>
         private static async Task<List<ForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
         {
             var results = new List<ForgeBuild>();
-            var response = await NetworkUtils.SendGetRequest($"https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_{mcVersion.Replace("-", "_")}.html", useBrowserUserAgent: true);
+            var response = await NetworkUtils.SendGetRequest(
+                $"https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_{mcVersion.Replace("-", "_")}.html",
+                true);
             var html = await response.Content.ReadAsStringAsync();
             // Split version info
-            var versionInfos = html.Substring(0, html.LastIndexOf("</table>", StringComparison.Ordinal)).Split(new[] { "<td class=\"download-version" }, StringSplitOptions.None);
-            for (int i = 1; i < versionInfos.Length; i++)
+            var versionInfos = html.Substring(0, html.LastIndexOf("</table>", StringComparison.Ordinal))
+                .Split(new[] { "<td class=\"download-version" }, StringSplitOptions.None);
+            for (var i = 1; i < versionInfos.Length; i++)
             {
                 var forgeVersion = versionInfos[i];
-                string preParsingForgeVersion = RegexSeek(forgeVersion, "(?<=[^(0-9)]+)[0-9\\.]+");
+                var preParsingForgeVersion = RegexSeek(forgeVersion, "(?<=[^(0-9)]+)[0-9\\.]+");
                 List<ForgeAttachment> forgeAttachments = new();
                 if (forgeVersion.Contains("classifier-installer\""))
                 {
                     // installer.jar，support range: ~753 (~ part of 1.6.1), 738~684 (all of 1.5.2)
-                    forgeVersion = forgeVersion.Substring(forgeVersion.IndexOf("installer.jar", StringComparison.Ordinal));
+                    forgeVersion =
+                        forgeVersion.Substring(forgeVersion.IndexOf("installer.jar", StringComparison.Ordinal));
                     forgeAttachments.Add(new ForgeAttachment
                     {
                         Format = "jar",
@@ -127,12 +123,15 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 else if (forgeVersion.Contains("classifier-universal\""))
                 {
                     // universal.zip，support range: 751~449 (part of 1.6.1), 682~183 (part of 1.5.1 ~ part of 1.3.2)
-                    forgeVersion = forgeVersion.Substring(forgeVersion.IndexOf("universal.zip", StringComparison.Ordinal));
+                    forgeVersion =
+                        forgeVersion.Substring(forgeVersion.IndexOf("universal.zip", StringComparison.Ordinal));
                     forgeAttachments.Add(new ForgeAttachment
                     {
                         Format = "zip",
                         Category = "universal",
-                        Hash = RegexSeek(forgeVersion.Substring(forgeVersion.IndexOf("universal.zip", StringComparison.Ordinal)), "(?<=MD5:</strong> )[^<]+")
+                        Hash = RegexSeek(
+                            forgeVersion.Substring(forgeVersion.IndexOf("universal.zip", StringComparison.Ordinal)),
+                            "(?<=MD5:</strong> )[^<]+")
                     });
                 }
                 else if (forgeVersion.Contains("client.zip"))
@@ -143,7 +142,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     {
                         Format = "zip",
                         Category = "client",
-                        Hash = RegexSeek(forgeVersion.Substring(forgeVersion.IndexOf("client.zip", StringComparison.Ordinal)), "(?<=MD5:</strong> )[^<]+")
+                        Hash = RegexSeek(
+                            forgeVersion.Substring(forgeVersion.IndexOf("client.zip", StringComparison.Ordinal)),
+                            "(?<=MD5:</strong> )[^<]+")
                     });
                 }
                 else
@@ -151,6 +152,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     // Empty (part of 1.6.4)
                     continue;
                 }
+
                 results.Add(new ForgeBuild
                 {
                     MinecraftVersion = mcVersion,
@@ -158,15 +160,17 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     Attachments = forgeAttachments
                 });
             }
+
             return results;
         }
 
         /// <summary>
-        /// Method to get version of Forge with a particular Minecraft version through BMCLAPI source.
+        ///    Method to get version of Forge with a particular Minecraft version through BMCLAPI source.
         /// </summary>
         private static async Task<List<ForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
         {
-            var response = await NetworkUtils.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
+            var response =
+                await NetworkUtils.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             return apiData!.Select(forgeBuild => new ForgeBuild
             {
@@ -182,7 +186,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Main method to get version of Forge with a particular Minecraft version.
+        ///    Main method to get version of Forge with a particular Minecraft version.
         /// </summary>
         private async void FetchForgeVersions(object sender, RoutedEventArgs e)
         {
@@ -201,12 +205,26 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Generated from Plain Craft Launcher 2.
+        ///    Generated from Plain Craft Launcher 2.
         /// </summary>
         private static string RegexSeek(string str, string regex, RegexOptions options = RegexOptions.None)
         {
             var result = Regex.Match(str, regex, options).Value;
             return string.IsNullOrEmpty(result) ? null : result;
+        }
+
+        private class ForgeAttachment
+        {
+            public string Format { get; set; }
+            public string Category { get; set; }
+            public string Hash { get; set; }
+        }
+
+        private class ForgeBuild
+        {
+            public string MinecraftVersion { get; set; }
+            public string ForgeVersion { get; set; }
+            public List<ForgeAttachment> Attachments { get; set; }
         }
     }
 }

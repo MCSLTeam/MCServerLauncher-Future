@@ -8,7 +8,7 @@ using Page = System.Windows.Controls.Page;
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
     /// <summary>
-    ///     DaemonSetupPage.xaml 的交互逻辑
+    ///    DaemonSetupPage.xaml 的交互逻辑
     /// </summary>
     public partial class DaemonSetupPage : Page
     {
@@ -18,7 +18,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
 
         /// <summary>
-        /// Skip adding daemons.
+        ///    Skip adding daemons.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -32,7 +32,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 SecondaryButtonText = "返回",
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
-                Content = new TextBlock()
+                Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
                     Text = "若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可在设置中链接守护进程。"

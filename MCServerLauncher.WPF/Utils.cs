@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -13,13 +15,12 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media;
+using Downloader;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Serilog;
 using static MCServerLauncher.WPF.App;
-using System.Runtime.InteropServices;
-using System.Net;
-using Downloader;
-using System.ComponentModel;
+using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
 
 namespace MCServerLauncher.WPF.Helpers
 {
@@ -62,7 +63,8 @@ namespace MCServerLauncher.WPF.Helpers
                     "release" => (0, 0, 0, 0),
                     _ => (0, 0, 0, 0)
                 };
-            version = version.ToLower().Replace("-", ".").Replace("_", ".").Replace("rc", "").Replace("pre", "").Replace("snapshot", "0");
+            version = version.ToLower().Replace("-", ".").Replace("_", ".").Replace("rc", "").Replace("pre", "")
+                .Replace("snapshot", "0");
             var parts = version.Split('.');
             if (parts.Length == 2)
                 return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
@@ -82,8 +84,9 @@ namespace MCServerLauncher.WPF.Helpers
         {
             return originalList.OrderByDescending(VersionComparator).ToList();
         }
+
         /// <summary>
-        /// 下载常规文件。
+        ///    下载常规文件。
         /// </summary>
         /// <param name="url">Download url.</param>
         /// <param name="savePath">Where to save the file.</param>
@@ -96,7 +99,7 @@ namespace MCServerLauncher.WPF.Helpers
             string url,
             string savePath,
             EventHandler<DownloadStartedEventArgs> startHandler,
-            EventHandler<Downloader.DownloadProgressChangedEventArgs> progressHandler,
+            EventHandler<DownloadProgressChangedEventArgs> progressHandler,
             EventHandler<AsyncCompletedEventArgs> finishHandler,
             string fileName = null
         )
@@ -123,7 +126,9 @@ namespace MCServerLauncher.WPF.Helpers
     {
         private static readonly HttpClient Client = new();
         public static string CommonUserAgent = $"MCServerLauncher/{AppVersion}";
-        public static string BrowserUserAgent = $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3 MCServerLauncher/{AppVersion}";
+
+        public static string BrowserUserAgent =
+            $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3 MCServerLauncher/{AppVersion}";
 
         public static async Task<HttpResponseMessage> SendGetRequest(string url, bool useBrowserUserAgent = false)
         {
@@ -132,7 +137,8 @@ namespace MCServerLauncher.WPF.Helpers
             return await Client.GetAsync(url);
         }
 
-        public static async Task<HttpResponseMessage> SendPostRequest(string url, string data, bool useBrowserUserAgent = false)
+        public static async Task<HttpResponseMessage> SendPostRequest(string url, string data,
+            bool useBrowserUserAgent = false)
         {
             Log.Information($"[Net] Try to post url \"{url}\" with data {data}");
             Client.DefaultRequestHeaders.Add("User-Agent", useBrowserUserAgent ? BrowserUserAgent : CommonUserAgent);
@@ -155,15 +161,18 @@ namespace MCServerLauncher.WPF.Helpers
 
     public class BasicUtils
     {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern int WriteProfileString(string lpszSection, string lpszKeyName, string lpszString);
-        [DllImport("gdi32")]
-        static extern int AddFontResource(string lpFileName);
-        public static Settings AppSettings { get; set; }
         private static Task _writeTask = Task.CompletedTask;
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
+        public static Settings AppSettings { get; set; }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern int WriteProfileString(string lpszSection, string lpszKeyName, string lpszString);
+
+        [DllImport("gdi32")]
+        private static extern int AddFontResource(string lpFileName);
+
         /// <summary>
-        /// 初始化数据目录。
+        ///    初始化数据目录。
         /// </summary>
         private static void InitDataDirectory()
         {
@@ -179,15 +188,18 @@ namespace MCServerLauncher.WPF.Helpers
             foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
                 Directory.CreateDirectory(dataFolder);
         }
+
         /// <summary>
-        /// 初始化程序设置。
+        ///    初始化程序设置。
         /// </summary>
         private void InitSettings()
         {
             if (File.Exists("Data/Configuration/MCSL/Settings.json"))
             {
                 Log.Information("[Set] Found profile, reading");
-                AppSettings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json", Encoding.UTF8));
+                AppSettings =
+                    JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json",
+                        Encoding.UTF8));
             }
             else
             {
@@ -232,8 +244,9 @@ namespace MCServerLauncher.WPF.Helpers
                 );
             }
         }
+
         /// <summary>
-        /// 保存 MCServerLauncher.WPF 设置。
+        ///    保存 MCServerLauncher.WPF 设置。
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="settingPath">要设置的项目，格式例如 App.Theme 。</param>
@@ -245,9 +258,7 @@ namespace MCServerLauncher.WPF.Helpers
         {
             var settingParts = settingPath.Split('.');
             if (settingParts.Length != 2)
-            {
                 throw new ArgumentException("Invalid setting path format. Expected format: 'Class.Property'");
-            }
 
             var settingClass = settingParts[0];
             var settingTarget = settingParts[1];
@@ -263,9 +274,7 @@ namespace MCServerLauncher.WPF.Helpers
 
             var property = settings.GetType().GetProperty(settingTarget);
             if (property == null || property.PropertyType != typeof(T))
-            {
                 throw new InvalidOperationException($"Property {settingTarget} not found or type mismatch.");
-            }
 
             property.SetValue(settings, value);
 
@@ -279,8 +288,9 @@ namespace MCServerLauncher.WPF.Helpers
                 }
             }
         }
+
         /// <summary>
-        /// 保存设置的队列实现。
+        ///    保存设置的队列实现。
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private static void ProcessQueue()
@@ -293,7 +303,8 @@ namespace MCServerLauncher.WPF.Helpers
                     "ResDownload" => AppSettings.Download,
                     "Instance" => AppSettings.Instance,
                     "App" => AppSettings.App,
-                    _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key, "Invalid setting class.")
+                    _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key,
+                        "Invalid setting class.")
                 };
 
                 var property = settingClass.GetType().GetProperty(setting.Value);
@@ -306,8 +317,9 @@ namespace MCServerLauncher.WPF.Helpers
                 );
             }
         }
+
         /// <summary>
-        /// 导入证书。
+        ///    导入证书。
         /// </summary>
         private static void InitCert()
         {
@@ -341,8 +353,9 @@ namespace MCServerLauncher.WPF.Helpers
                 Log.Error($"[Cer] Failed to import certificate. Reason: {ex.Message}");
             }
         }
+
         /// <summary>
-        /// 初始化日志记录器。
+        ///    初始化日志记录器。
         /// </summary>
         private static void InitLogger()
         {
@@ -353,16 +366,18 @@ namespace MCServerLauncher.WPF.Helpers
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
         }
+
         /// <summary>
-        /// 安装字体。
+        ///    安装字体。
         /// </summary>
         private static void InitFont()
         {
-            string fontFileName = "SegoeIcons.ttf";
-            string fontRegistryKey = "Segoe Fluent Icons (TrueType)";
-            string fontSysPath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR")!, "fonts", fontFileName);
+            var fontFileName = "SegoeIcons.ttf";
+            var fontRegistryKey = "Segoe Fluent Icons (TrueType)";
+            var fontSysPath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR")!, "fonts", fontFileName);
 
-            using (var fontsKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"))
+            using (var fontsKey =
+                   Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"))
             {
                 var fontNames = fontsKey!.GetValueNames();
                 if (fontNames.Any(fontName => fontName.Equals(fontRegistryKey, StringComparison.OrdinalIgnoreCase)))
@@ -371,15 +386,18 @@ namespace MCServerLauncher.WPF.Helpers
                     return;
                 }
             }
-            using var fontStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
+
+            using var fontStream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
             if (fontStream == null) throw new FileNotFoundException("Embedded resource not found");
             using var fileStream = File.Create(fontSysPath);
             fontStream.CopyTo(fileStream);
             AddFontResource(fontSysPath);
             WriteProfileString("fonts", fontRegistryKey, fontFileName);
         }
+
         /// <summary>
-        /// 程序初始化。
+        ///    程序初始化。
         /// </summary>
         public void InitApp()
         {
@@ -397,7 +415,6 @@ namespace MCServerLauncher.WPF.Helpers
             if (!AppSettings.App.IsFontInstalled) InitFont();
         }
     }
-    
 }
 
 public class InstanceCreationSettings

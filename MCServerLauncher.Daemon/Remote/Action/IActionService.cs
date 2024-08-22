@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 namespace MCServerLauncher.Daemon.Remote.Action;
 
 /// <summary>
-///     Action处理接口
+///    Action处理接口
 /// </summary>
 internal interface IActionService
 {

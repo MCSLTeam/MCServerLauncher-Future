@@ -5,12 +5,12 @@ using System.Windows.Media;
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     FastMirrorResCoreItem.xaml 的交互逻辑
+    ///    FastMirrorResCoreItem.xaml 的交互逻辑
     /// </summary>
     public partial class FastMirrorResCoreItem
     {
         /// <summary>
-        /// Recommend brush
+        ///    Recommend brush
         /// </summary>
         private readonly LinearGradientBrush _recommendBrush = new(
             new GradientStopCollection
@@ -28,7 +28,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string CoreName
         {
@@ -37,7 +37,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Tag of core.
+        ///    Tag of core.
         /// </summary>
         public string CoreTag
         {
@@ -46,7 +46,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Recommend status.
+        ///    Recommend status.
         /// </summary>
         public bool Recommend
         {
@@ -55,12 +55,12 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Homepage of core.
+        ///    Homepage of core.
         /// </summary>
         public string HomePage { get; set; }
 
         /// <summary>
-        /// Support Minecraft versions.
+        ///    Support Minecraft versions.
         /// </summary>
         public List<string> MinecraftVersions { get; set; }
 

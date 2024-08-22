@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     FastMirrorResCoreVersionItem.xaml 的交互逻辑
+    ///    FastMirrorResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
     public partial class FastMirrorResCoreVersionItem
     {
@@ -11,12 +11,12 @@
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string Core { get; set; }
 
         /// <summary>
-        /// Minecraft version.
+        ///    Minecraft version.
         /// </summary>
         public string MinecraftVersion
         {
@@ -25,7 +25,7 @@
         }
 
         /// <summary>
-        /// Core version.
+        ///    Core version.
         /// </summary>
         public string CoreVersion
         {

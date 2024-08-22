@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using MCServerLauncher.WPF.Helpers;
 using Newtonsoft.Json;
@@ -12,19 +11,20 @@ namespace MCServerLauncher.WPF.Modules.Download
         private readonly string _endPoint = "https://api.mslmc.cn/v3";
 
         /// <summary>
-        /// Get core info from MSL API.
+        ///    Get core info from MSL API.
         /// </summary>
         /// <returns>List of core name.</returns>
         public async Task<List<string>> GetCoreInfo()
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_server_types");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("types")!.ToObject<List<string>>();
+                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
+                    .SelectToken("data")!.SelectToken("types")!.ToObject<List<string>>();
             return null;
         }
 
         /// <summary>
-        /// Get specific core description from MSL API.
+        ///    Get specific core description from MSL API.
         /// </summary>
         /// <param name="Core">Raw name of the core.</param>
         /// <returns>String of the description.</returns>
@@ -32,12 +32,13 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("description")!.ToString();
+                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
+                    .SelectToken("data")!.SelectToken("description")!.ToString();
             return "获取核心介绍失败！";
         }
 
         /// <summary>
-        /// Get Minecraft versions of specific core from MSL API.
+        ///    Get Minecraft versions of specific core from MSL API.
         /// </summary>
         /// <param name="core">Raw name of the core.</param>
         /// <returns>List of Minecraft version.</returns>
@@ -45,12 +46,13 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
             return response.IsSuccessStatusCode
-                ? JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("versionList")!.ToObject<List<string>>()
+                ? JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!
+                    .SelectToken("versionList")!.ToObject<List<string>>()
                 : null;
         }
 
         /// <summary>
-        /// Get download URL of specific file from MSL API.
+        ///    Get download URL of specific file from MSL API.
         /// </summary>
         /// <param name="core">Raw name of the core.</param>
         /// <param name="minecraftVersion">Minecraft version.</param>
@@ -59,12 +61,13 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             var response = await NetworkUtils.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!.SelectToken("url")!.ToString();
+                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
+                    .SelectToken("data")!.SelectToken("url")!.ToString();
             return null;
         }
 
         /// <summary>
-        /// Prettier the core name.
+        ///    Prettier the core name.
         /// </summary>
         /// <param name="core"></param>
         /// <returns></returns>

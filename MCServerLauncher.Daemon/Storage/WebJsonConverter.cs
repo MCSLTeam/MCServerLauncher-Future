@@ -6,7 +6,7 @@ using Newtonsoft.Json.Serialization;
 namespace MCServerLauncher.Daemon.Storage;
 
 /// <summary>
-///     添加C#的BigCamelCase与Json的snake_case的互转，以及多种自定义Json转换器
+///    添加C#的BigCamelCase与Json的snake_case的互转，以及多种自定义Json转换器
 /// </summary>
 public class WebJsonConverter : IWebJsonConverter
 {
@@ -42,7 +42,7 @@ public class WebJsonConverter : IWebJsonConverter
     }
 
     /// <summary>
-    ///     Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
+    ///    Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
     /// </summary>
     /// <typeparam name="T"></typeparam>
     private class SnakeCaseEnumConverter<T> : JsonConverter where T : struct, Enum
@@ -86,7 +86,7 @@ public class WebJsonConverter : IWebJsonConverter
     }
 
     /// <summary>
-    ///     解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
+    ///    解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
     /// </summary>
     private class GuidJsonConverter : JsonConverter
     {

@@ -3,7 +3,7 @@
 namespace MCServerLauncher.WPF.View.Components.CreateInstance
 {
     /// <summary>
-    /// SetMinecraftJavaJvmArgument.xaml 的交互逻辑
+    ///    SetMinecraftJavaJvmArgument.xaml 的交互逻辑
     /// </summary>
     public partial class SetMinecraftJavaJvmArgument
     {

@@ -1,20 +1,24 @@
-﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using System.Windows;
+﻿using System.Windows;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 
 namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
-    ///     RangeSettingCard.xaml 的交互逻辑
+    ///    RangeSettingCard.xaml 的交互逻辑
     /// </summary>
     public partial class RangeSettingCard
     {
+        public static readonly DependencyProperty SliderValueProperty =
+            DependencyProperty.Register("SliderValue", typeof(int), typeof(RangeSettingCard),
+                new PropertyMetadata(1, OnSliderValueChanged));
+
         public RangeSettingCard()
         {
             InitializeComponent();
         }
 
         /// <summary>
-        /// Setting title.
+        ///    Setting title.
         /// </summary>
         public string Title
         {
@@ -23,7 +27,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting description.
+        ///    Setting description.
         /// </summary>
         public string Description
         {
@@ -32,7 +36,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting icon.
+        ///    Setting icon.
         /// </summary>
         public FontIconData? Icon
         {
@@ -41,7 +45,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Minimum value of slider.
+        ///    Minimum value of slider.
         /// </summary>
         public int MinValue
         {
@@ -50,7 +54,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Maximum value of slider.
+        ///    Maximum value of slider.
         /// </summary>
         public int MaxValue
         {
@@ -59,16 +63,13 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Value of slider.
+        ///    Value of slider.
         /// </summary>
         public int SliderValue
         {
             get => (int)SettingSlider.Value;
             set => SettingSlider.Value = value;
         }
-
-        public static readonly DependencyProperty SliderValueProperty =
-            DependencyProperty.Register("SliderValue", typeof(int), typeof(RangeSettingCard), new PropertyMetadata(1, OnSliderValueChanged));
 
         private static void OnSliderValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {

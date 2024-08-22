@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 /// <summary>
-///     密码本地化存储:使用PBKDF2加密密码，避免明文存储
+///    密码本地化存储:使用PBKDF2加密密码，避免明文存储
 /// </summary>
 public static class PasswordHasher
 {
@@ -14,7 +14,7 @@ public static class PasswordHasher
     private static readonly HashAlgorithmName HashAlgorithm = HashAlgorithmName.SHA256;
 
     /// <summary>
-    ///     使用PBKDF2 生成密码哈希，用于密码存储
+    ///    使用PBKDF2 生成密码哈希，用于密码存储
     /// </summary>
     /// <param name="password"></param>
     /// <returns></returns>
@@ -37,7 +37,7 @@ public static class PasswordHasher
     }
 
     /// <summary>
-    ///     验证密码
+    ///    验证密码
     /// </summary>
     /// <param name="password"></param>
     /// <param name="hashedPassword"></param>

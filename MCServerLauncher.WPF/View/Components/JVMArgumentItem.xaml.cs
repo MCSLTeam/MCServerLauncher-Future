@@ -4,7 +4,7 @@ using ListView = iNKORE.UI.WPF.Modern.Controls.ListView;
 namespace MCServerLauncher.WPF.View.Components
 {
     /// <summary>
-    ///     JvmArgumentItem.xaml 的交互逻辑
+    ///    JvmArgumentItem.xaml 的交互逻辑
     /// </summary>
     public partial class JvmArgumentItem
     {
@@ -14,7 +14,7 @@ namespace MCServerLauncher.WPF.View.Components
         }
 
         /// <summary>
-        /// JVM argument.
+        ///    JVM argument.
         /// </summary>
         public string Argument
         {
@@ -23,7 +23,7 @@ namespace MCServerLauncher.WPF.View.Components
         }
 
         /// <summary>
-        /// Delete self.
+        ///    Delete self.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

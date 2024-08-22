@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.Console.View.Pages
 {
     /// <summary>
-    ///     FileManagerPage.xaml 的交互逻辑
+    ///    FileManagerPage.xaml 的交互逻辑
     /// </summary>
     public partial class FileManagerPage
     {

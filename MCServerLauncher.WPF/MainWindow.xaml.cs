@@ -11,7 +11,7 @@ using Page = System.Windows.Controls.Page;
 namespace MCServerLauncher.WPF
 {
     /// <summary>
-    ///     MainWindow.xaml 的交互逻辑
+    ///    MainWindow.xaml 的交互逻辑
     /// </summary>
     public partial class MainWindow
     {
@@ -35,8 +35,9 @@ namespace MCServerLauncher.WPF
             InitializeComponent();
             InitializeView();
         }
+
         /// <summary>
-        /// Determine which component to show.
+        ///    Determine which component to show.
         /// </summary>
         private async void InitializeView()
         {
@@ -50,10 +51,12 @@ namespace MCServerLauncher.WPF
                 SetupView.Visibility = Visibility.Visible;
                 return;
             }
+
             NavView.Visibility = Visibility.Visible;
         }
+
         /// <summary>
-        /// Navigation trigger handler.
+        ///    Navigation trigger handler.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -65,8 +68,9 @@ namespace MCServerLauncher.WPF
                 NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()),
                     args.RecommendedNavigationTransitionInfo);
         }
+
         /// <summary>
-        /// Navigation to a specific page.
+        ///    Navigation to a specific page.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>

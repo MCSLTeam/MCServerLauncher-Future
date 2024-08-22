@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 /// <summary>
-///     JWT生成和解析验证工具
+///    JWT生成和解析验证工具
 /// </summary>
 public class JwtUtils
 {
@@ -15,7 +15,7 @@ public class JwtUtils
     private static string Secret => AppConfig.Get().Secret;
 
     /// <summary>
-    ///     生成Token(验证pwd 防止出现pwd已更改但token依然有效的情况)
+    ///    生成Token(验证pwd 防止出现pwd已更改但token依然有效的情况)
     /// </summary>
     /// <param name="usr"></param>
     /// <param name="pwd"></param>
@@ -41,7 +41,7 @@ public class JwtUtils
     }
 
     /// <summary>
-    ///     解析Token,返回用户名。解析失败会抛出异常，返回可为空
+    ///    解析Token,返回用户名。解析失败会抛出异常，返回可为空
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>

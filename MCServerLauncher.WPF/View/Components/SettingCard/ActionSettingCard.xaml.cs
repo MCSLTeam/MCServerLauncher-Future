@@ -4,7 +4,7 @@ using iNKORE.UI.WPF.Modern.Common.IconKeys;
 namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
-    ///     ActionSettingCard.xaml 的交互逻辑
+    ///    ActionSettingCard.xaml 的交互逻辑
     /// </summary>
     public partial class ActionSettingCard
     {
@@ -14,7 +14,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting title.
+        ///    Setting title.
         /// </summary>
         public string Title
         {
@@ -23,7 +23,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting description.
+        ///    Setting description.
         /// </summary>
         public string Description
         {
@@ -32,7 +32,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting icon.
+        ///    Setting icon.
         /// </summary>
         public FontIconData? Icon
         {
@@ -41,7 +41,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Controls the accent color of the button.
+        ///    Controls the accent color of the button.
         /// </summary>
         public bool IsAccentButtonStyle
         {
@@ -50,7 +50,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Text of the button.
+        ///    Text of the button.
         /// </summary>
         public string ButtonContent
         {

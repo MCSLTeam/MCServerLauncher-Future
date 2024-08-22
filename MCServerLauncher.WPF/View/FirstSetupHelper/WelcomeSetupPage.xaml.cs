@@ -1,10 +1,10 @@
-﻿using MCServerLauncher.WPF.Helpers;
-using System.Windows;
+﻿using System.Windows;
+using MCServerLauncher.WPF.Helpers;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
     /// <summary>
-    ///     WelcomeSetupPage.xaml 的交互逻辑
+    ///    WelcomeSetupPage.xaml 的交互逻辑
     /// </summary>
     public partial class WelcomeSetupPage
     {
@@ -12,8 +12,9 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             InitializeComponent();
         }
+
         /// <summary>
-        /// Hide FirstSetupHelper
+        ///    Hide FirstSetupHelper
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

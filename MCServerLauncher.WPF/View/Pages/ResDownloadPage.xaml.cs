@@ -1,13 +1,10 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Media.Animation;
-using MCServerLauncher.WPF.Helpers;
+﻿using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
-    ///     ResDownloadPage.xaml 的交互逻辑
+    ///    ResDownloadPage.xaml 的交互逻辑
     /// </summary>
     public partial class ResDownloadPage
     {
@@ -28,12 +25,12 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Refresh current download provider
+        ///    Refresh current download provider
         /// </summary>
         public async void Refresh()
         {
             switch (BasicUtils.AppSettings.Download.DownloadSource)
-            { 
+            {
                 case "FastMirror":
                     CurrentResDownloadProvider.Content = FastMirror;
                     Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";

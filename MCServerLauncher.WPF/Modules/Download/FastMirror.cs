@@ -12,7 +12,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         private readonly string _endPoint = "https://download.fastmirror.net/api/v3";
 
         /// <summary>
-        /// Prettier tag for FastMirror core.
+        ///    Prettier tag for FastMirror core.
         /// </summary>
         /// <param name="originalTag"></param>
         /// <returns></returns>
@@ -30,7 +30,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get FastMirror core info.
+        ///    Get FastMirror core info.
         /// </summary>
         /// <returns>List of core name.</returns>
         public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
@@ -51,7 +51,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get FastMirror core detail.
+        ///    Get FastMirror core detail.
         /// </summary>
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>
@@ -74,7 +74,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get download url.
+        ///    Get download url.
         /// </summary>
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>

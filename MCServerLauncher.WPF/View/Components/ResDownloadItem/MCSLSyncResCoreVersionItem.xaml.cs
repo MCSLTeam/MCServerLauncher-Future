@@ -1,10 +1,10 @@
-﻿using MCServerLauncher.WPF.Modules.Download;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using MCServerLauncher.WPF.Modules.Download;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     MCSLSyncResCoreVersionItem.xaml 的交互逻辑
+    ///    MCSLSyncResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
     public partial class MCSLSyncResCoreVersionItem
     {
@@ -14,12 +14,12 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string Core { get; set; }
 
         /// <summary>
-        /// Minecraft version.
+        ///    Minecraft version.
         /// </summary>
         public string MinecraftVersion
         {
@@ -28,7 +28,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Core version.
+        ///    Core version.
         /// </summary>
         public string CoreVersion
         {
@@ -37,7 +37,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Download URL.
+        ///    Download URL.
         /// </summary>
         public async Task<string> GetDownloadUrl()
         {

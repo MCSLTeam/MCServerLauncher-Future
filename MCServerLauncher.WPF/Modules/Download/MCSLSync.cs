@@ -11,7 +11,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         private readonly string _endPoint = "https://sync.mcsl.com.cn/api";
 
         /// <summary>
-        /// Get core info from MCSL-Sync
+        ///    Get core info from MCSL-Sync
         /// </summary>
         /// <returns>List of core name.</returns>
         public async Task<List<string>> GetCoreInfo()
@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get Minecraft versions of specific core from MCSL-Sync
+        ///    Get Minecraft versions of specific core from MCSL-Sync
         /// </summary>
         /// <param name="core"></param>
         /// <returns></returns>
@@ -38,7 +38,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get core versions of specific Minecraft version from MCSL-Sync
+        ///    Get core versions of specific Minecraft version from MCSL-Sync
         /// </summary>
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>
@@ -53,7 +53,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get core detail from MCSL-Sync
+        ///    Get core detail from MCSL-Sync
         /// </summary>
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>

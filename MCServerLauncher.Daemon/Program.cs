@@ -80,7 +80,7 @@ public class Program
     }
 
     /// <summary>
-    ///     app开始服务,包含配置DI和HttpServer启动
+    ///    app开始服务,包含配置DI和HttpServer启动
     /// </summary>
     private static void Serve()
     {
@@ -104,7 +104,7 @@ public class Program
     }
 
     /// <summary>
-    ///     配置DI服务
+    ///    配置DI服务
     /// </summary>
     /// <param name="services"></param>
     private static void ConfigureServices(IServiceCollection services)

@@ -58,7 +58,8 @@
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right" Click="FetchMinecraftVersions" x:Name="FetchMinecraftVersionsButton">
+                                HorizontalAlignment="Right" Click="FetchMinecraftVersions"
+                                x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
@@ -96,9 +97,10 @@
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <ComboBox x:Name="ForgeVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
-                                  Width="Auto" HorizontalAlignment="Stretch" IsEnabled="False"/>
+                                  Width="Auto" HorizontalAlignment="Stretch" IsEnabled="False" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right" x:Name="FetchForgeVersionButton" Click="FetchForgeVersions" IsEnabled="False">
+                                HorizontalAlignment="Right" x:Name="FetchForgeVersionButton" Click="FetchForgeVersions"
+                                IsEnabled="False">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
@@ -117,10 +119,10 @@
                         </ui:DropDownButton>
                     </Grid>
                 </Border>
-                <ci:SelectMinecraftJavaJvm/>
-                <ci:SetMinecraftJavaJvmRam/>
-                <ci:SetMinecraftJavaJvmArgument/>
-                <ci:SetInstanceName/>
+                <ci:SelectMinecraftJavaJvm />
+                <ci:SetMinecraftJavaJvmRam />
+                <ci:SetMinecraftJavaJvmArgument />
+                <ci:SetInstanceName />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

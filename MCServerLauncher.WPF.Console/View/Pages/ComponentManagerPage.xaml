@@ -15,22 +15,22 @@
                     Style="{StaticResource TabControlPivotStyle}">
             <TabItem Header="模组">
                 <ui:ListView Margin="0,15,0,0">
-                    <vc:InstanceComponentItem ComponentFileName="1.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="2.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="3.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="4.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="5.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="6.jar"/>
+                    <vc:InstanceComponentItem ComponentFileName="1.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="2.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="3.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="4.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="5.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="6.jar" />
                 </ui:ListView>
             </TabItem>
             <TabItem Header="插件">
                 <ui:ListView Margin="0,15,0,0">
-                    <vc:InstanceComponentItem ComponentFileName="7.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="8.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="9.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="10.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="11.jar"/>
-                    <vc:InstanceComponentItem ComponentFileName="12.jar"/>
+                    <vc:InstanceComponentItem ComponentFileName="7.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="8.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="9.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="10.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="11.jar" />
+                    <vc:InstanceComponentItem ComponentFileName="12.jar" />
                 </ui:ListView>
             </TabItem>
         </TabControl>

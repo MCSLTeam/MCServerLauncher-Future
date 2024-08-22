@@ -1,16 +1,15 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
-using iNKORE.UI.WPF.Modern.Media.Animation;
+﻿using System;
 using System.Collections.Generic;
-using System;
-using System.Windows.Controls;
-using Page = System.Windows.Controls.Page;
 using System.Windows;
+using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Helpers;
+using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
     /// <summary>
-    ///     FirstSetup.xaml 的交互逻辑
+    ///    FirstSetup.xaml 的交互逻辑
     /// </summary>
     public partial class FirstSetup
     {
@@ -24,6 +23,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             typeof(DaemonSetupPage),
             typeof(WelcomeSetupPage)
         };
+
         public FirstSetup()
         {
             InitializeComponent();
@@ -31,7 +31,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
 
         /// <summary>
-        /// Navigation trigger handler.
+        ///    Navigation trigger handler.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -45,7 +45,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
 
         /// <summary>
-        /// Navigation to a specific page.
+        ///    Navigation to a specific page.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>
@@ -72,39 +72,43 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
 
         /// <summary>
-        /// Determine the transition animation.
+        ///    Determine the transition animation.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <returns>Transition info.</returns>
         private SlideNavigationTransitionEffect DetermineSlideDirection(Type navPageType)
         {
             var current = (Page)CurrentPage.Content;
-            return _pageList.IndexOf(current.GetType()) < _pageList.IndexOf(navPageType) ? SlideNavigationTransitionEffect.FromRight : SlideNavigationTransitionEffect.FromLeft;
+            return _pageList.IndexOf(current.GetType()) < _pageList.IndexOf(navPageType)
+                ? SlideNavigationTransitionEffect.FromRight
+                : SlideNavigationTransitionEffect.FromLeft;
         }
+
         public void FinishSetup()
         {
             Visibility = Visibility.Hidden;
             var parent = this.TryFindParent<MainWindow>();
             parent.NavView.Visibility = Visibility.Visible;
         }
+
         public void GoDaemonSetup()
         {
-            RefreshNavMenu(newIdx: 1);
+            RefreshNavMenu(1);
         }
+
         public void GoWelcomeSetup()
         {
-            RefreshNavMenu(newIdx: 2);
+            RefreshNavMenu(2);
         }
 
         /// <summary>
-        /// Refresh the navigation menu.
+        ///    Refresh the navigation menu.
         /// </summary>
         /// <param name="newIdx"></param>
         private void RefreshNavMenu(int newIdx)
         {
             NavView.SelectedItem = NavView.MenuItems[newIdx];
             foreach (NavigationViewItemBase item in NavView.MenuItems)
-            {
                 if (NavView.MenuItems.IndexOf(item) == newIdx)
                 {
                     NavView.SelectedItem = NavView.MenuItems[NavView.MenuItems.IndexOf(item)];
@@ -114,8 +118,9 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 {
                     item.IsEnabled = false;
                 }
-            }
-            NavigateTo(_pageList[newIdx], new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(_pageList[newIdx])});
+
+            NavigateTo(_pageList[newIdx],
+                new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(_pageList[newIdx]) });
         }
     }
 }

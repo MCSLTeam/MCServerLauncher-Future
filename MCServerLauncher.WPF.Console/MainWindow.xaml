@@ -60,7 +60,8 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Event12}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="组件管理" Tag="MCServerLauncher.WPF.Console.View.Pages.ComponentManagerPage">
+                <ui:NavigationViewItem Content="组件管理"
+                                       Tag="MCServerLauncher.WPF.Console.View.Pages.ComponentManagerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Puzzle}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
@@ -70,7 +71,8 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="实例设置" Tag="MCServerLauncher.WPF.Console.View.Pages.InstanceSettingsPage">
+                <ui:NavigationViewItem Content="实例设置"
+                                       Tag="MCServerLauncher.WPF.Console.View.Pages.InstanceSettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>

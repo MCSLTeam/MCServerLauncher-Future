@@ -4,7 +4,7 @@ using MCServerLauncher.WPF.View.CreateInstanceProvider;
 namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
-    ///     CreateInstancePage.xaml 的交互逻辑
+    ///    CreateInstancePage.xaml 的交互逻辑
     /// </summary>
     public partial class CreateInstancePage
     {
@@ -17,7 +17,7 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Spawn a new Minecraft Java instance creation page.
+        ///    Spawn a new Minecraft Java instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>
         public UserControl NewMinecraftJavaServerPage()
@@ -26,7 +26,7 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Spawn a new Minecraft Forge instance creation page.
+        ///    Spawn a new Minecraft Forge instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>
         public UserControl NewMinecraftForgeServerPage()
@@ -35,7 +35,7 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Spawn a new Minecraft NeoForge instance creation page.
+        ///    Spawn a new Minecraft NeoForge instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>
         public UserControl NewMinecraftNeoForgeServerPage()
@@ -44,7 +44,7 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Spawn a new Minecraft Quilt instance creation page.
+        ///    Spawn a new Minecraft Quilt instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>
         public UserControl NewMinecraftQuiltServerPage()
@@ -53,7 +53,7 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Spawn a new Minecraft Bedrock instance creation page.
+        ///    Spawn a new Minecraft Bedrock instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>
         public UserControl NewMinecraftBedrockServerPage()
@@ -62,7 +62,7 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
-        /// Spawn a new other executable instance creation page.
+        ///    Spawn a new other executable instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>
         public UserControl NewOtherExecutablePage()

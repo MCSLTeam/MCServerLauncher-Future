@@ -10,7 +10,7 @@ using Serilog;
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
     /// <summary>
-    ///     MCSLSyncProvider.xaml 的交互逻辑
+    ///    MCSLSyncProvider.xaml 的交互逻辑
     /// </summary>
     public partial class MCSLSyncProvider
     {
@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         }
 
         /// <summary>
-        /// Refresh core list.
+        ///    Refresh core list.
         /// </summary>
         /// <returns>Status, true or false.</returns>
         public async Task<bool> Refresh()
@@ -55,7 +55,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         }
 
         /// <summary>
-        /// Handler for core selection changed, load Minecraft version list.
+        ///    Handler for core selection changed, load Minecraft version list.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -79,7 +79,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         }
 
         /// <summary>
-        /// Get core version detail.
+        ///    Get core version detail.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

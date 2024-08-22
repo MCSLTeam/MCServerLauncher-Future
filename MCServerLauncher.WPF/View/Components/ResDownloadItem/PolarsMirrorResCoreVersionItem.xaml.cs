@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     PolarsMirrorResCoreVersionItem.xaml 的交互逻辑
+    ///    PolarsMirrorResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
     public partial class PolarsMirrorResCoreVersionItem
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// File name.
+        ///    File name.
         /// </summary>
         public string FileName
         {

@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.Console.View.Components
 {
     /// <summary>
-    ///     MinecraftJavaInstanceAddress.xaml 的交互逻辑
+    ///    MinecraftJavaInstanceAddress.xaml 的交互逻辑
     /// </summary>
     public partial class MinecraftJavaInstanceAddress
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Server IP address.
+        ///    Server IP address.
         /// </summary>
         public string ServerIP
         {

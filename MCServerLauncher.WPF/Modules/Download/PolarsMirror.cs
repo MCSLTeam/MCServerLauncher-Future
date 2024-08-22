@@ -22,7 +22,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         //}
 
         /// <summary>
-        /// Get core info from Polars Mirror.
+        ///    Get core info from Polars Mirror.
         /// </summary>
         /// <returns>List of core name.</returns>
         public async Task<List<PolarsMirrorCoreInfo>> GetCoreInfo()
@@ -41,7 +41,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get core detail from Polars Mirror.
+        ///    Get core detail from Polars Mirror.
         /// </summary>
         /// <param name="coreId">Index of core.</param>
         /// <returns>List of core.</returns>

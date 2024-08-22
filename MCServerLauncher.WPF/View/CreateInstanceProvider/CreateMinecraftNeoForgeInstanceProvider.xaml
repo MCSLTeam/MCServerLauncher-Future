@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
-             xmlns:vc="clr-namespace:MCServerLauncher.WPF.View.Components"
              xmlns:ci="clr-namespace:MCServerLauncher.WPF.View.Components.CreateInstance"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -59,7 +58,8 @@
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                                HorizontalAlignment="Right" Click="FetchNeoForgeData" x:Name="FetchMinecraftVersionsButton">
+                                HorizontalAlignment="Right" Click="FetchNeoForgeData"
+                                x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
@@ -90,13 +90,15 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                                   Style="{StaticResource SubtitleTextBlock}" Text="NeoForge 版本" VerticalAlignment="Top"
+                                   Style="{StaticResource SubtitleTextBlock}" Text="NeoForge 版本"
+                                   VerticalAlignment="Top"
                                    HorizontalAlignment="Left" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
                                    Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 NeoForge 加载器的版本。"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <ComboBox x:Name="NeoForgeVersionComboBox" Grid.Row="2" Grid.ColumnSpan="2" Margin="20,15,20,20"
+                        <ComboBox x:Name="NeoForgeVersionComboBox" Grid.Row="2" Grid.ColumnSpan="2"
+                                  Margin="20,15,20,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
 
                         <ui:DropDownButton Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"
@@ -112,10 +114,10 @@
                         </ui:DropDownButton>
                     </Grid>
                 </Border>
-                <ci:SelectMinecraftJavaJvm/>
-                <ci:SetMinecraftJavaJvmRam/>
-                <ci:SetMinecraftJavaJvmArgument/>
-                <ci:SetInstanceName/>
+                <ci:SelectMinecraftJavaJvm />
+                <ci:SetMinecraftJavaJvmRam />
+                <ci:SetMinecraftJavaJvmArgument />
+                <ci:SetInstanceName />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

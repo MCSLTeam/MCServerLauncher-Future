@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.Console.View.Components
 {
     /// <summary>
-    ///     MinecraftJavaInstancePlayerList.xaml 的交互逻辑
+    ///    MinecraftJavaInstancePlayerList.xaml 的交互逻辑
     /// </summary>
     public partial class MinecraftJavaInstancePlayerList
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Online players list.
+        ///    Online players list.
         /// </summary>
         public string PlayerList
         {

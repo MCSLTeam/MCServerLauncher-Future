@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.Console.View.Components
 {
     /// <summary>
-    ///     InstanceComponentItem.xaml 的交互逻辑
+    ///    InstanceComponentItem.xaml 的交互逻辑
     /// </summary>
     public partial class InstanceComponentItem
     {
@@ -9,6 +9,7 @@
         {
             InitializeComponent();
         }
+
         public string ComponentFileName
         {
             get => ComponentFileNameTextBlock.Text;

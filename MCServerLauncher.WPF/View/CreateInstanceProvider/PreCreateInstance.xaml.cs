@@ -7,7 +7,7 @@ using static MCServerLauncher.WPF.Helpers.VisualTreeExtensions;
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
     /// <summary>
-    ///     PreCreateInstance.xaml 的交互逻辑
+    ///    PreCreateInstance.xaml 的交互逻辑
     /// </summary>
     public partial class PreCreateInstance
     {
@@ -19,7 +19,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        /// Trigger for navigating to the creation page.
+        ///    Trigger for navigating to the creation page.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

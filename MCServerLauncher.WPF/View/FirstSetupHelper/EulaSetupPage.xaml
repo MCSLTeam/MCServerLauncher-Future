@@ -1,31 +1,34 @@
 ﻿<Page x:Class="MCServerLauncher.WPF.View.FirstSetupHelper.EulaSetupPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-      mc:Ignorable="d" 
+      mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="EulaSetupPage">
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="请先阅读用户许可协议。" HorizontalAlignment="Left"/>
+        <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="请先阅读用户许可协议。"
+                   HorizontalAlignment="Left" />
         <ui:ScrollViewerEx Grid.Row="1" Margin="40,20,40,0" x:Name="EulaScrollViewer">
             <ikw:SimpleStackPanel>
-                <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，请在使用本软件前，详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。
-&#x000A;请您仔细阅读以下内容，当您使用本软件时，即代表您已经详细阅读并同意本协议的全部内容，且同意遵守本协议的规定。"/>
-
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="使用须知"/>
+                <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，请在使用本软件前，详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。
+&#x000A;请您仔细阅读以下内容，当您使用本软件时，即代表您已经详细阅读并同意本协议的全部内容，且同意遵守本协议的规定。" />
 
                 <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-Text="用户应自行配备本软件和本软件功能（包括但不限于 新建实例 等）所需要的硬件和软件配置。
+                           Style="{StaticResource SubtitleTextBlock}" Text="使用须知" />
+
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Text="用户应自行配备本软件和本软件功能（包括但不限于 新建实例 等）所需要的硬件和软件配置。
 &#x000A;用户应自行负担连接互联网后所需支付的相关电话、宽带使用等费用。
 &#x000A;用户应为其使用本软件产生的行为、事件、结果承担法律责任。
 &#x000A;用户与其他未授权的非官方个人之间产生的任何交易与纠纷，与开发者无关。
@@ -46,25 +49,31 @@ Text="用户应自行配备本软件和本软件功能（包括但不限于 新�
 &#x000A;破坏本软件系统或网站的正常运行，故意传播计算机病毒等破坏性程序；
 &#x000A;采取任何可能影响本软件网络服务的非正常使用行为（包括但不限于损害、攻击服务器或使服务器过度负荷等）；
 &#x000A;删除本软件及其副本上关于著作权的信息。
-&#x000A;&#x000A;若用户做出违法违规或违反本协议规定的行为，开发者有权视情节严重程度，依据本协议及法律法规，对用户做出包括但不限于终止服务等处理措施；情节严重的，将移交有关行政管理机关给予行政处罚，或追究其刑事责任。"/>
+&#x000A;&#x000A;若用户做出违法违规或违反本协议规定的行为，开发者有权视情节严重程度，依据本协议及法律法规，对用户做出包括但不限于终止服务等处理措施；情节严重的，将移交有关行政管理机关给予行政处罚，或追究其刑事责任。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="数据收集与使用"/>
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="数据收集与使用" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="若您同意本使用协议且使用本软件的在线服务，我们会收集以下信息：
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="若您同意本使用协议且使用本软件的在线服务，我们会收集以下信息：
 &#x000A;本软件所运行设备的IP地址（可能并非正确地址）；
 &#x000A;本软件所运行设备的部分系统信息；
 &#x000A;本软件崩溃时，可能会在经用户同意的情况下，上传软件在系统运行的日志（含有部分系统信息），以帮助解决问题和改善软件；
-&#x000A;其他会在经用户同意情况下上传的部分信息（软件中会具体说明）。"/>
+&#x000A;其他会在经用户同意情况下上传的部分信息（软件中会具体说明）。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="用户支持和反馈"/>
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="用户支持和反馈" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="用户在使用过程中如遇到任何问题，可以通过 官方电子邮件 或 在本软件源码仓库提交issue 的方式进行反馈。我们会认真考虑用户的反馈以改进服务。"/>
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="用户在使用过程中如遇到任何问题，可以通过 官方电子邮件 或 在本软件源码仓库提交issue 的方式进行反馈。我们会认真考虑用户的反馈以改进服务。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="服务的变更或中止"/>
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="1. 对用户服务的中止与终止
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="服务的变更或中止" />
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="1. 对用户服务的中止与终止
 &#x000A;&#x000A;用户有发布违法信息、严重违背社会公德、以及其他违反法律禁止性规定的行为，开发者应终止对用户提供服务；
 &#x000A;用户在接受本软件服务时实施不正当行为的，开发者有权终止对用户提供服务（该不正当行为的具体情形在本协议中有明确约定）；
 &#x000A;用户使用本软件的第三方修改版本的，用户应自行承担风险与法律责任。
@@ -76,57 +85,68 @@ Text="1. 对用户服务的中止与终止
 &#x000A;d. 因网络提供商线路或其他故障；
 &#x000A;e. 因政策因素；
 &#x000A;f. 第三方原因或其他不可抗力的情形。
-&#x000A;&#x000A;开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。"/>
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="免责声明"/>
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。
+&#x000A;&#x000A;开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。" />
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="免责声明" />
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。
 &#x000A;用户理解并同意，开发者不保证本软件及服务一定能满足用户需求，也不保证服务不会被中断，并且对本软件及服务的正确性、安全性等方面不提供任何担保。
 &#x000A;用户理解并同意，开发者无法完全保证本软件在线服务所下载的第三方文件的的正确性、安全性、合法性，也不对本软件内存在的第三方服务（包括但不限于 资源下载 等服务）的正确性、安全性、合法性等负责。因此，前面提到的内容与开发者和本软件无关，不代表开发者及本软件的立场。相关争议应由第三方服务提供方承担。
 &#x000A;用户理解并同意，若以错误或非法的手段使用本软件在线服务以及本软件所下载的相关文件，其造成的后果由用户自行承担，若导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。
 &#x000A;用户理解并同意，本软件不对第三方服务内容提供担保。 若用户使用第三方服务导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。
-&#x000A;用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。"/>
+&#x000A;用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="知识产权"/>
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="知识产权" />
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。
 &#x000A;&#x000A;本软件所使用的第三方服务归相关版权方所有，包括但不限于：
 &#x000A;本软件为 Minecraft（其最终解释权归 Microsoft 公司 和 Mojang AB 所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）和 中国区代理公司 网易 在中国大陆实行的相关政策，不得将游戏本体内容用于商业用途，或实施其他被最终用户许可协议所禁止的行为。
 &#x000A;本软件为 Terraria（其最终解释权归 Re-Logic 和其发行商所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）及相关政策。用户不得将游戏本体内容用于未经许可的商业用途，或实施其他被最终用户许可协议所禁止的行为。
 &#x000A;本软件提供的部分在线文件资源（服务端核心、游戏/服务器模组和插件等内容）下载服务由相应 官方/第三方 等提供，版权依照第三方平台规定处理。
 &#x000A;本软件使用的其他第三方服务，版权归服务提供商所有。
 &#x000A;本软件是开源软件，用户或其他非本软件的软件开发者应当遵守本软件的开源协议。
-&#x000A;用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。"/>
+&#x000A;用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="条款变更"/>
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="开发者有权在必要的时候修改本协议。本协议一旦发生变动，开发者将在重要页面展示修改内容。若用户不同意本协议的修订或更新，可以主动停止使用本软件及服务。若用户在本协议修订后仍继续使用本软件及服务，即表示用户同意本协议所做的所有修订或更新。 若用户在本协议修订后因未熟悉变更而引起的损失，开发者不承担任何责任。"/>
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="条款变更" />
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="开发者有权在必要的时候修改本协议。本协议一旦发生变动，开发者将在重要页面展示修改内容。若用户不同意本协议的修订或更新，可以主动停止使用本软件及服务。若用户在本协议修订后仍继续使用本软件及服务，即表示用户同意本协议所做的所有修订或更新。 若用户在本协议修订后因未熟悉变更而引起的损失，开发者不承担任何责任。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="其他规定"/>
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="本协议适用于中华人民共和国法律，并且排除一切冲突法规规定地适用；
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="其他规定" />
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="本协议适用于中华人民共和国法律，并且排除一切冲突法规规定地适用；
 &#x000A;开发者不行使、未能及时行使或者充分行使本协议或者依照法律规定所享有的权利，不应被视为放弃行使该权利，也不得影响开发者在将来行使该等权利；
 &#x000A;在法律许可范围内，开发者享有对本协议条款的解释权；
-&#x000A;用户可以通过电子邮件投诉、举报各类违法违规行为，邮件请发送至邮箱 services@mcsl.com.cn 。"/>
+&#x000A;用户可以通过电子邮件投诉、举报各类违法违规行为，邮件请发送至邮箱 services@mcsl.com.cn 。" />
 
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource SubtitleTextBlock}" Text="条款可分性"/>
-                <TextBlock Margin="0,10,0,20" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Style="{StaticResource BodyTextBlock}"
-Text="如果本协议的任何条款被认定为无效，或不可执行，其余条款仍应完全有效。"/>
+                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource SubtitleTextBlock}" Text="条款可分性" />
+                <TextBlock Margin="0,10,0,20" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource BodyTextBlock}"
+                           Text="如果本协议的任何条款被认定为无效，或不可执行，其余条款仍应完全有效。" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
         <Border Grid.Row="2" Style="{StaticResource StyledBorder}" Height="80">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" HorizontalAlignment="Left" Margin="40,0,0,0" Click="RefuseEula">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="拒绝"/>
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="拒绝" />
                     </Button.Content>
                 </Button>
-                <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="AcceptEula" Style="{StaticResource AccentButtonStyle}">
+                <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="AcceptEula"
+                        Style="{StaticResource AccentButtonStyle}">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Accept}" Content="同意"/>
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Accept}" Content="同意" />
                     </Button.Content>
                 </Button>
             </Grid>

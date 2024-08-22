@@ -53,38 +53,37 @@
                                       Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
                                       Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
                                       Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
-                                      Status="{Binding Path=MinecraftJavaAutoAcceptEula}"
-                                      />
+                                      Status="{Binding Path=MinecraftJavaAutoAcceptEula}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoDisableOnlineMode"
                                       Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
                                       Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
-                                      Status="{Binding Path=MinecraftJavaAutoSwitchOnlineMode}"/>
+                                      Status="{Binding Path=MinecraftJavaAutoSwitchOnlineMode}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftBedrockAutoDisableOnlineMode"
                                       Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
                                       Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
-                                      Status="{Binding Path=MinecraftBedrockAutoSwitchOnlineMode}"/>
+                                      Status="{Binding Path=MinecraftBedrockAutoSwitchOnlineMode}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftForgeInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
                                       Title="使用镜像源进行部署 ( Minecraft Forge 服务器 实例 )"
                                       Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
-                                      Status="{Binding Path=UseMirrorForMinecraftForgeInstall}"/>
+                                      Status="{Binding Path=UseMirrorForMinecraftForgeInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftNeoForgeInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
                                       Title="使用镜像源进行部署 ( Minecraft NeoForge 服务器 实例 )"
                                       Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
-                                      Status="{Binding Path=UseMirrorForMinecraftNeoForgeInstall}"/>
+                                      Status="{Binding Path=UseMirrorForMinecraftNeoForgeInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftFabricInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
                                       Title="使用镜像源进行部署 ( Minecraft Fabric 服务器 实例 )"
                                       Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
-                                      Status="{Binding Path=UseMirrorForMinecraftFabricInstall}"/>
+                                      Status="{Binding Path=UseMirrorForMinecraftFabricInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftQuiltInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
                                       Title="使用镜像源进行部署 ( Minecraft Quilt 服务器 实例 )"
                                       Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
-                                      Status="{Binding Path=UseMirrorForMinecraftQuiltInstall}"/>
+                                      Status="{Binding Path=UseMirrorForMinecraftQuiltInstall}" />
 
 
                 <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0" />
@@ -110,43 +109,51 @@
                         </Grid>
                     </Expander.Header>
                     <ui:RadioButtons Margin="5,0,5,0">
-                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" x:Name="FastMirrorSrc"/>
-                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="极星云镜像 ( 由 极星网络 提供支持 )" x:Name="PolarsMirrorSrc"/>
-                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )" x:Name="ZCloudFileSrc"/>
-                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="MSL下载源 ( 由 MSL开服器 提供支持 )" x:Name="MSLAPISrc"/>
-                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10" Content="MCSL-Sync 同步镜像" x:Name="MCSLSyncSrc"/>
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
+                                     Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" x:Name="FastMirrorSrc" />
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
+                                     Content="极星云镜像 ( 由 极星网络 提供支持 )" x:Name="PolarsMirrorSrc" />
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
+                                     Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )" x:Name="ZCloudFileSrc" />
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
+                                     Content="MSL下载源 ( 由 MSL开服器 提供支持 )" x:Name="MSLAPISrc" />
+                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
+                                     Content="MCSL-Sync 同步镜像" x:Name="MCSLSyncSrc" />
                     </ui:RadioButtons>
                 </Expander>
-                <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数" x:Name="ResDownload_DownloadThreadCnt"
+                <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数"
+                                     x:Name="ResDownload_DownloadThreadCnt"
                                      Description="线程数越多，在计算机性能足够的情况下，文件下载越快；反之会造成严重的卡顿。一般来说，设置为 16 线程即可满足需求。"
-                                     MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}"/>
+                                     MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}" />
                 <sc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
                                      Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="下载失败处理方式"
                                      Description="当文件下载失败时，应当进行的操作。"
-                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}"/>
+                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}" />
                 <TextBlock Text="实例管理" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="Instance_ActionWhenDeleteConfirm"
                                      Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="删除实例确认方式"
                                      Description="此功能可防止误操作导致实例被删除。"
-                                     ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}"/>
+                                     ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}" />
                 <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="More_LauncherTheme"
                                      Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="应用主题"
                                      Description="默认跟随系统变化，当然也可以自己设置。"
                                      ComboBoxItems="{Binding Path=ThemeForApp}" />
                 <sc:SwitchSettingCard x:Name="More_FollowStartupForLauncher"
-                                      Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}" Title="开机自启动 ( MCServerLauncher.WPF )"
+                                      Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
+                                      Title="开机自启动 ( MCServerLauncher.WPF )"
                                       Description="在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。"
-                                      Status="{Binding Path=AutoCheckUpdateForLauncher}"/>
+                                      Status="{Binding Path=AutoCheckUpdateForLauncher}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="检查更新 ( MCServerLauncher.WPF )"
                                       Description="检查本图形化程序的更新。"
                                       IsAccentButtonStyle="True"
                                       ButtonContent="检查更新" />
                 <sc:SwitchSettingCard x:Name="More_AutoCheckUpdateForLauncher"
-                                      Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}" Title="自动检查更新 ( MCServerLauncher.WPF )"
+                                      Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
+                                      Title="自动检查更新 ( MCServerLauncher.WPF )"
                                       Description="在每次启动时，检查本图形化程序的更新。"
-                                      Status="{Binding Path=AutoCheckUpdateForLauncher}"/>
+                                      Status="{Binding Path=AutoCheckUpdateForLauncher}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForDaemon" IsEnabled="False"
                                       Icon="{x:Static ui:SegoeFluentIcons.Processing}"
                                       Title="检查更新 ( MCServerLauncher.Daemon )" Description="检查守护进程的更新。"

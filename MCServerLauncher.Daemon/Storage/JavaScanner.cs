@@ -159,7 +159,7 @@ public static class JavaScanner
     }
 
     /// <summary>
-    ///     扫描Java,Async版
+    ///    扫描Java,Async版
     /// </summary>
     /// <returns></returns>
     public static async Task<List<JavaInfo>> ScanJavaAsync()
@@ -196,7 +196,7 @@ public static class JavaScanner
     }
 
     /// <summary>
-    ///     扫描Java
+    ///    扫描Java
     /// </summary>
     /// <returns></returns>
     public static List<JavaInfo> ScanJava()
@@ -239,7 +239,7 @@ public static class JavaScanner
     }
 
     /// <summary>
-    ///     改用struct: 默认实现了值比较
+    ///    改用struct: 默认实现了值比较
     /// </summary>
     public struct JavaInfo
     {

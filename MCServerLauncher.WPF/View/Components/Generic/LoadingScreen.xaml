@@ -24,14 +24,12 @@
             VerticalAlignment="Stretch"
             RenderOptions.BitmapScalingMode="HighQuality"
             Source="../../../Resources/MCServerLauncherFuture.png"
-            Height="128">
-        </Image>
+            Height="128" />
         <ui:ProgressRing
             Margin="0,-10,0,0"
             Grid.Row="2"
             Grid.Column="1"
             HorizontalAlignment="Center"
-            IsActive="True"
-        />
+            IsActive="True" />
     </Grid>
 </UserControl>

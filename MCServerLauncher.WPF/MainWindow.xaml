@@ -2,7 +2,6 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-        xmlns:vc="clr-namespace:MCServerLauncher.WPF.View.Components"
         xmlns:fs="clr-namespace:MCServerLauncher.WPF.View.FirstSetupHelper"
         xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
         WindowStartupLocation="CenterScreen"
@@ -23,7 +22,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ge:LoadingScreen x:Name="LoadingScreen" Grid.RowSpan="2"/>
+        <ge:LoadingScreen x:Name="LoadingScreen" Grid.RowSpan="2" />
         <Grid x:Name="TitleBarGrid" Visibility="Hidden" Grid.Row="0" Margin="10,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -53,7 +52,7 @@
                            VerticalAlignment="Top" />
             </Grid>
         </Grid>
-        <fs:FirstSetup Grid.Row="1" Visibility="Hidden" x:Name="SetupView"/>
+        <fs:FirstSetup Grid.Row="1" Visibility="Hidden" x:Name="SetupView" />
         <ui:NavigationView Visibility="Hidden" x:Name="NavView"
                            IsPaneOpen="False"
                            ItemInvoked="NavigationTriggered"
@@ -99,7 +98,8 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.WPF.View.Pages.TestPage" Visibility="Collapsed">
+                <ui:NavigationViewItem Content="测试页面" Tag="MCServerLauncher.WPF.View.Pages.TestPage"
+                                       Visibility="Collapsed">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>

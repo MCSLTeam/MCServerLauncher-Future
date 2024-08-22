@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
-             xmlns:vc="clr-namespace:MCServerLauncher.WPF.View.Components"
              xmlns:ci="clr-namespace:MCServerLauncher.WPF.View.Components.CreateInstance"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -57,11 +56,13 @@
                                    Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 Minecraft 版本。"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <CheckBox x:Name="ToggleStableMinecraftVersionCheckBox" Grid.Row="2" Grid.Column="0" Content="仅显示正式版" IsChecked="True" Margin="20,0,10,0"/>
+                        <CheckBox x:Name="ToggleStableMinecraftVersionCheckBox" Grid.Row="2" Grid.Column="0"
+                                  Content="仅显示正式版" IsChecked="True" Margin="20,0,10,0" />
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="3" Grid.Column="0" Margin="20,5,10,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
                         <Button Height="32" Margin="0,5,20,0" Grid.Row="3" Grid.Column="1" VerticalAlignment="Top"
-                                HorizontalAlignment="Right" Click="FetchMinecraftVersions" x:Name="FetchMinecraftVersionsButton">
+                                HorizontalAlignment="Right" Click="FetchMinecraftVersions"
+                                x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
                                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
                             </Button.Content>
@@ -120,10 +121,10 @@
                         </ui:DropDownButton>
                     </Grid>
                 </Border>
-                <ci:SelectMinecraftJavaJvm/>
-                <ci:SetMinecraftJavaJvmRam/>
-                <ci:SetMinecraftJavaJvmArgument/>
-                <ci:SetInstanceName/>
+                <ci:SelectMinecraftJavaJvm />
+                <ci:SetMinecraftJavaJvmRam />
+                <ci:SetMinecraftJavaJvmArgument />
+                <ci:SetInstanceName />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

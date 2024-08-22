@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         private readonly string _fileUrlApi = "/api/fs/get";
 
         /// <summary>
-        /// Get AList file list.
+        ///    Get AList file list.
         /// </summary>
         /// <param name="host"></param>
         /// <param name="path"></param>
@@ -32,7 +32,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         }
 
         /// <summary>
-        /// Get download url.
+        ///    Get download url.
         /// </summary>
         /// <param name="host"></param>
         /// <param name="path"></param>

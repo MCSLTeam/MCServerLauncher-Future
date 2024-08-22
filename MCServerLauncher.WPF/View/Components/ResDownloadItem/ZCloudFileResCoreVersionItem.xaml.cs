@@ -1,10 +1,10 @@
-﻿using MCServerLauncher.WPF.Modules.Download;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using MCServerLauncher.WPF.Modules.Download;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     ZCloudFileResCoreVersionItem.xaml 的交互逻辑
+    ///    ZCloudFileResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
     public partial class ZCloudFileResCoreVersionItem
     {
@@ -12,13 +12,14 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         {
             InitializeComponent();
         }
+
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string Core { get; set; }
 
         /// <summary>
-        /// Core version.
+        ///    Core version.
         /// </summary>
         public string FileName
         {
@@ -27,7 +28,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// File size.
+        ///    File size.
         /// </summary>
         public string FileSize
         {
@@ -36,8 +37,8 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         }
 
         /// <summary>
-        /// Get raw download url.
-        /// Only use this when downloading, cuz it takes much time.
+        ///    Get raw download url.
+        ///    Only use this when downloading, cuz it takes much time.
         /// </summary>
         public async Task<string> FetchRawUrl()
         {

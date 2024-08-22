@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     MCSLSyncResCoreItem.xaml 的交互逻辑
+    ///    MCSLSyncResCoreItem.xaml 的交互逻辑
     /// </summary>
     public partial class MCSLSyncResCoreItem
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string CoreName
         {

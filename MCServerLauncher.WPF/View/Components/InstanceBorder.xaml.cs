@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components
 {
     /// <summary>
-    ///     InstanceBorder.xaml 的交互逻辑
+    ///    InstanceBorder.xaml 的交互逻辑
     /// </summary>
     public partial class InstanceBorder
     {

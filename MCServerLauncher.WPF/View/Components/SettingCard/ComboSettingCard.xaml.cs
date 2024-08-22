@@ -5,17 +5,29 @@ using iNKORE.UI.WPF.Modern.Common.IconKeys;
 namespace MCServerLauncher.WPF.View.Components.SettingCard
 {
     /// <summary>
-    ///     ComboSettingCard.xaml 的交互逻辑
+    ///    ComboSettingCard.xaml 的交互逻辑
     /// </summary>
     public partial class ComboSettingCard
     {
+        public static readonly DependencyProperty ComboBoxItemsProperty = DependencyProperty.Register(
+            nameof(ComboBoxItems),
+            typeof(IEnumerable<string>),
+            typeof(ComboSettingCard),
+            new PropertyMetadata(new List<string>(), OnComboBoxItemsChanged));
+
+        public static readonly DependencyProperty IndexProperty = DependencyProperty.Register(
+            "Index",
+            typeof(int),
+            typeof(ComboSettingCard),
+            new PropertyMetadata(0, OnIndexChanged));
+
         public ComboSettingCard()
         {
             InitializeComponent();
         }
 
         /// <summary>
-        /// Setting title.
+        ///    Setting title.
         /// </summary>
         public string Title
         {
@@ -24,7 +36,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting description.
+        ///    Setting description.
         /// </summary>
         public string Description
         {
@@ -33,7 +45,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         }
 
         /// <summary>
-        /// Setting icon.
+        ///    Setting icon.
         /// </summary>
         public FontIconData? Icon
         {
@@ -47,12 +59,6 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
             set => SetValue(ComboBoxItemsProperty, value);
         }
 
-        public static readonly DependencyProperty ComboBoxItemsProperty = DependencyProperty.Register(
-            nameof(ComboBoxItems),
-            typeof(IEnumerable<string>),
-            typeof(ComboSettingCard),
-            new PropertyMetadata(new List<string>(), OnComboBoxItemsChanged));
-
         private static void OnComboBoxItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not ComboSettingCard control) return;
@@ -61,12 +67,6 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
             foreach (var item in items)
                 control.SettingComboBox.Items.Add(item);
         }
-
-        public static readonly DependencyProperty IndexProperty = DependencyProperty.Register(
-            "Index",
-            typeof(int),
-            typeof(ComboSettingCard),
-            new PropertyMetadata(0, OnIndexChanged));
 
         private static void OnIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {

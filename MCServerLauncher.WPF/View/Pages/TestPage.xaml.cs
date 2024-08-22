@@ -8,7 +8,7 @@ using MCServerLauncher.WPF.Modules.Download;
 namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
-    ///     TestPage.xaml 的交互逻辑
+    ///    TestPage.xaml 的交互逻辑
     /// </summary>
     public partial class TestPage
     {
@@ -16,8 +16,9 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             InitializeComponent();
         }
+
         /// <summary>
-        /// Show debug dialog.
+        ///    Show debug dialog.
         /// </summary>
         /// <param name="result">Text to show.</param>
         private static async void ShowTextResultContentDialog(string result)

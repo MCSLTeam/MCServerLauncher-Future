@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Console.View.Pages;
@@ -9,7 +8,7 @@ using Page = System.Windows.Controls.Page;
 namespace MCServerLauncher.WPF.Console
 {
     /// <summary>
-    ///     MainWindow.xaml 的交互逻辑
+    ///    MainWindow.xaml 的交互逻辑
     /// </summary>
     public partial class MainWindow
     {
@@ -26,7 +25,7 @@ namespace MCServerLauncher.WPF.Console
         }
 
         /// <summary>
-        /// Navigation trigger handler.
+        ///    Navigation trigger handler.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -40,7 +39,7 @@ namespace MCServerLauncher.WPF.Console
         }
 
         /// <summary>
-        /// Navigation to a specific page.
+        ///    Navigation to a specific page.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>
@@ -74,7 +73,7 @@ namespace MCServerLauncher.WPF.Console
         }
 
         /// <summary>
-        /// Determine the transition animation.
+        ///    Determine the transition animation.
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <returns>Transition info.</returns>
@@ -86,7 +85,9 @@ namespace MCServerLauncher.WPF.Console
                 typeof(BoardPage), typeof(CommandPage), typeof(FileManagerPage), typeof(EventTriggerPage),
                 typeof(ComponentManagerPage)
             };
-            return pages.IndexOf(current.GetType()) < pages.IndexOf(navPageType) ? SlideNavigationTransitionEffect.FromRight : SlideNavigationTransitionEffect.FromLeft;
+            return pages.IndexOf(current.GetType()) < pages.IndexOf(navPageType)
+                ? SlideNavigationTransitionEffect.FromRight
+                : SlideNavigationTransitionEffect.FromLeft;
         }
     }
 }

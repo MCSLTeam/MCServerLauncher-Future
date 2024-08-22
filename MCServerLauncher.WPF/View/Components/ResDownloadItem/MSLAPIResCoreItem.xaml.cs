@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     MSLAPIResCoreItem.xaml 的交互逻辑
+    ///    MSLAPIResCoreItem.xaml 的交互逻辑
     /// </summary>
     public partial class MSLAPIResCoreItem
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string CoreName
         {
@@ -20,7 +20,7 @@
         }
 
         /// <summary>
-        /// Raw API core name.
+        ///    Raw API core name.
         /// </summary>
         public string ApiActualName { get; set; }
     }

@@ -1,7 +1,7 @@
 ﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///     ZCloudFileResCoreItem.xaml 的交互逻辑
+    ///    ZCloudFileResCoreItem.xaml 的交互逻辑
     /// </summary>
     public partial class ZCloudFileResCoreItem
     {
@@ -11,7 +11,7 @@
         }
 
         /// <summary>
-        /// Core name.
+        ///    Core name.
         /// </summary>
         public string CoreName
         {
