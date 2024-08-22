@@ -5,7 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
-      xmlns:vc="clr-namespace:MCServerLauncher.WPF.View.Components"
+      xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="NotificationCenterPage">
@@ -18,8 +18,8 @@
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
         <ui:ScrollViewerEx Margin="35,120,35,20">
             <ikw:SimpleStackPanel Spacing="10" x:Name="NotificationContainer">
-                <vc:DownloadProgressItem FileName="Paper-1.21-build99.jar" Progress="56"/>
-                <vc:DownloadProgressItem FileName="Forge-1.20.6-50.1.9.jar" Progress="41"/>
+                <ge:DownloadProgressItem FileName="Paper-1.21-build99.jar" Progress="56"/>
+                <ge:DownloadProgressItem FileName="Forge-1.20.6-50.1.9.jar" Progress="41"/>
                 <ui:InfoBar Title="Infomational Message" IsOpen="True" IsClosable="True" Severity="Informational"
                             Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit."/>
 

@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View.Components
+﻿namespace MCServerLauncher.WPF.View.Components.Generic
 {
     /// <summary>
     ///     DownloadProgressItem.xaml 的交互逻辑

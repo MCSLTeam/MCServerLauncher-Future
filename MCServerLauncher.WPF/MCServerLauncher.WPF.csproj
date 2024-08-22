@@ -203,19 +203,19 @@
     <Compile Include="Remote\ClientConnection.cs" />
     <Compile Include="Remote\Utils.cs" />
     <Compile Include="Utils.cs" />
-    <Compile Include="View\Components\ActionSettingCard.xaml.cs">
+    <Compile Include="View\Components\SettingCard\ActionSettingCard.xaml.cs">
       <DependentUpon>ActionSettingCard.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\ComboSettingCard.xaml.cs">
+    <Compile Include="View\Components\SettingCard\ComboSettingCard.xaml.cs">
       <DependentUpon>ComboSettingCard.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\DownloadProgressItem.xaml.cs">
+    <Compile Include="View\Components\Generic\DownloadProgressItem.xaml.cs">
       <DependentUpon>DownloadProgressItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\FastMirrorResCoreItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\FastMirrorResCoreItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\FastMirrorResCoreVersionItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\FastMirrorResCoreVersionItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreVersionItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\CreateInstanceProvider\CreateMinecraftQuiltInstanceProvider.xaml.cs">
@@ -236,34 +236,34 @@
     <Compile Include="View\Components\JVMArgumentItem.xaml.cs">
       <DependentUpon>JVMArgumentItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\MCSLSyncResCoreItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\MCSLSyncResCoreItem.xaml.cs">
       <DependentUpon>MCSLSyncResCoreItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\MCSLSyncResCoreVersionItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\MCSLSyncResCoreVersionItem.xaml.cs">
       <DependentUpon>MCSLSyncResCoreVersionItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\MSLAPIResCoreItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\MSLAPIResCoreItem.xaml.cs">
       <DependentUpon>MSLAPIResCoreItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\MSLAPIResCoreVersionItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\MSLAPIResCoreVersionItem.xaml.cs">
       <DependentUpon>MSLAPIResCoreVersionItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\PolarsMirrorResCoreItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\PolarsMirrorResCoreItem.xaml.cs">
       <DependentUpon>PolarsMirrorResCoreItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\PolarsMirrorResCoreVersionItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\PolarsMirrorResCoreVersionItem.xaml.cs">
       <DependentUpon>PolarsMirrorResCoreVersionItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\RangeSettingCard.xaml.cs">
+    <Compile Include="View\Components\SettingCard\RangeSettingCard.xaml.cs">
       <DependentUpon>RangeSettingCard.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\SwitchSettingCard.xaml.cs">
+    <Compile Include="View\Components\SettingCard\SwitchSettingCard.xaml.cs">
       <DependentUpon>SwitchSettingCard.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\ZCloudFileResCoreItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\ZCloudFileResCoreItem.xaml.cs">
       <DependentUpon>ZCloudFileResCoreItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\ZCloudFileResCoreVersionItem.xaml.cs">
+    <Compile Include="View\Components\ResDownloadItem\ZCloudFileResCoreVersionItem.xaml.cs">
       <DependentUpon>ZCloudFileResCoreVersionItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Pages\CreateInstancePage.xaml.cs">
@@ -284,7 +284,7 @@
     <Compile Include="View\CreateInstanceProvider\PreCreateInstance.xaml.cs">
       <DependentUpon>PreCreateInstance.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\LoadingScreen.xaml.cs">
+    <Compile Include="View\Components\Generic\LoadingScreen.xaml.cs">
       <DependentUpon>LoadingScreen.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\FirstSetupHelper\EulaSetupPage.xaml.cs">
@@ -341,23 +341,23 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="View\Components\ActionSettingCard.xaml">
+    <Page Include="View\Components\SettingCard\ActionSettingCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\ComboSettingCard.xaml">
+    <Page Include="View\Components\SettingCard\ComboSettingCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\DownloadProgressItem.xaml">
+    <Page Include="View\Components\Generic\DownloadProgressItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\Components\FastMirrorResCoreItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\FastMirrorResCoreItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\FastMirrorResCoreVersionItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\FastMirrorResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -385,43 +385,43 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\MCSLSyncResCoreItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\MCSLSyncResCoreItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\MCSLSyncResCoreVersionItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\MCSLSyncResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\MSLAPIResCoreItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\MSLAPIResCoreItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\MSLAPIResCoreVersionItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\MSLAPIResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\PolarsMirrorResCoreItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\PolarsMirrorResCoreItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\PolarsMirrorResCoreVersionItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\PolarsMirrorResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\RangeSettingCard.xaml">
+    <Page Include="View\Components\SettingCard\RangeSettingCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\SwitchSettingCard.xaml">
+    <Page Include="View\Components\SettingCard\SwitchSettingCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\ZCloudFileResCoreItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\ZCloudFileResCoreItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\ZCloudFileResCoreVersionItem.xaml">
+    <Page Include="View\Components\ResDownloadItem\ZCloudFileResCoreVersionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -449,7 +449,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\Components\LoadingScreen.xaml">
+    <Page Include="View\Components\Generic\LoadingScreen.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\FirstSetupHelper\EulaSetupPage.xaml">
@@ -551,7 +551,9 @@
   <ItemGroup>
     <Resource Include="Resources\MCServerLauncherFuture.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="View\Components\CreateInstance\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

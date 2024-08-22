@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:vc="clr-namespace:MCServerLauncher.WPF.View.Components"
         xmlns:fs="clr-namespace:MCServerLauncher.WPF.View.FirstSetupHelper"
+        xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
         WindowStartupLocation="CenterScreen"
         UseLayoutRounding="True"
         ui:ThemeManager.IsThemeAware="True"
@@ -22,7 +23,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <vc:LoadingScreen x:Name="LoadingScreen" Grid.RowSpan="2"/>
+        <ge:LoadingScreen x:Name="LoadingScreen" Grid.RowSpan="2"/>
         <Grid x:Name="TitleBarGrid" Visibility="Hidden" Grid.Row="0" Margin="10,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
