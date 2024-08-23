@@ -98,63 +98,63 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>MCServerLauncher WPF 遇到錯誤</value>
+    <value>MCServerLauncher WPF 遇到错误</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆棧已復製到剪貼板。您可直接進入 GitHub 進行反饋。</value>
+    <value>堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。</value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
-    <value>WPF 客戶端 ( 僅 Windows )</value>
+    <value>WPF 客户端 ( 仅 Windows )</value>
   </data>
   <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
-    <value>語言 / Language</value>
+    <value>语言 / Language</value>
   </data>
   <data name="FirstSetup_EulaMenu" xml:space="preserve">
-    <value>用戶協議</value>
+    <value>用户协议</value>
   </data>
   <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
-    <value>連接守護進程</value>
+    <value>连接守护进程</value>
   </data>
   <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
-    <value>開始使用</value>
+    <value>开始使用</value>
   </data>
   <data name="Continue" xml:space="preserve">
-    <value>繼續</value>
+    <value>继续</value>
   </data>
   <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
-    <value> 設置語言</value>
+    <value> 设置语言</value>
   </data>
   <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
     <value> Language</value>
   </data>
   <data name="Main_HomeNavMenu" xml:space="preserve">
-    <value>主頁</value>
+    <value>主页</value>
   </data>
   <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
-    <value>新建實例</value>
+    <value>新建实例</value>
   </data>
   <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
-    <value>實例管理</value>
+    <value>实例管理</value>
   </data>
   <data name="Main_ResDownloadNavMenu" xml:space="preserve">
-    <value>資源下載</value>
+    <value>资源下载</value>
   </data>
   <data name="Main_HelpCenterNavMenu" xml:space="preserve">
-    <value>幫助中心</value>
+    <value>帮助中心</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>訊息中心</value>
+    <value>通知中心</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
-    <value>調試頁面</value>
+    <value>调试页面</value>
   </data>
   <data name="Main_SettingsNavMenu" xml:space="preserve">
-    <value>程序設置</value>
+    <value>程序设置</value>
   </data>
   <data name="Tip" xml:space="preserve">
-    <value>訊息</value>
+    <value>提示</value>
   </data>
   <data name="NotAllowedOverOpening" xml:space="preserve">
-    <value>MCServerLauncher WPF 不支持重復啟動。</value>
+    <value>MCServerLauncher WPF 不支持重复运行。</value>
   </data>
 </root>
