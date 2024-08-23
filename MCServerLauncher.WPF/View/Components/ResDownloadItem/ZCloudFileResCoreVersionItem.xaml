@@ -22,9 +22,9 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Margin="20,16,5,5" Grid.Column="0" Grid.Row="0" Text="文件名："
+                <TextBlock Margin="20,16,5,5" Grid.Column="0" Grid.Row="0" Text="{Binding [FileName], StringFormat={}：, Source={x:Static h:LanguageManager.Instance}}"
                            Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left" />
-                <TextBlock Margin="20,5,5,10" Grid.Column="0" Grid.Row="1" Text="文件大小："
+                <TextBlock Margin="20,5,5,10" Grid.Column="0" Grid.Row="1" Text="{Binding [FileSize], StringFormat={}：, Source={x:Static h:LanguageManager.Instance}}"
                            Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left" />
                 <TextBlock Margin="20,16,5,5" Grid.Column="1" Grid.Row="0" x:Name="FileNameReplacer"
                            Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"

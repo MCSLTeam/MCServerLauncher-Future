@@ -102,8 +102,8 @@ namespace MCServerLauncher.WPF
                 case not null when navPageType == typeof(SettingsPage):
                     CurrentPage.Navigate(_settings);
                     break;
-                case not null when navPageType == typeof(TestPage):
-                    CurrentPage.Navigate(new TestPage());
+                case not null when navPageType == typeof(DebugPage):
+                    CurrentPage.Navigate(new DebugPage());
                     break;
             }
         }

@@ -13,47 +13,47 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="请选择欲操作的方式:" VerticalAlignment="Top"
+        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreCreateInstanceTip], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="0,80,0,0" />
         <ui:ScrollViewerEx Grid.Row="1" Margin="0,15,0,60">
             <ikw:SimpleStackPanel Spacing="10">
                 <Button x:Name="MinecraftJavaServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="通用 Minecraft Java 版服务器" />
+                        Content="{Binding [CreateUniversalMinecraftJavaInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button x:Name="MinecraftForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="Minecraft Forge 服务器" />
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftForgeInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button x:Name="MinecraftNeoForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="Minecraft NeoForge 服务器" />
+                        Content="{Binding [CreateMinecraftNeoForgeInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button x:Name="MinecraftQuiltServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="Minecraft Quilt 服务器" />
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftQuiltInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button x:Name="MinecraftBedrockServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="Minecraft 基岩版服务器" />
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftBedrockInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button IsEnabled="False" x:Name="MinecraftGeyserStandalone" Padding="20,10,0,10"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="Minecraft Geyser互通 独立端" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateMinecraftGeyserStandaloneInstance], Source={x:Static h:LanguageManager.Instance}}" ToolTip="没做完呢，别急" />
                 <Button IsEnabled="False" x:Name="MinecraftBungeeCord" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="Minecraft BungeeCord 群组端" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateMinecraftBungeeCordInstance], Source={x:Static h:LanguageManager.Instance}}" ToolTip="没做完呢，别急" />
                 <Button IsEnabled="False" x:Name="MinecraftWaterfall" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="Minecraft Waterfall 群组端" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateMinecraftWaterfallInstance], Source={x:Static h:LanguageManager.Instance}}" ToolTip="没做完呢，别急" />
                 <Button IsEnabled="False" x:Name="MinecraftVelocity" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="Minecraft Velocity 群组端" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateMinecraftVelocityInstance], Source={x:Static h:LanguageManager.Instance}}" ToolTip="没做完呢，别急" />
                 <Button IsEnabled="False" x:Name="MinecraftTravertine" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="Minecraft Travertine 群组端" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateMinecraftTravertineInstance], Source={x:Static h:LanguageManager.Instance}}" ToolTip="没做完呢，别急" />
                 <Button IsEnabled="False" x:Name="FastReverseProxyClient" Padding="20,10,0,10"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="FRP 客户端程序 ( FRPC )" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateFastReverseProxyClientInstance], Source={x:Static h:LanguageManager.Instance}}" ToolTip="没做完呢，别急" />
                 <Button IsEnabled="False" x:Name="TerrariaGameServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="Terraria 游戏服务器"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateTerrariaServerInstance], Source={x:Static h:LanguageManager.Instance}}"
                         ToolTip="没做完呢，别急" />
                 <Button x:Name="OtherExecutable" Padding="20,10,0,10" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="其他控制台程序" />
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateOtherExecutableInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button IsEnabled="False" x:Name="ImportInstance" Padding="20,10,0,10" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="导入现有实例"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [ImportExistsInstance], Source={x:Static h:LanguageManager.Instance}}"
                         ToolTip="没做完呢，别急" />
 
             </ikw:SimpleStackPanel>

@@ -15,7 +15,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="添加守护进程"
+        <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [FirstSetup_ConnectDaemonMenu], Source={x:Static h:LanguageManager.Instance}}"
                    HorizontalAlignment="Left" />
         <TextBlock Margin="40,20,40,0" Grid.Row="1" Style="{StaticResource MinititleTextBlock}"
                    Text="MCServerLauncher 的所有实例均移交给 守护进程 管理。请在此处链接已部署好的守护进程。" TextTrimming="CharacterEllipsis"
@@ -27,12 +27,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <ui:HyperlinkButton Content="暂时跳过" Height="32" Hyperlink.Click="Skip" Grid.Column="0"
+                <ui:HyperlinkButton Content="{Binding [TempSkip], Source={x:Static h:LanguageManager.Instance}}" Height="32" Hyperlink.Click="Skip" Grid.Column="0"
                                     HorizontalAlignment="Right" Margin="0,0,20,0" />
                 <Button IsEnabled="False" Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0"
                         Style="{StaticResource AccentButtonStyle}">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="继续" />
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static h:LanguageManager.Instance}}" />
                     </Button.Content>
                 </Button>
             </Grid>

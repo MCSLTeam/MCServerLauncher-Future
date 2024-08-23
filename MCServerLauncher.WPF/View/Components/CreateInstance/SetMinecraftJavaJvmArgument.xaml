@@ -21,16 +21,16 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="JVM 参数" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_Title], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                       Style="{StaticResource BodyTextBlock}" Text="(可选) 可在此处添加其他 JVM 参数，一行一个。"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_Description], Source={x:Static h:LanguageManager.Instance}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <Button Click="AddJvmArgument" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="20,15,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="添加参数" />
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_AddArgument], Source={x:Static h:LanguageManager.Instance}}" />
                 </Button.Content>
             </Button>
             <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JVMArgumentListView"

@@ -19,10 +19,10 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="JVM 内存堆" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Title], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                       Style="{StaticResource BodyTextBlock}" Text="这决定了您的 Minecraft Java 服务器将能使用多少内存。"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Description], Source={x:Static h:LanguageManager.Instance}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="20,15,20,20">
@@ -35,12 +35,12 @@
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
                               InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
                               Width="200" Margin="0,0,10,0" SpinButtonPlacementMode="Inline"
-                              PlaceholderText="最小内存" />
+                              PlaceholderText="{Binding [MinimumMemory], Source={x:Static h:LanguageManager.Instance}}" />
                 <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~" />
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
                               InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
                               Width="200" Margin="10,0,10,0" SpinButtonPlacementMode="Inline"
-                              PlaceholderText="最大内存" />
+                              PlaceholderText="{Binding [MaximumMemory], Source={x:Static h:LanguageManager.Instance}}" />
                 <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
                     <ComboBoxItem Content="M" IsSelected="True" />
                     <ComboBoxItem Content="G" />
@@ -53,7 +53,7 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:Flyout Placement="TopEdgeAlignedRight">
-                        <TextBlock TextWrapping="Wrap" Text="最小内存 ≤ 最大内存即可" />
+                        <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Tip], Source={x:Static h:LanguageManager.Instance}}" />
                     </ui:Flyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>

@@ -19,14 +19,14 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="运行命令" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                       Style="{StaticResource BodyTextBlock}" Text="在此处输入运行命令。" TextWrapping="Wrap"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description], Source={x:Static h:LanguageManager.Instance}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2"
                      Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,20,20"
-                     ui:ControlHelper.PlaceholderText="运行命令" />
+                     ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title], Source={x:Static h:LanguageManager.Instance}}" />
             <ui:DropDownButton Grid.Row="0" Grid.Column="1" ShowChevronArrow="False"
                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                 <ui:DropDownButton.Content>
@@ -34,7 +34,7 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:Flyout Placement="TopEdgeAlignedRight">
-                        <TextBlock TextWrapping="Wrap" Text="如果需要附带参数，&#x000A;直接附在后面即可。" />
+                        <TextBlock TextWrapping="Wrap" Text="{Binding [RunCommandArgumentTip], Source={x:Static h:LanguageManager.Instance}}" />
                     </ui:Flyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>

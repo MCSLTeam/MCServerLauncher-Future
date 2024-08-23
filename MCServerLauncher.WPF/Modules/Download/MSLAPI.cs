@@ -34,7 +34,7 @@ namespace MCServerLauncher.WPF.Modules.Download
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     .SelectToken("data")!.SelectToken("description")!.ToString();
-            return "获取核心介绍失败！";
+            return LanguageManager.Instance["DownloadModule_MSLAPIGetCoreDescriptionFailed"];
         }
 
         /// <summary>

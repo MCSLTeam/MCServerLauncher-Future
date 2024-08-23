@@ -13,10 +13,10 @@
 
     <Grid>
         <Button Click="TestNotification" Content="test" Visibility="Hidden" />
-        <TextBlock Style="{StaticResource TitleTextBlock}" Text="通知中心" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_NotificationCenterNavMenu], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left"
                    Margin="35,35,0,0" />
-        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="四面八方，使命必达。" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [NotificationCenterTip], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
         <ui:ScrollViewerEx Margin="35,120,35,20">
             <ikw:SimpleStackPanel Spacing="10" x:Name="NotificationContainer">

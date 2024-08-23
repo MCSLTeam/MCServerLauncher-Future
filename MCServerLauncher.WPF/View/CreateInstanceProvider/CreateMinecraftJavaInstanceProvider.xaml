@@ -24,16 +24,16 @@
             <Button Grid.Column="0" Grid.Row="0" Click="GoPreCreateInstance" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="返回" />
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static h:LanguageManager.Instance}}" />
                 </Button.Content>
             </Button>
-            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="完成以下配置后，单击 “继续”。"
+            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static h:LanguageManager.Instance}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0" />
             <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
                     <ui:IconAndText x:Name="FinishSetupInstance" Icon="{x:Static ui:SegoeFluentIcons.PageRight}"
-                                    Content="继续" />
+                                    Content="{Binding [Continue], Source={x:Static h:LanguageManager.Instance}}" />
                 </Button.Content>
             </Button>
         </Grid>

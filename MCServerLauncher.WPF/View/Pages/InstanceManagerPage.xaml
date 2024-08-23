@@ -9,9 +9,9 @@
       Title="InstanceManagerPage">
 
     <Grid>
-        <TextBlock Style="{StaticResource TitleTextBlock}" Text="实例管理" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,35,0,0" />
-        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="纵览全局，以观天下。" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [InstanceManagerTip], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
     </Grid>
 </Page>

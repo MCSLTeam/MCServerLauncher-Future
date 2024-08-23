@@ -9,9 +9,9 @@
       Title="HelpPage">
 
     <Grid>
-        <TextBlock Style="{StaticResource TitleTextBlock}" Text="帮助" VerticalAlignment="Top" HorizontalAlignment="Left"
+        <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_HelpCenterNavMenu], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top" HorizontalAlignment="Left"
                    Margin="35,35,0,0" />
-        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="尽其所能，答其所问。" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [HelpCenterTip], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
     </Grid>
 </Page>

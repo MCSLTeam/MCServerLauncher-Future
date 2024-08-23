@@ -15,9 +15,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <TextBlock Style="{StaticResource TitleTextBlock}" Text="资源下载" VerticalAlignment="Top"
+            <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" Margin="0,35,0,0" />
-            <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}" Text="你想要的，这里都有。"
+            <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}" Text="{Binding [ResDownloadTip], Source={x:Static h:LanguageManager.Instance}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,10,0"
                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
         </Grid>

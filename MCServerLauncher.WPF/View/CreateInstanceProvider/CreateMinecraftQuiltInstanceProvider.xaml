@@ -24,15 +24,15 @@
             <Button Grid.Column="0" Grid.Row="0" Click="GoPreCreateInstance" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="返回" />
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static h:LanguageManager.Instance}}" />
                 </Button.Content>
             </Button>
-            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="完成以下配置后，单击 “继续”。"
+            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static h:LanguageManager.Instance}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0" />
             <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="继续" />
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static h:LanguageManager.Instance}}" />
                 </Button.Content>
             </Button>
         </Grid>
@@ -51,21 +51,21 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                                   Style="{StaticResource SubtitleTextBlock}" Text="Minecraft 版本"
+                                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [MinecraftVersion], Source={x:Static h:LanguageManager.Instance}}"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                                   Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 Minecraft 版本。"
+                                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftVersionTip], Source={x:Static h:LanguageManager.Instance}}"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <CheckBox x:Name="ToggleStableMinecraftVersionCheckBox" Grid.Row="2" Grid.Column="0"
-                                  Content="仅显示正式版" IsChecked="True" Margin="20,0,10,0" />
+                                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static h:LanguageManager.Instance}}" IsChecked="True" Margin="20,0,10,0" />
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="3" Grid.Column="0" Margin="20,5,10,20"
                                   Width="Auto" HorizontalAlignment="Stretch" />
                         <Button Height="32" Margin="0,5,20,0" Grid.Row="3" Grid.Column="1" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" Click="FetchMinecraftVersions"
                                 x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
-                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
+                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static h:LanguageManager.Instance}}" />
                             </Button.Content>
                         </Button>
 
@@ -76,7 +76,7 @@
                             </ui:DropDownButton.Content>
                             <ui:DropDownButton.Flyout>
                                 <ui:Flyout Placement="TopEdgeAlignedRight">
-                                    <TextBlock TextWrapping="Wrap" Text="如果加载不出来，请稍后再试。&#x000A;下载服务由 BMCLAPI 提供支持" />
+                                    <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static h:LanguageManager.Instance}}" />
                                 </ui:Flyout>
                             </ui:DropDownButton.Flyout>
                         </ui:DropDownButton>
@@ -94,10 +94,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                                   Style="{StaticResource SubtitleTextBlock}" Text="Quilt 版本" VerticalAlignment="Top"
+                                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [QuiltVersion], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                                    HorizontalAlignment="Left" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                                   Style="{StaticResource BodyTextBlock}" Text="请选择该服务器将运行的 Quilt 加载器的版本。"
+                                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectQuiltVersion_Description], Source={x:Static h:LanguageManager.Instance}}"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <ComboBox x:Name="QuiltVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
@@ -105,7 +105,7 @@
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" x:Name="FetchQuiltVersionButton" Click="FetchQuiltVersions">
                             <Button.Content>
-                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="刷新" />
+                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static h:LanguageManager.Instance}}" />
                             </Button.Content>
                         </Button>
 
@@ -116,7 +116,7 @@
                             </ui:DropDownButton.Content>
                             <ui:DropDownButton.Flyout>
                                 <ui:Flyout Placement="TopEdgeAlignedRight">
-                                    <TextBlock TextWrapping="Wrap" Text="如果加载不出来，请稍后再试。&#x000A;下载服务由 BMCLAPI 提供支持" />
+                                    <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static h:LanguageManager.Instance}}" />
                                 </ui:Flyout>
                             </ui:DropDownButton.Flyout>
                         </ui:DropDownButton>

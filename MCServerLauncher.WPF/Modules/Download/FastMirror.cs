@@ -20,11 +20,11 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             return originalTag switch
             {
-                "proxy" => "代理",
-                "vanilla" => "原版",
-                "pure" => "纯净",
-                "mod" => "模组",
-                "bedrock" => "基岩",
+                "proxy" => LanguageManager.Instance["DownloadModule_FastMirrorProxyType"],
+                "vanilla" => LanguageManager.Instance["DownloadModule_FastMirrorVanillaType"],
+                "pure" => LanguageManager.Instance["DownloadModule_FastMirrorPureType"],
+                "mod" => LanguageManager.Instance["DownloadModule_FastMirrorModType"],
+                "bedrock" => LanguageManager.Instance["DownloadModule_FastMirrorBedrockType"],
                 _ => originalTag
             };
         }

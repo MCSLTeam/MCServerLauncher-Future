@@ -21,7 +21,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <TextBlock Margin="20,0,0,0" Grid.Column="0" Text="文件名：" Style="{StaticResource MinititleTextBlock}"
+                <TextBlock Margin="20,0,0,0" Grid.Column="0" Text="{Binding [FileName], StringFormat={}：, Source={x:Static h:LanguageManager.Instance}}" Style="{StaticResource MinititleTextBlock}"
                            HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                 <TextBlock Margin="20,0,0,0" Grid.Column="1" x:Name="FileNameReplacer"
                            Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"

@@ -19,11 +19,11 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="Java 运行时" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftJavaJvm_Title], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
                        Style="{StaticResource BodyTextBlock}"
-                       Text="Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。" TextWrapping="Wrap"
+                       Text="{Binding [CreateInstance_SelectMinecraftJavaJvm_Description], Source={x:Static h:LanguageManager.Instance}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2"
                      Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="Java 路径" />
@@ -34,18 +34,18 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <MenuItem Header="手动选择">
+                        <MenuItem Header="{Binding [SelectManually], Source={x:Static h:LanguageManager.Instance}}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="在 Daemon 宿主机自动搜索">
+                        <MenuItem Header="{Binding [ScanJavaAtDaemon], Source={x:Static h:LanguageManager.Instance}}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SearchAndApps}"
                                              FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="从现有结果中选取">
+                        <MenuItem Header="{Binding [SelectFromResult], Source={x:Static h:LanguageManager.Instance}}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SelectAll}" FontSize="16" />
                             </MenuItem.Icon>
@@ -61,7 +61,7 @@
                 <ui:DropDownButton.Flyout>
                     <ui:Flyout Placement="TopEdgeAlignedRight">
                         <TextBlock TextWrapping="Wrap"
-                                   Text="1.12+ 要求 Java 8&#x000A;1.17+ 要求 Java 16&#x000A;1.18+ 要求 Java 17&#x000A;1.20.5+ 要求 Java 21" />
+                                   Text="{Binding [MinecraftJavaRequirementTip], Source={x:Static h:LanguageManager.Instance}}" />
                     </ui:Flyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>

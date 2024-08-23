@@ -10,9 +10,9 @@
       d:DesignHeight="450" d:DesignWidth="800"
       Title="HomePage">
     <Grid>
-        <TextBlock Style="{StaticResource TitleTextBlock}" Text="主页" VerticalAlignment="Top" HorizontalAlignment="Left"
+        <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_HomeNavMenu], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top" HorizontalAlignment="Left"
                    Margin="35,35,0,0" />
-        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="新征程，新体验。" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [HomeTip], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
         <ui:ScrollViewerEx Margin="35,120,35,0">
             <ikw:SimpleStackPanel>

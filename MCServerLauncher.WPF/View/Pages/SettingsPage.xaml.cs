@@ -290,9 +290,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ActionWhenDownloadError { get; } = new List<string>
         {
-            "直接停止下载",
-            "重试下载 1 次",
-            "重试下载 3 次"
+            LanguageManager.Instance["Settings_ActionWhenDownloadError_Stop"],
+            LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry1"],
+            LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry3"]
         };
 
         public int ActionWhenDownloadErrorIndex
@@ -329,8 +329,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ActionWhenDeleteConfirm { get; } = new List<string>
         {
-            "实例名称输入验证",
-            "守护进程密钥验证"
+            LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeName"],
+            LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeKey"]
         };
 
         private static readonly List<string> _actionWhenDeleteConfirmList = new() { "name", "key" };
@@ -369,9 +369,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ThemeForApp { get; } = new List<string>
         {
-            "跟随系统",
-            "浅色",
-            "深色"
+            LanguageManager.Instance["Settings_AppTheme_Auto"],
+            LanguageManager.Instance["Settings_AppTheme_Light"],
+            LanguageManager.Instance["Settings_AppTheme_Dark"]
         };
 
         private static readonly List<string> _themeList = new() { "auto", "light", "dark" };

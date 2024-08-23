@@ -24,7 +24,7 @@
             <TextBlock x:Name="SettingDescription" Grid.Column="1" VerticalAlignment="Top" Grid.Row="1"
                        Margin="0,2,20,5" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis"
                        TextWrapping="WrapWithOverflow" />
-            <ui:ToggleSwitch x:Name="SettingSwitch" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center" OffContent="关" OnContent="开" />
+            <ui:ToggleSwitch x:Name="SettingSwitch" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center" OffContent="{Binding [Off], Source={x:Static h:LanguageManager.Instance}}" OnContent="{Binding [On], Source={x:Static h:LanguageManager.Instance}}" />
         </Grid>
     </Border>
 </UserControl>

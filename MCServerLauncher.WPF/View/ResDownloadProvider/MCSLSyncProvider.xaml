@@ -19,7 +19,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition />
                 </Grid.RowDefinitions>
-                <TextBlock Margin="15,15,15,0" Grid.Row="0" Text="服务器核心" Style="{StaticResource MinititleTextBlock}"
+                <TextBlock Margin="15,15,15,0" Grid.Row="0" Text="{Binding [ResDownload_InstanceCore], Source={x:Static h:LanguageManager.Instance}}" Style="{StaticResource MinititleTextBlock}"
                            HorizontalAlignment="Center" />
                 <ui:ScrollViewerEx Margin="10,10,10,15" VerticalAlignment="Stretch" Width="180" Height="Auto"
                                    Grid.Row="1">
@@ -36,7 +36,7 @@
                     <RowDefinition />
                 </Grid.RowDefinitions>
                 <ComboBox Grid.Row="0" x:Name="MinecraftVersionComboBox" Width="Auto" HorizontalAlignment="Stretch"
-                          IsEnabled="False" ToolTip="Minecraft 版本" SelectionChanged="GetCoreDetail" />
+                          IsEnabled="False" ToolTip="{Binding [MinecraftVersion], Source={x:Static h:LanguageManager.Instance}}" SelectionChanged="GetCoreDetail" />
                 <ui:ScrollViewerEx Grid.Row="1" Margin="0,10,0,0" VerticalAlignment="Stretch"
                                    HorizontalAlignment="Stretch" Width="Auto">
                     <ikw:SimpleStackPanel x:Name="CoreVersionStackPanel" />

@@ -41,53 +41,53 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="设置" VerticalAlignment="Top"
+        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_SettingsNavMenu], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" />
-        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="你的 MCSL，你的选择。"
+        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="{Binding [SettingsTip], Source={x:Static h:LanguageManager.Instance}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0" />
 
         <ui:ScrollViewerEx Grid.Column="0" Grid.Row="2" Margin="0,15,0,35">
             <ikw:SimpleStackPanel Spacing="10" VerticalAlignment="Top" HorizontalAlignment="Stretch">
 
-                <TextBlock Text="新建实例" FontSize="18" />
+                <TextBlock Text="{Binding [Main_CreateInstanceNavMenu], Source={x:Static h:LanguageManager.Instance}}" FontSize="18" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoAgreeEula"
-                                      Title="自动同意 EULA (Minecraft Java 版服务器 实例 )"
-                                      Description="自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。"
+                                      Title="{Binding [Settings_AutoAcceptMinecraftJavaEula_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_AutoAcceptMinecraftJavaEula_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
                                       Status="{Binding Path=MinecraftJavaAutoAcceptEula}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoDisableOnlineMode"
-                                      Title="自动禁用正版验证 ( Minecraft Java 版服务器 实例 )"
-                                      Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。"
+                                      Title="{Binding [Settings_AutoDisableMinecraftJavaOnlineMode_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_AutoDisableMinecraftJavaOnlineMode_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
                                       Status="{Binding Path=MinecraftJavaAutoSwitchOnlineMode}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftBedrockAutoDisableOnlineMode"
-                                      Title="自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )"
-                                      Description="启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。"
+                                      Title="{Binding [Settings_AutoDisableMinecraftBedrockOnlineMode_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_AutoDisableMinecraftBedrockOnlineMode_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
                                       Status="{Binding Path=MinecraftBedrockAutoSwitchOnlineMode}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftForgeInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="使用镜像源进行部署 ( Minecraft Forge 服务器 实例 )"
-                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftForgeInstall_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Status="{Binding Path=UseMirrorForMinecraftForgeInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftNeoForgeInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="使用镜像源进行部署 ( Minecraft NeoForge 服务器 实例 )"
-                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftNeoForgeInstall_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Status="{Binding Path=UseMirrorForMinecraftNeoForgeInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftFabricInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="使用镜像源进行部署 ( Minecraft Fabric 服务器 实例 )"
-                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftFabricInstall_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Status="{Binding Path=UseMirrorForMinecraftFabricInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftQuiltInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="使用镜像源进行部署 ( Minecraft Quilt 服务器 实例 )"
-                                      Description="启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftQuiltInstall_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Status="{Binding Path=UseMirrorForMinecraftQuiltInstall}" />
 
 
-                <TextBlock Text="资源下载" FontSize="18" Margin="0,10,0,0" />
+                <TextBlock Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static h:LanguageManager.Instance}}" FontSize="18" Margin="0,10,0,0" />
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
@@ -101,65 +101,66 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ProvisioningPackage}" Grid.RowSpan="2"
                                          Grid.Column="0" Margin="5,15,20,15" />
-                            <TextBlock Text="下载源" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
+                            <TextBlock Text="{Binding [Settings_ResDownloadProvider_Title], Source={x:Static h:LanguageManager.Instance}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
                                        Margin="0,0,0,2" TextTrimming="CharacterEllipsis"
                                        TextWrapping="WrapWithOverflow" />
-                            <TextBlock Text="选择在 “资源下载” 页面使用的下载提供方。" Grid.Row="1" Grid.Column="1"
+                            <TextBlock Text="{Binding [Settings_ResDownloadProvider_Description], Source={x:Static h:LanguageManager.Instance}}" Grid.Row="1" Grid.Column="1"
                                        VerticalAlignment="Center" Margin="0,2,20,5" Opacity="0.615" FontSize="12"
                                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <ui:RadioButtons Margin="5,0,5,0">
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="无极镜像 FastMirror ( 由 物语云计算 提供支持 )" x:Name="FastMirrorSrc" />
+                                     Content="{Binding [Settings_FastMirrorName], Source={x:Static h:LanguageManager.Instance}}" x:Name="FastMirrorSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="极星云镜像 ( 由 极星网络 提供支持 )" x:Name="PolarsMirrorSrc" />
+                                     Content="{Binding [Settings_PolarsMirrorName], Source={x:Static h:LanguageManager.Instance}}" x:Name="PolarsMirrorSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )" x:Name="ZCloudFileSrc" />
+                                     Content="{Binding [Settings_ZCloudFileName], Source={x:Static h:LanguageManager.Instance}}" x:Name="ZCloudFileSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="MSL下载源 ( 由 MSL开服器 提供支持 )" x:Name="MSLAPISrc" />
+                                     Content="{Binding [Settings_MSLAPIName], Source={x:Static h:LanguageManager.Instance}}" x:Name="MSLAPISrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="MCSL-Sync 同步镜像" x:Name="MCSLSyncSrc" />
+                                     Content="{Binding [Settings_MCSLSyncName], Source={x:Static h:LanguageManager.Instance}}" x:Name="MCSLSyncSrc" />
                     </ui:RadioButtons>
                 </Expander>
-                <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="下载引擎线程数"
+                <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="{Binding [Settings_DownloadThreadCnt_Title], Source={x:Static h:LanguageManager.Instance}}"
                                      x:Name="ResDownload_DownloadThreadCnt"
-                                     Description="线程数越多，在计算机性能足够的情况下，文件下载越快；反之会造成严重的卡顿。一般来说，设置为 16 线程即可满足需求。"
+                                     Description="{Binding [Settings_DownloadThreadCnt_Description], Source={x:Static h:LanguageManager.Instance}}"
                                      MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}" />
                 <sc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
-                                     Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="下载失败处理方式"
-                                     Description="当文件下载失败时，应当进行的操作。"
+                                     Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="{Binding [Settings_ActionWhenDownloadError_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                     Description="{Binding [Settings_ActionWhenDownloadError_Description], Source={x:Static h:LanguageManager.Instance}}"
                                      ComboBoxItems="{Binding Path=ActionWhenDownloadError}" />
-                <TextBlock Text="实例管理" FontSize="18" Margin="0,10,0,0" />
+                <TextBlock Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static h:LanguageManager.Instance}}" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="Instance_ActionWhenDeleteConfirm"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="删除实例确认方式"
-                                     Description="此功能可防止误操作导致实例被删除。"
+                                     Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="{Binding [Settings_ActionWhenDeleteConfirm_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                     Description="{Binding [Settings_ActionWhenDeleteConfirm_Description], Source={x:Static h:LanguageManager.Instance}}"
                                      ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}" />
-                <TextBlock Text="更多" FontSize="18" Margin="0,10,0,0" />
+                <TextBlock Text="{Binding [More], Source={x:Static h:LanguageManager.Instance}}" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="More_LauncherTheme"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="应用主题"
-                                     Description="默认跟随系统变化，当然也可以自己设置。"
+                                     Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="{Binding [Settings_AppTheme_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                     Description="{Binding [Settings_AppTheme_Description], Source={x:Static h:LanguageManager.Instance}}"
                                      ComboBoxItems="{Binding Path=ThemeForApp}" />
                 <sc:SwitchSettingCard x:Name="More_FollowStartupForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
-                                      Title="开机自启动 ( MCServerLauncher.WPF )"
-                                      Description="在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。"
+                                      Title="{Binding [Settings_FollowStartupForLauncher_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_FollowStartupForLauncher_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Status="{Binding Path=AutoCheckUpdateForLauncher}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForLauncher"
-                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="检查更新 ( MCServerLauncher.WPF )"
-                                      Description="检查本图形化程序的更新。"
+                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="{Binding [Settings_CheckUpdateForLauncher_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_CheckUpdateForLauncher_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       IsAccentButtonStyle="True"
-                                      ButtonContent="检查更新" />
+                                      ButtonContent="{Binding [CheckUpdate], Source={x:Static h:LanguageManager.Instance}}" />
                 <sc:SwitchSettingCard x:Name="More_AutoCheckUpdateForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
-                                      Title="自动检查更新 ( MCServerLauncher.WPF )"
-                                      Description="在每次启动时，检查本图形化程序的更新。"
+                                      Title="{Binding [Settings_AutoCheckUpdateForLauncher_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_AutoCheckUpdateForLauncher_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       Status="{Binding Path=AutoCheckUpdateForLauncher}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForDaemon" IsEnabled="False"
                                       Icon="{x:Static ui:SegoeFluentIcons.Processing}"
-                                      Title="检查更新 ( MCServerLauncher.Daemon )" Description="检查守护进程的更新。"
+                                      Title="{Binding [Settings_CheckUpdateForDaemon_Title], Source={x:Static h:LanguageManager.Instance}}"
+                                      Description="{Binding [Settings_CheckUpdateForDaemon_Description], Source={x:Static h:LanguageManager.Instance}}"
                                       IsAccentButtonStyle="True"
-                                      ButtonContent="检查更新" />
+                                      ButtonContent="{Binding [CheckUpdate], Source={x:Static h:LanguageManager.Instance}}" />
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
@@ -173,7 +174,7 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Grid.RowSpan="2"
                                          Margin="5,15,20,15" />
-                            <TextBlock Text="关于 MCServerLauncher Future (WPF)" TextTrimming="CharacterEllipsis"
+                            <TextBlock Text="{Binding [Settings_About_Title], Source={x:Static h:LanguageManager.Instance}}" TextTrimming="CharacterEllipsis"
                                        TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1"
                                        VerticalAlignment="Bottom" Margin="0,0,0,2" />
                             <TextBlock x:Name="AboutVersionReplacer" Grid.Column="1" VerticalAlignment="Top"
@@ -193,7 +194,7 @@
                                    Text="MCServerLauncher Future Project" VerticalAlignment="Center"
                                    HorizontalAlignment="Left" Margin="0,0,0,10" />
                         <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                   Text="此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序（或其中任何部分），将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。"
+                                   Text="{Binding [Settings_About_LegalProtected], Source={x:Static h:LanguageManager.Instance}}"
                                    VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10" />
                         <Grid Grid.Row="2" VerticalAlignment="Center" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -202,18 +203,18 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                       Text="此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至"
+                                       Text="{Binding [Settings_About_OpenSourceLicenseProtected], Source={x:Static h:LanguageManager.Instance}}"
                                        VerticalAlignment="Center" HorizontalAlignment="Left" />
                             <ui:HyperlinkButton Grid.Column="1" Padding="0"
                                                 NavigateUri="https://github.com/MCSLTeam/MCServerLauncher-Future">
                                 GitHub
                             </ui:HyperlinkButton>
                             <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                       Text="。" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                       Text="{Binding [PeriodSymbol], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Center" HorizontalAlignment="Left" />
                         </Grid>
 
                         <TextBlock Grid.Row="3" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                   Text="MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。"
+                                   Text="{Binding [Settings_About_CertProtected], Source={x:Static h:LanguageManager.Instance}}"
                                    VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,20,10" />
                         <Grid Grid.Row="4" VerticalAlignment="Center" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>

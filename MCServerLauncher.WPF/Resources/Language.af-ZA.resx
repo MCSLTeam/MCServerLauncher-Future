@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -156,5 +156,476 @@
   </data>
   <data name="NotAllowedOverOpening" xml:space="preserve">
     <value>MCServerLauncher WPF 不支持重复运行。</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ResDownloadTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value></value>
   </data>
 </root>
