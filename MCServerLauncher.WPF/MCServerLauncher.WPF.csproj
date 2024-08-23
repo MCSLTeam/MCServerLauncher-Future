@@ -592,7 +592,34 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="Resources\Language.af-ZA.resx" />
+    <EmbeddedResource Include="Resources\Language.ar-SA.resx" />
+    <EmbeddedResource Include="Resources\Language.ca-ES.resx" />
+    <EmbeddedResource Include="Resources\Language.cs-CZ.resx" />
+    <EmbeddedResource Include="Resources\Language.da-DK.resx" />
+    <EmbeddedResource Include="Resources\Language.de-DE.resx" />
+    <EmbeddedResource Include="Resources\Language.el-GR.resx" />
     <EmbeddedResource Include="Resources\Language.en-US.resx" />
+    <EmbeddedResource Include="Resources\Language.es-ES.resx" />
+    <EmbeddedResource Include="Resources\Language.fi-FI.resx" />
+    <EmbeddedResource Include="Resources\Language.fr-FR.resx" />
+    <EmbeddedResource Include="Resources\Language.he-IL.resx" />
+    <EmbeddedResource Include="Resources\Language.hu-HU.resx" />
+    <EmbeddedResource Include="Resources\Language.it-IT.resx" />
+    <EmbeddedResource Include="Resources\Language.ja-JP.resx" />
+    <EmbeddedResource Include="Resources\Language.ko-KR.resx" />
+    <EmbeddedResource Include="Resources\Language.nl-NL.resx" />
+    <EmbeddedResource Include="Resources\Language.no-NO.resx" />
+    <EmbeddedResource Include="Resources\Language.pl-PL.resx" />
+    <EmbeddedResource Include="Resources\Language.pt-BR.resx" />
+    <EmbeddedResource Include="Resources\Language.pt-PT.resx" />
+    <EmbeddedResource Include="Resources\Language.ro-RO.resx" />
+    <EmbeddedResource Include="Resources\Language.ru-RU.resx" />
+    <EmbeddedResource Include="Resources\Language.sr-SP.resx" />
+    <EmbeddedResource Include="Resources\Language.sv-SE.resx" />
+    <EmbeddedResource Include="Resources\Language.tr-TR.resx" />
+    <EmbeddedResource Include="Resources\Language.uk-UA.resx" />
+    <EmbeddedResource Include="Resources\Language.vi-VN.resx" />
     <EmbeddedResource Include="Resources\Language.zh-Hans.resx" />
     <EmbeddedResource Include="Resources\Language.zh-Hant.resx" />
     <EmbeddedResource Include="Resources\MCSLTeam.cer" />

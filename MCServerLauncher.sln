@@ -46,8 +46,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceTail","PunctuationLead","PunctuationTail"]}
-		SolutionGuid = {F5E19E2D-E5CF-4B9A-9449-7675E3E5C4C0}
+		RESX_AutoApplyExistingTranslations = True
 		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F5E19E2D-E5CF-4B9A-9449-7675E3E5C4C0}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceTail","PunctuationLead","PunctuationTail"]}
 	EndGlobalSection
 EndGlobal
