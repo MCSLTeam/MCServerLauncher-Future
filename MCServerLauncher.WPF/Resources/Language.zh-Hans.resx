@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
 		Microsoft ResX Schema
@@ -200,7 +200,7 @@
     <value>Java 运行时</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
-    <value>Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。</value>
+    <value>Java 运行时是 Minecraft Java 服务器的必需环境。请务必选择合适的版本，防止启动失败。</value>
   </data>
   <data name="JavaPath" xml:space="preserve">
     <value>Java 路径</value>
