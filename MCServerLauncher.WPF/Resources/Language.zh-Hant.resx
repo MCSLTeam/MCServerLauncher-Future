@@ -164,73 +164,73 @@
     <value>原版</value>
   </data>
   <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
-    <value>纯净</value>
+    <value>純淨</value>
   </data>
   <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
-    <value>模组</value>
+    <value>模組</value>
   </data>
   <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
     <value>基岩</value>
   </data>
   <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
-    <value>获取核心介绍失败！</value>
+    <value>獲取核心介紹失敗！</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
-    <value>Minecraft 基岩版压缩包</value>
+    <value>Minecraft 基岩版壓縮包</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
-    <value>请在此处导入下载的压缩包。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>在這裡放入下載的壓縮包，如果不知道下載方位，可以點擊右側按鈕前往。</value>
   </data>
   <data name="Archive" xml:space="preserve">
-    <value>压缩包</value>
+    <value>壓縮包</value>
   </data>
   <data name="Browse" xml:space="preserve">
-    <value>浏览</value>
+    <value>流覽</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
-    <value>Minecraft 服务器核心</value>
+    <value>Minecraft 伺服器核心</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
-    <value>请选择该服务器将使用的核心文件。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>請選擇該伺服器將使用的核心文件。如果不知道在哪裡下載，可以單擊右側按鈕前往。</value>
   </data>
   <data name="MinecraftCoreFileName" xml:space="preserve">
-    <value>核心文件名</value>
+    <value>核心文件名稱</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
-    <value>Java 运行时</value>
+    <value>Java 運行时</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
-    <value>Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。</value>
+    <value>Java 運行时是 Minecraft Java 服务器的必需环境。請務必選擇合適的版本，以防止啟動失敗。</value>
   </data>
   <data name="JavaPath" xml:space="preserve">
-    <value>Java 路径</value>
+    <value>Java 位置路徑</value>
   </data>
   <data name="SelectManually" xml:space="preserve">
-    <value>手动选择</value>
+    <value>手動選擇</value>
   </data>
   <data name="ScanJavaAtDaemon" xml:space="preserve">
-    <value>在 Daemon 宿主机自动搜索</value>
+    <value>在 Daemon 宿主機中自動搜索</value>
   </data>
   <data name="SelectFromResult" xml:space="preserve">
-    <value>从现有结果中选取</value>
+    <value>從現有結果中選取</value>
   </data>
   <data name="MinecraftJavaRequirementTip" xml:space="preserve">
     <value>1.12+ 要求 Java 8&amp;#x000A;1.17+ 要求 Java 16&amp;#x000A;1.18+ 要求 Java 17&amp;#x000A;1.20.5+ 要求 Java 21</value>
   </data>
   <data name="FileName" xml:space="preserve">
-    <value>文件名</value>
+    <value>文件名稱</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
-    <value>请选择该实例所需的文件/文件夹/压缩包。压缩包仅支持 ZIP 格式。</value>
+    <value>請選擇該實例所需的文件/文件夾/壓縮包。壓縮包僅支持 ZIP 格式。</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
-    <value>部署依赖</value>
+    <value>部署依賴</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
-    <value>运行命令</value>
+    <value>運行指令</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
-    <value>在此处输入运行命令。</value>
+    <value>在此處輸入運行指令。</value>
   </data>
   <data name="RunCommandArgumentTip" xml:space="preserve">
     <value>如果需要附带参数，&amp;#x000A;直接附在后面即可。</value>
@@ -548,16 +548,16 @@
     <value>选择在 “资源下载” 页面使用的下载提供方。</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
-    <value>无极镜像 FastMirror ( 由 物语云计算 提供支持 )</value>
+    <value>无极镜像 FastMirror (由物语云计算提供)</value>
   </data>
   <data name="Settings_PolarsMirrorName" xml:space="preserve">
-    <value>极星云镜像 ( 由 极星网络 提供支持 )</value>
+    <value>极星云镜像 (由极星网络提供)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )</value>
+    <value>ZCloud File (由开发组成员Z__Tsin提供)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 ( 由 MSL开服器 提供支持 )</value>
+    <value>MSL下载源 (由MSL开服器提供)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
     <value>MCSL-Sync 同步镜像</value>
@@ -566,7 +566,7 @@
     <value>下载引擎线程数</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
-    <value>线程数越多，在计算机性能足够的情况下，文件下载越快；反之会造成严重的卡顿。一般来说，设置为 16 线程即可满足需求。</value>
+    <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
     <value>下载失败处理方式</value>
