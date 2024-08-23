@@ -58,27 +58,27 @@
 			: using a System.ComponentModel.TypeConverter
 			: and then encoded with base64 encoding.
 	-->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xsd:schema xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root">
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
         <xsd:choice maxOccurs="unbounded">
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -200,7 +200,7 @@
     <value>Java 运行时</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
-    <value>Java 是 Minecraft Java 服务器的必需运行时。请务必选择合适的 Java 版本，避免无法启动。</value>
+    <value>Java 运行时是 Minecraft Java 服务器的必需环境。请务必选择合适的版本，防止启动失败。</value>
   </data>
   <data name="JavaPath" xml:space="preserve">
     <value>Java 路径</value>
@@ -548,16 +548,16 @@
     <value>选择在 “资源下载” 页面使用的下载提供方。</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
-    <value>无极镜像 FastMirror ( 由 物语云计算 提供支持 )</value>
+    <value>无极镜像 FastMirror (由物语云计算提供)</value>
   </data>
   <data name="Settings_PolarsMirrorName" xml:space="preserve">
-    <value>极星云镜像 ( 由 极星网络 提供支持 )</value>
+    <value>极星云镜像 (由极星网络提供)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )</value>
+    <value>ZCloud File (由开发组成员Z__Tsin提供)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 ( 由 MSL开服器 提供支持 )</value>
+    <value>MSL下载源 (由MSL开服器提供)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
     <value>MCSL-Sync 同步镜像</value>
@@ -566,7 +566,7 @@
     <value>下载引擎线程数</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
-    <value>线程数越多，在计算机性能足够的情况下，文件下载越快；反之会造成严重的卡顿。一般来说，设置为 16 线程即可满足需求。</value>
+    <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
     <value>下载失败处理方式</value>
