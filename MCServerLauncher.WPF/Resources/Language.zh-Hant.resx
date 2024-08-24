@@ -628,4 +628,13 @@
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>MCServerLauncher Future使用數字簽名證書保證該程式不被仿冒篡改。序列號：59cbf9b5207eeabb45417d148120ac9a。如有不同，請勿使用，并向 services@mcsl.com.cn 反饋。</value>
   </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>無極鏡像</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>極星雲鏡像</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync 同步鏡像</value>
+  </data>
 </root>
