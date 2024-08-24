@@ -27,16 +27,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         public LanguageSetupPage()
         {
             InitializeComponent();
-            if ("zh".Equals(CultureInfo.CurrentCulture.TwoLetterISOLanguageName))
-            {
-                LanguageManager.Instance.ChangeLanguage(new CultureInfo("zh-Hans"));
-                LanguageComboBox.SelectedIndex = 0;
-            }
-            else
-            {
-                LanguageManager.Instance.ChangeLanguage(new CultureInfo("en-US"));
-                LanguageComboBox.SelectedIndex = 2;
-            }
+            LanguageComboBox.ItemsSource = LanguageNameList;
+            LanguageComboBox.SelectedIndex = 28;
         }
         /// <summary>
         ///    Go to Eula page.
@@ -50,11 +42,70 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
         private static readonly List<string> LanguageList = new()
         {
+            "af-ZA",
+            "ar-SA",
+            "ca-ES",
+            "cs-CZ",
+            "da-DK",
+            "de-DE",
+            "el-GR",
+            "en-US",
+            "es-ES",
+            "fi-FI",
+            "fr-FR",
+            "he-IL",
+            "hu-HU",
+            "it-IT",
+            "ja-JP",
+            "ko-KR",
+            "nl-NL",
+            "no-NO",
+            "pl-PL",
+            "pt-BR",
+            "pt-PT",
+            "ro-RO",
+            "ru-RU",
+            "sr-SP",
+            "sv-SE",
+            "tr-TR",
+            "uk-UA",
+            "vi-VN",
             "zh-Hans",
-            "zh-Hant",
-            "en-US"
+            "zh-Hant"
         };
-
+        private static readonly List<string> LanguageNameList = new()
+        {
+            "Suid-Afrikaanse Nederlands",
+            "العربية",
+            "Català",
+            "Čeština",
+            "Dansk",
+            "Deutsch",
+            "Ελληνικά",
+            "English",
+            "Español",
+            "Suomi",
+            "Français",
+            "עברית",
+            "Magyar",
+            "Italiano",
+            "日本語",
+            "한국어",
+            "Nederlands",
+            "Norsk",
+            "Polski",
+            "Português (Brasil)",
+            "Português (Portugal)",
+            "Română",
+            "Русский",
+            "Српски (ћирилица)",
+            "Svenska",
+            "Türkçe",
+            "Українська",
+            "Tiếng Việt",
+            "简体中文",
+            "繁體中文"
+        };
         /// <summary>
         ///     Handle language combo box changes.
         /// </summary>

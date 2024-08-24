@@ -32,11 +32,7 @@
                            Text="{Binding [FirstSetup_SetLanguageHintReverse], Source={x:Static h:LanguageManager.Instance}}" />
             </Grid>
             <Grid Grid.Column="1">
-                <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageChanged" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <ComboBoxItem Content="简体中文 (中国)" />
-                    <ComboBoxItem Content="繁体中文 (中国)" />
-                    <ComboBoxItem Content="English (United States)" />
-                </ComboBox>
+                <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageChanged" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Grid>
         </Grid>
         <Border Grid.Row="1" Style="{StaticResource StyledBorder}" Height="80">
