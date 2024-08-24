@@ -232,7 +232,7 @@ namespace MCServerLauncher.WPF.Helpers
                     App = new AppSettings
                     {
                         Theme = "auto",
-                        Language = "zh-CN",
+                        Language = "zh-Hans",
                         FollowStartup = false,
                         AutoCheckUpdate = true,
                         IsCertImported = false,
