@@ -85,7 +85,6 @@ namespace MCServerLauncher.WPF
                     break;
                 case not null when navPageType == typeof(CreateInstancePage):
                     CurrentPage.Navigate(_createInstance);
-                    throw new Exception("test");
                     break;
                 case not null when navPageType == typeof(InstanceManagerPage):
                     CurrentPage.Navigate(_instanceManager);
