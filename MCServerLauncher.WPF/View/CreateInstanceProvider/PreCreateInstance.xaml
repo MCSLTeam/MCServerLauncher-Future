@@ -25,6 +25,8 @@
                 <Button x:Name="MinecraftNeoForgeServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                         Content="{Binding [CreateMinecraftNeoForgeInstance], Source={x:Static h:LanguageManager.Instance}}" />
+                <Button x:Name="MinecraftFabricServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftFabricInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button x:Name="MinecraftQuiltServer" Padding="20,10,0,10" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftQuiltInstance], Source={x:Static h:LanguageManager.Instance}}" />
                 <Button x:Name="MinecraftBedrockServer" Padding="20,10,0,10" Click="GoCreateNewInstance"

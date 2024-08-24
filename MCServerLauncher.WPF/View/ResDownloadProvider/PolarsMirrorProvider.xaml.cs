@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.Modules.Download;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
@@ -14,7 +15,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class PolarsMirrorProvider
     {
-        public readonly string ResProviderName = "极星云镜像";
+        public readonly string ResProviderName = LanguageManager.Instance["ResDownloadPage_ProviderName_PolarsMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

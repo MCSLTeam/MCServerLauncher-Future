@@ -44,6 +44,15 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
+        ///    Spawn a new Minecraft Fabric instance creation page.
+        /// </summary>
+        /// <returns>The user control.</returns>
+        public UserControl NewMinecraftFabricServerPage()
+        {
+            return new CreateMinecraftFabricInstanceProvider();
+        }
+
+        /// <summary>
         ///    Spawn a new Minecraft Quilt instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>

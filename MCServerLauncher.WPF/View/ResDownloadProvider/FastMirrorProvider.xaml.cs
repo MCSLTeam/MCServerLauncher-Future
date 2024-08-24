@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class FastMirrorProvider
     {
-        public readonly string ResProviderName = "无极镜像";
+        public readonly string ResProviderName = LanguageManager.Instance["ResDownloadPage_ProviderName_FastMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

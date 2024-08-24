@@ -1,0 +1,135 @@
+﻿<UserControl x:Class="MCServerLauncher.WPF.View.CreateInstanceProvider.CreateMinecraftFabricInstanceProvider"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+             xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
+             xmlns:ci="clr-namespace:MCServerLauncher.WPF.View.Components.CreateInstance"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Grid.Row="0" Click="GoPreCreateInstance" HorizontalAlignment="Left"
+                    VerticalAlignment="Top" Margin="0,80,0,0">
+                <Button.Content>
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static h:LanguageManager.Instance}}" />
+                </Button.Content>
+            </Button>
+            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static h:LanguageManager.Instance}}"
+                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0" />
+            <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
+                <Button.Content>
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static h:LanguageManager.Instance}}" />
+                </Button.Content>
+            </Button>
+        </Grid>
+        <ui:ScrollViewerEx x:Name="GeneralSettingsScroll" Grid.Row="1">
+            <ikw:SimpleStackPanel>
+                <Border Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
+                    <Grid Margin="0,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
+                                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [MinecraftVersion], Source={x:Static h:LanguageManager.Instance}}"
+                                   VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
+                                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftVersionTip], Source={x:Static h:LanguageManager.Instance}}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <CheckBox x:Name="ToggleStableMinecraftVersionCheckBox" Grid.Row="2" Grid.Column="0"
+                                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static h:LanguageManager.Instance}}" IsChecked="True" Margin="20,0,10,0" />
+                        <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="3" Grid.Column="0" Margin="20,5,10,20"
+                                  Width="Auto" HorizontalAlignment="Stretch" />
+                        <Button Height="32" Margin="0,5,20,0" Grid.Row="3" Grid.Column="1" VerticalAlignment="Top"
+                                HorizontalAlignment="Right" Click="FetchMinecraftVersions"
+                                x:Name="FetchMinecraftVersionsButton">
+                            <Button.Content>
+                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static h:LanguageManager.Instance}}" />
+                            </Button.Content>
+                        </Button>
+
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"
+                                           VerticalAlignment="Top" Margin="0,15,20,0" ShowChevronArrow="False">
+                            <ui:DropDownButton.Content>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
+                            </ui:DropDownButton.Content>
+                            <ui:DropDownButton.Flyout>
+                                <ui:Flyout Placement="TopEdgeAlignedRight">
+                                    <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static h:LanguageManager.Instance}}" />
+                                </ui:Flyout>
+                            </ui:DropDownButton.Flyout>
+                        </ui:DropDownButton>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
+                    <Grid Margin="0,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
+                                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [FabricVersion], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
+                                   HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
+                                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectFabricVersion_Description], Source={x:Static h:LanguageManager.Instance}}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <CheckBox x:Name="ToggleStableFabricVersionCheckBox" Grid.Row="2" Grid.Column="0"
+                                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static h:LanguageManager.Instance}}" IsChecked="True" Margin="20,0,10,0" />
+                        <ComboBox x:Name="FabricVersionComboBox" Grid.Row="3" Grid.Column="0" Margin="20,15,10,20"
+                                  Width="Auto" HorizontalAlignment="Stretch" />
+                        <Button Height="32" Margin="0,15,20,0" Grid.Row="3" Grid.Column="1" VerticalAlignment="Top"
+                                HorizontalAlignment="Right" x:Name="FetchFabricVersionButton" Click="FetchFabricVersions">
+                            <Button.Content>
+                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static h:LanguageManager.Instance}}" />
+                            </Button.Content>
+                        </Button>
+
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"
+                                           VerticalAlignment="Top" Margin="0,15,20,0" ShowChevronArrow="False">
+                            <ui:DropDownButton.Content>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Help}" FontSize="16" />
+                            </ui:DropDownButton.Content>
+                            <ui:DropDownButton.Flyout>
+                                <ui:Flyout Placement="TopEdgeAlignedRight">
+                                    <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static h:LanguageManager.Instance}}" />
+                                </ui:Flyout>
+                            </ui:DropDownButton.Flyout>
+                        </ui:DropDownButton>
+                    </Grid>
+                </Border>
+                <ci:SelectMinecraftJavaJvm />
+                <ci:SetMinecraftJavaJvmRam />
+                <ci:SetMinecraftJavaJvmArgument />
+                <ci:SetInstanceName />
+            </ikw:SimpleStackPanel>
+        </ui:ScrollViewerEx>
+    </Grid>
+</UserControl>
