@@ -422,37 +422,37 @@
     <value>请选择欲操作的方式：</value>
   </data>
   <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
-    <value>通用 Minecraft Java 版服务器</value>
+    <value>Universal Minecraft Java Server</value>
   </data>
   <data name="CreateMinecraftForgeInstance" xml:space="preserve">
-    <value>Minecraft Forge 服务器</value>
+    <value>Minecraft Forge Server</value>
   </data>
   <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
-    <value>Minecraft NeoForge 服务器</value>
+    <value>Minecraft NeoForge Server</value>
   </data>
   <data name="CreateMinecraftFabricInstance" xml:space="preserve">
-    <value>Minecraft Fabric 服务器</value>
+    <value>Minecraft Fabric Server</value>
   </data>
   <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
-    <value>Minecraft Quilt 服务器</value>
+    <value>Minecraft Quilt Server</value>
   </data>
   <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
-    <value>Minecraft 基岩版服务器</value>
+    <value>Minecraft Bedrock Server</value>
   </data>
   <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
-    <value>Minecraft Geyser互通 独立端</value>
+    <value>Minecraft Geyser Standalone Server</value>
   </data>
   <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
-    <value>Minecraft BungeeCord 群组端</value>
+    <value>Minecraft BungeeCord Proxy Server</value>
   </data>
   <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
-    <value>Minecraft Waterfall 群组端</value>
+    <value>Minecraft Waterfall Proxy Server</value>
   </data>
   <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
-    <value>Minecraft Velocity 群组端</value>
+    <value>Minecraft Velocity Proxy Server</value>
   </data>
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
-    <value>Minecraft Travertine 群组端</value>
+    <value>Minecraft Travertine Proxy Server</value>
   </data>
   <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
     <value>Frp client (Frpc)</value>
@@ -470,16 +470,16 @@
     <value>A new journey, a new experience.</value>
   </data>
   <data name="InstanceManagerTip" xml:space="preserve">
-    <value>纵览全局，以观天下。</value>
+    <value>Panoramic view, all within your rule.</value>
   </data>
   <data name="NotificationCenterTip" xml:space="preserve">
-    <value>四面八方，使命必达。</value>
+    <value>Running silently, tasks accomplished efficiently.</value>
   </data>
   <data name="ResDownloadTip" xml:space="preserve">
     <value>Whatever you want, is here to be found.</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
-    <value>尽其所能，答其所问。</value>
+    <value>Striving our utmost, answering every question.</value>
   </data>
   <data name="SettingsTip" xml:space="preserve">
     <value>Your MCSL, also your style.</value>
@@ -542,7 +542,7 @@
     <value>启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。</value>
   </data>
   <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
-    <value>下载源</value>
+    <value>Download source</value>
   </data>
   <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
     <value>选择在 “资源下载” 页面使用的下载提供方。</value>
@@ -560,10 +560,10 @@
     <value>MSL下载源 (由MSL开服器提供)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>MCSL-Sync</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
-    <value>下载引擎线程数</value>
+    <value>Download thread count</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
     <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
@@ -581,7 +581,7 @@
     <value>此功能可防止误操作导致实例被删除。</value>
   </data>
   <data name="Settings_AppTheme_Title" xml:space="preserve">
-    <value>应用主题</value>
+    <value>App Theme</value>
   </data>
   <data name="Settings_AppTheme_Description" xml:space="preserve">
     <value>默认跟随系统变化，当然也可以自己设置。</value>
