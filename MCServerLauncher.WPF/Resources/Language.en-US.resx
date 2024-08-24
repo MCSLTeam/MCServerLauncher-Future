@@ -329,19 +329,19 @@
     <value>Quilt Version</value>
   </data>
   <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Forge 加载器的版本。</value>
+    <value>Please select the Forge version of the server.</value>
   </data>
   <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 NeoForge 加载器的版本。</value>
+    <value>Please select the NeoForge version of the server.</value>
   </data>
   <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Fabric 加载器的版本。</value>
+    <value>Please select the Fabric version of the server.</value>
   </data>
   <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Quilt 加载器的版本。</value>
+    <value>Please select the Quilt version of the server.</value>
   </data>
   <data name="OnlyShowReleaseVersion" xml:space="preserve">
-    <value>仅显示正式版</value>
+    <value>Only show releases</value>
   </data>
   <data name="ResDownload_InstanceCore" xml:space="preserve">
     <value>Server Core</value>
