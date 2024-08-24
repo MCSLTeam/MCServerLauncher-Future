@@ -347,7 +347,7 @@
     <value>Server Core</value>
   </data>
   <data name="ResDownload_OpenHomePage" xml:space="preserve">
-    <value>打开官网</value>
+    <value>Open the official website</value>
   </data>
   <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
     <value>欢迎使用</value>
@@ -482,7 +482,7 @@
     <value>尽其所能，答其所问。</value>
   </data>
   <data name="SettingsTip" xml:space="preserve">
-    <value>你的 MCSL，你的选择。</value>
+    <value>Your MCSL, also your style.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
     <value>直接停止下载</value>
