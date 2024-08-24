@@ -434,7 +434,7 @@ namespace MCServerLauncher.WPF.Helpers
                 {
                     throw new ArgumentNullException(nameof(name));
                 }
-                return _resourceManager.GetString(name);
+                return _resourceManager.GetString(name)!.Replace("\\n", "\n");
             }
         }
 
