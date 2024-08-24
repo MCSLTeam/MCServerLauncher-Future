@@ -17,7 +17,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         public CreateMinecraftQuiltInstanceProvider()
         {
             InitializeComponent();
+
             ToggleStableMinecraftVersionCheckBox.Checked += ToggleStableMinecraftVersion;
+            ToggleStableMinecraftVersionCheckBox.Unchecked += ToggleStableMinecraftVersion;
+
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             FetchQuiltVersionButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
@@ -61,8 +64,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             var response = await NetworkUtils.SendGetRequest($"{GetEndPoint()}/v3/versions/game", true);
-            var content = await response.Content.ReadAsStringAsync();
-            var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(content);
+            var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             SupportedAllMinecraftVersions = allSupportedVersionsList!.Select(mcVersion => new QuiltMinecraftVersion
             {
                 MinecraftVersion = mcVersion.SelectToken("version")!.ToString(),
@@ -74,7 +76,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
-        ///    Toggle stable/snapshot Minecraft version.
+        ///    Toggle stable/snapshot Minecraft versions.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
