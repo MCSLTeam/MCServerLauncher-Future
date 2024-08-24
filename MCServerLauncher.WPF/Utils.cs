@@ -232,7 +232,7 @@ namespace MCServerLauncher.WPF.Helpers
                     App = new AppSettings
                     {
                         Theme = "auto",
-                        Language = "zh-CN",
+                        Language = "zh-Hans",
                         FollowStartup = false,
                         AutoCheckUpdate = true,
                         IsCertImported = false,
@@ -434,7 +434,7 @@ namespace MCServerLauncher.WPF.Helpers
                 {
                     throw new ArgumentNullException(nameof(name));
                 }
-                return _resourceManager.GetString(name);
+                return _resourceManager.GetString(name)!.Replace("\\n", "\n");
             }
         }
 

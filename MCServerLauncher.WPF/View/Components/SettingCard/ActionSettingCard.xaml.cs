@@ -18,8 +18,18 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         /// </summary>
         public string Title
         {
-            get => SettingTitle.Text;
-            set => SettingTitle.Text = value;
+            get => (string)GetValue(TitleProperty);
+            set => SetValue(TitleProperty, value);
+        }
+        public static readonly DependencyProperty TitleProperty =
+            DependencyProperty.Register("Title", typeof(string), typeof(ActionSettingCard),
+                new PropertyMetadata("", OnTitleChanged));
+
+        private static void OnTitleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not ActionSettingCard control) return;
+            if (e.NewValue is not string title) return;
+            control.SettingTitle.Text = title;
         }
 
         /// <summary>
@@ -27,8 +37,18 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         /// </summary>
         public string Description
         {
-            get => SettingDescription.Text;
-            set => SettingDescription.Text = value;
+            get => (string)GetValue(DescriptionProperty);
+            set => SetValue(DescriptionProperty, value);
+        }
+        public static readonly DependencyProperty DescriptionProperty =
+            DependencyProperty.Register("Description", typeof(string), typeof(ActionSettingCard),
+                new PropertyMetadata("", OnDescriptionChanged));
+
+        private static void OnDescriptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not ActionSettingCard control) return;
+            if (e.NewValue is not string description) return;
+            control.SettingDescription.Text = description;
         }
 
         /// <summary>
@@ -54,8 +74,18 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         /// </summary>
         public string ButtonContent
         {
-            get => SettingButton.Content.ToString();
-            set => SettingButton.Content = value;
+            get => (string)GetValue(ButtonContentProperty);
+            set => SetValue(ButtonContentProperty, value);
+        }
+        public static readonly DependencyProperty ButtonContentProperty =
+            DependencyProperty.Register("ButtonContent", typeof(string), typeof(ActionSettingCard),
+                new PropertyMetadata("", OnButtonContentChanged));
+
+        private static void OnButtonContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not ActionSettingCard control) return;
+            if (e.NewValue is not string buttonContent) return;
+            control.SettingDescription.Text = buttonContent;
         }
     }
 }

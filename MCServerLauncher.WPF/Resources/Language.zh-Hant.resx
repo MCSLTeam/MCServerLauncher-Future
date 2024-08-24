@@ -314,7 +314,7 @@
     <value>刷新</value>
   </data>
   <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
-    <value>如果加載不出來，請稍後再試。\n鏡像服務由BMCLAPI提供支持</value>
+    <value>如果加载不出来，请稍后再试。\n镜像服务由 BMCLAPI 提供支持</value>
   </data>
   <data name="ForgeVersion" xml:space="preserve">
     <value>Forge 版本</value>
