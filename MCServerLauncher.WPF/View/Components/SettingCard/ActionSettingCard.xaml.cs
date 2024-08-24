@@ -85,7 +85,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         {
             if (d is not ActionSettingCard control) return;
             if (e.NewValue is not string buttonContent) return;
-            control.SettingDescription.Text = buttonContent;
+            control.SettingButton.Content = buttonContent;
         }
     }
 }
