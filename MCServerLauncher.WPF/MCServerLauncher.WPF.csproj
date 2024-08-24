@@ -239,6 +239,9 @@
     <Compile Include="View\Components\ResDownloadItem\FastMirrorResCoreVersionItem.xaml.cs">
       <DependentUpon>FastMirrorResCoreVersionItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\CreateInstanceProvider\CreateMinecraftFabricInstanceProvider.xaml.cs">
+      <DependentUpon>CreateMinecraftFabricInstanceProvider.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\CreateInstanceProvider\CreateMinecraftQuiltInstanceProvider.xaml.cs">
       <DependentUpon>CreateMinecraftQuiltInstanceProvider.xaml</DependentUpon>
     </Compile>
@@ -413,6 +416,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\Components\ResDownloadItem\FastMirrorResCoreVersionItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\CreateInstanceProvider\CreateMinecraftFabricInstanceProvider.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
