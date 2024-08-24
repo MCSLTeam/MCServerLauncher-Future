@@ -14,7 +14,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class MCSLSyncProvider
     {
-        public readonly string ResProviderName = "MCSL-Sync 同步镜像";
+        public readonly string ResProviderName = LanguageManager.Instance["ResDownloadPage_ProviderName_MCSLSync"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
