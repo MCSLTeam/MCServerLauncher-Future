@@ -422,7 +422,7 @@
     <value>请选择欲操作的方式：</value>
   </data>
   <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
-    <value>Universal Minecraft Java Server</value>
+    <value>Universal Minecraft Java Edition Server</value>
   </data>
   <data name="CreateMinecraftForgeInstance" xml:space="preserve">
     <value>Minecraft Forge Server</value>
@@ -437,7 +437,7 @@
     <value>Minecraft Quilt Server</value>
   </data>
   <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
-    <value>Minecraft Bedrock Server</value>
+    <value>Minecraft Bedrock Edition Server</value>
   </data>
   <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
     <value>Minecraft Geyser Standalone Server</value>
@@ -455,16 +455,16 @@
     <value>Minecraft Travertine Proxy Server</value>
   </data>
   <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>Frp client (Frpc)</value>
+    <value>Frp Client (Frpc)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
-    <value>Terraria server</value>
+    <value>Terraria Server</value>
   </data>
   <data name="CreateOtherExecutableInstance" xml:space="preserve">
-    <value>Other executable files</value>
+    <value>Other Executable Programs</value>
   </data>
   <data name="ImportExistsInstance" xml:space="preserve">
-    <value>Import from an existing instance</value>
+    <value>Import Existing Instance</value>
   </data>
   <data name="HomeTip" xml:space="preserve">
     <value>A new journey, a new experience.</value>
@@ -542,7 +542,7 @@
     <value>启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。</value>
   </data>
   <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
-    <value>Download source</value>
+    <value>Download Source</value>
   </data>
   <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
     <value>选择在 “资源下载” 页面使用的下载提供方。</value>
@@ -563,7 +563,7 @@
     <value>MCSL-Sync</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
-    <value>Download thread count</value>
+    <value>Download Thread Count</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
     <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
@@ -593,16 +593,16 @@
     <value>在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>Check update (MCServerLauncher.WPF)</value>
+    <value>Check Update (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
     <value>检查本图形化程序的更新。</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
-    <value>Check update</value>
+    <value>Check Update</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>Auto check update for WPF on launch.</value>
+    <value>Auto check update for this WPF application on launch.</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
     <value>自动检查更新 (MCServerLauncher.WPF)</value>
@@ -611,7 +611,7 @@
     <value>检查更新 (MCServerLauncher.Daemon)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
-    <value>Check update for daemon.</value>
+    <value>Check update for MCSL Daemon.</value>
   </data>
   <data name="Settings_About_Title" xml:space="preserve">
     <value>About MCServerLauncher Future (WPF)</value>
