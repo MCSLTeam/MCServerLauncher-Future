@@ -353,7 +353,7 @@
     <value>欢迎使用</value>
   </data>
   <data name="TempSkip" xml:space="preserve">
-    <value>暂时跳过</value>
+    <value>Skip temporarily</value>
   </data>
   <data name="Agree" xml:space="preserve">
     <value>同意</value>
