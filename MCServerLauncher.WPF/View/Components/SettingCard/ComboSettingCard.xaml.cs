@@ -31,8 +31,18 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         /// </summary>
         public string Title
         {
-            get => SettingTitle.Text;
-            set => SettingTitle.Text = value;
+            get => (string)GetValue(TitleProperty);
+            set => SetValue(TitleProperty, value);
+        }
+        public static readonly DependencyProperty TitleProperty =
+            DependencyProperty.Register("Title", typeof(string), typeof(ComboSettingCard),
+                new PropertyMetadata("", OnTitleChanged));
+
+        private static void OnTitleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not ComboSettingCard control) return;
+            if (e.NewValue is not string title) return;
+            control.SettingTitle.Text = title;
         }
 
         /// <summary>
@@ -40,8 +50,18 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
         /// </summary>
         public string Description
         {
-            get => SettingDescription.Text;
-            set => SettingDescription.Text = value;
+            get => (string)GetValue(DescriptionProperty);
+            set => SetValue(DescriptionProperty, value);
+        }
+        public static readonly DependencyProperty DescriptionProperty =
+            DependencyProperty.Register("Description", typeof(string), typeof(ComboSettingCard),
+                new PropertyMetadata("", OnDescriptionChanged));
+
+        private static void OnDescriptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not ComboSettingCard control) return;
+            if (e.NewValue is not string description) return;
+            control.SettingDescription.Text = description;
         }
 
         /// <summary>
