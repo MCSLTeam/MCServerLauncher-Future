@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Sei sicuro?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Se l'utente rifiuta l'Accordo con l'utente, il Software verrà ritirato.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Assicurati di aver letto tutto prima di fare clic su Accetto. Come minimo, dovresti far rotolare il protocollo fino alla fine.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Non ora</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Ciò significa che l'utente accetta tutti i contenuti del presente Contratto.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Selezionare la lingua in cui viene utilizzato il programma.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Se non si collega alcun demone, la maggior parte delle funzioni del software saranno limitate.\nPuoi ancora collegare il demone in un secondo momento nelle impostazioni.</value>
   </data>
 </root>
