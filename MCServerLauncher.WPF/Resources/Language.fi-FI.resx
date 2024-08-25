@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Oletko varma?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Jos hylkäät käyttäjäsopimuksen, ohjelmisto peruutetaan.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Varmista, että olet lukenut kaiken, ennen kuin napsautat Hyväksyn. Ainakin sinun pitäisi rullata protokolla loppuun.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Ei nyt</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Tämä tarkoittaa, että hyväksyt tämän sopimuksen koko sisällön.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Valitse kieli, jolla ohjelmaa käytetään.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Jos et linkitä mitään demoneja, suurin osa ohjelmiston toiminnoista on rajoitettuja.\nVoit silti linkittää demonin myöhemmin asetuksissa.</value>
   </data>
 </root>
