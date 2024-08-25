@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,6 +30,7 @@ namespace MCServerLauncher.WPF.View.Pages
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex =
                 _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm);
             More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(BasicUtils.AppSettings.App.Theme);
+            More_LauncherLanguage.SettingComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(BasicUtils.AppSettings.App.Language);
 
             #endregion
 
@@ -55,6 +58,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 OnActionWhenDeleteConfirmIndexSelectionChanged;
 
             More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
+            More_LauncherLanguage.SettingComboBox.SelectionChanged += OnLauncherLanguageIndexSelectionChanged;
             More_FollowStartupForLauncher.SettingSwitch.Toggled += OnFollowStartupForLauncherChanged;
             More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += OnAutoCheckUpdateForLauncherChanged;
 
@@ -407,6 +411,22 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 // ignored due to mtfk error
             }
+        }
+
+        #endregion
+
+        #region LauncherLanguage
+
+        /// <summary>
+        ///     Handle language combo box changes.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnLauncherLanguageIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!BasicUtils.AppSettings.App.IsFirstSetupFinished) return;
+            LanguageManager.Instance.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
+            BasicUtils.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
         }
 
         #endregion

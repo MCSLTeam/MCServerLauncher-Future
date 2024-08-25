@@ -140,6 +140,10 @@
                                      Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="{Binding [Settings_AppTheme_Title], Source={x:Static h:LanguageManager.Instance}}"
                                      Description="{Binding [Settings_AppTheme_Description], Source={x:Static h:LanguageManager.Instance}}"
                                      ComboBoxItems="{Binding Path=ThemeForApp}" />
+                <sc:ComboSettingCard x:Name="More_LauncherLanguage"
+                                     Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" Title="{Binding [FirstSetup_TimeLanguageMenu], Source={x:Static h:LanguageManager.Instance}}"
+                                     Description="{Binding [Settings_AppLanguage_Description], Source={x:Static h:LanguageManager.Instance}}"
+                                     ComboBoxItems="{Binding .,Source={x:Static h:LanguageManager.LanguageNameList}}" />
                 <sc:SwitchSettingCard x:Name="More_FollowStartupForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
                                       Title="{Binding [Settings_FollowStartupForLauncher_Title], Source={x:Static h:LanguageManager.Instance}}"
