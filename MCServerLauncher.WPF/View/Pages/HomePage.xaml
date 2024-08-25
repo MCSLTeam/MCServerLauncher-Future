@@ -18,7 +18,7 @@
             <ikw:SimpleStackPanel>
                 <Border x:Name="NoticeBorder" Style="{StaticResource StyledBorder}" VerticalAlignment="Top">
                     <Grid>
-                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="公告" VerticalAlignment="Top"
+                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Announcement], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
                                    HorizontalAlignment="Left" Margin="20,15,0,0" />
                         <TextBlock Style="{StaticResource BodyTextBlock}" LineHeight="22"
                                    Text="MCServerLauncher Future 是 MCSL开发组 全新的项目！&#13;本 WPF 程序仅仅是其中的一部分，需要 Daemon 配合使用！&#13;同时我们也在制作 Web 版，可作为本 WPF 版的替代！"

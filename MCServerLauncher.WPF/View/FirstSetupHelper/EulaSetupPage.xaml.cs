@@ -25,15 +25,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             ContentDialog dialog = new()
             {
-                Title = "确定？",
+                Title = LanguageManager.Instance["AreYouSure"],
                 PrimaryButtonText = "再想想",
-                SecondaryButtonText = "拒绝",
+                SecondaryButtonText = LanguageManager.Instance["Disagree"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = "若您拒绝用户协议，本软件将退出。"
+                    Text = LanguageManager.Instance["EulaDisagreeTip"]
                 }
             };
             dialog.SecondaryButtonClick += (o, args) => Application.Current.Shutdown();
@@ -60,14 +60,14 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 ContentDialog fakeFinishedDialog = new()
                 {
-                    Title = "你认真的吗 ?!",
-                    PrimaryButtonText = "明白",
+                    Title = LanguageManager.Instance["AreYouSure"],
+                    PrimaryButtonText = LanguageManager.Instance["OK"],
                     DefaultButton = ContentDialogButton.Primary,
                     FullSizeDesired = false,
                     Content = new TextBlock
                     {
                         TextWrapping = TextWrapping.WrapWithOverflow,
-                        Text = "请确保您已完整阅读后再点击同意。"
+                        Text = LanguageManager.Instance["FakeEulaAgreeTip"]
                     }
                 };
                 try
@@ -84,15 +84,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
             ContentDialog dialog = new()
             {
-                Title = "确定？",
-                PrimaryButtonText = "同意",
-                SecondaryButtonText = "还没读完",
+                Title = LanguageManager.Instance["AreYouSure"],
+                PrimaryButtonText = LanguageManager.Instance["Agree"],
+                SecondaryButtonText = LanguageManager.Instance["NotNow"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = "请确保您已完整阅读并同意用户协议后再继续使用本软件。"
+                    Text = LanguageManager.Instance["EulaAgreeTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent.GoDaemonSetup();
