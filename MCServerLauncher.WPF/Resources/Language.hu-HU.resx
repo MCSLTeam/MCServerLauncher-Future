@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Biztos vagy benne?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Ha elutasítja a Felhasználói megállapodást, a Szoftver visszavonásra kerül.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Győződjön meg róla, hogy mindent elolvasott, mielőtt az Elfogadom gombra kattint. Legalább a végére kell tekernie a protokollt.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Ne most</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Ez azt jelenti, hogy Ön elfogadja a jelen Szerződés teljes tartalmát.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Válassza ki a program használatának nyelvét.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Ha nem kapcsol össze démonokat, a szoftver legtöbb funkciója korlátozott lesz.\nA démont később is összekapcsolhatja a beállításokban.</value>
   </data>
 </root>
