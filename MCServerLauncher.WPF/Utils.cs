@@ -419,9 +419,8 @@ namespace MCServerLauncher.WPF.Helpers
             LanguageManager.Instance.ChangeLanguage(new CultureInfo(AppSettings.App.Language));
         }
     }
-    internal class LanguageManager : INotifyPropertyChanged
+    public class LanguageManager : INotifyPropertyChanged
     {
-
         private readonly ResourceManager _resourceManager = new("MCServerLauncher.WPF.Resources.Language", typeof(LanguageManager).Assembly);
         private static readonly Lazy<LanguageManager> Lazy = new(() => new LanguageManager());
         public static LanguageManager Instance => Lazy.Value;
@@ -435,7 +434,6 @@ namespace MCServerLauncher.WPF.Helpers
                 {
                     throw new ArgumentNullException(nameof(name));
                 }
-                Console.WriteLine("MCServerLauncher.WPF.Resources.Language"+ typeof(LanguageManager).Assembly);
                 return _resourceManager.GetString(name)!.Replace("\\n", "\n");
             }
         }
@@ -446,6 +444,7 @@ namespace MCServerLauncher.WPF.Helpers
             CultureInfo.CurrentUICulture = cultureInfo;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("item[]"));
         }
+
         public static readonly List<string> LanguageList = new()
         {
             "af-ZA",
@@ -478,6 +477,7 @@ namespace MCServerLauncher.WPF.Helpers
             "zh-Hans",
             "zh-Hant"
         };
+
         public static readonly List<string> LanguageNameList = new()
         {
             "Suid-Afrikaanse Nederlands",
@@ -510,6 +510,7 @@ namespace MCServerLauncher.WPF.Helpers
             "简体中文",
             "繁體中文"
         };
+
     }
 }
 

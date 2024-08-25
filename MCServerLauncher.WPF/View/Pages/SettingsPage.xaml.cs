@@ -292,7 +292,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private static readonly List<string> _actionWhenDownloadErrorList = new() { "stop", "retry1", "retry3" };
 
-        public static IEnumerable<string> ActionWhenDownloadError { get; } = new List<string>
+        public static IEnumerable<string> ActionWhenDownloadError { get; set; } = new List<string>
         {
             LanguageManager.Instance["Settings_ActionWhenDownloadError_Stop"],
             LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry1"],
@@ -331,7 +331,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         #region ActionWhenDeleteConfirm
 
-        public static IEnumerable<string> ActionWhenDeleteConfirm { get; } = new List<string>
+        public static IEnumerable<string> ActionWhenDeleteConfirm { get; set; } = new List<string>
         {
             LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeName"],
             LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeKey"]
@@ -371,7 +371,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         #region LauncherTheme
 
-        public static IEnumerable<string> ThemeForApp { get; } = new List<string>
+        public static IEnumerable<string> ThemeForApp { get; set; } = new List<string>
         {
             LanguageManager.Instance["Settings_AppTheme_Auto"],
             LanguageManager.Instance["Settings_AppTheme_Light"],
@@ -426,7 +426,52 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             if (!BasicUtils.AppSettings.App.IsFirstSetupFinished) return;
             LanguageManager.Instance.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
+            OnLanguageChanged();
             BasicUtils.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
+        }
+        /// <summary>
+        /// Update language for ComboBox due to failure of TwoWay binding mode.
+        /// </summary>
+        public void OnLanguageChanged()
+        {
+            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged -=
+                OnActionWhenDownloadErrorSelectionChanged;
+            var actionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
+            ActionWhenDownloadError = new List<string>
+            {
+                LanguageManager.Instance["Settings_ActionWhenDownloadError_Stop"],
+                LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry1"],
+                LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry3"]
+            };
+            ResDownload_ActionWhenDownloadError.SettingComboBox.ItemsSource = ActionWhenDownloadError;
+            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = actionWhenDownloadErrorIndex;
+            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged +=
+                OnActionWhenDownloadErrorSelectionChanged;
+
+            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectionChanged -=
+                OnActionWhenDeleteConfirmIndexSelectionChanged;
+            var actionWhenDeleteConfirmIndex = Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex;
+            ActionWhenDeleteConfirm = new List<string>
+            {
+                LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeName"],
+                LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeKey"]
+            };
+            Instance_ActionWhenDeleteConfirm.SettingComboBox.ItemsSource = ActionWhenDeleteConfirm;
+            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = actionWhenDeleteConfirmIndex;
+            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectionChanged +=
+                OnActionWhenDeleteConfirmIndexSelectionChanged;
+
+            More_LauncherTheme.SettingComboBox.SelectionChanged -= OnLauncherThemeIndexSelectionChanged;
+            var themeForAppIndex = More_LauncherTheme.SettingComboBox.SelectedIndex;
+            ThemeForApp = new List<string>
+            {
+                LanguageManager.Instance["Settings_AppTheme_Auto"],
+                LanguageManager.Instance["Settings_AppTheme_Light"],
+                LanguageManager.Instance["Settings_AppTheme_Dark"]
+            };
+            More_LauncherTheme.SettingComboBox.ItemsSource = ThemeForApp;
+            More_LauncherTheme.SettingComboBox.SelectedIndex = themeForAppIndex;
+            More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
         }
 
         #endregion

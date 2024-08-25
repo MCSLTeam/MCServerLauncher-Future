@@ -661,4 +661,7 @@
   <data name="ResDownloadTipSuffix" xml:space="preserve">
     <value>Last ned kilde)</value>
   </data>
+  <data name="Settings_AppLanguage_Description" xml:space="preserve">
+    <value>Velg språket programmet brukes på.</value>
+  </data>
 </root>

@@ -84,8 +84,7 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
             if (d is not ComboSettingCard control) return;
             control.SettingComboBox.Items.Clear();
             if (e.NewValue is not IEnumerable<string> items) return;
-            foreach (var item in items)
-                control.SettingComboBox.Items.Add(item);
+            control.SettingComboBox.ItemsSource = items;
         }
 
         private static void OnIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
