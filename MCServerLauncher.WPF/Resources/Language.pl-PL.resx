@@ -98,543 +98,567 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>MCServerLauncher WPF 遇到错误</value>
+    <value>Wystąpił błąd w MCServerLauncher WPF</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。</value>
+    <value>Stos został skopiowany do schowka. Możesz przejść bezpośrednio do usługi GitHub, aby przekazać opinię.</value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
-    <value>WPF 客户端 ( 仅 Windows )</value>
+    <value>Klient WPF (tylko system Windows)</value>
   </data>
   <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
-    <value>语言 / Language</value>
+    <value>Język</value>
   </data>
   <data name="FirstSetup_EulaMenu" xml:space="preserve">
-    <value>用户协议</value>
+    <value>Umowa z użytkownikiem</value>
   </data>
   <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
-    <value>连接守护进程</value>
+    <value>Podłączanie demona</value>
   </data>
   <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
-    <value>开始使用</value>
+    <value>Rozpocząć</value>
   </data>
   <data name="Continue" xml:space="preserve">
-    <value>继续</value>
+    <value>Kontynuuj</value>
   </data>
   <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
-    <value> 设置语言</value>
+    <value> Ustawianie języka</value>
   </data>
   <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
-    <value> Language</value>
+    <value> Język</value>
   </data>
   <data name="Main_HomeNavMenu" xml:space="preserve">
-    <value>主页</value>
+    <value>strona główna</value>
   </data>
   <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
-    <value>新建实例</value>
+    <value>Tworzenie instancji</value>
   </data>
   <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
-    <value>实例管理</value>
+    <value>Zarządzanie instancjami</value>
   </data>
   <data name="Main_ResDownloadNavMenu" xml:space="preserve">
-    <value>资源下载</value>
+    <value>Zasoby do pobrania</value>
   </data>
   <data name="Main_HelpCenterNavMenu" xml:space="preserve">
-    <value>帮助中心</value>
+    <value>Centrum pomocy</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>通知中心</value>
+    <value>Centrum powiadomień</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
-    <value>调试页面</value>
+    <value>Strona debugowania</value>
   </data>
   <data name="Main_SettingsNavMenu" xml:space="preserve">
-    <value>程序设置</value>
+    <value>Ustawienia programu</value>
   </data>
   <data name="Tip" xml:space="preserve">
-    <value>提示</value>
+    <value>monit</value>
   </data>
   <data name="NotAllowedOverOpening" xml:space="preserve">
-    <value>MCServerLauncher WPF 不支持重复运行。</value>
+    <value>MCServerLauncher WPF nie obsługuje zduplikowanych przebiegów.</value>
   </data>
   <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
-    <value>代理</value>
+    <value>pośrednik</value>
   </data>
   <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
-    <value>原版</value>
+    <value>Oryginał</value>
   </data>
   <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
-    <value>纯净</value>
+    <value>czysty</value>
   </data>
   <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
-    <value>模组</value>
+    <value>Moduł</value>
   </data>
   <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
-    <value>基岩</value>
+    <value>Bedrock</value>
   </data>
   <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
-    <value>获取核心介绍失败！</value>
+    <value>Nie udało się uzyskać podstawowego wprowadzenia!</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
-    <value>Minecraft 基岩版压缩包</value>
+    <value>Pakiet zip Minecraft Bedrock Edition</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
-    <value>请在此处导入下载的压缩包。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>Zaimportuj pobrany pakiet tutaj. Jeśli nie wiesz, skąd pobrać, możesz kliknąć przycisk po prawej stronie, aby skoczyć.</value>
   </data>
   <data name="Archive" xml:space="preserve">
-    <value>压缩包</value>
+    <value>Pakiet zip</value>
   </data>
   <data name="Browse" xml:space="preserve">
-    <value>浏览</value>
+    <value>Przeglądać</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
-    <value>Minecraft 服务器核心</value>
+    <value>Rdzeń serwera Minecraft</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
-    <value>请选择该服务器将使用的核心文件。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>Wybierz podstawowe pliki, które będą używane przez serwer. Jeśli nie wiesz, skąd pobrać, możesz kliknąć przycisk po prawej stronie, aby skoczyć.</value>
   </data>
   <data name="MinecraftCoreFileName" xml:space="preserve">
-    <value>核心文件名</value>
+    <value>Nazwa pliku podstawowego</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
-    <value>Java 运行时</value>
+    <value>Środowisko uruchomieniowe Java</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
-    <value>Java 运行时是 Minecraft Java 服务器的必需环境。请务必选择合适的版本，防止启动失败。</value>
+    <value>Środowisko wykonawcze Java jest wymaganym środowiskiem dla serwera Java Minecraft. Pamiętaj, aby wybrać odpowiednią wersję, aby zapobiec niepowodzeniom uruchamiania.</value>
   </data>
   <data name="JavaPath" xml:space="preserve">
-    <value>Java 路径</value>
+    <value>Ścieżka Java</value>
   </data>
   <data name="SelectManually" xml:space="preserve">
-    <value>手动选择</value>
+    <value>Wybór ręczny</value>
   </data>
   <data name="ScanJavaAtDaemon" xml:space="preserve">
-    <value>在 Daemon 宿主机自动搜索</value>
+    <value>Automatyczne wyszukiwanie na hostach demona</value>
   </data>
   <data name="SelectFromResult" xml:space="preserve">
-    <value>从现有结果中选取</value>
+    <value>Wybieranie spośród istniejących wyników</value>
   </data>
   <data name="MinecraftJavaRequirementTip" xml:space="preserve">
-    <value>1.12+ 要求 Java 8\n1.17+ 要求 Java 16\n1.18+ 要求 Java 17\n1.20.5+ 要求 Java 21</value>
+    <value>1.12+ wymaga środowiska Java 8\n1.17+ wymaga Javy 16\n1.18+ wymaga Javy 17\n1.20.5+ wymaga Javy 21</value>
   </data>
   <data name="FileName" xml:space="preserve">
-    <value>文件名</value>
+    <value>Pod nazwą</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
-    <value>请选择该实例所需的文件/文件夹/压缩包。压缩包仅支持 ZIP 格式。</value>
+    <value>Wybierz plik/folder/pakiet wymagany dla instancji. Archiwum obsługuje tylko format ZIP.</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
-    <value>部署依赖</value>
+    <value>Zależności wdrożenia</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
-    <value>运行命令</value>
+    <value>Uruchom polecenie</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
-    <value>在此处输入运行命令。</value>
+    <value>Wprowadź tutaj polecenie uruchamiania.</value>
   </data>
   <data name="RunCommandArgumentTip" xml:space="preserve">
-    <value>如果需要附带参数，\n直接附在后面即可。</value>
+    <value>Jeśli zajdzie potrzeba dołączenia parametrów,\nPrzymocuj go bezpośrednio do tyłu.</value>
   </data>
   <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
-    <value>请勿包含特殊符号或使用非法名称。</value>
+    <value>Nie dołączaj symboli specjalnych ani nie używaj nielegalnych nazw.</value>
   </data>
   <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
-    <value>实例名称</value>
+    <value>Nazwa instancji</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
-    <value>(可选) 可在此处添加其他 JVM 参数，一行一个。</value>
+    <value>Opcjonalnie możesz dodać tutaj dodatkowe parametry JVM, po jednym na wiersz.</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
-    <value>添加参数</value>
+    <value>Dodawanie parametrów</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
-    <value>JVM 参数</value>
+    <value>Parametry JVM</value>
   </data>
   <data name="MaximumMemory" xml:space="preserve">
-    <value>最大内存</value>
+    <value>Maksymalna ilość pamięci</value>
   </data>
   <data name="MinimumMemory" xml:space="preserve">
-    <value>最小内存</value>
+    <value>Minimalna ilość pamięci</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
-    <value>这决定了您的 Minecraft Java 服务器将能使用多少内存。</value>
+    <value>Określa to, ile pamięci będzie mógł wykorzystać Twój serwer Java Minecraft.</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
-    <value>JVM 内存堆</value>
+    <value>Sterta pamięci JVM</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
-    <value>最小内存 ≤ 最大内存即可</value>
+    <value>Minimalna ilość pamięci ≤ maksymalna ilość pamięci jest wystarczająca</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
-    <value>复制链接</value>
+    <value>Skopiuj link</value>
   </data>
   <data name="Pause" xml:space="preserve">
-    <value>暂停</value>
+    <value>Limit czasu</value>
   </data>
   <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
+    <value>Anuluj</value>
   </data>
   <data name="FileSize" xml:space="preserve">
-    <value>文件大小</value>
+    <value>Rozmiar pliku</value>
   </data>
   <data name="MinecraftVersion" xml:space="preserve">
-    <value>Minecraft 版本</value>
+    <value>Edycja Minecraft</value>
   </data>
   <data name="BuildVersion" xml:space="preserve">
-    <value>构建版本</value>
+    <value>Buduje</value>
   </data>
   <data name="Off" xml:space="preserve">
-    <value>关</value>
+    <value>zamykać</value>
   </data>
   <data name="On" xml:space="preserve">
-    <value>开</value>
+    <value>otwierać</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
-    <value>创建时间</value>
+    <value>Czas utworzenia</value>
   </data>
   <data name="InstanceType" xml:space="preserve">
-    <value>实例类型</value>
+    <value>Typ instancji</value>
   </data>
   <data name="More" xml:space="preserve">
-    <value>更多</value>
+    <value>więcej</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>启动</value>
+    <value>wtajemniczyć</value>
   </data>
   <data name="Back" xml:space="preserve">
-    <value>返回</value>
+    <value>wrócić</value>
   </data>
   <data name="PreFinishCreateInstanceTip" xml:space="preserve">
-    <value>完成以下配置后，单击 “继续”。</value>
+    <value>Po zakończeniu wykonywania poniższych konfiguracji kliknij przycisk Kontynuuj.</value>
   </data>
   <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
-    <value>请选择该服务器将运行的 Minecraft 版本。</value>
+    <value>Wybierz wersję gry Minecraft, na której będzie działał serwer.</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>刷新</value>
+    <value>Opróżniany</value>
   </data>
   <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
-    <value>如果加载不出来，请稍后再试。\n镜像服务由 BMCLAPI 提供支持</value>
+    <value>Jeśli się nie załaduje, spróbuj ponownie później.\nUSŁUGA IMAGE SERVICE JEST OBSŁUGIWANA PRZEZ BMCLAPI</value>
   </data>
   <data name="ForgeVersion" xml:space="preserve">
-    <value>Forge 版本</value>
+    <value>Wersja kuźni</value>
   </data>
   <data name="NeoForgeVersion" xml:space="preserve">
-    <value>NeoForge 版本</value>
+    <value>Wersja NeoForge</value>
   </data>
   <data name="FabricVersion" xml:space="preserve">
-    <value>Fabric 版本</value>
+    <value>Wersja tkaninowa</value>
   </data>
   <data name="QuiltVersion" xml:space="preserve">
-    <value>Quilt 版本</value>
+    <value>Wersja kołdrowa</value>
   </data>
   <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Forge 加载器的版本。</value>
+    <value>Wybierz wersję programu ładującego Forge, na której będzie działał serwer.</value>
   </data>
   <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 NeoForge 加载器的版本。</value>
+    <value>Wybierz wersję programu ładującego NeoForge, na której będzie działał serwer.</value>
   </data>
   <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Fabric 加载器的版本。</value>
+    <value>Wybierz wersję modułu ładującego sieć szkieletową, która będzie uruchamiana na serwerze.</value>
   </data>
   <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Quilt 加载器的版本。</value>
+    <value>Wybierz wersję programu ładującego kołdry, na której będzie działał serwer.</value>
   </data>
   <data name="OnlyShowReleaseVersion" xml:space="preserve">
-    <value>仅显示正式版</value>
+    <value>Wyświetlana jest tylko oficjalna wersja</value>
   </data>
   <data name="ResDownload_InstanceCore" xml:space="preserve">
-    <value>服务器核心</value>
+    <value>Rdzenie serwerowe</value>
   </data>
   <data name="ResDownload_OpenHomePage" xml:space="preserve">
-    <value>打开官网</value>
+    <value>Otwórz oficjalną stronę internetową</value>
   </data>
   <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
-    <value>欢迎使用</value>
+    <value>Mile widziany</value>
   </data>
   <data name="TempSkip" xml:space="preserve">
-    <value>暂时跳过</value>
+    <value>Pomiń na razie</value>
   </data>
   <data name="Agree" xml:space="preserve">
-    <value>同意</value>
+    <value>zgodzić się</value>
   </data>
   <data name="Disagree" xml:space="preserve">
-    <value>拒绝</value>
+    <value>odmówić</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value>欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，在使用本软件前，请详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。\n请您仔细阅读以下内容，当您使用本软件时，即代表您已经详细阅读并同意本协议的全部内容，且同意遵守本协议的规定。</value>
+    <value>Witamy w oprogramowaniu i usługach MCServerLauncher (zwanych dalej "Oprogramowaniem") dostarczanych przez Zespół Programistów MCSL. W celu ochrony praw i interesów użytkowników prosimy o uważne zapoznanie się z całą treścią niniejszej umowy przed rozpoczęciem korzystania z tego oprogramowania. Niniejsza Umowa może zostać zaktualizowana w dowolnym momencie, a po jej opublikowaniu zastąpi ona pierwotną Umowę z Użytkownikiem.\nProsimy o uważne zapoznanie się z poniższą treścią, korzystanie z tego oprogramowania oznacza, że przeczytałeś i zgadzasz się na całą treść niniejszej umowy w szczegółach oraz zgadzasz się przestrzegać postanowień tej umowy.</value>
   </data>
   <data name="Eula2" xml:space="preserve">
-    <value>使用须知</value>
+    <value>Środki ostrożności</value>
   </data>
   <data name="Eula3" xml:space="preserve">
-    <value>用户应自行配备本软件和本软件功能（包括但不限于 新建实例 等）所需要的硬件和软件配置。\n用户应自行负担连接互联网后所需支付的相关电话、宽带使用等费用。\n用户应为其使用本软件产生的行为、事件、结果承担法律责任。\n用户与其他未授权的非官方个人之间产生的任何交易与纠纷，与开发者无关。\n用户应遵守中华人民共和国相关法律法规（如果用户是中华人民共和国境外的使用者，还应遵守所属国家或地区的法律法规）。\n用户不得使用本软件（或本软件的一些特性功能）从事非法行为，不得使用与本软件有关联的相关进程和服务从事非法行为，其任何行为造成的后果，与开发者无关。\n用户应当自行承担其所发布的信息内容所涉及的法律责任。用户不得在本软件内、本软件运行的相关进程与服务内输入、发表和传播下列任何内容，不得以任何形式发布下列任何内容：\n\n反对中华人民共和国宪法所确定的基本原则的；\n危害国家安全，泄露国家机密，颠覆国家政权，破坏国家统一的；\n损害国家荣誉和利益的；\n煽动民族仇恨、民族歧视，破坏民族团结的；\n破坏国家宗教政策，宣扬邪教和封建迷信的；\n散布谣言，扰乱社会秩序，破坏社会稳定的；\n散布淫秽、色情、赌博、暴力、凶杀、恐怖或者教唆犯罪的；\n侮辱或者诽谤他人，侵害他人合法权益的；\n含有中华人民共和国法律、行政法规禁止的其他内容的。\n除非法律允许或开发者书面许可，用户不得从事下列任何行为：\n不合法、不恰当地使用本软件及服务；\n破坏本软件系统或网站的正常运行，故意传播计算机病毒等破坏性程序；\n采取任何可能影响本软件网络服务的非正常使用行为（包括但不限于损害、攻击服务器或使服务器过度负荷等）；\n删除本软件及其副本上关于著作权的信息。\n\n若用户做出违法违规或违反本协议规定的行为，开发者有权视情节严重程度，依据本协议及法律法规，对用户做出包括但不限于终止服务等处理措施；情节严重的，将移交有关行政管理机关给予行政处罚，或追究其刑事责任。</value>
+    <value>Użytkownik jest zobowiązany do wyposażenia oprogramowania i jego funkcji (w tym m.in. do tworzenia nowych instancji) w konfigurację sprzętową i programową wymaganą przez użytkownika.\nUżytkownicy są odpowiedzialni za uiszczenie odpowiednich opłat za korzystanie z usług telefonicznych i szerokopasmowych, które należy uiścić po połączeniu się z Internetem.\nUżytkownik ponosi odpowiedzialność prawną za zachowanie, zdarzenie i wynik spowodowany korzystaniem z tego oprogramowania.\nWszelkie transakcje i spory między użytkownikami a innymi nieautoryzowanymi nieoficjalnymi osobami nie mają nic wspólnego z programistą.\nUżytkownik jest zobowiązany do przestrzegania odpowiednich przepisów ustawowych i wykonawczych Chińskiej Republiki Ludowej (jeśli użytkownik jest użytkownikiem spoza Chińskiej Republiki Ludowej, użytkownik jest również zobowiązany do przestrzegania praw i przepisów obowiązujących w kraju lub regionie, do którego należy).\nUżytkownik nie może używać oprogramowania (lub niektórych cech i funkcji oprogramowania) do angażowania się w działania niezgodne z prawem, a także nie może wykorzystywać odpowiednich procesów i usług związanych z oprogramowaniem do angażowania się w działania niezgodne z prawem, a konsekwencje jakichkolwiek działań nie są związane z programistą.\nUżytkownicy ponoszą własną odpowiedzialność prawną związaną z treścią publikowanych przez nich informacji. Użytkownik nie może wprowadzać, publikować ani rozpowszechniać żadnej z następujących treści w oprogramowaniu, procesach i usługach związanych z działaniem oprogramowania, a także nie może publikować żadnej z następujących treści w żadnej formie：\n\nsprzeciwianie się podstawowym zasadom zawartym w Konstytucji Chińskiej Republiki Ludowej;\nzagrażanie bezpieczeństwu narodowemu, ujawnianie tajemnic państwowych, podważanie władzy państwowej lub podważanie jedności narodowej;\ngodzenie w honor i interesy państwa;\npodżeganie do nienawiści etnicznej, dyskryminacji etnicznej lub podważanie jedności etnicznej;\npodważanie krajowej polityki religijnej, propagowanie kultów i feudalnych przesądów;\nrozpowszechnianie plotek, zakłócanie porządku społecznego lub podważanie stabilności społecznej;\nRozpowszechnianie treści obscenicznych, pornografii, hazardu, przemocy, morderstw, terroru lub podżegania do przestępstw;\nobrażanie lub oczernianie innych osób, naruszanie słusznych praw i interesów innych osób;\nZawiera inne treści zabronione przez Chińską Republikę Ludową lub przepisy administracyjne.\nO ile nie jest to dozwolone przez prawo lub nie ma pisemnej zgody programisty, użytkownicy nie mogą angażować się w żadne z poniższych działań：\nNielegalne lub niewłaściwe korzystanie z Oprogramowania i Usług;\nZakłócać normalnego działania systemu oprogramowania lub strony internetowej, celowo rozpowszechniać wirusów komputerowych i innych destrukcyjnych programów;\nPodejmować jakichkolwiek nietypowych zachowań związanych z użytkowaniem, które mogą mieć wpływ na usługi sieciowe Oprogramowania (w tym między innymi uszkadzania, atakowania serwera lub przeciążania serwera itp.);\nUsunąć informacje o prawach autorskich z Oprogramowania i jego kopii.\n\nJeśli użytkownik dopuści się jakiegokolwiek zachowania, które narusza przepisy prawa i regulacje lub narusza postanowienia niniejszej Umowy, deweloper ma prawo podjąć środki przeciwko użytkownikowi w zależności od powagi sytuacji, zgodnie z niniejszą Umową oraz przepisami ustawowymi i wykonawczymi, w tym między innymi do zakończenia świadczenia usług. Jeżeli okoliczności są poważne, zostaną oni przekazani odpowiednim organom administracyjnym w celu wymierzenia kary administracyjnej lub zostaną wszczęte dochodzenie w sprawie odpowiedzialności karnej.</value>
   </data>
   <data name="Eula4" xml:space="preserve">
-    <value>数据收集与使用</value>
+    <value>Gromadzenie i wykorzystywanie danych</value>
   </data>
   <data name="Eula5" xml:space="preserve">
-    <value>若您同意本使用协议且使用本软件的在线服务，我们会收集以下信息：\n本软件所运行设备的IP地址（可能并非正确地址）；\n本软件所运行设备的部分系统信息；\n本软件崩溃时，可能会在经用户同意的情况下，上传软件在系统运行的日志（含有部分系统信息），以帮助解决问题和改善软件；\n其他会在经用户同意情况下上传的部分信息（软件中会具体说明）。</value>
+    <value>Jeśli użytkownik wyrazi zgodę na niniejsze Warunki użytkowania i będzie korzystał z usług online Oprogramowania, będziemy gromadzić następujące informacje：\nadres IP urządzenia, na którym uruchomione jest Oprogramowanie (który może nie być prawidłowym adresem);\nNiektóre informacje systemowe sprzętu, na którym działa Oprogramowanie;\nW przypadku awarii oprogramowania dzienniki oprogramowania uruchomionego w systemie (w tym niektóre informacje o systemie) mogą zostać przesłane za zgodą użytkownika, aby pomóc w rozwiązaniu problemu i ulepszeniu oprogramowania.\nInne informacje, które zostaną przesłane za zgodą użytkownika (zgodnie z opisem w oprogramowaniu).</value>
   </data>
   <data name="Eula6" xml:space="preserve">
-    <value>用户支持和反馈</value>
+    <value>Wsparcie i opinie użytkowników</value>
   </data>
   <data name="Eula7" xml:space="preserve">
-    <value>用户在使用过程中如遇到任何问题，可以通过官方电子邮件或在本软件源码仓库提交 Issue 的方式进行反馈。我们会认真考虑用户的反馈以改进服务。</value>
+    <value>Jeśli użytkownicy napotkają jakiekolwiek problemy podczas użytkowania, mogą przekazać opinię za pośrednictwem oficjalnej wiadomości e-mail lub przesyłając problem w tym repozytorium kodu źródłowego oprogramowania. Poważnie traktujemy nasze opinie, aby ulepszać nasze usługi.</value>
   </data>
   <data name="Eula8" xml:space="preserve">
-    <value>服务的变更或中止</value>
+    <value>Zmiany lub zawieszenie usługi</value>
   </data>
   <data name="Eula9" xml:space="preserve">
-    <value>1. 对用户服务的中止与终止\n\n用户有发布违法信息、严重违背社会公德、以及其他违反法律禁止性规定的行为，开发者应终止对用户提供服务；\n用户在接受本软件服务时实施不正当行为的，开发者有权终止对用户提供服务（该不正当行为的具体情形在本协议中有明确约定）；\n用户使用本软件的第三方修改版本的，用户应自行承担风险与法律责任。\n\n2. 对本软件及服务的中断、中止与终止：\n\n发生下列情形之一时，开发者有权终止或中断本软件全部或部分服务，对因此造成的不便及损害，开发者对用户或第三人均不承担任何责任：\n\na. 因本软件及服务自身的需要；\nb. 因服务器遭受损害、无法正常工作；\nc. 因突发性的软硬件设备与电子通信设备故障；\nd. 因网络提供商线路或其他故障；\ne. 因政策因素；\nf. 第三方原因或其他不可抗力的情形。\n\n开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。</value>
+    <value>1. Zawieszenie i zakończenie świadczenia usługi przez Użytkownika\n\nW przypadku, gdy użytkownik publikuje informacje o charakterze bezprawnym, rażąco narusza dobre obyczaje lub narusza zakazy wynikające z przepisów prawa, deweloper zaprzestanie świadczenia usług na rzecz użytkownika;\nJeśli użytkownik dopuści się niewłaściwego działania podczas akceptowania usługi oprogramowania, programista ma prawo do zakończenia usługi świadczonej użytkownikowi (konkretne okoliczności niewłaściwego zachowania są wyraźnie określone w niniejszej umowie);\nW przypadku korzystania przez użytkownika ze zmodyfikowanej wersji oprogramowania od osoby trzeciej, użytkownik ponosi własne ryzyko i odpowiedzialność prawną.\n\n2. Zawieszenie, zawieszenie i zakończenie działania Oprogramowania i Usług：\n\nW przypadku zaistnienia którejkolwiek z poniższych okoliczności, programista ma prawo zakończyć lub przerwać świadczenie całości lub części usług związanych z oprogramowaniem, a programista nie ponosi odpowiedzialności wobec użytkownika ani żadnej osoby trzeciej za niedogodności lub szkody z tego powodu wynikające：\n\na. zgodnie z wymaganiami Oprogramowania i Usług;\nb. Nieprawidłowe działanie z powodu uszkodzenia serwera;\nc. Z powodu nagłej awarii oprogramowania i sprzętu komputerowego oraz sprzętu do komunikacji elektronicznej;\nd. z powodu awarii linii dostawcy sieci lub innych awarii;\ne. ze względów politycznych;\nf. Przyczyny osób trzecich lub inne okoliczności siły wyższej.\n\nProgramista zastrzega sobie prawo do zakończenia lub częściowego zakończenia Oprogramowania i Usług, gdy uzna to za konieczne, a Deweloper może powiadomić o tym Użytkownika w formie komunikatu, ale Deweloper nie ponosi odpowiedzialności za jakiekolwiek straty wyrządzone Użytkownikowi.</value>
   </data>
   <data name="Eula10" xml:space="preserve">
-    <value>免责声明</value>
+    <value>zrzeczenie się</value>
   </data>
   <data name="Eula11" xml:space="preserve">
-    <value>用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。\n用户理解并同意，开发者不保证本软件及服务一定能满足用户需求，也不保证服务不会被中断，并且对本软件及服务的正确性、安全性等方面不提供任何担保。\n用户理解并同意，开发者无法完全保证本软件在线服务所下载的第三方文件的的正确性、安全性、合法性，也不对本软件内存在的第三方服务（包括但不限于 资源下载 等服务）的正确性、安全性、合法性等负责。因此，前面提到的内容与开发者和本软件无关，不代表开发者及本软件的立场。相关争议应由第三方服务提供方承担。\n用户理解并同意，若以错误或非法的手段使用本软件在线服务以及本软件所下载的相关文件，其造成的后果由用户自行承担，若导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，本软件不对第三方服务内容提供担保。 若用户使用第三方服务导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。</value>
+    <value>Użytkownik rozumie i zgadza się, że programista nie udziela żadnej gwarancji na to oprogramowanie w zakresie dozwolonym przez prawo. Użytkownik korzysta z tego oprogramowania na własne ryzyko.\nUżytkownik przyjmuje do wiadomości i zgadza się, że Deweloper nie gwarantuje, że Oprogramowanie i Usługi zaspokoją potrzeby Użytkownika, ani nie gwarantuje, że Usługi nie zostaną przerwane, ani nie udziela żadnej gwarancji poprawności i bezpieczeństwa Oprogramowania i Usług.\nUżytkownik przyjmuje do wiadomości i zgadza się, że programista nie może w pełni zagwarantować poprawności, bezpieczeństwa i legalności plików stron trzecich pobranych z usług online oprogramowania, ani nie ponosi odpowiedzialności za poprawność, bezpieczeństwo i legalność usług stron trzecich (w tym między innymi pobierania zasobów i innych usług) istniejących w oprogramowaniu. W związku z tym powyższe treści nie mają nic wspólnego z programistą i oprogramowaniem oraz nie reprezentują stanowiska programisty i oprogramowania. Spory będą rozstrzygane przez usługodawcę będącego stroną trzecią.\nUżytkownik przyjmuje do wiadomości i zgadza się, że ponosi wyłączną odpowiedzialność za konsekwencje spowodowane korzystaniem z usług online Oprogramowania i związanych z nimi plików pobranych z Oprogramowania w nieprawidłowy lub nielegalny sposób, a także nie ponosi odpowiedzialności za jakiekolwiek szkody majątkowe, naruszenie praw autorskich lub praw własności intelektualnej itp., a także nie będzie i nie może ponosić żadnej odpowiedzialności prawnej.\nUżytkownik przyjmuje do wiadomości i zgadza się, że Oprogramowanie nie gwarantuje zawartości usług stron trzecich. Deweloper nie ponosi odpowiedzialności za jakiekolwiek szkody majątkowe, naruszenie praw autorskich lub praw własności intelektualnej spowodowane korzystaniem przez użytkownika z usług osób trzecich i nie będzie i nie może ponosić żadnej odpowiedzialności prawnej.\nUżytkownik przyjmuje do wiadomości i zgadza się, że programista nie udziela żadnej gwarancji ani wsparcia prawnego dla funkcji oprogramowania, a jeśli użytkownik korzysta z funkcji oprogramowania w celu angażowania się w nielegalne lub inne niewłaściwe działania, ryzyko i konsekwencje prawne spowodowane przez użytkownika ponosi użytkownik.</value>
   </data>
   <data name="Eula12" xml:space="preserve">
-    <value>知识产权</value>
+    <value>własność intelektualna</value>
   </data>
   <data name="Eula13" xml:space="preserve">
-    <value>本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。\n\n本软件所使用的第三方服务归相关版权方所有，包括但不限于：\n本软件为 Minecraft（其最终解释权归 Microsoft 公司 和 Mojang AB 所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）和 中国区代理公司 网易 在中国大陆实行的相关政策，不得将游戏本体内容用于商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件为 Terraria（其最终解释权归 Re-Logic 和其发行商所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）及相关政策。用户不得将游戏本体内容用于未经许可的商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件提供的部分在线文件资源（服务端核心、游戏/服务器模组和插件等内容）下载服务由相应 官方/第三方 等提供，版权依照第三方平台规定处理。\n本软件使用的其他第三方服务，版权归服务提供商所有。\n本软件是开源软件，用户或其他非本软件的软件开发者应当遵守本软件的开源协议。\n用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。</value>
+    <value>Prawa autorskie, patenty i inne prawa własności intelektualnej do tego oprogramowania są własnością programisty lub wyznaczonego właściciela praw autorskich.\n\nUsługi stron trzecich używane w tym oprogramowaniu są własnością odpowiednich właścicieli praw autorskich, w tym między innymi:：\nTo oprogramowanie jest narzędziem do zarządzania serwerem i gry online dla Minecrafta (którego ostateczna interpretacja jest własnością Microsoft Corporation i Mojang AB). Użytkownicy są zobowiązani do przestrzegania Umowy licencyjnej użytkownika końcowego (EULA) oraz odpowiednich zasad wdrożonych przez NetEase w Chinach kontynentalnych, a także nie mogą wykorzystywać zawartości gry do celów komercyjnych ani podejmować innych działań zabronionych przez Umowę licencyjną użytkownika końcowego.\nOprogramowanie jest narzędziem do zarządzania serwerami i łączenia się z grą firmy Terraria, którego ostateczna interpretacja należy do Re-Logic i jego wydawców. Użytkownicy są odpowiedzialni za przestrzeganie Umowy licencyjnej użytkownika końcowego (EULA) i powiązanych zasad. Użytkownicy nie mogą wykorzystywać zawartości gry do nielicencjonowanych celów komercyjnych ani wykonywać innych działań zabronionych przez umowę licencyjną użytkownika końcowego.\nNiektóre z internetowych zasobów plików (rdzeń serwera, moduły gry/serwera, wtyczki itp.) usługi pobierania świadczone przez to oprogramowanie są świadczone przez odpowiedniego urzędnika/osobę trzecią itp., a prawa autorskie będą traktowane zgodnie z postanowieniami platformy strony trzeciej.\nPrawa autorskie do innych usług stron trzecich wykorzystywanych w tym oprogramowaniu należą do usługodawcy.\nTo oprogramowanie jest oprogramowaniem typu open source, a użytkownicy lub inni twórcy oprogramowania, którzy nie są częścią tego oprogramowania, muszą przestrzegać umowy o otwartym oprogramowaniu tej firmy.\nUżytkownik przyjmuje do wiadomości i zgadza się, że z wyjątkiem zasobów stworzonych przez Użytkownika, wszystkie dane usług online udostępnianych przez Oprogramowanie są własnością Dewelopera. Deweloper ma prawo zdecydować, czy chce zachować całość lub część danych na serwerze.</value>
   </data>
   <data name="Eula14" xml:space="preserve">
-    <value>条款变更</value>
+    <value>Zmiany w Warunkach</value>
   </data>
   <data name="Eula15" xml:space="preserve">
-    <value>开发者有权在必要的时候修改本协议。本协议一旦发生变动，开发者将在重要页面展示修改内容。若用户不同意本协议的修订或更新，可以主动停止使用本软件及服务。若用户在本协议修订后仍继续使用本软件及服务，即表示用户同意本协议所做的所有修订或更新。 若用户在本协议修订后因未熟悉变更而引起的损失，开发者不承担任何责任。</value>
+    <value>Deweloper ma prawo do zmiany niniejszej Umowy w razie potrzeby. Po wprowadzeniu zmian w niniejszej Umowie deweloper wyświetli zmodyfikowaną zawartość na ważnej stronie. Jeśli użytkownik nie zgadza się na zmianę lub aktualizację niniejszej umowy, może podjąć inicjatywę zaprzestania korzystania z oprogramowania i usług. Jeśli użytkownik będzie nadal korzystał z oprogramowania i usług po zmianie niniejszej umowy, oznacza to, że użytkownik wyraża zgodę na wszelkie zmiany lub aktualizacje wprowadzone do niniejszej umowy. Jeśli użytkownik nie jest zaznajomiony ze zmianami po zmianie niniejszej umowy, deweloper nie ponosi odpowiedzialności za jakiekolwiek straty.</value>
   </data>
   <data name="Eula16" xml:space="preserve">
-    <value>其他规定</value>
+    <value>Rozmaity</value>
   </data>
   <data name="Eula17" xml:space="preserve">
-    <value>本协议适用于中华人民共和国法律，并且排除一切冲突法规规定地适用；\n开发者不行使、未能及时行使或者充分行使本协议或者依照法律规定所享有的权利，不应被视为放弃行使该权利，也不得影响开发者在将来行使该等权利；\n在法律许可范围内，开发者享有对本协议条款的解释权；\n用户可以通过电子邮件投诉、举报各类违法违规行为，邮件请发送至邮箱 services@mcsl.com.cn 。</value>
+    <value>Niniejsza Umowa podlega prawu Chińskiej Republiki Ludowej, bez względu na wszelkie przepisy kolizyjne;\nNiewykonanie, niewykonanie w odpowiednim czasie lub niepełne wykonanie przez Dewelopera praw przysługujących mu na mocy niniejszej Umowy lub zgodnie z prawem nie będzie uważane za zrzeczenie się wykonywania takich praw ani nie będzie miało wpływu na wykonywanie tych praw przez Dewelopera w przyszłości;\nW zakresie dozwolonym przez prawo Deweloper ma prawo do interpretacji warunków niniejszej Umowy;\nUżytkownicy mogą składać skargi i zgłaszać wszelkiego rodzaju naruszenia prawa i przepisów za pośrednictwem poczty elektronicznej, prosimy o wysłanie wiadomości e-mail na adres services@mcsl.com.cn.</value>
   </data>
   <data name="Eula18" xml:space="preserve">
-    <value>条款可分性</value>
+    <value>Rozdzielność postanowień</value>
   </data>
   <data name="Eula19" xml:space="preserve">
-    <value>如果本协议的任何条款被认定为无效，或不可执行，其余条款仍应完全有效。</value>
+    <value>Jeśli którekolwiek z postanowień niniejszej Umowy zostanie uznane za nieważne lub niewykonalne, pozostałe postanowienia pozostaną w pełnej mocy.</value>
   </data>
   <data name="PreCreateInstanceTip" xml:space="preserve">
-    <value>请选择欲操作的方式：</value>
+    <value>Wybierz metodę, którą chcesz obsługiwać：</value>
   </data>
   <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
-    <value>通用 Minecraft Java 版服务器</value>
+    <value>Uniwersalne serwery Minecraft Java Edition</value>
   </data>
   <data name="CreateMinecraftForgeInstance" xml:space="preserve">
-    <value>Minecraft Forge 服务器</value>
+    <value>Serwery Minecraft Forge</value>
   </data>
   <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
-    <value>Minecraft NeoForge 服务器</value>
+    <value>Serwery Minecraft NeoForge</value>
   </data>
   <data name="CreateMinecraftFabricInstance" xml:space="preserve">
-    <value>Minecraft Fabric 服务器</value>
+    <value>Serwery Minecraft Fabric</value>
   </data>
   <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
-    <value>Minecraft Quilt 服务器</value>
+    <value>Serwery Minecraft Quilt</value>
   </data>
   <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
-    <value>Minecraft 基岩版服务器</value>
+    <value>Serwery Minecraft Bedrock Edition</value>
   </data>
   <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
-    <value>Minecraft Geyser互通 独立端</value>
+    <value>Interoperacyjność gejzeru Minecraft Samodzielna</value>
   </data>
   <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
-    <value>Minecraft BungeeCord 群组端</value>
+    <value>Strona grupy Minecraft BungeeCord</value>
   </data>
   <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
-    <value>Minecraft Waterfall 群组端</value>
+    <value>Strona grupy Minecraft Waterfall</value>
   </data>
   <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
-    <value>Minecraft Velocity 群组端</value>
+    <value>Strona grupy prędkości Minecraft</value>
   </data>
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
-    <value>Minecraft Travertine 群组端</value>
+    <value>Strona grupy Minecraft Trawertyn</value>
   </data>
   <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>Frp 客户端程序 (Frpc)</value>
+    <value>Program kliencki FRP (FRPC)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
-    <value>Terraria 游戏服务器</value>
+    <value>Serwery gier Terraria</value>
   </data>
   <data name="CreateOtherExecutableInstance" xml:space="preserve">
-    <value>其他控制台程序</value>
+    <value>Inne programy konsolowe</value>
   </data>
   <data name="ImportExistsInstance" xml:space="preserve">
-    <value>导入现有实例</value>
+    <value>Importowanie istniejącej instancji</value>
   </data>
   <data name="HomeTip" xml:space="preserve">
-    <value>新征程，新体验。</value>
+    <value>Nowa podróż, nowe doświadczenie.</value>
   </data>
   <data name="InstanceManagerTip" xml:space="preserve">
-    <value>纵览全局，以观天下。</value>
+    <value>Spójrz na świat z szerszej perspektywy.</value>
   </data>
   <data name="NotificationCenterTip" xml:space="preserve">
-    <value>四面八方，使命必达。</value>
+    <value>We wszystkich kierunkach misja musi zostać zrealizowana.</value>
   </data>
-  <data name="ResDownloadTip" xml:space="preserve">
-    <value>你想要的，这里都有。</value>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Nazwij to, ma tutaj. (Obecnie w użyciu.)</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
-    <value>尽其所能，答其所问。</value>
+    <value>Postaraj się odpowiedzieć na ich pytania.</value>
   </data>
   <data name="SettingsTip" xml:space="preserve">
-    <value>你的 MCSL，你的选择。</value>
+    <value>Twój MCSL, Twój wybór.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
-    <value>直接停止下载</value>
+    <value>Zatrzymaj pobieranie bezpośrednio</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
-    <value>重试下载 1 次</value>
+    <value>Ponów próbę pobrania 1 raz</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
-    <value>重试下载 3 次</value>
+    <value>Ponów próbę pobrania 3 razy</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
-    <value>实例名称输入验证</value>
+    <value>Wprowadź nazwę instancji do walidacji</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
-    <value>守护进程密钥验证</value>
+    <value>Walidacja klucza demona</value>
   </data>
   <data name="Settings_AppTheme_Auto" xml:space="preserve">
-    <value>跟随系统</value>
+    <value>Postępuj zgodnie z systemem</value>
   </data>
   <data name="Settings_AppTheme_Light" xml:space="preserve">
-    <value>浅色</value>
+    <value>światło</value>
   </data>
   <data name="Settings_AppTheme_Dark" xml:space="preserve">
-    <value>深色</value>
+    <value>Ciemny</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
-    <value>自动同意 EULA (Minecraft Java 版服务器实例)</value>
+    <value>Umowa licencyjna użytkownika końcowego (EULA) dotycząca automatycznej zgody (instancja serwerowa Minecraft Java Edition)</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
-    <value>自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。</value>
+    <value>Wyrażając na to automatyczną zgodę, użytkownik jest związany Umową licencyjną użytkownika końcowego gry Minecraft i zgadza się, że firma MCSL nie ponosi odpowiedzialności solidarnej.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
-    <value>自动禁用正版验证 (Minecraft Java 版服务器实例)</value>
+    <value>Automatycznie wyłącz weryfikację autentyczności (instancja serwera Minecraft Java Edition)</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。</value>
+    <value>Gdy ta opcja jest włączona, takie instancje automatycznie wyłączą uwierzytelnianie z Mojang/Microsoft, umożliwiając nieoryginalnym klientom Minecraft Java Edition łączenie się z serwerem.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。</value>
+    <value>Gdy ta opcja jest włączona, takie instancje automatycznie wyłączą uwierzytelnianie z Mojang/Microsoft, umożliwiając nieoryginalnym klientom Minecraft Bedrock Edition łączenie się z serwerem.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
-    <value>自动禁用正版验证 (Minecraft 基岩版服务器实例)</value>
+    <value>Automatycznie wyłącz weryfikację autentyczności (instancja serwera Minecraft Bedrock Edition)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Forge 服务器实例)</value>
+    <value>Wdrażanie ze źródłem obrazu (instancja serwera Minecraft Forge)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft NeoForge 服务器实例)</value>
+    <value>Wdrażanie przy użyciu źródła obrazu (instancja serwera Minecraft NeoForge)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Fabric 服务器实例)</value>
+    <value>Wdrażanie przy użyciu źródła obrazu (instancja serwera Minecraft Fabric)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Quilt 服务器实例)</value>
+    <value>Wdrażanie ze źródłem lustrzanym (instancja serwera Minecraft Quilt)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
-    <value>启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。</value>
+    <value>Po włączeniu BMCLAPI będzie używane do pobierania zasobów, co jest zalecane dla użytkowników z Chin.</value>
   </data>
   <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
-    <value>下载源</value>
+    <value>Pobierz źródło</value>
   </data>
   <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
-    <value>选择在 “资源下载” 页面使用的下载提供方。</value>
+    <value>Wybierz dostawcę pobierania, który ma być używany na stronie Pobieranie zasobów.</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
-    <value>无极镜像 FastMirror (由物语云计算提供)</value>
+    <value>FastMirror (dostarczane przez Monogatari Cloud Computing)</value>
   </data>
   <data name="Settings_PolarsMirrorName" xml:space="preserve">
-    <value>极星云镜像 (由极星网络提供)</value>
+    <value>Zdjęcie chmury Polestar (dzięki uprzejmości Polestar Network)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File (由开发组成员 Z__Tsin 提供)</value>
+    <value>Plik ZCloud (dostarczony przez Z__Tsin członka zespołu programistów)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 (由 MSL 开服器提供)</value>
+    <value>Źródło pobierania MSL (dostarczane przez MSL Server Builder)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>Synchroniczne dublowanie MCSL-Sync</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
-    <value>下载引擎线程数</value>
+    <value>Liczba wątków silnika pobierania</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
-    <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
+    <value>W przypadku wystarczającej wydajności komputera, im większa liczba wątków, tym większa teoretyczna prędkość pobierania pliku. Ogólnie rzecz biorąc, wystarczające jest ustawienie 16 wątków.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
-    <value>下载失败处理方式</value>
+    <value>Jak radzić sobie z błędami pobierania</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
-    <value>当文件下载失败时，应当进行的操作。</value>
+    <value>Co zrobić, jeśli pobieranie pliku się nie powiedzie.</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
-    <value>删除实例确认方式</value>
+    <value>Potwierdź metodę usuwania instancji</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
-    <value>此功能可防止误操作导致实例被删除。</value>
+    <value>Ta funkcja zapobiega usuwaniu instancji z powodu nieprawidłowego działania.</value>
   </data>
   <data name="Settings_AppTheme_Title" xml:space="preserve">
-    <value>应用主题</value>
+    <value>Stosowanie motywu</value>
   </data>
   <data name="Settings_AppTheme_Description" xml:space="preserve">
-    <value>默认跟随系统变化，当然也可以自己设置。</value>
+    <value>Ustawienie domyślne podąża za zmianami systemowymi, oczywiście możesz je również ustawić samodzielnie.</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
-    <value>开机自启动 (MCServerLauncher.WPF)</value>
+    <value>Automatyczne uruchamianie (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
-    <value>在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。</value>
+    <value>Po uruchomieniu systemu automatycznie uruchamiany jest program graficzny. Po włączeniu poufne operacje mogą zostać dotknięte w systemie, więc zezwól na nie w swoim oprogramowaniu antywirusowym.</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>检查更新 (MCServerLauncher.WPF)</value>
+    <value>Sprawdź dostępność aktualizacji (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>检查本图形化程序的更新。</value>
+    <value>Sprawdź dostępność aktualizacji tego programu graficznego.</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
-    <value>检查更新</value>
+    <value>Sprawdź dostępność aktualizacji</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>在每次启动时，检查本图形化程序的更新。</value>
+    <value>Sprawdzaj dostępność aktualizacji tego programu graficznego przy każdym uruchomieniu.</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>自动检查更新 (MCServerLauncher.WPF)</value>
+    <value>Automatyczne sprawdzanie dostępności aktualizacji (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
-    <value>检查更新 (MCServerLauncher.Daemon)</value>
+    <value>Sprawdź dostępność aktualizacji (MCServerLauncher.Daemon)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
-    <value>检查守护进程的更新。</value>
+    <value>Sprawdź dostępność aktualizacji demona.</value>
   </data>
   <data name="Settings_About_Title" xml:space="preserve">
-    <value>关于 MCServerLauncher Future (WPF)</value>
+    <value>Informacje o MCServerLauncher Future (WPF)</value>
   </data>
   <data name="Settings_About_LegalProtected" xml:space="preserve">
-    <value>此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序或其中任何部分，将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。</value>
+    <value>Ten projekt jest chroniony prawem autorskim Chińskiej Republiki Ludowej i traktatami międzynarodowymi, a nieautoryzowane powielanie lub dystrybucja Programu lub jakiejkolwiek jego części podlega surowym sankcjom cywilnym i karnym oraz ściganiu w najszerszym zakresie dozwolonym przez prawo.</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至</value>
+    <value>Ten projekt jest chroniony na licencji GNU General Public License w wersji 3.0 o otwartym kodzie źródłowym, a kod źródłowy jest hostowany pod adresem</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
     <value>。</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
-    <value>MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。</value>
+    <value>Podpisany cyfrowo certyfikat używany przez MCServerLauncher Future gwarantuje, że program nie może zostać zmanipulowany. Numer seryjny：59cbf9b5207eeabb45417d148120ac9a。 Jeśli jest inny, nie używaj go i przekaż services@mcsl.com.cn opinię.</value>
   </data>
   <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
-    <value>无极镜像</value>
+    <value>Nieskończone odbicie lustrzane</value>
   </data>
   <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
-    <value>极星云镜像</value>
+    <value>Obraz Mgławicy Polarnej</value>
   </data>
   <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>Synchroniczne dublowanie MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>anons</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Czy na pewno?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>W przypadku odrzucenia Umowy z Użytkownikiem, Oprogramowanie zostanie wycofane.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Upewnij się, że przeczytałeś wszystko, zanim klikniesz przycisk Zgadzam się. Przynajmniej powinieneś przetoczyć protokół do końca.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Dobry</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Nie teraz</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Oznacza to, że zgadzasz się na całą treść niniejszej Umowy.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Źródło pobierania)</value>
   </data>
 </root>
