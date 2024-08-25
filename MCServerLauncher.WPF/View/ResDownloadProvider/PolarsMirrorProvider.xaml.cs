@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.Modules.Download;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
@@ -13,9 +14,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// <summary>
     ///    PolarsMirrorProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class PolarsMirrorProvider
+    public partial class PolarsMirrorProvider : IResDownloadProvider
     {
-        public readonly string ResProviderName = LanguageManager.Instance["ResDownloadPage_ProviderName_PolarsMirror"];
+        public string ResProviderName => LanguageManager.Instance["ResDownloadPage_ProviderName_PolarsMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
@@ -23,7 +24,6 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         {
             InitializeComponent();
         }
-
         /// <summary>
         ///    Refresh core list.
         /// </summary>

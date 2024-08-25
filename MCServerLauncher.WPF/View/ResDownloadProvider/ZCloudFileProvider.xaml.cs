@@ -11,9 +11,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// <summary>
     ///    ZCloudFileProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class ZCloudFileProvider
+    public partial class ZCloudFileProvider : IResDownloadProvider
     {
-        public readonly string ResProviderName = "ZCloud File";
+        public string ResProviderName => "ZCloud File";
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

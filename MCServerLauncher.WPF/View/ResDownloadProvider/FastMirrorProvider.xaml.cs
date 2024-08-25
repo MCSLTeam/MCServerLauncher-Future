@@ -14,9 +14,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// <summary>
     ///    FastMirrorProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class FastMirrorProvider
+    public partial class FastMirrorProvider : IResDownloadProvider
     {
-        public readonly string ResProviderName = LanguageManager.Instance["ResDownloadPage_ProviderName_FastMirror"];
+        public string ResProviderName => LanguageManager.Instance["ResDownloadPage_ProviderName_FastMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

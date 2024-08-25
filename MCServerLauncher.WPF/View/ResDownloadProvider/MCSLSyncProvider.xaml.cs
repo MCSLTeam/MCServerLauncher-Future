@@ -12,9 +12,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// <summary>
     ///    MCSLSyncProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class MCSLSyncProvider
+    public partial class MCSLSyncProvider : IResDownloadProvider
     {
-        public readonly string ResProviderName = LanguageManager.Instance["ResDownloadPage_ProviderName_MCSLSync"];
+        public string ResProviderName => LanguageManager.Instance["ResDownloadPage_ProviderName_MCSLSync"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
