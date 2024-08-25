@@ -113,7 +113,9 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         /// <param name="e"></param>
         private void LanguageChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (BasicUtils.AppSettings.App.IsFirstSetupFinished) return;
             LanguageManager.Instance.ChangeLanguage(new CultureInfo(LanguageList.ElementAt(LanguageComboBox.SelectedIndex)));
+            BasicUtils.SaveSetting("App.Language", LanguageList.ElementAt(LanguageComboBox.SelectedIndex));
         }
     }
 }
