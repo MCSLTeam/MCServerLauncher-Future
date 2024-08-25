@@ -621,13 +621,12 @@
     <EmbeddedResource Include="Resources\Language.ja-JP.resx" />
     <EmbeddedResource Include="Resources\Language.ko-KR.resx" />
     <EmbeddedResource Include="Resources\Language.nl-NL.resx" />
-    <EmbeddedResource Include="Resources\Language.no-NO.resx" />
+    <EmbeddedResource Include="Resources\Language.nb-NO.resx" />
     <EmbeddedResource Include="Resources\Language.pl-PL.resx" />
     <EmbeddedResource Include="Resources\Language.pt-BR.resx" />
     <EmbeddedResource Include="Resources\Language.pt-PT.resx" />
     <EmbeddedResource Include="Resources\Language.ro-RO.resx" />
     <EmbeddedResource Include="Resources\Language.ru-RU.resx" />
-    <EmbeddedResource Include="Resources\Language.sr-SP.resx" />
     <EmbeddedResource Include="Resources\Language.sv-SE.resx" />
     <EmbeddedResource Include="Resources\Language.tr-TR.resx" />
     <EmbeddedResource Include="Resources\Language.uk-UA.resx" />

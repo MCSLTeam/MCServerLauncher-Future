@@ -1,19 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Helpers;
 using Page = System.Windows.Controls.Page;
 
@@ -59,13 +48,12 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             "ja-JP",
             "ko-KR",
             "nl-NL",
-            "no-NO",
+            "nb-NO",
             "pl-PL",
             "pt-BR",
             "pt-PT",
             "ro-RO",
             "ru-RU",
-            "sr-SP",
             "sv-SE",
             "tr-TR",
             "uk-UA",
@@ -98,7 +86,6 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             "Português (Portugal)",
             "Română",
             "Русский",
-            "Српски (ћирилица)",
             "Svenska",
             "Türkçe",
             "Українська",
