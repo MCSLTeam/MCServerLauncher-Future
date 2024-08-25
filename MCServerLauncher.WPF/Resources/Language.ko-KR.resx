@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -98,7 +98,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>MCServerLauncher WPF에서 오류가 발생했습니다.</value>
+    <value>MCServerLauncher WPF에서 오류가 발생했습니다</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
     <value>스택이 클립보드에 복사되었습니다. GitHub로 직접 이동하여 피드백을 제공할 수 있습니다.</value>
@@ -215,7 +215,7 @@
     <value>기존 결과에서 선택</value>
   </data>
   <data name="MinecraftJavaRequirementTip" xml:space="preserve">
-    <value>1.12+에는 Java 8이 필요합니다.\n1.17+에는 Java 16이 필요합니다.\n1.18+에는 Java 17이 필요합니다.\n1.20.5+에는 Java 21이 필요합니다.</value>
+    <value>1.12+에는 Java 8이 필요합니다.\n1.17+에는 Java 16이 필요합니다.\n1.18+에는 Java 17이 필요합니다.\n1.20.5+에는 Java 21이 필요합니다</value>
   </data>
   <data name="FileName" xml:space="preserve">
     <value>파일</value>
@@ -227,7 +227,7 @@
     <value>배포 종속성</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
-    <value>다음 명령을 실행합니다.</value>
+    <value>다음 명령을 실행합니다</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
     <value>여기에 실행 명령을 입력합니다.</value>
@@ -263,7 +263,7 @@
     <value>JVM 메모리 힙</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
-    <value>최소 메모리 ≤ 최대 메모리가 충분합니다.</value>
+    <value>최소 메모리 ≤ 최대 메모리가 충분합니다</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
     <value>링크 복사</value>
@@ -314,7 +314,7 @@
     <value>플러시</value>
   </data>
   <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
-    <value>로드되지 않으면 나중에 다시 시도하십시오.\n이미지 서비스는 BMCLAPI에 의해 구동됩니다.</value>
+    <value>로드되지 않으면 나중에 다시 시도하십시오.\n이미지 서비스는 BMCLAPI에 의해 구동됩니다</value>
   </data>
   <data name="ForgeVersion" xml:space="preserve">
     <value>Forge 버전</value>
@@ -485,13 +485,13 @@
     <value>당신의 MCSL, 당신의 선택.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
-    <value>다운로드를 직접 중지하십시오.</value>
+    <value>다운로드를 직접 중지하십시오</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
     <value>다운로드 1회 다시 시도</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
-    <value>다운로드를 3번 다시 시도합니다.</value>
+    <value>다운로드를 3번 다시 시도합니다</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
     <value>유효성 검사를 위해 인스턴스 이름을 입력합니다</value>
@@ -623,7 +623,7 @@
     <value>이 프로젝트는 오픈 소스 GNU General Public License 버전 3.0에 따라 보호되며 소스 코드는</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>MCServerLauncher Future에서 사용하는 디지털 서명 인증서는 프로그램이 변조될 수 없음을 보장합니다. 일련 번호：59cbf9b5207eeabb45417d148120ac9a。 다른 경우 사용하지 말고 services@mcsl.com.cn 에게 피드백을 제공하십시오.</value>

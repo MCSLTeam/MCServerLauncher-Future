@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -569,7 +569,7 @@
     <value>Yeterli bilgisayar performansı durumunda, iş parçacığı sayısı ne kadar yüksek olursa, dosyanın teorik indirme hızı o kadar hızlı olur. Genel olarak, 16 iş parçacığından oluşan bir ayar yeterlidir.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
-    <value>İndirme hatalarıyla nasıl başa çıkılır?</value>
+    <value>İndirme hatalarıyla nasıl başa çıkılır</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
     <value>Dosya indirme başarısız olursa ne yapmalı.</value>
@@ -620,10 +620,10 @@
     <value>Bu proje, Çin Halk Cumhuriyeti Telif Hakkı Yasası ve uluslararası anlaşmalar tarafından korunmaktadır ve Programın veya herhangi bir bölümünün izinsiz çoğaltılması veya dağıtılması, yasaların izin verdiği en geniş ölçüde ciddi hukuki ve cezai yaptırımlara ve kovuşturmaya tabidir.</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>Bu proje, açık kaynaklı GNU Genel Kamu Lisansı Sürüm 3.0 kapsamında korunmaktadır ve kaynak kodu şu adreste barındırılmaktadır:</value>
+    <value>Bu proje, açık kaynaklı GNU Genel Kamu Lisansı Sürüm 3.0 kapsamında korunmaktadır ve kaynak kodu şu adreste barındırılmaktadır</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>MCServerLauncher Future tarafından kullanılan dijital olarak imzalanmış sertifika, programın kurcalanamayacağını garanti eder. Seri numarası：59cbf9b5207eeabb45417d148120ac9a。 Farklıysa, kullanmayın ve services@mcsl.com.cn geri bildirimde bulunun.</value>

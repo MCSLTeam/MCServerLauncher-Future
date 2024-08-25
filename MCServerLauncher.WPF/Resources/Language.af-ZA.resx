@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -623,7 +623,7 @@
     <value>Hierdie projek word beskerm onder die open source GNU General Public License Weergawe 3.0 en die bronkode word aangebied by</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>Die digitaal ondertekende sertifikaat wat deur MCServerLauncher Future gebruik word, waarborg dat daar nie met die program gepeuter kan word nie. Reeksnommer：59cbf9b5207eeabb45417d148120ac9a。 As dit anders is, gebruik dit nie en gee terugvoer aan services@mcsl.com.cn.</value>
@@ -660,29 +660,5 @@
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
     <value>Laai bron af)</value>
-  </data>
-  <data name="Announcement" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="AreYouSure" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="NotNow" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="ResDownloadTipSuffix" xml:space="preserve">
-    <value></value>
   </data>
 </root>
