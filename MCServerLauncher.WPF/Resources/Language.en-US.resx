@@ -475,8 +475,8 @@
   <data name="NotificationCenterTip" xml:space="preserve">
     <value>Running silently, tasks accomplished efficiently.</value>
   </data>
-  <data name="ResDownloadTip" xml:space="preserve">
-    <value>Whatever you want, is here to be found.</value>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>你想要的，这里都有。 (当前正在使用</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
     <value>Striving our utmost, answering every question.</value>
@@ -636,5 +636,29 @@
   </data>
   <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
     <value>MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>公告</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>你确定吗？</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>若您拒绝用户协议，本软件将退出。</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>请确保您已完整阅读后再点击同意。您至少要把协议滚动到底吧。</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>好的</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>不是现在</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>这代表您同意本协议的所有内容。</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>下载源）</value>
   </data>
 </root>
