@@ -475,7 +475,7 @@
   <data name="NotificationCenterTip" xml:space="preserve">
     <value></value>
   </data>
-  <data name="ResDownloadTip" xml:space="preserve">
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value></value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
@@ -635,6 +635,30 @@
     <value></value>
   </data>
   <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
     <value></value>
   </data>
 </root>

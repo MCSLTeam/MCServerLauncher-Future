@@ -341,6 +341,7 @@
     <Compile Include="View\ResDownloadProvider\FastMirrorProvider.xaml.cs">
       <DependentUpon>FastMirrorProvider.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\ResDownloadProvider\IResDownloadProvider.cs" />
     <Compile Include="View\ResDownloadProvider\MCSLSyncProvider.xaml.cs">
       <DependentUpon>MCSLSyncProvider.xaml</DependentUpon>
     </Compile>
@@ -599,14 +600,18 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <EmbeddedResource Include="Resources\Language.af-ZA.resx" />
+    <EmbeddedResource Include="Resources\Language.af-ZA.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\Language.ar-SA.resx" />
     <EmbeddedResource Include="Resources\Language.ca-ES.resx" />
     <EmbeddedResource Include="Resources\Language.cs-CZ.resx" />
     <EmbeddedResource Include="Resources\Language.da-DK.resx" />
     <EmbeddedResource Include="Resources\Language.de-DE.resx" />
     <EmbeddedResource Include="Resources\Language.el-GR.resx" />
-    <EmbeddedResource Include="Resources\Language.en-US.resx" />
+    <EmbeddedResource Include="Resources\Language.en-US.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\Language.es-ES.resx" />
     <EmbeddedResource Include="Resources\Language.fi-FI.resx" />
     <EmbeddedResource Include="Resources\Language.fr-FR.resx" />
@@ -627,8 +632,12 @@
     <EmbeddedResource Include="Resources\Language.tr-TR.resx" />
     <EmbeddedResource Include="Resources\Language.uk-UA.resx" />
     <EmbeddedResource Include="Resources\Language.vi-VN.resx" />
-    <EmbeddedResource Include="Resources\Language.zh-Hans.resx" />
-    <EmbeddedResource Include="Resources\Language.zh-Hant.resx" />
+    <EmbeddedResource Include="Resources\Language.zh-Hans.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Language.zh-Hant.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\MCSLTeam.cer" />
     <EmbeddedResource Include="Resources\SegoeIcons.ttf" />
     <Resource Include="Resources\Montserrat.ttf" />
