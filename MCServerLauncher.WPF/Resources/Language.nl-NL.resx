@@ -623,7 +623,7 @@
     <value>Dit project wordt beschermd door de open-source GNU General Public License Version 3.0 en de broncode wordt gehost op</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>Het digitaal ondertekende certificaat dat door MCServerLauncher Future wordt gebruikt, garandeert dat er niet met het programma kan worden geknoeid. Serienummer：59CBF9B5207EAAB45417D148120AC9A。 Als het anders is, gebruik het dan niet en geef feedback aan services@mcsl.com.cn.</value>
