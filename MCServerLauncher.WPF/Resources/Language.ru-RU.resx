@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Уверен?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Если вы откажетесь от Пользовательского соглашения, Программное обеспечение будет отозвано.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Убедитесь, что вы прочитали все это, прежде чем нажать «Согласен». По крайней мере, вы должны довести протокол до конца.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Не сейчас</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Это означает, что вы соглашаетесь со всем содержанием настоящего Соглашения.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Выберите язык, на котором используется программа.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Если вы не свяжете никаких демонов, большинство функций программного обеспечения будут ограничены.\nВы все еще можете привязать демон позже в настройках.</value>
   </data>
 </root>
