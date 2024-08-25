@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Er du sikker?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Hvis du afviser brugeraftalen, trækkes softwaren tilbage.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Sørg for, at du har læst det hele, før du klikker på Accepter. I det mindste bør du rulle protokollen til slutningen.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Ikke nu</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Det betyder, at du accepterer alt indholdet af denne aftale.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Vælg det sprog, som programmet bruges på.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Hvis du ikke forbinder nogen dæmoner, vil de fleste af softwarens funktioner være begrænsede.\nDu kan stadig linke dæmonen senere i indstillingerne.</value>
   </data>
 </root>
