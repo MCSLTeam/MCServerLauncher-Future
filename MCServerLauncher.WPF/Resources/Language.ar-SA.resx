@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>هل أنت متأكد؟</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>إذا رفضت اتفاقية المستخدم ، سحب البرنامج.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>تأكد من قراءة كل شيء قبل النقر فوق موافق. على الأقل ، يجب عليك لف البروتوكول حتى النهاية.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>ليس الآن</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>هذا يعني أنك توافق على جميع محتويات هذه الاتفاقية.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>حدد اللغة التي يتم استخدام البرنامج بها.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>إذا لم تقم بربط أي شياطين ، فستكون معظم وظائف البرنامج محدودة.\nلا يزال بإمكانك ربط البرنامج الخفي لاحقا في الإعدادات.</value>
   </data>
 </root>
