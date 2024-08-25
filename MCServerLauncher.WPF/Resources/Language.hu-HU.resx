@@ -572,7 +572,7 @@
     <value>A letöltési hibák kezelése</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
-    <value>Mi a teendő, ha a fájl letöltése sikertelen?</value>
+    <value>Mi a teendő, ha a fájl letöltése sikertelen.</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
     <value>Példány törlési módjának megerősítése</value>
@@ -620,10 +620,10 @@
     <value>Ezt a projektet a Kínai Népköztársaság szerzői jogi törvénye és nemzetközi szerződések védik, és a Program vagy annak bármely részének jogosulatlan sokszorosítása vagy terjesztése a törvény által megengedett legteljesebb mértékben szigorú polgári és büntetőjogi szankciókat és büntetőeljárásokat von maga után.</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>Ezt a projektet a nyílt forráskódú GNU General Public License Version 3.0 védi, és a forráskód a következő helyen található:</value>
+    <value>Ezt a projektet a nyílt forráskódú GNU General Public License Version 3.0 védi, és a forráskód a következő helyen található</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>Az MCServerLauncher Future által használt digitálisan aláírt tanúsítvány garantálja, hogy a programot nem lehet manipulálni. Sorozatszám：59cbf9b5207eeabb45417d148120ac9a。 Ha más, ne használja, és adjon visszajelzést services@mcsl.com.cn.</value>
