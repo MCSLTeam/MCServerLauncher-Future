@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Är du säker?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Om du avvisar användaravtalet kommer programvaran att dras tillbaka.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Se till att du har läst allt innan du klickar på Godkänn. Åtminstone bör du rulla protokollet till slutet.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Inte nu</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Detta innebär att du samtycker till allt innehåll i detta avtal.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Välj det språk som programmet används på.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Om du inte länkar några demoner kommer de flesta av programvarans funktioner att vara begränsade.\nDu kan fortfarande länka demonen senare i inställningarna.</value>
   </data>
 </root>
