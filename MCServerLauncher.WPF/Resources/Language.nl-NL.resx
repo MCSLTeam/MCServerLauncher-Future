@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Weet je het zeker?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Als u de Gebruikersovereenkomst afwijst, wordt de Software ingetrokken.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Zorg ervoor dat je alles hebt gelezen voordat je op Akkoord klikt. Je moet op zijn minst het protocol tot het einde rollen.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Niet nu</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Dit betekent dat u akkoord gaat met de volledige inhoud van deze Overeenkomst.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Selecteer de taal waarin het programma wordt gebruikt.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Als je geen daemons koppelt, zijn de meeste functies van de software beperkt.\nJe kunt de daemon later nog koppelen in de instellingen.</value>
   </data>
 </root>
