@@ -98,543 +98,567 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>MCServerLauncher WPF 遇到错误</value>
+    <value>'N Fout is ondervind met MCServerLauncher WPF</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。</value>
+    <value>Die stapel is na die knipbord gekopieër. U kan direk na GitHub gaan om terugvoer te gee.</value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
-    <value>WPF 客户端 ( 仅 Windows )</value>
+    <value>WPF-kliënt (slegs Windows)</value>
   </data>
   <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
-    <value>语言 / Language</value>
+    <value>Taal</value>
   </data>
   <data name="FirstSetup_EulaMenu" xml:space="preserve">
-    <value>用户协议</value>
+    <value>Gebruikersooreenkoms</value>
   </data>
   <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
-    <value>连接守护进程</value>
+    <value>Verbind die daemon</value>
   </data>
   <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
-    <value>开始使用</value>
+    <value>Begin</value>
   </data>
   <data name="Continue" xml:space="preserve">
-    <value>继续</value>
+    <value>Gaan aan</value>
   </data>
   <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
-    <value> 设置语言</value>
+    <value> Stel die taal</value>
   </data>
   <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
-    <value> Language</value>
+    <value> Taal</value>
   </data>
   <data name="Main_HomeNavMenu" xml:space="preserve">
-    <value>主页</value>
+    <value>tuisblad</value>
   </data>
   <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
-    <value>新建实例</value>
+    <value>Skep 'n instansie</value>
   </data>
   <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
-    <value>实例管理</value>
+    <value>Instansie bestuur</value>
   </data>
   <data name="Main_ResDownloadNavMenu" xml:space="preserve">
-    <value>资源下载</value>
+    <value>Hulpbron aflaaie</value>
   </data>
   <data name="Main_HelpCenterNavMenu" xml:space="preserve">
-    <value>帮助中心</value>
+    <value>Hulpsentrum</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>通知中心</value>
+    <value>Kennisgewingsentrum</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
-    <value>调试页面</value>
+    <value>Ontfouting bladsy</value>
   </data>
   <data name="Main_SettingsNavMenu" xml:space="preserve">
-    <value>程序设置</value>
+    <value>Program instellings</value>
   </data>
   <data name="Tip" xml:space="preserve">
-    <value>提示</value>
+    <value>Por</value>
   </data>
   <data name="NotAllowedOverOpening" xml:space="preserve">
-    <value>MCServerLauncher WPF 不支持重复运行。</value>
+    <value>MCServerLauncher WPF ondersteun nie duplikaatlopies nie.</value>
   </data>
   <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
-    <value>代理</value>
+    <value>Makelaar</value>
   </data>
   <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
-    <value>原版</value>
+    <value>Oorspronklike</value>
   </data>
   <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
-    <value>纯净</value>
+    <value>Suiwer</value>
   </data>
   <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
-    <value>模组</value>
+    <value>Module</value>
   </data>
   <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
-    <value>基岩</value>
+    <value>Grondsteen</value>
   </data>
   <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
-    <value>获取核心介绍失败！</value>
+    <value>Kon nie die kerninleiding kry nie!</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
-    <value>Minecraft 基岩版压缩包</value>
+    <value>Minecraft Bedrock Uitgawe ritspakket</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
-    <value>请在此处导入下载的压缩包。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>Voer asseblief die afgelaaide pakket hier in. As u nie weet waar om af te laai nie, kan u op die knoppie aan die regterkant klik om te spring.</value>
   </data>
   <data name="Archive" xml:space="preserve">
-    <value>压缩包</value>
+    <value>Zip pakket</value>
   </data>
   <data name="Browse" xml:space="preserve">
-    <value>浏览</value>
+    <value>Blaai</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
-    <value>Minecraft 服务器核心</value>
+    <value>Minecraft-bedienerkern</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
-    <value>请选择该服务器将使用的核心文件。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>Kies asseblief die kernlêers wat deur die bediener gebruik sal word. As u nie weet waar om af te laai nie, kan u op die knoppie aan die regterkant klik om te spring.</value>
   </data>
   <data name="MinecraftCoreFileName" xml:space="preserve">
-    <value>核心文件名</value>
+    <value>Kern lêer naam</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
-    <value>Java 运行时</value>
+    <value>Java looptyd</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
-    <value>Java 运行时是 Minecraft Java 服务器的必需环境。请务必选择合适的版本，防止启动失败。</value>
+    <value>Die Java-looptyd is 'n vereiste omgewing vir die Minecraft Java-bediener. Maak seker dat u die toepaslike weergawe kies om opstartfoute te voorkom.</value>
   </data>
   <data name="JavaPath" xml:space="preserve">
-    <value>Java 路径</value>
+    <value>Java-pad</value>
   </data>
   <data name="SelectManually" xml:space="preserve">
-    <value>手动选择</value>
+    <value>Handmatige keuse</value>
   </data>
   <data name="ScanJavaAtDaemon" xml:space="preserve">
-    <value>在 Daemon 宿主机自动搜索</value>
+    <value>Soek outomaties op Daemon-gashere</value>
   </data>
   <data name="SelectFromResult" xml:space="preserve">
-    <value>从现有结果中选取</value>
+    <value>Kies uit bestaande resultate</value>
   </data>
   <data name="MinecraftJavaRequirementTip" xml:space="preserve">
-    <value>1.12+ 要求 Java 8\n1.17+ 要求 Java 16\n1.18+ 要求 Java 17\n1.20.5+ 要求 Java 21</value>
+    <value>1.12+ benodig Java 8\n1.17+ benodig Java 16\n1.18+ benodig Java 17\n1.20.5+ benodig Java 21</value>
   </data>
   <data name="FileName" xml:space="preserve">
-    <value>文件名</value>
+    <value>Lêernaam</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
-    <value>请选择该实例所需的文件/文件夹/压缩包。压缩包仅支持 ZIP 格式。</value>
+    <value>Kies die lêer / gids / pakket wat benodig word vir die instansie. Die argief ondersteun slegs die zip-formaat.</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
-    <value>部署依赖</value>
+    <value>Ontplooiingsafhanklikhede</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
-    <value>运行命令</value>
+    <value>Voer die opdrag uit</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
-    <value>在此处输入运行命令。</value>
+    <value>Voer die hardloopopdrag hier in.</value>
   </data>
   <data name="RunCommandArgumentTip" xml:space="preserve">
-    <value>如果需要附带参数，\n直接附在后面即可。</value>
+    <value>As u parameters moet aanheg,\nHeg dit direk aan die agterkant vas.</value>
   </data>
   <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
-    <value>请勿包含特殊符号或使用非法名称。</value>
+    <value>Moenie spesiale simbole insluit of onwettige name gebruik nie.</value>
   </data>
   <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
-    <value>实例名称</value>
+    <value>Die naam van die instansie</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
-    <value>(可选) 可在此处添加其他 JVM 参数，一行一个。</value>
+    <value>Opsioneel kan u addisionele JVM-parameters hier byvoeg, een per reël.</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
-    <value>添加参数</value>
+    <value>Voeg parameters by</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
-    <value>JVM 参数</value>
+    <value>JVM parameters</value>
   </data>
   <data name="MaximumMemory" xml:space="preserve">
-    <value>最大内存</value>
+    <value>Maksimum geheue</value>
   </data>
   <data name="MinimumMemory" xml:space="preserve">
-    <value>最小内存</value>
+    <value>Minimum geheue</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
-    <value>这决定了您的 Minecraft Java 服务器将能使用多少内存。</value>
+    <value>Dit bepaal hoeveel geheue u Minecraft Java-bediener sal kan gebruik.</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
-    <value>JVM 内存堆</value>
+    <value>JVM geheue hoop</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
-    <value>最小内存 ≤ 最大内存即可</value>
+    <value>Die minimum geheue ≤ die maksimum geheue is voldoende</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
-    <value>复制链接</value>
+    <value>Kopieer die skakel</value>
   </data>
   <data name="Pause" xml:space="preserve">
-    <value>暂停</value>
+    <value>Tyd uit</value>
   </data>
   <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
+    <value>Kanselleer</value>
   </data>
   <data name="FileSize" xml:space="preserve">
-    <value>文件大小</value>
+    <value>Lêer grootte</value>
   </data>
   <data name="MinecraftVersion" xml:space="preserve">
-    <value>Minecraft 版本</value>
+    <value>Minecraft-uitgawe</value>
   </data>
   <data name="BuildVersion" xml:space="preserve">
-    <value>构建版本</value>
+    <value>Bou</value>
   </data>
   <data name="Off" xml:space="preserve">
-    <value>关</value>
+    <value>Sluit</value>
   </data>
   <data name="On" xml:space="preserve">
-    <value>开</value>
+    <value>Oop</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
-    <value>创建时间</value>
+    <value>Skeppingstyd</value>
   </data>
   <data name="InstanceType" xml:space="preserve">
-    <value>实例类型</value>
+    <value>Instansie tipe</value>
   </data>
   <data name="More" xml:space="preserve">
-    <value>更多</value>
+    <value>Meer</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>启动</value>
+    <value>Inisieer</value>
   </data>
   <data name="Back" xml:space="preserve">
-    <value>返回</value>
+    <value>Terugkeer</value>
   </data>
   <data name="PreFinishCreateInstanceTip" xml:space="preserve">
-    <value>完成以下配置后，单击 “继续”。</value>
+    <value>As u klaar is met die volgende konfigurasies, klik op Gaan voort.</value>
   </data>
   <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
-    <value>请选择该服务器将运行的 Minecraft 版本。</value>
+    <value>Kies asseblief die weergawe van Minecraft wat die bediener sal gebruik.</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>刷新</value>
+    <value>spoel</value>
   </data>
   <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
-    <value>如果加载不出来，请稍后再试。\n镜像服务由 BMCLAPI 提供支持</value>
+    <value>As dit nie laai nie, probeer later weer.\nBEELDDIENS WORD AANGEDRYF DEUR BMCLAPI</value>
   </data>
   <data name="ForgeVersion" xml:space="preserve">
-    <value>Forge 版本</value>
+    <value>Smee weergawe</value>
   </data>
   <data name="NeoForgeVersion" xml:space="preserve">
-    <value>NeoForge 版本</value>
+    <value>NeoForge weergawe</value>
   </data>
   <data name="FabricVersion" xml:space="preserve">
-    <value>Fabric 版本</value>
+    <value>Stof weergawe</value>
   </data>
   <data name="QuiltVersion" xml:space="preserve">
-    <value>Quilt 版本</value>
+    <value>Kwilt weergawe</value>
   </data>
   <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Forge 加载器的版本。</value>
+    <value>Kies asseblief die weergawe van die Forge-laaier wat die bediener sal gebruik.</value>
   </data>
   <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 NeoForge 加载器的版本。</value>
+    <value>Kies asseblief die weergawe van die NeoForge-laaier wat die bediener sal laat loop.</value>
   </data>
   <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Fabric 加载器的版本。</value>
+    <value>Kies die weergawe van die stoflaaier wat die bediener sal laat loop.</value>
   </data>
   <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Quilt 加载器的版本。</value>
+    <value>Kies asseblief die weergawe van die Quilt-laaier wat die bediener gaan gebruik.</value>
   </data>
   <data name="OnlyShowReleaseVersion" xml:space="preserve">
-    <value>仅显示正式版</value>
+    <value>Slegs die amptelike weergawe word vertoon</value>
   </data>
   <data name="ResDownload_InstanceCore" xml:space="preserve">
-    <value>服务器核心</value>
+    <value>Bediener kerne</value>
   </data>
   <data name="ResDownload_OpenHomePage" xml:space="preserve">
-    <value>打开官网</value>
+    <value>Maak die amptelike webwerf oop</value>
   </data>
   <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
-    <value>欢迎使用</value>
+    <value>Welkom</value>
   </data>
   <data name="TempSkip" xml:space="preserve">
-    <value>暂时跳过</value>
+    <value>Slaan vir eers oor</value>
   </data>
   <data name="Agree" xml:space="preserve">
-    <value>同意</value>
+    <value>Saamstem</value>
   </data>
   <data name="Disagree" xml:space="preserve">
-    <value>拒绝</value>
+    <value>Weier</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value>欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，在使用本软件前，请详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。\n请您仔细阅读以下内容，当您使用本软件时，即代表您已经详细阅读并同意本协议的全部内容，且同意遵守本协议的规定。</value>
+    <value>Welkom by die sagteware en dienste van MCServerLauncher (hierna die "Sagteware" genoem) wat deur die MCSL-ontwikkelingspan verskaf word. Om die regte en belange van gebruikers te beskerm, lees asseblief al die inhoud van hierdie ooreenkoms aandagtig deur voordat u hierdie sagteware gebruik. Ons kan hierdie ooreenkoms te eniger tyd opdateer, en dit sal die oorspronklike gebruikersooreenkoms effektief vervang sodra dit geplaas is.\nLees asseblief die volgende inhoud aandagtig deur, wanneer u hierdie sagteware gebruik, beteken dit dat u al die inhoud van hierdie ooreenkoms in detail gelees en ingestem het en instem om die bepalings van hierdie ooreenkoms na te kom.</value>
   </data>
   <data name="Eula2" xml:space="preserve">
-    <value>使用须知</value>
+    <value>Voorsorgmaatreëls</value>
   </data>
   <data name="Eula3" xml:space="preserve">
-    <value>用户应自行配备本软件和本软件功能（包括但不限于 新建实例 等）所需要的硬件和软件配置。\n用户应自行负担连接互联网后所需支付的相关电话、宽带使用等费用。\n用户应为其使用本软件产生的行为、事件、结果承担法律责任。\n用户与其他未授权的非官方个人之间产生的任何交易与纠纷，与开发者无关。\n用户应遵守中华人民共和国相关法律法规（如果用户是中华人民共和国境外的使用者，还应遵守所属国家或地区的法律法规）。\n用户不得使用本软件（或本软件的一些特性功能）从事非法行为，不得使用与本软件有关联的相关进程和服务从事非法行为，其任何行为造成的后果，与开发者无关。\n用户应当自行承担其所发布的信息内容所涉及的法律责任。用户不得在本软件内、本软件运行的相关进程与服务内输入、发表和传播下列任何内容，不得以任何形式发布下列任何内容：\n\n反对中华人民共和国宪法所确定的基本原则的；\n危害国家安全，泄露国家机密，颠覆国家政权，破坏国家统一的；\n损害国家荣誉和利益的；\n煽动民族仇恨、民族歧视，破坏民族团结的；\n破坏国家宗教政策，宣扬邪教和封建迷信的；\n散布谣言，扰乱社会秩序，破坏社会稳定的；\n散布淫秽、色情、赌博、暴力、凶杀、恐怖或者教唆犯罪的；\n侮辱或者诽谤他人，侵害他人合法权益的；\n含有中华人民共和国法律、行政法规禁止的其他内容的。\n除非法律允许或开发者书面许可，用户不得从事下列任何行为：\n不合法、不恰当地使用本软件及服务；\n破坏本软件系统或网站的正常运行，故意传播计算机病毒等破坏性程序；\n采取任何可能影响本软件网络服务的非正常使用行为（包括但不限于损害、攻击服务器或使服务器过度负荷等）；\n删除本软件及其副本上关于著作权的信息。\n\n若用户做出违法违规或违反本协议规定的行为，开发者有权视情节严重程度，依据本协议及法律法规，对用户做出包括但不限于终止服务等处理措施；情节严重的，将移交有关行政管理机关给予行政处罚，或追究其刑事责任。</value>
+    <value>Die gebruiker moet die sagteware en die funksies van die sagteware (insluitend maar nie beperk nie tot die skep van nuwe gevalle) toerus met die hardeware- en sagtewarekonfigurasie wat deur die gebruiker vereis word.\nGebruikers sal verantwoordelik wees vir die relevante telefoon- en breëbandgebruiksfooie wat betaal moet word nadat hulle aan die internet gekoppel is.\nDie gebruiker dra die wetlike verantwoordelikheid vir die gedrag, gebeurtenis en resultaat wat veroorsaak word deur die gebruik van hierdie sagteware.\nEnige transaksies en geskille tussen gebruikers en ander nie-amptelike individue het niks met die ontwikkelaar te doen nie.\nDie gebruiker moet voldoen aan die toepaslike wette en regulasies van die Volksrepubliek China (as die gebruiker 'n gebruiker buite die Volksrepubliek China is, moet die gebruiker ook voldoen aan die wette en regulasies van die land of streek waaraan dit behoort).\nDie gebruiker mag nie die sagteware (of sommige funksies en funksies van die sagteware) gebruik om onwettige dade aan te gaan nie, en sal nie die relevante prosesse en dienste wat met die sagteware verband hou, gebruik om onwettige dade aan te gaan nie, en die gevolge van enige aksies hou nie verband met die ontwikkelaar nie.\nGebruikers sal hul eie wetlike verantwoordelikhede dra wat verband hou met die inhoud van die inligting wat hulle publiseer. Die gebruiker mag nie enige van die volgende inhoud in die sagteware, die prosesse en dienste wat verband hou met die werking van die sagteware invoer, publiseer of versprei nie, en sal nie een van die volgende inhoud in enige vorm publiseer nie：\n\nteen die basiese beginsels soos uiteengesit in die Grondwet van die Volksrepubliek China;\nnasionale veiligheid in gevaar stel, staatsgeheime bekend maak, staatsmag ondermyn of nasionale eenheid ondermyn;\ndie eer en belange van die staat benadeel;\ndie aanhitsing van etniese haat, etniese diskriminasie of die ondermyning van etniese eenheid;\nondermyning van nasionale godsdienstige beleid, pleit vir kultusse en feodale bygelowe;\ndie verspreiding van gerugte, die ontwrigting van sosiale orde of die ondermyning van sosiale stabiliteit;\nDie verspreiding van onwelvoeglikheid, pornografie, dobbelary, geweld, moord, terreur of die aanhitsing van misdade;\nander beledig of belaster, inbreuk maak op die wettige regte en belange van ander;\nBevat ander inhoud wat volksrepubliek China verbied deur wette of administratiewe regulasies.\nTensy dit deur die wet of met skriftelike toestemming van die ontwikkelaar toegelaat word, sal gebruikers nie aan enige van die volgende handelinge deelneem nie：\nOnwettige of onvanpaste gebruik van die sagteware en dienste;\nBeskadig die normale werking van die sagtewarestelsel of webwerf, versprei doelbewus rekenaarvirusse en ander vernietigende programme;\nNeem enige abnormale gebruiksgedrag wat die netwerkdienste van die sagteware kan beïnvloed (insluitend maar nie beperk nie tot skade, aanval op die bediener of oorlading van die bediener, ens.);\nVee die kopiereginligting op die sagteware en die kopieë daarvan uit.\n\nAs die gebruiker enige gedrag pleeg wat wette en regulasies oortree of die bepalings van hierdie ooreenkoms oortree, het die ontwikkelaar die reg om maatreëls teen die gebruiker te tref volgens die erns van die situasie, in ooreenstemming met hierdie ooreenkoms en wette en regulasies, insluitend maar nie beperk nie tot die beëindiging van dienste. As die omstandighede ernstig is, sal dit vir administratiewe straf na die betrokke administratiewe organe oorgeplaas word of vir strafregtelike verantwoordelikheid ondersoek word.</value>
   </data>
   <data name="Eula4" xml:space="preserve">
-    <value>数据收集与使用</value>
+    <value>Data-insameling en -gebruik</value>
   </data>
   <data name="Eula5" xml:space="preserve">
-    <value>若您同意本使用协议且使用本软件的在线服务，我们会收集以下信息：\n本软件所运行设备的IP地址（可能并非正确地址）；\n本软件所运行设备的部分系统信息；\n本软件崩溃时，可能会在经用户同意的情况下，上传软件在系统运行的日志（含有部分系统信息），以帮助解决问题和改善软件；\n其他会在经用户同意情况下上传的部分信息（软件中会具体说明）。</value>
+    <value>As u instem tot hierdie gebruiksvoorwaardes en die aanlyndienste van die sagteware gebruik, sal ons die volgende inligting versamel：\ndie IP-adres van die toestel waarop die sagteware werk (wat moontlik nie die regte adres is nie);\nSommige stelselinligting van die toerusting waarop die sagteware werk;\nAs die sagteware ineenstort, kan die logboeke van die sagteware wat op die stelsel loop (insluitend sommige stelselinligting) met die toestemming van die gebruiker opgelaai word om die probleem op te los en die sagteware te verbeter.\nAnder inligting wat met die toestemming van die gebruiker opgelaai sal word (soos gespesifiseer in die sagteware).</value>
   </data>
   <data name="Eula6" xml:space="preserve">
-    <value>用户支持和反馈</value>
+    <value>Gebruikersondersteuning en terugvoer</value>
   </data>
   <data name="Eula7" xml:space="preserve">
-    <value>用户在使用过程中如遇到任何问题，可以通过官方电子邮件或在本软件源码仓库提交 Issue 的方式进行反馈。我们会认真考虑用户的反馈以改进服务。</value>
+    <value>As gebruikers probleme ondervind tydens gebruik, kan hulle terugvoer gee via die amptelike e-pos of deur 'n probleem in hierdie sagtewarebronkode-bewaarplek in te dien. Ons neem ons terugvoer ernstig op om ons dienste te verbeter.</value>
   </data>
   <data name="Eula8" xml:space="preserve">
-    <value>服务的变更或中止</value>
+    <value>Veranderinge of opskorting van diens</value>
   </data>
   <data name="Eula9" xml:space="preserve">
-    <value>1. 对用户服务的中止与终止\n\n用户有发布违法信息、严重违背社会公德、以及其他违反法律禁止性规定的行为，开发者应终止对用户提供服务；\n用户在接受本软件服务时实施不正当行为的，开发者有权终止对用户提供服务（该不正当行为的具体情形在本协议中有明确约定）；\n用户使用本软件的第三方修改版本的，用户应自行承担风险与法律责任。\n\n2. 对本软件及服务的中断、中止与终止：\n\n发生下列情形之一时，开发者有权终止或中断本软件全部或部分服务，对因此造成的不便及损害，开发者对用户或第三人均不承担任何责任：\n\na. 因本软件及服务自身的需要；\nb. 因服务器遭受损害、无法正常工作；\nc. 因突发性的软硬件设备与电子通信设备故障；\nd. 因网络提供商线路或其他故障；\ne. 因政策因素；\nf. 第三方原因或其他不可抗力的情形。\n\n开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。</value>
+    <value>1. Opskorting en beëindiging van die gebruiker se diens\n\nAs die gebruiker onwettige inligting publiseer, die sosiale moraliteit ernstig oortree of die verbod op die wet oortree, moet die ontwikkelaar die verskaffing van dienste aan die gebruiker beëindig;\nAs die gebruiker 'n onbehoorlike handeling pleeg wanneer hy die sagtewarediens aanvaar, het die ontwikkelaar die reg om die diens wat aan die gebruiker gelewer word, te beëindig (die spesifieke omstandighede van die onbehoorlike gedrag word duidelik in hierdie ooreenkoms bepaal);\nAs die gebruiker 'n gewysigde weergawe van die sagteware van 'n derde party gebruik, sal die gebruiker sy eie risiko en wetlike verantwoordelikheid dra.\n\n2. Opskorting, opskorting en beëindiging van die sagteware en dienste：\n\nIn die geval van enige van die volgende omstandighede, het die ontwikkelaar die reg om die hele of 'n gedeelte van die dienste van die sagteware te beëindig of te onderbreek, en die ontwikkelaar is nie aanspreeklik teenoor die gebruiker of enige derde party vir die ongerief of skade wat daardeur veroorsaak word nie：\n\na. soos vereis deur die Sagteware en Dienste;\nb. Versuim om behoorlik te funksioneer as gevolg van skade aan die bediener;\nc. As gevolg van skielike mislukking van sagteware- en hardewaretoerusting en elektroniese kommunikasietoerusting;\nd. as gevolg van netwerkverskafferlyn of ander foute;\ne. weens beleidsoorwegings;\nf. Derdeparty-redes of ander force majeure-omstandighede.\n\nDie ontwikkelaar behou die reg voor om die sagteware en dienste te beëindig of gedeeltelik te beëindig wanneer dit nodig ag, en die ontwikkelaar mag die gebruiker in kennis stel in die vorm van 'n aankondiging, maar die ontwikkelaar is nie aanspreeklik vir enige verliese wat die gebruiker veroorsaak nie.</value>
   </data>
   <data name="Eula10" xml:space="preserve">
-    <value>免责声明</value>
+    <value>Vrywaring</value>
   </data>
   <data name="Eula11" xml:space="preserve">
-    <value>用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。\n用户理解并同意，开发者不保证本软件及服务一定能满足用户需求，也不保证服务不会被中断，并且对本软件及服务的正确性、安全性等方面不提供任何担保。\n用户理解并同意，开发者无法完全保证本软件在线服务所下载的第三方文件的的正确性、安全性、合法性，也不对本软件内存在的第三方服务（包括但不限于 资源下载 等服务）的正确性、安全性、合法性等负责。因此，前面提到的内容与开发者和本软件无关，不代表开发者及本软件的立场。相关争议应由第三方服务提供方承担。\n用户理解并同意，若以错误或非法的手段使用本软件在线服务以及本软件所下载的相关文件，其造成的后果由用户自行承担，若导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，本软件不对第三方服务内容提供担保。 若用户使用第三方服务导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。</value>
+    <value>Die gebruiker verstaan en stem saam dat die ontwikkelaar geen waarborg vir hierdie sagteware verskaf in die mate wat die wet dit toelaat nie. Die gebruik van hierdie sagteware deur die gebruiker is op eie risiko.\nDie gebruiker verstaan en stem saam dat die ontwikkelaar nie waarborg dat die sagteware en dienste aan die behoeftes van die gebruiker sal voldoen nie, en waarborg ook nie dat die dienste nie onderbreek sal word nie, en bied geen waarborg vir die korrektheid en sekuriteit van die sagteware en dienste nie.\nDie gebruiker verstaan en stem saam dat die ontwikkelaar nie die korrektheid, sekuriteit en legitimiteit van die derdeparty-lêers wat van die aanlyndienste van die sagteware afgelaai is, ten volle kan waarborg nie, en is ook nie verantwoordelik vir die korrektheid, sekuriteit en wettigheid van die derdeparty-dienste (insluitend maar nie beperk nie tot die aflaai van hulpbronne en ander dienste) wat in die sagteware bestaan. Daarom het die inhoud hierbo genoem niks met die ontwikkelaar en die sagteware te doen nie, en verteenwoordig dit nie die posisie van die ontwikkelaar en die sagteware nie. Geskille sal deur die derdeparty-diensverskaffer gedra word.\nDie gebruiker verstaan en stem in dat die gebruiker alleen verantwoordelik sal wees vir die gevolge wat veroorsaak word deur die gebruik van die aanlyndienste van die sagteware en die verwante lêers wat op verkeerde of onwettige wyse van die sagteware afgelaai is, en is nie verantwoordelik vir enige skade aan eiendom, skending van outeursreg of intellektuele eiendomsregte nie, ens., en sal geen wetlike verantwoordelikheid dra nie.\nDie gebruiker verstaan en stem saam dat die sagteware nie die inhoud van derdeparty-dienste waarborg nie. Die ontwikkelaar sal nie verantwoordelik wees vir enige skade aan eiendom, skending van kopiereg of intellektuele eiendomsregte wat veroorsaak word deur die gebruiker se gebruik van derdepartydienste nie, en sal en kan geen wetlike verantwoordelikheid dra nie.\nDie gebruiker verstaan en stem saam dat die ontwikkelaar geen waarborg en wettige ondersteuning bied vir die funksies van die sagteware nie, en as die gebruiker die funksies van die sagteware gebruik om onwettige of ander onbehoorlike dade aan te gaan, sal die risiko's en regsgevolge wat deur die gebruiker veroorsaak word, deur die gebruiker gedra word.</value>
   </data>
   <data name="Eula12" xml:space="preserve">
-    <value>知识产权</value>
+    <value>intellektuele eiendom</value>
   </data>
   <data name="Eula13" xml:space="preserve">
-    <value>本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。\n\n本软件所使用的第三方服务归相关版权方所有，包括但不限于：\n本软件为 Minecraft（其最终解释权归 Microsoft 公司 和 Mojang AB 所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）和 中国区代理公司 网易 在中国大陆实行的相关政策，不得将游戏本体内容用于商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件为 Terraria（其最终解释权归 Re-Logic 和其发行商所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）及相关政策。用户不得将游戏本体内容用于未经许可的商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件提供的部分在线文件资源（服务端核心、游戏/服务器模组和插件等内容）下载服务由相应 官方/第三方 等提供，版权依照第三方平台规定处理。\n本软件使用的其他第三方服务，版权归服务提供商所有。\n本软件是开源软件，用户或其他非本软件的软件开发者应当遵守本软件的开源协议。\n用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。</value>
+    <value>Die kopiereg, patente en ander intellektuele eiendomsregte van hierdie sagteware word besit deur die ontwikkelaar of die aangewese kopieregeienaar.\n\nDerdepartydienste wat in hierdie sagteware gebruik word, word deur die betrokke kopiereghouers besit, insluitend maar nie beperk nie tot:：\nHierdie sagteware is 'n bedienerbestuur- en speletjie-aanlynhulpmiddel vir Minecraft (waarvan die finale interpretasie deur Microsoft Corporation en Mojang AB besit word). Gebruikers moet voldoen aan hul eindgebruikerlisensie-ooreenkoms (ELO) en die relevante beleide wat deur NetEase op die Chinese vasteland geïmplementeer word, en mag nie die inhoud van die spel vir kommersiële doeleindes gebruik of ander handelinge uitvoer wat deur die eindgebruikerlisensieooreenkoms verbied word nie.\nDie sagteware is die bedienerbestuur- en spelverbindingsinstrument van Terraria, waarvan die uiteindelike interpretasie berus by Re-Logic en sy uitgewers. Gebruikers is verantwoordelik vir die nakoming van hul eindgebruikerlisensie-ooreenkoms (ELO) en verwante beleide. Gebruikers mag nie die inhoud van die speletjie vir ongelisensieerde kommersiële doeleindes gebruik of ander handelinge uitvoer wat deur die eindgebruikerlisensie-ooreenkoms verbied word nie.\nSommige van die aanlyn lêerbronne (bedienerkern, spel- / bedienermodules, plug-ins, ens.) aflaaidienste wat deur hierdie sagteware verskaf word, word verskaf deur die ooreenstemmende amptenaar / derde party, ens., En die outeursreg word hanteer in ooreenstemming met die bepalings van die derdeparty-platform.\nDie kopiereg van ander derdeparty-dienste wat in hierdie sagteware gebruik word, behoort aan die diensverskaffer.\nHierdie sagteware is open source sagteware, en gebruikers of ander sagteware-ontwikkelaars wat nie deel van hierdie sagteware is nie, moet voldoen aan die open source ooreenkoms van hierdie sagteware.\nDie gebruiker verstaan en stem saam dat, behalwe vir die hulpbronne wat deur die gebruiker geskep is, alle aanlyndiensdata wat deur die sagteware verskaf word, deur die ontwikkelaar besit word. Die ontwikkelaar het die reg om te besluit of hy die hele of 'n gedeelte van die data op die bediener wil behou of nie.</value>
   </data>
   <data name="Eula14" xml:space="preserve">
-    <value>条款变更</value>
+    <value>Veranderinge aan bepalings</value>
   </data>
   <data name="Eula15" xml:space="preserve">
-    <value>开发者有权在必要的时候修改本协议。本协议一旦发生变动，开发者将在重要页面展示修改内容。若用户不同意本协议的修订或更新，可以主动停止使用本软件及服务。若用户在本协议修订后仍继续使用本软件及服务，即表示用户同意本协议所做的所有修订或更新。 若用户在本协议修订后因未熟悉变更而引起的损失，开发者不承担任何责任。</value>
+    <value>Die ontwikkelaar het die reg om hierdie ooreenkoms te verander indien nodig. Sodra daar 'n verandering aan hierdie ooreenkoms is, sal die ontwikkelaar die gewysigde inhoud op die belangrike bladsy vertoon. As die gebruiker nie instem tot die hersiening of opdatering van hierdie ooreenkoms nie, kan hy of sy die inisiatief neem om op te hou om die sagteware en dienste te gebruik. As die gebruiker voortgaan om die sagteware en dienste te gebruik na die hersiening van hierdie ooreenkoms, beteken dit dat die gebruiker instem tot alle wysigings of opdaterings wat aan hierdie ooreenkoms aangebring is. As die gebruiker nie vertroud is met die veranderinge na die hersiening van hierdie ooreenkoms nie, is die ontwikkelaar nie aanspreeklik vir enige verliese nie.</value>
   </data>
   <data name="Eula16" xml:space="preserve">
-    <value>其他规定</value>
+    <value>Diverse</value>
   </data>
   <data name="Eula17" xml:space="preserve">
-    <value>本协议适用于中华人民共和国法律，并且排除一切冲突法规规定地适用；\n开发者不行使、未能及时行使或者充分行使本协议或者依照法律规定所享有的权利，不应被视为放弃行使该权利，也不得影响开发者在将来行使该等权利；\n在法律许可范围内，开发者享有对本协议条款的解释权；\n用户可以通过电子邮件投诉、举报各类违法违规行为，邮件请发送至邮箱 services@mcsl.com.cn 。</value>
+    <value>Hierdie ooreenkoms word beheer deur die wet van die Volksrepubliek China, sonder inagneming van alle bepalings van die konflik van die wet;\nDie ontwikkelaar se versuim om die regte wat ingevolge hierdie ooreenkoms of in ooreenstemming met die wet geniet word, uit te oefen, versuim om betyds uit te oefen of ten volle uit te oefen, word nie geag 'n afstanddoening van die uitoefening van sodanige regte te wees nie, en dit sal ook nie die ontwikkelaar se uitoefening van sodanige regte in die toekoms beïnvloed nie;\nIn die mate waarin die wet dit toelaat, het die ontwikkelaar die reg om die bepalings van hierdie ooreenkoms te interpreteer;\nGebruikers kan kla en allerhande oortredings van wette en regulasies per e-pos aanmeld, stuur asseblief die e-pos aan services@mcsl.com.cn.</value>
   </data>
   <data name="Eula18" xml:space="preserve">
-    <value>条款可分性</value>
+    <value>Skeibaarheid van terme</value>
   </data>
   <data name="Eula19" xml:space="preserve">
-    <value>如果本协议的任何条款被认定为无效，或不可执行，其余条款仍应完全有效。</value>
+    <value>As enige bepaling van hierdie ooreenkoms ongeldig of onafdwingbaar is, bly die oorblywende bepalings van krag.</value>
   </data>
   <data name="PreCreateInstanceTip" xml:space="preserve">
-    <value>请选择欲操作的方式：</value>
+    <value>Kies asseblief die metode wat u wil gebruik：</value>
   </data>
   <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
-    <value>通用 Minecraft Java 版服务器</value>
+    <value>Universal Minecraft Java Edition-bedieners</value>
   </data>
   <data name="CreateMinecraftForgeInstance" xml:space="preserve">
-    <value>Minecraft Forge 服务器</value>
+    <value>Minecraft Forge bedieners</value>
   </data>
   <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
-    <value>Minecraft NeoForge 服务器</value>
+    <value>Minecraft NeoForge-bedieners</value>
   </data>
   <data name="CreateMinecraftFabricInstance" xml:space="preserve">
-    <value>Minecraft Fabric 服务器</value>
+    <value>Minecraft Fabric bedieners</value>
   </data>
   <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
-    <value>Minecraft Quilt 服务器</value>
+    <value>Minecraft Quilt bedieners</value>
   </data>
   <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
-    <value>Minecraft 基岩版服务器</value>
+    <value>Minecraft Bedrock Edition bedieners</value>
   </data>
   <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
-    <value>Minecraft Geyser互通 独立端</value>
+    <value>Minecraft Geyser Interoperabiliteit Selfstandig</value>
   </data>
   <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
-    <value>Minecraft BungeeCord 群组端</value>
+    <value>Minecraft BungeeCord groep kant</value>
   </data>
   <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
-    <value>Minecraft Waterfall 群组端</value>
+    <value>Minecraft Waterval groep kant</value>
   </data>
   <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
-    <value>Minecraft Velocity 群组端</value>
+    <value>Minecraft Velocity Groep Kant</value>
   </data>
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
-    <value>Minecraft Travertine 群组端</value>
+    <value>Minecraft Travertine groep kant</value>
   </data>
   <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>Frp 客户端程序 (Frpc)</value>
+    <value>FRP-kliëntprogram (FRPC)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
-    <value>Terraria 游戏服务器</value>
+    <value>Terraria-speletjiebedieners</value>
   </data>
   <data name="CreateOtherExecutableInstance" xml:space="preserve">
-    <value>其他控制台程序</value>
+    <value>Ander konsoleprogramme</value>
   </data>
   <data name="ImportExistsInstance" xml:space="preserve">
-    <value>导入现有实例</value>
+    <value>Voer 'n bestaande instansie in</value>
   </data>
   <data name="HomeTip" xml:space="preserve">
-    <value>新征程，新体验。</value>
+    <value>Nuwe reis, nuwe ervaring.</value>
   </data>
   <data name="InstanceManagerTip" xml:space="preserve">
-    <value>纵览全局，以观天下。</value>
+    <value>Vee die groot prentjie om die wêreld te sien.</value>
   </data>
   <data name="NotificationCenterTip" xml:space="preserve">
-    <value>四面八方，使命必达。</value>
+    <value>In alle rigtings moet die missie bereik word.</value>
   </data>
-  <data name="ResDownloadTip" xml:space="preserve">
-    <value>你想要的，这里都有。</value>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Noem maar op, dit is hier. (Tans in gebruik.)</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
-    <value>尽其所能，答其所问。</value>
+    <value>Doen jou bes om hul vrae te beantwoord.</value>
   </data>
   <data name="SettingsTip" xml:space="preserve">
-    <value>你的 MCSL，你的选择。</value>
+    <value>Jou MCSL, jou keuse.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
-    <value>直接停止下载</value>
+    <value>Stop die aflaai direk</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
-    <value>重试下载 1 次</value>
+    <value>Probeer die aflaai 1 keer weer</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
-    <value>重试下载 3 次</value>
+    <value>Probeer die aflaai 3 keer weer</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
-    <value>实例名称输入验证</value>
+    <value>Voer die instansienaam in vir validering</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
-    <value>守护进程密钥验证</value>
+    <value>Daemon sleutel validering</value>
   </data>
   <data name="Settings_AppTheme_Auto" xml:space="preserve">
-    <value>跟随系统</value>
+    <value>Volg die stelsel</value>
   </data>
   <data name="Settings_AppTheme_Light" xml:space="preserve">
-    <value>浅色</value>
+    <value>Lig</value>
   </data>
   <data name="Settings_AppTheme_Dark" xml:space="preserve">
-    <value>深色</value>
+    <value>Donker</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
-    <value>自动同意 EULA (Minecraft Java 版服务器实例)</value>
+    <value>Outomatiese toestemming EULA (Minecraft Java Edition Server Instance)</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
-    <value>自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。</value>
+    <value>Deur outomaties in te stem, is u gebonde aan die Minecraft End User License Agreement en stem u in dat MCSL nie gesamentlik en afsonderlik aanspreeklik is nie.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
-    <value>自动禁用正版验证 (Minecraft Java 版服务器实例)</value>
+    <value>Skakel egtheidsverifikasie outomaties uit (Minecraft Java Edition-bedienerinstansie)</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。</value>
+    <value>Wanneer hierdie opsie geaktiveer is, sal sulke gevalle outomaties verifikasie van Mojang/Microsoft deaktiveer, wat nie-egte Minecraft Java Edition-kliënte toelaat om aan die bediener te koppel.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。</value>
+    <value>Wanneer hierdie opsie geaktiveer is, sal sulke gevalle outomaties verifikasie van Mojang/Microsoft deaktiveer, wat nie-egte Minecraft Bedrock Edition-kliënte toelaat om aan die bediener te koppel.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
-    <value>自动禁用正版验证 (Minecraft 基岩版服务器实例)</value>
+    <value>Skakel egtheidsverifikasie outomaties uit (Minecraft Bedrock Edition-bedienerinstansie)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Forge 服务器实例)</value>
+    <value>Ontplooi met 'n beeldbron (Minecraft Forge-bedienerinstansie)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft NeoForge 服务器实例)</value>
+    <value>Ontplooi met 'n beeldbron (Minecraft NeoForge Server Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Fabric 服务器实例)</value>
+    <value>Ontplooi met 'n beeldbron (Minecraft Fabric-bedienerinstansie)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Quilt 服务器实例)</value>
+    <value>Ontplooi met 'n spieëlbron (Minecraft Quilt-bedienerinstansie)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
-    <value>启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。</value>
+    <value>Nadat dit geaktiveer is, sal BMCLAPI gebruik word om hulpbronne af te laai, wat aanbeveel word vir Chinese gebruikers.</value>
   </data>
   <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
-    <value>下载源</value>
+    <value>Laai die bron af</value>
   </data>
   <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
-    <value>选择在 “资源下载” 页面使用的下载提供方。</value>
+    <value>Kies die aflaaiverskaffer om op die Hulpbronaflaai-bladsy te gebruik.</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
-    <value>无极镜像 FastMirror (由物语云计算提供)</value>
+    <value>FastMirror (verskaf deur Monogatari Cloud Computing)</value>
   </data>
   <data name="Settings_PolarsMirrorName" xml:space="preserve">
-    <value>极星云镜像 (由极星网络提供)</value>
+    <value>Polestar Cloud Image (met vergunning van Polestar Network)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File (由开发组成员 Z__Tsin 提供)</value>
+    <value>ZCloud-lêer (verskaf deur Z__Tsin lid van die ontwikkelingspan)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 (由 MSL 开服器提供)</value>
+    <value>MSL Aflaai Bron (verskaf deur MSL Server Builder)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>MCSL-Sync sinchrone spieëlbeeld</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
-    <value>下载引擎线程数</value>
+    <value>Aantal aflaai-enjindrade</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
-    <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
+    <value>In die geval van voldoende rekenaarprestasie, hoe hoër die aantal drade, hoe vinniger is die teoretiese aflaaisnelheid van die lêer. Oor die algemeen is 'n instelling van 16 drade voldoende.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
-    <value>下载失败处理方式</value>
+    <value>Hoe om aflaaifoute te hanteer</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
-    <value>当文件下载失败时，应当进行的操作。</value>
+    <value>Wat om te doen as die aflaai van die lêer misluk.</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
-    <value>删除实例确认方式</value>
+    <value>Bevestig die metode om 'n instansie uit te vee</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
-    <value>此功能可防止误操作导致实例被删除。</value>
+    <value>Hierdie funksie verhoed dat gevalle verwyder word as gevolg van wanwerking.</value>
   </data>
   <data name="Settings_AppTheme_Title" xml:space="preserve">
-    <value>应用主题</value>
+    <value>Pas 'n tema toe</value>
   </data>
   <data name="Settings_AppTheme_Description" xml:space="preserve">
-    <value>默认跟随系统变化，当然也可以自己设置。</value>
+    <value>Die standaard volg op die stelselveranderings, natuurlik kan u dit ook self instel.</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
-    <value>开机自启动 (MCServerLauncher.WPF)</value>
+    <value>Outo-begin (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
-    <value>在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。</value>
+    <value>Wanneer die stelsel begin, word die grafiese program outomaties van stapel gestuur. As dit geaktiveer is, kan sensitiewe bewerkings op die stelsel aangeraak word, dus laat dit asseblief toe in u antivirusprogrammatuur.</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>检查更新 (MCServerLauncher.WPF)</value>
+    <value>Kyk vir opdaterings (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>检查本图形化程序的更新。</value>
+    <value>Kyk vir opdaterings van hierdie grafiese program.</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
-    <value>检查更新</value>
+    <value>Kyk vir opdaterings</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>在每次启动时，检查本图形化程序的更新。</value>
+    <value>Kyk vir opdaterings van hierdie grafiese program by elke opstart.</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>自动检查更新 (MCServerLauncher.WPF)</value>
+    <value>Kontroleer outomaties vir opdaterings (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
-    <value>检查更新 (MCServerLauncher.Daemon)</value>
+    <value>Kyk vir opdaterings (MCServerLauncher.Daemon)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
-    <value>检查守护进程的更新。</value>
+    <value>Kyk vir opdaterings aan die daemon.</value>
   </data>
   <data name="Settings_About_Title" xml:space="preserve">
-    <value>关于 MCServerLauncher Future (WPF)</value>
+    <value>Oor MCServerLauncher Future (WPF)</value>
   </data>
   <data name="Settings_About_LegalProtected" xml:space="preserve">
-    <value>此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序或其中任何部分，将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。</value>
+    <value>Hierdie projek word beskerm deur die kopieregwet van die Volksrepubliek China en internasionale verdrae, en ongemagtigde reproduksie of verspreiding van die program of enige deel daarvan is onderhewig aan ernstige siviele en strafregtelike sanksies en vervolging tot die volle mate wat deur die wet toegelaat word.</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至</value>
+    <value>Hierdie projek word beskerm onder die open source GNU General Public License Weergawe 3.0 en die bronkode word aangebied by</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
     <value>。</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
-    <value>MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。</value>
+    <value>Die digitaal ondertekende sertifikaat wat deur MCServerLauncher Future gebruik word, waarborg dat daar nie met die program gepeuter kan word nie. Reeksnommer：59cbf9b5207eeabb45417d148120ac9a。 As dit anders is, gebruik dit nie en gee terugvoer aan services@mcsl.com.cn.</value>
   </data>
   <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
-    <value>无极镜像</value>
+    <value>Oneindige spieëlbeeld</value>
   </data>
   <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
-    <value>极星云镜像</value>
+    <value>Polêre newelbeeld</value>
   </data>
   <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>MCSL-Sync sinchrone spieëlbeeld</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>Aankondiging</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Is jy seker?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>As u die gebruikersooreenkoms verwerp, sal die sagteware teruggetrek word.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Maak seker dat jy dit alles gelees het voordat jy op Stem saam. U moet ten minste die protokol tot die einde toe rol.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Goeie</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Nie nou nie</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Dit beteken dat u instem tot al die inhoud van hierdie ooreenkoms.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Laai bron af)</value>
   </data>
 </root>
