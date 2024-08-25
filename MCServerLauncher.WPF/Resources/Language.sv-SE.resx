@@ -98,543 +98,567 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>MCServerLauncher WPF 遇到错误</value>
+    <value>Ett fel påträffades med MCServerLauncher WPF</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。</value>
+    <value>Stapeln har kopierats till Urklipp. Du kan gå direkt till GitHub för att ge feedback.</value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
-    <value>WPF 客户端 ( 仅 Windows )</value>
+    <value>WPF-klient (endast Windows)</value>
   </data>
   <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
-    <value>语言 / Language</value>
+    <value>Språk</value>
   </data>
   <data name="FirstSetup_EulaMenu" xml:space="preserve">
-    <value>用户协议</value>
+    <value>Användaravtal</value>
   </data>
   <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
-    <value>连接守护进程</value>
+    <value>Anslut demonen</value>
   </data>
   <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
-    <value>开始使用</value>
+    <value>Sätta igång</value>
   </data>
   <data name="Continue" xml:space="preserve">
-    <value>继续</value>
+    <value>Fortsätt</value>
   </data>
   <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
-    <value> 设置语言</value>
+    <value> Ställ in språk</value>
   </data>
   <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
-    <value> Language</value>
+    <value> Språk</value>
   </data>
   <data name="Main_HomeNavMenu" xml:space="preserve">
-    <value>主页</value>
+    <value>hemsida</value>
   </data>
   <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
-    <value>新建实例</value>
+    <value>Skapa en instans</value>
   </data>
   <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
-    <value>实例管理</value>
+    <value>Hantering av instanser</value>
   </data>
   <data name="Main_ResDownloadNavMenu" xml:space="preserve">
-    <value>资源下载</value>
+    <value>Nedladdningar av resurser</value>
   </data>
   <data name="Main_HelpCenterNavMenu" xml:space="preserve">
-    <value>帮助中心</value>
+    <value>Hjälpcenter</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>通知中心</value>
+    <value>Notiscenter</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
-    <value>调试页面</value>
+    <value>Sidan Felsökning</value>
   </data>
   <data name="Main_SettingsNavMenu" xml:space="preserve">
-    <value>程序设置</value>
+    <value>Programinställningar</value>
   </data>
   <data name="Tip" xml:space="preserve">
-    <value>提示</value>
+    <value>snabb</value>
   </data>
   <data name="NotAllowedOverOpening" xml:space="preserve">
-    <value>MCServerLauncher WPF 不支持重复运行。</value>
+    <value>MCServerLauncher WPF stöder inte duplicerade körningar.</value>
   </data>
   <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
-    <value>代理</value>
+    <value>mäklare</value>
   </data>
   <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
-    <value>原版</value>
+    <value>Original</value>
   </data>
   <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
-    <value>纯净</value>
+    <value>ren</value>
   </data>
   <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
-    <value>模组</value>
+    <value>Modul</value>
   </data>
   <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
-    <value>基岩</value>
+    <value>berggrund</value>
   </data>
   <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
-    <value>获取核心介绍失败！</value>
+    <value>Misslyckades med att få den grundläggande introduktionen!</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
-    <value>Minecraft 基岩版压缩包</value>
+    <value>Minecraft Bedrock Edition med dragkedja</value>
   </data>
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
-    <value>请在此处导入下载的压缩包。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>Importera det nedladdade paketet här. Om du inte vet var du ska ladda ner kan du klicka på knappen till höger för att hoppa.</value>
   </data>
   <data name="Archive" xml:space="preserve">
-    <value>压缩包</value>
+    <value>Zip-paket</value>
   </data>
   <data name="Browse" xml:space="preserve">
-    <value>浏览</value>
+    <value>Bläddra</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
-    <value>Minecraft 服务器核心</value>
+    <value>Minecraft Server Core</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
-    <value>请选择该服务器将使用的核心文件。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
+    <value>Välj de kärnfiler som ska användas av servern. Om du inte vet var du ska ladda ner kan du klicka på knappen till höger för att hoppa.</value>
   </data>
   <data name="MinecraftCoreFileName" xml:space="preserve">
-    <value>核心文件名</value>
+    <value>Namn på kärnfil</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
-    <value>Java 运行时</value>
+    <value>Java-körning</value>
   </data>
   <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
-    <value>Java 运行时是 Minecraft Java 服务器的必需环境。请务必选择合适的版本，防止启动失败。</value>
+    <value>Java-körningen är en obligatorisk miljö för Minecrafts Java-server. Se till att välja lämplig version för att förhindra startfel.</value>
   </data>
   <data name="JavaPath" xml:space="preserve">
-    <value>Java 路径</value>
+    <value>Sökväg till Java</value>
   </data>
   <data name="SelectManually" xml:space="preserve">
-    <value>手动选择</value>
+    <value>Manuellt val</value>
   </data>
   <data name="ScanJavaAtDaemon" xml:space="preserve">
-    <value>在 Daemon 宿主机自动搜索</value>
+    <value>Sök automatiskt på Daemon-värdar</value>
   </data>
   <data name="SelectFromResult" xml:space="preserve">
-    <value>从现有结果中选取</value>
+    <value>Välj bland befintliga resultat</value>
   </data>
   <data name="MinecraftJavaRequirementTip" xml:space="preserve">
-    <value>1.12+ 要求 Java 8\n1.17+ 要求 Java 16\n1.18+ 要求 Java 17\n1.20.5+ 要求 Java 21</value>
+    <value>1.12+ kräver Java 8\n1.17+ kräver Java 16\n1.18+ kräver Java 17\n1.20.5+ kräver Java 21</value>
   </data>
   <data name="FileName" xml:space="preserve">
-    <value>文件名</value>
+    <value>filnamn</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
-    <value>请选择该实例所需的文件/文件夹/压缩包。压缩包仅支持 ZIP 格式。</value>
+    <value>Välj den fil/mapp/paket som krävs för instansen. Arkivet stöder endast ZIP-formatet.</value>
   </data>
   <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
-    <value>部署依赖</value>
+    <value>Beroenden för distribution</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
-    <value>运行命令</value>
+    <value>Kör kommandot</value>
   </data>
   <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
-    <value>在此处输入运行命令。</value>
+    <value>Ange körkommandot här.</value>
   </data>
   <data name="RunCommandArgumentTip" xml:space="preserve">
-    <value>如果需要附带参数，\n直接附在后面即可。</value>
+    <value>Om du behöver bifoga parametrar,\nFäst den direkt på baksidan.</value>
   </data>
   <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
-    <value>请勿包含特殊符号或使用非法名称。</value>
+    <value>Inkludera inte speciella symboler och använd inte olagliga namn.</value>
   </data>
   <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
-    <value>实例名称</value>
+    <value>Namnet på instansen</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
-    <value>(可选) 可在此处添加其他 JVM 参数，一行一个。</value>
+    <value>Du kan också lägga till ytterligare JVM-parametrar här, en per rad.</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
-    <value>添加参数</value>
+    <value>Lägg till parametrar</value>
   </data>
   <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
-    <value>JVM 参数</value>
+    <value>JVM-parametrar</value>
   </data>
   <data name="MaximumMemory" xml:space="preserve">
-    <value>最大内存</value>
+    <value>Maximalt minne</value>
   </data>
   <data name="MinimumMemory" xml:space="preserve">
-    <value>最小内存</value>
+    <value>Minsta minne</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
-    <value>这决定了您的 Minecraft Java 服务器将能使用多少内存。</value>
+    <value>Detta avgör hur mycket minne din Minecraft Java-server kommer att kunna använda.</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
-    <value>JVM 内存堆</value>
+    <value>Heap med JVM-minne</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
-    <value>最小内存 ≤ 最大内存即可</value>
+    <value>Det minsta minnet ≤ det maximala minnet är tillräckligt</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
-    <value>复制链接</value>
+    <value>Kopiera länken</value>
   </data>
   <data name="Pause" xml:space="preserve">
-    <value>暂停</value>
+    <value>Paus</value>
   </data>
   <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
+    <value>Annullera</value>
   </data>
   <data name="FileSize" xml:space="preserve">
-    <value>文件大小</value>
+    <value>Filstorlek</value>
   </data>
   <data name="MinecraftVersion" xml:space="preserve">
-    <value>Minecraft 版本</value>
+    <value>Minecraft-utgåva</value>
   </data>
   <data name="BuildVersion" xml:space="preserve">
-    <value>构建版本</value>
+    <value>Bygger</value>
   </data>
   <data name="Off" xml:space="preserve">
-    <value>关</value>
+    <value>stänga</value>
   </data>
   <data name="On" xml:space="preserve">
-    <value>开</value>
+    <value>öppna</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
-    <value>创建时间</value>
+    <value>Tid för skapande</value>
   </data>
   <data name="InstanceType" xml:space="preserve">
-    <value>实例类型</value>
+    <value>Typ av instans</value>
   </data>
   <data name="More" xml:space="preserve">
-    <value>更多</value>
+    <value>mer</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>启动</value>
+    <value>inleda</value>
   </data>
   <data name="Back" xml:space="preserve">
-    <value>返回</value>
+    <value>återvända</value>
   </data>
   <data name="PreFinishCreateInstanceTip" xml:space="preserve">
-    <value>完成以下配置后，单击 “继续”。</value>
+    <value>När du är klar med följande konfigurationer klickar du på Fortsätt.</value>
   </data>
   <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
-    <value>请选择该服务器将运行的 Minecraft 版本。</value>
+    <value>Välj den version av Minecraft som servern ska köra.</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>刷新</value>
+    <value>Spolas</value>
   </data>
   <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
-    <value>如果加载不出来，请稍后再试。\n镜像服务由 BMCLAPI 提供支持</value>
+    <value>Om den inte laddas, försök igen senare.\nBILDTJÄNSTEN DRIVS AV BMCLAPI</value>
   </data>
   <data name="ForgeVersion" xml:space="preserve">
-    <value>Forge 版本</value>
+    <value>Forge-version</value>
   </data>
   <data name="NeoForgeVersion" xml:space="preserve">
-    <value>NeoForge 版本</value>
+    <value>NeoForge version</value>
   </data>
   <data name="FabricVersion" xml:space="preserve">
-    <value>Fabric 版本</value>
+    <value>Version av tyg</value>
   </data>
   <data name="QuiltVersion" xml:space="preserve">
-    <value>Quilt 版本</value>
+    <value>Quilt version</value>
   </data>
   <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Forge 加载器的版本。</value>
+    <value>Välj den version av Forge-laddaren som servern ska köra.</value>
   </data>
   <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 NeoForge 加载器的版本。</value>
+    <value>Välj den version av NeoForge-lastaren som servern ska köra.</value>
   </data>
   <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Fabric 加载器的版本。</value>
+    <value>Välj den version av infrastrukturinläsaren som servern ska köra.</value>
   </data>
   <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
-    <value>请选择该服务器将运行的 Quilt 加载器的版本。</value>
+    <value>Välj den version av Quilt-laddaren som servern ska köra.</value>
   </data>
   <data name="OnlyShowReleaseVersion" xml:space="preserve">
-    <value>仅显示正式版</value>
+    <value>Endast den officiella versionen visas</value>
   </data>
   <data name="ResDownload_InstanceCore" xml:space="preserve">
-    <value>服务器核心</value>
+    <value>Serverkärnor</value>
   </data>
   <data name="ResDownload_OpenHomePage" xml:space="preserve">
-    <value>打开官网</value>
+    <value>Öppna den officiella webbplatsen</value>
   </data>
   <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
-    <value>欢迎使用</value>
+    <value>Välkommen</value>
   </data>
   <data name="TempSkip" xml:space="preserve">
-    <value>暂时跳过</value>
+    <value>Hoppa över tills vidare</value>
   </data>
   <data name="Agree" xml:space="preserve">
-    <value>同意</value>
+    <value>samtycka</value>
   </data>
   <data name="Disagree" xml:space="preserve">
-    <value>拒绝</value>
+    <value>vägra</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value>欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，在使用本软件前，请详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。\n请您仔细阅读以下内容，当您使用本软件时，即代表您已经详细阅读并同意本协议的全部内容，且同意遵守本协议的规定。</value>
+    <value>Välkommen till programvaran och tjänsterna från MCServerLauncher (hädanefter kallad "programvaran") som tillhandahålls av MCSL-utvecklingsteamet. För att skydda användarnas rättigheter och intressen bör du läsa igenom allt innehåll i detta avtal noggrant innan du använder programvaran. Vi kan uppdatera detta avtal när som helst, och det kommer att ersätta det ursprungliga användaravtalet när det har publicerats.\nLäs följande innehåll noggrant, när du använder denna programvara innebär det att du har läst och godkänt allt innehåll i detta avtal i detalj och samtycker till att följa bestämmelserna i detta avtal.</value>
   </data>
   <data name="Eula2" xml:space="preserve">
-    <value>使用须知</value>
+    <value>Försiktighetsåtgärder</value>
   </data>
   <data name="Eula3" xml:space="preserve">
-    <value>用户应自行配备本软件和本软件功能（包括但不限于 新建实例 等）所需要的硬件和软件配置。\n用户应自行负担连接互联网后所需支付的相关电话、宽带使用等费用。\n用户应为其使用本软件产生的行为、事件、结果承担法律责任。\n用户与其他未授权的非官方个人之间产生的任何交易与纠纷，与开发者无关。\n用户应遵守中华人民共和国相关法律法规（如果用户是中华人民共和国境外的使用者，还应遵守所属国家或地区的法律法规）。\n用户不得使用本软件（或本软件的一些特性功能）从事非法行为，不得使用与本软件有关联的相关进程和服务从事非法行为，其任何行为造成的后果，与开发者无关。\n用户应当自行承担其所发布的信息内容所涉及的法律责任。用户不得在本软件内、本软件运行的相关进程与服务内输入、发表和传播下列任何内容，不得以任何形式发布下列任何内容：\n\n反对中华人民共和国宪法所确定的基本原则的；\n危害国家安全，泄露国家机密，颠覆国家政权，破坏国家统一的；\n损害国家荣誉和利益的；\n煽动民族仇恨、民族歧视，破坏民族团结的；\n破坏国家宗教政策，宣扬邪教和封建迷信的；\n散布谣言，扰乱社会秩序，破坏社会稳定的；\n散布淫秽、色情、赌博、暴力、凶杀、恐怖或者教唆犯罪的；\n侮辱或者诽谤他人，侵害他人合法权益的；\n含有中华人民共和国法律、行政法规禁止的其他内容的。\n除非法律允许或开发者书面许可，用户不得从事下列任何行为：\n不合法、不恰当地使用本软件及服务；\n破坏本软件系统或网站的正常运行，故意传播计算机病毒等破坏性程序；\n采取任何可能影响本软件网络服务的非正常使用行为（包括但不限于损害、攻击服务器或使服务器过度负荷等）；\n删除本软件及其副本上关于著作权的信息。\n\n若用户做出违法违规或违反本协议规定的行为，开发者有权视情节严重程度，依据本协议及法律法规，对用户做出包括但不限于终止服务等处理措施；情节严重的，将移交有关行政管理机关给予行政处罚，或追究其刑事责任。</value>
+    <value>Användaren ska utrusta programvaran och programvarans funktioner (inklusive men inte begränsat till att skapa nya instanser) med den hårdvaru- och programvarukonfiguration som krävs av användaren.\nAnvändare ska ansvara för relevanta telefon- och bredbandsanvändningsavgifter som måste betalas efter anslutning till Internet.\nAnvändaren ska bära det juridiska ansvaret för beteende, händelse och resultat som orsakas av användningen av denna programvara.\nEventuella transaktioner och tvister mellan användare och andra obehöriga inofficiella personer har inget att göra med utvecklaren.\nAnvändaren ska följa relevanta lagar och förordningar i Folkrepubliken Kina (om användaren är en användare utanför Folkrepubliken Kina ska användaren också följa lagar och förordningar i det land eller den region som den tillhör).\nAnvändaren får inte använda programvaran (eller vissa funktioner och funktioner i programvaran) för att begå olagliga handlingar, och får inte använda de relevanta processer och tjänster som är förknippade med programvaran för att begå olagliga handlingar, och konsekvenserna av eventuella åtgärder ska inte vara relaterade till utvecklaren.\nAnvändarna ska bära sitt eget juridiska ansvar i samband med innehållet i den information de publicerar. Användaren får inte mata in, publicera eller sprida något av följande innehåll i programvaran, de processer och tjänster som är relaterade till driften av programvaran, och får inte publicera något av följande innehåll i någon form：\n\nmotsätta sig de grundläggande principer som anges i Folkrepubliken Kinas konstitution;\näventyra den nationella säkerheten, sprida statshemligheter, undergräva statsmakten eller undergräva den nationella enigheten,\nskada statens ära och intressen;\nuppvigling till etniskt hat, etnisk diskriminering eller undergrävande av etnisk enighet;\nundergräva den nationella religionspolitiken, förespråka kulter och feodal vidskepelse;\nsprida rykten, störa den sociala ordningen eller undergräva den sociala stabiliteten;\nSpridning av obsceniteter, pornografi, hasardspel, våld, mord, terror eller anstiftan till brott;\nförolämpa eller förtala andra, inkräkta på andras lagliga rättigheter och intressen;\nInnehåller annat innehåll som är förbjudet enligt lagar eller administrativa bestämmelser.\nOm det inte är tillåtet enligt lag eller med skriftligt tillstånd från utvecklaren får användarna inte delta i någon av följande handlingar：\nOlaglig eller olämplig användning av programvaran och tjänsterna;\nSkada den normala driften av programvaran, systemet eller webbplatsen, avsiktligt sprida datavirus och andra destruktiva program;\nVidta något onormalt användningsbeteende som kan påverka programvarans nätverkstjänster (inklusive men inte begränsat till att skada, attackera servern eller överbelasta servern, etc.);\nTa bort copyrightinformationen för programvaran och dess kopior.\n\nOm användaren begår något beteende som bryter mot lagar och förordningar eller bryter mot bestämmelserna i detta avtal, har utvecklaren rätt att vidta åtgärder mot användaren beroende på situationens allvar, i enlighet med detta avtal och lagar och förordningar, inklusive men inte begränsat till att avsluta tjänster. Om omständigheterna är allvarliga kommer de att överföras till de berörda förvaltningsorganen för administrativa påföljder eller utredas för straffrättsligt ansvar.</value>
   </data>
   <data name="Eula4" xml:space="preserve">
-    <value>数据收集与使用</value>
+    <value>Insamling och användning av data</value>
   </data>
   <data name="Eula5" xml:space="preserve">
-    <value>若您同意本使用协议且使用本软件的在线服务，我们会收集以下信息：\n本软件所运行设备的IP地址（可能并非正确地址）；\n本软件所运行设备的部分系统信息；\n本软件崩溃时，可能会在经用户同意的情况下，上传软件在系统运行的日志（含有部分系统信息），以帮助解决问题和改善软件；\n其他会在经用户同意情况下上传的部分信息（软件中会具体说明）。</value>
+    <value>Om du godkänner dessa användarvillkor och använder programvarans onlinetjänster kommer vi att samla in följande information：\nIP-adressen för den enhet som programvaran körs på (vilket kanske inte är den korrekta adressen);\nViss systeminformation om den utrustning som programvaran drivs på;\nNär programvaran kraschar kan loggarna för programvaran som körs på systemet (inklusive viss systeminformation) laddas upp med användarens medgivande för att hjälpa till att lösa problemet och förbättra programvaran.\nAnnan information som kommer att laddas upp med användarens samtycke (enligt vad som anges i programvaran).</value>
   </data>
   <data name="Eula6" xml:space="preserve">
-    <value>用户支持和反馈</value>
+    <value>Användarsupport och feedback</value>
   </data>
   <data name="Eula7" xml:space="preserve">
-    <value>用户在使用过程中如遇到任何问题，可以通过官方电子邮件或在本软件源码仓库提交 Issue 的方式进行反馈。我们会认真考虑用户的反馈以改进服务。</value>
+    <value>Om användare stöter på några problem under användningen kan de ge feedback via det officiella e-postmeddelandet eller genom att skicka in ett problem i detta källkodsförråd för programvara. Vi tar vår feedback på allvar för att förbättra våra tjänster.</value>
   </data>
   <data name="Eula8" xml:space="preserve">
-    <value>服务的变更或中止</value>
+    <value>Ändringar eller avstängning av tjänsten</value>
   </data>
   <data name="Eula9" xml:space="preserve">
-    <value>1. 对用户服务的中止与终止\n\n用户有发布违法信息、严重违背社会公德、以及其他违反法律禁止性规定的行为，开发者应终止对用户提供服务；\n用户在接受本软件服务时实施不正当行为的，开发者有权终止对用户提供服务（该不正当行为的具体情形在本协议中有明确约定）；\n用户使用本软件的第三方修改版本的，用户应自行承担风险与法律责任。\n\n2. 对本软件及服务的中断、中止与终止：\n\n发生下列情形之一时，开发者有权终止或中断本软件全部或部分服务，对因此造成的不便及损害，开发者对用户或第三人均不承担任何责任：\n\na. 因本软件及服务自身的需要；\nb. 因服务器遭受损害、无法正常工作；\nc. 因突发性的软硬件设备与电子通信设备故障；\nd. 因网络提供商线路或其他故障；\ne. 因政策因素；\nf. 第三方原因或其他不可抗力的情形。\n\n开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。</value>
+    <value>1. Avstängning och uppsägning av Användarens Tjänst\n\nOm användaren publicerar olaglig information, allvarligt bryter mot samhällsmoralen eller bryter mot lagens förbud, ska utvecklaren säga upp tillhandahållandet av tjänster till användaren;\nOm användaren begår en olämplig handling när han eller hon accepterar programvarutjänsten har utvecklaren rätt att säga upp den tjänst som tillhandahållits användaren (de specifika omständigheterna för det felaktiga beteendet anges tydligt i detta avtal);\nOm användaren använder en modifierad version av programvaran från en tredje part ska användaren bära sin egen risk och sitt juridiska ansvar.\n\n2. Avstängning, avstängning och uppsägning av programvaran och tjänsterna：\n\nI händelse av någon av följande omständigheter har utvecklaren rätt att säga upp eller avbryta alla eller delar av programvarans tjänster, och utvecklaren ska inte vara ansvarig gentemot användaren eller någon tredje part för de olägenheter eller skador som orsakas av detta：\n\na. i enlighet med vad som krävs av Programvaran och Tjänsterna;\nb. Underlåtenhet att fungera korrekt på grund av skada på servern;\nc. På grund av plötsligt fel på mjukvaru- och hårdvaruutrustning och elektronisk kommunikationsutrustning;\nd. på grund av nätverksleverantörens linjefel eller andra fel;\ne. på grund av politiska överväganden;\nf. Skäl till tredje part eller andra force majeure-omständigheter.\n\nUtvecklaren förbehåller sig rätten att säga upp eller delvis avsluta Programvaran och Tjänsterna när den anser det nödvändigt, och Utvecklaren kan meddela Användaren i form av ett meddelande, men Utvecklaren ansvarar inte för eventuella förluster som orsakas Användaren.</value>
   </data>
   <data name="Eula10" xml:space="preserve">
-    <value>免责声明</value>
+    <value>friskrivning</value>
   </data>
   <data name="Eula11" xml:space="preserve">
-    <value>用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。\n用户理解并同意，开发者不保证本软件及服务一定能满足用户需求，也不保证服务不会被中断，并且对本软件及服务的正确性、安全性等方面不提供任何担保。\n用户理解并同意，开发者无法完全保证本软件在线服务所下载的第三方文件的的正确性、安全性、合法性，也不对本软件内存在的第三方服务（包括但不限于 资源下载 等服务）的正确性、安全性、合法性等负责。因此，前面提到的内容与开发者和本软件无关，不代表开发者及本软件的立场。相关争议应由第三方服务提供方承担。\n用户理解并同意，若以错误或非法的手段使用本软件在线服务以及本软件所下载的相关文件，其造成的后果由用户自行承担，若导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，本软件不对第三方服务内容提供担保。 若用户使用第三方服务导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。</value>
+    <value>Användaren förstår och samtycker till att utvecklaren inte ger någon garanti för denna programvara i den utsträckning som lagen tillåter. Användarens användning av denna programvara sker på egen risk.\nAnvändaren är införstådd med och samtycker till att Utvecklaren inte garanterar att Programvaran och Tjänsterna kommer att uppfylla Användarens behov, och inte heller garanterar att Tjänsterna inte kommer att avbrytas, och ger ingen garanti för Programvarans och Tjänsternas korrekthet och säkerhet.\nAnvändaren förstår och samtycker till att utvecklaren inte helt kan garantera korrektheten, säkerheten och legitimiteten hos de tredjepartsfiler som laddas ner från programvarans onlinetjänster, och inte heller är ansvarig för korrektheten, säkerheten och lagligheten av tredjepartstjänsterna (inklusive men inte begränsat till resursnedladdning och andra tjänster) som finns i programvaran. Därför har innehållet som nämns ovan inget att göra med utvecklaren och programvaran och representerar inte utvecklarens och programvarans position. Tvister ska bäras av tredjepartsleverantören.\nAnvändaren förstår och samtycker till att användaren är ensam ansvarig för de konsekvenser som orsakas av användningen av programvarans onlinetjänster och relaterade filer som laddats ner från programvaran på felaktiga eller olagliga sätt, och ska inte vara ansvarig för eventuella skador på egendom, intrång i upphovsrätt eller immateriella rättigheter etc., och kommer inte och kan inte bära något juridiskt ansvar.\nAnvändaren är införstådd med och samtycker till att programvaran inte garanterar innehållet i tjänster från tredje part. Utvecklaren ska inte hållas ansvarig för eventuella skador på egendom, intrång i upphovsrätt eller immateriella rättigheter som orsakas av användarens användning av tjänster från tredje part, och kommer inte och kan inte bära något juridiskt ansvar.\nAnvändaren förstår och samtycker till att utvecklaren inte ger någon garanti och juridiskt stöd för programvarans funktioner, och om användaren använder programvarans funktioner för att begå olagliga eller andra olämpliga handlingar, ska de risker och rättsliga konsekvenser som orsakas av användaren bäras av användaren.</value>
   </data>
   <data name="Eula12" xml:space="preserve">
-    <value>知识产权</value>
+    <value>Immateriella</value>
   </data>
   <data name="Eula13" xml:space="preserve">
-    <value>本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。\n\n本软件所使用的第三方服务归相关版权方所有，包括但不限于：\n本软件为 Minecraft（其最终解释权归 Microsoft 公司 和 Mojang AB 所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）和 中国区代理公司 网易 在中国大陆实行的相关政策，不得将游戏本体内容用于商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件为 Terraria（其最终解释权归 Re-Logic 和其发行商所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）及相关政策。用户不得将游戏本体内容用于未经许可的商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件提供的部分在线文件资源（服务端核心、游戏/服务器模组和插件等内容）下载服务由相应 官方/第三方 等提供，版权依照第三方平台规定处理。\n本软件使用的其他第三方服务，版权归服务提供商所有。\n本软件是开源软件，用户或其他非本软件的软件开发者应当遵守本软件的开源协议。\n用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。</value>
+    <value>Upphovsrätten, patenten och andra immateriella rättigheter för denna programvara ägs av utvecklaren eller den utsedda upphovsrättsinnehavaren.\n\nTjänster från tredje part som används i denna programvara ägs av relevanta upphovsrättsinnehavare, inklusive men inte begränsat till:：\nDenna programvara är ett serverhanterings- och spelonlineverktyg för Minecraft (vars slutliga tolkning ägs av Microsoft Corporation och Mojang AB). Användare ska följa sitt licensavtal för slutanvändare (EULA) och relevanta policyer som implementerats av NetEase på det kinesiska fastlandet, och får inte använda innehållet i spelet för kommersiella ändamål eller utföra andra åtgärder som är förbjudna enligt licensavtalet för slutanvändare.\nProgramvaran är Terrarias serverhanterings- och spelanslutningsverktyg, och den ultimata tolkningen av detta ligger hos Re-Logic och dess utgivare. Användare är ansvariga för att följa sitt licensavtal för slutanvändare (EULA) och relaterade policyer. Användare får inte använda innehållet i spelet för olicensierade kommersiella ändamål eller utföra andra handlingar som är förbjudna enligt licensavtalet för slutanvändare.\nVissa av de nedladdningstjänster för onlinefiler (serverkärna, spel-/servermoduler, plugin-program osv.) som tillhandahålls av denna programvara tillhandahålls av motsvarande tjänsteman/tredje part, etc., och upphovsrätten ska hanteras i enlighet med bestämmelserna för tredjepartsplattformen.\nUpphovsrätten till andra tjänster från tredje part som används i denna programvara tillhör tjänsteleverantören.\nDenna programvara är programvara med öppen källkod och användare eller andra programvaruutvecklare som inte är en del av denna programvara ska följa avtalet om öppen källkod för denna programvara.\nAnvändaren är införstådd med och samtycker till att, med undantag för de resurser som skapats av användaren, alla onlinetjänstdata som tillhandahålls av programvaran ägs av utvecklaren. Utvecklaren har rätt att bestämma om han eller hon vill behålla alla eller delar av data på servern.</value>
   </data>
   <data name="Eula14" xml:space="preserve">
-    <value>条款变更</value>
+    <value>Ändringar av villkor</value>
   </data>
   <data name="Eula15" xml:space="preserve">
-    <value>开发者有权在必要的时候修改本协议。本协议一旦发生变动，开发者将在重要页面展示修改内容。若用户不同意本协议的修订或更新，可以主动停止使用本软件及服务。若用户在本协议修订后仍继续使用本软件及服务，即表示用户同意本协议所做的所有修订或更新。 若用户在本协议修订后因未熟悉变更而引起的损失，开发者不承担任何责任。</value>
+    <value>Utvecklaren har rätt att ändra detta avtal vid behov. När det finns en ändring i detta avtal kommer utvecklaren att visa det ändrade innehållet på den viktiga sidan. Om användaren inte samtycker till revideringen eller uppdateringen av detta avtal kan han eller hon ta initiativ till att sluta använda programvaran och tjänsterna. Om användaren fortsätter att använda programvaran och tjänsterna efter revideringen av detta avtal innebär det att användaren godkänner alla ändringar eller uppdateringar som görs i detta avtal. Om användaren inte är bekant med ändringarna efter revideringen av detta avtal ska utvecklaren inte hållas ansvarig för eventuella förluster.</value>
   </data>
   <data name="Eula16" xml:space="preserve">
-    <value>其他规定</value>
+    <value>Diverse</value>
   </data>
   <data name="Eula17" xml:space="preserve">
-    <value>本协议适用于中华人民共和国法律，并且排除一切冲突法规规定地适用；\n开发者不行使、未能及时行使或者充分行使本协议或者依照法律规定所享有的权利，不应被视为放弃行使该权利，也不得影响开发者在将来行使该等权利；\n在法律许可范围内，开发者享有对本协议条款的解释权；\n用户可以通过电子邮件投诉、举报各类违法违规行为，邮件请发送至邮箱 services@mcsl.com.cn 。</value>
+    <value>Detta avtal ska regleras av Folkrepubliken Kinas lag, utan hänsyn till alla lagvalsregler;\nUtvecklarens underlåtenhet att utöva, underlåta att i tid eller fullt ut utöva de rättigheter som åtnjuts enligt detta avtal eller i enlighet med lagen ska inte anses vara ett avstående från utövandet av sådana rättigheter, och det ska inte heller påverka utvecklarens utövande av sådana rättigheter i framtiden;\nI den utsträckning det är tillåtet enligt lag har utvecklaren rätt att tolka villkoren i detta avtal;\nAnvändare kan klaga och rapportera alla typer av överträdelser av lagar och förordningar via e-post, skicka e-postmeddelandet till services@mcsl.com.cn.</value>
   </data>
   <data name="Eula18" xml:space="preserve">
-    <value>条款可分性</value>
+    <value>Uppdelning av villkor</value>
   </data>
   <data name="Eula19" xml:space="preserve">
-    <value>如果本协议的任何条款被认定为无效，或不可执行，其余条款仍应完全有效。</value>
+    <value>Om någon bestämmelse i detta avtal anses vara ogiltig eller omöjlig att verkställa, ska de återstående bestämmelserna förbli i full kraft och verkan.</value>
   </data>
   <data name="PreCreateInstanceTip" xml:space="preserve">
-    <value>请选择欲操作的方式：</value>
+    <value>Välj den metod du vill använda：</value>
   </data>
   <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
-    <value>通用 Minecraft Java 版服务器</value>
+    <value>Universella Minecraft Java Edition-servrar</value>
   </data>
   <data name="CreateMinecraftForgeInstance" xml:space="preserve">
-    <value>Minecraft Forge 服务器</value>
+    <value>Minecraft Forge-servrar</value>
   </data>
   <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
-    <value>Minecraft NeoForge 服务器</value>
+    <value>Minecraft NeoForge-servrar</value>
   </data>
   <data name="CreateMinecraftFabricInstance" xml:space="preserve">
-    <value>Minecraft Fabric 服务器</value>
+    <value>Minecraft Fabric-servrar</value>
   </data>
   <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
-    <value>Minecraft Quilt 服务器</value>
+    <value>Minecraft Quilt-servrar</value>
   </data>
   <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
-    <value>Minecraft 基岩版服务器</value>
+    <value>Minecraft Bedrock Edition-servrar</value>
   </data>
   <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
-    <value>Minecraft Geyser互通 独立端</value>
+    <value>Minecraft Geyser Interoperability (fristående)</value>
   </data>
   <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
-    <value>Minecraft BungeeCord 群组端</value>
+    <value>Minecraft BungeeCord-gruppens sida</value>
   </data>
   <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
-    <value>Minecraft Waterfall 群组端</value>
+    <value>Minecraft vattenfall gruppsida</value>
   </data>
   <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
-    <value>Minecraft Velocity 群组端</value>
+    <value>Minecraft Velocity-gruppens sida</value>
   </data>
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
-    <value>Minecraft Travertine 群组端</value>
+    <value>Minecraft Travertine gruppsida</value>
   </data>
   <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>Frp 客户端程序 (Frpc)</value>
+    <value>FRP-klientprogram (FRPC)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
-    <value>Terraria 游戏服务器</value>
+    <value>Terraria spelservrar</value>
   </data>
   <data name="CreateOtherExecutableInstance" xml:space="preserve">
-    <value>其他控制台程序</value>
+    <value>Andra konsolprogram</value>
   </data>
   <data name="ImportExistsInstance" xml:space="preserve">
-    <value>导入现有实例</value>
+    <value>Importera en befintlig instans</value>
   </data>
   <data name="HomeTip" xml:space="preserve">
-    <value>新征程，新体验。</value>
+    <value>Ny resa, ny erfarenhet.</value>
   </data>
   <data name="InstanceManagerTip" xml:space="preserve">
-    <value>纵览全局，以观天下。</value>
+    <value>Svep med dig den stora bilden för att se världen.</value>
   </data>
   <data name="NotificationCenterTip" xml:space="preserve">
-    <value>四面八方，使命必达。</value>
+    <value>I alla riktningar måste uppdraget uppnås.</value>
   </data>
-  <data name="ResDownloadTip" xml:space="preserve">
-    <value>你想要的，这里都有。</value>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>You name it, det finns här. (Används för närvarande.)</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
-    <value>尽其所能，答其所问。</value>
+    <value>Gör ditt bästa för att svara på deras frågor.</value>
   </data>
   <data name="SettingsTip" xml:space="preserve">
-    <value>你的 MCSL，你的选择。</value>
+    <value>Ditt MCSL, ditt val.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
-    <value>直接停止下载</value>
+    <value>Stoppa nedladdningen direkt</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
-    <value>重试下载 1 次</value>
+    <value>Försök att ladda ned igen 1 gång</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
-    <value>重试下载 3 次</value>
+    <value>Försök att ladda ner igen 3 gånger</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
-    <value>实例名称输入验证</value>
+    <value>Ange instansnamnet för validering</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
-    <value>守护进程密钥验证</value>
+    <value>Validering av daemonnyckel</value>
   </data>
   <data name="Settings_AppTheme_Auto" xml:space="preserve">
-    <value>跟随系统</value>
+    <value>Följ systemet</value>
   </data>
   <data name="Settings_AppTheme_Light" xml:space="preserve">
-    <value>浅色</value>
+    <value>ljus</value>
   </data>
   <data name="Settings_AppTheme_Dark" xml:space="preserve">
-    <value>深色</value>
+    <value>Mörk</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
-    <value>自动同意 EULA (Minecraft Java 版服务器实例)</value>
+    <value>Licensavtal för automatiskt samtycke (Minecraft Java Edition Server Instance)</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
-    <value>自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。</value>
+    <value>Genom att automatiskt godkänna avtalet är du bunden av Minecrafts licensavtal för slutanvändare och samtycker till att MCSL inte är solidariskt ansvarigt.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
-    <value>自动禁用正版验证 (Minecraft Java 版服务器实例)</value>
+    <value>Inaktivera äkthetsverifiering automatiskt (serverinstans för Minecraft Java Edition)</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。</value>
+    <value>När det här alternativet är aktiverat kommer sådana instanser automatiskt att inaktivera autentisering från Mojang/Microsoft, vilket gör att oäkta Minecraft Java Edition-klienter kan ansluta till servern.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。</value>
+    <value>När det här alternativet är aktiverat kommer sådana instanser automatiskt att inaktivera autentisering från Mojang/Microsoft, vilket gör att oäkta Minecraft Bedrock Edition-klienter kan ansluta till servern.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
-    <value>自动禁用正版验证 (Minecraft 基岩版服务器实例)</value>
+    <value>Inaktivera äkthetsverifiering automatiskt (serverinstans för Minecraft Bedrock Edition)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Forge 服务器实例)</value>
+    <value>Distribuera med en bildkälla (Minecraft Forge-serverinstans)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft NeoForge 服务器实例)</value>
+    <value>Distribuera med en bildkälla (Minecraft NeoForge Server Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Fabric 服务器实例)</value>
+    <value>Distribuera med en avbildningskälla (Minecraft Fabric-serverinstans)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
-    <value>使用镜像源进行部署 (Minecraft Quilt 服务器实例)</value>
+    <value>Distribuera med en speglingskälla (Minecraft Quilt-serverinstans)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
-    <value>启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。</value>
+    <value>Efter aktivering kommer BMCLAPI att användas för att ladda ner resurser, vilket rekommenderas för kinesiska användare.</value>
   </data>
   <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
-    <value>下载源</value>
+    <value>Ladda ner källan</value>
   </data>
   <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
-    <value>选择在 “资源下载” 页面使用的下载提供方。</value>
+    <value>Välj den nedladdningsprovider som ska användas på sidan Resursnedladdningar.</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
-    <value>无极镜像 FastMirror (由物语云计算提供)</value>
+    <value>FastMirror (tillhandahålls av Monogatari Cloud Computing)</value>
   </data>
   <data name="Settings_PolarsMirrorName" xml:space="preserve">
-    <value>极星云镜像 (由极星网络提供)</value>
+    <value>Bild av Polestar Cloud (med tillstånd av Polestar Network)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File (由开发组成员 Z__Tsin 提供)</value>
+    <value>ZCloud-fil (tillhandahålls av Z__Tsin medlem av utvecklingsteamet)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 (由 MSL 开服器提供)</value>
+    <value>MSL-nedladdningskälla (tillhandahålls av MSL Server Builder)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>MCSL-Sync synkron spegling</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
-    <value>下载引擎线程数</value>
+    <value>Antal motortrådar för nedladdning</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
-    <value>在计算机性能足够的情况下，线程数越高，文件的理论下载速度越快。一般来说，设置为 16 线程即可满足需求。</value>
+    <value>Om datorn har tillräcklig prestanda gäller att ju högre antal trådar, desto snabbare är filens teoretiska nedladdningshastighet. I allmänhet räcker det med en inställning på 16 trådar.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
-    <value>下载失败处理方式</value>
+    <value>Så här hanterar du nedladdningsfel</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
-    <value>当文件下载失败时，应当进行的操作。</value>
+    <value>Vad ska jag göra om filnedladdningen misslyckas.</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
-    <value>删除实例确认方式</value>
+    <value>Bekräfta metoden för att ta bort en instans</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
-    <value>此功能可防止误操作导致实例被删除。</value>
+    <value>Den här funktionen förhindrar att instanser tas bort på grund av felaktig användning.</value>
   </data>
   <data name="Settings_AppTheme_Title" xml:space="preserve">
-    <value>应用主题</value>
+    <value>Använda ett tema</value>
   </data>
   <data name="Settings_AppTheme_Description" xml:space="preserve">
-    <value>默认跟随系统变化，当然也可以自己设置。</value>
+    <value>Standardinställningen följer systemändringarna, naturligtvis kan du också ställa in den själv.</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
-    <value>开机自启动 (MCServerLauncher.WPF)</value>
+    <value>Automatisk start (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
-    <value>在系统启动时，自动启动本图形化程序。启用时可能触及系统敏感操作，请在杀毒软件中放行。</value>
+    <value>När systemet startar startas det grafiska programmet automatiskt. När det är aktiverat kan känsliga åtgärder beröras i systemet, så tillåt dem i ditt antivirusprogram.</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>检查更新 (MCServerLauncher.WPF)</value>
+    <value>Sök efter uppdateringar (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>检查本图形化程序的更新。</value>
+    <value>Sök efter uppdateringar till det här grafiska programmet.</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
-    <value>检查更新</value>
+    <value>Sök efter uppdateringar</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>在每次启动时，检查本图形化程序的更新。</value>
+    <value>Sök efter uppdateringar till detta grafiska program vid varje start.</value>
   </data>
   <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
-    <value>自动检查更新 (MCServerLauncher.WPF)</value>
+    <value>Sök automatiskt efter uppdateringar (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
-    <value>检查更新 (MCServerLauncher.Daemon)</value>
+    <value>Sök efter uppdateringar (MCServerLauncher.Daemon)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
-    <value>检查守护进程的更新。</value>
+    <value>Sök efter uppdateringar av demonen.</value>
   </data>
   <data name="Settings_About_Title" xml:space="preserve">
-    <value>关于 MCServerLauncher Future (WPF)</value>
+    <value>Om MCServerLauncher Future (WPF)</value>
   </data>
   <data name="Settings_About_LegalProtected" xml:space="preserve">
-    <value>此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序或其中任何部分，将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。</value>
+    <value>Detta projekt är skyddat av Folkrepubliken Kinas upphovsrättslag och internationella fördrag, och obehörig reproduktion eller distribution av programmet eller någon del därav är föremål för stränga civilrättsliga och straffrättsliga påföljder och åtal i den utsträckning som lagen tillåter.</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至</value>
+    <value>Detta projekt är skyddat under GNU General Public License Version 3.0 med öppen källkod och källkoden finns på</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
     <value>。</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
-    <value>MCServerLauncher Future 使用的数字签名证书保证该程序不被仿冒篡改。序列号：59cbf9b5207eeabb45417d148120ac9a。如有不同，请勿使用，并向 services@mcsl.com.cn 反馈。</value>
+    <value>Det digitalt signerade certifikatet som används av MCServerLauncher Future garanterar att programmet inte kan manipuleras. Serienummer：59cbf9b5207eeabb45417d148120ac9a。 Om det är annorlunda, använd det inte och ge feedback till services@mcsl.com.cn.</value>
   </data>
   <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
-    <value>无极镜像</value>
+    <value>Oändlig spegling</value>
   </data>
   <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
-    <value>极星云镜像</value>
+    <value>Bild av Polära nebulosan</value>
   </data>
   <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
-    <value>MCSL-Sync 同步镜像</value>
+    <value>MCSL-Sync synkron spegling</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>tillkännagivande</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Är du säker?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Om du avvisar användaravtalet kommer programvaran att dras tillbaka.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Se till att du har läst allt innan du klickar på Godkänn. Åtminstone bör du rulla protokollet till slutet.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bra</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Inte nu</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Detta innebär att du samtycker till allt innehåll i detta avtal.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Ladda ner källa)</value>
   </data>
 </root>
