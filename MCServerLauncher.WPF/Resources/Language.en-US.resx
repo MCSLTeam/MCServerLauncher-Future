@@ -362,43 +362,69 @@
     <value>Disagree</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value/>
+    <value>Welcome to the MCServerLauncher Software and Services Provided by the MCSL Development Team.\nThank you for choosing the software and services provided by the MCSL Development Team (hereinafter referred to as "the Software" or "this Software"). To protect user rights and interests, please carefully read all contents of this Agreement before using the Software. We reserve the right to update this Agreement at any time, and upon publication, the updated Agreement will supersede any previous versions.\nBy using this Software, you acknowledge that you have read and understood all terms and conditions of this Agreement and agree to be bound by them.</value>
   </data>
   <data name="Eula2" xml:space="preserve">
     <value>Instructions for use</value>
   </data>
   <data name="Eula3" xml:space="preserve">
-    <value>用户应自行配备本软件和本软件功能（包括但不限于 新建实例 等）所需要的硬件和软件配置。&amp;#x000A;用户应自行负担连接互联网后所需支付的相关电话、宽带使用等费用。&amp;#x000A;用户应为其使用本软件产生的行为、事件、结果承担法律责任。&amp;#x000A;用户与其他未授权的非官方个人之间产生的任何交易与纠纷，与开发者无关。&amp;#x000A;用户应遵守中华人民共和国相关法律法规（如果用户是中华人民共和国境外的使用者，还应遵守所属国家或地区的法律法规）。&amp;#x000A;用户不得使用本软件（或本软件的一些特性功能）从事非法行为，不得使用与本软件有关联的相关进程和服务从事非法行为，其任何行为造成的后果，与开发者无关。&amp;#x000A;用户应当自行承担其所发布的信息内容所涉及的法律责任。用户不得在本软件内、本软件运行的相关进程与服务内输入、发表和传播下列任何内容，不得以任何形式发布下列任何内容：&amp;#x000A;&amp;#x000A;反对中华人民共和国宪法所确定的基本原则的；&amp;#x000A;危害国家安全，泄露国家机密，颠覆国家政权，破坏国家统一的；&amp;#x000A;损害国家荣誉和利益的；&amp;#x000A;煽动民族仇恨、民族歧视，破坏民族团结的；&amp;#x000A;破坏国家宗教政策，宣扬邪教和封建迷信的；&amp;#x000A;散布谣言，扰乱社会秩序，破坏社会稳定的；&amp;#x000A;散布淫秽、色情、赌博、暴力、凶杀、恐怖或者教唆犯罪的；&amp;#x000A;侮辱或者诽谤他人，侵害他人合法权益的；&amp;#x000A;含有中华人民共和国法律、行政法规禁止的其他内容的。&amp;#x000A;除非法律允许或开发者书面许可，用户不得从事下列任何行为：&amp;#x000A;不合法、不恰当地使用本软件及服务；&amp;#x000A;破坏本软件系统或网站的正常运行，故意传播计算机病毒等破坏性程序；&amp;#x000A;采取任何可能影响本软件网络服务的非正常使用行为（包括但不限于损害、攻击服务器或使服务器过度负荷等）；&amp;#x000A;删除本软件及其副本上关于著作权的信息。&amp;#x000A;&amp;#x000A;若用户做出违法违规或违反本协议规定的行为，开发者有权视情节严重程度，依据本协议及法律法规，对用户做出包括但不限于终止服务等处理措施；情节严重的，将移交有关行政管理机关给予行政处罚，或追究其刑事责任。</value>
+    <value>User Responsibilities and Restrictions\n\n
+Users shall provide the necessary hardware and software configurations required for this Software and its functionalities (including but not limited to creating new instances).\n
+Users shall bear any costs associated with connecting to the Internet, such as telephone and broadband usage fees.\n
+Users shall be solely responsible for all actions, events, and consequences arising from their use of this Software.\n
+Any transactions and disputes between users and unauthorized non-official individuals are not the responsibility of the developers.\n
+Users must comply with the laws and regulations of the People's Republic of China (if the user is outside the People's Republic of China, they must also comply with the laws and regulations of their country or region).\n
+Users may not use this Software (or any of its features) to engage in illegal activities or use any related processes and services in an unlawful manner. The developers are not liable for any consequences resulting from such behavior.\n
+Users are solely responsible for the legal consequences of any information they publish. Users must not input, post, or disseminate any of the following content within this Software or any related processes and services:\n\n
+Content opposing the fundamental principles established by the Constitution of the People's Republic of China.\n
+Content endangering national security, disclosing state secrets, subverting state power, or undermining national unity.\n
+Content damaging the national honor and interests.\n
+Content inciting ethnic hatred or discrimination and disrupting ethnic unity.\n
+Content undermining national religious policies, promoting cults, or feudal superstitions.\n
+Rumors that disrupt social order or undermine social stability.\n
+Obscene, pornographic, gambling-related, violent, murderous, or terrorist content, or content inciting criminal activities.\n
+Content defaming others or infringing on the legal rights and interests of others.\n
+Any other content prohibited by the laws and administrative regulations of the People's Republic of China.\n
+Unless permitted by law or granted written permission by the developers, users shall not engage in any of the following behaviors:\n
+Using this Software and its services in an illegal or improper manner.\n
+Damaging the normal operation of this Software system or website by deliberately spreading malicious software, such as computer viruses.\n
+Engaging in any non-normal usage of the network services that could affect this Software (including but not limited to damaging or overloading servers).
+Removing copyright notices from this Software or its copies.\n\n
+If a user engages in any unlawful or breach-of-agreement conduct, the developers reserve the right to take appropriate measures based on the severity of the violation, including but not limited to terminating service. In cases of severe violations, the matter will be referred to relevant administrative authorities for administrative penalties or criminal prosecution.</value>
   </data>
   <data name="Eula4" xml:space="preserve">
     <value>Data collection and utilization</value>
   </data>
   <data name="Eula5" xml:space="preserve">
-    <value>若您同意本使用协议且使用本软件的在线服务，我们会收集以下信息：&amp;#x000A;本软件所运行设备的IP地址（可能并非正确地址）；&amp;#x000A;本软件所运行设备的部分系统信息；&amp;#x000A;本软件崩溃时，可能会在经用户同意的情况下，上传软件在系统运行的日志（含有部分系统信息），以帮助解决问题和改善软件；&amp;#x000A;其他会在经用户同意情况下上传的部分信息（软件中会具体说明）。</value>
+    <value>If you agree to this User Agreement and use the online services provided by this Software, we may collect the following information:\n
+The IP address of the device on which this Software is running (note that this may not always be accurate).\n
+Certain system information about the device on which this Software is running.\n
+In the event of a software crash, with your consent, we may upload system logs (containing some system information) to help diagnose and resolve issues and improve the Software.\n
+Other information may be uploaded with your consent (specific details will be provided within the Software).\n</value>
   </data>
   <data name="Eula6" xml:space="preserve">
     <value>User support and feedback</value>
   </data>
   <data name="Eula7" xml:space="preserve">
-    <value>用户在使用过程中如遇到任何问题，可以通过 官方电子邮件 或 在本软件源码仓库提交issue 的方式进行反馈。我们会认真考虑用户的反馈以改进服务。</value>
+    <value>If users encounter any issues during use, they can provide feedback via official email or by submitting an Issue in this software's source code repository. We will carefully consider user feedback to improve our services.</value>
   </data>
   <data name="Eula8" xml:space="preserve">
     <value>Change or suspension of services</value>
   </data>
   <data name="Eula9" xml:space="preserve">
-    <value>1. 对用户服务的中止与终止&amp;#x000A;&amp;#x000A;用户有发布违法信息、严重违背社会公德、以及其他违反法律禁止性规定的行为，开发者应终止对用户提供服务；&amp;#x000A;用户在接受本软件服务时实施不正当行为的，开发者有权终止对用户提供服务（该不正当行为的具体情形在本协议中有明确约定）；&amp;#x000A;用户使用本软件的第三方修改版本的，用户应自行承担风险与法律责任。&amp;#x000A;&amp;#x000A;2. 对本软件及服务的中断、中止与终止：&amp;#x000A;&amp;#x000A;发生下列情形之一时，开发者有权终止或中断本软件全部或部分服务，对因此造成的不便及损害，开发者对用户或第三人均不承担任何责任：&amp;#x000A;&amp;#x000A;a. 因本软件及服务自身的需要；&amp;#x000A;b. 因服务器遭受损害、无法正常工作；&amp;#x000A;c. 因突发性的软硬件设备与电子通信设备故障；&amp;#x000A;d. 因网络提供商线路或其他故障；&amp;#x000A;e. 因政策因素；&amp;#x000A;f. 第三方原因或其他不可抗力的情形。&amp;#x000A;&amp;#x000A;开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。</value>
+    <value>1. 对用户服务的中止与终止\n\n用户有发布违法信息、严重违背社会公德、以及其他违反法律禁止性规定的行为，开发者应终止对用户提供服务；\n用户在接受本软件服务时实施不正当行为的，开发者有权终止对用户提供服务（该不正当行为的具体情形在本协议中有明确约定）；\n用户使用本软件的第三方修改版本的，用户应自行承担风险与法律责任。\n\n2. 对本软件及服务的中断、中止与终止：\n\n发生下列情形之一时，开发者有权终止或中断本软件全部或部分服务，对因此造成的不便及损害，开发者对用户或第三人均不承担任何责任：\n\na. 因本软件及服务自身的需要；\nb. 因服务器遭受损害、无法正常工作；\nc. 因突发性的软硬件设备与电子通信设备故障；\nd. 因网络提供商线路或其他故障；\ne. 因政策因素；\nf. 第三方原因或其他不可抗力的情形。\n\n开发者保留在其认为有必要的情况下终止或部分终止本软件及服务的权利，开发者可以采取公告的形式通知用户，但开发者不承担对用户造成的任何损失。</value>
   </data>
   <data name="Eula10" xml:space="preserve">
     <value>Disclaimers</value>
   </data>
   <data name="Eula11" xml:space="preserve">
-    <value>用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。&amp;#x000A;用户理解并同意，开发者不保证本软件及服务一定能满足用户需求，也不保证服务不会被中断，并且对本软件及服务的正确性、安全性等方面不提供任何担保。&amp;#x000A;用户理解并同意，开发者无法完全保证本软件在线服务所下载的第三方文件的的正确性、安全性、合法性，也不对本软件内存在的第三方服务（包括但不限于 资源下载 等服务）的正确性、安全性、合法性等负责。因此，前面提到的内容与开发者和本软件无关，不代表开发者及本软件的立场。相关争议应由第三方服务提供方承担。&amp;#x000A;用户理解并同意，若以错误或非法的手段使用本软件在线服务以及本软件所下载的相关文件，其造成的后果由用户自行承担，若导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。&amp;#x000A;用户理解并同意，本软件不对第三方服务内容提供担保。 若用户使用第三方服务导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。&amp;#x000A;用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。</value>
+    <value>用户理解并同意，在法律许可范围内，开发者不对本软件提供任何保证。 用户使用本软件所造成的的风险均由用户自行承担。\n用户理解并同意，开发者不保证本软件及服务一定能满足用户需求，也不保证服务不会被中断，并且对本软件及服务的正确性、安全性等方面不提供任何担保。\n用户理解并同意，开发者无法完全保证本软件在线服务所下载的第三方文件的的正确性、安全性、合法性，也不对本软件内存在的第三方服务（包括但不限于 资源下载 等服务）的正确性、安全性、合法性等负责。因此，前面提到的内容与开发者和本软件无关，不代表开发者及本软件的立场。相关争议应由第三方服务提供方承担。\n用户理解并同意，若以错误或非法的手段使用本软件在线服务以及本软件所下载的相关文件，其造成的后果由用户自行承担，若导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，本软件不对第三方服务内容提供担保。 若用户使用第三方服务导致财产损毁、版权或知识产权被侵犯等问题，开发者概不负责，不会也不能承担任何法律责任。\n用户理解并同意，开发者对本软件功能不提供任何保证和法律支持，若用户使用本软件功能从事违法犯罪或其他不正当的行为，所造成的风险和法律后果均由用户自行承担。</value>
   </data>
   <data name="Eula12" xml:space="preserve">
     <value>Intellectual property</value>
   </data>
   <data name="Eula13" xml:space="preserve">
-    <value>本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。&amp;#x000A;&amp;#x000A;本软件所使用的第三方服务归相关版权方所有，包括但不限于：&amp;#x000A;本软件为 Minecraft（其最终解释权归 Microsoft 公司 和 Mojang AB 所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）和 中国区代理公司 网易 在中国大陆实行的相关政策，不得将游戏本体内容用于商业用途，或实施其他被最终用户许可协议所禁止的行为。&amp;#x000A;本软件为 Terraria（其最终解释权归 Re-Logic 和其发行商所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）及相关政策。用户不得将游戏本体内容用于未经许可的商业用途，或实施其他被最终用户许可协议所禁止的行为。&amp;#x000A;本软件提供的部分在线文件资源（服务端核心、游戏/服务器模组和插件等内容）下载服务由相应 官方/第三方 等提供，版权依照第三方平台规定处理。&amp;#x000A;本软件使用的其他第三方服务，版权归服务提供商所有。&amp;#x000A;本软件是开源软件，用户或其他非本软件的软件开发者应当遵守本软件的开源协议。&amp;#x000A;用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。</value>
+    <value>本软件著作权、专利权及其他知识产权，均为开发者或者指定版权方所有。\n\n本软件所使用的第三方服务归相关版权方所有，包括但不限于：\n本软件为 Minecraft（其最终解释权归 Microsoft 公司 和 Mojang AB 所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）和 中国区代理公司 网易 在中国大陆实行的相关政策，不得将游戏本体内容用于商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件为 Terraria（其最终解释权归 Re-Logic 和其发行商所有）的服务器管理和游戏联机工具。用户应当遵守其最终用户许可协议（EULA）及相关政策。用户不得将游戏本体内容用于未经许可的商业用途，或实施其他被最终用户许可协议所禁止的行为。\n本软件提供的部分在线文件资源（服务端核心、游戏/服务器模组和插件等内容）下载服务由相应 官方/第三方 等提供，版权依照第三方平台规定处理。\n本软件使用的其他第三方服务，版权归服务提供商所有。\n本软件是开源软件，用户或其他非本软件的软件开发者应当遵守本软件的开源协议。\n用户理解并同意，除用户创建的资源外，本软件提供的所有在线服务数据均归开发者所有。开发者有权决定保留或不保留服务器上的全部或部分数据。</value>
   </data>
   <data name="Eula14" xml:space="preserve">
     <value>Change of terms</value>
@@ -410,7 +436,7 @@
     <value>Other terms</value>
   </data>
   <data name="Eula17" xml:space="preserve">
-    <value>本协议适用于中华人民共和国法律，并且排除一切冲突法规规定地适用；&amp;#x000A;开发者不行使、未能及时行使或者充分行使本协议或者依照法律规定所享有的权利，不应被视为放弃行使该权利，也不得影响开发者在将来行使该等权利；&amp;#x000A;在法律许可范围内，开发者享有对本协议条款的解释权；&amp;#x000A;用户可以通过电子邮件投诉、举报各类违法违规行为，邮件请发送至邮箱 services@mcsl.com.cn 。</value>
+    <value>This EULA is governed by the laws of the People's Republic of China and excludes the application of any conflicting legal provisions; \nThe developer's failure or delay in exercising or fully exercising any rights under this EULA or as provided by law shall not be deemed a waiver of those rights, nor shall it affect the developer's ability to exercise such rights in the future; \nTo the extent permitted by law, the developer has the right to interpret the terms of this EULA; \nUsers can file complaints or report various illegal activities by email to services@mcsl.com.cn.</value>
   </data>
   <data name="Eula18" xml:space="preserve">
     <value>Terms separability</value>
@@ -419,7 +445,7 @@
     <value>If any provision of this EULA is regarded as invalid or unenforceable, the remaining provisions should still remain in full force and effect.</value>
   </data>
   <data name="PreCreateInstanceTip" xml:space="preserve">
-    <value>请选择欲操作的方式：</value>
+    <value>Please select the instance type that you want to create:</value>
   </data>
   <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
     <value>Universal Minecraft Java Edition Server</value>
@@ -485,19 +511,19 @@
     <value>Your MCSL, also your style.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
-    <value>直接停止下载</value>
+    <value>Stop Downloading</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
-    <value>重试下载 1 次</value>
+    <value>Retry Once</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
-    <value>重试下载 3 次</value>
+    <value>Retry 3 Times</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
-    <value>实例名称输入验证</value>
+    <value>Instance Name Input Validation</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
-    <value>守护进程密钥验证</value>
+    <value>Daemon Key Validation</value>
   </data>
   <data name="Settings_AppTheme_Auto" xml:space="preserve">
     <value>System</value>
@@ -512,16 +538,16 @@
     <value>Automatically accept the EULA (Minecraft : Java Edition Server Instance)</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
-    <value>自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。</value>
+    <value>Automatically agree the EULA means you comply with the Minecraft EULA and acknowledge that MCSL assumes no joint liability.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
     <value>自动禁用正版验证 ( Minecraft Java 版服务器 实例 )</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft Java 版客户端连接到服务器。</value>
+    <value>After enabling this option, the instances of this type will automatically disable authentication from Mojang/Microsoft, and allow offline-mode Minecraft : Java Edition clients to connect to the server.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
-    <value>启用此选项后，此类实例将会自动禁用来自 Mojang/Microsoft 的身份验证，从而允许非正版 Minecraft 基岩版客户端连接到服务器。</value>
+    <value>After enabling this option, the instances of this type will automatically disable authentication from Mojang/Microsoft, and allow offline-mode Minecraft : Bedrock Edition clients to connect to the server.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
     <value>自动禁用正版验证 ( Minecraft 基岩版服务器 实例 )</value>
@@ -539,13 +565,13 @@
     <value>使用镜像源进行部署 ( Minecraft Quilt 服务器 实例 )</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
-    <value>启用后将使用 BMCLAPI 进行下载资源，建议中国用户开启。</value>
+    <value>After enabling this option, resources will be downloaded using BMCLAPI. Recommended for Chinese users.</value>
   </data>
   <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
     <value>Download Source</value>
   </data>
   <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
-    <value>选择在 “资源下载” 页面使用的下载提供方。</value>
+    <value>Choose the resource provider in "Resource Download" page.</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
     <value>无极镜像 FastMirror ( 由 物语云计算 提供支持 )</value>
@@ -554,10 +580,10 @@
     <value>极星云镜像 ( 由 极星网络 提供支持 )</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File ( 由开发组成员 Z__Tsin 提供支持 )</value>
+    <value>ZCloud File ( Provided by MCSL Developer Z__Tsin )</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 ( 由 MSL开服器 提供支持 )</value>
+    <value>MSL Download Source ( Provided by MSL )</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
     <value>MCSL-Sync</value>
@@ -569,10 +595,10 @@
     <value>With sufficient computer performance, higher number of threads means faster download speed, Generally, setting it to 16 threads should be sufficient to meet the needs.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
-    <value>下载失败处理方式</value>
+    <value>s</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
-    <value>当文件下载失败时，应当进行的操作。</value>
+    <value>Action should perform when download failed.</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
     <value>删除实例确认方式</value>
@@ -617,10 +643,10 @@
     <value>About MCServerLauncher Future (WPF)</value>
   </data>
   <data name="Settings_About_LegalProtected" xml:space="preserve">
-    <value>此项目受《中华人民共和国著作权法》和国际条约保护，如未经授权而擅自复制或传播本程序（或其中任何部分），将受到严厉的民事和刑事制裁，并将在法律许可的最大限度内受到起诉。</value>
+    <value>This project is protected by the Copyright Law of the People's Republic of China and international treaties. Unauthorized copying or distribution of this program (or any part thereof) will be subject to severe civil and criminal penalties and will be prosecuted to the fullest extent permitted by law</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>此项目受开源协议 GNU General Public License Version 3.0 保护，源代码托管至</value>
+    <value>This project is under GNU General Public License Version 3.0, with source code at</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
     <value>.</value>
