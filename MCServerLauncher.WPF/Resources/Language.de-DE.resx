@@ -98,7 +98,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>Bei MCServerLauncher WPF ist ein Fehler aufgetreten.</value>
+    <value>Bei MCServerLauncher WPF ist ein Fehler aufgetreten</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
     <value>Der Stack wurde in die Zwischenablage kopiert. Sie können direkt zu GitHub gehen, um Feedback zu geben.</value>
@@ -572,7 +572,7 @@
     <value>Umgang mit Download-Fehlern</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
-    <value>Was ist zu tun, wenn der Dateidownload fehlschlägt?</value>
+    <value>Was ist zu tun, wenn der Dateidownload fehlschlägt.</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
     <value>Bestätigen Sie die Methode zum Löschen einer Instanz</value>
@@ -623,7 +623,7 @@
     <value>Dieses Projekt ist unter der Open-Source-GNU General Public License Version 3.0 geschützt und der Quellcode wird unter</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>Das von MCServerLauncher Future verwendete digital signierte Zertifikat garantiert, dass das Programm nicht manipuliert werden kann. Seriennummer：59cbf9b5207eeabb45417d148120ac9a。 Wenn es anders ist, verwenden Sie es nicht und geben Sie services@mcsl.com.cn Feedback.</value>
