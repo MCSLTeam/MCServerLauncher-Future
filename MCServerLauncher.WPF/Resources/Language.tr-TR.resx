@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Emin misiniz?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Kullanıcı Sözleşmesini reddederseniz, Yazılım geri çekilecektir.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Kabul Ediyorum'a tıklamadan önce hepsini okuduğunuzdan emin olun. En azından, protokolü sonuna kadar yuvarlamalısınız.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Şimdi değil</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Bu, bu Sözleşmenin tüm içeriğini kabul ettiğiniz anlamına gelir.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Programın kullanıldığı dili seçin.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Herhangi bir arka plan programı bağlamazsanız, yazılımın işlevlerinin çoğu sınırlı olacaktır.\nDaemon'u daha sonra ayarlardan bağlamaya devam edebilirsiniz.</value>
   </data>
 </root>
