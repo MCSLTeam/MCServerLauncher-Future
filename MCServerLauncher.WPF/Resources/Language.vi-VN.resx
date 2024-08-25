@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Bạn có chắc không?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Nếu bạn từ chối Thỏa thuận người dùng, Phần mềm sẽ bị thu hồi.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Đảm bảo bạn đã đọc tất cả trước khi nhấp vào Đồng ý. Ít nhất, bạn nên cuộn giao thức đến cùng.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Không phải bây giờ</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Điều này có nghĩa là bạn đồng ý với tất cả các nội dung của Thỏa thuận này.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Chọn ngôn ngữ mà chương trình được sử dụng.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Nếu bạn không liên kết bất kỳ daemon nào, hầu hết các chức năng của phần mềm sẽ bị hạn chế.\nBạn vẫn có thể liên kết daemon sau này trong cài đặt.</value>
   </data>
 </root>
