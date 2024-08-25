@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Estàs segur?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Si rebutgeu l'acord d'usuari, el programari es retirarà.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Assegureu-vos d'haver-ho llegit tot abans de fer clic a Accepta. Com a mínim, hauríeu de rodar el protocol fins al final.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Ara no</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Això vol dir que accepteu tot el contingut d'aquest Acord.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Seleccioneu l'idioma en què s'utilitza el programa.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Si no enllaceu cap dimoni, la majoria de les funcions del programari seran limitades.\nEncara podeu enllaçar el dimoni més endavant a la configuració.</value>
   </data>
 </root>
