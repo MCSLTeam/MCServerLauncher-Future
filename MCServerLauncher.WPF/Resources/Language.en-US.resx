@@ -362,49 +362,49 @@
     <value>Disagree</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value>Welcome to the MCServerLauncher Software and Services Provided by the MCSL Development Team.\nThank you for choosing the Software and services provided by the MCSL Development Team (hereinafter referred to as "the Software" or "this Software"). To protect user rights and interests, please carefully read all contents of this Agreement before using the Software. We reserve the right to update this Agreement at any time, and upon publication, the updated Agreement will supersede any previous versions.\nBy using this Software, you acknowledge that you have read and understood all terms and conditions of this Agreement and agree to be bound by them.</value>
+    <value>Welcome to MCServerLauncher by MCSLTeam.\nThank you for choosing the software and services provided by MCSLTeam (hereinafter referred to as "the Software" or "this Software"). To protect user rights and interests, please carefully read all contents of this agreement before using the software. We reserve the right to update this agreement at any time, and upon publication, the updated agreement will supersede any previous versions.\nBy using this software, you acknowledge that you have read and understood all terms and conditions of this agreement and agree to be bound by them.</value>
   </data>
   <data name="Eula2" xml:space="preserve">
     <value>Instructions for use</value>
   </data>
   <data name="Eula3" xml:space="preserve">
-    <value>Users shall provide the necessary hardware and software configurations required for this Software and its functionalities (including but not limited to creating new instances).\nUsers shall bear any costs associated with connecting to the Internet, such as telephone and broadband usage fees.\nUsers shall be solely responsible for all actions, events, and consequences arising from their use of this Software.\nAny transactions and disputes between users and unauthorized non-official individuals are not the responsibility of the developers.\nUsers must comply with the laws and regulations of the People's Republic of China (if the user is outside the People's Republic of China, they must also comply with the laws and regulations of their country or region).\nUsers may not use this Software (or any of its features) to engage in illegal activities or use any related processes and services in an unlawful manner. The developers are not liable for any consequences resulting from such behavior.\nUsers are solely responsible for the legal consequences of any information they publish. Users must not input, post, or disseminate any of the following content within this Software or any related processes and services:\n\nContent opposing the fundamental principles established by the Constitution of the People's Republic of China.\nContent endangering national security, disclosing state secrets, subverting state power, or undermining national unity.\nContent damaging the national honor and interests.\nContent inciting ethnic hatred or discrimination and disrupting ethnic unity.\nContent undermining national religious policies, promoting cults, or feudal superstitions.\nRumors that disrupt social order or undermine social stability.\nObscene, pornographic, gambling-related, violent, murderous, or terrorist content, or content inciting criminal activities.\nContent defaming others or infringing on the legal rights and interests of others.\nAny other content prohibited by the laws and administrative regulations of the People's Republic of China.\nUnless permitted by law or granted written permission by the developers, users shall not engage in any of the following behaviors:\nUsing this Software and its services in an illegal or improper manner.\nDamaging the normal operation of this Software system or website by deliberately spreading malicious software, such as computer viruses.\nEngaging in any non-normal usage of the network services that could affect this Software (including but not limited to damaging or overloading servers).\nRemoving copyright notices from this Software or its copies.\n\nIf a user engages in any unlawful or breach-of-agreement conduct, the developers reserve the right to take appropriate measures based on the severity of the violation, including but not limited to terminating service. In cases of severe violations, the matter will be referred to relevant administrative authorities for administrative penalties or criminal prosecution.</value>
+    <value>Users shall provide the necessary hardware and software configurations required for this software and its functionalities (including but not limited to creating new instances).\nUsers shall bear any costs associated with connecting to the Internet, such as telephone and broadband usage fees.\nUsers shall be solely responsible for all actions, events, and consequences arising from their use of this software.\nAny transactions and disputes between users and unauthorized non-official individuals are not the responsibility of the developers.\nUsers must comply with the laws and regulations of the PRC (if the user is outside the PRC, they must also comply with the laws and regulations of their country or region).\nUsers may not use this Software (or any of its features) to engage in illegal activities or use any related processes and services in an unlawful manner. The developers are not liable for any consequences resulting from such behavior.\nUsers are solely responsible for the legal consequences of any information they publish. Users must not input, post, or disseminate any of the following content within this Software or any related processes and services:\n\nContent opposing the fundamental principles established by the Constitution of the PRC.\nContent endangering national security, disclosing state secrets, subverting state power, or undermining national unity.\nContent damaging the national honor and interests.\nContent inciting ethnic hatred or discrimination and disrupting ethnic unity.\nContent undermining national religious policies, promoting cults, or feudal superstitions.\nRumors that disrupt social order or undermine social stability.\nObscene, pornographic, gambling-related, violent, murderous, or terrorist content, or content inciting criminal activities.\nContent defaming others or infringing on the legal rights and interests of others.\nAny other content prohibited by the laws and administrative regulations of the PRC.\nUnless permitted by law or granted written permission by the developers, users shall not engage in any of the following behaviors:\nUsing this software and its services in an illegal or improper manner.\nDamaging the normal operation of this software system or website by deliberately spreading malicious software, such as computer viruses.\nEngaging in any non-normal usage of the network services that could affect this software (including but not limited to damaging or overloading servers).\nRemoving copyright notices from this software or its copies.\n\nIf a user engages in any unlawful or breach-of-agreement conduct, the developers reserve the right to take appropriate measures based on the severity of the violation, including but not limited to terminating service. In cases of severe violations, the matter will be referred to relevant administrative authorities for administrative penalties or criminal prosecution.</value>
   </data>
   <data name="Eula4" xml:space="preserve">
     <value>Data collection and utilization</value>
   </data>
   <data name="Eula5" xml:space="preserve">
-    <value>If you agree to this User Agreement and use the online services provided by this Software, we may collect the following information:\nThe IP address of the device on which this Software is running (note that this may not always be accurate). \nCertain system information about the device on which this Software is running. \nIn the event of a software crash, with your consent, we may upload system logs (containing some system information) to help diagnose and resolve issues and improve the Software. \nOther information may be uploaded with your consent (specific details will be provided within the Software). </value>
+    <value>If you agree to this agreement and use the online services provided by this software, we may collect the following information:\nThe IP address of the device on which this software is running (note that this may not always be accurate). \nCertain system information about the device on which this software is running. \nIn the event of a software crash, with your consent, we may upload system logs (containing some system information) to help diagnose and resolve issues and improve the software. \nOther information may be uploaded with your consent (specific details will be provided within the software).</value>
   </data>
   <data name="Eula6" xml:space="preserve">
     <value>User support and feedback</value>
   </data>
   <data name="Eula7" xml:space="preserve">
-    <value>If users encounter any issues during use, they can provide feedback via official email or by submitting an Issue in the Software's source code repository. We will carefully consider user feedback to improve our services.</value>
+    <value>If users encounter any issues during use, they can provide feedback via official email or by submitting an Issue in the software's GitHub repository. We will carefully consider user feedback to improve our services.</value>
   </data>
   <data name="Eula8" xml:space="preserve">
     <value>Change or suspension of services</value>
   </data>
   <data name="Eula9" xml:space="preserve">
-    <value>1. Termination and Suspension of User Services\n\nIf a user engages in illegal activities, seriously violates social morals, or other actions prohibited by law, the developers shall terminate the provision of services to the user;\nIf a user engages in improper behavior while using the Software, the developers has the right to terminate the provision of services to the user (specific cases of improper behavior are clearly defined in this EULA);\nIf a user uses a third-party modified version of the Software, the user shall bear the risk and legal responsibility themselves.\n\n2. Interruption, Suspension, and Termination of the Software and Services\n\nIn any of the following circumstances, the developers has the right to terminate or interrupt all or part of the Software services, and the developers shall not be liable for any inconvenience or damages caused to users or third parties:\n\na. Due to the needs of the Software and services themselves;\nb. Due to damage to the server or inability to operate normally;\nc. Due to sudden hardware or software device and electronic communication equipment failures;\nd. Due to network provider line issues or other faults;\ne. Due to policy factors;\nf. Due to third-party reasons or other force majeure circumstances.\n\nThe developers reserves the right to terminate or partially terminate the Software and services when deemed necessary. The developers may notify users via announcements, but will not be liable for any losses incurred by users.</value>
+    <value>1. Termination and Suspension of User Services\n\nIf a user engages in illegal activities, seriously violates social morals, or other actions prohibited by law, the developers shall terminate the provision of services to the user;\nIf a user engages in improper behavior while using the software, the developers has the right to terminate the provision of services to the user (specific cases of improper behavior are clearly defined in this EULA);\nIf a user uses a third-party modified version of the software, the user shall bear the risk and legal responsibility themselves.\n\n2. Interruption, Suspension, and Termination of the Software and Services\n\nIn any of the following circumstances, the developers has the right to terminate or interrupt all or part of the software services, and the developers shall not be liable for any inconvenience or damages caused to users or third parties:\n\na. Due to the needs of the software and services themselves;\nb. Due to damage to the server or inability to operate normally;\nc. Due to sudden hardware or software device and electronic communication equipment failures;\nd. Due to network provider line issues or other faults;\ne. Due to policy factors;\nf. Due to third-party reasons or other force majeure circumstances.\n\nThe developers reserves the right to terminate or partially terminate the software and services when deemed necessary. The developers may notify users via announcements, but will not be liable for any losses incurred by users.</value>
   </data>
   <data name="Eula10" xml:space="preserve">
     <value>Disclaimers</value>
   </data>
   <data name="Eula11" xml:space="preserve">
-    <value>The user understands and agrees that, to the extent permitted by law, the developer makes no warranties regarding this Software. The risks arising from the use of this Software are entirely borne by the user.\n The user understands and agrees that the developer does not guarantee that this Software and services will meet the user's needs, nor does it guarantee that the service will not be interrupted, and it provides no warranties regarding the accuracy, security, or other aspects of this Software and services.\n The user understands and agrees that the developer cannot fully guarantee the accuracy, security, or legality of third-party files downloaded from the online services of this Software, nor does it take responsibility for the accuracy, security, legality, etc., of third-party services within the Software (including but not limited to resource downloads, etc.). Therefore, the aforementioned content is unrelated to the developer and this Software and does not represent the position of the developer or this Software. Relevant disputes should be borne by the third-party service provider.\n The user understands and agrees that if the Software online services or related files downloaded by this Software are used in erroneous or illegal ways, the consequences are borne by the user. If it leads to property damage, copyright, or intellectual property infringement, the developer will not be responsible and will not undertake any legal liability.\n The user understands and agrees that this Software does not provide any guarantee for third-party service content. If the use of third-party services leads to property damage, copyright, or intellectual property infringement, the developer will not be responsible and will not undertake any legal liability.\n The user understands and agrees that the developer provides no guarantees or legal support for the functionality of this Software. If the user engages in illegal activities or other improper behavior using the Software's functionality, the risks and legal consequences are entirely borne by the user.</value>
+    <value>The user understands and agrees that, to the extent permitted by law, the developer makes no warranties regarding this software. The risks arising from the use of this software are entirely borne by the user.\n The user understands and agrees that the developer does not guarantee that this software and services will meet the user's needs, nor does it guarantee that the service will not be interrupted, and it provides no warranties regarding the accuracy, security, or other aspects of this software and services.\n The user understands and agrees that the developer cannot fully guarantee the accuracy, security, or legality of third-party files downloaded from the online services of this Software, nor does it take responsibility for the accuracy, security, legality, etc., of third-party services within the software (including but not limited to resource downloads, etc.). Therefore, the aforementioned content is unrelated to the developer and this software and does not represent the position of the developer or this software. Relevant disputes should be borne by the third-party service provider.\n The user understands and agrees that if the software online services or related files downloaded by this software are used in erroneous or illegal ways, the consequences are borne by the user. If it leads to property damage, copyright, or intellectual property infringement, the developer will not be responsible and will not undertake any legal liability.\n The user understands and agrees that this software does not provide any guarantee for third-party service content. If the use of third-party services leads to property damage, copyright, or intellectual property infringement, the developer will not be responsible and will not undertake any legal liability.\n The user understands and agrees that the developer provides no guarantees or legal support for the functionality of this software. If the user engages in illegal activities or other improper behavior using the software's functionality, the risks and legal consequences are entirely borne by the user.</value>
   </data>
   <data name="Eula12" xml:space="preserve">
     <value>Intellectual property</value>
   </data>
   <data name="Eula13" xml:space="preserve">
-    <value>The copyright, patent rights, and other intellectual property rights of this Software are owned by the developer or designated copyright holders.\n\n The third-party services used by this Software are owned by the relevant copyright holders, including but not limited to:\n this Software is a server management and online gaming tool for Minecraft (the final interpretation rights belong to Microsoft and Mojang AB). Users must comply with its End User License Agreement (EULA) and the relevant policies implemented by NetEase in Mainland China, and must not use the game content for commercial purposes or engage in other activities prohibited by the EULA.\n this Software is a server management and online gaming tool for Terraria (the final interpretation rights belong to Re-Logic and its publisher). Users must comply with its End User License Agreement (EULA) and related policies. Users must not use the game content for unauthorized commercial purposes or engage in other activities prohibited by the EULA.\n Some online file resources (such as server cores, game/server mods, and plugins) provided by this Software are downloaded from official/third-party sources, and copyright is handled according to third-party platform regulations.\n Other third-party services used by this Software have their copyrights owned by the service providers.\n this Software is open-source, and users or other software developers not associated with this Software must comply with its open-source license.\n The user understands and agrees that, except for resources created by the user, all online service data provided by this Software are owned by the developer. The developer has the right to decide whether to retain all or part of the data on the server.</value>
+    <value>The copyright, patent rights, and other intellectual property rights of this software are owned by the developer or designated copyright holders.\n\n The third-party services used by this Software are owned by the relevant copyright holders, including but not limited to:\n this software is a server management and online gaming tool for Minecraft (the final interpretation rights belong to Microsoft and Mojang AB). Users must comply with its End User License Agreement (EULA) and the relevant policies implemented by NetEase in Mainland China, and must not use the game content for commercial purposes or engage in other activities prohibited by the EULA.\n This software is a server management and online gaming tool for Terraria (the final interpretation rights belong to Re-Logic and its publisher). Users must comply with its End User License Agreement (EULA) and related policies. Users must not use the game content for unauthorized commercial purposes or engage in other activities prohibited by the EULA.\n Some online file resources (such as server cores, game/server mods, and plugins) provided by this software are downloaded from official/third-party sources, and copyright is handled according to third-party platform regulations.\n Other third-party services used by this software have their copyrights owned by the service providers.\n This software is open-source, and users or other software developers not associated with this software must comply with its open-source license.\n The user understands and agrees that, except for resources created by the user, all online service data provided by this software are owned by the developer. The developer has the right to decide whether to retain all or part of the data on the server.</value>
   </data>
   <data name="Eula14" xml:space="preserve">
     <value>Change of terms</value>
   </data>
   <data name="Eula15" xml:space="preserve">
-    <value>The developer has the right to modify this EULA when necessary. If there are changes to this EULA, the developer will display the modifications on important pages. If the user does not agree with the revisions or updates to this EULA, they are able to choose to stop using the Software and services. If the user continues to use the Software and services after the EULA has been revised, it signifies the user's acceptance of all the changes or updates to the EULA. The developer will not be liable for any losses incurred by the user due to unfamiliarity with the changes after the EULA has been revised.</value>
+    <value>The developer has the right to modify this EULA when necessary. If there are changes to this EULA, the developer will display the modifications on important pages. If the user does not agree with the revisions or updates to this EULA, they are able to choose to stop using the software and services. If the user continues to use the software and services after the EULA has been revised, it signifies the user's acceptance of all the changes or updates to the EULA. The developer will not be liable for any losses incurred by the user due to unfamiliarity with the changes after the EULA has been revised.</value>
   </data>
   <data name="Eula16" xml:space="preserve">
     <value>Other terms</value>
@@ -509,34 +509,34 @@
     <value>Dark</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
-    <value>Auto accept the EULA (Minecraft : Java Edition Server Instance)</value>
+    <value>Auto Accept Minecraft's EULA (Minecraft Java Edition Server Instance)</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
-    <value>Auto agree the EULA means you comply with the Minecraft EULA and acknowledge that MCSL assumes no joint liability.</value>
+    <value>Automatically agree the EULA means you comply with the Minecraft EULA and acknowledge that MCSL assumes no joint liability.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
-    <value>Auto disable online authentication ( Minecraft : JAVA Edition Instance )</value>
+    <value>Automatically Disable Online Authentication (Minecraft Java Edition Instance)</value>
   </data>
   <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
-    <value>After enabling this option, the instances of this type will automatically disable authentication from Mojang/Microsoft, and allow offline-mode Minecraft : Java Edition clients to connect to the server.</value>
+    <value>After enabling this option, the instances of this type will automatically disable authentication from Mojang/Microsoft, and allow offline-mode Minecraft Clients to connect to the server.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
-    <value>After enabling this option, the instances of this type will automatically disable authentication from Mojang/Microsoft, and allow offline-mode Minecraft : Bedrock Edition clients to connect to the server.</value>
+    <value>After enabling this option, the instances of this type will automatically disable authentication from Mojang/Microsoft, and allow offline-mode Minecraft Clients to connect to the server.</value>
   </data>
   <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
-    <value>Automatically disable online authentication ( Minecraft : Bedrock Edition Instance )</value>
+    <value>Automatically Disable Online Authentication (Minecraft Bedrock Edition Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
-    <value>Use mirror source for installation ( Minecraft Forge Server Instance )</value>
+    <value>Use Mirror for Installation (Minecraft Forge Server Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
-    <value>Use mirror source for installation ( Minecraft NeoForge Server Instance )</value>
+    <value>Use Mirror for Installation (Minecraft NeoForge Server Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
-    <value>Use mirror source for installation ( Minecraft Fabric Server Instance )</value>
+    <value>Use Mirror for Installation (Minecraft Fabric Server Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
-    <value>Use mirror source for installation ( Minecraft Quilt Server Instance )</value>
+    <value>Use Mirror for Installation (Minecraft Quilt Server Instance)</value>
   </data>
   <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
     <value>After enabling this option, resources will be downloaded using BMCLAPI. Recommended for Chinese users.</value>
@@ -548,16 +548,16 @@
     <value>Choose the resource provider in "Resource Download" page.</value>
   </data>
   <data name="Settings_FastMirrorName" xml:space="preserve">
-    <value>FastMirror ( Provided by 物语云计算 )</value>
+    <value>FastMirror (Provided by 物语云计算)</value>
   </data>
   <data name="Settings_PolarsMirrorName" xml:space="preserve">
-    <value>PolarsMirror ( Provided by 极星网络 )</value>
+    <value>PolarsMirror (Provided by 极星网络)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File ( Provided by Z__Tsin )</value>
+    <value>ZCloud File (Provided by Z__Tsin)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL Download Source ( Provided by MSL )</value>
+    <value>MSLAPI (Provided by Minecraft-Server-Launcher)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
     <value>MCSL-Sync</value>
@@ -569,7 +569,7 @@
     <value>With sufficient computer performance, higher number of threads means faster download speed, Generally, setting it to 16 threads should be sufficient to meet the needs.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
-    <value>Handling when download failed.</value>
+    <value>Download Failures Handle Method</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
     <value>Action should perform when download failed.</value>
@@ -578,7 +578,7 @@
     <value>Instance Deletion Confirmation Method</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
-    <value>This feature can prevent instances from being deleted due to accidental operations.</value>
+    <value>This can prevent instances from being deleted due to accidental operations.</value>
   </data>
   <data name="Settings_AppTheme_Title" xml:space="preserve">
     <value>App Theme</value>
@@ -587,16 +587,16 @@
     <value>Following system changes by default, also you can set by yourself.</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
-    <value>Auto Launch (MCServerLauncher.WPF)</value>
+    <value>Launch at System Startup (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
-    <value>Auto-start this GUI-program at system startup.(May cause system-sensitive operations, please add to the whitelist of the antivirus software.)</value>
+    <value>Automatically launch this WPF app at system startup. It may cause system-sensitive operations, please add to the whitelist of the antivirus software.</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
     <value>Check Update (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
-    <value>Check Update (GUI-program)</value>
+    <value>Check update for this WPF app.</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
     <value>Check Update</value>
@@ -608,7 +608,7 @@
     <value>Auto Check Update (MCServerLauncher.WPF)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
-    <value>Check update (MCServerLauncher.Daemon)</value>
+    <value>Check Update (MCServerLauncher.Daemon)</value>
   </data>
   <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
     <value>Check update for MCSL Daemon.</value>
@@ -617,16 +617,16 @@
     <value>About MCServerLauncher Future (WPF)</value>
   </data>
   <data name="Settings_About_LegalProtected" xml:space="preserve">
-    <value>This project is protected by the Copyright Law of the People's Republic of China and international treaties. Unauthorized copying or distribution of this program (or any part thereof) will be subject to severe civil and criminal penalties and will be prosecuted to the fullest extent permitted by law</value>
+    <value>This project is protected by the Copyright Law of the People's Republic of China and international treaties. Unauthorized copying or distribution of this program (or any part thereof) will be subject to severe civil and criminal penalties, and will be prosecuted to the fullest extent permitted by law.</value>
   </data>
   <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
-    <value>This project is under GNU General Public License Version 3.0, with source code at</value>
+    <value>This project is published under GNU General Public License Version 3.0, with source code at</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
     <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
-    <value>MCServerLauncher Future uses a digital signature certificate to ensure that the program has not been counterfeited or tampered with. Serial Number: 59cbf9b5207eeabb45417d148120ac9a. If there are any differences, please do not use it and report to services@mcsl.com.cn.</value>
+    <value>MCServerLauncher Future uses a certificate to ensure that the program has not been counterfeited or tampered with. Serial Number: 59cbf9b5207eeabb45417d148120ac9a. If there are any differences, please do not use it and report to services@mcsl.com.cn.</value>
   </data>
   <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
     <value>FastMirror</value>
