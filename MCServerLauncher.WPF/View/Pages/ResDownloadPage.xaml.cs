@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.WPF.Helpers;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -29,34 +30,18 @@ namespace MCServerLauncher.WPF.View.Pages
         /// </summary>
         public async void Refresh()
         {
-            switch (BasicUtils.AppSettings.Download.DownloadSource)
+            IResDownloadProvider currentResDownloadProvider = BasicUtils.AppSettings.Download.DownloadSource switch
             {
-                case "FastMirror":
-                    CurrentResDownloadProvider.Content = FastMirror;
-                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {FastMirror.ResProviderName} 下载源 )";
-                    await FastMirror.Refresh();
-                    break;
-                case "PolarsMirror":
-                    CurrentResDownloadProvider.Content = PolarsMirror;
-                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {PolarsMirror.ResProviderName} 下载源 )";
-                    await PolarsMirror.Refresh();
-                    break;
-                case "ZCloudFile":
-                    CurrentResDownloadProvider.Content = ZCloudFile;
-                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {ZCloudFile.ResProviderName} 下载源 )";
-                    await ZCloudFile.Refresh();
-                    break;
-                case "MSLAPI":
-                    CurrentResDownloadProvider.Content = MSLAPI;
-                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MSLAPI.ResProviderName} 下载源 )";
-                    await MSLAPI.Refresh();
-                    break;
-                case "MCSLSync":
-                    CurrentResDownloadProvider.Content = MCSLSync;
-                    Subtitle.Text = $"你想要的，这里都有。 ( 当前正在使用 {MCSLSync.ResProviderName} 下载源 )";
-                    await MCSLSync.Refresh();
-                    break;
-            }
+                "FastMirror" => FastMirror,
+                "PolarsMirror" => PolarsMirror,
+                "ZCloudFile" => ZCloudFile,
+                "MSLAPI" => MSLAPI,
+                "MCSLSync" => MCSLSync,
+                _ => null
+            };
+            Subtitle.Text = $"{LanguageManager.Instance["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {LanguageManager.Instance["ResDownloadTipSuffix"]}";
+            CurrentResDownloadProvider.Content = currentResDownloadProvider;
+            await currentResDownloadProvider.Refresh();
         }
     }
 }

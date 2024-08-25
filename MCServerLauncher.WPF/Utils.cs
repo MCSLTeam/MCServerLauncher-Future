@@ -416,6 +416,7 @@ namespace MCServerLauncher.WPF.Helpers
             InitSettings();
             if (!AppSettings.App.IsCertImported) InitCert();
             if (!AppSettings.App.IsFontInstalled) InitFont();
+            LanguageManager.Instance.ChangeLanguage(new CultureInfo(AppSettings.App.Language));
         }
     }
     internal class LanguageManager : INotifyPropertyChanged
@@ -434,6 +435,7 @@ namespace MCServerLauncher.WPF.Helpers
                 {
                     throw new ArgumentNullException(nameof(name));
                 }
+                Console.WriteLine("MCServerLauncher.WPF.Resources.Language"+ typeof(LanguageManager).Assembly);
                 return _resourceManager.GetString(name)!.Replace("\\n", "\n");
             }
         }

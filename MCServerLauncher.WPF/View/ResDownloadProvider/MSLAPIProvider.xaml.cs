@@ -11,9 +11,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// <summary>
     ///    MSLAPIProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class MSLAPIProvider
+    public partial class MSLAPIProvider : IResDownloadProvider
     {
-        public readonly string ResProviderName = "MSL";
+        public string ResProviderName => "MSL";
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

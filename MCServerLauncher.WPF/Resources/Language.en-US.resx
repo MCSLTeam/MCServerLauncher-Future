@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -476,7 +476,7 @@
     <value>Running silently, tasks accomplished efficiently.</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
-    <value>你想要的，这里都有。 (当前正在使用</value>
+    <value>Whatever you want, is here to be found. (Currently using</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
     <value>Striving our utmost, answering every question.</value>
@@ -638,27 +638,27 @@
     <value>MCSL-Sync</value>
   </data>
   <data name="Announcement" xml:space="preserve">
-    <value>公告</value>
+    <value>Announcement</value>
   </data>
   <data name="AreYouSure" xml:space="preserve">
-    <value>你确定吗？</value>
+    <value>Are you sure?</value>
   </data>
   <data name="EulaDisagreeTip" xml:space="preserve">
-    <value>若您拒绝用户协议，本软件将退出。</value>
+    <value>If you refuse the EULA, the application will exit.</value>
   </data>
   <data name="FakeEulaAgreeTip" xml:space="preserve">
-    <value>请确保您已完整阅读后再点击同意。您至少要把协议滚动到底吧。</value>
+    <value>Please make sure you have read the entire agreement before clicking Agree. You should at least scroll the agreement to the bottom.</value>
   </data>
   <data name="OK" xml:space="preserve">
-    <value>好的</value>
+    <value>OK</value>
   </data>
   <data name="NotNow" xml:space="preserve">
-    <value>不是现在</value>
+    <value>Not now</value>
   </data>
   <data name="EulaAgreeTip" xml:space="preserve">
-    <value>这代表您同意本协议的所有内容。</value>
+    <value>This signifies that you have acknowledged all the contents of this agreement.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
-    <value>下载源）</value>
+    <value>Download Source)</value>
   </data>
 </root>
