@@ -623,7 +623,7 @@
     <value>Ten projekt jest chroniony na licencji GNU General Public License w wersji 3.0 o otwartym kodzie źródłowym, a kod źródłowy jest hostowany pod adresem</value>
   </data>
   <data name="PeriodSymbol" xml:space="preserve">
-    <value>。</value>
+    <value>.</value>
   </data>
   <data name="Settings_About_CertProtected" xml:space="preserve">
     <value>Podpisany cyfrowo certyfikat używany przez MCServerLauncher Future gwarantuje, że program nie może zostać zmanipulowany. Numer seryjny：59cbf9b5207eeabb45417d148120ac9a。 Jeśli jest inny, nie używaj go i przekaż services@mcsl.com.cn opinię.</value>
