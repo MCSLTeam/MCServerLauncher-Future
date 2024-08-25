@@ -98,22 +98,22 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorDialogTitle" xml:space="preserve">
-    <value>MCServerLauncher WPF 遇到错误</value>
+    <value>MCServerLauncher WPF でエラーが発生しました</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆栈已复制到剪贴板。您可直接进入 GitHub 进行反馈。</value>
+    <value>スタックがクリップボードにコピーされました。 GitHub に直接アクセスしてフィードバックを送信できます。</value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
-    <value>WPF 客户端 ( 仅 Windows )</value>
+    <value>WPF Client (Windows のみ)</value>
   </data>
   <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
-    <value>语言 / Language</value>
+    <value>言語/ Language</value>
   </data>
   <data name="FirstSetup_EulaMenu" xml:space="preserve">
-    <value>用户协议</value>
+    <value>ユーザー同意書</value>
   </data>
   <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
-    <value>连接守护进程</value>
+    <value>デーモンを接続する</value>
   </data>
   <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
     <value>开始使用</value>
@@ -554,10 +554,10 @@
     <value>极星云镜像 (由极星网络提供)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File (由开发组成员Z__Tsin提供)</value>
+    <value>ZCloud File (由开发组成员 Z__Tsin 提供)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 (由MSL开服器提供)</value>
+    <value>MSL下载源 (由 MSL 开服器提供)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
     <value>MCSL-Sync 同步镜像</value>

@@ -554,10 +554,10 @@
     <value>极星云镜像 (由极星网络提供)</value>
   </data>
   <data name="Settings_ZCloudFileName" xml:space="preserve">
-    <value>ZCloud File (由开发组成员Z__Tsin提供)</value>
+    <value>ZCloud File (由开发组成员 Z__Tsin 提供)</value>
   </data>
   <data name="Settings_MSLAPIName" xml:space="preserve">
-    <value>MSL下载源 (由MSL开服器提供)</value>
+    <value>MSL下载源 (由 MSL 开服器提供)</value>
   </data>
   <data name="Settings_MCSLSyncName" xml:space="preserve">
     <value>MCSL-Sync 同步镜像</value>
