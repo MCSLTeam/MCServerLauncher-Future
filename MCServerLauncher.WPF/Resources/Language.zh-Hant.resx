@@ -476,7 +476,7 @@
     <value>四面八方，使命必達。</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
-    <value>你想要的，這裡都有。（當前正在使用</value>
+    <value>你想要的，這裡都有。 (當前正在使用</value>
   </data>
   <data name="HelpCenterTip" xml:space="preserve">
     <value>盡其所能，答其所問。</value>
@@ -644,21 +644,24 @@
     <value>公告</value>
   </data>
   <data name="AreYouSure" xml:space="preserve">
-    <value>你確定嗎？</value>
+    <value>您確定嗎？</value>
   </data>
   <data name="EulaDisagreeTip" xml:space="preserve">
-    <value>若您拒絕用戶協議，本軟件將退出。</value>
+    <value>若您拒絕使用者協定，本軟體將退出。</value>
   </data>
   <data name="FakeEulaAgreeTip" xml:space="preserve">
-    <value>請確保您已完整閱讀後再點擊同意。您至少要把協議滾動到底吧。</value>
+    <value>請確保您已完整閱讀后再點擊同意。 您至少要把協定滾動到底吧。</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>好的</value>
   </data>
   <data name="NotNow" xml:space="preserve">
-    <value>不是現在</value>
+    <value>稍後</value>
   </data>
   <data name="EulaAgreeTip" xml:space="preserve">
-    <value>這代表您同意本協議的所有內容。</value>
+    <value>這代表您同意本協定的所有內容。</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>下載源）</value>
   </data>
 </root>

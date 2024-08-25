@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Дошло је до грешке са МЦСерверЛаунцхер ВПФ</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Стек је копиран у оставу. Можете ићи директно на ГитХуб да бисте дали повратне информације.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>ВПФ клијент (само Виндовс)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Језик</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Кориснички уговор</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Повежите демона</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Почетак рада</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Настави</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Подесите језик</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Језик</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>Мапа сајта</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Креирајте инстанцу</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Управљање инстанцама</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Преузимања ресурса</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Центар за помоћ</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Центар за обавештавање</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Страница за отклањање грешака</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Подешавања програма</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>Одзивник</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>МЦСерверЛаунцхер ВПФ не подржава дуплирање трчања.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>Брокер</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Оригиналне</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>Ииста</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Модул</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>Билтен</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Није успео да добије основни увод!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Минецрафт Бедроцк издање зип пакет</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Молимо Вас да увезете преузети пакет овде. Ако не знате где да преузмете, можете да кликнете на дугме са десне стране да скочите.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Зип пакет</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Потражи</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Минецрафт Сервер Цоре</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Молимо Вас да изаберете основне датотеке које ће се користити на серверу. Ако не знате где да преузмете, можете да кликнете на дугме са десне стране да скочите.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Основно име датотеке</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Јава рунтиме</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Јава рунтиме је потребно окружење за Минецрафт Јава сервер. Будите сигурни да изаберете одговарајућу верзију како би се спречило покретање неуспеха.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Јава пут</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Ручни избор</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Аутоматски тражи на Даемон домаћинима</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Изаберите неку од постојећих резултата</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1 .12 + захтева Јава 8\n1 .17 + захтева Јава 16\n1 .18 + захтева Јава 17\n1 .20 .5 + захтева Јава 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Имедатотеке</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Изаберите фајл/фолдер/пакет који је потребан за инстанцу. Архива подржава само ЗИП формат.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Зависности од распоређивања</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Покрените команду</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Унесите команду рун овде.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Ако је потребно да приложите параметре,\nПричврстите га директно на задњу страну.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Немојте укључивати посебне симболе или користити илегална имена.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Име инстанце</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Опционо , можете додати додатне ЈВМ параметре овде, један по линији.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Додајте параметре</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>ЈВМ параметри</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Максимална меморија</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Минимална меморија</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Ово одређује колико меморије ће ваш Минецрафт Јава сервер моћи да користи.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>ЈВМ меморија гомила</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Минимална меморија ≤ максимална меморија је довољна</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Копирајте везу</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Тајм-аут</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Откажи</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Величина фајла</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Минецрафт издање</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Гради</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Затворите</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Отворите</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Време стварања</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Тип инстанце</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>Виље</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Покретање</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Вратити</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Када завршите са следећим конфигурацијама, кликните на дугме Настави.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Молимо Вас да изаберете верзију Минецрафт-а коју ће сервер покренути.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Бацила</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Ако се не учита, покушајте поново касније.\nСЕРВИС СЛИКА ПОКРЕЋЕ БМЦЛАПИ</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Форге верзија</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>НеоФорге верзија</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Верзија тканине</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>јорган верзија</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Молимо Вас да изаберете верзију Форге утоваривача који ће сервер бити покренут.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Молимо Вас да изаберете верзију НеоФорге утоваривача који ће сервер бити покренут.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Изаберите верзију Фабриц лоадер-а који ће сервер покренути.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Молимо Вас да изаберете верзију јорган утоваривача који ће сервер бити покренут.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Приказана је само званична верзија</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Језгра сервера</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Отворите званични сајт</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Добродошли</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Прескочи за сада</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>Слаћете</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>Одбити</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Добродошли на софтвер и услуге МЦСерверЛаунцхер (у даљем тексту "Софтвер") које пружа МЦСЛ развојни тим. У циљу заштите права и интереса корисника, молимо вас да пажљиво прочитате сав садржај овог уговора пре употребе овог софтвера. Овај Уговор можемо ажурирати у било ком тренутку, а он ће ефективно заменити оригинални Кориснички уговор након што је објављен.\nМолимо Вас да пажљиво прочитате следећи садржај, када користите овај софтвер, то значи да сте прочитали и сложили се са свим садржајима овог уговора у детаље, и слажете се да се придржавате одредби овог уговора.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Мере</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Корисник ће опремити софтвер и функције софтвера (укључујући, али не ограничавајући се на стварање нових инстанци) са хардверском и софтверском конфигурацијом коју захтева корисник.\nКорисници ће бити одговорни за релевантне накнаде за кориштење телефона и широкопојасног приступа које је потребно платити након повезивања на Интернет.\nКорисник сноси законску одговорност за понашање, догађај и резултат проузрокован употребом овог софтвера.\nСве трансакције и спорови између корисника и других неовлашћених незваничних појединаца немају никакве везе са програмером.\nКорисник ће се придржавати релевантних закона и прописа Народне Републике Кине (ако је корисник корисник изван Народне Републике Кине, корисник ће се придржавати закона и прописа земље или региона којем припада).\nКорисник неће користити софтвер (или неке карактеристике и функције софтвера) да се укључе у незаконите радње, и неће користити релевантне процесе и услуге у вези са софтвером да се укључе у незаконите радње, а последице било каквих радњи неће бити у вези са програмером.\nКорисници сносе своје законске обавезе у вези са садржајем информација које објављују. Корисник неће уносити, објављивати или ширити било који од следећих садржаја у софтверу, процесима и услугама везаним за рад софтвера, и неће објављивати било који од следећих садржаја у било ком облику：\n\nсупротстављајући се основним принципима утврђеним у Уставу Народне Републике Кине;\nугрожавање националне безбедности, откривање државних тајни, подривање државне моћи или подривање националног јединства;\nнарушавање части и интереса државе;\nподстицање етничке мржње, етничке дискриминације или подривања етничког јединства;\nподривање националних верских политика, заговарање култова и феудалних сујеверја;\nширење гласина, нарушавање друштвеног поретка или подривање друштвене стабилности;\nШирење опсцености, порнографије, коцкања, насиља, убиства, терора или подстицања злочина;\nвређање или клеветање других, кршење законитих права и интереса других;\nСадржи и друге садржаје које је Народна Република Кина забрањена законима или административним прописима.\nОсим ако то није дозвољено законом или уз писмену дозволу програмера, корисници неће учествовати ни у једном од следећих радњи：\nНезаконито или неприкладно коришћење софтвера и услуга;\nОштетити нормалан рад софтверског система или веб сајта, намерно ширити компјутерске вирусе и друге деструктивне програме;\nУзмите било какво ненормално понашање коришћења које може утицати на мрежне услуге Софтвера (укључујући, али не ограничавајући се на оштећење, напад на сервер или преоптерећење сервера, итд.);\nИзбришите информације о ауторским правима на Софтверу и његовим копијама.\n\nАко корисник почини било какво понашање које крши законе и прописе или крши одредбе овог Уговора, програмер има право да предузме мере против корисника у складу са озбиљношћу ситуације, у складу са овим Уговором и законима и прописима, укључујући, али не ограничавајући се на укидање услуга. Ако су околности озбиљне, они ће бити пребачени у надлежне управне органе ради административног кажњавања или ће бити под истрагом због кривичне одговорности.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Прикупљање и коришћење података</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Ако се слажете са овим Условима коришћења и користите онлине услуге Софтвера, ми ћемо прикупити следеће информације：\nИП адреса уређаја на којем је Софтвер покренут (што можда није тачна адреса);\nНеке системске информације о опреми на којој Софтвер ради;\nКада се софтвер сруши, евиденције софтвера који ради на систему (укључујући и неке информације о систему) могу се отпремити уз сагласност корисника како би се помогло у решавању проблема и побољшању софтвера.\nОстале информације које ће бити постављене уз сагласност корисника (као што је наведено у софтверу).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Корисничка подршка и повратне информације</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Ако корисници наиђу на било какве проблеме током употребе, они могу дати повратну информацију путем званичне е-поште или подношењем проблема у овом спремишту изворног кода софтвера. Ми озбиљно схватамо наше повратне информације како бисмо побољшали наше услуге.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Промене или суспензија услуге</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1 . Суспензија и престанак корисничке услуге\n\nАко корисник објави незаконите информације, озбиљно крши друштвени морал или крши забране закона, програмер ће прекинути пружање услуга кориснику;\nАко корисник почини непрописан поступак приликом прихватања софтверске услуге, програмер има право да прекине услугу која се пружа кориснику (специфичне околности непримереног понашања су јасно прописане у овом уговору);\nАко корисник користи модификовану верзију софтвера од треће стране, корисник сноси сопствени ризик и правну одговорност.\n\n2 . Суспензија, суспензија и престанак софтвера и услуга：\n\nУ случају било које од следећих околности, програмер има право да прекине или прекине све или део услуга софтвера, а програмер неће бити одговоран кориснику или било којој трећој страни за неугодности или штету проузроковану тиме：\n\nа . у складу са захтевима Софтвера и Услуга;\nб . Неуспех да правилно функционише због оштећења сервера;\nц . Због изненадног квара софтверске и хардверске опреме и електронске комуникационе опреме;\nд . због линије мрежног провајдера или других кварова;\nЕ . због политичких разлога;\nф . Разлози треће стране или друге околности више силе.\n\nПрограмер задржава право да прекине или делимично прекине софтвер и услуге када сматра да је то потребно, а програмер може обавести корисника у облику најаве, али програмер неће бити одговоран за било какве губитке проузроковане кориснику.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>Изјава о одрицању од одговорности</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Корисник разуме и слаже се да програмер не даје никакву гаранцију за овај софтвер у мери у којој је то дозвољено законом. Коришћење овог софтвера од стране корисника је на сопствени ризик корисника.\nКорисник разуме и слаже се да Програмер не гарантује да ће Софтвер и Услуге задовољити потребе Корисника, нити гарантује да Услуге неће бити прекинуте, и не даје никакву гаранцију за исправност и сигурност Софтвера и Услуга.\nКорисник разуме и слаже се да програмер не може у потпуности гарантовати исправност, сигурност и легитимност датотека трећих страна преузетих са онлине услуга софтвера, нити је одговоран за исправност, сигурност и законитост услуга трећих страна (укључујући, али не ограничавајући се на преузимање ресурса и друге услуге) које постоје у софтверу. Стога , горе поменути садржај нема никакве везе са програмером и софтвером, и не представља став програмера и софтвера. Спорове сноси провајдер треће стране.\nКорисник разуме и слаже се да ће Корисник бити искључиво одговоран за последице проузроковане коришћењем онлајн услуга Софтвера и сродних датотека преузетих са Софтвера погрешним или незаконитим средствима, и неће бити одговоран за било какву штету на имовини, кршење ауторских права или права интелектуалне својине, итд., И неће и не може сносити никакву правну одговорност.\nКорисник разуме и слаже се да Софтвер не гарантује садржај услуга трећих страна. Програмер неће бити одговоран за било какву штету на имовини, кршење ауторских права или права интелектуалне својине проузроковано корисниковим коришћењем услуга трећих страна, и неће и не може сносити никакву правну одговорност.\nКорисник разуме и слаже се да програмер не пружа никакву гаранцију и правну подршку за функције софтвера, а ако корисник користи функције софтвера да се укључе у незаконите или друге неприкладне радње, ризике и правне последице које је проузроковао корисник сноси корисник.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>Интелектуална својина</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Ауторска права, патенти и друга права интелектуалне својине овог софтвера су у власништву програмера или одређеног власника ауторских права.\n\nУслуге трећих страна које се користе у овом софтверу су у власништву релевантних власника ауторских права, укључујући, али не ограничавајући се на:：\nОвај софтвер је алат за управљање сервером и онлине игре за Минецрафт (коначна интерпретација која је у власништву Мицрософт Цорпоратион и Мојанг АБ). Корисници ће се придржавати свог Уговора о лиценцирању крајњег корисника (ЕУЛА) и релевантних политика које спроводи НетЕасе у кинеском копну, и неће користити садржај игре у комерцијалне сврхе или обављати друге радње забрањене Уговором о лиценцирању крајњег корисника.\nСофтвер је алат за управљање сервером и повезивање игара Террариа, чије крајње тумачење почива на Ре-Логиц-у и његовим издавачима. Корисници су одговорни за поштовање њиховог Уговора о лиценцирању крајњег корисника (ЕУЛА) и сродних политика. Корисници неће користити садржај игре у нелиценциране комерцијалне сврхе или обављати друге радње забрањене уговором о лиценцирању крајњег корисника.\nНеке од онлине ресурса датотека (језгро сервера, модули за игру / сервер, додаци, итд.) Услуге преузимања које пружа овај софтвер обезбеђује одговарајућа званична / трећа страна, итд., А ауторска права ће се обрађивати у складу са одредбама платформе треће стране.\nАуторска права других услуга трећих страна које се користе у овом софтверу припадају провајдеру.\nОвај софтвер је софтвер отвореног кода, а корисници или други програмери који нису део овог софтвера морају се придржавати уговора о отвореном изворном коду овог софтвера.\nКорисник разуме и слаже се да, осим ресурса које је створио Корисник, сви подаци о онлајн услугама које пружа Софтвер су у власништву Програмера. Програмер има право да одлучи да ли ће задржати или не да задржи све или део података на серверу.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Измене услова</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Програмер има право да измени овај Уговор када је то потребно. Када дође до промене овог Уговора, програмер ће приказати модификовани садржај на важној страници. Ако се корисник не слаже са ревизијом или ажурирањем овог уговора, он или она може преузети иницијативу да престане да користи софтвер и услуге. Ако корисник настави да користи софтвер и услуге након ревизије овог уговора, то значи да се корисник слаже са свим изменама и допунама или ажурирањима овог уговора. Ако корисник није упознат са променама након ревизије овог уговора, програмер неће бити одговоран за било какве губитке.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Разно</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Овај Уговор ће бити регулисан законом Народне Републике Кине, без обзира на све одредбе о сукобу закона;\nНеуспех Програмера да оствари, не оствари благовремено или у потпуности оствари права која уживају по овом Уговору или у складу са законом неће се сматрати одрицањем од остваривања таквих права, нити ће утицати на остваривање таквих права Програмера у будућности;\nУ мери у којој је то дозвољено законом, Програмер има право да тумачи услове овог Уговора;\nКорисници могу да се жале и пријаве све врсте кршења закона и прописа путем е-маила, молимо вас да пошаљете е-маил на сервицес@мцсл.цом.цн.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Раздвојивост услова</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Ако се било која одредба овог Уговора сматра неважећом или неприменљивом, преостале одредбе остају на снази и ефекту.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Молимо Вас да изаберете метод који желите да радите：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Универзални Минецрафт Јава Едитион сервери</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Минецрафт Форге сервери</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Минецрафт НеоФорге сервери</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Минецрафт Фабриц сервери</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Минецрафт јорган сервери</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Минецрафт Бедроцк Едитион сервери</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Минецрафт Гејзир интероперабилност Самостална</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Минецрафт БунгееЦорд група страна</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Минецрафт Ватерфалл група страна</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Минецрафт Брзина Група страна</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Минецрафт Травертин група страна</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>ФРП клијентски програм (ФРПЦ)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Террариа Гаме Сервери</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Остали конзолни програми</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Увезите постојећу инстанцу</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Ново путовање, ново искуство.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Очистите велику слику да бисте видели свет.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>У свим правцима, мисија мора бити остварена.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Само реците, има овде. (Тренутно у употреби.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Дајте све од себе да одговорите на њихова питања.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Ваш МЦСЛ, ваш избор.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Зауставите преузимање директно</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Поновите преузимање 1 пут</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Поновите преузимање 3 пута</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Унесите име инстанце за валидацију</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Даемон кључ валидација</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Пратите систем</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>Светло</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Мраино</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>Аутоматска сагласност ЕУЛА (Минецрафт Јава Едитион Сервер Инстанце)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Аутоматским слагањем, обавезани сте Уговором о лиценцирању крајњег корисника Минецрафт и слажете се да МЦСЛ није солидарно одговоран.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Аутоматски онемогућите верификацију аутентичности (Минецрафт Јава Едитион инстанца сервера)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Када је ова опција омогућена, такви случајеви ће аутоматски онемогућити аутентификацију од Мојанг / Мицрософт, омогућавајући не-оригиналним Минецрафт Јава Едитион клијентима да се повежу са сервером.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Када је ова опција омогућена, такви случајеви ће аутоматски онемогућити аутентификацију од Мојанг / Мицрософт, омогућавајући не-оригиналним Минецрафт Бедроцк Едитион клијентима да се повежу са сервером.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Аутоматски онемогућите верификацију аутентичности (Минецрафт Бедроцк Едитион инстанца сервера)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Развијте са извором слике (Минецрафт Форге инстанца сервера)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Развијте са извором слике (Минецрафт НеоФорге Сервер Инстанце)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Развијте са извором слике (инстанца сервера Минецрафт Фабриц)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Развијте са извором огледала (Минецрафт Куилт инстанца сервера)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Након омогућавања, БМЦЛАПИ ће се користити за преузимање ресурса, што се препоручује кинеским корисницима.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Преузмите извор</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Изаберите провајдера за преузимање који ће се користити на страници Преузимања ресурса.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>ФастМиррор (обезбеђује Моногатари Цлоуд Цомпутинг)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Полестар Цлоуд Имаге (Љубазношћу Полестар Нетворк)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ЗЦлоуд Филе (обезбеђује З__Тсин члан развојног тима)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>МСЛ Довнлоад Соурце (обезбеђује МСЛ Сервер Буилдер)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>МЦСЛ -Синц синхроно зрцаљење</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Број тема мотора за преузимање</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>У случају довољних перформанси рачунара, што је већи број тема, то је бржа теоретска брзина преузимања датотеке. Генерално , довољно је подешавање од 16 нити.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Како се носити са грешкама у преузимању</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Шта урадити ако преузимање датотеке не успе.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Потврдите начин брисања инстанце</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Ова функција спречава да се инстанце избришу због погрешног рада.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Примените тему</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Подразумевано прати промене система, наравно, можете га и сами подесити.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Ауто -старт (МЦСерверЛаунцхер.ВПФ)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Када се систем покрене, графички програм се аутоматски покреће. Када је омогућено, осетљиве операције могу бити додирнуте на систему, па их дозволите у антивирусном софтверу.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Проверите ажурирања (МЦСерверЛаунцхер.ВПФ)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Проверите ажурирања овог графичког програма.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Проверите ажурирања</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Проверите ажурирања овог графичког програма при сваком покретању.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Аутоматски проверите ажурирања (МЦСерверЛаунцхер.ВПФ)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Проверите ажурирања (МЦСерверЛаунцхер.Даемон)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Проверите ажурирања демона.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>О МЦСерверЛаунцхер Футуре (ВПФ)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Овај пројекат је заштићен Законом о ауторским правима Народне Републике Кине и међународним уговорима, а неовлашћено умножавање или дистрибуција Програма или било ког његовог дела подлеже строгим грађанским и кривичним санкцијама и кривичном гоњењу у највећој могућој мери дозвољеној законом.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Овај пројекат је заштићен ГНУ-овом општом јавном лиценцом отвореног кода верзије 3.0, а изворни код се налази на адреси</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Дигитално потписани сертификат који користи МЦСерверЛаунцхер Футуре гарантује да се програм не може мијењати. Серијски број：59CBF9B5207EEABB45417D148120AC9A。 Ако је другачија, немојте је користити и дати повратне информације сервицес@мцсл.цом.цн.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Бескрајно зрцаљење</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Слика поларне маглине</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>МЦСЛ -Синц синхроно зрцаљење</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>Објаву</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Јеси сигуран?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Ако одбијете Кориснички уговор, Софтвер ће бити повучен.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Уверите се да сте све прочитали пре него што кликнете на Слажем се. У најмању руку, требало би да котрљате протокол до краја.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Добро</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Не сад</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>То значи да се слажете са свим садржајем овог Уговора.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Довнлоад извор)</value>
+  </data>
 </root>

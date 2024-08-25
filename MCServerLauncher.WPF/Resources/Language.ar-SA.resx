@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>تمت مصادفة خطأ مع MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>تم نسخ المكدس إلى الحافظة. يمكنك الانتقال مباشرة إلى GitHub لتقديم ملاحظات.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>عميل WPF (ويندوز فقط)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>اللغة</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>اتفاقية المستخدم</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>قم بتوصيل البرنامج الخفي</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>بدء الاستخدام</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>استمر</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> تعيين اللغة</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> اللغة</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>صفحة رئيسية</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>إنشاء مثيل</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>إدارة المثيلات</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>تنزيلات الموارد</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>مركز المساعدة</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>مركز الإشعارات</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>صفحة التصحيح</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>إعدادات البرنامج</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>فوري</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>لا يدعم MCServerLauncher WPF عمليات التشغيل المكررة.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>سمسار</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>اللغة الأصلية</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>نقي</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>الوحده النمطيه</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>حجر الاساس</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>فشل في الحصول على المقدمة الأساسية!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>ماينكرافت بيدروك الطبعة ملف مضغوط</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>يرجى استيراد الحزمة التي تم تنزيلها هنا. إذا كنت لا تعرف مكان التنزيل ، فيمكنك النقر فوق الزر الموجود على اليمين للقفز.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>حزمة الرمز البريدي</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>تصفح</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>ماين كرافت سيرفر كور</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>يرجى تحديد الملفات الأساسية التي سيتم استخدامها من قبل الخادم. إذا كنت لا تعرف مكان التنزيل ، فيمكنك النقر فوق الزر الموجود على اليمين للقفز.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>اسم الملف الأساسي</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>وقت تشغيل جافا</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>وقت تشغيل Java هو بيئة مطلوبة لخادم Minecraft Java. تأكد من اختيار الإصدار المناسب لمنع فشل بدء التشغيل.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>مسار جافا</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>الاختيار اليدوي</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>البحث تلقائيا على المضيفين الخفي</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>اختر من النتائج الحالية</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ يتطلب جافا 8\n1.17+ يتطلب جافا 16\n1.18+ يتطلب جافا 17\n1.20.5+ يتطلب جافا 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>اسم الملف</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>حدد الملف / المجلد / الحزمة المطلوبة للمثيل. يدعم الأرشيف تنسيق ZIP فقط.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>تبعيات النشر</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>قم بتشغيل الأمر</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>أدخل أمر التشغيل هنا.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>إذا كنت بحاجة إلى إرفاق المعلمات ،\nنعلقه مباشرة على الظهر.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>لا تقم بتضمين رموز خاصة أو استخدام أسماء غير قانونية.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>اسم المثيل</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>اختياريا ، يمكنك إضافة معلمات JVM إضافية هنا ، واحدة لكل سطر.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>إضافة معلمات</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>معلمات JVM</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>الحد الأقصى للذاكرة</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>الحد الأدنى للذاكرة</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>يحدد هذا مقدار الذاكرة التي سيتمكن خادم Minecraft Java من استخدامها.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>كومة ذاكرة JVM</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>الحد الأدنى للذاكرة ≤ الحد الأقصى للذاكرة كاف</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>انسخ الرابط</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>مهلة</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>إلغاء الأمر</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>حجم الملف</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>ماين كرافت الطبعة</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>يبني</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>غلق</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>مفتوح</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>وقت الخلق</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>نوع المثيل</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>أكثر</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>بادر</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>أعاد</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>عند الانتهاء من التكوينات التالية، انقر فوق متابعة.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>يرجى تحديد إصدار Minecraft الذي سيتم تشغيل الخادم عليه.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>إذا لم يتم تحميله ، فحاول مرة أخرى لاحقا.\nيتم تشغيل خدمة الصور بواسطة BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>نسخة تزوير</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>نسخة نيوفورج</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>نسخة النسيج</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>نسخة لحاف</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>يرجى تحديد إصدار أداة تحميل Forge التي سيتم تشغيل الخادم عليها.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>يرجى تحديد إصدار محمل NeoForge الذي سيتم تشغيل الخادم عليه.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>حدد إصدار محمل Fabric الذي سيتم تشغيل الخادم.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>يرجى تحديد إصدار محمل اللحاف الذي سيتم تشغيل الخادم عليه.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>يتم عرض النسخة الرسمية فقط</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>نوى الخادم</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>افتح الموقع الرسمي</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>أهلًا وسهلًا</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>تخطي الآن</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>اصطلح</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>رفض</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>مرحبا بكم في برامج وخدمات MCServerLauncher (المشار إليها فيما يلي باسم "البرنامج") التي يقدمها فريق تطوير MCSL. من أجل حماية حقوق ومصالح المستخدمين ، يرجى قراءة جميع محتويات هذه الاتفاقية بعناية قبل استخدام هذا البرنامج. يجوز لنا تحديث هذه الاتفاقية في أي وقت ، وستحل محل اتفاقية المستخدم الأصلية بشكل فعال بمجرد نشرها.\nيرجى قراءة المحتوى التالي بعناية ، عند استخدام هذا البرنامج ، فهذا يعني أنك قد قرأت ووافقت على جميع محتويات هذه الاتفاقية بالتفصيل ، وتوافق على الالتزام بأحكام هذه الاتفاقية.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>الاحتياطات</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>يجب على المستخدم تجهيز البرنامج ووظائف البرنامج (بما في ذلك على سبيل المثال لا الحصر إنشاء مثيلات جديدة) بتكوين الأجهزة والبرامج المطلوبة من قبل المستخدم.\nيكون المستخدمون مسؤولين عن رسوم استخدام الهاتف والنطاق العريض ذات الصلة التي يجب دفعها بعد الاتصال بالإنترنت.\nيتحمل المستخدم المسؤولية القانونية عن السلوك والحدث والنتيجة الناتجة عن استخدام هذا البرنامج.\nأي معاملات ونزاعات بين المستخدمين وغيرهم من الأفراد غير الرسميين غير المصرح لهم لا علاقة لها بالمطور.\nيجب على المستخدم الامتثال للقوانين واللوائح ذات الصلة لجمهورية الصين الشعبية (إذا كان المستخدم مستخدما خارج جمهورية الصين الشعبية ، فيجب على المستخدم أيضا الامتثال لقوانين وأنظمة البلد أو المنطقة التي ينتمي إليها).\nلا يجوز للمستخدم استخدام البرنامج (أو بعض ميزات ووظائف البرنامج) للانخراط في أعمال غير قانونية ، ولا يجوز له استخدام العمليات والخدمات ذات الصلة المرتبطة بالبرنامج للانخراط في أعمال غير قانونية ، ولن تكون عواقب أي إجراءات مرتبطة بالمطور.\nيتحمل المستخدمون مسؤولياتهم القانونية المتعلقة بمحتوى المعلومات التي ينشرونها. لا يجوز للمستخدم إدخال أو نشر أو توزيع أي من المحتويات التالية في البرنامج والعمليات والخدمات المتعلقة بتشغيل البرنامج ، ولا يجوز له نشر أي من المحتويات التالية بأي شكل من الأشكال：\n\nمعارضة المبادئ الأساسية المنصوص عليها في دستور جمهورية الصين الشعبية؛\nتعريض الأمن القومي للخطر، أو إفشاء أسرار الدولة، أو تقويض سلطة الدولة، أو تقويض الوحدة الوطنية؛\nالإضرار بشرف الدولة ومصالحها؛\nالتحريض على الكراهية العرقية أو التمييز العرقي أو تقويض الوحدة العرقية؛\nتقويض السياسات الدينية الوطنية ، والدعوة إلى الطوائف والخرافات الإقطاعية ؛\nنشر الشائعات أو تعطيل النظام الاجتماعي أو تقويض الاستقرار الاجتماعي ؛\nنشر الفحش أو المواد الإباحية أو القمار أو العنف أو القتل أو الإرهاب أو التحريض على الجرائم؛\nإهانة الآخرين أو التشهير بهم، والتعدي على الحقوق والمصالح المشروعة للآخرين؛\nيحتوي على محتوى آخر تحظره جمهورية الصين الشعبية بموجب القوانين أو اللوائح الإدارية.\nما لم يسمح القانون بذلك أو بإذن كتابي من المطور ، لا يجوز للمستخدمين المشاركة في أي من الأفعال التالية：\nالاستخدام غير القانوني أو غير المناسب للبرامج والخدمات؛\nإتلاف التشغيل العادي لنظام البرنامج أو موقع الويب ، ونشر فيروسات الكمبيوتر والبرامج المدمرة الأخرى عمدا ؛\nاتخاذ أي سلوك استخدام غير طبيعي قد يؤثر على خدمات الشبكة الخاصة بالبرنامج (بما في ذلك على سبيل المثال لا الحصر إتلاف الخادم أو مهاجمته أو التحميل الزائد على الخادم ، وما إلى ذلك) ؛\nحذف معلومات حقوق النشر الموجودة على البرنامج ونسخه.\n\nإذا ارتكب المستخدم أي سلوك يخالف القوانين واللوائح أو ينتهك أحكام هذه الاتفاقية ، يحق للمطور اتخاذ إجراءات ضد المستخدم وفقا لخطورة الموقف ، وفقا لهذه الاتفاقية والقوانين واللوائح ، بما في ذلك على سبيل المثال لا الحصر إنهاء الخدمات. وإذا كانت الظروف خطيرة، ينقلون إلى الأجهزة الإدارية ذات الصلة لفرض عقوبات إدارية عليهم أو التحقيق معهم بشأن المسؤولية الجنائية.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>جمع البيانات واستخدامها</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>إذا وافقت على شروط الاستخدام هذه واستخدمت خدمات البرنامج عبر الإنترنت ، فسنجمع المعلومات التالية：\nعنوان IP للجهاز الذي يعمل عليه البرنامج (والذي قد لا يكون العنوان الصحيح)؛\nبعض معلومات النظام الخاصة بالمعدات التي يعمل عليها البرنامج؛\nعند تعطل البرنامج، قد يتم تحميل سجلات البرنامج الذي يعمل على النظام (بما في ذلك بعض معلومات النظام) بموافقة المستخدم للمساعدة في حل المشكلة وتحسين البرنامج.\nالمعلومات الأخرى التي سيتم تحميلها بموافقة المستخدم (كما هو محدد في البرنامج).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>دعم المستخدم وردود الفعل</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>إذا واجه المستخدمون أي مشاكل أثناء الاستخدام ، فيمكنهم تقديم ملاحظات من خلال البريد الإلكتروني الرسمي أو عن طريق إرسال مشكلة في مستودع شفرة مصدر البرنامج هذا. نحن نأخذ ملاحظاتنا على محمل الجد لتحسين خدماتنا.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>تغيير أو تعليق الخدمة</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. تعليق وإنهاء خدمة المستخدم\n\nإذا نشر المستخدم معلومات غير قانونية ، أو انتهك بشكل خطير الأخلاق الاجتماعية ، أو انتهك محظورات القانون ، فيجب على المطور إنهاء تقديم الخدمات للمستخدم ؛\nإذا ارتكب المستخدم فعلا غير لائق عند قبول خدمة البرنامج ، يحق للمطور إنهاء الخدمة المقدمة للمستخدم (الظروف المحددة للسلوك غير السليم منصوص عليها بوضوح في هذه الاتفاقية) ؛\nإذا استخدم المستخدم نسخة معدلة من البرنامج من طرف ثالث ، يتحمل المستخدم مسؤوليته القانونية ومسؤوليته القانونية.\n\n2. تعليق وتعليق وإنهاء البرامج والخدمات：\n\nفي حالة حدوث أي من الحالات التالية ، يحق للمطور إنهاء أو مقاطعة كل أو جزء من خدمات البرنامج ، ولن يكون المطور مسؤولا تجاه المستخدم أو أي طرف ثالث عن الإزعاج أو الضرر الناجم عن ذلك：\n\nأ. كما هو مطلوب بموجب البرامج والخدمات؛\nب. الفشل في العمل بشكل صحيح بسبب تلف الخادم ؛\nج. بسبب الفشل المفاجئ في معدات البرامج والأجهزة ومعدات الاتصالات الإلكترونية ؛\nد. بسبب خط مزود الشبكة أو أعطال أخرى ؛\n(ه) لاعتبارات تتعلق بالسياسات؛\nو. أسباب الطرف الثالث أو ظروف القوة القاهرة الأخرى.\n\nيحتفظ المطور بالحق في إنهاء البرامج والخدمات أو إنهائها جزئيا عندما يرى ذلك ضروريا ، ويجوز للمطور إخطار المستخدم في شكل إعلان ، ولكن لن يكون المطور مسؤولا عن أي خسائر تلحق بالمستخدم.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>اخلاء المسؤوليه</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>يدرك المستخدم ويوافق على أن المطور لا يقدم أي ضمان لهذا البرنامج إلى الحد الذي يسمح به القانون. استخدام هذا البرنامج من قبل المستخدم هو على مسؤولية المستخدم الخاصة.\nيدرك المستخدم ويوافق على أن المطور لا يضمن أن البرامج والخدمات ستلبي احتياجات المستخدم ، ولا يضمن عدم انقطاع الخدمات ، ولا يقدم أي ضمان لصحة وأمن البرامج والخدمات.\nيدرك المستخدم ويوافق على أن المطور لا يمكنه ضمان صحة وأمان وشرعية ملفات الجهات الخارجية التي تم تنزيلها من خدمات البرنامج عبر الإنترنت ، كما أنه ليس مسؤولا عن صحة وأمان وقانونية خدمات الجهات الخارجية (بما في ذلك على سبيل المثال لا الحصر تنزيل الموارد والخدمات الأخرى) الموجودة في البرنامج. لذلك ، فإن المحتوى المذكور أعلاه لا علاقة له بالمطور والبرنامج ، ولا يمثل موقف المطور والبرنامج. يتحمل مزود الخدمة الخارجي النزاعات.\nيدرك المستخدم ويوافق على أن المستخدم سيكون المسؤول الوحيد عن العواقب الناجمة عن استخدام الخدمات عبر الإنترنت للبرنامج والملفات ذات الصلة التي تم تنزيلها من البرنامج بوسائل غير صحيحة أو غير قانونية ، ولن يكون مسؤولا عن أي ضرر يلحق بالممتلكات أو انتهاك حقوق الطبع والنشر أو حقوق الملكية الفكرية ، وما إلى ذلك ، ولن يتحمل ولا يمكنه تحمل أي مسؤولية قانونية.\nيدرك المستخدم ويوافق على أن البرنامج لا يضمن محتوى خدمات الجهات الخارجية. لن يكون المطور مسؤولا عن أي ضرر يلحق بالممتلكات أو انتهاك حقوق الطبع والنشر أو حقوق الملكية الفكرية بسبب استخدام المستخدم لخدمات الطرف الثالث ، ولن يتحمل ولا يمكنه تحمل أي مسؤولية قانونية.\nيدرك المستخدم ويوافق على أن المطور لا يقدم أي ضمان ودعم قانوني لوظائف البرنامج ، وإذا استخدم المستخدم وظائف البرنامج للانخراط في أعمال غير قانونية أو غيرها من الأعمال غير السليمة ، يتحمل المستخدم المخاطر والعواقب القانونية التي يسببها المستخدم.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>الملكية الفكرية</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>حقوق الطبع والنشر وبراءات الاختراع وحقوق الملكية الفكرية الأخرى لهذا البرنامج مملوكة للمطور أو مالك حقوق الطبع والنشر المعين.\n\nخدمات الجهات الخارجية المستخدمة في هذا البرنامج مملوكة لأصحاب حقوق الطبع والنشر المعنيين، بما في ذلك على سبيل المثال لا الحصر:：\nهذا البرنامج عبارة عن أداة لإدارة الخادم والألعاب عبر الإنترنت ل Minecraft (التفسير النهائي مملوك لشركة Microsoft Corporation و Mojang AB). يجب على المستخدمين الامتثال لاتفاقية ترخيص المستخدم النهائي (EULA) والسياسات ذات الصلة التي تنفذها NetEase في بر الصين الرئيسي، ولا يجوز لهم استخدام محتوى اللعبة لأغراض تجارية أو القيام بأعمال أخرى محظورة بموجب اتفاقية ترخيص المستخدم النهائي.\nالبرنامج هو أداة إدارة الخادم واتصال الألعاب من Terraria ، والتفسير النهائي الذي يقع على عاتق Re-Logic وناشريها. يتحمل المستخدمون مسؤولية الامتثال لاتفاقية ترخيص المستخدم النهائي (EULA) والسياسات ذات الصلة. لا يجوز للمستخدمين استخدام محتوى اللعبة لأغراض تجارية غير مرخصة أو القيام بأعمال أخرى محظورة بموجب اتفاقية ترخيص المستخدم النهائي.\nيتم توفير بعض موارد الملفات عبر الإنترنت (نواة الخادم ، ووحدات الألعاب / الخادم ، والمكونات الإضافية ، وما إلى ذلك) التي يوفرها هذا البرنامج من قبل المسؤول / الطرف الثالث المقابل ، وما إلى ذلك ، ويجب التعامل مع حقوق الطبع والنشر وفقا لأحكام منصة الطرف الثالث.\nحقوق الطبع والنشر لخدمات الجهات الخارجية الأخرى المستخدمة في هذا البرنامج تنتمي إلى مزود الخدمة.\nهذا البرنامج هو برنامج مفتوح المصدر ، ويجب على المستخدمين أو مطوري البرامج الآخرين الذين ليسوا جزءا من هذا البرنامج الالتزام باتفاقية المصدر المفتوح لهذا البرنامج.\nيدرك المستخدم ويوافق على أنه ، باستثناء الموارد التي أنشأها المستخدم ، فإن جميع بيانات الخدمة عبر الإنترنت التي يوفرها البرنامج مملوكة للمطور. يحق للمطور أن يقرر ما إذا كان سيحتفظ أو لا يحتفظ بكل أو جزء من البيانات الموجودة على الخادم.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>التغييرات في الشروط</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>يحق للمطور تعديل هذه الاتفاقية عند الضرورة. بمجرد إجراء تغيير على هذه الاتفاقية ، سيعرض المطور المحتوى المعدل على الصفحة المهمة. إذا لم يوافق المستخدم على مراجعة أو تحديث هذه الاتفاقية ، فيجوز له / لها المبادرة بالتوقف عن استخدام البرامج والخدمات. إذا استمر المستخدم في استخدام البرامج والخدمات بعد مراجعة هذه الاتفاقية ، فهذا يعني أن المستخدم يوافق على جميع التعديلات أو التحديثات التي تم إجراؤها على هذه الاتفاقية. إذا لم يكن المستخدم على دراية بالتغييرات بعد مراجعة هذه الاتفاقية ، فلن يكون المطور مسؤولا عن أي خسائر.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>متنوعه</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>تخضع هذه الاتفاقية لقانون جمهورية الصين الشعبية ، بغض النظر عن جميع أحكام تعارض القانون ؛\nلا يعتبر فشل المطور في ممارسة الحقوق التي يتمتع بها بموجب هذه الاتفاقية أو وفقا للقانون أو فشله في ممارستها في الوقت المناسب أو ممارستها بالكامل تنازلا عن ممارسة هذه الحقوق ، ولا يؤثر على ممارسة المطور لهذه الحقوق في المستقبل ؛\nإلى الحد الذي يسمح به القانون، يحق للمطور تفسير شروط هذه الاتفاقية؛\nيمكن للمستخدمين تقديم شكوى والإبلاغ عن جميع أنواع انتهاكات القوانين واللوائح عن طريق البريد الإلكتروني ، يرجى إرسال البريد الإلكتروني إلى services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>قابلية الفصل بين الشروط</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>إذا تم اعتبار أي حكم من أحكام هذه الاتفاقية غير صالح أو غير قابل للتنفيذ ، فستظل الأحكام المتبقية سارية المفعول والتأثير الكامل.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>يرجى تحديد الطريقة التي تريد تشغيلها：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>خوادم ماين كرافت الطبعة جافا العالمية</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>خوادم ماين كرافت فورج</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>خوادم ماين كرافت نيوفورج</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>خوادم ماين كرافت فابريك</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>خوادم ماين كرافت لحاف</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>خوادم ماين كرافت بيدروك إيديشن</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>ماين كرافت السخان التشغيل البيني مستقل</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>ماين كرافت بنجي كورد جانب المجموعة</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>جانب مجموعة شلال ماين كرافت</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>ماين كرافت سرعة المجموعة الجانب</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>ماين كرافت الترافرتين جانب المجموعة</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>برنامج عميل FRP (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>خوادم ألعاب تيراريا</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>برامج وحدة التحكم الأخرى</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>استيراد مثيل موجود</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>رحلة جديدة، تجربة جديدة.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>اكتسح الصورة الكبيرة لرؤية العالم.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>في جميع الاتجاهات ، يجب تحقيق المهمة.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>سمها ما شئت ، لقد وصلت إلى هنا. (قيد الاستخدام حاليا.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>ابذل قصارى جهدك للإجابة على أسئلتهم.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>MCSL الخاص بك ، اختيارك.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>أوقف التنزيل مباشرة</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>أعد محاولة التنزيل 1 مرة</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>أعد محاولة التنزيل 3 مرات</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>أدخل اسم المثيل للتحقق من صحته</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>التحقق من صحة المفتاح الخفي</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>اتبع النظام</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>ضوء</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>داكن</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>الموافقة التلقائية EULA (مثيل خادم إصدار جافا من Minecraft)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>بالموافقة التلقائية ، فأنت ملزم باتفاقية ترخيص المستخدم النهائي ل Minecraft وتوافق على أن MCSL ليست مسؤولة بشكل مشترك وفردي.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>تعطيل التحقق من الأصالة تلقائيا (مثيل خادم Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>عند تمكين هذا الخيار ، ستقوم هذه الحالات تلقائيا بتعطيل المصادقة من Mojang / Microsoft ، مما يسمح لعملاء Minecraft Java Edition غير الأصليين بالاتصال بالخادم.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>عند تمكين هذا الخيار ، ستقوم هذه الحالات تلقائيا بتعطيل المصادقة من Mojang / Microsoft ، مما يسمح لعملاء Minecraft Bedrock Edition غير الأصليين بالاتصال بالخادم.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>تعطيل التحقق من المصادقة تلقائيا (مثيل خادم Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>النشر باستخدام مصدر صورة (مثيل خادم Minecraft Forge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>النشر باستخدام مصدر صورة (مثيل خادم NeoForge Minecraft)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>النشر باستخدام مصدر صورة (مثيل خادم Minecraft Fabric)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>النشر باستخدام مصدر مرآة (مثيل خادم Minecraft Quilt)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>بعد التمكين ، سيتم استخدام BMCLAPI لتنزيل الموارد ، وهو أمر موصى به للمستخدمين الصينيين.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>تنزيل المصدر</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>حدد موفر التنزيل لاستخدامه في صفحة تنزيلات الموارد.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (مقدمة من Monogatari الحوسبة السحابية)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>صورة سحابة بولستار (بإذن من شبكة بولستار)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ملف ZCloud (مقدم من Z__Tsin عضو في فريق التطوير)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>مصدر تنزيل MSL (مقدم من منشئ خادم MSL)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>MCSL-Sync النسخ المتزامن</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>عدد مؤشرات ترابط محرك التنزيل</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>في حالة الأداء الكافي للكمبيوتر ، كلما زاد عدد مؤشرات الترابط ، زادت سرعة التنزيل النظرية للملف. بشكل عام ، يكفي إعداد 16 خيطا.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>كيفية التعامل مع فشل التنزيل</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>ماذا تفعل إذا فشل تنزيل الملف.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>تأكيد طريقة حذف مثيل</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>تمنع هذه الميزة حذف المثيلات بسبب سوء التشغيل.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>تطبيق نسق</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>يتبع الإعداد الافتراضي تغييرات النظام ، بالطبع ، يمكنك أيضا تعيينه بنفسك.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>بدء التشغيل التلقائي (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>عند بدء تشغيل النظام ، يتم تشغيل البرنامج الرسومي تلقائيا. عند التمكين ، قد يتم لمس العمليات الحساسة على النظام ، لذا يرجى السماح بها في برنامج مكافحة الفيروسات الخاص بك.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>التحقق من وجود تحديثات (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>تحقق من وجود تحديثات لهذا البرنامج الرسومي.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>التحقق من وجود تحديثات</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>تحقق من وجود تحديثات لهذا البرنامج الرسومي عند كل بدء تشغيل.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>التحقق تلقائيا من وجود تحديثات (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>التحقق من وجود تحديثات (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>تحقق من وجود تحديثات للبرنامج الخفي.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>حول MCServerLauncher المستقبل (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>هذا المشروع محمي بموجب قانون حقوق الطبع والنشر لجمهورية الصين الشعبية والمعاهدات الدولية ، ويخضع الاستنساخ أو التوزيع غير المصرح به للبرنامج أو أي جزء منه لعقوبات مدنية وجنائية شديدة ومقاضاة إلى أقصى حد يسمح به القانون.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>هذا المشروع محمي بموجب رخصة جنو العمومية مفتوحة المصدر الإصدار 3.0 ويتم استضافة شفرة المصدر في</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>تضمن الشهادة الموقعة رقميا التي يستخدمها MCServerLauncher Future عدم إمكانية العبث بالبرنامج. الرقم التسلسلي：59CBF9B5207EEABB45417D148120AC9A。 إذا كان مختلفا ، فلا تستخدمه وقدم ملاحظات services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>انعكاس لانهائي</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>صورة السديم القطبي</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync النسخ المتزامن</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>إعلان</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>هل أنت متأكد؟</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>إذا رفضت اتفاقية المستخدم ، سحب البرنامج.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>تأكد من قراءة كل شيء قبل النقر فوق موافق. على الأقل ، يجب عليك لف البروتوكول حتى النهاية.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>جيد</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>ليس الآن</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>هذا يعني أنك توافق على جميع محتويات هذه الاتفاقية.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>مصدر التحميل)</value>
+  </data>
 </root>

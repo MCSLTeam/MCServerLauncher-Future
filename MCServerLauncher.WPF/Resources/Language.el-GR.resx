@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Παρουσιάστηκε σφάλμα με το MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Η στοίβα έχει αντιγραφεί στο πρόχειρο. Μπορείτε να μεταβείτε απευθείας στο GitHub για να δώσετε σχόλια.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>Πρόγραμμα-πελάτης WPF (μόνο για Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Γλώσσα</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Συμφωνία χρήστη</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Συνδέστε τον δαίμονα</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Ξεκινήσετε</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Συνέχισε</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Ορισμός της γλώσσας</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Γλώσσα</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>αρχική σελίδα</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Δημιουργία παρουσίας</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Διαχείριση παρουσιών</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Λήψεις πόρων</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Κέντρο βοήθειας</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Κέντρο γνωστοποιήσεων</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Σελίδα εντοπισμού σφαλμάτων</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Ρυθμίσεις προγράμματος</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>προτροπή</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>Το MCServerLauncher WPF δεν υποστηρίζει διπλές εκτελέσεις.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>μεσίτης</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Αρχικός</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>αγνός</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Δομοστοιχείο</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>Θεμέλιο</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Απέτυχε να πάρει την κύρια εισαγωγή!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Πακέτο φερμουάρ Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Εισαγάγετε το ληφθέν πακέτο εδώ. Εάν δεν ξέρετε πού να κατεβάσετε, μπορείτε να κάνετε κλικ στο κουμπί στα δεξιά για να πηδήξετε.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Πακέτο φερμουάρ</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Φυλλομετρώ</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Πυρήνας διακομιστή Minecraft</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Επιλέξτε τα βασικά αρχεία που θα χρησιμοποιηθούν από τον διακομιστή. Εάν δεν ξέρετε πού να κατεβάσετε, μπορείτε να κάνετε κλικ στο κουμπί στα δεξιά για να πηδήξετε.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Όνομα αρχείου πυρήνα</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Χρόνος εκτέλεσης Java</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Ο χρόνος εκτέλεσης Java είναι ένα απαιτούμενο περιβάλλον για τον διακομιστή Java του Minecraft. Βεβαιωθείτε ότι έχετε επιλέξει την κατάλληλη έκδοση για να αποτρέψετε τις αποτυχίες εκκίνησης.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Διαδρομή Java</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Χειροκίνητη επιλογή</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Αυτόματη αναζήτηση σε κεντρικούς υπολογιστές Daemon</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Επιλέξτε από τα υπάρχοντα αποτελέσματα</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ απαιτεί Java 8\n1.17+ απαιτεί Java 16\n1.18+ απαιτεί Java 17\n1.20.5+ απαιτεί Java 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Όνομα_αρχείου</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Επιλέξτε το αρχείο/φάκελο/πακέτο που απαιτείται για την παρουσία. Το αρχείο υποστηρίζει μόνο τη μορφή ZIP.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Εξαρτήσεις ανάπτυξης</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Εκτελέστε την εντολή</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Εισαγάγετε την εντολή run εδώ.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Εάν πρέπει να επισυνάψετε παραμέτρους,\nΣυνδέστε το απευθείας στο πίσω μέρος.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Μην συμπεριλαμβάνετε ειδικά σύμβολα και μην χρησιμοποιείτε παράνομα ονόματα.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Το όνομα της παρουσίας</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Προαιρετικά, μπορείτε να προσθέσετε επιπλέον παραμέτρους JVM εδώ, μία ανά γραμμή.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Προσθήκη παραμέτρων</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>Παράμετροι JVM</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Μέγιστη μνήμη</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Ελάχιστη μνήμη</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Αυτό καθορίζει πόση μνήμη θα μπορεί να χρησιμοποιήσει ο διακομιστής Java του Minecraft.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>Σωρός μνήμης JVM</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Η ελάχιστη μνήμη ≤ η μέγιστη μνήμη είναι επαρκής</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Αντιγραφή του συνδέσμου</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Λήξη χρονικού ορίου</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Ακυρώνω</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Μέγεθος αρχείου</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Έκδοση Minecraft</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Χτίζει</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>κλείνω</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>ανοίγω</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Χρόνος δημιουργίας</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Τύπος παρουσίας</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>περισσότερο</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>κατηχώ</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>επιστροφή</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Όταν ολοκληρώσετε τις παρακάτω ρυθμίσεις παραμέτρων, κάντε κλικ στην επιλογή Συνέχεια.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Επιλέξτε την έκδοση του Minecraft που θα εκτελεί ο διακομιστής.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Ξεπλυθεί</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Εάν δεν φορτωθεί, δοκιμάστε ξανά αργότερα.\nΗ ΥΠΗΡΕΣΊΑ ΕΙΚΌΝΑΣ ΤΡΟΦΟΔΟΤΕΊΤΑΙ ΑΠΌ BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Πλαστή έκδοση</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>Έκδοση NeoForge</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Υφασμάτινη έκδοση</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Έκδοση παπλώματος</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Επιλέξτε την έκδοση του φορτωτή Forge που θα εκτελεί ο διακομιστής.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Επιλέξτε την έκδοση του φορτωτή NeoForge που θα εκτελεί ο διακομιστής.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Επιλέξτε την έκδοση του προγράμματος φόρτωσης Fabric που θα εκτελέσει ο διακομιστής.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Επιλέξτε την έκδοση του φορτωτή παπλώματος που θα εκτελεί ο διακομιστής.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Εμφανίζεται μόνο η επίσημη έκδοση</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Πυρήνες διακομιστή</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Ανοίξτε τον επίσημο ιστότοπο</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Καλώς ήρθες</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Παράλειψη προς το παρόν</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>συμφωνώ</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>απορρίπτω</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Καλώς ήλθατε στο λογισμικό και τις υπηρεσίες του MCServerLauncher (εφεξής το "Λογισμικό") που παρέχονται από την Ομάδα Ανάπτυξης MCSL. Προκειμένου να προστατεύσουμε τα δικαιώματα και τα συμφέροντα των χρηστών, διαβάστε προσεκτικά όλα τα περιεχόμενα αυτής της συμφωνίας πριν χρησιμοποιήσετε αυτό το λογισμικό. Ενδέχεται να ενημερώσουμε την παρούσα Συμφωνία ανά πάσα στιγμή και θα αντικαταστήσει αποτελεσματικά την αρχική Συμφωνία Χρήστη μόλις δημοσιευτεί.\nΔιαβάστε προσεκτικά το ακόλουθο περιεχόμενο, όταν χρησιμοποιείτε αυτό το λογισμικό, σημαίνει ότι έχετε διαβάσει και συμφωνήσει λεπτομερώς με όλα τα περιεχόμενα αυτής της συμφωνίας και συμφωνείτε να συμμορφώνεστε με τις διατάξεις αυτής της συμφωνίας.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Προφυλάξεις</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Ο χρήστης πρέπει να εξοπλίσει το λογισμικό και τις λειτουργίες του λογισμικού (συμπεριλαμβανομένης, ενδεικτικά, της δημιουργίας νέων παρουσιών) με τη διαμόρφωση υλικού και λογισμικού που απαιτείται από τον χρήστη.\nΟι χρήστες είναι υπεύθυνοι για τα σχετικά τέλη χρήσης τηλεφώνου και ευρυζωνικών υπηρεσιών που πρέπει να καταβληθούν μετά τη σύνδεση στο διαδίκτυο.\nΟ χρήστης φέρει τη νομική ευθύνη για τη συμπεριφορά, το συμβάν και το αποτέλεσμα που προκαλείται από τη χρήση αυτού του λογισμικού.\nΟποιεσδήποτε συναλλαγές και διαφορές μεταξύ χρηστών και άλλων μη εξουσιοδοτημένων ανεπίσημων ατόμων δεν έχουν καμία σχέση με τον προγραμματιστή.\nΟ χρήστης πρέπει να συμμορφώνεται με τους σχετικούς νόμους και κανονισμούς της Λαϊκής Δημοκρατίας της Κίνας (εάν ο χρήστης είναι χρήστης εκτός της Λαϊκής Δημοκρατίας της Κίνας, ο χρήστης πρέπει επίσης να συμμορφώνεται με τους νόμους και τους κανονισμούς της χώρας ή της περιοχής στην οποία ανήκει).\nΟ χρήστης δεν πρέπει να χρησιμοποιεί το λογισμικό (ή ορισμένα χαρακτηριστικά και λειτουργίες του λογισμικού) για να εμπλακεί σε παράνομες πράξεις και δεν πρέπει να χρησιμοποιεί τις σχετικές διαδικασίες και υπηρεσίες που σχετίζονται με το λογισμικό για να εμπλακεί σε παράνομες πράξεις και οι συνέπειες οποιωνδήποτε ενεργειών δεν σχετίζονται με τον προγραμματιστή.\nΟι χρήστες φέρουν τις δικές τους νομικές ευθύνες σχετικά με το περιεχόμενο των πληροφοριών που δημοσιεύουν. Ο χρήστης δεν πρέπει να εισάγει, δημοσιεύει ή διαδίδει οποιοδήποτε από τα ακόλουθα περιεχόμενα στο λογισμικό, τις διαδικασίες και τις υπηρεσίες που σχετίζονται με τη λειτουργία του λογισμικού και δεν δημοσιεύει κανένα από τα ακόλουθα περιεχόμενα σε οποιαδήποτε μορφή：\n\nαντιτίθενται στις βασικές αρχές που ορίζονται στο Σύνταγμα της Λαϊκής Δημοκρατίας της Κίνας·\nδιακινδύνευση της εθνικής ασφάλειας, αποκάλυψη κρατικών μυστικών, υπονόμευση της κρατικής εξουσίας ή υπονόμευση της εθνικής ενότητας·\nβλάπτοντας την τιμή και τα συμφέροντα του κράτους ·\nυποκίνηση εθνοτικού μίσους, εθνοτικών διακρίσεων ή υπονόμευση της εθνοτικής ενότητας·\nυπονόμευση των εθνικών θρησκευτικών πολιτικών, υποστήριξη λατρειών και φεουδαρχικών δεισιδαιμονιών·\nδιάδοση φημών, διατάραξη της κοινωνικής τάξης ή υπονόμευση της κοινωνικής σταθερότητας·\nΔιάδοση αισχρότητας, πορνογραφίας, τυχερών παιχνιδιών, βίας, δολοφονίας, τρομοκρατίας ή υποκίνησης εγκλημάτων.\nπροσβολή ή συκοφαντική δυσφήμιση άλλων, παραβίαση των νόμιμων δικαιωμάτων και συμφερόντων άλλων,\nΠεριέχει άλλο περιεχόμενο που απαγορεύεται από τη Λαϊκή Δημοκρατία της Κίνας βάσει νόμων ή διοικητικών κανονισμών.\nΕκτός εάν επιτρέπεται από το νόμο ή με γραπτή άδεια από τον προγραμματιστή, οι χρήστες δεν πρέπει να συμμετέχουν σε καμία από τις ακόλουθες πράξεις：\nΠαράνομη ή ακατάλληλη χρήση του Λογισμικού και των Υπηρεσιών,\nΒλάπτετε την κανονική λειτουργία του συστήματος λογισμικού ή του ιστότοπου, διαδίδετε σκόπιμα ιούς υπολογιστών και άλλα καταστροφικά προγράμματα.\nΛάβετε υπόψη οποιαδήποτε μη φυσιολογική συμπεριφορά χρήσης που μπορεί να επηρεάσει τις υπηρεσίες δικτύου του Λογισμικού (συμπεριλαμβανομένων, ενδεικτικά, της βλάβης, της επίθεσης στον διακομιστή ή της υπερφόρτωσης του διακομιστή κ.λπ.),\nΔιαγράψτε τις πληροφορίες πνευματικών δικαιωμάτων στο Λογισμικό και τα αντίγραφά του.\n\nΕάν ο χρήστης διαπράξει οποιαδήποτε συμπεριφορά που παραβιάζει τους νόμους και τους κανονισμούς ή παραβιάζει τις διατάξεις της παρούσας Συμφωνίας, ο προγραμματιστής έχει το δικαίωμα να λάβει μέτρα εναντίον του χρήστη ανάλογα με τη σοβαρότητα της κατάστασης, σύμφωνα με την παρούσα Συμφωνία και τους νόμους και κανονισμούς, συμπεριλαμβανομένου, ενδεικτικά, του τερματισμού των υπηρεσιών. Εάν οι περιστάσεις είναι σοβαρές, θα μεταφερθούν στα αρμόδια διοικητικά όργανα για διοικητική τιμωρία ή θα διερευνηθούν για ποινική ευθύνη.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Συλλογή και χρήση δεδομένων</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Εάν συμφωνείτε με τους παρόντες Όρους Χρήσης και χρησιμοποιείτε τις ηλεκτρονικές υπηρεσίες του Λογισμικού, θα συλλέξουμε τις ακόλουθες πληροφορίες：\nτη διεύθυνση IP της συσκευής στην οποία εκτελείται το Λογισμικό (η οποία ενδέχεται να μην είναι η σωστή διεύθυνση),\nΟρισμένες πληροφορίες συστήματος του εξοπλισμού στον οποίο λειτουργεί το Λογισμικό,\nΌταν διακόπτεται η λειτουργία του λογισμικού, τα αρχεία καταγραφής του λογισμικού που εκτελείται στο σύστημα (συμπεριλαμβανομένων ορισμένων πληροφοριών συστήματος) ενδέχεται να αποσταλούν με τη συγκατάθεση του χρήστη για την επίλυση του προβλήματος και τη βελτίωση του λογισμικού.\nΆλλες πληροφορίες που θα μεταφορτωθούν με τη συγκατάθεση του χρήστη (όπως καθορίζεται στο λογισμικό).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Υποστήριξη χρηστών και σχόλια</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Εάν οι χρήστες αντιμετωπίσουν προβλήματα κατά τη χρήση, μπορούν να δώσουν σχόλια μέσω του επίσημου email ή υποβάλλοντας ένα ζήτημα σε αυτό το αποθετήριο πηγαίου κώδικα λογισμικού. Λαμβάνουμε σοβαρά υπόψη τα σχόλιά μας για να βελτιώσουμε τις υπηρεσίες μας.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Αλλαγές ή αναστολή υπηρεσίας</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Αναστολή και τερματισμός της υπηρεσίας του χρήστη\n\nΕάν ο χρήστης δημοσιεύει παράνομες πληροφορίες, παραβιάζει σοβαρά την κοινωνική ηθική ή παραβιάζει τις απαγορεύσεις του νόμου, ο προγραμματιστής τερματίζει την παροχή υπηρεσιών στον χρήστη.\nΕάν ο χρήστης διαπράξει ανάρμοστη πράξη κατά την αποδοχή της υπηρεσίας λογισμικού, ο προγραμματιστής έχει το δικαίωμα να τερματίσει την υπηρεσία που παρέχεται στον χρήστη (οι συγκεκριμένες περιστάσεις της ανάρμοστης συμπεριφοράς ορίζονται σαφώς στην παρούσα συμφωνία).\nΕάν ο χρήστης χρησιμοποιεί τροποποιημένη έκδοση του λογισμικού από τρίτο μέρος, ο χρήστης φέρει τον δικό του κίνδυνο και νομική ευθύνη.\n\n2. Αναστολή, αναστολή και τερματισμός του Λογισμικού και των Υπηρεσιών：\n\nΣε περίπτωση οποιασδήποτε από τις ακόλουθες περιπτώσεις, ο προγραμματιστής έχει το δικαίωμα να τερματίσει ή να διακόψει το σύνολο ή μέρος των υπηρεσιών του λογισμικού και ο προγραμματιστής δεν φέρει καμία ευθύνη έναντι του χρήστη ή οποιουδήποτε τρίτου μέρους για την ταλαιπωρία ή τη ζημία που προκλήθηκε από αυτό：\n\nα. όπως απαιτείται από το Λογισμικό και τις Υπηρεσίες,\nβ. Αποτυχία σωστής λειτουργίας λόγω βλάβης στον διακομιστή.\nγ. Λόγω αιφνίδιας βλάβης του εξοπλισμού λογισμικού και υλικού και του εξοπλισμού ηλεκτρονικών επικοινωνιών.\nδ. λόγω βλάβης γραμμής παρόχου δικτύου ή άλλων βλαβών,\nε. για λόγους πολιτικής·\nστ. Λόγοι τρίτων ή άλλες περιστάσεις ανωτέρας βίας.\n\nΟ Προγραμματιστής διατηρεί το δικαίωμα να τερματίσει ή να τερματίσει εν μέρει το Λογισμικό και τις Υπηρεσίες όταν το κρίνει απαραίτητο και ο Προγραμματιστής μπορεί να ειδοποιήσει τον Χρήστη με τη μορφή ανακοίνωσης, αλλά ο Προγραμματιστής δεν φέρει ευθύνη για τυχόν απώλειες που προκλήθηκαν στον Χρήστη.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>αποκήρυξη</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Ο χρήστης κατανοεί και συμφωνεί ότι ο προγραμματιστής δεν παρέχει καμία εγγύηση για αυτό το λογισμικό στο βαθμό που επιτρέπεται από το νόμο. Η χρήση αυτού του λογισμικού από τον χρήστη γίνεται με δική του ευθύνη.\nΟ Χρήστης κατανοεί και συμφωνεί ότι ο Προγραμματιστής δεν εγγυάται ότι το Λογισμικό και οι Υπηρεσίες θα ικανοποιούν τις ανάγκες του Χρήστη, ούτε εγγυάται ότι οι Υπηρεσίες δεν θα διακοπούν και δεν παρέχει καμία εγγύηση για την ορθότητα και την ασφάλεια του Λογισμικού και των Υπηρεσιών.\nΟ χρήστης κατανοεί και συμφωνεί ότι ο προγραμματιστής δεν μπορεί να εγγυηθεί πλήρως την ορθότητα, την ασφάλεια και τη νομιμότητα των αρχείων τρίτων που λαμβάνονται από τις ηλεκτρονικές υπηρεσίες του λογισμικού, ούτε είναι υπεύθυνος για την ορθότητα, την ασφάλεια και τη νομιμότητα των υπηρεσιών τρίτων (συμπεριλαμβανομένων, ενδεικτικά, της λήψης πόρων και άλλων υπηρεσιών) που υπάρχουν στο λογισμικό. Επομένως, το περιεχόμενο που αναφέρεται παραπάνω δεν έχει καμία σχέση με τον προγραμματιστή και το λογισμικό και δεν αντιπροσωπεύει τη θέση του προγραμματιστή και του λογισμικού. Οι διαφορές βαρύνουν τον τρίτο πάροχο υπηρεσιών.\nΟ Χρήστης κατανοεί και συμφωνεί ότι ο Χρήστης θα είναι αποκλειστικά υπεύθυνος για τις συνέπειες που προκαλούνται από τη χρήση των ηλεκτρονικών υπηρεσιών του Λογισμικού και των σχετικών αρχείων που λαμβάνονται από το Λογισμικό με εσφαλμένα ή παράνομα μέσα και δεν θα είναι υπεύθυνος για οποιαδήποτε ζημιά στην ιδιοκτησία, παραβίαση πνευματικών δικαιωμάτων ή δικαιωμάτων πνευματικής ιδιοκτησίας κ.λπ., και δεν θα φέρει και δεν μπορεί να φέρει καμία νομική ευθύνη.\nΟ χρήστης κατανοεί και συμφωνεί ότι το Λογισμικό δεν εγγυάται το περιεχόμενο υπηρεσιών τρίτων. Ο προγραμματιστής δεν ευθύνεται για οποιαδήποτε ζημιά στην ιδιοκτησία, παραβίαση πνευματικών δικαιωμάτων ή δικαιωμάτων πνευματικής ιδιοκτησίας που προκαλείται από τη χρήση υπηρεσιών τρίτων από τον χρήστη και δεν θα φέρει και δεν μπορεί να φέρει καμία νομική ευθύνη.\nΟ χρήστης κατανοεί και συμφωνεί ότι ο προγραμματιστής δεν παρέχει καμία εγγύηση και νομική υποστήριξη για τις λειτουργίες του λογισμικού και εάν ο χρήστης χρησιμοποιεί τις λειτουργίες του λογισμικού για να εμπλακεί σε παράνομες ή άλλες ανάρμοστες πράξεις, οι κίνδυνοι και οι νομικές συνέπειες που προκαλούνται από τον χρήστη βαρύνουν τον χρήστη.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>Πνευματική ιδιοκτησία</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Τα πνευματικά δικαιώματα, τα διπλώματα ευρεσιτεχνίας και άλλα δικαιώματα πνευματικής ιδιοκτησίας αυτού του λογισμικού ανήκουν στον προγραμματιστή ή στον καθορισμένο κάτοχο πνευματικών δικαιωμάτων.\n\nΟι υπηρεσίες τρίτων που χρησιμοποιούνται σε αυτό το λογισμικό ανήκουν στους σχετικούς κατόχους πνευματικών δικαιωμάτων, συμπεριλαμβανομένων, ενδεικτικά, των εξής:：\nΑυτό το λογισμικό είναι ένα διαδικτυακό εργαλείο διαχείρισης διακομιστών και παιχνιδιών για το Minecraft (η τελική ερμηνεία του οποίου ανήκει στη Microsoft Corporation και τη Mojang AB). Οι Χρήστες οφείλουν να συμμορφώνονται με την Άδεια Χρήσης Τελικού Χρήστη (EULA) και τις σχετικές πολιτικές που εφαρμόζει η NetEase στην ηπειρωτική Κίνα και δεν πρέπει να χρησιμοποιούν το περιεχόμενο του παιχνιδιού για εμπορικούς σκοπούς ή να εκτελούν άλλες πράξεις που απαγορεύονται από την Άδεια Χρήσης Τελικού Χρήστη.\nΤο Λογισμικό είναι το εργαλείο διαχείρισης διακομιστών και σύνδεσης παιχνιδιών της Terraria, η τελική ερμηνεία του οποίου εναπόκειται στη Re-Logic και τους εκδότες της. Οι χρήστες είναι υπεύθυνοι για τη συμμόρφωση με την Άδεια Χρήσης Τελικού Χρήστη (EULA) και τις σχετικές πολιτικές. Οι χρήστες δεν πρέπει να χρησιμοποιούν το περιεχόμενο του παιχνιδιού για εμπορικούς σκοπούς χωρίς άδεια ή να εκτελούν άλλες πράξεις που απαγορεύονται από τη συμφωνία άδειας χρήσης τελικού χρήστη.\nΟρισμένες από τις διαδικτυακές πηγές αρχείων (πυρήνας διακομιστή, μονάδες παιχνιδιών/διακομιστών, plug-ins κ.λπ.) υπηρεσίες λήψης που παρέχονται από αυτό το λογισμικό παρέχονται από το αντίστοιχο επίσημο / τρίτο μέρος κ.λπ., και τα πνευματικά δικαιώματα θα αντιμετωπίζονται σύμφωνα με τις διατάξεις της πλατφόρμας τρίτου μέρους.\nΤα πνευματικά δικαιώματα άλλων υπηρεσιών τρίτων που χρησιμοποιούνται σε αυτό το λογισμικό ανήκουν στον πάροχο υπηρεσιών.\nΑυτό το λογισμικό είναι λογισμικό ανοιχτού κώδικα και οι χρήστες ή άλλοι προγραμματιστές λογισμικού που δεν αποτελούν μέρος αυτού του λογισμικού πρέπει να συμμορφώνονται με τη συμφωνία ανοιχτού κώδικα αυτού του λογισμικού.\nΟ Χρήστης κατανοεί και συμφωνεί ότι, εκτός από τους πόρους που δημιουργούνται από τον Χρήστη, όλα τα δεδομένα ηλεκτρονικών υπηρεσιών που παρέχονται από το Λογισμικό ανήκουν στον Προγραμματιστή. Ο προγραμματιστής έχει το δικαίωμα να αποφασίσει εάν θα διατηρήσει ή όχι το σύνολο ή μέρος των δεδομένων στον διακομιστή.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Αλλαγές στους Όρους</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Ο Προγραμματιστής έχει το δικαίωμα να τροποποιήσει την παρούσα Σύμβαση όταν είναι απαραίτητο. Μόλις υπάρξει αλλαγή στην παρούσα Σύμβαση, ο προγραμματιστής θα εμφανίσει το τροποποιημένο περιεχόμενο στη σημαντική σελίδα. Εάν ο χρήστης δεν συμφωνεί με την αναθεώρηση ή την ενημέρωση της παρούσας σύμβασης, μπορεί να αναλάβει την πρωτοβουλία να σταματήσει να χρησιμοποιεί το λογισμικό και τις υπηρεσίες. Εάν ο χρήστης συνεχίσει να χρησιμοποιεί το λογισμικό και τις υπηρεσίες μετά την αναθεώρηση της παρούσας σύμβασης, αυτό σημαίνει ότι ο χρήστης συμφωνεί με όλες τις τροποποιήσεις ή ενημερώσεις που γίνονται στην παρούσα σύμβαση. Εάν ο χρήστης δεν είναι εξοικειωμένος με τις αλλαγές μετά την αναθεώρηση της παρούσας συμφωνίας, ο προγραμματιστής δεν ευθύνεται για τυχόν απώλειες.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Διάφορος</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Η παρούσα συμφωνία διέπεται από το δίκαιο της Λαϊκής Δημοκρατίας της Κίνας, χωρίς να λαμβάνονται υπόψη όλες οι διατάξεις περί σύγκρουσης νόμων·\nΗ αποτυχία του Προγραμματιστή να ασκήσει, να μην ασκήσει εγκαίρως ή να ασκήσει πλήρως τα δικαιώματα που απολαμβάνει βάσει της παρούσας Σύμβασης ή σύμφωνα με το νόμο δεν θα θεωρείται παραίτηση από την άσκηση των εν λόγω δικαιωμάτων, ούτε θα επηρεάσει την άσκηση των εν λόγω δικαιωμάτων από τον Προγραμματιστή στο μέλλον.\nΣτο βαθμό που επιτρέπεται από το νόμο, ο Προγραμματιστής έχει το δικαίωμα να ερμηνεύσει τους όρους της παρούσας Σύμβασης.\nΟι χρήστες μπορούν να παραπονεθούν και να αναφέρουν κάθε είδους παραβιάσεις νόμων και κανονισμών μέσω ηλεκτρονικού ταχυδρομείου, στείλτε το μήνυμα ηλεκτρονικού ταχυδρομείου στο services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Διαιρετότητα των Όρων</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Εάν οποιαδήποτε διάταξη της παρούσας Συμφωνίας κριθεί άκυρη ή ανεφάρμοστη, οι υπόλοιπες διατάξεις θα παραμείνουν σε πλήρη ισχύ και εφαρμογή.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Επιλέξτε τη μέθοδο που θέλετε να χρησιμοποιήσετε：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Διακομιστές Universal Minecraft Java Edition</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Διακομιστές Minecraft Forge</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Διακομιστές Minecraft NeoForge</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Διακομιστές Minecraft Fabric</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Διακομιστές Minecraft Quilt</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Διακομιστές Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Αυτόνομη διαλειτουργικότητα Minecraft Geyser</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Πλευρά ομάδας Minecraft BungeeCord</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Πλευρά ομάδας Minecraft Waterfall</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity Group Πλευρά</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Ομάδα τραβερτίνης Minecraft</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>Πρόγραμμα-πελάτης FRP (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Διακομιστές παιχνιδιών Terraria</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Άλλα προγράμματα κονσόλας</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Εισαγωγή υπάρχουσας παρουσίας</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Νέο ταξίδι, νέα εμπειρία.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Σαρώστε τη μεγάλη εικόνα για να δείτε τον κόσμο.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>Προς όλες τις κατευθύνσεις, η αποστολή πρέπει να επιτευχθεί.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Μπορείτε να το ονομάσετε, είναι εδώ. (Προς το παρόν σε χρήση.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Κάντε το καλύτερο δυνατό για να απαντήσετε στις ερωτήσεις τους.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Το MCSL σας, η επιλογή σας.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Σταματήστε απευθείας τη λήψη</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Επαναλάβετε τη λήψη 1 φορά</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Επαναλάβετε τη λήψη 3 φορές</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Εισαγάγετε το όνομα της παρουσίας για επικύρωση</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Επικύρωση κλειδιού δαίμονα</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Ακολουθήστε το σύστημα</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>φως</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Σκοτεινός</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>EULA αυτόματης συγκατάθεσης (παρουσία διακομιστή Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Συμφωνώντας αυτόματα, δεσμεύεστε από την Άδεια Χρήσης Τελικού Χρήστη του Minecraft και συμφωνείτε ότι η MCSL δεν είναι αλληλεγγύως και εις ολόκληρον υπεύθυνη.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Αυτόματη απενεργοποίηση επαλήθευσης γνησιότητας (παρουσία διακομιστή Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Όταν είναι ενεργοποιημένη αυτή η επιλογή, τέτοιες περιπτώσεις θα απενεργοποιούν αυτόματα τον έλεγχο ταυτότητας από τη Mojang/Microsoft, επιτρέποντας στους μη γνήσιους πελάτες Java Edition του Minecraft να συνδεθούν στον διακομιστή.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Όταν είναι ενεργοποιημένη αυτή η επιλογή, τέτοιες παρουσίες θα απενεργοποιούν αυτόματα τον έλεγχο ταυτότητας από τη Mojang/Microsoft, επιτρέποντας στους μη γνήσιους πελάτες του Minecraft Bedrock Edition να συνδεθούν στο διακομιστή.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Αυτόματη απενεργοποίηση επαλήθευσης γνησιότητας (παρουσία διακομιστή Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Ανάπτυξη με προέλευση εικόνας (παρουσία διακομιστή Minecraft Forge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Ανάπτυξη με προέλευση εικόνας (παρουσία διακομιστή Minecraft NeoForge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Ανάπτυξη με προέλευση εικόνας (παρουσία διακομιστή Minecraft Fabric)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Ανάπτυξη με προέλευση ειδώλου (παρουσία διακομιστή Minecraft Quilt)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Μετά την ενεργοποίηση, το BMCLAPI θα χρησιμοποιηθεί για τη λήψη πόρων, κάτι που συνιστάται για τους Κινέζους χρήστες.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Κατεβάστε την πηγή</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Επιλέξτε την υπηρεσία παροχής λήψης που θα χρησιμοποιήσετε στη σελίδα Λήψεις πόρων.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (παρέχεται από το Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Polestar Cloud Image (Ευγενική προσφορά του Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>Αρχείο ZCloud (παρέχεται από Z__Tsin μέλος της ομάδας ανάπτυξης)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>Προέλευση λήψης MSL (παρέχεται από το MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>Σύγχρονος κατοπτρισμός MCSL-Sync</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Αριθμός νημάτων κινητήρα λήψης</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>Σε περίπτωση επαρκούς απόδοσης υπολογιστή, όσο μεγαλύτερος είναι ο αριθμός των νημάτων, τόσο μεγαλύτερη είναι η θεωρητική ταχύτητα λήψης του αρχείου. Γενικά, αρκεί μια ρύθμιση 16 νημάτων.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Πώς να χειριστείτε τις αποτυχίες λήψης</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Τι πρέπει να κάνετε εάν αποτύχει η λήψη του αρχείου.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Επιβεβαιώστε τη μέθοδο διαγραφής μιας παρουσίας</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Αυτή η δυνατότητα αποτρέπει τη διαγραφή παρουσιών λόγω κακής λειτουργίας.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Εφαρμογή θέματος</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Η προεπιλογή ακολουθεί τις αλλαγές του συστήματος, φυσικά, μπορείτε επίσης να το ορίσετε μόνοι σας.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Αυτόματη εκκίνηση (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Όταν ξεκινήσει το σύστημα, το γραφικό πρόγραμμα ξεκινά αυτόματα. Όταν είναι ενεργοποιημένη, ενδέχεται να αγγίξετε ευαίσθητες λειτουργίες στο σύστημα, επομένως επιτρέψτε τις στο λογισμικό προστασίας από ιούς.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Έλεγχος για ενημερώσεις (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Ελέγξτε για ενημερώσεις σε αυτό το γραφικό πρόγραμμα.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Έλεγχος για ενημερώσεις</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Ελέγξτε για ενημερώσεις σε αυτό το γραφικό πρόγραμμα σε κάθε εκκίνηση.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Αυτόματος έλεγχος για ενημερώσεις (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Έλεγχος για ενημερώσεις (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Ελέγξτε για ενημερώσεις στον δαίμονα.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>Σχετικά με το MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Αυτό το έργο προστατεύεται από το νόμο περί πνευματικών δικαιωμάτων της Λαϊκής Δημοκρατίας της Κίνας και τις διεθνείς συνθήκες και η μη εξουσιοδοτημένη αναπαραγωγή ή διανομή του Προγράμματος ή οποιουδήποτε μέρους αυτού υπόκειται σε αυστηρές αστικές και ποινικές κυρώσεις και διώξεις στο μέγιστο βαθμό που επιτρέπεται από το νόμο.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Αυτό το έργο προστατεύεται από την ανοιχτού κώδικα GNU General Public License Version 3.0 και ο πηγαίος κώδικας φιλοξενείται στο</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Το ψηφιακά υπογεγραμμένο πιστοποιητικό που χρησιμοποιείται από το MCServerLauncher Future εγγυάται ότι το πρόγραμμα δεν μπορεί να αλλοιωθεί. Αύξων αριθμός：59CBF9B5207EEABB45417D148120AC9A。 Εάν είναι διαφορετικό, μην το χρησιμοποιήσετε και δώστε ανατροφοδότηση σε services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Άπειρος κατοπτρισμός</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Εικόνα πολικού νεφελώματος</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>Σύγχρονος κατοπτρισμός MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>ανακοίνωση</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Είσαι σίγουρος?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Εάν απορρίψετε τη Συμφωνία Χρήστη, το Λογισμικό θα αποσυρθεί.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Βεβαιωθείτε ότι τα έχετε διαβάσει όλα πριν κάνετε κλικ στην επιλογή Συμφωνώ. Τουλάχιστον, θα πρέπει να κυλήσετε το πρωτόκολλο μέχρι το τέλος.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Καλό</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Όχι τώρα</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Αυτό σημαίνει ότι συμφωνείτε με όλα τα περιεχόμενα της παρούσας Συμφωνίας.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Λήψη πηγής)</value>
+  </data>
 </root>

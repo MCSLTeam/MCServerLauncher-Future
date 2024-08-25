@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>U souboru WPF MCServerLauncher došlo k chybě</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Balíček byl zkopírován do schránky. Můžete přejít přímo na GitHub a poskytnout zpětnou vazbu.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>Klient WPF (pouze Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Jazyk</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Uživatelská smlouva</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Připojení démona</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Rozjet</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Tak do toho</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Nastavení jazyka</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Jazyk</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>domovská stránka</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Vytvoření instance</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Správa instancí</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Stahování zdrojů</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Centrum nápovědy</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Centrum oznámení</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Stránka ladění</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Nastavení programu</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>pobídnout</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF nepodporuje duplicitní spuštění.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>makléř</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Původní</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>ryzí</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Modul</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>dno</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Nepodařilo se získat základní úvod!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Minecraft Bedrock Edition zip pack</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Stažený balíček importujte zde. Pokud nevíte, kde stáhnout, můžete kliknout na tlačítko vpravo a přeskočit.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Zip balíček</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Pást se</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Jádro serveru Minecraft</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Vyberte prosím základní soubory, které bude server používat. Pokud nevíte, kde stáhnout, můžete kliknout na tlačítko vpravo a přeskočit.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Název základního souboru</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Běhové prostředí Java</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Běhové prostředí Java je požadované prostředí pro server Java Minecraft. Nezapomeňte zvolit vhodnou verzi, abyste předešli chybám při spuštění.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Cesta k Javě</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Ruční výběr</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Automatické vyhledávání na hostitelích démona</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Vyberte si z existujících výsledků</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ vyžaduje Javu 8\n1.17+ vyžaduje Javu 16\n1.18+ vyžaduje Javu 17\n1.20.5+ vyžaduje Javu 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>jméno souboru</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Vyberte soubor/složku/balíček vyžadovaný pro danou instanci. Archiv podporuje pouze formát ZIP.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Závislosti nasazení</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Spusťte příkaz</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Sem zadejte příkaz spustit.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Pokud potřebujete připojit parametry,\nPřipevněte jej přímo na zadní stranu.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Neuvádějte speciální symboly ani nepoužívejte nelegální názvy.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Název instance</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Volitelně sem můžete přidat další parametry JVM, jeden na řádek.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Přidání parametrů</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>Parametry prostředí JVM</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Maximální paměť</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Minimální paměť</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>To určuje, kolik paměti bude váš server Minecraft Java schopen použít.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>Halda paměti JVM</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Stačí minimální paměť ≤ maximální paměť</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Zkopírujte odkaz</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Oddechový čas</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Zrušit</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Velikost souboru</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Minecraft edice</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Staví</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>zavřít</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>otevřený</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Čas vytvoření</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Typ instance</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>více</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>iniciovat</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>vrátit</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Až budete s následujícími konfiguracemi hotovi, klikněte na tlačítko Pokračovat.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Vyberte verzi hry Minecraft, na které bude server spuštěn.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>zrudlý</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Pokud se nenačte, zkuste to znovu později.\nOBRAZOVÁ SLUŽBA JE POHÁNĚNA BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Koňská verze</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>Verze NeoForge</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Fabric verze</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Verze přikrývky</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Vyberte prosím verzi zavaděče Forge, na které bude server spuštěn.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Vyberte verzi zavaděče NeoForge, na které bude server spuštěn.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Vyberte verzi zavaděče prostředků infrastruktury, kterou bude server spouštět.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Vyberte prosím verzi zavaděče Quilt, na které bude server spuštěn.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Zobrazí se pouze oficiální verze</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Serverová jádra</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Otevřete oficiální web</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Vítejte</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Prozatím přeskočit</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>souhlasit</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>odmítnout</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Vítejte v softwaru a službách MCServerLauncher (dále jen "Software") poskytovaných Vývojovým týmem MCSL. Z důvodu ochrany práv a zájmů uživatelů si před použitím tohoto softwaru pečlivě přečtěte veškerý obsah této smlouvy. Tuto smlouvu můžeme kdykoli aktualizovat a po jejím zveřejnění účinně nahradí původní uživatelskou smlouvu.\nPřečtěte si prosím pozorně následující obsah, protože při používání tohoto softwaru to znamená, že jste si podrobně přečetli a souhlasili s veškerým obsahem této smlouvy a souhlasíte s tím, že se budete řídit ustanoveními této smlouvy.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Opatření</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Uživatel musí vybavit software a funkce softwaru (mimo jiné včetně vytváření nových instancí) hardwarovou a softwarovou konfigurací požadovanou uživatelem.\nUživatelé jsou odpovědní za příslušné poplatky za používání telefonu a širokopásmového připojení, které je třeba uhradit po připojení k internetu.\nUživatel nese právní odpovědnost za chování, událost a výsledek způsobený používáním tohoto softwaru.\nJakékoli transakce a spory mezi uživateli a jinými neoprávněnými neoficiálními osobami nemají nic společného s vývojářem.\nUživatel musí dodržovat příslušné zákony a předpisy Čínské lidové republiky (pokud je uživatel uživatelem mimo Čínskou lidovou republiku, musí také dodržovat zákony a předpisy země nebo regionu, do kterého patří).\nUživatel nesmí používat software (ani některé vlastnosti a funkce softwaru) k účasti na protiprávních činech a nesmí používat příslušné procesy a služby spojené se softwarem k účasti na protiprávních činech a důsledky jakéhokoli jednání se nebudou vztahovat na vývojáře.\nUživatelé nesou svou vlastní právní odpovědnost související s obsahem informací, které zveřejňují. Uživatel nesmí vkládat, zveřejňovat ani šířit žádný z následujících obsahů softwaru, procesů a služeb souvisejících s provozem softwaru a nesmí publikovat žádný z následujících obsahů v žádné formě：\n\nodporují základním principům stanoveným v Ústavě Čínské lidové republiky;\nohrožování národní bezpečnosti, vyzrazování státních tajemství, podvracení státní moci nebo podkopávání národní jednoty;\npoškozování cti a zájmů státu;\npodněcování etnické nenávisti, etnické diskriminace nebo podkopávání etnické jednoty;\npodkopávání národní náboženské politiky, obhajování kultů a feudálních pověr;\nšíření fám, narušování společenského řádu nebo podkopávání sociální stability;\nŠíření obscénnosti, pornografie, hazardních her, násilí, vražd, teroru nebo podněcování k trestným činům;\nurážet nebo pomlouvat ostatní, porušovat zákonná práva a zájmy ostatních;\nObsahuje další obsah, který Čínská lidová republika zakazuje zákony nebo správními předpisy.\nPokud to není povoleno zákonem nebo s písemným souhlasem vývojáře, uživatelé se nesmí zapojit do žádného z následujících činů：\nNezákonné nebo nevhodné použití Softwaru a Služeb;\nPoškozovat normální provoz softwarového systému nebo webových stránek, záměrně šířit počítačové viry a jiné destruktivní programy;\nProvádět jakékoli neobvyklé chování při používání, které může ovlivnit síťové služby softwaru (mimo jiné včetně poškození, útoku na server nebo přetížení serveru atd.);\nOdstranit informace o autorských právech k softwaru a jeho kopiím.\n\nPokud se uživatel dopustí jakéhokoli chování, které porušuje zákony a předpisy nebo porušuje ustanovení této smlouvy, má vývojář právo přijmout opatření proti uživateli podle závažnosti situace v souladu s touto smlouvou a zákony a předpisy, mimo jiné včetně ukončení služeb. Pokud nastanou závažné okolnosti, budou předány příslušným správním orgánům ke správnímu potrestání nebo prošetřeny pro trestní odpovědnost.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Shromažďování a používání údajů</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Pokud souhlasíte s těmito Podmínkami použití a používáte online služby Softwaru, budeme shromažďovat následující informace：\nIP adresa zařízení, na kterém je Software spuštěn (což nemusí být správná adresa);\nNěkteré systémové informace o zařízení, na kterém Software pracuje;\nPokud dojde k chybě softwaru, mohou být se souhlasem uživatele odeslány protokoly softwaru spuštěného v systému (včetně některých systémových informací), které pomohou vyřešit problém a vylepšit software.\nDalší informace, které budou nahrány se souhlasem uživatele (jak je uvedeno v softwaru).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Uživatelská podpora a zpětná vazba</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Pokud uživatelé během používání narazí na nějaké problémy, mohou poskytnout zpětnou vazbu prostřednictvím oficiálního e-mailu nebo odesláním problému v tomto úložišti zdrojového kódu softwaru. Naši zpětnou vazbu bereme vážně, abychom mohli zlepšovat naše služby.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Změny nebo pozastavení služby</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Pozastavení a ukončení Služby Uživatele\n\nPokud uživatel zveřejní nezákonné informace, závažným způsobem porušuje společenskou morálku nebo zákazy zákona, vývojář ukončí poskytování služeb uživateli;\nPokud se uživatel při převzetí softwarové služby dopustí nesprávného jednání, má vývojář právo ukončit službu poskytovanou uživateli (konkrétní okolnosti nesprávného jednání jsou jasně stanoveny v této smlouvě);\nPokud uživatel používá upravenou verzi softwaru od třetí strany, nese uživatel své vlastní riziko a právní odpovědnost.\n\n2. Pozastavení, pozastavení a ukončení softwaru a služeb：\n\nV případě kterékoli z následujících okolností má vývojář právo ukončit nebo přerušit všechny nebo část služeb softwaru a vývojář nenese odpovědnost vůči uživateli ani žádné třetí straně za nepříjemnosti nebo škody tím způsobené：\n\na. v souladu se Softwarem a Službami;\nb. Nesprávnou funkcí v důsledku poškození serveru;\nc. V důsledku náhlého selhání softwarového a hardwarového vybavení a elektronických komunikačních zařízení;\nd. v důsledku poruch linky poskytovatele sítě nebo jiných poruch;\ne. z politických důvodů;\nf. Důvody třetích stran nebo jiné okolnosti vyšší moci.\n\nVývojář si vyhrazuje právo ukončit nebo částečně ukončit Software a Služby, pokud to považuje za nutné, a Vývojář může informovat Uživatele formou oznámení, ale Vývojář nenese odpovědnost za žádné ztráty způsobené Uživateli.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>zřeknutí se</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Uživatel bere na vědomí a souhlasí s tím, že vývojář neposkytuje na tento software žádnou záruku v rozsahu povoleném zákonem. Použití tohoto softwaru uživatelem je na vlastní riziko uživatele.\nUživatel je srozuměn a souhlasí s tím, že Vývojář nezaručuje, že Software a Služby budou splňovat potřeby Uživatele, ani nezaručuje, že Služby nebudou přerušeny, a neposkytuje žádnou záruku za správnost a bezpečnost Softwaru a Služeb.\nUživatel chápe a souhlasí s tím, že vývojář nemůže plně zaručit správnost, bezpečnost a legitimitu souborů třetích stran stažených z online služeb softwaru, ani není odpovědný za správnost, bezpečnost a zákonnost služeb třetích stran (mimo jiné včetně stahování zdrojů a dalších služeb) existujících v softwaru. Výše uvedený obsah proto nemá nic společného s vývojářem a softwarem a nereprezentuje postavení vývojáře a softwaru. Spory nese poskytovatel služeb třetí strany.\nUživatel je srozuměn a souhlasí s tím, že je výhradně odpovědný za následky způsobené používáním online služeb Softwaru a souvisejících souborů stažených ze Softwaru nesprávnými nebo nezákonnými prostředky a není odpovědný za žádné škody na majetku, porušení autorských práv nebo práv duševního vlastnictví atd. a nenese a nemůže nést žádnou právní odpovědnost.\nUživatel je srozuměn a souhlasí s tím, že Software nezaručuje obsah služeb třetích stran. Vývojář nenese odpovědnost za jakékoli škody na majetku, porušení autorských práv nebo práv duševního vlastnictví způsobené používáním služeb třetích stran uživatelem a nenese a nemůže nést žádnou právní odpovědnost.\nUživatel je srozuměn a souhlasí s tím, že vývojář neposkytuje žádnou záruku a právní podporu pro funkce softwaru, a pokud uživatel používá funkce softwaru k zapojení se do nezákonného nebo jiného nesprávného jednání, rizika a právní důsledky způsobené uživatelem nese uživatel.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>duševní vlastnictví</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Autorská práva, patenty a další práva duševního vlastnictví tohoto softwaru jsou vlastnictvím vývojáře nebo určeného vlastníka autorských práv.\n\nSlužby třetích stran používané v tomto softwaru jsou vlastněny příslušnými držiteli autorských práv, mimo jiné včetně:：\nTento software je online nástroj pro správu serverů a hry Minecraft (jehož konečná interpretace je ve vlastnictví společností Microsoft Corporation a Mojang AB). Uživatelé musí dodržovat svou Licenční smlouvu s koncovým uživatelem (EULA) a příslušné zásady implementované společností NetEase v pevninské Číně a nesmí používat obsah hry pro komerční účely nebo provádět jiné činnosti zakázané Licenční smlouvou s koncovým uživatelem.\nSoftware je nástrojem pro správu serverů a připojení her společnosti Terraria, jehož konečná interpretace spočívá na společnosti Re-Logic a jejích vydavatelích. Uživatelé jsou zodpovědní za dodržování své licenční smlouvy s koncovým uživatelem (EULA) a souvisejících zásad. Uživatelé nesmí používat obsah hry pro nelicencované komerční účely nebo provádět jiné činnosti zakázané licenční smlouvou s koncovým uživatelem.\nNěkteré z online zdrojů stahování souborů (jádro serveru, herní/serverové moduly, zásuvné moduly atd.) poskytované tímto softwarem jsou poskytovány příslušnou oficiální/třetí stranou atd. a s autorskými právy bude nakládáno v souladu s ustanoveními platformy třetí strany.\nAutorská práva k dalším službám třetích stran použitým v tomto softwaru patří poskytovateli služeb.\nTento software je software s otevřeným zdrojovým kódem a uživatelé nebo jiní vývojáři softwaru, kteří nejsou součástí tohoto softwaru, musí dodržovat smlouvu o otevřeném zdrojovém kódu tohoto softwaru.\nUživatel je srozuměn a souhlasí s tím, že s výjimkou zdrojů vytvořených uživatelem jsou všechna data online služeb poskytovaná softwarem vlastnictvím vývojáře. Vývojář má právo rozhodnout, zda zachová nebo nezachová všechna data nebo jejich část na serveru.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Změny podmínek</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Vývojář má právo v případě potřeby změnit tuto Smlouvu. Jakmile dojde ke změně této smlouvy, vývojář zobrazí upravený obsah na důležité stránce. Pokud uživatel nesouhlasí s revizí nebo aktualizací této smlouvy, může převzít iniciativu a přestat software a služby používat. Pokud uživatel pokračuje v používání softwaru a služeb po revizi této smlouvy, znamená to, že souhlasí se všemi dodatky nebo aktualizacemi provedenými v této smlouvě. Pokud uživatel není obeznámen se změnami po revizi této smlouvy, vývojář nenese odpovědnost za žádné ztráty.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Rozmanitý</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Tato Smlouva se řídí právem Čínské lidové republiky, bez ohledu na všechna ustanovení o kolizi právních norem;\nPokud vývojář neuplatní, neuplatní včas nebo plně neuplatní práva vyplývající z této smlouvy nebo v souladu se zákonem, nebude to považováno za zřeknutí se výkonu těchto práv, ani to nebude mít vliv na výkon těchto práv vývojářem v budoucnu;\nV rozsahu povoleném zákonem má Vývojář právo vykládat podmínky této Smlouvy;\nUživatelé si mohou stěžovat a hlásit všechny druhy porušení zákonů a předpisů e-mailem, zašlete prosím e-mail na adresu services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Salvátorské funkce pojmů</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Pokud bude jakékoli ustanovení této smlouvy považováno za neplatné nebo nevymahatelné, zbývající ustanovení zůstanou v plné platnosti a účinnosti.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Vyberte prosím způsob, který chcete provozovat：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Univerzální servery Minecraft Java Edition</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Servery Minecraft Forge</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Servery Minecraft NeoForge</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Servery Minecraft Fabric</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Servery Minecraft Quilt</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Servery Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Samostatná interoperabilita gejzíru Minecraft</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord strana skupiny</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Strana skupiny vodopádu Minecraft</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Strana skupiny rychlosti Minecraftu</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Strana skupiny Minecraft Travertine</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>Klientský program FRP (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Herní servery Terraria</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Další konzolové programy</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Import existující instance</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Nová cesta, nová zkušenost.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Vydejte se na svět v širších souvislostech.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>Ve všech směrech musí být mise splněna.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Na co si vzpomenete, je to tady. (V současné době se používá.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Snažte se co nejlépe odpovědět na jejich otázky.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Vaše MCSL, vaše volba.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Přímé zastavení stahování</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Opakujte stahování 1krát</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Opakujte stahování 3krát</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Zadejte název instance pro ověření</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Ověření démonického klíče</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Sledujte systém</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>světlo</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Temný</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>EULA s automatickým souhlasem (serverová instance Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Automatickým souhlasem jste vázáni Licenční smlouvou s koncovým uživatelem hry Minecraft a souhlasíte s tím, že společnost MCSL nenese společnou a nerozdílnou odpovědnost.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Automaticky zakázat ověření pravosti (instance serveru Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Pokud je tato možnost povolena, takové instance automaticky deaktivují ověřování od společnosti Mojang/Microsoft, což umožní neoriginálním klientům Minecraft Java Edition připojit se k serveru.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Pokud je tato možnost povolena, takové instance automaticky zakážou ověřování od společnosti Mojang/Microsoft, což umožní neoriginálním klientům Minecraft Bedrock Edition připojit se k serveru.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Automaticky zakázat ověření pravosti (instance serveru Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Nasazení se zdrojem obrazu (instance serveru Minecraft Forge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Nasazení se zdrojem obrazu (instance serveru Minecraft NeoForge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Nasazení se zdrojem obrazu (instance serveru Minecraft Fabric)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Nasazení se zrcadlovým zdrojem (instance serveru Minecraft Quilt)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Po povolení bude BMCLAPI použit ke stažení zdrojů, což se doporučuje pro čínské uživatele.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Stáhnout zdrojový kód</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Na stránce Stahování zdrojů vyberte poskytovatele stahování, kterého chcete použít.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (poskytuje Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Obrázek Polestar Cloud (s laskavým svolením společnosti Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>Soubor ZCloud (poskytnutý Z__Tsin členem vývojového týmu)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>Zdrojový kód MSL ke stažení (poskytuje MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>Synchronní zrcadlení MCSL-Sync</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Počet vláken motoru pro stahování</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>V případě dostatečného výkonu počítače platí, že čím vyšší je počet vláken, tím vyšší je teoretická rychlost stahování souboru. Obecně stačí nastavení 16 vláken.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Řešení selhání stahování</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Co dělat, když se stahování souboru nezdaří.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Potvrzení způsobu odstranění instance</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Tato funkce zabraňuje odstranění instancí z důvodu nesprávné obsluhy.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Použití motivu</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Výchozí nastavení se řídí změnami systému, samozřejmě si jej můžete nastavit i sami.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Automatické spouštění (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Při spuštění systému se automaticky spustí grafický program. Pokud je tato možnost povolena, mohou se v systému dotýkat citlivé operace, proto je v antivirovém softwaru povolte.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Kontrola aktualizací (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Zkontrolujte aktualizace tohoto grafického programu.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Kontrola aktualizací</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Při každém spuštění zkontrolujte aktualizace tohoto grafického programu.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Automatická kontrola aktualizací (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Kontrola aktualizací (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Zkontrolujte aktualizace démona.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>O společnosti MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Tento projekt je chráněn autorským zákonem Čínské lidové republiky a mezinárodními smlouvami a neoprávněná reprodukce nebo distribuce programu nebo jakékoli jeho části podléhá přísným občanskoprávním a trestním postihům a stíhání v maximálním rozsahu povoleném zákonem.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Tento projekt je chráněn pod open-source GNU General Public License verze 3.0 a zdrojový kód je hostován na adrese</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Digitálně podepsaný certifikát používaný MCServerLauncher Future zaručuje, že s programem nelze manipulovat. Sériové číslo：59cbf9b5207eeabb45417d148120ac9a。 Pokud je to jiné, nepoužívejte jej a dejte services@mcsl.com.cn zpětnou vazbu.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Nekonečné zrcadlení</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Snímek polární mlhoviny</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>Synchronní zrcadlení MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>oznámení</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Opravdu?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Pokud uživatelskou smlouvu odmítnete, bude software stažen.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Před kliknutím na tlačítko Souhlasím se ujistěte, že jste si vše přečetli. Přinejmenším byste měli protokol dotáhnout až do konce.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Dobré</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Teď ne</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>To znamená, že souhlasíte s veškerým obsahem této smlouvy.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Stáhnout zdroj)</value>
+  </data>
 </root>

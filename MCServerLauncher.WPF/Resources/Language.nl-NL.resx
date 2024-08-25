@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Er is een fout opgetreden met MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>De stapel is gekopieerd naar het klembord. Je kunt direct naar GitHub gaan om feedback te geven.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>WPF-client (alleen Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Taal</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Gebruikersovereenkomst</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Sluit de daemon aan</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Slag</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Ga door</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Stel de taal in</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Taal</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>hoofdpagina</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Een exemplaar maken</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Beheer van instanties</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Downloads van bronnen</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Helpcentrum</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Berichtencentrum</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Pagina voor foutopsporing</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Programma-instellingen</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>prompt</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF ondersteunt geen dubbele uitvoeringen.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>makelaar</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Origineel</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>zuiver</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Module</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>Bedrock</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Het is niet gelukt om de kernintroductie te krijgen!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Minecraft Bedrock Edition-pakket met ritssluiting</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Importeer het gedownloade pakket hier. Als je niet weet waar je moet downloaden, kun je op de knop aan de rechterkant klikken om te springen.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Zip pakket</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Bladeren</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Minecraft Server Core</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Selecteer de kernbestanden die door de server zullen worden gebruikt. Als je niet weet waar je moet downloaden, kun je op de knop aan de rechterkant klikken om te springen.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Bestandsnaam kern</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Java-runtime</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>De Java-runtime is een vereiste omgeving voor de Minecraft Java-server. Zorg ervoor dat u de juiste versie kiest om mislukte opstarten te voorkomen.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Java-pad</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Handmatige selectie</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Automatisch zoeken op Daemon-hosts</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Kies uit bestaande resultaten</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ vereist Java 8\n1.17+ vereist Java 16\n1.18+ vereist Java 17\n1.20.5+ vereist Java 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Bestandsnaam</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Selecteer het bestand/de map/het pakket dat nodig is voor het exemplaar. Het archief ondersteunt alleen het ZIP-formaat.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Afhankelijkheden van implementatie</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Voer de opdracht uit</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Voer hier de opdracht run in.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Als u parameters moet toevoegen,\nBevestig het direct aan de achterkant.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Gebruik geen speciale symbolen en gebruik geen illegale namen.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>De naam van de instantie</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Optioneel kunt u hier extra JVM-parameters toevoegen, één per regel.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Parameters toevoegen</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>JVM-parameters</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Maximaal geheugen</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Minimaal geheugen</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Dit bepaalt hoeveel geheugen uw Minecraft Java-server kan gebruiken.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>JVM-geheugen hoop</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Het minimale geheugen ≤ het maximale geheugen is voldoende</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Kopieer de link</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Time-out</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuleren</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Bestandsgrootte</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Minecraft-editie</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Bouwt</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>sluiten</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>openen</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Tijd tot oprichting</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Type instantie</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>meer</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>ingewijde</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>terugkeren</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Wanneer u klaar bent met de volgende configuraties, klikt u op Doorgaan.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Selecteer de versie van Minecraft die de server zal draaien.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Gespoeld</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Als het niet laadt, probeer het dan later opnieuw.\nIMAGE SERVICE WORDT MOGELIJK GEMAAKT DOOR BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Smeed versie</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>NeoForge versie</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Stoffen uitvoering</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Quilt versie</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Selecteer de versie van de Forge-loader die de server zal gebruiken.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Selecteer de versie van de NeoForge-loader die de server zal draaien.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Selecteer de versie van de Fabric loader die op de server wordt uitgevoerd.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Selecteer de versie van de Quilt-loader die de server zal draaien.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Alleen de officiële versie wordt weergegeven</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Server kernen</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Open de officiële website</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Welkom</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Sla voorlopig over</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>instemmen</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>weigeren</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Welkom bij de software en diensten van MCServerLauncher (hierna te noemen de "Software") die worden geleverd door het MCSL Development Team. Om de rechten en belangen van gebruikers te beschermen, verzoeken wij u de volledige inhoud van deze overeenkomst zorgvuldig te lezen voordat u deze software gebruikt. We kunnen deze Overeenkomst op elk gewenst moment bijwerken en deze zal de oorspronkelijke Gebruikersovereenkomst in feite vervangen zodra deze is geplaatst.\nLees de volgende inhoud aandachtig door, wanneer u deze software gebruikt, betekent dit dat u alle inhoud van deze overeenkomst in detail hebt gelezen en ermee instemt, en ermee instemt zich te houden aan de bepalingen van deze overeenkomst.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Voorzorgsmaatregelen</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>De gebruiker dient de software en de functies van de software (met inbegrip van, maar niet beperkt tot, het maken van nieuwe instanties) uit te rusten met de door de gebruiker vereiste hardware- en softwareconfiguratie.\nGebruikers zijn verantwoordelijk voor de relevante kosten voor telefoon- en breedbandgebruik die moeten worden betaald na verbinding met internet.\nDe gebruiker draagt de wettelijke verantwoordelijkheid voor het gedrag, de gebeurtenis en het resultaat veroorzaakt door het gebruik van deze software.\nAlle transacties en geschillen tussen gebruikers en andere onbevoegde niet-officiële personen hebben niets te maken met de ontwikkelaar.\nDe gebruiker moet zich houden aan de relevante wet- en regelgeving van de Volksrepubliek China (als de gebruiker een gebruiker buiten de Volksrepubliek China is, moet de gebruiker zich ook houden aan de wet- en regelgeving van het land of de regio waartoe hij behoort).\nDe gebruiker mag de software (of sommige kenmerken en functies van de software) niet gebruiken om illegale handelingen te verrichten, en zal de relevante processen en diensten die verband houden met de software niet gebruiken om illegale handelingen te verrichten, en de gevolgen van eventuele handelingen zullen niet gerelateerd zijn aan de ontwikkelaar.\nGebruikers dragen hun eigen wettelijke verantwoordelijkheden met betrekking tot de inhoud van de informatie die ze publiceren. De gebruiker mag geen van de volgende inhoud in de software invoeren, publiceren of verspreiden, de processen en diensten die verband houden met de werking van de software, en zal geen van de volgende inhoud in welke vorm dan ook publiceren：\n\nzich verzetten tegen de basisbeginselen die zijn vastgelegd in de grondwet van de Volksrepubliek China;\nhet in gevaar brengen van de nationale veiligheid, het onthullen van staatsgeheimen, het ondermijnen van de staatsmacht of het ondermijnen van de nationale eenheid;\nhet schaden van de eer en belangen van de staat;\nhet aanzetten tot etnische haat, etnische discriminatie of het ondermijnen van etnische eenheid;\nhet ondermijnen van nationaal religieus beleid, het bepleiten van sekten en feodaal bijgeloof;\nhet verspreiden van geruchten, het verstoren van de sociale orde of het ondermijnen van de sociale stabiliteit;\nHet verspreiden van obsceniteiten, pornografie, gokken, geweld, moord, terreur of het aanzetten tot misdaden;\nanderen beledigen of belasteren, inbreuk maken op de wettelijke rechten en belangen van anderen;\nBevat andere inhoud die in de Volksrepubliek China verboden is door wetten of administratieve voorschriften.\nTenzij toegestaan door de wet of met schriftelijke toestemming van de ontwikkelaar, mogen gebruikers zich niet bezighouden met een van de volgende handelingen：\nIllegaal of ongepast gebruik van de Software en Diensten;\nDe normale werking van het softwaresysteem of de website beschadigen, opzettelijk computervirussen en andere destructieve programma's verspreiden;\nAbnormaal gebruiksgedrag te ondernemen dat van invloed kan zijn op de netwerkdiensten van de Software (met inbegrip van, maar niet beperkt tot, het beschadigen, aanvallen van de server of het overbelasten van de server, enz.);\nVerwijder de auteursrechtelijke informatie op de Software en de kopieën ervan.\n\nAls de gebruiker gedrag vertoont dat in strijd is met wet- en regelgeving of in strijd is met de bepalingen van deze Overeenkomst, heeft de ontwikkelaar het recht om maatregelen tegen de gebruiker te nemen, afhankelijk van de ernst van de situatie, in overeenstemming met deze Overeenkomst en wet- en regelgeving, inclusief maar niet beperkt tot het beëindigen van services. Als de omstandigheden ernstig zijn, worden ze overgedragen aan de relevante bestuursorganen voor administratieve bestraffing of worden ze onderzocht op strafrechtelijke aansprakelijkheid.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Gegevensverzameling en -gebruik</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Als u akkoord gaat met deze Gebruiksvoorwaarden en gebruik maakt van de online diensten van de Software, verzamelen wij de volgende informatie：\nhet IP-adres van het apparaat waarop de Software wordt uitgevoerd (wat mogelijk niet het juiste adres is);\nBepaalde systeeminformatie over de apparatuur waarop de Software werkt;\nWanneer de software crasht, kunnen de logboeken van de software die op het systeem wordt uitgevoerd (inclusief bepaalde systeeminformatie) met toestemming van de gebruiker worden geüpload om het probleem op te lossen en de software te verbeteren.\nAndere informatie die wordt geüpload met toestemming van de gebruiker (zoals gespecificeerd in de software).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Ondersteuning en feedback van gebruikers</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Als gebruikers tijdens het gebruik problemen ondervinden, kunnen ze feedback geven via de officiële e-mail of door een probleem in te dienen in deze repository voor softwarebroncode. We nemen onze feedback serieus om onze diensten te verbeteren.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Wijzigingen of opschorting van de service</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Opschorting en beëindiging van de Dienst van de Gebruiker\n\nAls de gebruiker illegale informatie publiceert, de sociale moraal ernstig schendt of de verboden van de wet overtreedt, zal de ontwikkelaar de levering van diensten aan de gebruiker beëindigen;\nAls de gebruiker een ongepaste handeling pleegt bij het accepteren van de softwareservice, heeft de ontwikkelaar het recht om de service die aan de gebruiker wordt geleverd te beëindigen (de specifieke omstandigheden van het ongepast gedrag zijn duidelijk vastgelegd in deze overeenkomst);\nAls de gebruiker een gewijzigde versie van de software van een derde partij gebruikt, draagt de gebruiker zijn eigen risico en wettelijke aansprakelijkheid.\n\n2. Opschorting, opschorting en beëindiging van de Software en Diensten：\n\nIn het geval van een van de volgende omstandigheden heeft de ontwikkelaar het recht om alle of een deel van de diensten van de software te beëindigen of te onderbreken, en de ontwikkelaar is niet aansprakelijk jegens de gebruiker of een derde partij voor het ongemak of de schade die hierdoor wordt veroorzaakt：\n\na. zoals vereist door de Software en Diensten;\nb. Het niet naar behoren functioneren als gevolg van schade aan de server;\nc. Als gevolg van plotselinge uitval van software- en hardwareapparatuur en elektronische communicatieapparatuur;\nd. als gevolg van lijn- of andere storingen van de netwerkprovider;\ne. uit beleidsoverwegingen;\nf. Redenen van derden of andere omstandigheden van overmacht.\n\nDe Ontwikkelaar behoudt zich het recht voor om de Software en Diensten te beëindigen of gedeeltelijk te beëindigen wanneer hij dit nodig acht, en de Ontwikkelaar kan de Gebruiker hiervan op de hoogte stellen in de vorm van een aankondiging, maar de Ontwikkelaar is niet aansprakelijk voor eventuele verliezen die aan de Gebruiker worden toegebracht.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>Disclaimer</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>De gebruiker begrijpt en stemt ermee in dat de ontwikkelaar geen enkele garantie biedt voor deze software voor zover toegestaan door de wet. Het gebruik van deze software door de gebruiker is op eigen risico van de gebruiker.\nDe Gebruiker begrijpt en stemt ermee in dat de Ontwikkelaar niet garandeert dat de Software en Diensten zullen voldoen aan de behoeften van de Gebruiker, noch dat de Diensten niet zullen worden onderbroken, en geen enkele garantie biedt voor de juistheid en veiligheid van de Software en Diensten.\nDe gebruiker begrijpt en stemt ermee in dat de ontwikkelaar de juistheid, veiligheid en legitimiteit van de bestanden van derden die zijn gedownload van de online diensten van de software niet volledig kan garanderen, noch is hij verantwoordelijk voor de juistheid, veiligheid en wettigheid van de diensten van derden (inclusief maar niet beperkt tot het downloaden van bronnen en andere diensten) die in de software bestaan. Daarom heeft de hierboven genoemde inhoud niets te maken met de ontwikkelaar en de software, en vertegenwoordigt het niet de positie van de ontwikkelaar en de software. Geschillen zijn ten laste van de derde dienstverlener.\nDe Gebruiker begrijpt en stemt ermee in dat de Gebruiker als enige verantwoordelijk is voor de gevolgen die worden veroorzaakt door het gebruik van de online diensten van de Software en de bijbehorende bestanden die op onjuiste of illegale wijze van de Software zijn gedownload, en niet verantwoordelijk is voor enige schade aan eigendommen, inbreuk op auteursrechten of intellectuele eigendomsrechten, enz., en geen enkele wettelijke aansprakelijkheid zal en kan dragen.\nDe gebruiker begrijpt en stemt ermee in dat de Software de inhoud van diensten van derden niet garandeert. De ontwikkelaar is niet verantwoordelijk voor enige schade aan eigendommen, inbreuk op auteursrechten of intellectuele eigendomsrechten veroorzaakt door het gebruik van diensten van derden door de gebruiker, en zal en kan geen enkele juridische verantwoordelijkheid dragen.\nDe gebruiker begrijpt en stemt ermee in dat de ontwikkelaar geen enkele garantie en juridische ondersteuning biedt voor de functies van de software, en als de gebruiker de functies van de software gebruikt om illegale of andere ongepaste handelingen te verrichten, zijn de risico's en juridische gevolgen die door de gebruiker worden veroorzaakt, voor rekening van de gebruiker.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>Intellectuele eigendom</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>De auteursrechten, patenten en andere intellectuele eigendomsrechten van deze software zijn eigendom van de ontwikkelaar of de aangewezen auteursrechthebbende.\n\nDiensten van derden die in deze software worden gebruikt, zijn eigendom van de relevante auteursrechthebbenden, met inbegrip van, maar niet beperkt tot:：\nDeze software is een online tool voor serverbeheer en games voor Minecraft (waarvan de uiteindelijke interpretatie eigendom is van Microsoft Corporation en Mojang AB). Gebruikers dienen zich te houden aan hun Licentieovereenkomst voor eindgebruikers (EULA) en het relevante beleid dat door NetEase op het Chinese vasteland is geïmplementeerd, en mogen de inhoud van het spel niet gebruiken voor commerciële doeleinden of andere handelingen verrichten die verboden zijn door de Licentieovereenkomst voor eindgebruikers.\nDe Software is de tool voor serverbeheer en spelverbinding van Terraria, waarvan de uiteindelijke invulling berust bij Re-Logic en haar uitgevers. Gebruikers zijn verantwoordelijk voor het naleven van hun licentieovereenkomst voor eindgebruikers (EULA) en gerelateerd beleid. Gebruikers mogen de inhoud van het spel niet gebruiken voor commerciële doeleinden zonder licentie of andere handelingen verrichten die verboden zijn door de licentieovereenkomst voor eindgebruikers.\nSommige van de downloadservices voor online bestandsbronnen (serverkern, game-/servermodules, plug-ins, enz.) die door deze software worden geleverd, worden geleverd door de overeenkomstige officiële/derde partij, enz., en het auteursrecht zal worden behandeld in overeenstemming met de bepalingen van het platform van derden.\nHet auteursrecht van andere diensten van derden die in deze software worden gebruikt, behoort toe aan de dienstverlener.\nDeze software is open source software en gebruikers of andere softwareontwikkelaars die geen deel uitmaken van deze software moeten zich houden aan de open source-overeenkomst van deze software.\nDe Gebruiker begrijpt en gaat ermee akkoord dat, met uitzondering van de bronnen die door de Gebruiker zijn gemaakt, alle online servicegegevens die door de Software worden verstrekt, eigendom zijn van de Ontwikkelaar. De ontwikkelaar heeft het recht om te beslissen of hij alle of een deel van de gegevens op de server wil bewaren of niet.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Wijzigingen in de voorwaarden</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>De Ontwikkelaar heeft het recht om deze Overeenkomst te wijzigen wanneer dat nodig is. Zodra er een wijziging in deze Overeenkomst is aangebracht, zal de ontwikkelaar de gewijzigde inhoud op de belangrijke pagina weergeven. Indien de gebruiker niet akkoord gaat met de herziening of bijwerking van deze overeenkomst, kan hij of zij het initiatief nemen om het gebruik van de software en diensten te staken. Als de gebruiker de software en services blijft gebruiken na de herziening van deze overeenkomst, betekent dit dat de gebruiker akkoord gaat met alle wijzigingen of updates die in deze overeenkomst zijn aangebracht. Als de gebruiker niet op de hoogte is van de wijzigingen na de herziening van deze overeenkomst, is de ontwikkelaar niet aansprakelijk voor eventuele verliezen.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Allerlei</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Op deze Overeenkomst is het recht van de Volksrepubliek China van toepassing, zonder rekening te houden met conflicterende wettelijke bepalingen;\nHet niet, niet tijdig of niet volledig uitoefenen van de rechten die de Ontwikkelaar geniet op grond van deze Overeenkomst of in overeenstemming met de wet, mag niet worden beschouwd als een verklaring van afstand van de uitoefening van dergelijke rechten, noch heeft dit invloed op de uitoefening van dergelijke rechten door de Ontwikkelaar in de toekomst;\nVoor zover wettelijk toegestaan, heeft de Ontwikkelaar het recht om de voorwaarden van deze Overeenkomst te interpreteren;\nGebruikers kunnen per e-mail klagen en allerlei overtredingen van wet- en regelgeving melden, stuur de e-mail naar services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Scheidbaarheid van voorwaarden</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Indien een bepaling van deze Overeenkomst ongeldig of niet-afdwingbaar wordt geacht, blijven de overige bepalingen volledig van kracht.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Selecteer de methode die u wilt gebruiken：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Universele Minecraft Java Edition-servers</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Minecraft Forge servers</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Minecraft NeoForge-servers</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Minecraft Fabric servers</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Minecraft Quilt servers</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Minecraft Bedrock Edition-servers</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Minecraft Geyser Interoperabiliteit Standalone</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord groepszijde</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Minecraft Waterval groep kant</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity Groep Zijde</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Minecraft Travertijn groep kant</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>FRP-clientprogramma (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Terraria Game Servers</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Andere consoleprogramma's</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Een bestaand exemplaar importeren</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Nieuwe reis, nieuwe ervaring.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Veeg het grote geheel om de wereld te zien.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>In alle richtingen moet de missie worden volbracht.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Noem maar op, het is hier gekomen. (Momenteel in gebruik.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Doe je best om hun vragen te beantwoorden.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Uw MCSL, uw keuze.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Stop de download direct</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Probeer de download 1 keer opnieuw uit te voeren</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Probeer de download 3 keer opnieuw uit te voeren</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Voer de naam van het exemplaar in voor validatie</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Validatie van Daemon-sleutels</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Volg het systeem</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>licht</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Donker</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>EULA voor automatische toestemming (Minecraft Java Edition Server-instantie)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Door automatisch akkoord te gaan, bent u gebonden aan de Minecraft End User License Agreement en gaat u ermee akkoord dat MCSL niet hoofdelijk aansprakelijk is.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Authenticiteitsverificatie automatisch uitschakelen (Minecraft Java Edition-serverinstantie)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Wanneer deze optie is ingeschakeld, wordt de verificatie van Mojang/Microsoft automatisch uitgeschakeld, waardoor niet-legitieme Minecraft Java Edition-clients verbinding kunnen maken met de server.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Wanneer deze optie is ingeschakeld, wordt de verificatie van Mojang/Microsoft automatisch uitgeschakeld, waardoor niet-legitieme Minecraft Bedrock Edition-clients verbinding kunnen maken met de server.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Authenticiteitsverificatie automatisch uitschakelen (Minecraft Bedrock Edition-serverinstantie)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Implementeren met een afbeeldingsbron (Minecraft Forge-serverinstantie)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Implementeren met een afbeeldingsbron (Minecraft NeoForge Server Instance)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Implementeren met een afbeeldingsbron (Minecraft Fabric-serverinstantie)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Implementeren met een spiegelbron (Minecraft Quilt-serverinstantie)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Nadat ingeschakeld, wordt BMCLAPI gebruikt om bronnen te downloaden, wat wordt aanbevolen voor Chinese gebruikers.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Download de bron</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Selecteer de downloadprovider die u wilt gebruiken op de pagina Resource Downloads.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (geleverd door Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Polestar Cloud-afbeelding (met dank aan Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ZCloud-bestand (geleverd door Z__Tsin lid van het ontwikkelingsteam)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>MSL-downloadbron (geleverd door MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>MCSL-Sync synchroon spiegelen</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Aantal threads van de downloadengine</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>In het geval van voldoende computerprestaties geldt: hoe hoger het aantal threads, hoe sneller de theoretische downloadsnelheid van het bestand. Over het algemeen is een instelling van 16 draden voldoende.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Hoe om te gaan met downloadfouten</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Wat te doen als het downloaden van het bestand mislukt.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Bevestig de methode voor het verwijderen van een exemplaar</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Deze functie voorkomt dat instanties worden verwijderd als gevolg van verkeerde bediening.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Een thema toepassen</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>De standaard volgt de systeemwijzigingen, u kunt deze natuurlijk ook zelf instellen.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Automatisch starten (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Wanneer het systeem opstart, wordt het grafische programma automatisch gestart. Indien ingeschakeld, kunnen gevoelige bewerkingen op het systeem worden aangeraakt, dus sta deze toe in uw antivirussoftware.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Controleren op updates (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Controleer of er updates zijn voor dit grafische programma.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Controleren op updates</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Controleer bij elke opstart of er updates zijn voor dit grafische programma.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Automatisch controleren op updates (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Controleren op updates (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Controleer of er updates zijn voor de daemon.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>Over MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Dit project wordt beschermd door de Auteurswet van de Volksrepubliek China en internationale verdragen, en ongeoorloofde reproductie of distributie van het Programma of een deel daarvan is onderworpen aan strenge civielrechtelijke en strafrechtelijke sancties en vervolging voor zover toegestaan door de wet.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Dit project wordt beschermd door de open-source GNU General Public License Version 3.0 en de broncode wordt gehost op</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Het digitaal ondertekende certificaat dat door MCServerLauncher Future wordt gebruikt, garandeert dat er niet met het programma kan worden geknoeid. Serienummer：59CBF9B5207EAAB45417D148120AC9A。 Als het anders is, gebruik het dan niet en geef feedback aan services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Oneindig spiegelen</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Het beeld van de polaire nevel</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync synchroon spiegelen</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>aankondiging</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Weet je het zeker?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Als u de Gebruikersovereenkomst afwijst, wordt de Software ingetrokken.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Zorg ervoor dat je alles hebt gelezen voordat je op Akkoord klikt. Je moet op zijn minst het protocol tot het einde rollen.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Goed</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Niet nu</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Dit betekent dat u akkoord gaat met de volledige inhoud van deze Overeenkomst.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Download bron)</value>
+  </data>
 </root>

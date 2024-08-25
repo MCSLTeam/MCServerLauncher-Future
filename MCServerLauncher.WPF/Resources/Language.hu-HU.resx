@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Hiba történt az MCServerLauncher WPF használatakor</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>A verem a vágólapra lett másolva. Közvetlenül a GitHubon küldhet visszajelzést.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>WPF-ügyfél (csak Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Nyelv</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Felhasználói megállapodás</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>A démon csatlakoztatása</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Induláshoz</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Folytasd</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> A nyelv beállítása</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Nyelv</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>honlap</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Példány létrehozása</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Példánykezelés</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Erőforrások letöltése</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Súgó Központ</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Értesítési központ</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Hibakeresési oldal</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Program beállítások</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>haladéktalan</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>Az MCServerLauncher WPF nem támogatja az ismétlődő futtatásokat.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>alkusz</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Eredeti</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>tiszta</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Modul</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>fekükőzet</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Nem sikerült megszerezni az alapvető bevezetést!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Minecraft Bedrock Edition zip csomag</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Kérjük, importálja a letöltött csomagot itt. Ha nem tudja, hol töltse le, kattintson a jobb oldali gombra az ugráshoz.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Zip csomag</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Böngészik</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Minecraft Server Core</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Kérjük, válassza ki a szerver által használt alapvető fájlokat. Ha nem tudja, hol töltse le, kattintson a jobb oldali gombra az ugráshoz.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Alapvető fájlnév</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Java futtatókörnyezet</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>A Java futtatókörnyezet a Minecraft Java szerver szükséges környezete. Ügyeljen arra, hogy a megfelelő verziót válassza ki az indítási hibák elkerülése érdekében.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Java elérési út</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Kézi kiválasztás</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Automatikus keresés a démongépeken</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Válasszon a meglévő találatok közül</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>Az 1.12+ használatához Java 8 szükséges\nAz 1.17+ használatához Java 16 szükséges\nAz 1.18+ használatához Java 17 szükséges\nAz 1.20.5+ használatához Java 21 szükséges</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>fájlnév</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Válassza ki a példányhoz szükséges fájlt/mappát/csomagot. Az archívum csak a ZIP formátumot támogatja.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Üzembe helyezési függőségek</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Futtassa a parancsot</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Írja be ide a futtatás parancsot.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Ha paramétereket kell csatolnia,\nCsatlakoztassa közvetlenül a hátához.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Ne használj különleges szimbólumokat, és ne használj illegális neveket.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>A példány neve</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Itt további JVM-paramétereket is hozzáadhat, soronként egyet.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Paraméterek hozzáadása</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>JVM paraméterek</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Maximális memória</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Minimális memória</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Ez határozza meg, hogy mennyi memóriát képes használni a Minecraft Java szerver.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>JVM memóriakupac</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>A minimális memória ≤ a maximális memória elegendő</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>A hivatkozás másolása</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Időtúllépés</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Érvénytelenít</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Fájl mérete</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Minecraft kiadás</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Épít</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>bezár</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>nyitott</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Létrehozási idő</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Példány típusa</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>több</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>kezdeményez</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>visszatérés</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Ha végzett a következő konfigurációkkal, kattintson a Folytatás gombra.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Kérjük, válassza ki a Minecraft azon verzióját, amelyet a szerver futtatni fog.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Kipirult</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Ha nem töltődik be, próbálkozzon újra később.\nAZ IMAGE SERVICE-T A BMCLAPI MŰKÖDTETI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Forge verzió</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>NeoForge verzió</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Szövet verzió</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Paplan változat</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Válassza ki a Forge betöltő verzióját, amelyet a szerver futtatni fog.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Kérjük, válassza ki a NeoForge betöltő verzióját, amelyet a szerver futtatni fog.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Válassza ki a Fabric-betöltő azon verzióját, amelyet a kiszolgáló futtatni fog.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Válassza ki a paplanbetöltő azon verzióját, amelyet a szerver futtatni fog.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Csak a hivatalos verzió jelenik meg</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Kiszolgálómagok</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Nyissa meg a hivatalos weboldalt</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Isten hozott</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Ugrás most</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>egyetért</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>visszautasít</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Üdvözöljük az MCServerLauncher szoftverében és szolgáltatásaiban (a továbbiakban: "Szoftver"), amelyet az MCSL fejlesztői csapat biztosít. A felhasználók jogainak és érdekeinek védelme érdekében kérjük, olvassa el figyelmesen a jelen szerződés teljes tartalmát a szoftver használata előtt. A jelen Szerződést bármikor frissíthetjük, és közzétételét követően ténylegesen felváltja az eredeti Felhasználói megállapodást.\nKérjük, figyelmesen olvassa el az alábbi tartalmat, amikor ezt a szoftvert használja, ez azt jelenti, hogy részletesen elolvasta és elfogadta a jelen szerződés teljes tartalmát, és vállalja, hogy betartja a jelen szerződés rendelkezéseit.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Óvintézkedések</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>A felhasználónak fel kell szerelnie a szoftvert és a szoftver funkcióit (beleértve, de nem kizárólagosan az új példányok létrehozását) a felhasználó által igényelt hardver- és szoftverkonfigurációval.\nA felhasználók felelősek a vonatkozó telefon- és szélessávú használati díjakért, amelyeket az internethez való csatlakozást követően kell megfizetni.\nA felhasználó viseli a jogi felelősséget a szoftver használatából eredő viselkedésért, eseményért és eredményért.\nA felhasználók és más illetéktelen nem hivatalos személyek közötti tranzakciók és viták semmi köze a fejlesztőhöz.\nA felhasználónak be kell tartania a Kínai Népköztársaság vonatkozó törvényeit és rendeleteit (ha a felhasználó a Kínai Népköztársaságon kívüli felhasználó, akkor a felhasználónak be kell tartania annak az országnak vagy régiónak a törvényeit és rendeleteit is, amelyhez tartozik).\nA felhasználó nem használhatja a szoftvert (vagy a szoftver egyes jellemzőit és funkcióit) illegális cselekmények végrehajtására, és nem használhatja a szoftverhez kapcsolódó folyamatokat és szolgáltatásokat jogellenes cselekmények végrehajtására, és semmilyen tevékenység következményei nem vonhatók felelősségre a fejlesztőtől.\nA felhasználók viselik saját jogi felelősségüket az általuk közzétett információk tartalmával kapcsolatban. A felhasználó nem viheti be, nem teheti közzé és nem terjesztheti a szoftverbe, a szoftver működéséhez kapcsolódó folyamatokba és szolgáltatásokba az alábbi tartalmakat, és semmilyen formában nem teheti közzé az alábbi tartalmakat：\n\nellenezve a Kínai Népköztársaság alkotmányában foglalt alapelveket;\na nemzetbiztonság veszélyeztetése, államtitkok nyilvánosságra hozatala, az államhatalom aláásása vagy a nemzeti egység aláásása;\naz állam becsületének és érdekeinek megsértése;\netnikai gyűlölet és etnikai megkülönböztetés szítása vagy az etnikai egység aláásása;\naláássa a nemzeti valláspolitikákat, kultuszokat és feudális babonákat támogat;\npletykák terjesztése, a társadalmi rend megzavarása vagy a társadalmi stabilitás aláásása;\nObszcenitás, pornográfia, szerencsejáték, erőszak, gyilkosság, terror terjesztése vagy bűncselekményekre való felbujtás;\nmások sértegetése vagy rágalmazása, mások törvényes jogainak és érdekeinek megsértése;\nEgyéb olyan tartalmakat tartalmaz, amelyeket a Kínai Népköztársaság törvények vagy közigazgatási rendeletek tiltanak.\nHacsak a törvény nem engedélyezi vagy a fejlesztő írásbeli engedélyével, a felhasználók nem vehetnek részt az alábbi cselekmények egyikében sem：\nA Szoftver és a Szolgáltatások illegális vagy nem megfelelő használata;\nA szoftverrendszer vagy a weboldal normál működésének károsítása, számítógépes vírusok és egyéb romboló programok szándékos terjesztése;\nNem tehet semmilyen rendellenes használati magatartást, amely hatással lehet a Szoftver hálózati szolgáltatásaira (beleértve, de nem kizárólagosan a kiszolgáló károsítását, megtámadását vagy a kiszolgáló túlterhelését stb.);\nTörölje a szerzői jogi információkat a Szoftverről és annak másolatairól.\n\nHa a felhasználó olyan magatartást követ el, amely sérti a törvényeket és rendeleteket, vagy megsérti a jelen Szerződés rendelkezéseit, a fejlesztőnek joga van intézkedéseket tenni a felhasználóval szemben a helyzet súlyosságának megfelelően, a jelen Megállapodással, valamint a törvényekkel és rendeletekkel összhangban, beleértve, de nem kizárólagosan a szolgáltatások megszüntetését. Ha a körülmények súlyosak, közigazgatási büntetés kiszabása céljából átadják őket az illetékes közigazgatási szerveknek, vagy büntetőjogi felelősség megállapítása céljából vizsgálják ki őket.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Adatgyűjtés és -felhasználás</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Ha elfogadja a jelen Használati feltételeket, és használja a Szoftver online szolgáltatásait, a következő információkat gyűjtjük：\nannak az eszköznek az IP-címe, amelyen a Szoftver fut (amely nem feltétlenül a helyes cím);\nNéhány rendszerinformáció arról a berendezésről, amelyen a Szoftver működik;\nAmikor a szoftver összeomlik, a rendszeren futó szoftver naplói (beleértve néhány rendszerinformációt is) feltölthetők a felhasználó beleegyezésével a probléma megoldása és a szoftver fejlesztése érdekében.\nEgyéb információk, amelyek feltöltése a felhasználó beleegyezésével történik (a szoftverben meghatározottak szerint).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Felhasználói támogatás és visszajelzés</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Ha a felhasználók bármilyen problémába ütköznek a használat során, visszajelzést adhatnak a hivatalos e-mailen keresztül, vagy problémát küldhetnek be ebben a szoftver forráskódtárában. Szolgáltatásaink fejlesztése érdekében komolyan vesszük visszajelzéseinket.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>A szolgáltatás módosítása vagy felfüggesztése</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. A Felhasználó Szolgáltatásának felfüggesztése és megszüntetése\n\nHa a felhasználó illegális információkat tesz közzé, súlyosan megsérti a társadalmi erkölcsöt, vagy megsérti a törvény tilalmait, a fejlesztő megszünteti a szolgáltatás nyújtását a felhasználó számára;\nHa a felhasználó helytelen cselekményt követ el a szoftverszolgáltatás elfogadásakor, a fejlesztőnek joga van megszüntetni a felhasználónak nyújtott szolgáltatást (a helytelen viselkedés konkrét körülményeit egyértelműen meghatározza ez a szerződés);\nHa a felhasználó a szoftver harmadik féltől származó módosított verzióját használja, a felhasználó viseli saját kockázatát és jogi felelősségét.\n\n2. A Szoftver és a Szolgáltatások felfüggesztése, felfüggesztése és megszüntetése：\n\nAz alábbi körülmények bármelyike esetén a fejlesztőnek jogában áll megszüntetni vagy megszakítani a szoftver szolgáltatásainak egészét vagy egy részét, és a fejlesztő nem vállal felelősséget a felhasználó vagy bármely harmadik fél felé az ebből eredő kellemetlenségekért vagy károkért：\n\na. a Szoftver és a Szolgáltatások által megkövetelt módon;\nb. A szerver károsodása miatt nem működik megfelelően;\nc. A szoftver- és hardverberendezések, valamint az elektronikus kommunikációs berendezések hirtelen meghibásodása miatt;\nd. hálózati szolgáltatói vonal vagy egyéb hibák miatt;\ne. szakpolitikai megfontolások miatt;\nf. Harmadik fél okai vagy egyéb vis maior körülmények.\n\nA Fejlesztő fenntartja magának a jogot, hogy szükség esetén megszüntesse vagy részlegesen megszüntesse a Szoftvert és a Szolgáltatásokat, és a Fejlesztő közlemény formájában értesítheti a Felhasználót, de a Fejlesztő nem vállal felelősséget a Felhasználónak okozott veszteségekért.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>lemondás</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>A felhasználó megérti és elfogadja, hogy a fejlesztő nem vállal garanciát erre a szoftverre a törvény által megengedett mértékben. A szoftvert a felhasználó saját felelősségére használja.\nA Felhasználó megérti és elfogadja, hogy a Fejlesztő nem garantálja, hogy a Szoftver és a Szolgáltatások megfelelnek a Felhasználó igényeinek, sem azt, hogy a Szolgáltatások nem szakadnak meg, és nem vállal garanciát a Szoftver és a Szolgáltatások helyességére és biztonságára.\nA felhasználó megérti és elfogadja, hogy a fejlesztő nem tudja teljes mértékben garantálni a szoftver online szolgáltatásaiból letöltött harmadik féltől származó fájlok helyességét, biztonságát és legitimitását, és nem felelős a szoftverben található harmadik féltől származó szolgáltatások helyességéért, biztonságáért és jogszerűségéért (beleértve, de nem kizárólagosan az erőforrások letöltését és egyéb szolgáltatásokat). Ezért a fent említett tartalomnak semmi köze a fejlesztőhöz és a szoftverhez, és nem képviseli a fejlesztő és a szoftver helyzetét. A vitákat a harmadik fél szolgáltató viseli.\nA Felhasználó megérti és elfogadja, hogy kizárólag a Felhasználó felelős a Szoftver online szolgáltatásainak és a Szoftverből helytelen vagy illegális módon letöltött kapcsolódó fájloknak a használatából eredő következményekért, és nem felelős semmilyen vagyoni kárért, szerzői jog vagy szellemi tulajdonjog megsértéséért stb., és nem vállal és nem is vállalhat jogi felelősséget.\nA felhasználó megérti és elfogadja, hogy a Szoftver nem garantálja harmadik fél szolgáltatásainak tartalmát. A fejlesztő nem vállal felelősséget semmilyen vagyoni kárért, a szerzői jog vagy a szellemi tulajdonjogok megsértéséért, amelyet a felhasználó harmadik fél szolgáltatásainak használata okoz, és nem vállal és nem is vállalhat jogi felelősséget.\nA felhasználó megérti és elfogadja, hogy a fejlesztő nem nyújt garanciát és jogi támogatást a szoftver funkcióira, és ha a felhasználó a szoftver funkcióit illegális vagy más helytelen cselekmények végrehajtására használja, a felhasználó által okozott kockázatok és jogi következmények a felhasználót terhelik.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>Szellemi tulajdon</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>A szoftver szerzői jogai, szabadalmai és egyéb szellemi tulajdonjogai a fejlesztő vagy a szerzői jog kijelölt tulajdonosának tulajdonát képezik.\n\nA szoftverben használt, harmadik féltől származó szolgáltatások az érintett szerzői jogok tulajdonosainak tulajdonát képezik, korlátozás nélkül ideértve a következőket:：\nEz a szoftver egy szerverkezelő és játék online eszköz a Minecraft számára (amelynek végső értelmezése a Microsoft Corporation és a Mojang AB tulajdonában van). A felhasználóknak be kell tartaniuk a Végfelhasználói Licencszerződésüket (EULA) és a NetEase által a kontinentális Kínában bevezetett vonatkozó irányelveket, és nem használhatják a játék tartalmát kereskedelmi célokra, és nem végezhetnek más, a Végfelhasználói licencszerződés által tiltott cselekedeteket.\nA Szoftver a Terrária szerverkezelő és játékkapcsolati eszköze, amelynek végső értelmezése a Re-Logic és kiadói kezében van. A felhasználók felelősek a végfelhasználói licencszerződés (EULA) és a kapcsolódó irányelvek betartásáért. A felhasználók nem használhatják a játék tartalmát engedély nélküli kereskedelmi célokra, és nem végezhetnek más, a végfelhasználói licencszerződés által tiltott cselekményeket.\nA szoftver által biztosított online fájlforrások (szervermag, játék/szervermodulok, beépülő modulok stb.) letöltési szolgáltatásainak egy részét a megfelelő hivatalos/harmadik fél stb. biztosítja, és a szerzői jogokat a harmadik fél platformjának rendelkezéseivel összhangban kell kezelni.\nA szoftverben használt, harmadik féltől származó egyéb szolgáltatások szerzői joga a szolgáltatót illeti.\nEz a szoftver nyílt forráskódú szoftver, és azoknak a felhasználóknak vagy más szoftverfejlesztőknek, akik nem részei a szoftvernek, be kell tartaniuk a szoftver nyílt forráskódú megállapodását.\nA Felhasználó megérti és elfogadja, hogy a Felhasználó által létrehozott erőforrások kivételével a Szoftver által biztosított összes online szolgáltatási adat a Fejlesztő tulajdonát képezi. A fejlesztőnek joga van eldönteni, hogy megőrzi-e vagy sem az adatok egészét vagy egy részét a szerveren.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>A Feltételek módosítása</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>A Fejlesztőnek jogában áll szükség esetén módosítani a jelen Szerződést. A jelen Szerződés módosítását követően a fejlesztő megjeleníti a módosított tartalmat a fontos oldalon. Ha a felhasználó nem ért egyet a jelen szerződés felülvizsgálatával vagy frissítésével, kezdeményezheti a szoftver és a szolgáltatások használatának abbahagyását. Ha a felhasználó a jelen szerződés módosítása után továbbra is használja a szoftvert és a szolgáltatásokat, az azt jelenti, hogy elfogadja a jelen szerződés minden módosítását vagy frissítését. Ha a felhasználó a jelen szerződés felülvizsgálata után nem ismeri a változásokat, a fejlesztő nem vállal felelősséget az esetleges veszteségekért.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Vegyes</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>E megállapodásra a Kínai Népköztársaság joga az irányadó, tekintet nélkül a kollíziós szabályokra;\nHa a Fejlesztő elmulasztja, nem gyakorolja kellő időben vagy teljes mértékben a jelen Szerződés alapján vagy a törvényekkel összhangban élvezett jogait, az nem tekinthető az ilyen jogok gyakorlásáról való lemondásnak, és nem befolyásolja a Fejlesztő jövőbeli ilyen jogainak gyakorlását;\nA törvény által megengedett mértékben a Fejlesztőnek joga van értelmezni a jelen Szerződés feltételeit;\nA felhasználók e-mailben panaszkodhatnak és jelenthetnek mindenféle törvénysértést és rendeletet, kérjük, küldje el az e-mailt a services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>A feltételek elválaszthatósága</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Ha a jelen Szerződés bármely rendelkezése érvénytelennek vagy végrehajthatatlannak bizonyul, a fennmaradó rendelkezések teljes mértékben érvényben és hatályban maradnak.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Kérjük, válassza ki a működtetni kívánt módszert：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Universal Minecraft Java Edition szerverek</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Minecraft Forge szerverek</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Minecraft NeoForge szerverek</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Minecraft Fabric szerverek</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Minecraft paplan szerverek</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Minecraft Bedrock Edition szerverek</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Minecraft gejzír interoperabilitás önálló</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord csoport oldal</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Minecraft vízesés csoport oldala</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity csoportoldal</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Minecraft Travertine csoport oldal</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>FRP ügyfélprogram (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Terraria játékszerverek</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Egyéb konzolprogramok</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Meglévő példány importálása</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Új utazás, új élmény.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Söpörje végig a teljes képet, hogy lássa a világot.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>A küldetést minden irányban el kell érni.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Nevezd meg, itt van. (Jelenleg használatban van.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Tegyen meg minden tőle telhetőt, hogy válaszoljon a kérdéseikre.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Az Ön MCSL-je, az Ön választása.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>A letöltés közvetlen leállítása</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Próbálja meg újra a letöltést 1 alkalommal</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Próbálja meg újra a letöltést 3-szor</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Adja meg a példány nevét az érvényesítéshez</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Démonkulcs érvényesítése</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Kövesse a rendszert</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>fény</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Sötét</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>Automatikus hozzájárulási EULA (Minecraft Java Edition kiszolgálópéldány)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Az automatikus elfogadással kötelező érvényű a Minecraft végfelhasználói licencszerződése, és elfogadja, hogy az MCSL nem tartozik egyetemleges felelősséggel.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>A hitelesség ellenőrzésének automatikus letiltása (Minecraft Java Edition kiszolgálópéldány)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Ha ez az opció engedélyezve van, az ilyen példányok automatikusan letiltják a Mojang/Microsoft hitelesítését, lehetővé téve a nem eredeti Minecraft Java Edition kliensek csatlakozását a szerverhez.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Ha ez az opció engedélyezve van, az ilyen példányok automatikusan letiltják a Mojang/Microsoft hitelesítését, lehetővé téve a nem eredeti Minecraft Bedrock Edition kliensek csatlakozását a kiszolgálóhoz.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>A hitelesség ellenőrzésének automatikus letiltása (Minecraft Bedrock Edition kiszolgálópéldány)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Üzembe helyezés képforrással (Minecraft Forge szerverpéldány)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Üzembe helyezés képforrással (Minecraft NeoForge Server Instance)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Üzembe helyezés képforrással (Minecraft Fabric szerverpéldány)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Üzembe helyezés tükörforrással (Minecraft Quilt szerverpéldány)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Az engedélyezés után a BMCLAPI az erőforrások letöltésére szolgál, ami a kínai felhasználók számára ajánlott.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Töltse le a forrást</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Válassza ki a használni kívánt letöltésszolgáltatót az Erőforrás-letöltések lapon.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (a Monogatari Cloud Computing szolgáltatója)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Polestar Cloud Image (A Polestar Network tulajdona)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ZCloud fájl (Z__Tsin fejlesztői csapat tagja biztosítja)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>MSL letöltési forrás (az MSL Server Builder biztosítja)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>MCSL-Sync szinkron tükrözés</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Letöltési motorszálak száma</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>Megfelelő számítógépes teljesítmény esetén minél nagyobb a szálak száma, annál gyorsabb a fájl elméleti letöltési sebessége. Általában 16 szál beállítása elegendő.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>A letöltési hibák kezelése</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Mi a teendő, ha a fájl letöltése sikertelen?</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Példány törlési módjának megerősítése</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Ez a funkció megakadályozza a példányok helytelen működés miatti törlését.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Téma alkalmazása</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Az alapértelmezett követi a rendszerváltozásokat, természetesen saját maga is beállíthatja.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Automatikus indítás (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>A rendszer indításakor a grafikus program automatikusan elindul. Ha engedélyezve van, a rendszer érzékeny műveleteket érinthet, ezért kérjük, engedélyezze őket a víruskereső szoftverben.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Frissítések keresése (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Ellenőrizze a grafikus program frissítéseit.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Frissítések keresése</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Ellenőrizze a grafikus program frissítéseit minden indításkor.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Frissítések automatikus keresése (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Frissítések keresése (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Ellenőrizze a démon frissítéseit.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>Az MCServerLauncher Future-ről (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Ezt a projektet a Kínai Népköztársaság szerzői jogi törvénye és nemzetközi szerződések védik, és a Program vagy annak bármely részének jogosulatlan sokszorosítása vagy terjesztése a törvény által megengedett legteljesebb mértékben szigorú polgári és büntetőjogi szankciókat és büntetőeljárásokat von maga után.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Ezt a projektet a nyílt forráskódú GNU General Public License Version 3.0 védi, és a forráskód a következő helyen található:</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Az MCServerLauncher Future által használt digitálisan aláírt tanúsítvány garantálja, hogy a programot nem lehet manipulálni. Sorozatszám：59cbf9b5207eeabb45417d148120ac9a。 Ha más, ne használja, és adjon visszajelzést services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Végtelen tükrözés</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Polar Nebula kép</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync szinkron tükrözés</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>bejelentés</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Biztos vagy benne?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Ha elutasítja a Felhasználói megállapodást, a Szoftver visszavonásra kerül.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Győződjön meg róla, hogy mindent elolvasott, mielőtt az Elfogadom gombra kattint. Legalább a végére kell tekernie a protokollt.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Jó</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Ne most</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Ez azt jelenti, hogy Ön elfogadja a jelen Szerződés teljes tartalmát.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Forrás letöltése)</value>
+  </data>
 </root>

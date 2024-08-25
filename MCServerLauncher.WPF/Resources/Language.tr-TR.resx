@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>MCServerLauncher WPF ile ilgili bir hatayla karşılaşıldı</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Yığın panoya kopyalandı. Geri bildirimde bulunmak için doğrudan GitHub'a gidebilirsiniz.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>WPF İstemcisi (yalnızca Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Dil</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Kullanıcı Sözleşmesi</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Arka plan programını bağlayın</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Başlayın</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Devam et</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Dili ayarlayın</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Dil</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>ana sayfa</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Örnek oluşturma</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Örnek yönetimi</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Kaynak indirmeleri</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Yardım Merkezi</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Bildirim Merkezi</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Hata ayıklama sayfası</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Program ayarları</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>Istemi</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF yinelenen çalıştırmaları desteklemez.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>komisyoncu</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Özgün</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>saf</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Modül</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>Bedrock</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Çekirdek tanıtımı alamadım!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Minecraft Bedrock Sürümü zip paketi</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Lütfen indirilen paketi buraya aktarın. Nereden indireceğinizi bilmiyorsanız, atlamak için sağdaki düğmeyi tıklayabilirsiniz.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Zip paketi</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Göz atmak</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Minecraft Sunucu Çekirdeği</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Lütfen sunucu tarafından kullanılacak çekirdek dosyaları seçin. Nereden indireceğinizi bilmiyorsanız, atlamak için sağdaki düğmeyi tıklayabilirsiniz.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Çekirdek dosya adı</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Java çalışma zamanı</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Java çalışma zamanı, Minecraft Java sunucusu için gerekli bir ortamdır. Başlatma hatalarını önlemek için uygun sürümü seçtiğinizden emin olun.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Java yolu</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Manuel seçim</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Daemon ana bilgisayarlarında otomatik olarak arama yapın</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Mevcut sonuçlar arasından seçim yapın</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+, Java 8 gerektirir\n1.17+, Java 16 gerektirir\n1.18+, Java 17 gerektirir\n1.20.5+, Java 21 gerektirir</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Dosyaadı</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Örnek için gereken dosyayı/klasörü/paketi seçin. Arşiv yalnızca ZIP biçimini destekler.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Dağıtım bağımlılıkları</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Komutu çalıştırın</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Çalıştır komutunu buraya girin.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Parametre eklemeniz gerekiyorsa,\nDoğrudan arkaya takın.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Özel semboller eklemeyin veya yasa dışı adlar kullanmayın.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Örneğin adı</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>İsteğe bağlı olarak, buraya her satırda bir tane olmak üzere ek JVM parametreleri ekleyebilirsiniz.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Parametre ekleme</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>JVM parametreleri</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Maksimum bellek</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Minimum bellek</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Bu, Minecraft Java sunucunuzun ne kadar bellek kullanabileceğini belirler.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>JVM bellek yığını</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>En düşük bellek ≤ en yüksek bellek yeterlidir</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Bağlantıyı kopyalayın</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Zaman aşımı</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Dosya boyutu</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Minecraft Sürümü</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Oluşturur</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>kapatmak</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>açık</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Oluşturma zamanı</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Bulut sunucusu türü</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>daha</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>başlatmak</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>dönmek</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Aşağıdaki yapılandırmalarla işiniz bittiğinde Devam'ı tıklayın.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Lütfen sunucunun çalıştıracağı Minecraft sürümünü seçin.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Temiz -lendi</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Yüklenmezse daha sonra tekrar deneyin.\nGÖRÜNTÜ HIZMETI BMCLAPI TARAFINDAN DESTEKLENMEKTEDIR</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Forge sürümü</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>NeoForge sürümü</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Kumaş versiyonu</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Yorgan versiyonu</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Lütfen sunucunun çalıştıracağı Forge yükleyici sürümünü seçin.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Lütfen sunucunun çalıştıracağı NeoForge yükleyici sürümünü seçin.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Sunucunun çalıştıracağı Fabric yükleyici sürümünü seçin.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Lütfen sunucunun çalıştıracağı Quilt loader sürümünü seçin.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Yalnızca resmi sürüm görüntülenir</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Sunucu çekirdekleri</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Resmi web sitesini açın</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Hoş geldin</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Şimdilik atla</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>anlaşmak</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>reddetmek</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>MCServerLauncher Yazılım ve Hizmetlerine (bundan böyle "Yazılım" olarak anılacaktır) MCSL Geliştirme Ekibi tarafından sağlanmaktadır. Kullanıcıların haklarını ve çıkarlarını korumak için lütfen bu yazılımı kullanmadan önce bu sözleşmenin tüm içeriğini dikkatlice okuyun. Bu Sözleşmeyi herhangi bir zamanda güncelleyebiliriz ve yayınlandıktan sonra orijinal Kullanıcı Sözleşmesinin yerini etkin bir şekilde alacaktır.\nLütfen aşağıdaki içeriği dikkatlice okuyunuz, bu yazılımı kullandığınızda, bu sözleşmenin tüm içeriğini ayrıntılı olarak okuyup kabul ettiğiniz ve bu sözleşmenin hükümlerine uymayı kabul ettiğiniz anlamına gelir.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Önlem</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Kullanıcı, yazılımı ve yazılımın işlevlerini (yeni örnekler oluşturmak dahil ancak bunlarla sınırlı olmamak üzere) kullanıcının ihtiyaç duyduğu donanım ve yazılım yapılandırması ile donatmalıdır.\nİnternete bağlandıktan sonra ödenmesi gereken ilgili telefon ve geniş bant kullanım ücretlerinden kullanıcılar sorumludur.\nKullanıcı, bu yazılımın kullanımından kaynaklanan davranış, olay ve sonuçtan yasal olarak sorumludur.\nKullanıcılar ve diğer yetkisiz gayri resmi kişiler arasındaki herhangi bir işlem ve anlaşmazlığın geliştiriciyle hiçbir ilgisi yoktur.\nKullanıcı, Çin Halk Cumhuriyeti'nin ilgili yasa ve yönetmeliklerine uyacaktır (kullanıcı Çin Halk Cumhuriyeti dışında bir kullanıcıysa, kullanıcı ait olduğu ülke veya bölgenin yasa ve yönetmeliklerine de uyacaktır).\nKullanıcı, yazılımı (veya yazılımın bazı özelliklerini ve işlevlerini) yasa dışı eylemlerde bulunmak için kullanamaz ve yazılımla ilişkili ilgili süreçleri ve hizmetleri yasa dışı eylemlerde bulunmak için kullanamaz ve herhangi bir eylemin sonuçları geliştiriciyle ilgili olmayacaktır.\nKullanıcılar, yayınladıkları bilgilerin içeriği ile ilgili kendi yasal sorumluluklarını üstlenirler. Kullanıcı, yazılıma, yazılımın çalışmasıyla ilgili işlemlere ve hizmetlere aşağıdaki içeriklerden herhangi birini girmeyecek, yayınlaymayacak veya yaymayacak ve aşağıdaki içeriklerden hiçbirini herhangi bir biçimde yayınlaymayacaktır：\n\nÇin Halk Cumhuriyeti Anayasası'nda belirtilen temel ilkelere karşı çıkmak;\nulusal güvenliği tehlikeye atmak, devlet sırlarını ifşa etmek, devlet gücünü yıkmak veya ulusal birliği baltalamak;\ndevletin onur ve çıkarlarına zarar vermek;\netnik nefreti, etnik ayrımcılığı kışkırtmak veya etnik birliği baltalamak;\nulusal dini politikaları baltalamak, kültleri ve feodal batıl inançları savunmak;\ndedikodular yaymak, sosyal düzeni bozmak veya sosyal istikrarı baltalamak;\nMüstehcenlik, pornografi, kumar, şiddet, cinayet, terör veya suça azmettirme;\nbaşkalarına hakaret etmek veya iftira atmak, başkalarının yasal haklarını ve çıkarlarını ihlal etmek;\nÇin Halk Cumhuriyeti'nin yasalar veya idari düzenlemeler tarafından yasaklandığı diğer içerikleri barındırıyor.\nYasalarca izin verilmedikçe veya geliştiricinin yazılı izni olmadıkça, kullanıcılar aşağıdaki eylemlerden hiçbirini gerçekleştiremez：\nYazılım ve Hizmetlerin yasa dışı veya uygunsuz kullanımı;\nYazılım sisteminin veya web sitesinin normal çalışmasına zarar vermek, kasıtlı olarak bilgisayar virüsleri ve diğer yıkıcı programları yaymak;\nYazılımın ağ hizmetlerini etkileyebilecek herhangi bir anormal kullanım davranışında bulunmak (sunucuya zarar vermek, sunucuya saldırmak veya sunucuya aşırı yüklenmek vb. dahil ancak bunlarla sınırlı olmamak üzere);\nYazılım ve kopyalarındaki telif hakkı bilgilerini silin.\n\nKullanıcı, yasa ve yönetmelikleri ihlal eden veya bu Sözleşmenin hükümlerini ihlal eden herhangi bir davranışta bulunursa, geliştirici, hizmetlerin sonlandırılması dahil ancak bunlarla sınırlı olmamak üzere, bu Sözleşme ve yasa ve yönetmeliklere uygun olarak, durumun ciddiyetine göre kullanıcıya karşı önlem alma hakkına sahiptir. Durumun ciddi olması halinde, idari ceza için ilgili idari organlara nakledilir veya cezai sorumluluk için soruşturulur.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Verilerin Toplanması ve Kullanımı</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Bu Kullanım Koşullarını kabul ederseniz ve Yazılımın çevrimiçi hizmetlerini kullanırsanız, aşağıdaki bilgileri toplayacağız：\nYazılımın çalıştığı cihazın IP adresi (doğru adres olmayabilir);\nYazılımın üzerinde çalıştığı ekipmanın bazı sistem bilgileri;\nYazılım çöktüğünde, sistemde çalışan yazılımın günlükleri (bazı sistem bilgileri dahil), sorunun çözülmesine ve yazılımın iyileştirilmesine yardımcı olmak için kullanıcının izniyle yüklenebilir.\nKullanıcının rızası ile yüklenecek diğer bilgiler (yazılımda belirtildiği gibi).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Kullanıcı desteği ve geri bildirimi</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Kullanıcılar kullanım sırasında herhangi bir sorunla karşılaşırlarsa, resmi e-posta yoluyla veya bu yazılım kaynak kodu deposuna bir sorun göndererek geri bildirimde bulunabilirler. Hizmetlerimizi geliştirmek için geri bildirimlerimizi ciddiye alıyoruz.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Hizmetin Değiştirilmesi veya Askıya Alınması</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Kullanıcı Hizmetinin Askıya Alınması ve Sonlandırılması\n\nKullanıcı yasa dışı bilgi yayınlarsa, sosyal ahlakı ciddi şekilde ihlal ederse veya yasaların yasaklarını ihlal ederse, geliştirici kullanıcıya hizmet sunumunu sonlandıracaktır;\nKullanıcı, yazılım hizmetini kabul ederken uygunsuz bir eylemde bulunursa, geliştirici, kullanıcıya sağlanan hizmeti sonlandırma hakkına sahiptir (uygunsuz davranışın özel koşulları bu sözleşmede açıkça belirtilmiştir);\nKullanıcı, yazılımın üçüncü bir tarafça değiştirilmiş bir sürümünü kullanırsa, kullanıcı kendi riskini ve yasal sorumluluğunu üstlenir.\n\n2. Yazılım ve Hizmetlerin Askıya Alınması, Askıya Alınması ve Sonlandırılması：\n\nAşağıdaki durumlardan herhangi birinin olması durumunda, geliştirici, yazılım hizmetlerinin tamamını veya bir kısmını sonlandırma veya kesintiye uğratma hakkına sahiptir ve geliştirici, bundan kaynaklanan rahatsızlık veya zarardan kullanıcıya veya herhangi bir üçüncü tarafa karşı sorumlu olmayacaktır：\n\na. Yazılım ve Hizmetlerin gerektirdiği şekilde;\nb. Sunucunun hasar görmesi nedeniyle düzgün çalışmaması;\nc. Yazılım ve donanım donanımı ile elektronik haberleşme donanımının ani arızalanması nedeniyle;\nd. şebeke sağlayıcı hattı veya diğer arızalar nedeniyle;\ne. politika hususları nedeniyle;\nf. Üçüncü taraf sebepleri veya diğer mücbir sebep halleri.\n\nGeliştirici, gerekli gördüğü durumlarda Yazılım ve Hizmetleri sonlandırma veya kısmen sonlandırma hakkını saklı tutar ve Geliştirici, Kullanıcıyı bir duyuru şeklinde bilgilendirebilir, ancak Geliştirici, Kullanıcıya verilen herhangi bir zarardan sorumlu olmayacaktır.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>feragatname</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Kullanıcı, geliştiricinin bu yazılım için yasaların izin verdiği ölçüde herhangi bir garanti vermediğini anlar ve kabul eder. Bu yazılımın kullanıcı tarafından kullanılmasının riski kullanıcının kendisine aittir.\nKullanıcı, Geliştiricinin Yazılım ve Hizmetlerin Kullanıcının ihtiyaçlarını karşılayacağını garanti etmediğini ve Hizmetlerin kesintiye uğramayacağını garanti etmediğini ve Yazılım ve Hizmetlerin doğruluğu ve güvenliği konusunda herhangi bir garanti vermediğini anlar ve kabul eder.\nKullanıcı, geliştiricinin, yazılımın çevrimiçi hizmetlerinden indirilen üçüncü taraf dosyalarının doğruluğunu, güvenliğini ve meşruiyetini tam olarak garanti edemeyeceğini ve yazılımda bulunan üçüncü taraf hizmetlerinin (kaynak indirme ve diğer hizmetler dahil ancak bunlarla sınırlı olmamak üzere) doğruluğundan, güvenliğinden ve yasallığından sorumlu olmadığını anlar ve kabul eder. Bu nedenle, yukarıda belirtilen içeriğin geliştirici ve yazılımla hiçbir ilgisi yoktur ve geliştiricinin ve yazılımın konumunu temsil etmez. Anlaşmazlıklar üçüncü taraf hizmet sağlayıcı tarafından karşılanacaktır.\nKullanıcı, Yazılım'ın çevrimiçi hizmetlerinin ve Yazılım'dan indirilen ilgili dosyaların yanlış veya yasa dışı yollarla kullanılmasından kaynaklanan sonuçlardan münhasıran kendisinin sorumlu olacağını ve herhangi bir mülkiyet zararı, telif hakkı veya fikri mülkiyet haklarının ihlali vb. durumlardan sorumlu olmayacağını ve herhangi bir yasal sorumluluk üstlenmeyeceğini ve taşıyamayacağını anlar ve kabul eder.\nKullanıcı, Yazılımın üçüncü taraf hizmetlerinin içeriğini garanti etmediğini anlar ve kabul eder. Geliştirici, kullanıcının üçüncü taraf hizmetlerini kullanmasından kaynaklanan herhangi bir mülkiyet hasarı, telif hakkı veya fikri mülkiyet haklarının ihlalinden sorumlu olmayacak ve herhangi bir yasal sorumluluk kabul etmeyecektir ve edemez.\nKullanıcı, geliştiricinin yazılımın işlevleri için herhangi bir garanti ve yasal destek sağlamadığını ve kullanıcının yazılımın işlevlerini yasa dışı veya diğer uygunsuz eylemlerde bulunmak için kullanması durumunda, kullanıcının neden olduğu risklerin ve yasal sonuçların kullanıcı tarafından karşılanacağını anlar ve kabul eder.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>FİKRİ MÜLKİYET</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Bu yazılımın telif hakları, patentleri ve diğer fikri mülkiyet hakları, geliştiriciye veya belirlenen telif hakkı sahibine aittir.\n\nBu yazılımda kullanılan üçüncü taraf hizmetleri, aşağıdakiler dahil ancak bunlarla sınırlı olmamak üzere ilgili telif hakkı sahiplerine aittir:：\nBu yazılım, Minecraft için bir sunucu yönetimi ve çevrimiçi oyun aracıdır (son yorumlaması Microsoft Corporation ve Mojang AB'ye aittir). Kullanıcılar, Son Kullanıcı Lisans Sözleşmelerine (EULA) ve NetEase tarafından Çin ana karasında uygulanan ilgili politikalara uymalı ve oyunun içeriğini ticari amaçlarla kullanmamalı veya Son Kullanıcı Lisans Sözleşmesi tarafından yasaklanan diğer eylemleri gerçekleştirmemelidir.\nYazılım, Terraria'nın sunucu yönetimi ve oyun bağlantı aracıdır ve nihai yorumu Re-Logic ve yayıncılarına aittir. Kullanıcılar, Son Kullanıcı Lisans Sözleşmesi'ne (EULA) ve ilgili politikalara uymaktan sorumludur. Kullanıcılar, oyunun içeriğini lisanssız ticari amaçlarla kullanamaz veya son kullanıcı lisans sözleşmesi tarafından yasaklanan diğer eylemleri gerçekleştiremez.\nBu yazılım tarafından sağlanan bazı çevrimiçi dosya kaynakları (sunucu çekirdeği, oyun/sunucu modülleri, eklentiler vb.) indirme hizmetleri, ilgili yetkili/üçüncü taraf vb. tarafından sağlanır ve telif hakkı, üçüncü taraf platformunun hükümlerine uygun olarak ele alınacaktır.\nBu yazılımda kullanılan diğer üçüncü taraf hizmetlerinin telif hakkı hizmet sağlayıcıya aittir.\nBu yazılım açık kaynaklı bir yazılımdır ve bu yazılımın bir parçası olmayan kullanıcılar veya diğer yazılım geliştiricileri, bu yazılımın açık kaynak sözleşmesine uyacaktır.\nKullanıcı, Kullanıcı tarafından oluşturulan kaynaklar dışında, Yazılım tarafından sağlanan tüm çevrimiçi hizmet verilerinin Geliştiriciye ait olduğunu anlar ve kabul eder. Geliştirici, sunucudaki verilerin tamamını veya bir kısmını tutup tutmamaya karar verme hakkına sahiptir.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Şartlardaki Değişiklikler</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Geliştirici, gerektiğinde bu Sözleşmeyi değiştirme hakkına sahiptir. Bu Sözleşmede bir değişiklik olduğunda, geliştirici değiştirilen içeriği önemli sayfada gösterecektir. Kullanıcı, bu sözleşmenin revizyonunu veya güncellenmesini kabul etmezse, yazılımı ve hizmetleri kullanmayı bırakmak için inisiyatif alabilir. Kullanıcı, bu sözleşmenin revizyonundan sonra yazılımı ve hizmetleri kullanmaya devam ederse, bu, kullanıcının bu sözleşmede yapılan tüm değişiklikleri veya güncellemeleri kabul ettiği anlamına gelir. Kullanıcı, bu sözleşmenin revizyonundan sonra yapılan değişikliklerden haberdar değilse, geliştirici herhangi bir kayıptan sorumlu olmayacaktır.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Çeşitli</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Bu Sözleşme, tüm kanun hükümleri ihtilafına bakılmaksızın Çin Halk Cumhuriyeti kanunlarına tabi olacaktır;\nGeliştiricinin bu Sözleşme kapsamında veya yasalara uygun olarak yararlandığı hakları kullanmaması, zamanında kullanmaması veya tam olarak kullanmaması, bu hakların kullanılmasından feragat edildiği anlamına gelmez ve Geliştiricinin gelecekte bu hakları kullanmasını etkilemez;\nYasaların izin verdiği ölçüde, Geliştirici bu Sözleşmenin şartlarını yorumlama hakkına sahiptir;\nKullanıcılar her türlü yasa ve yönetmelik ihlalini e-posta ile şikayet edebilir ve bildirebilir, lütfen e-postayı services@mcsl.com.cn gönderin.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Şartların Bölünebilirliği</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Bu Sözleşmenin herhangi bir hükmünün geçersiz veya uygulanamaz olduğuna karar verilirse, geri kalan hükümler tam olarak yürürlükte kalacaktır.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Lütfen çalıştırmak istediğiniz yöntemi seçin：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Evrensel Minecraft Java Sürümü sunucuları</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Minecraft Forge sunucuları</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Minecraft NeoForge Sunucuları</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Minecraft Fabric sunucuları</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Minecraft Yorgan sunucuları</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Minecraft Bedrock Sürümü sunucuları</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Minecraft Gayzer Birlikte Çalışabilirliği Bağımsız</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord grup tarafı</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Minecraft Şelalesi grup tarafı</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity Grup Tarafı</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Minecraft Traverten grup tarafı</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>FRP İstemci Programı (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Terraria Oyun Sunucuları</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Diğer konsol programları</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Var olan bir örneği içe aktarma</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Yeni yolculuk, yeni deneyim.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Dünyayı görmek için büyük resmi tarayın.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>Her yönde, misyon başarılmalıdır.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Adını siz koyun, burada var. (Şu anda kullanımda.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Sorularını cevaplamak için elinizden gelenin en iyisini yapın.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Sizin MCSL'niz, sizin seçiminiz.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>İndirme işlemini doğrudan durdurun</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>İndirmeyi 1 kez yeniden deneyin</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>İndirmeyi 3 kez yeniden deneyin</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Doğrulama için örnek adını girin</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Daemon anahtar doğrulaması</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Sistemi takip edin</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>ışık</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Koyu</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>Otomatik Onay EULA'sı (Minecraft Java Sürümü Sunucu Örneği)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Otomatik olarak kabul ederek, Minecraft Son Kullanıcı Lisans Sözleşmesi'ne bağlı olursunuz ve MCSL'nin müştereken ve müteselsilen sorumlu olmadığını kabul edersiniz.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Orijinallik doğrulamasını otomatik olarak devre dışı bırak (Minecraft Java Edition sunucu örneği)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Bu seçenek etkinleştirildiğinde, bu tür örnekler Mojang/Microsoft'tan gelen kimlik doğrulamasını otomatik olarak devre dışı bırakarak orijinal olmayan Minecraft Java Sürümü istemcilerinin sunucuya bağlanmasına izin verir.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Bu seçenek etkinleştirildiğinde, bu tür örnekler Mojang/Microsoft'tan gelen kimlik doğrulamasını otomatik olarak devre dışı bırakarak orijinal olmayan Minecraft Bedrock Edition istemcilerinin sunucuya bağlanmasına izin verir.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Orijinallik doğrulamasını otomatik olarak devre dışı bırak (Minecraft Bedrock Edition sunucu örneği)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Bir görüntü kaynağıyla dağıtma (Minecraft Forge sunucu örneği)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Bir görüntü kaynağıyla dağıtma (Minecraft NeoForge Sunucu Örneği)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Bir görüntü kaynağıyla dağıtma (Minecraft Fabric sunucu örneği)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Bir yansıtma kaynağıyla dağıtma (Minecraft Quilt sunucu örneği)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Etkinleştirildikten sonra, Çinli kullanıcılar için önerilen kaynakları indirmek için BMCLAPI kullanılacaktır.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Kaynağı indirin</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Kaynak İndirmeleri sayfasında kullanılacak indirme sağlayıcısını seçin.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (Monogatari Cloud Computing tarafından sağlanır)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Polestar Cloud Image (Polestar Network'ün izniyle)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ZCloud Dosyası (geliştirme ekibinin Z__Tsin üyesi tarafından sağlanır)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>MSL İndirme Kaynağı (MSL Server Builder tarafından sağlanır)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>MCSL-Sync senkron yansıtma</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>İndirme motoru iş parçacığı sayısı</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>Yeterli bilgisayar performansı durumunda, iş parçacığı sayısı ne kadar yüksek olursa, dosyanın teorik indirme hızı o kadar hızlı olur. Genel olarak, 16 iş parçacığından oluşan bir ayar yeterlidir.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>İndirme hatalarıyla nasıl başa çıkılır?</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Dosya indirme başarısız olursa ne yapmalı.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Bir örneği silme yöntemini onaylayın</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Bu özellik, yanlış işlem nedeniyle örneklerin silinmesini önler.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Tema uygulama</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Varsayılan, sistem değişikliklerini takip eder, elbette, kendiniz de ayarlayabilirsiniz.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Otomatik başlatma (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Sistem başlatıldığında, grafik programı otomatik olarak başlatılır. Etkinleştirildiğinde, sistemde hassas işlemlere dokunulabilir, bu nedenle lütfen virüsten koruma yazılımınızda bunlara izin verin.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Güncelleştirmeleri denetleme (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Bu grafik programındaki güncellemeleri kontrol edin.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Güncellemeleri kontrol et</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Her başlangıçta bu grafik programında güncelleme olup olmadığını kontrol edin.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Güncelleştirmeleri otomatik olarak denetle (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Güncellemeleri kontrol et (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Daemon güncellemelerini kontrol edin.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>MCServerLauncher Future (WPF) Hakkında</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Bu proje, Çin Halk Cumhuriyeti Telif Hakkı Yasası ve uluslararası anlaşmalar tarafından korunmaktadır ve Programın veya herhangi bir bölümünün izinsiz çoğaltılması veya dağıtılması, yasaların izin verdiği en geniş ölçüde ciddi hukuki ve cezai yaptırımlara ve kovuşturmaya tabidir.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Bu proje, açık kaynaklı GNU Genel Kamu Lisansı Sürüm 3.0 kapsamında korunmaktadır ve kaynak kodu şu adreste barındırılmaktadır:</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>MCServerLauncher Future tarafından kullanılan dijital olarak imzalanmış sertifika, programın kurcalanamayacağını garanti eder. Seri numarası：59cbf9b5207eeabb45417d148120ac9a。 Farklıysa, kullanmayın ve services@mcsl.com.cn geri bildirimde bulunun.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Sonsuz yansıtma</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Kutup Bulutsusu görüntüsü</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync senkron yansıtma</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>Duyuru</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Emin misiniz?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Kullanıcı Sözleşmesini reddederseniz, Yazılım geri çekilecektir.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Kabul Ediyorum'a tıklamadan önce hepsini okuduğunuzdan emin olun. En azından, protokolü sonuna kadar yuvarlamalısınız.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>İyi</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Şimdi değil</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Bu, bu Sözleşmenin tüm içeriğini kabul ettiğiniz anlamına gelir.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Kaynağı indir)</value>
+  </data>
 </root>

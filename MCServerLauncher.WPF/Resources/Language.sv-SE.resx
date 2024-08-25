@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Ett fel påträffades med MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Stapeln har kopierats till Urklipp. Du kan gå direkt till GitHub för att ge feedback.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>WPF-klient (endast Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Språk</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Användaravtal</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Anslut demonen</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Sätta igång</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Fortsätt</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Ställ in språk</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Språk</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>hemsida</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Skapa en instans</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Hantering av instanser</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Nedladdningar av resurser</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Hjälpcenter</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Notiscenter</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Sidan Felsökning</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Programinställningar</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>snabb</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF stöder inte duplicerade körningar.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>mäklare</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>ren</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Modul</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>berggrund</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Misslyckades med att få den grundläggande introduktionen!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Minecraft Bedrock Edition med dragkedja</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Importera det nedladdade paketet här. Om du inte vet var du ska ladda ner kan du klicka på knappen till höger för att hoppa.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Zip-paket</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Bläddra</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Minecraft Server Core</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Välj de kärnfiler som ska användas av servern. Om du inte vet var du ska ladda ner kan du klicka på knappen till höger för att hoppa.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Namn på kärnfil</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Java-körning</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Java-körningen är en obligatorisk miljö för Minecrafts Java-server. Se till att välja lämplig version för att förhindra startfel.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Sökväg till Java</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Manuellt val</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Sök automatiskt på Daemon-värdar</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Välj bland befintliga resultat</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ kräver Java 8\n1.17+ kräver Java 16\n1.18+ kräver Java 17\n1.20.5+ kräver Java 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>filnamn</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Välj den fil/mapp/paket som krävs för instansen. Arkivet stöder endast ZIP-formatet.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Beroenden för distribution</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Kör kommandot</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Ange körkommandot här.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Om du behöver bifoga parametrar,\nFäst den direkt på baksidan.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Inkludera inte speciella symboler och använd inte olagliga namn.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Namnet på instansen</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Du kan också lägga till ytterligare JVM-parametrar här, en per rad.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Lägg till parametrar</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>JVM-parametrar</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Maximalt minne</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Minsta minne</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Detta avgör hur mycket minne din Minecraft Java-server kommer att kunna använda.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>Heap med JVM-minne</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Det minsta minnet ≤ det maximala minnet är tillräckligt</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Kopiera länken</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Paus</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annullera</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Filstorlek</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Minecraft-utgåva</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Bygger</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>stänga</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>öppna</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Tid för skapande</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Typ av instans</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>mer</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>inleda</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>återvända</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>När du är klar med följande konfigurationer klickar du på Fortsätt.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Välj den version av Minecraft som servern ska köra.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Spolas</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Om den inte laddas, försök igen senare.\nBILDTJÄNSTEN DRIVS AV BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Forge-version</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>NeoForge version</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Version av tyg</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Quilt version</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Välj den version av Forge-laddaren som servern ska köra.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Välj den version av NeoForge-lastaren som servern ska köra.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Välj den version av infrastrukturinläsaren som servern ska köra.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Välj den version av Quilt-laddaren som servern ska köra.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Endast den officiella versionen visas</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Serverkärnor</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Öppna den officiella webbplatsen</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Välkommen</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Hoppa över tills vidare</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>samtycka</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>vägra</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Välkommen till programvaran och tjänsterna från MCServerLauncher (hädanefter kallad "programvaran") som tillhandahålls av MCSL-utvecklingsteamet. För att skydda användarnas rättigheter och intressen bör du läsa igenom allt innehåll i detta avtal noggrant innan du använder programvaran. Vi kan uppdatera detta avtal när som helst, och det kommer att ersätta det ursprungliga användaravtalet när det har publicerats.\nLäs följande innehåll noggrant, när du använder denna programvara innebär det att du har läst och godkänt allt innehåll i detta avtal i detalj och samtycker till att följa bestämmelserna i detta avtal.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Försiktighetsåtgärder</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Användaren ska utrusta programvaran och programvarans funktioner (inklusive men inte begränsat till att skapa nya instanser) med den hårdvaru- och programvarukonfiguration som krävs av användaren.\nAnvändare ska ansvara för relevanta telefon- och bredbandsanvändningsavgifter som måste betalas efter anslutning till Internet.\nAnvändaren ska bära det juridiska ansvaret för beteende, händelse och resultat som orsakas av användningen av denna programvara.\nEventuella transaktioner och tvister mellan användare och andra obehöriga inofficiella personer har inget att göra med utvecklaren.\nAnvändaren ska följa relevanta lagar och förordningar i Folkrepubliken Kina (om användaren är en användare utanför Folkrepubliken Kina ska användaren också följa lagar och förordningar i det land eller den region som den tillhör).\nAnvändaren får inte använda programvaran (eller vissa funktioner och funktioner i programvaran) för att begå olagliga handlingar, och får inte använda de relevanta processer och tjänster som är förknippade med programvaran för att begå olagliga handlingar, och konsekvenserna av eventuella åtgärder ska inte vara relaterade till utvecklaren.\nAnvändarna ska bära sitt eget juridiska ansvar i samband med innehållet i den information de publicerar. Användaren får inte mata in, publicera eller sprida något av följande innehåll i programvaran, de processer och tjänster som är relaterade till driften av programvaran, och får inte publicera något av följande innehåll i någon form：\n\nmotsätta sig de grundläggande principer som anges i Folkrepubliken Kinas konstitution;\näventyra den nationella säkerheten, sprida statshemligheter, undergräva statsmakten eller undergräva den nationella enigheten,\nskada statens ära och intressen;\nuppvigling till etniskt hat, etnisk diskriminering eller undergrävande av etnisk enighet;\nundergräva den nationella religionspolitiken, förespråka kulter och feodal vidskepelse;\nsprida rykten, störa den sociala ordningen eller undergräva den sociala stabiliteten;\nSpridning av obsceniteter, pornografi, hasardspel, våld, mord, terror eller anstiftan till brott;\nförolämpa eller förtala andra, inkräkta på andras lagliga rättigheter och intressen;\nInnehåller annat innehåll som är förbjudet enligt lagar eller administrativa bestämmelser.\nOm det inte är tillåtet enligt lag eller med skriftligt tillstånd från utvecklaren får användarna inte delta i någon av följande handlingar：\nOlaglig eller olämplig användning av programvaran och tjänsterna;\nSkada den normala driften av programvaran, systemet eller webbplatsen, avsiktligt sprida datavirus och andra destruktiva program;\nVidta något onormalt användningsbeteende som kan påverka programvarans nätverkstjänster (inklusive men inte begränsat till att skada, attackera servern eller överbelasta servern, etc.);\nTa bort copyrightinformationen för programvaran och dess kopior.\n\nOm användaren begår något beteende som bryter mot lagar och förordningar eller bryter mot bestämmelserna i detta avtal, har utvecklaren rätt att vidta åtgärder mot användaren beroende på situationens allvar, i enlighet med detta avtal och lagar och förordningar, inklusive men inte begränsat till att avsluta tjänster. Om omständigheterna är allvarliga kommer de att överföras till de berörda förvaltningsorganen för administrativa påföljder eller utredas för straffrättsligt ansvar.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Insamling och användning av data</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Om du godkänner dessa användarvillkor och använder programvarans onlinetjänster kommer vi att samla in följande information：\nIP-adressen för den enhet som programvaran körs på (vilket kanske inte är den korrekta adressen);\nViss systeminformation om den utrustning som programvaran drivs på;\nNär programvaran kraschar kan loggarna för programvaran som körs på systemet (inklusive viss systeminformation) laddas upp med användarens medgivande för att hjälpa till att lösa problemet och förbättra programvaran.\nAnnan information som kommer att laddas upp med användarens samtycke (enligt vad som anges i programvaran).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Användarsupport och feedback</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Om användare stöter på några problem under användningen kan de ge feedback via det officiella e-postmeddelandet eller genom att skicka in ett problem i detta källkodsförråd för programvara. Vi tar vår feedback på allvar för att förbättra våra tjänster.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Ändringar eller avstängning av tjänsten</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Avstängning och uppsägning av Användarens Tjänst\n\nOm användaren publicerar olaglig information, allvarligt bryter mot samhällsmoralen eller bryter mot lagens förbud, ska utvecklaren säga upp tillhandahållandet av tjänster till användaren;\nOm användaren begår en olämplig handling när han eller hon accepterar programvarutjänsten har utvecklaren rätt att säga upp den tjänst som tillhandahållits användaren (de specifika omständigheterna för det felaktiga beteendet anges tydligt i detta avtal);\nOm användaren använder en modifierad version av programvaran från en tredje part ska användaren bära sin egen risk och sitt juridiska ansvar.\n\n2. Avstängning, avstängning och uppsägning av programvaran och tjänsterna：\n\nI händelse av någon av följande omständigheter har utvecklaren rätt att säga upp eller avbryta alla eller delar av programvarans tjänster, och utvecklaren ska inte vara ansvarig gentemot användaren eller någon tredje part för de olägenheter eller skador som orsakas av detta：\n\na. i enlighet med vad som krävs av Programvaran och Tjänsterna;\nb. Underlåtenhet att fungera korrekt på grund av skada på servern;\nc. På grund av plötsligt fel på mjukvaru- och hårdvaruutrustning och elektronisk kommunikationsutrustning;\nd. på grund av nätverksleverantörens linjefel eller andra fel;\ne. på grund av politiska överväganden;\nf. Skäl till tredje part eller andra force majeure-omständigheter.\n\nUtvecklaren förbehåller sig rätten att säga upp eller delvis avsluta Programvaran och Tjänsterna när den anser det nödvändigt, och Utvecklaren kan meddela Användaren i form av ett meddelande, men Utvecklaren ansvarar inte för eventuella förluster som orsakas Användaren.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>friskrivning</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Användaren förstår och samtycker till att utvecklaren inte ger någon garanti för denna programvara i den utsträckning som lagen tillåter. Användarens användning av denna programvara sker på egen risk.\nAnvändaren är införstådd med och samtycker till att Utvecklaren inte garanterar att Programvaran och Tjänsterna kommer att uppfylla Användarens behov, och inte heller garanterar att Tjänsterna inte kommer att avbrytas, och ger ingen garanti för Programvarans och Tjänsternas korrekthet och säkerhet.\nAnvändaren förstår och samtycker till att utvecklaren inte helt kan garantera korrektheten, säkerheten och legitimiteten hos de tredjepartsfiler som laddas ner från programvarans onlinetjänster, och inte heller är ansvarig för korrektheten, säkerheten och lagligheten av tredjepartstjänsterna (inklusive men inte begränsat till resursnedladdning och andra tjänster) som finns i programvaran. Därför har innehållet som nämns ovan inget att göra med utvecklaren och programvaran och representerar inte utvecklarens och programvarans position. Tvister ska bäras av tredjepartsleverantören.\nAnvändaren förstår och samtycker till att användaren är ensam ansvarig för de konsekvenser som orsakas av användningen av programvarans onlinetjänster och relaterade filer som laddats ner från programvaran på felaktiga eller olagliga sätt, och ska inte vara ansvarig för eventuella skador på egendom, intrång i upphovsrätt eller immateriella rättigheter etc., och kommer inte och kan inte bära något juridiskt ansvar.\nAnvändaren är införstådd med och samtycker till att programvaran inte garanterar innehållet i tjänster från tredje part. Utvecklaren ska inte hållas ansvarig för eventuella skador på egendom, intrång i upphovsrätt eller immateriella rättigheter som orsakas av användarens användning av tjänster från tredje part, och kommer inte och kan inte bära något juridiskt ansvar.\nAnvändaren förstår och samtycker till att utvecklaren inte ger någon garanti och juridiskt stöd för programvarans funktioner, och om användaren använder programvarans funktioner för att begå olagliga eller andra olämpliga handlingar, ska de risker och rättsliga konsekvenser som orsakas av användaren bäras av användaren.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>Immateriella</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Upphovsrätten, patenten och andra immateriella rättigheter för denna programvara ägs av utvecklaren eller den utsedda upphovsrättsinnehavaren.\n\nTjänster från tredje part som används i denna programvara ägs av relevanta upphovsrättsinnehavare, inklusive men inte begränsat till:：\nDenna programvara är ett serverhanterings- och spelonlineverktyg för Minecraft (vars slutliga tolkning ägs av Microsoft Corporation och Mojang AB). Användare ska följa sitt licensavtal för slutanvändare (EULA) och relevanta policyer som implementerats av NetEase på det kinesiska fastlandet, och får inte använda innehållet i spelet för kommersiella ändamål eller utföra andra åtgärder som är förbjudna enligt licensavtalet för slutanvändare.\nProgramvaran är Terrarias serverhanterings- och spelanslutningsverktyg, och den ultimata tolkningen av detta ligger hos Re-Logic och dess utgivare. Användare är ansvariga för att följa sitt licensavtal för slutanvändare (EULA) och relaterade policyer. Användare får inte använda innehållet i spelet för olicensierade kommersiella ändamål eller utföra andra handlingar som är förbjudna enligt licensavtalet för slutanvändare.\nVissa av de nedladdningstjänster för onlinefiler (serverkärna, spel-/servermoduler, plugin-program osv.) som tillhandahålls av denna programvara tillhandahålls av motsvarande tjänsteman/tredje part, etc., och upphovsrätten ska hanteras i enlighet med bestämmelserna för tredjepartsplattformen.\nUpphovsrätten till andra tjänster från tredje part som används i denna programvara tillhör tjänsteleverantören.\nDenna programvara är programvara med öppen källkod och användare eller andra programvaruutvecklare som inte är en del av denna programvara ska följa avtalet om öppen källkod för denna programvara.\nAnvändaren är införstådd med och samtycker till att, med undantag för de resurser som skapats av användaren, alla onlinetjänstdata som tillhandahålls av programvaran ägs av utvecklaren. Utvecklaren har rätt att bestämma om han eller hon vill behålla alla eller delar av data på servern.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Ändringar av villkor</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Utvecklaren har rätt att ändra detta avtal vid behov. När det finns en ändring i detta avtal kommer utvecklaren att visa det ändrade innehållet på den viktiga sidan. Om användaren inte samtycker till revideringen eller uppdateringen av detta avtal kan han eller hon ta initiativ till att sluta använda programvaran och tjänsterna. Om användaren fortsätter att använda programvaran och tjänsterna efter revideringen av detta avtal innebär det att användaren godkänner alla ändringar eller uppdateringar som görs i detta avtal. Om användaren inte är bekant med ändringarna efter revideringen av detta avtal ska utvecklaren inte hållas ansvarig för eventuella förluster.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Diverse</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Detta avtal ska regleras av Folkrepubliken Kinas lag, utan hänsyn till alla lagvalsregler;\nUtvecklarens underlåtenhet att utöva, underlåta att i tid eller fullt ut utöva de rättigheter som åtnjuts enligt detta avtal eller i enlighet med lagen ska inte anses vara ett avstående från utövandet av sådana rättigheter, och det ska inte heller påverka utvecklarens utövande av sådana rättigheter i framtiden;\nI den utsträckning det är tillåtet enligt lag har utvecklaren rätt att tolka villkoren i detta avtal;\nAnvändare kan klaga och rapportera alla typer av överträdelser av lagar och förordningar via e-post, skicka e-postmeddelandet till services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Uppdelning av villkor</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Om någon bestämmelse i detta avtal anses vara ogiltig eller omöjlig att verkställa, ska de återstående bestämmelserna förbli i full kraft och verkan.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Välj den metod du vill använda：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Universella Minecraft Java Edition-servrar</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Minecraft Forge-servrar</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Minecraft NeoForge-servrar</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Minecraft Fabric-servrar</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Minecraft Quilt-servrar</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Minecraft Bedrock Edition-servrar</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Minecraft Geyser Interoperability (fristående)</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord-gruppens sida</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Minecraft vattenfall gruppsida</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity-gruppens sida</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Minecraft Travertine gruppsida</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>FRP-klientprogram (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Terraria spelservrar</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Andra konsolprogram</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Importera en befintlig instans</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Ny resa, ny erfarenhet.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Svep med dig den stora bilden för att se världen.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>I alla riktningar måste uppdraget uppnås.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>You name it, det finns här. (Används för närvarande.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Gör ditt bästa för att svara på deras frågor.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Ditt MCSL, ditt val.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Stoppa nedladdningen direkt</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Försök att ladda ned igen 1 gång</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Försök att ladda ner igen 3 gånger</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Ange instansnamnet för validering</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Validering av daemonnyckel</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Följ systemet</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>ljus</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Mörk</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>Licensavtal för automatiskt samtycke (Minecraft Java Edition Server Instance)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Genom att automatiskt godkänna avtalet är du bunden av Minecrafts licensavtal för slutanvändare och samtycker till att MCSL inte är solidariskt ansvarigt.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Inaktivera äkthetsverifiering automatiskt (serverinstans för Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>När det här alternativet är aktiverat kommer sådana instanser automatiskt att inaktivera autentisering från Mojang/Microsoft, vilket gör att oäkta Minecraft Java Edition-klienter kan ansluta till servern.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>När det här alternativet är aktiverat kommer sådana instanser automatiskt att inaktivera autentisering från Mojang/Microsoft, vilket gör att oäkta Minecraft Bedrock Edition-klienter kan ansluta till servern.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Inaktivera äkthetsverifiering automatiskt (serverinstans för Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Distribuera med en bildkälla (Minecraft Forge-serverinstans)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Distribuera med en bildkälla (Minecraft NeoForge Server Instance)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Distribuera med en avbildningskälla (Minecraft Fabric-serverinstans)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Distribuera med en speglingskälla (Minecraft Quilt-serverinstans)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Efter aktivering kommer BMCLAPI att användas för att ladda ner resurser, vilket rekommenderas för kinesiska användare.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Ladda ner källan</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Välj den nedladdningsprovider som ska användas på sidan Resursnedladdningar.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (tillhandahålls av Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Bild av Polestar Cloud (med tillstånd av Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ZCloud-fil (tillhandahålls av Z__Tsin medlem av utvecklingsteamet)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>MSL-nedladdningskälla (tillhandahålls av MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>MCSL-Sync synkron spegling</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Antal motortrådar för nedladdning</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>Om datorn har tillräcklig prestanda gäller att ju högre antal trådar, desto snabbare är filens teoretiska nedladdningshastighet. I allmänhet räcker det med en inställning på 16 trådar.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Så här hanterar du nedladdningsfel</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Vad ska jag göra om filnedladdningen misslyckas.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Bekräfta metoden för att ta bort en instans</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Den här funktionen förhindrar att instanser tas bort på grund av felaktig användning.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Använda ett tema</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Standardinställningen följer systemändringarna, naturligtvis kan du också ställa in den själv.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Automatisk start (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>När systemet startar startas det grafiska programmet automatiskt. När det är aktiverat kan känsliga åtgärder beröras i systemet, så tillåt dem i ditt antivirusprogram.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Sök efter uppdateringar (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Sök efter uppdateringar till det här grafiska programmet.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Sök efter uppdateringar</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Sök efter uppdateringar till detta grafiska program vid varje start.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Sök automatiskt efter uppdateringar (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Sök efter uppdateringar (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Sök efter uppdateringar av demonen.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>Om MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Detta projekt är skyddat av Folkrepubliken Kinas upphovsrättslag och internationella fördrag, och obehörig reproduktion eller distribution av programmet eller någon del därav är föremål för stränga civilrättsliga och straffrättsliga påföljder och åtal i den utsträckning som lagen tillåter.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Detta projekt är skyddat under GNU General Public License Version 3.0 med öppen källkod och källkoden finns på</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Det digitalt signerade certifikatet som används av MCServerLauncher Future garanterar att programmet inte kan manipuleras. Serienummer：59cbf9b5207eeabb45417d148120ac9a。 Om det är annorlunda, använd det inte och ge feedback till services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Oändlig spegling</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Bild av Polära nebulosan</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync synkron spegling</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>tillkännagivande</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Är du säker?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Om du avvisar användaravtalet kommer programvaran att dras tillbaka.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Se till att du har läst allt innan du klickar på Godkänn. Åtminstone bör du rulla protokollet till slutet.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bra</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Inte nu</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Detta innebär att du samtycker till allt innehåll i detta avtal.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Ladda ner källa)</value>
+  </data>
 </root>

@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>MCServerLauncher WPF에서 오류가 발생했습니다.</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>스택이 클립보드에 복사되었습니다. GitHub로 직접 이동하여 피드백을 제공할 수 있습니다.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>WPF 클라이언트(Windows에만 해당)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>언어</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>사용자 계약</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>데몬 연결</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>시작</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>계속  해</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> 언어 설정</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> 언어</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>홈페이지</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>인스턴스 만들기</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>인스턴스 관리</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>리소스 다운로드</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>지원 센터</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>알림 센터</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>디버깅 페이지</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>프로그램 설정</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>프롬프트</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF는 중복 실행을 지원하지 않습니다.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>브로커</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>원문 언어</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>순수한</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>모듈</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>암반</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>핵심 소개를 얻지 못했습니다!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Minecraft Bedrock Edition 지퍼 팩</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>다운로드한 패키지를 여기로 가져오십시오. 다운로드할 위치를 모르는 경우 오른쪽에 있는 버튼을 클릭하여 점프할 수 있습니다.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Zip 패키지</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>찾아보기</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>마인크래프트 서버 코어</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>서버에서 사용할 코어 파일을 선택하십시오. 다운로드할 위치를 모르는 경우 오른쪽에 있는 버튼을 클릭하여 점프할 수 있습니다.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>코어 파일 이름</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Java 런타임</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Java 런타임은 Minecraft Java 서버에 필요한 환경입니다. 시작 실패를 방지하기 위해 적절한 버전을 선택해야 합니다.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Java 경로</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>수동 선택</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Daemon 호스트에서 자동 검색</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>기존 결과에서 선택</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+에는 Java 8이 필요합니다.\n1.17+에는 Java 16이 필요합니다.\n1.18+에는 Java 17이 필요합니다.\n1.20.5+에는 Java 21이 필요합니다.</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>파일</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>인스턴스에 필요한 파일/폴더/패키지를 선택합니다. 아카이브는 ZIP 형식만 지원합니다.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>배포 종속성</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>다음 명령을 실행합니다.</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>여기에 실행 명령을 입력합니다.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>매개 변수를 첨부해야 하는 경우\n뒷면에 직접 부착하십시오.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>특수 기호를 포함하거나 잘못된 이름을 사용해서는 안 됩니다.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>인스턴스의 이름입니다</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>선택적으로 여기에 한 줄에 하나씩 추가 JVM 매개 변수를 추가할 수 있습니다.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>매개 변수 추가</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>JVM 매개변수</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>최대 메모리</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>최소 메모리</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>이것은 Minecraft Java 서버가 사용할 수 있는 메모리의 양을 결정합니다.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>JVM 메모리 힙</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>최소 메모리 ≤ 최대 메모리가 충분합니다.</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>링크 복사</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>시간 초과</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>파일 크기</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>마인크래프트 에디션</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>빌드</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>닫다</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>열다</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>생성 시간</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>인스턴스 유형</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>더</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>시작하다</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>돌아오다</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>다음 구성을 마쳤으면 계속을 클릭합니다.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>서버가 실행될 Minecraft 버전을 선택하십시오.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>플러시</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>로드되지 않으면 나중에 다시 시도하십시오.\n이미지 서비스는 BMCLAPI에 의해 구동됩니다.</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Forge 버전</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>네오포지 버전</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>패브릭 버전</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>퀼트 버전</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>서버가 실행될 Forge 로더의 버전을 선택하십시오.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>서버가 실행될 NeoForge 로더 버전을 선택하십시오.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>서버가 실행할 패브릭 로더의 버전을 선택하십시오.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>서버가 실행될 Quilt 로더의 버전을 선택하십시오.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>공식 버전만 표시됩니다</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>서버 코어</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>공식 웹 사이트 열기</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>환영</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>지금은 건너뛰기</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>동의하다</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>쓰레기</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>MCSL 개발팀에서 제공하는 MCServerLauncher의 소프트웨어 및 서비스(이하 "소프트웨어")에 오신 것을 환영합니다. 사용자의 권리와 이익을 보호하기 위해 이 소프트웨어를 사용하기 전에 본 계약의 모든 내용을 주의 깊게 읽으십시오. 당사는 본 계약을 언제든지 업데이트할 수 있으며, 본 계약은 게시되는 즉시 원래의 사용자 계약을 효과적으로 대체합니다.\n이 소프트웨어를 사용할 때 다음 내용을 주의 깊게 읽으십시오., 이는 귀하가 본 계약의 모든 내용을 자세히 읽고 동의했으며 본 계약의 조항을 준수할 것에 동의한다는 것을 의미합니다.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>예방 조치</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>사용자는 소프트웨어 및 소프트웨어의 기능(새 인스턴스 생성을 포함하되 이에 국한되지 않음)에 사용자가 요구하는 하드웨어 및 소프트웨어 구성을 갖추어야 합니다.\n사용자는 인터넷 연결 후 지불해야 하는 관련 전화 및 광대역 사용료를 부담해야 합니다.\n사용자는 이 소프트웨어의 사용으로 인해 발생하는 동작, 이벤트 및 결과에 대한 법적 책임을 져야 합니다.\n사용자와 기타 승인되지 않은 비공식 개인 간의 모든 거래 및 분쟁은 개발자와 관련이 없습니다.\n사용자는 중화인민공화국의 관련 법률 및 규정을 준수해야 합니다(사용자가 중화인민공화국 이외의 사용자인 경우 사용자는 자신이 속한 국가 또는 지역의 법률 및 규정도 준수해야 합니다).\n사용자는 소프트웨어(또는 소프트웨어의 일부 기능)를 사용하여 불법 행위에 가담해서는 안 되며, 소프트웨어와 관련된 관련 프로세스 및 서비스를 사용하여 불법 행위에 가담해서는 안 되며, 어떠한 행위의 결과도 개발자와 관련이 없습니다.\n사용자는 자신이 게시한 정보의 내용과 관련된 법적 책임을 져야 합니다. 사용자는 소프트웨어의 다음 내용, 소프트웨어의 작동과 관련된 프로세스 및 서비스를 입력, 게시 또는 배포하지 않으며 다음 내용을 어떤 형태로든 게시할 수 없습니다：\n\n중화인민공화국 헌법에 명시된 기본 원칙에 반대한다.\n국가 안보를 위태롭게 하거나, 국가 기밀을 누설하거나, 국가 권력을 전복하거나, 국가 통합을 훼손하는 행위\n국가의 명예와 이익을 해치는 행위\n민족적 증오, 민족 차별을 선동하거나 민족적 단결을 약화시키는 행위\n국가 종교 정책을 훼손하고 사교와 봉건 미신을 옹호합니다.\n유언비어를 퍼뜨리거나, 사회 질서를 어지럽히거나, 사회 안정을 저해하는 행위\n외설, 포르노, 도박, 폭력, 살인, 테러 또는 범죄를 선동하는 행위\n타인을 모욕하거나 비방하는 행위, 타인의 합법적인 권리와 이익을 침해하는 행위\n중화인민공화국이 법률 또는 행정 규정에 의해 금지한 기타 콘텐츠를 포함하는 콘텐츠.\n법령에 의해 허용되거나 개발자의 서면 허가가 없는 한, 사용자는 다음과 같은 행위를 해서는 안 됩니다：\n소프트웨어 및 서비스의 불법 또는 부적절한 사용;\n소프트웨어 시스템 또는 웹 사이트의 정상적인 작동을 손상시키고 컴퓨터 바이러스 및 기타 파괴적인 프로그램을 고의로 퍼뜨리는 행위\n소프트웨어의 네트워크 서비스에 영향을 줄 수 있는 비정상적인 사용 행위(서버 손상, 공격 또는 서버 과부하 등을 포함하되 이에 국한되지 않음)를 하는 행위\n소프트웨어 및 그 사본에 대한 저작권 정보를 삭제합니다.\n\n사용자가 법률 및 규정을 위반하거나 본 계약의 조항을 위반하는 행위를 저지르는 경우 개발자는 본 계약 및 법률 및 규정에 따라 상황의 심각성에 따라 서비스 종료를 포함하되 이에 국한되지 않는 조치를 취할 권리가 있습니다. 상황이 엄중한 경우 관련 행정기관으로 이관돼 행정처벌을 받거나 형사책임을 묻게 된다.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>데이터 수집 및 사용</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>귀하가 본 이용 약관에 동의하고 소프트웨어의 온라인 서비스를 사용하는 경우, 당사는 다음 정보를 수집합니다：\n소프트웨어가 실행 중인 장치의 IP 주소(올바른 주소가 아닐 수 있음)\n소프트웨어가 작동하는 장비의 일부 시스템 정보;\n소프트웨어가 충돌하는 경우 문제를 해결하고 소프트웨어를 개선하는 데 도움이 되도록 시스템에서 실행 중인 소프트웨어의 로그(일부 시스템 정보 포함)가 사용자의 동의 하에 업로드될 수 있습니다.\n사용자의 동의하에 업로드되는 기타 정보(소프트웨어에 명시된 대로).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>사용자 지원 및 피드백</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>사용자가 사용 중 문제가 발생하면 공식 이메일을 통해 피드백을 제공하거나 이 소프트웨어 소스 코드 리포지토리에 문제를 제출할 수 있습니다. 우리는 서비스를 개선하기 위해 피드백을 진지하게 받아들입니다.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>서비스 변경 또는 중단</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. 이용자 서비스의 중단 및 종료\n\n이용자가 불법 정보를 게시하거나 사회 도덕을 심각하게 위반하거나 법률의 금지 사항을 위반하는 경우 개발자는 이용자에 대한 서비스 제공을 종료해야 합니다.\n사용자가 소프트웨어 서비스를 수락할 때 부적절한 행위를 하는 경우 개발자는 사용자에게 제공된 서비스를 종료할 권리가 있습니다(부적절한 행동의 구체적인 상황은 본 계약에 명확하게 명시되어 있음).\n사용자가 제3자의 수정된 버전의 소프트웨어를 사용하는 경우 사용자는 자신의 위험과 법적 책임을 져야 합니다.\n\n2. 소프트웨어 및 서비스의 중단, 중단 및 종료：\n\n다음과 같은 상황이 발생할 경우 개발자는 소프트웨어 서비스의 전부 또는 일부를 종료하거나 중단할 수 있는 권리를 가지며, 개발자는 이로 인해 발생하는 불편이나 손해에 대해 사용자 또는 제3자에게 책임을 지지 않습니다：\n\na. 소프트웨어 및 서비스에서 요구하는 경우;\nb. 서버 손상으로 인해 제대로 작동하지 않는 경우;\nc. 소프트웨어 및 하드웨어 장비 및 전자 통신 장비의 갑작스러운 고장으로 인해;\nd. 네트워크 공급자 회선 또는 기타 장애로 인해;\ne. 정책적 고려 사항으로 인해;\nf. 제3자의 사유 또는 기타 불가항력 상황.\n\n개발자는 필요하다고 판단되는 경우 소프트웨어 및 서비스를 종료하거나 부분적으로 종료할 수 있는 권리를 보유하며, 개발자는 공지 형식으로 사용자에게 통지할 수 있지만 개발자는 사용자에게 발생한 손실에 대해 책임을 지지 않습니다.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>면책 조항</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>사용자는 개발자가 법이 허용하는 범위 내에서 이 소프트웨어에 대해 어떠한 보증도 제공하지 않음을 이해하고 이에 동의합니다. 사용자가 이 소프트웨어를 사용하는 데 따른 위험은 사용자가 감수해야 합니다.\n사용자는 개발자가 소프트웨어 및 서비스가 사용자의 요구를 충족시킬 것이라고 보장하지 않으며, 서비스가 중단되지 않을 것이라고 보장하지 않으며, 소프트웨어 및 서비스의 정확성과 보안에 대한 어떠한 보증도 제공하지 않는다는 것을 이해하고 이에 동의합니다.\n사용자는 개발자가 소프트웨어의 온라인 서비스에서 다운로드한 제3자 파일의 정확성, 보안 및 적법성을 완전히 보장할 수 없으며 소프트웨어에 존재하는 제3자 서비스(리소스 다운로드 및 기타 서비스를 포함하되 이에 국한되지 않음)의 정확성, 보안 및 적법성에 대해 책임을 지지 않음을 이해하고 이에 동의합니다. 따라서 위에서 언급한 내용은 개발자 및 소프트웨어와 아무런 관련이 없으며 개발자 및 소프트웨어의 입장을 나타내지 않습니다. 분쟁은 제3자 서비스 제공업체가 부담합니다.\n사용자는 부정확하거나 불법적인 수단으로 소프트웨어의 온라인 서비스 및 소프트웨어에서 다운로드한 관련 파일을 사용함으로써 발생하는 결과에 대해 전적으로 책임을 져야 하며, 재산 피해, 저작권 또는 지적 재산권 침해 등에 대해 책임을 지지 않으며, 어떠한 법적 책임도 지지 않으며 법적 책임을 질 수 없음을 이해하고 이에 동의합니다.\n사용자는 소프트웨어가 제3자 서비스의 내용을 보장하지 않는다는 것을 이해하고 이에 동의합니다. 개발자는 사용자의 제3자 서비스 사용으로 인해 발생하는 재산 피해, 저작권 또는 지적 재산권 침해에 대해 책임을 지지 않으며 어떠한 법적 책임도 지지 않으며 질 수도 없습니다.\n사용자는 개발자가 소프트웨어의 기능에 대해 어떠한 보증과 법적 지원도 제공하지 않으며, 사용자가 소프트웨어의 기능을 사용하여 불법 또는 기타 부적절한 행위에 관여하는 경우 사용자로 인해 발생하는 위험 및 법적 결과는 사용자가 부담해야 함을 이해하고 이에 동의합니다.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>지적 재산권</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>이 소프트웨어의 저작권, 특허 및 기타 지적 재산권은 개발자 또는 지정된 저작권 소유자가 소유합니다.\n\n이 소프트웨어에 사용된 타사 서비스는 다음을 포함하되 이에 국한되지 않는 관련 저작권 소유자가 소유합니다.：\n이 소프트웨어는 Minecraft용 서버 관리 및 게임 온라인 도구입니다(최종 해석은 Microsoft Corporation 및 Mojang AB 소유). 사용자는 최종 사용자 사용권 계약(EULA) 및 중국 본토에서 NetEase가 시행하는 관련 정책을 준수해야 하며, 게임 콘텐츠를 상업적 목적으로 사용하거나 최종 사용자 사용권 계약에서 금지하는 기타 행위를 해서는 안 됩니다.\n소프트웨어는 Terraria의 서버 관리 및 게임 연결 도구이며, 이에 대한 궁극적인 해석은 Re-Logic과 그 퍼블리셔에게 있습니다. 사용자는 EULA(최종 사용자 사용권 계약) 및 관련 정책을 준수할 책임이 있습니다. 사용자는 게임 콘텐츠를 허가되지 않은 상업적 목적으로 사용하거나 최종 사용자 라이선스 계약에서 금지하는 기타 행위를 해서는 안 됩니다.\n이 소프트웨어가 제공하는 일부 온라인 파일 리소스(서버 코어, 게임/서버 모듈, 플러그인 등) 다운로드 서비스는 해당 공식/제3자 등에 의해 제공되며, 저작권은 제3자 플랫폼의 규정에 따라 취급됩니다.\n이 소프트웨어에 사용된 다른 타사 서비스의 저작권은 서비스 공급자에게 있습니다.\n이 소프트웨어는 오픈 소스 소프트웨어이며 이 소프트웨어의 일부가 아닌 사용자 또는 기타 소프트웨어 개발자는 이 소프트웨어의 오픈 소스 계약을 준수해야 합니다.\n사용자는 사용자가 만든 리소스를 제외하고 소프트웨어가 제공하는 모든 온라인 서비스 데이터는 개발자가 소유한다는 것을 이해하고 동의합니다. 개발자는 서버의 데이터 전부 또는 일부를 보존할지 여부를 결정할 권리가 있습니다.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>약관 변경</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>개발자는 필요한 경우 본 계약을 수정할 권리가 있습니다. 본 계약에 변경 사항이 있으면 개발자는 수정된 콘텐츠를 중요 페이지에 표시합니다. 사용자가 본 계약의 개정 또는 업데이트에 동의하지 않는 경우 소프트웨어 및 서비스 사용을 중단할 수 있습니다. 사용자가 본 계약이 개정된 후에도 소프트웨어 및 서비스를 계속 사용하는 경우 사용자는 본 계약의 모든 개정 또는 업데이트에 동의하는 것입니다. 이용자가 본 약관 개정 후의 변경 사항을 인지하지 못한 경우, 개발자는 어떠한 손실에 대해서도 책임을 지지 않습니다.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>잡다한</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>본 계약은 모든 법률 조항의 충돌에 관계없이 중화 인민 공화국 법률의 적용을 받습니다.\n개발자가 본 계약에 따라 또는 법률에 따라 향유하는 권리를 행사하지 못하거나, 적시에 행사하지 못하거나, 완전히 행사하지 않는 것은 해당 권리의 행사를 포기하는 것으로 간주되지 않으며, 향후 개발자의 그러한 권리 행사에 영향을 미치지 않습니다.\n법이 허용하는 한도 내에서 개발자는 본 계약의 조건을 해석할 권리가 있습니다.\n사용자는 이메일로 모든 종류의 법률 및 규정 위반을 불만 제기하고 신고 할 수 있으므로 services@mcsl.com.cn 로 이메일을 보내주십시오.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>약관의 분리 가능성</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>본 계약의 조항이 유효하지 않거나 시행할 수 없는 경우, 나머지 조항은 완전한 효력을 유지합니다.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>조작하고자 하는 방법을 선택해 주세요：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>범용 Minecraft Java Edition 서버</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>마인크래프트 포지 서버</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>마인크래프트 네오포지 서버</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>마인크래프트 패브릭 서버</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>마인크래프트 퀼트 서버</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>마인크래프트 베드락 에디션 서버</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Minecraft Geyser 상호 운용성 독립 실행형</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord 그룹 측</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>마인크래프트 폭포 그룹 측</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity 그룹 측</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>마인크래프트 트래버틴 그룹 측</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>FRP 클라이언트 프로그램(FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Terraria 게임 서버</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>다른 콘솔 프로그램</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>기존 인스턴스 가져오기Import an existing instance</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>새로운 여정, 새로운 경험.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>큰 그림을 보고 세상을 보세요.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>모든 방향에서 임무를 완수해야 합니다.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>이름만 대면 알 수 있습니다. (현재 사용 중입니다.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>그들의 질문에 답하기 위해 최선을 다하십시오.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>당신의 MCSL, 당신의 선택.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>다운로드를 직접 중지하십시오.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>다운로드 1회 다시 시도</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>다운로드를 3번 다시 시도합니다.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>유효성 검사를 위해 인스턴스 이름을 입력합니다</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>데몬 키 유효성 검사</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>시스템을 따르십시오</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>광</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>어둠</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>자동 동의 EULA(Minecraft Java Edition 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>자동으로 동의하면 Minecraft 최종 사용자 라이선스 계약에 구속되며 MCSL이 공동 및 개별적으로 책임을 지지 않음에 동의하는 것입니다.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>정품 확인 자동 비활성화(Minecraft Java Edition 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>이 옵션을 활성화하면 이러한 인스턴스는 Mojang/Microsoft의 인증을 자동으로 비활성화하여 정품이 아닌 Minecraft Java Edition 클라이언트가 서버에 연결할 수 있도록 합니다.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>이 옵션을 활성화하면 이러한 인스턴스는 Mojang/Microsoft의 인증을 자동으로 비활성화하여 비정품 Minecraft Bedrock Edition 클라이언트가 서버에 연결할 수 있도록 합니다.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>정품 인증 자동 비활성화(Minecraft Bedrock Edition 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>이미지 소스를 사용하여 배포(Minecraft Forge 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>이미지 소스를 사용하여 배포(Minecraft NeoForge 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>이미지 소스를 사용하여 배포(Minecraft Fabric 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>미러 소스를 사용하여 배포(Minecraft Quilt 서버 인스턴스)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>활성화한 후에는 BMCLAPI를 사용하여 리소스를 다운로드하며, 이는 중국 사용자에게 권장됩니다.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>소스 다운로드</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>리소스 다운로드 페이지에서 사용할 다운로드 공급자를 선택합니다.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror(Monogatari Cloud Computing 제공)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Polestar Cloud 이미지(Polestar Network 제공)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>ZCloud File (개발팀 Z__Tsin 제공)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>MSL 다운로드 소스(MSL Server Builder에서 제공)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>MCSL-Sync 동기 미러링</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>다운로드 엔진 스레드 수</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>컴퓨터 성능이 충분한 경우 스레드 수가 많을수록 파일의 이론적 다운로드 속도가 빨라집니다. 일반적으로 스레드 16개로 설정하면 충분합니다.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>다운로드 실패를 처리하는 방법</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>파일 다운로드에 실패한 경우 수행할 작업.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>인스턴스를 삭제하는 방법을 확인합니다</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>이 기능은 인스턴스가 오작동으로 인해 삭제되는 것을 방지합니다.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>테마 적용</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>기본값은 시스템 변경 사항을 따르며 물론 직접 설정할 수도 있습니다.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>자동 시작(MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>시스템이 시작되면 그래픽 프로그램이 자동으로 시작됩니다. 활성화하면 시스템에서 민감한 작업이 건드려질 수 있으므로 바이러스 백신 소프트웨어에서 허용하십시오.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>업데이트 확인(MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>이 그래픽 프로그램에 대한 업데이트를 확인하십시오.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>업데이트 확인</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>시작할 때마다 이 그래픽 프로그램에 대한 업데이트를 확인하십시오.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>자동으로 업데이트 확인(MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>업데이트 확인(MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>데몬에 대한 업데이트를 확인합니다.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>MCServerLauncher Future(WPF) 정보</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>이 프로젝트는 중화인민공화국 저작권법 및 국제 조약에 의해 보호되며, 프로그램 또는 그 일부의 무단 복제 또는 배포는 법이 허용하는 최대 한도 내에서 엄중한 민형사상 제재 및 기소의 대상이 됩니다.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>이 프로젝트는 오픈 소스 GNU General Public License 버전 3.0에 따라 보호되며 소스 코드는</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>MCServerLauncher Future에서 사용하는 디지털 서명 인증서는 프로그램이 변조될 수 없음을 보장합니다. 일련 번호：59cbf9b5207eeabb45417d148120ac9a。 다른 경우 사용하지 말고 services@mcsl.com.cn 에게 피드백을 제공하십시오.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>무한 미러링</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>극지 성운 이미지</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>MCSL-Sync 동기 미러링</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>발표</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>확실한가요?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>사용자 계약을 거부하면 소프트웨어가 철회됩니다.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>동의를 클릭하기 전에 모든 내용을 읽었는지 확인하십시오. 최소한 프로토콜을 끝까지 굴려야 합니다.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>좋다</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>지금은 아니에요</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>이는 귀하가 본 계약의 모든 내용에 동의한다는 것을 의미합니다.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>소스 다운로드)</value>
+  </data>
 </root>

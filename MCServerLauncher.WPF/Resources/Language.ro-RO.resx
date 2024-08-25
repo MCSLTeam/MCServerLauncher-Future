@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>S-a întâmpinat o eroare cu MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Stiva a fost copiată în clipboard. Puteți accesa direct GitHub pentru a oferi feedback.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>Client WPF (numai Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Limbă</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Acord de utilizare</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Conectați demonul</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Începe</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Continuă</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Setați limba</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Limbă</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>Pagina principală</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Creați o instanță</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Gestionarea instanțelor</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Descărcări de resurse</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Centrul de ajutor</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Centrul de notificări</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Pagina de depanare</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Setările programului</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>prompt</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF nu acceptă rulări duplicate.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>broker</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>pur</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Modul</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>Roca</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Nu am reușit să obțin introducerea de bază!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Pachet cu fermoar Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Vă rugăm să importați pachetul descărcat aici. Dacă nu știți de unde să descărcați, puteți face clic pe butonul din dreapta pentru a sări.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Pachet Zip</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Răsfoi</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Nucleul serverului Minecraft</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Vă rugăm să selectați fișierele de bază care vor fi utilizate de server. Dacă nu știți de unde să descărcați, puteți face clic pe butonul din dreapta pentru a sări.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Numele fișierului de bază</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Timp de execuție Java</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Timpul de rulare Java este un mediu necesar pentru serverul Java Minecraft. Asigurați-vă că alegeți versiunea adecvată pentru a preveni eșecurile de pornire.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Calea Java</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Selecție manuală</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Căutați automat pe gazdele Daemon</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Alegeți dintre rezultatele existente</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ necesită Java 8\n1.17+ necesită Java 16\n1.18+ necesită Java 17\n1.20.5+ necesită Java 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Filename</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Selectați fișierul/folderul/pachetul necesar pentru instanță. Arhiva acceptă doar formatul ZIP.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Dependențe de implementare</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Rulați comanda</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Introduceți comanda de rulare aici.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Dacă trebuie să atașați parametri,\nAtașați-l direct pe spate.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Nu includeți simboluri speciale și nu folosiți nume ilegale.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Numele instanței</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Opțional, puteți adăuga aici parametri JVM suplimentari, unul pe linie.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Adăugarea parametrilor</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>Parametrii JVM</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Memorie maximă</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Memorie minimă</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Aceasta determină câtă memorie va putea folosi serverul Java Minecraft.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>Heap de memorie JVM</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Memoria minimă ≤ memoria maximă este suficientă</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Copiați linkul</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Pauză</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Anula</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Dimensiunea fișierului</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Ediția Minecraft</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Construieşte</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>închide</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>deschide</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Timpul creației</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Tip de instanță</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>mai mult</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Iniţia</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>restitui</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Când ați terminat cu următoarele configurații, faceți clic pe Continuare.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Vă rugăm să selectați versiunea de Minecraft pe care o va rula serverul.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Eliminate</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Dacă nu se încarcă, încercați din nou mai târziu.\nSERVICIUL DE IMAGINE ESTE ALIMENTAT DE BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Versiunea Forge</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>Versiunea NeoForge</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Versiune din țesătură</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Versiunea Quilt</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Vă rugăm să selectați versiunea încărcătorului Forge pe care o va rula serverul.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Vă rugăm să selectați versiunea încărcătorului NeoForge pe care serverul o va rula.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Selectați versiunea încărcătorului Fabric pe care o va rula serverul.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Vă rugăm să selectați versiunea încărcătorului Quilt pe care serverul o va rula.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Este afișată doar versiunea oficială</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Nuclee de server</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Deschideți site-ul oficial</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Bun venit</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Săriți deocamdată</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>acord</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>refuza</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Bine ați venit la software-ul și serviciile MCServerLauncher (denumit în continuare "Software") furnizate de echipa de dezvoltare MCSL. Pentru a proteja drepturile și interesele utilizatorilor, vă rugăm să citiți cu atenție tot conținutul acestui acord înainte de a utiliza acest software. Putem actualiza acest Acord în orice moment și va înlocui efectiv Acordul de utilizare original odată ce este postat.\nVă rugăm să citiți cu atenție următorul conținut, atunci când utilizați acest software, înseamnă că ați citit și sunteți de acord cu întregul conținut al acestui acord în detaliu și sunteți de acord să respectați prevederile acestui acord.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Precauţii</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Utilizatorul trebuie să echipeze software-ul și funcțiile software-ului (inclusiv, dar fără a se limita la crearea de noi instanțe) cu configurația hardware și software necesară utilizatorului.\nUtilizatorii sunt responsabili pentru taxele relevante de utilizare a telefonului și a conexiunii în bandă largă care trebuie plătite după conectarea la internet.\nUtilizatorul poartă responsabilitatea legală pentru comportamentul, evenimentul și rezultatul cauzat de utilizarea acestui software.\nOrice tranzacții și dispute între utilizatori și alte persoane neoficiale neautorizate nu au nimic de-a face cu dezvoltatorul.\nUtilizatorul trebuie să respecte legile și reglementările relevante ale Republicii Populare Chineze (dacă utilizatorul este un utilizator din afara Republicii Populare Chineze, utilizatorul trebuie să respecte și legile și reglementările țării sau regiunii din care face parte).\nUtilizatorul nu va utiliza software-ul (sau unele caracteristici și funcții ale software-ului) pentru a se angaja în acte ilegale și nu va utiliza procesele și serviciile relevante asociate cu software-ul pentru a se angaja în acte ilegale, iar consecințele oricăror acțiuni nu vor fi legate de dezvoltator.\nUtilizatorii își asumă propriile responsabilități legale legate de conținutul informațiilor pe care le publică. Utilizatorul nu trebuie să introducă, să publice sau să disemineze niciunul dintre următoarele conținuturi în software, procesele și serviciile legate de funcționarea software-ului și nu va publica niciunul dintre următoarele conținuturi sub nicio formă：\n\nopoziția față de principiile de bază stabilite în Constituția Republicii Populare Chineze;\npunerea în pericol a securității naționale, divulgarea secretelor de stat, subminarea puterii de stat sau subminarea unității naționale;\ndăunarea onoarei și intereselor statului;\nincitarea la ură etnică, discriminarea etnică sau subminarea unității etnice;\nsubminarea politicilor religioase naționale, susținerea cultelor și a superstițiilor feudale;\nrăspândirea zvonurilor, perturbarea ordinii sociale sau subminarea stabilității sociale;\nDiseminarea obscenității, pornografiei, jocurilor de noroc, violenței, crimei, terorii sau instigării la infracțiuni;\ninsultarea sau calomnierea altora, încălcarea drepturilor și intereselor legitime ale altora;\nConține alt conținut interzis de legi sau reglementări administrative.\nCu excepția cazului în care este permis de lege sau cu permisiunea scrisă a dezvoltatorului, utilizatorii nu se vor angaja în niciunul dintre următoarele acte：\nUtilizarea ilegală sau necorespunzătoare a Software-ului și a Serviciilor;\nDeteriorarea funcționării normale a sistemului software sau a site-ului web, răspândirea deliberată a virușilor informatici și a altor programe distructive;\nLuați orice comportament de utilizare anormală care poate afecta serviciile de rețea ale Software-ului (inclusiv, dar fără a se limita la deteriorarea, atacarea serverului sau supraîncărcarea serverului etc.);\nȘtergeți informațiile privind drepturile de autor de pe Software și copiile acestuia.\n\nÎn cazul în care utilizatorul comite orice comportament care încalcă legile și reglementările sau încalcă prevederile prezentului Acord, dezvoltatorul are dreptul de a lua măsuri împotriva utilizatorului în funcție de gravitatea situației, în conformitate cu prezentul Acord și legile și reglementările, inclusiv, dar fără a se limita la încetarea serviciilor. În cazul în care circumstanțele sunt grave, acestea vor fi transferate organelor administrative relevante pentru sancțiuni administrative sau vor fi cercetate pentru răspundere penală.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Colectarea și utilizarea datelor</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Dacă sunteți de acord cu acești Termeni de utilizare și utilizați serviciile online ale Software-ului, vom colecta următoarele informații：\nadresa IP a dispozitivului pe care rulează Software-ul (care poate să nu fie adresa corectă);\nUnele informații de sistem ale echipamentului pe care funcționează Software-ul;\nCând software-ul se blochează, jurnalele software-ului care rulează pe sistem (inclusiv unele informații de sistem) pot fi încărcate cu consimțământul utilizatorului pentru a ajuta la rezolvarea problemei și la îmbunătățirea software-ului.\nAlte informații care vor fi încărcate cu consimțământul utilizatorului (așa cum este specificat în software).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Asistență și feedback pentru utilizatori</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Dacă utilizatorii întâmpină probleme în timpul utilizării, pot oferi feedback prin e-mailul oficial sau prin trimiterea unei probleme în acest depozit de cod sursă al software-ului. Luăm în serios feedback-ul nostru pentru a ne îmbunătăți serviciile.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Modificări sau suspendarea serviciului</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Suspendarea și încetarea serviciului utilizatorului\n\nÎn cazul în care utilizatorul publică informații ilegale, încalcă grav moralitatea socială sau încalcă interdicțiile legii, dezvoltatorul va înceta furnizarea de servicii către utilizator;\nÎn cazul în care utilizatorul comite un act necorespunzător la acceptarea serviciului software, dezvoltatorul are dreptul de a rezilia serviciul furnizat utilizatorului (circumstanțele specifice comportamentului necorespunzător sunt clar stipulate în acest acord);\nDacă utilizatorul utilizează o versiune modificată a software-ului de la o terță parte, utilizatorul își asumă propriul risc și responsabilitatea legală.\n\n2. Suspendarea, suspendarea și încetarea software-ului și a serviciilor：\n\nÎn oricare dintre următoarele circumstanțe, dezvoltatorul are dreptul de a rezilia sau întrerupe toate sau o parte din serviciile software-ului, iar dezvoltatorul nu va fi răspunzător față de utilizator sau față de orice terță parte pentru neplăcerile sau daunele cauzate de aceasta：\n\na. conform cerințelor Software-ului și Serviciilor;\nb. Eșecul de a funcționa corect din cauza deteriorării serverului;\nc. Din cauza defecțiunii bruște a echipamentelor software și hardware și a echipamentelor de comunicații electronice;\nd. din cauza defecțiunilor de linie ale furnizorului de rețea sau a altor defecțiuni;\ne. din considerente de politică;\nf. Motive ale terților sau alte circumstanțe de forță majoră.\n\nDezvoltatorul își rezervă dreptul de a rezilia sau de a rezilia parțial Software-ul și Serviciile atunci când consideră necesar, iar Dezvoltatorul poate notifica Utilizatorul sub forma unui anunț, dar Dezvoltatorul nu va fi răspunzător pentru pierderile cauzate Utilizatorului.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>Disclaimer</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Utilizatorul înțelege și este de acord că dezvoltatorul nu oferă nicio garanție pentru acest software în măsura permisă de lege. Utilizarea acestui software de către utilizator se face pe propriul risc al utilizatorului.\nUtilizatorul înțelege și este de acord că Dezvoltatorul nu garantează că Software-ul și Serviciile vor satisface nevoile Utilizatorului și nici nu garantează că Serviciile nu vor fi întrerupte și nu oferă nicio garanție pentru corectitudinea și securitatea Software-ului și Serviciilor.\nUtilizatorul înțelege și este de acord că dezvoltatorul nu poate garanta pe deplin corectitudinea, securitatea și legitimitatea fișierelor terților descărcate din serviciile online ale software-ului și nici nu este responsabil pentru corectitudinea, securitatea și legalitatea serviciilor terților (inclusiv, dar fără a se limita la descărcarea de resurse și alte servicii) existente în software. Prin urmare, conținutul menționat mai sus nu are nimic de-a face cu dezvoltatorul și software-ul și nu reprezintă poziția dezvoltatorului și a software-ului. Litigiile vor fi suportate de furnizorul terț de servicii.\nUtilizatorul înțelege și este de acord că Utilizatorul va fi singurul responsabil pentru consecințele cauzate de utilizarea serviciilor online ale Software-ului și a fișierelor aferente descărcate din Software prin mijloace incorecte sau ilegale și nu va fi responsabil pentru nicio daună aduse proprietății, încălcarea drepturilor de autor sau a drepturilor de proprietate intelectuală etc.\nUtilizatorul înțelege și este de acord că Software-ul nu garantează conținutul serviciilor terțe. Dezvoltatorul nu va fi responsabil pentru nicio daună aduse proprietății, încălcarea drepturilor de autor sau a drepturilor de proprietate intelectuală cauzate de utilizarea de către utilizator a serviciilor terților și nu va purta și nu poate purta nicio responsabilitate legală.\nUtilizatorul înțelege și este de acord că dezvoltatorul nu oferă nicio garanție și suport juridic pentru funcțiile software-ului, iar dacă utilizatorul utilizează funcțiile software-ului pentru a se angaja în acte ilegale sau alte acte necorespunzătoare, riscurile și consecințele juridice cauzate de utilizator vor fi suportate de utilizator.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>proprietate intelectuală</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Drepturile de autor, brevetele și alte drepturi de proprietate intelectuală ale acestui software sunt deținute de dezvoltator sau de proprietarul desemnat al drepturilor de autor.\n\nServiciile terțe utilizate în acest software sunt deținute de deținătorii de drepturi de autor relevanți, inclusiv, dar fără a se limita la:：\nAcest software este un instrument online de gestionare a serverului și de jocuri pentru Minecraft (a cărui interpretare finală este deținută de Microsoft Corporation și Mojang AB). Utilizatorii trebuie să respecte Acordul de licență pentru utilizatorul final (EULA) și politicile relevante implementate de NetEase în China continentală și nu trebuie să utilizeze conținutul jocului în scopuri comerciale sau să efectueze alte acte interzise de Acordul de licență pentru utilizatorul final.\nSoftware-ul este instrumentul de gestionare a serverului și de conectare la jocuri al Terraria, a cărui interpretare finală aparține Re-Logic și editorilor săi. Utilizatorii sunt responsabili pentru respectarea Acordului de licență pentru utilizatorul final (EULA) și a politicilor aferente. Utilizatorii nu trebuie să utilizeze conținutul jocului în scopuri comerciale fără licență sau să efectueze alte acte interzise de acordul de licență pentru utilizatorul final.\nUnele dintre serviciile de descărcare a resurselor de fișiere online (nucleul serverului, modulele de joc/server, plug-in-uri etc.) furnizate de acest software sunt furnizate de oficialul/terța parte corespunzătoare etc., iar drepturile de autor vor fi gestionate în conformitate cu prevederile platformei terțe.\nDrepturile de autor ale altor servicii terțe utilizate în acest software aparțin furnizorului de servicii.\nAcest software este software open source, iar utilizatorii sau alți dezvoltatori de software care nu fac parte din acest software trebuie să respecte acordul open source al acestui software.\nUtilizatorul înțelege și este de acord că, cu excepția resurselor create de utilizator, toate datele serviciilor online furnizate de software sunt deținute de dezvoltator. Dezvoltatorul are dreptul de a decide dacă să păstreze sau nu toate sau o parte din datele de pe server.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Modificări ale Termenilor</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Dezvoltatorul are dreptul de a modifica acest Acord atunci când este necesar. Odată ce există o modificare a acestui Acord, dezvoltatorul va afișa conținutul modificat pe pagina importantă. Dacă utilizatorul nu este de acord cu revizuirea sau actualizarea acestui acord, acesta poate lua inițiativa de a înceta utilizarea software-ului și a serviciilor. Dacă utilizatorul continuă să utilizeze software-ul și serviciile după revizuirea acestui acord, înseamnă că utilizatorul este de acord cu toate modificările sau actualizările aduse acestui acord. Dacă utilizatorul nu este familiarizat cu modificările după revizuirea acestui acord, dezvoltatorul nu va fi răspunzător pentru nicio pierdere.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Divers</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Prezentul Acord va fi guvernat de legislația Republicii Populare Chineze, fără a ține cont de toate prevederile privind conflictul de legi;\nNeexercitarea de către Dezvoltator, neexercitarea în timp util sau exercitarea deplină a drepturilor de care se bucură în temeiul prezentului Acord sau în conformitate cu legea nu va fi considerată o renunțare la exercitarea acestor drepturi și nici nu va afecta exercitarea de către Dezvoltator a acestor drepturi în viitor;\nÎn măsura permisă de lege, Dezvoltatorul are dreptul de a interpreta termenii prezentului Acord;\nUtilizatorii pot depune plângeri și raporta tot felul de încălcări ale legilor și reglementărilor prin e-mail, vă rugăm să trimiteți e-mailul la services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Separabilitatea termenilor</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>În cazul în care orice prevedere a prezentului Acord este considerată nevalidă sau inaplicabilă, celelalte prevederi vor rămâne în vigoare și în vigoare.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Vă rugăm să selectați metoda pe care doriți să o utilizați：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Servere universale Minecraft Java Edition</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Servere Minecraft Forge</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Servere Minecraft NeoForge</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Servere Minecraft Fabric</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Servere Minecraft Quilt</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Servere Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Interoperabilitate Minecraft Geyser Standalone</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Partea grupului Minecraft BungeeCord</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Minecraft Waterfall partea grupului</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity Group Side</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Partea grupului Minecraft Travertin</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>Programul client FRP (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Servere de jocuri Terraria</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Alte programe de consolă</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Importarea unei instanțe existente</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>O nouă călătorie, o nouă experiență.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Măturați imaginea de ansamblu pentru a vedea lumea.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>În toate direcțiile, misiunea trebuie îndeplinită.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Îl numiți, a ajuns aici. (În prezent în uz.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Faceți tot posibilul să răspundeți la întrebările lor.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>MCSL-ul tău, alegerea ta.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Opriți descărcarea direct</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Reîncercați descărcarea de 1 dată</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Reîncercați descărcarea de 3 ori</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Introduceți numele instanței pentru validare</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Validarea cheii demonului</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Urmați sistemul</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>lumină</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Întunecat</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>EULA de consimțământ automat (instanță de server Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Prin acceptarea automată, sunteți obligat să respectați Acordul de licență pentru utilizatorul final Minecraft și sunteți de acord că MCSL nu este răspunzător în solidar.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Dezactivați automat verificarea autenticității (instanță de server Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Când această opțiune este activată, astfel de instanțe vor dezactiva automat autentificarea de la Mojang/Microsoft, permițând clienților Minecraft Java Edition neautentici să se conecteze la server.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Când această opțiune este activată, astfel de instanțe vor dezactiva automat autentificarea de la Mojang/Microsoft, permițând clienților Minecraft Bedrock Edition neautentici să se conecteze la server.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Dezactivați automat verificarea autenticității (instanță de server Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Implementați cu o sursă de imagine (instanță de server Minecraft Forge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Implementați cu o sursă de imagine (Minecraft NeoForge Server Instance)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Implementați cu o sursă de imagine (instanță de server Minecraft Fabric)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Implementați cu o sursă în oglindă (instanță de server Minecraft Quilt)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>După activare, BMCLAPI va fi folosit pentru a descărca resurse, ceea ce este recomandat utilizatorilor chinezi.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Descărcați sursa</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Selectați furnizorul de descărcare de utilizat pe pagina Descărcări de resurse.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (furnizat de Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Imagine polestar cloud (prin amabilitatea Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>Fișier ZCloud (furnizat de Z__Tsin membru al echipei de dezvoltare)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>Sursa de descărcare MSL (furnizată de MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>Oglindire sincronă MCSL-Sync</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Numărul de fire ale motorului de descărcare</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>În cazul unei performanțe suficiente a computerului, cu cât numărul de fire de execuție este mai mare, cu atât viteza teoretică de descărcare a fișierului este mai rapidă. În general, este suficientă o setare de 16 fire.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Cum să gestionați eșecurile de descărcare</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Ce trebuie să faceți dacă descărcarea fișierului nu reușește.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Confirmați metoda de ștergere a unei instanțe</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Această caracteristică împiedică ștergerea instanțelor din cauza funcționării greșite.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Aplicarea unei teme</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Implicit urmează modificările sistemului, desigur, îl puteți seta și singur.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Pornire automată (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Când sistemul pornește, programul grafic este lansat automat. Când este activată, operațiunile sensibile pot fi atinse în sistem, așa că vă rugăm să le permiteți în software-ul antivirus.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Căutați actualizări (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Verificați dacă există actualizări ale acestui program grafic.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Verificați dacă există actualizări</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Verificați dacă există actualizări ale acestui program grafic la fiecare pornire.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Căutarea automată a actualizărilor (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Căutați actualizări (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Verificați dacă există actualizări ale demonului.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>Despre MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Acest proiect este protejat de Legea drepturilor de autor a Republicii Populare Chineze și de tratatele internaționale, iar reproducerea sau distribuirea neautorizată a Programului sau a oricărei părți a acestuia este supusă unor sancțiuni civile și penale severe și urmăririi penale în cea mai mare măsură permisă de lege.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Acest proiect este protejat de versiunea 3.0 a Licenței Publice Generale GNU open-source, iar codul sursă este găzduit la</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Certificatul semnat digital utilizat de MCServerLauncher Future garantează că programul nu poate fi modificat. Număr de serie：59cbf9b5207eeabb45417d148120ac9a。 Dacă este diferit, nu-l folosiți și oferiți feedback services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Oglindire infinită</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Imaginea Nebuloasei Polare</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>Oglindire sincronă MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>anunț</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Eşti sigur?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Dacă respingeți Acordul de utilizare, Software-ul va fi retras.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Asigurați-vă că ați citit totul înainte de a da clic pe De acord. Cel puțin, ar trebui să rulați protocolul până la sfârșit.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bun</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Nu acum</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Aceasta înseamnă că sunteți de acord cu întregul conținut al acestui Acord.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Descărcați sursa)</value>
+  </data>
 </root>

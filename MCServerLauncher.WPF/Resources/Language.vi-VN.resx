@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Đã gặp lỗi với MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>Ngăn xếp đã được sao chép vào khay nhớ tạm. Bạn có thể truy cập trực tiếp vào GitHub để đưa ra phản hồi.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>WPF Client (chỉ dành cho Windows)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Ngôn ngữ</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Thỏa thuận người dùng</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Kết nối daemon</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Bắt đầu</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Tiếp tục</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Đặt ngôn ngữ</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Ngôn ngữ</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>trang nhà</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Tạo phiên bản</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Quản lý phiên bản</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Tải xuống tài nguyên</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Trung tâm trợ giúp</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Trung tâm thông báo</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Trang gỡ lỗi</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Cài đặt chương trình</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>nhắc</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF không hỗ trợ chạy trùng lặp.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>môi giới</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Gốc</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>thuần</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Module</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>Nền tảng</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Không nhận được phần giới thiệu cốt lõi!</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Gói zip Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Vui lòng nhập gói đã tải xuống tại đây. Nếu bạn không biết tải xuống ở đâu, bạn có thể nhấp vào nút bên phải để nhảy.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Gói zip</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Duyệt</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Lõi máy chủ Minecraft</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Vui lòng chọn các tệp cốt lõi sẽ được máy chủ sử dụng. Nếu bạn không biết tải xuống ở đâu, bạn có thể nhấp vào nút bên phải để nhảy.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Tên tệp cốt lõi</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Thời gian chạy Java</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>Thời gian chạy Java là môi trường bắt buộc đối với máy chủ Minecraft Java. Hãy chắc chắn chọn phiên bản thích hợp để ngăn chặn lỗi khởi động.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Đường dẫn Java</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Lựa chọn thủ công</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Tự động tìm kiếm trên máy chủ Daemon</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Chọn từ các kết quả hiện có</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ yêu cầu Java 8\n1.17+ yêu cầu Java 16\n1.18+ yêu cầu Java 17\n1.20.5+ yêu cầu Java 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Filename</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Chọn tệp/thư mục/gói cần thiết cho phiên bản. Kho lưu trữ chỉ hỗ trợ định dạng ZIP.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Phụ thuộc triển khai</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Chạy lệnh</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Nhập lệnh run vào đây.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Nếu bạn cần đính kèm tham số,\nGắn nó trực tiếp vào mặt sau.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>Không bao gồm các biểu tượng đặc biệt hoặc sử dụng tên bất hợp pháp.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Tên của phiên bản</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Theo tùy chọn, bạn có thể thêm các tham số JVM bổ sung tại đây, một tham số trên mỗi dòng.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Thêm thông số</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>Thông số JVM</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Bộ nhớ tối đa</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Bộ nhớ tối thiểu</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Điều này xác định dung lượng bộ nhớ mà máy chủ Minecraft Java của bạn sẽ có thể sử dụng.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>Đống bộ nhớ JVM</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>Bộ nhớ tối thiểu ≤ bộ nhớ tối đa là đủ</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Sao chép liên kết</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Hết giờ</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Hủy</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Kích thước tệp</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Phiên bản Minecraft</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Xây dựng</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>đóng</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>mở</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Thời gian sáng tạo</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Loại phiên bản</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>nhiều hơn</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>bắt đầu</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>về</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Khi bạn đã hoàn tất với các cấu hình sau, hãy bấm vào Tiếp tục.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Vui lòng chọn phiên bản Minecraft mà máy chủ sẽ chạy.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>đỏ bừng</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>Nếu nó không tải, hãy thử lại sau.\nDỊCH VỤ HÌNH ẢNH ĐƯỢC CUNG CẤP BỞI BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Phiên bản giả mạo</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>Phiên bản NeoForge</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Phiên bản vải</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Phiên bản chăn bông</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Vui lòng chọn phiên bản trình tải Forge mà máy chủ sẽ chạy.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Vui lòng chọn phiên bản bộ tải NeoForge mà máy chủ sẽ chạy.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Chọn phiên bản Fabric loader mà máy chủ sẽ chạy.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Vui lòng chọn phiên bản Quilt loader mà máy chủ sẽ chạy.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Chỉ có phiên bản chính thức được hiển thị</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Lõi máy chủ</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Mở trang web chính thức</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Chào mừng</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Bỏ qua ngay bây giờ</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>đồng ý</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>từ chối</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Chào mừng bạn đến với phần mềm và dịch vụ của MCServerLauncher (sau đây gọi là "Phần mềm") do Nhóm Phát triển MCSL cung cấp. Để bảo vệ quyền và lợi ích của người dùng, vui lòng đọc kỹ tất cả nội dung của thỏa thuận này trước khi sử dụng phần mềm này. Chúng tôi có thể cập nhật Thỏa thuận này bất cứ lúc nào và nó sẽ thay thế Thỏa thuận người dùng ban đầu một cách hiệu quả sau khi nó được đăng.\nVui lòng đọc kỹ nội dung sau, khi bạn sử dụng phần mềm này, điều đó có nghĩa là bạn đã đọc và đồng ý với tất cả các nội dung của thỏa thuận này một cách chi tiết, và đồng ý tuân thủ các quy định của thỏa thuận này.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Biện pháp phòng ngừa</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>Người dùng phải trang bị phần mềm và các chức năng của phần mềm (bao gồm nhưng không giới hạn ở việc tạo các phiên bản mới) với cấu hình phần cứng và phần mềm theo yêu cầu của người dùng.\nNgười dùng phải chịu trách nhiệm về phí sử dụng điện thoại và băng thông rộng có liên quan cần phải trả sau khi kết nối Internet.\nNgười dùng phải chịu trách nhiệm pháp lý về hành vi, sự kiện và kết quả gây ra bởi việc sử dụng phần mềm này.\nBất kỳ giao dịch và tranh chấp nào giữa người dùng và các cá nhân không chính thức trái phép khác không liên quan gì đến nhà phát triển.\nNgười dùng phải tuân thủ các luật và quy định có liên quan của Cộng hòa Nhân dân Trung Hoa (nếu người dùng là người dùng bên ngoài Cộng hòa Nhân dân Trung Hoa, người dùng cũng phải tuân thủ luật pháp và quy định của quốc gia hoặc khu vực mà nó thuộc về).\nNgười dùng không được sử dụng phần mềm (hoặc một số tính năng và chức năng của phần mềm) để tham gia vào các hành vi bất hợp pháp và không được sử dụng các quy trình và dịch vụ có liên quan đến phần mềm để tham gia vào các hành vi bất hợp pháp và hậu quả của bất kỳ hành động nào sẽ không liên quan đến nhà phát triển.\nNgười dùng phải tự chịu trách nhiệm pháp lý liên quan đến nội dung thông tin mà họ công bố. Người dùng không được nhập, xuất bản hoặc phổ biến bất kỳ nội dung nào sau đây trong phần mềm, các quy trình và dịch vụ liên quan đến hoạt động của phần mềm và không được xuất bản bất kỳ nội dung nào sau đây dưới bất kỳ hình thức nào：\n\nphản đối các nguyên tắc cơ bản được quy định trong Hiến pháp nước Cộng hòa Nhân dân Trung Hoa;\ngây nguy hiểm cho an ninh quốc gia, tiết lộ bí mật nhà nước, lật đổ quyền lực nhà nước, phá hoại khối đại đoàn kết toàn dân tộc;\ngây thiệt hại đến danh dự, lợi ích của nhà nước;\nkích động hận thù dân tộc, phân biệt đối xử dân tộc hoặc phá hoại đoàn kết dân tộc;\nphá hoại chính sách tôn giáo quốc gia, ủng hộ tà giáo, mê tín phong kiến;\nlan truyền tin đồn, gây rối trật tự xã hội, phá hoại ổn định xã hội;\nPhổ biến khiêu dâm, khiêu dâm, cờ bạc, bạo lực, giết người, khủng bố hoặc xúi giục tội phạm;\nxúc phạm, vu khống người khác, xâm phạm quyền, lợi ích hợp pháp của người khác;\nChứa nội dung khác mà Cộng hòa Nhân dân Trung Hoa cấm theo luật pháp hoặc quy định hành chính.\nTrừ khi được pháp luật cho phép hoặc có sự cho phép bằng văn bản của nhà phát triển, người dùng không được tham gia vào bất kỳ hành vi nào sau đây：\nSử dụng bất hợp pháp hoặc không phù hợp Phần mềm và Dịch vụ;\nLàm hỏng hoạt động bình thường của hệ thống phần mềm hoặc trang web, cố ý phát tán vi-rút máy tính và các chương trình phá hoại khác;\nThực hiện bất kỳ hành vi sử dụng bất thường nào có thể ảnh hưởng đến các dịch vụ mạng của Phần mềm (bao gồm nhưng không giới hạn ở việc làm hỏng, tấn công máy chủ hoặc làm quá tải máy chủ, v.v.);\nXóa thông tin bản quyền trên Phần mềm và các bản sao của Phần mềm.\n\nNếu người dùng thực hiện bất kỳ hành vi nào vi phạm luật pháp và quy định hoặc vi phạm các quy định của Thỏa thuận này, nhà phát triển có quyền thực hiện các biện pháp chống lại người dùng theo mức độ nghiêm trọng của tình huống, phù hợp với Thỏa thuận này và các luật và quy định, bao gồm nhưng không giới hạn ở việc chấm dứt dịch vụ. Nếu tình tiết nghiêm trọng, họ sẽ được chuyển đến các cơ quan hành chính có liên quan để xử phạt hành chính hoặc bị truy cứu trách nhiệm hình sự.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Thu thập và sử dụng dữ liệu</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Nếu bạn đồng ý với Điều khoản sử dụng này và sử dụng các dịch vụ trực tuyến của Phần mềm, chúng tôi sẽ thu thập các thông tin sau：\nđịa chỉ IP của thiết bị mà Phần mềm đang chạy (có thể không phải là địa chỉ chính xác);\nMột số thông tin hệ thống của thiết bị mà Phần mềm hoạt động;\nKhi phần mềm gặp sự cố, nhật ký của phần mềm đang chạy trên hệ thống (bao gồm một số thông tin hệ thống) có thể được tải lên với sự đồng ý của người dùng để giúp giải quyết vấn đề và cải thiện phần mềm.\nCác thông tin khác sẽ được tải lên với sự đồng ý của người dùng (như được chỉ định trong phần mềm).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Hỗ trợ người dùng và phản hồi</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Nếu người dùng gặp bất kỳ sự cố nào trong quá trình sử dụng, họ có thể gửi phản hồi qua email chính thức hoặc bằng cách gửi sự cố trong kho mã nguồn phần mềm này. Chúng tôi xem xét phản hồi của mình một cách nghiêm túc để cải thiện dịch vụ của mình.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Thay đổi hoặc tạm ngừng dịch vụ</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Đình chỉ và chấm dứt Dịch vụ của Người dùng\n\nNếu người dùng công bố thông tin bất hợp pháp, vi phạm nghiêm trọng đạo đức xã hội hoặc vi phạm các điều cấm của pháp luật, nhà phát triển phải chấm dứt việc cung cấp dịch vụ cho người dùng;\nNếu người dùng có hành vi không đúng khi chấp nhận dịch vụ phần mềm, nhà phát triển có quyền chấm dứt dịch vụ được cung cấp cho người dùng (các trường hợp cụ thể của hành vi không đúng được quy định rõ ràng trong thỏa thuận này);\nNếu người dùng sử dụng phiên bản sửa đổi của phần mềm từ bên thứ ba, người dùng phải tự chịu rủi ro và trách nhiệm pháp lý.\n\n2. Đình chỉ, đình chỉ và chấm dứt Phần mềm và Dịch vụ：\n\nTrong trường hợp có bất kỳ trường hợp nào sau đây, nhà phát triển có quyền chấm dứt hoặc gián đoạn tất cả hoặc một phần dịch vụ của phần mềm và nhà phát triển sẽ không chịu trách nhiệm với người dùng hoặc bất kỳ bên thứ ba nào về sự bất tiện hoặc thiệt hại gây ra do đó：\n\na. theo yêu cầu của Phần mềm và Dịch vụ;\nb. Không hoạt động bình thường do hư hỏng máy chủ;\nc. Do hỏng hóc đột ngột thiết bị phần mềm, phần cứng và thiết bị liên lạc điện tử;\nd. do đường dây của nhà cung cấp mạng hoặc các lỗi khác;\ne. do cân nhắc chính sách;\nf. Lý do của bên thứ ba hoặc các trường hợp bất khả kháng khác.\n\nNhà phát triển có quyền chấm dứt hoặc chấm dứt một phần Phần mềm và Dịch vụ khi thấy cần thiết và Nhà phát triển có thể thông báo cho Người dùng dưới dạng thông báo, nhưng Nhà phát triển sẽ không chịu trách nhiệm về bất kỳ tổn thất nào gây ra cho Người dùng.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>Disclaimer</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>Người dùng hiểu và đồng ý rằng nhà phát triển không cung cấp bất kỳ bảo hành nào cho phần mềm này trong phạm vi pháp luật cho phép. Việc sử dụng phần mềm này của người dùng là rủi ro riêng của người dùng.\nNgười dùng hiểu và đồng ý rằng Nhà phát triển không đảm bảo rằng Phần mềm và Dịch vụ sẽ đáp ứng nhu cầu của Người dùng, cũng như không đảm bảo rằng Dịch vụ sẽ không bị gián đoạn và không cung cấp bất kỳ đảm bảo nào về tính đúng đắn và bảo mật của Phần mềm và Dịch vụ.\nNgười dùng hiểu và đồng ý rằng nhà phát triển không thể đảm bảo đầy đủ tính chính xác, bảo mật và tính hợp pháp của các tệp của bên thứ ba được tải xuống từ các dịch vụ trực tuyến của phần mềm, cũng như không chịu trách nhiệm về tính đúng đắn, bảo mật và hợp pháp của các dịch vụ của bên thứ ba (bao gồm nhưng không giới hạn ở tải xuống tài nguyên và các dịch vụ khác) hiện có trong phần mềm. Do đó, nội dung nêu trên không liên quan gì đến nhà phát triển và phần mềm, và không đại diện cho vị trí của nhà phát triển và phần mềm. Tranh chấp sẽ do nhà cung cấp dịch vụ bên thứ ba chịu.\nNgười dùng hiểu và đồng ý rằng Người dùng sẽ tự chịu trách nhiệm về hậu quả gây ra bởi việc sử dụng các dịch vụ trực tuyến của Phần mềm và các tệp liên quan được tải xuống từ Phần mềm bằng các phương tiện không chính xác hoặc bất hợp pháp và sẽ không chịu trách nhiệm về bất kỳ thiệt hại nào đối với tài sản, vi phạm bản quyền hoặc quyền sở hữu trí tuệ, v.v., và sẽ không và không thể chịu bất kỳ trách nhiệm pháp lý nào.\nNgười dùng hiểu và đồng ý rằng Phần mềm không đảm bảo nội dung của các dịch vụ của bên thứ ba. Nhà phát triển sẽ không chịu trách nhiệm về bất kỳ thiệt hại nào đối với tài sản, vi phạm bản quyền hoặc quyền sở hữu trí tuệ do người dùng sử dụng dịch vụ của bên thứ ba gây ra và sẽ không và không thể chịu bất kỳ trách nhiệm pháp lý nào.\nNgười dùng hiểu và đồng ý rằng nhà phát triển không cung cấp bất kỳ đảm bảo và hỗ trợ pháp lý nào cho các chức năng của phần mềm và nếu người dùng sử dụng các chức năng của phần mềm để tham gia vào các hành vi bất hợp pháp hoặc không phù hợp khác, rủi ro và hậu quả pháp lý do người dùng gây ra sẽ do người dùng chịu.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>Sở hữu trí tuệ</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Bản quyền, bằng sáng chế và các quyền sở hữu trí tuệ khác của phần mềm này thuộc sở hữu của nhà phát triển hoặc chủ sở hữu bản quyền được chỉ định.\n\nCác dịch vụ của bên thứ ba được sử dụng trong phần mềm này thuộc sở hữu của chủ sở hữu bản quyền có liên quan, bao gồm nhưng không giới hạn ở:：\nPhần mềm này là một công cụ quản lý máy chủ và trò chơi trực tuyến cho Minecraft (cách giải thích cuối cùng thuộc sở hữu của Microsoft Corporation và Mojang AB). Người dùng phải tuân thủ Thỏa thuận cấp phép người dùng cuối (EULA) và các chính sách liên quan do NetEase thực hiện tại Trung Quốc đại lục và không được sử dụng nội dung của trò chơi cho mục đích thương mại hoặc thực hiện các hành vi khác bị cấm theo Thỏa thuận cấp phép người dùng cuối.\nPhần mềm là công cụ quản lý máy chủ và kết nối trò chơi của Terraria, cách giải thích cuối cùng thuộc về Re-Logic và các nhà xuất bản của nó. Người dùng có trách nhiệm tuân thủ Thỏa thuận cấp phép người dùng cuối (EULA) và các chính sách liên quan. Người dùng không được sử dụng nội dung của trò chơi cho mục đích thương mại không có giấy phép hoặc thực hiện các hành vi khác bị cấm theo thỏa thuận cấp phép người dùng cuối.\nMột số tài nguyên tệp trực tuyến (lõi máy chủ, mô-đun trò chơi / máy chủ, trình cắm, v.v.) dịch vụ tải xuống do phần mềm này cung cấp được cung cấp bởi chính thức / bên thứ ba tương ứng, v.v. và bản quyền sẽ được xử lý theo các quy định của nền tảng bên thứ ba.\nBản quyền của các dịch vụ của bên thứ ba khác được sử dụng trong phần mềm này thuộc về nhà cung cấp dịch vụ.\nPhần mềm này là phần mềm nguồn mở và người dùng hoặc nhà phát triển phần mềm khác không phải là một phần của phần mềm này phải tuân thủ thỏa thuận nguồn mở của phần mềm này.\nNgười dùng hiểu và đồng ý rằng, ngoại trừ các tài nguyên do Người dùng tạo ra, tất cả dữ liệu dịch vụ trực tuyến do Phần mềm cung cấp đều thuộc sở hữu của Nhà phát triển. Nhà phát triển có quyền quyết định giữ lại hay không giữ lại toàn bộ hoặc một phần dữ liệu trên máy chủ.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Thay đổi Điều khoản</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Nhà phát triển có quyền sửa đổi Thỏa thuận này khi cần thiết. Khi có thay đổi đối với Thỏa thuận này, nhà phát triển sẽ hiển thị nội dung đã sửa đổi trên trang quan trọng. Nếu người dùng không đồng ý với việc sửa đổi hoặc cập nhật thỏa thuận này, họ có thể chủ động ngừng sử dụng phần mềm và dịch vụ. Nếu người dùng tiếp tục sử dụng phần mềm và dịch vụ sau khi sửa đổi thỏa thuận này, điều đó có nghĩa là người dùng đồng ý với tất cả các sửa đổi hoặc cập nhật được thực hiện cho thỏa thuận này. Nếu người dùng không quen thuộc với các thay đổi sau khi sửa đổi thỏa thuận này, nhà phát triển sẽ không chịu trách nhiệm cho bất kỳ tổn thất nào.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Linh tinh</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Thỏa thuận này sẽ được điều chỉnh bởi luật pháp Cộng hòa Nhân dân Trung Hoa, không liên quan đến tất cả các xung đột của các quy định pháp luật;\nViệc Chủ đầu tư không thực hiện, không thực hiện kịp thời hoặc thực hiện đầy đủ các quyền được hưởng theo Hợp đồng này hoặc theo quy định của pháp luật sẽ không được coi là từ bỏ việc thực hiện các quyền đó, cũng như không ảnh hưởng đến việc thực hiện các quyền đó của Chủ đầu tư trong tương lai;\nTrong phạm vi pháp luật cho phép, Nhà phát triển có quyền giải thích các điều khoản của Thỏa thuận này;\nNgười dùng có thể khiếu nại và báo cáo tất cả các loại vi phạm pháp luật và quy định qua email, vui lòng gửi email cho services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Tính hiệu lực từng phần của Điều khoản</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Nếu bất kỳ điều khoản nào của Thỏa thuận này được coi là không hợp lệ hoặc không thể thực thi, các điều khoản còn lại sẽ vẫn có hiệu lực đầy đủ.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Vui lòng chọn phương pháp bạn muốn hoạt động：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Máy chủ Minecraft Java Edition phổ biến</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Máy chủ Minecraft Forge</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Máy chủ Minecraft NeoForge</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Máy chủ Minecraft Fabric</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Máy chủ Minecraft Quilt</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Máy chủ Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Minecraft Geyser Khả năng tương tác độc lập</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord bên nhóm</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Bên nhóm Minecraft Waterfall</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Mặt nhóm vận tốc Minecraft</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Bên nhóm Minecraft Travertine</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>Chương trình khách hàng FRP (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Máy chủ trò chơi Terraria</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Các chương trình giao diện điều khiển khác</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Nhập phiên bản hiện có</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Hành trình mới, trải nghiệm mới.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Quét bức tranh lớn để nhìn thế giới.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>Trong tất cả các hướng, nhiệm vụ phải đạt được.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Bạn đặt tên cho nó, nó có ở đây. (Hiện đang được sử dụng.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Cố gắng hết sức để trả lời câu hỏi của họ.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>MCSL của bạn, sự lựa chọn của bạn.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Dừng tải xuống trực tiếp</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Thử tải xuống lại 1 lần</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Thử tải xuống lại 3 lần</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Nhập tên phiên bản để xác thực</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Xác thực khóa Daemon</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Thực hiện theo hệ thống</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>ánh sáng</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Tối</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>Đồng ý tự động EULA (Phiên bản máy chủ Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>Bằng cách tự động đồng ý, bạn bị ràng buộc bởi Thỏa thuận cấp phép người dùng cuối Minecraft và đồng ý rằng MCSL không chịu trách nhiệm liên đới và riêng biệt.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Tự động tắt xác minh tính xác thực (phiên bản máy chủ Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Khi tùy chọn này được bật, các phiên bản như vậy sẽ tự động vô hiệu hóa xác thực từ Mojang / Microsoft, cho phép các máy khách Minecraft Java Edition không chính hãng kết nối với máy chủ.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Khi tùy chọn này được bật, các phiên bản như vậy sẽ tự động vô hiệu hóa xác thực từ Mojang / Microsoft, cho phép các máy khách Minecraft Bedrock Edition không chính hãng kết nối với máy chủ.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Tự động tắt xác minh tính xác thực (phiên bản máy chủ Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Triển khai với nguồn hình ảnh (phiên bản máy chủ Minecraft Forge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Triển khai với nguồn hình ảnh (Minecraft NeoForge Server Instance)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Triển khai với nguồn hình ảnh (phiên bản máy chủ Minecraft Fabric)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Triển khai với nguồn nhân bản (phiên bản máy chủ Minecraft Quilt)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Sau khi được bật, BMCLAPI sẽ được sử dụng để tải xuống tài nguyên, được khuyến nghị cho người dùng Trung Quốc.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Tải xuống nguồn</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Chọn nhà cung cấp bản tải xuống để sử dụng trên trang Tải xuống tài nguyên.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (được cung cấp bởi Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Polestar Cloud Image (Được sự cho phép của Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>Tệp ZCloud (được cung cấp bởi Z__Tsin thành viên của nhóm phát triển)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>Nguồn tải xuống MSL (cung cấp bởi MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>Phản chiếu đồng bộ MCSL-Sync</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Số lượng luồng công cụ tải xuống</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>Trong trường hợp đủ hiệu suất máy tính, số lượng luồng càng cao thì tốc độ tải xuống lý thuyết của tệp càng nhanh. Nói chung, cài đặt 16 luồng là đủ.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Cách xử lý lỗi tải xuống</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Phải làm gì nếu tải xuống tệp không thành công.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Xác nhận phương pháp xóa phiên bản</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Tính năng này ngăn không cho các phiên bản bị xóa do thao tác sai.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Áp dụng chủ đề</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>Mặc định tuân theo các thay đổi của hệ thống, tất nhiên, bạn cũng có thể tự đặt nó.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Tự động khởi động (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Khi hệ thống khởi động, chương trình đồ họa sẽ tự động được khởi chạy. Khi được bật, các hoạt động nhạy cảm có thể được chạm vào trên hệ thống, vì vậy vui lòng cho phép chúng trong phần mềm chống vi-rút của bạn.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Kiểm tra bản cập nhật (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Kiểm tra các bản cập nhật cho chương trình đồ họa này.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Kiểm tra bản cập nhật</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Kiểm tra các bản cập nhật cho chương trình đồ họa này ở mỗi lần khởi động.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Tự động kiểm tra các bản cập nhật (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Kiểm tra các bản cập nhật (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Kiểm tra các bản cập nhật cho daemon.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>Giới thiệu về MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Dự án này được bảo vệ bởi Luật Bản quyền của Cộng hòa Nhân dân Trung Hoa và các điều ước quốc tế, và việc sao chép hoặc phân phối trái phép Chương trình hoặc bất kỳ phần nào của Chương trình phải chịu các biện pháp trừng phạt dân sự và hình sự nghiêm trọng và truy tố trong phạm vi tối đa được pháp luật cho phép.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Dự án này được bảo vệ theo Giấy phép Công cộng GNU mã nguồn mở Phiên bản 3.0 và mã nguồn được lưu trữ tại</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Chứng chỉ được ký điện tử được sử dụng bởi MCServerLauncher Future đảm bảo rằng chương trình không thể bị giả mạo. Số sê-ri：59cbf9b5207eeabb45417d148120ac9a。 Nếu nó khác nhau, không sử dụng nó và đưa ra phản hồi cho services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Phản chiếu vô hạn</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Hình ảnh tinh vân vùng cực</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>Phản chiếu đồng bộ MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>thông báo</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Bạn có chắc không?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Nếu bạn từ chối Thỏa thuận người dùng, Phần mềm sẽ bị thu hồi.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Đảm bảo bạn đã đọc tất cả trước khi nhấp vào Đồng ý. Ít nhất, bạn nên cuộn giao thức đến cùng.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Tốt</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Không phải bây giờ</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Điều này có nghĩa là bạn đồng ý với tất cả các nội dung của Thỏa thuận này.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Tải nguồn)</value>
+  </data>
 </root>

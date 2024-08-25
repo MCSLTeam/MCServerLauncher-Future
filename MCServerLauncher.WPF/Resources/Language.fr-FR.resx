@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -97,4 +97,568 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Une erreur s’est produite avec MCServerLauncher WPF</value>
+  </data>
+  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
+    <value>La pile a été copiée dans le presse-papiers. Vous pouvez vous rendre directement sur GitHub pour donner votre avis.</value>
+  </data>
+  <data name="OnlyForWindows" xml:space="preserve">
+    <value>Client WPF (Windows uniquement)</value>
+  </data>
+  <data name="FirstSetup_TimeLanguageMenu" xml:space="preserve">
+    <value>Langue</value>
+  </data>
+  <data name="FirstSetup_EulaMenu" xml:space="preserve">
+    <value>Accord d’utilisation</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonMenu" xml:space="preserve">
+    <value>Connecter le démon</value>
+  </data>
+  <data name="FirstSetup_WelcomeMenu" xml:space="preserve">
+    <value>Démarrer</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Allez</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHint" xml:space="preserve">
+    <value> Définir la langue</value>
+  </data>
+  <data name="FirstSetup_SetLanguageHintReverse" xml:space="preserve">
+    <value> Langue</value>
+  </data>
+  <data name="Main_HomeNavMenu" xml:space="preserve">
+    <value>page d’accueil</value>
+  </data>
+  <data name="Main_CreateInstanceNavMenu" xml:space="preserve">
+    <value>Créer une instance</value>
+  </data>
+  <data name="Main_InstanceManagerNavMenu" xml:space="preserve">
+    <value>Gestion des instances</value>
+  </data>
+  <data name="Main_ResDownloadNavMenu" xml:space="preserve">
+    <value>Téléchargements de ressources</value>
+  </data>
+  <data name="Main_HelpCenterNavMenu" xml:space="preserve">
+    <value>Centre d’aide</value>
+  </data>
+  <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
+    <value>Centre de notifications</value>
+  </data>
+  <data name="Main_DebugNavMenu" xml:space="preserve">
+    <value>Page de débogage</value>
+  </data>
+  <data name="Main_SettingsNavMenu" xml:space="preserve">
+    <value>Paramètres du programme</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>prompt</value>
+  </data>
+  <data name="NotAllowedOverOpening" xml:space="preserve">
+    <value>MCServerLauncher WPF ne prend pas en charge les exécutions en double.</value>
+  </data>
+  <data name="DownloadModule_FastMirrorProxyType" xml:space="preserve">
+    <value>courtier</value>
+  </data>
+  <data name="DownloadModule_FastMirrorVanillaType" xml:space="preserve">
+    <value>Langue source</value>
+  </data>
+  <data name="DownloadModule_FastMirrorPureType" xml:space="preserve">
+    <value>pur</value>
+  </data>
+  <data name="DownloadModule_FastMirrorModType" xml:space="preserve">
+    <value>Module</value>
+  </data>
+  <data name="DownloadModule_FastMirrorBedrockType" xml:space="preserve">
+    <value>soubassement</value>
+  </data>
+  <data name="DownloadModule_MSLAPIGetCoreDescriptionFailed" xml:space="preserve">
+    <value>Échec de l’introduction de base !</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
+    <value>Pack zippé Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+    <value>Veuillez importer le package téléchargé ici. Si vous ne savez pas où télécharger, vous pouvez cliquer sur le bouton à droite pour sauter.</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Forfait zip</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Parcourir</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Title" xml:space="preserve">
+    <value>Noyau du serveur Minecraft</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaCore_Description" xml:space="preserve">
+    <value>Veuillez sélectionner les fichiers de base qui seront utilisés par le serveur. Si vous ne savez pas où télécharger, vous pouvez cliquer sur le bouton à droite pour sauter.</value>
+  </data>
+  <data name="MinecraftCoreFileName" xml:space="preserve">
+    <value>Nom du fichier principal</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Title" xml:space="preserve">
+    <value>Exécution Java</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftJavaJvm_Description" xml:space="preserve">
+    <value>L’environnement d’exécution Java est un environnement requis pour le serveur Java Minecraft. Assurez-vous de choisir la version appropriée pour éviter les échecs de démarrage.</value>
+  </data>
+  <data name="JavaPath" xml:space="preserve">
+    <value>Chemin d’accès Java</value>
+  </data>
+  <data name="SelectManually" xml:space="preserve">
+    <value>Sélection manuelle</value>
+  </data>
+  <data name="ScanJavaAtDaemon" xml:space="preserve">
+    <value>Recherche automatique sur les hôtes Daemon</value>
+  </data>
+  <data name="SelectFromResult" xml:space="preserve">
+    <value>Choisissez parmi les résultats existants</value>
+  </data>
+  <data name="MinecraftJavaRequirementTip" xml:space="preserve">
+    <value>1.12+ nécessite Java 8\n1.17+ nécessite Java 16\n1.18+ nécessite Java 17\nLa version 1.20.5+ nécessite Java 21</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>Fichier</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Description" xml:space="preserve">
+    <value>Sélectionnez le fichier/dossier/package requis pour l’instance. L’archive ne prend en charge que le format ZIP.</value>
+  </data>
+  <data name="CreateInstance_SelectOtherExecutableInstanceDependency_Title" xml:space="preserve">
+    <value>Dépendances de déploiement</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title" xml:space="preserve">
+    <value>Exécuter la commande</value>
+  </data>
+  <data name="CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description" xml:space="preserve">
+    <value>Entrez la commande run ici.</value>
+  </data>
+  <data name="RunCommandArgumentTip" xml:space="preserve">
+    <value>Si vous avez besoin d’attacher des paramètres,\nFixez-le directement à l’arrière.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Description" xml:space="preserve">
+    <value>N’incluez pas de symboles spéciaux et n’utilisez pas de noms illégaux.</value>
+  </data>
+  <data name="CreateInstance_SetInstanceName_Title" xml:space="preserve">
+    <value>Le nom de l’instance</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Description" xml:space="preserve">
+    <value>Si vous le souhaitez, vous pouvez ajouter des paramètres JVM supplémentaires ici, un par ligne.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_AddArgument" xml:space="preserve">
+    <value>Ajouter des paramètres</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJavaJvmArgument_Title" xml:space="preserve">
+    <value>Paramètres JVM</value>
+  </data>
+  <data name="MaximumMemory" xml:space="preserve">
+    <value>Mémoire maximale</value>
+  </data>
+  <data name="MinimumMemory" xml:space="preserve">
+    <value>Mémoire minimale</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
+    <value>Cela détermine la quantité de mémoire que votre serveur Java Minecraft pourra utiliser.</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Title" xml:space="preserve">
+    <value>Tas de mémoire JVM</value>
+  </data>
+  <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
+    <value>La mémoire minimale ≤ la mémoire maximale sont suffisantes</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Copiez le lien</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Temps d’arrêt</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Taille du fichier</value>
+  </data>
+  <data name="MinecraftVersion" xml:space="preserve">
+    <value>Édition Minecraft</value>
+  </data>
+  <data name="BuildVersion" xml:space="preserve">
+    <value>Construit</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>fermer</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>ouvrir</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>Heure de création</value>
+  </data>
+  <data name="InstanceType" xml:space="preserve">
+    <value>Type d’instance</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>plus</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>initier</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>rendre</value>
+  </data>
+  <data name="PreFinishCreateInstanceTip" xml:space="preserve">
+    <value>Lorsque vous avez terminé d’utiliser les configurations suivantes, cliquez sur Continuer.</value>
+  </data>
+  <data name="CreateInstance_SelectMinecraftVersionTip" xml:space="preserve">
+    <value>Veuillez sélectionner la version de Minecraft que le serveur exécutera.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Rincé</value>
+  </data>
+  <data name="CreateInstance_BmclapiMayBeFailedTip" xml:space="preserve">
+    <value>S’il ne se charge pas, réessayez plus tard.\nLE SERVICE D’IMAGES EST PROPULSÉ PAR BMCLAPI</value>
+  </data>
+  <data name="ForgeVersion" xml:space="preserve">
+    <value>Version forge</value>
+  </data>
+  <data name="NeoForgeVersion" xml:space="preserve">
+    <value>Version de NeoForge</value>
+  </data>
+  <data name="FabricVersion" xml:space="preserve">
+    <value>Version en tissu</value>
+  </data>
+  <data name="QuiltVersion" xml:space="preserve">
+    <value>Version courtepointe</value>
+  </data>
+  <data name="CreateInstance_SelectForgeVersion_Description" xml:space="preserve">
+    <value>Veuillez sélectionner la version du chargeur Forge que le serveur exécutera.</value>
+  </data>
+  <data name="CreateInstance_SelectNeoForgeVersion_Description" xml:space="preserve">
+    <value>Veuillez sélectionner la version du chargeur NeoForge que le serveur exécutera.</value>
+  </data>
+  <data name="CreateInstance_SelectFabricVersion_Description" xml:space="preserve">
+    <value>Sélectionnez la version du chargeur de fabric que le serveur exécutera.</value>
+  </data>
+  <data name="CreateInstance_SelectQuiltVersion_Description" xml:space="preserve">
+    <value>Veuillez sélectionner la version du chargeur Quilt que le serveur exécutera.</value>
+  </data>
+  <data name="OnlyShowReleaseVersion" xml:space="preserve">
+    <value>Seule la version officielle est affichée</value>
+  </data>
+  <data name="ResDownload_InstanceCore" xml:space="preserve">
+    <value>Cœurs de serveur</value>
+  </data>
+  <data name="ResDownload_OpenHomePage" xml:space="preserve">
+    <value>Ouvrir le site officiel</value>
+  </data>
+  <data name="FirstSetup_SetupFinishedWelcome" xml:space="preserve">
+    <value>Bienvenue</value>
+  </data>
+  <data name="TempSkip" xml:space="preserve">
+    <value>Passer pour l’instant</value>
+  </data>
+  <data name="Agree" xml:space="preserve">
+    <value>accepter</value>
+  </data>
+  <data name="Disagree" xml:space="preserve">
+    <value>refuser</value>
+  </data>
+  <data name="Eula1" xml:space="preserve">
+    <value>Bienvenue sur le logiciel et les services de MCServerLauncher (ci-après dénommés le « Logiciel ») fournis par l’équipe de développement de MCSL. Afin de protéger les droits et les intérêts des utilisateurs, veuillez lire attentivement tout le contenu de cet accord avant d’utiliser ce logiciel. Nous pouvons mettre à jour le présent Accord à tout moment, et il remplacera effectivement le Contrat d’utilisation original une fois qu’il sera publié.\nVeuillez lire attentivement le contenu suivant, lorsque vous utilisez ce logiciel, cela signifie que vous avez lu et accepté tout le contenu de cet accord en détail, et que vous acceptez de respecter les dispositions de cet accord.</value>
+  </data>
+  <data name="Eula2" xml:space="preserve">
+    <value>Précautions</value>
+  </data>
+  <data name="Eula3" xml:space="preserve">
+    <value>L’utilisateur doit équiper le logiciel et les fonctions du logiciel (y compris, mais sans s’y limiter, la création de nouvelles instances) avec la configuration matérielle et logicielle requise par l’utilisateur.\nLes utilisateurs sont responsables des frais d’utilisation du téléphone et du haut débit qui doivent être payés après la connexion à Internet.\nL’utilisateur est légalement responsable du comportement, de l’événement et du résultat causés par l’utilisation de ce logiciel.\nLes transactions et les litiges entre les utilisateurs et d’autres personnes non officielles non autorisées n’ont rien à voir avec le développeur.\nL’utilisateur doit se conformer aux lois et réglementations pertinentes de la République populaire de Chine (si l’utilisateur est un utilisateur en dehors de la République populaire de Chine, l’utilisateur doit également se conformer aux lois et réglementations du pays ou de la région à laquelle il appartient).\nL’utilisateur ne doit pas utiliser le logiciel (ou certaines caractéristiques et fonctions du logiciel) pour se livrer à des actes illégaux, et ne doit pas utiliser les processus et services pertinents associés au logiciel pour se livrer à des actes illégaux, et les conséquences de toute action ne doivent pas être liées au développeur.\nLes utilisateurs assument leurs propres responsabilités légales en ce qui concerne le contenu des informations qu’ils publient. L’utilisateur ne doit pas saisir, publier ou diffuser l’un des contenus suivants dans le logiciel, les processus et les services liés au fonctionnement du logiciel, et ne doit publier aucun des contenus suivants sous quelque forme que ce soit：\n\ns’opposer aux principes fondamentaux énoncés dans la Constitution de la République populaire de Chine ;\nmettre en danger la sécurité nationale, divulguer des secrets d’État, subvertir le pouvoir de l’État ou porter atteinte à l’unité nationale ;\natteinte à l’honneur et aux intérêts de l’État ;\nl’incitation à la haine ethnique, à la discrimination ethnique ou l’atteinte à l’unité ethnique ;\nsapant les politiques religieuses nationales, prônant les cultes et les superstitions féodales ;\nla propagation de rumeurs, la perturbation de l’ordre social ou l’atteinte à la stabilité sociale ;\nDiffusion d’obscénités, de pornographie, de jeux d’argent, de violence, de meurtre, de terreur ou d’incitation à des crimes ;\ninsulter ou calomnier autrui, porter atteinte aux droits et intérêts légitimes d’autrui ;\nContient d’autres contenus interdits par la République populaire de Chine par des lois ou des règlements administratifs.\nSauf autorisation légale ou avec l’autorisation écrite du développeur, les utilisateurs ne doivent pas se livrer à l’un des actes suivants：\nUtilisation illégale ou inappropriée du Logiciel et des Services ;\nEndommager le fonctionnement normal du système logiciel ou du site Web, propager délibérément des virus informatiques et d’autres programmes destructeurs ;\nPrendre tout comportement d’utilisation anormal susceptible d’affecter les services réseau du Logiciel (y compris, mais sans s’y limiter, endommager, attaquer le serveur ou surcharger le serveur, etc.) ;\nSupprimez les informations de droits d’auteur sur le Logiciel et ses copies.\n\nSi l’utilisateur adopte un comportement qui enfreint les lois et règlements ou qui enfreint les dispositions du présent Accord, le développeur a le droit de prendre des mesures à l’encontre de l’utilisateur en fonction de la gravité de la situation, conformément au présent Accord et aux lois et règlements, y compris, mais sans s’y limiter, la résiliation des services. Si les circonstances sont graves, ils seront transférés aux organes administratifs compétents pour être sanctionnés administrativement ou faire l’objet d’une enquête sur la responsabilité pénale.</value>
+  </data>
+  <data name="Eula4" xml:space="preserve">
+    <value>Collecte et utilisation des données</value>
+  </data>
+  <data name="Eula5" xml:space="preserve">
+    <value>Si vous acceptez les présentes conditions d’utilisation et utilisez les services en ligne du logiciel, nous collecterons les informations suivantes：\nl’adresse IP de l’appareil sur lequel le Logiciel s’exécute (qui peut ne pas être l’adresse correcte) ;\nCertaines informations système de l’équipement sur lequel le Logiciel fonctionne ;\nLorsque le logiciel se bloque, les journaux du logiciel en cours d’exécution sur le système (y compris certaines informations système) peuvent être téléchargés avec le consentement de l’utilisateur pour aider à résoudre le problème et à améliorer le logiciel.\nD’autres informations qui seront téléchargées avec le consentement de l’utilisateur (comme spécifié dans le logiciel).</value>
+  </data>
+  <data name="Eula6" xml:space="preserve">
+    <value>Assistance et commentaires des utilisateurs</value>
+  </data>
+  <data name="Eula7" xml:space="preserve">
+    <value>Si les utilisateurs rencontrent des problèmes lors de l’utilisation, ils peuvent donner leur avis par e-mail officiel ou en soumettant un problème dans ce référentiel de code source du logiciel. Nous prenons nos commentaires au sérieux pour améliorer nos services.</value>
+  </data>
+  <data name="Eula8" xml:space="preserve">
+    <value>Modifications ou suspension du service</value>
+  </data>
+  <data name="Eula9" xml:space="preserve">
+    <value>1. Suspension et résiliation du Service de l’Utilisateur\n\nSi l’utilisateur publie des informations illégales, enfreint gravement la moralité sociale ou enfreint les interdictions de la loi, le développeur doit mettre fin à la fourniture de services à l’utilisateur ;\nSi l’utilisateur commet un acte inapproprié en acceptant le service logiciel, le développeur a le droit de résilier le service fourni à l’utilisateur (les circonstances spécifiques du comportement inapproprié sont clairement stipulées dans le présent contrat) ;\nSi l’utilisateur utilise une version modifiée du logiciel d’un tiers, l’utilisateur supporte ses propres risques et sa responsabilité légale.\n\n2. Suspension, suspension et résiliation du Logiciel et des Services：\n\nDans l’une des circonstances suivantes, le développeur a le droit de résilier ou d’interrompre tout ou partie des services du logiciel, et le développeur ne sera pas responsable envers l’utilisateur ou un tiers des désagréments ou dommages causés par celui-ci：\n\na. comme l’exigent le Logiciel et les Services ;\nb. Défaut de fonctionnement en raison d’un dommage au serveur ;\nc. En raison d’une défaillance soudaine de l’équipement logiciel et matériel et de l’équipement de communication électronique ;\nd. en raison d’une défaillance de la ligne du fournisseur de réseau ou d’autres défaillances ;\ne. pour des raisons de politique générale ;\nf. Raisons de tiers ou autres circonstances de force majeure.\n\nLe Développeur se réserve le droit de résilier ou de résilier partiellement le Logiciel et les Services lorsqu’il le juge nécessaire, et le Développeur peut en informer l’Utilisateur sous la forme d’une annonce, mais le Développeur ne sera pas responsable des pertes causées à l’Utilisateur.</value>
+  </data>
+  <data name="Eula10" xml:space="preserve">
+    <value>démenti</value>
+  </data>
+  <data name="Eula11" xml:space="preserve">
+    <value>L’utilisateur comprend et accepte que le développeur ne fournit aucune garantie pour ce logiciel dans la mesure permise par la loi. L’utilisation de ce logiciel par l’utilisateur se fait à ses propres risques.\nL’Utilisateur comprend et accepte que le Développeur ne garantit pas que le Logiciel et les Services répondront aux besoins de l’Utilisateur, ni que les Services ne seront pas interrompus, et ne fournit aucune garantie quant à l’exactitude et à la sécurité du Logiciel et des Services.\nL’utilisateur comprend et accepte que le développeur ne peut pas garantir entièrement l’exactitude, la sécurité et la légitimité des fichiers tiers téléchargés à partir des services en ligne du logiciel, ni être responsable de l’exactitude, de la sécurité et de la légalité des services tiers (y compris, mais sans s’y limiter, le téléchargement de ressources et d’autres services) existant dans le logiciel. Par conséquent, le contenu mentionné ci-dessus n’a rien à voir avec le développeur et le logiciel, et ne représente pas la position du développeur et du logiciel. Les litiges sont à la charge du prestataire de services tiers.\nL’Utilisateur comprend et accepte que l’Utilisateur sera seul responsable des conséquences causées par l’utilisation des services en ligne du Logiciel et des fichiers associés téléchargés à partir du Logiciel par des moyens incorrects ou illégaux, et ne sera pas responsable de tout dommage à la propriété, violation des droits d’auteur ou des droits de propriété intellectuelle, etc., et ne portera et ne pourra supporter aucune responsabilité légale.\nL’utilisateur comprend et accepte que le Logiciel ne garantit pas le contenu des services de tiers. Le développeur n’est pas responsable des dommages à la propriété, de la violation des droits d’auteur ou des droits de propriété intellectuelle causés par l’utilisation par l’utilisateur de services tiers, et n’assumera et ne pourra assumer aucune responsabilité légale.\nL’utilisateur comprend et accepte que le développeur ne fournit aucune garantie et support juridique pour les fonctions du logiciel, et si l’utilisateur utilise les fonctions du logiciel pour se livrer à des actes illégaux ou autres actes inappropriés, les risques et les conséquences juridiques causés par l’utilisateur seront à la charge de l’utilisateur.</value>
+  </data>
+  <data name="Eula12" xml:space="preserve">
+    <value>propriété intellectuelle</value>
+  </data>
+  <data name="Eula13" xml:space="preserve">
+    <value>Les droits d’auteur, brevets et autres droits de propriété intellectuelle de ce logiciel sont la propriété du développeur ou du propriétaire des droits d’auteur désigné.\n\nLes services tiers utilisés dans ce logiciel sont la propriété des détenteurs des droits d’auteur concernés, y compris, mais sans s’y limiter :：\nCe logiciel est un outil de gestion de serveur et de jeu en ligne pour Minecraft (dont l’interprétation finale appartient à Microsoft Corporation et Mojang AB). Les utilisateurs doivent se conformer à leur contrat de licence d’utilisateur final (CLUF) et aux politiques pertinentes mises en œuvre par NetEase en Chine continentale, et ne doivent pas utiliser le contenu du jeu à des fins commerciales ou effectuer d’autres actes interdits par le contrat de licence d’utilisateur final.\nLe Logiciel est l’outil de gestion de serveur et de connexion de jeu de Terraria, dont l’interprétation ultime incombe à Re-Logic et à ses éditeurs. Les utilisateurs sont responsables du respect de leur contrat de licence d’utilisateur final (CLUF) et des politiques associées. Les utilisateurs ne doivent pas utiliser le contenu du jeu à des fins commerciales sans licence ou effectuer d’autres actes interdits par le contrat de licence de l’utilisateur final.\nCertaines des ressources de téléchargement de fichiers en ligne (noyau de serveur, modules de jeu/serveur, plug-ins, etc.) fournies par ce logiciel sont fournies par le fonctionnaire/tiers correspondant, etc., et les droits d’auteur sont gérés conformément aux dispositions de la plate-forme tierce.\nLes droits d’auteur des autres services tiers utilisés dans ce logiciel appartiennent au fournisseur de services.\nCe logiciel est un logiciel open source, et les utilisateurs ou autres développeurs de logiciels qui ne font pas partie de ce logiciel doivent respecter l’accord open source de ce logiciel.\nL’Utilisateur comprend et accepte que, à l’exception des ressources créées par l’Utilisateur, toutes les données de service en ligne fournies par le Logiciel sont la propriété du Développeur. Le développeur a le droit de décider de conserver ou non tout ou partie des données sur le serveur.</value>
+  </data>
+  <data name="Eula14" xml:space="preserve">
+    <value>Modifications des conditions</value>
+  </data>
+  <data name="Eula15" xml:space="preserve">
+    <value>Le Développeur a le droit de modifier le présent Contrat si nécessaire. Une fois qu’il y a une modification du présent Contrat, le développeur affichera le contenu modifié sur la page importante. Si l’utilisateur n’est pas d’accord avec la révision ou la mise à jour du présent contrat, il peut prendre l’initiative de cesser d’utiliser le logiciel et les services. Si l’utilisateur continue d’utiliser le logiciel et les services après la révision du présent contrat, cela signifie que l’utilisateur accepte toutes les modifications ou mises à jour apportées au présent contrat. Si l’utilisateur n’est pas familier avec les modifications après la révision du présent contrat, le développeur ne sera pas responsable des pertes.</value>
+  </data>
+  <data name="Eula16" xml:space="preserve">
+    <value>Divers</value>
+  </data>
+  <data name="Eula17" xml:space="preserve">
+    <value>Le présent Accord est régi par le droit de la République populaire de Chine, sans égard à toutes les dispositions relatives aux conflits de lois ;\nLe fait que le Développeur n’exerce pas, n’exerce pas en temps opportun ou n’exerce pas pleinement les droits dont il jouit en vertu du présent Contrat ou conformément à la loi ne sera pas considéré comme une renonciation à l’exercice de ces droits, ni n’affectera l’exercice de ces droits par le Développeur à l’avenir ;\nDans la mesure permise par la loi, le Développeur a le droit d’interpréter les termes du présent Contrat ;\nLes utilisateurs peuvent se plaindre et signaler toutes sortes de violations des lois et règlements par e-mail, veuillez envoyer l’e-mail à services@mcsl.com.cn.</value>
+  </data>
+  <data name="Eula18" xml:space="preserve">
+    <value>Divisibilité des conditions</value>
+  </data>
+  <data name="Eula19" xml:space="preserve">
+    <value>Si l’une des dispositions du présent Accord est jugée invalide ou inapplicable, les dispositions restantes resteront pleinement en vigueur.</value>
+  </data>
+  <data name="PreCreateInstanceTip" xml:space="preserve">
+    <value>Veuillez sélectionner la méthode que vous souhaitez utiliser：</value>
+  </data>
+  <data name="CreateUniversalMinecraftJavaInstance" xml:space="preserve">
+    <value>Serveurs universels Minecraft Java Edition</value>
+  </data>
+  <data name="CreateMinecraftForgeInstance" xml:space="preserve">
+    <value>Serveurs Minecraft Forge</value>
+  </data>
+  <data name="CreateMinecraftNeoForgeInstance" xml:space="preserve">
+    <value>Serveurs Minecraft NeoForge</value>
+  </data>
+  <data name="CreateMinecraftFabricInstance" xml:space="preserve">
+    <value>Serveurs Minecraft Fabric</value>
+  </data>
+  <data name="CreateMinecraftQuiltInstance" xml:space="preserve">
+    <value>Serveurs Minecraft Quilt</value>
+  </data>
+  <data name="CreateMinecraftBedrockInstance" xml:space="preserve">
+    <value>Serveurs Minecraft Bedrock Edition</value>
+  </data>
+  <data name="CreateMinecraftGeyserStandaloneInstance" xml:space="preserve">
+    <value>Interopérabilité Minecraft Geyser autonome</value>
+  </data>
+  <data name="CreateMinecraftBungeeCordInstance" xml:space="preserve">
+    <value>Minecraft BungeeCord côté groupe</value>
+  </data>
+  <data name="CreateMinecraftWaterfallInstance" xml:space="preserve">
+    <value>Minecraft Waterfall côté groupe</value>
+  </data>
+  <data name="CreateMinecraftVelocityInstance" xml:space="preserve">
+    <value>Minecraft Velocity Côté groupe</value>
+  </data>
+  <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
+    <value>Minecraft Travertin côté groupe</value>
+  </data>
+  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
+    <value>Programme des clients du PRF (FRPC)</value>
+  </data>
+  <data name="CreateTerrariaServerInstance" xml:space="preserve">
+    <value>Serveurs de jeu Terraria</value>
+  </data>
+  <data name="CreateOtherExecutableInstance" xml:space="preserve">
+    <value>Autres programmes de console</value>
+  </data>
+  <data name="ImportExistsInstance" xml:space="preserve">
+    <value>Importer une instance existante</value>
+  </data>
+  <data name="HomeTip" xml:space="preserve">
+    <value>Nouveau voyage, nouvelle expérience.</value>
+  </data>
+  <data name="InstanceManagerTip" xml:space="preserve">
+    <value>Balayez la vue d’ensemble pour voir le monde.</value>
+  </data>
+  <data name="NotificationCenterTip" xml:space="preserve">
+    <value>Dans toutes les directions, la mission doit être accomplie.</value>
+  </data>
+  <data name="ResDownloadTipPrefix" xml:space="preserve">
+    <value>Vous l’appelez, il est là. (Actuellement utilisé.)</value>
+  </data>
+  <data name="HelpCenterTip" xml:space="preserve">
+    <value>Faites de votre mieux pour répondre à leurs questions.</value>
+  </data>
+  <data name="SettingsTip" xml:space="preserve">
+    <value>Votre MCSL, votre choix.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Stop" xml:space="preserve">
+    <value>Arrêtez le téléchargement directement</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry1" xml:space="preserve">
+    <value>Réessayez le téléchargement 1 fois</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Retry3" xml:space="preserve">
+    <value>Réessayez le téléchargement 3 fois</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
+    <value>Entrez le nom de l’instance pour la validation</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
+    <value>Validation de la clé démoniaque</value>
+  </data>
+  <data name="Settings_AppTheme_Auto" xml:space="preserve">
+    <value>Suivre le système</value>
+  </data>
+  <data name="Settings_AppTheme_Light" xml:space="preserve">
+    <value>lumière</value>
+  </data>
+  <data name="Settings_AppTheme_Dark" xml:space="preserve">
+    <value>Sombre</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
+    <value>CLUF de consentement automatique (instance serveur Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
+    <value>En acceptant automatiquement, vous êtes lié par le contrat de licence d’utilisateur final de Minecraft et acceptez que MCSL n’est pas conjointement et solidairement responsable.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Title" xml:space="preserve">
+    <value>Désactiver automatiquement la vérification de l’authenticité (instance de serveur Minecraft Java Edition)</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftJavaOnlineMode_Description" xml:space="preserve">
+    <value>Lorsque cette option est activée, ces instances désactivent automatiquement l’authentification de Mojang/Microsoft, permettant aux clients Minecraft Java Edition non authentiques de se connecter au serveur.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Description" xml:space="preserve">
+    <value>Lorsque cette option est activée, ces instances désactivent automatiquement l’authentification de Mojang/Microsoft, permettant aux clients non authentiques de Minecraft Bedrock Edition de se connecter au serveur.</value>
+  </data>
+  <data name="Settings_AutoDisableMinecraftBedrockOnlineMode_Title" xml:space="preserve">
+    <value>Désactiver automatiquement la vérification de l’authenticité (instance de serveur Minecraft Bedrock Edition)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftForgeInstall_Title" xml:space="preserve">
+    <value>Déployer avec une source d’image (instance de serveur Minecraft Forge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftNeoForgeInstall_Title" xml:space="preserve">
+    <value>Déployer avec une source d’image (instance de serveur Minecraft NeoForge)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftFabricInstall_Title" xml:space="preserve">
+    <value>Déployer avec une source d’image (instance de serveur Minecraft Fabric)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftQuiltInstall_Title" xml:space="preserve">
+    <value>Déployer avec une source miroir (instance de serveur Minecraft Quilt)</value>
+  </data>
+  <data name="Settings_UseMirrorForMinecraftLoadersInstall_Description" xml:space="preserve">
+    <value>Une fois activé, BMCLAPI sera utilisé pour télécharger des ressources, ce qui est recommandé pour les utilisateurs chinois.</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Title" xml:space="preserve">
+    <value>Télécharger la source</value>
+  </data>
+  <data name="Settings_ResDownloadProvider_Description" xml:space="preserve">
+    <value>Sélectionnez le fournisseur de téléchargement à utiliser sur la page Téléchargements de ressources.</value>
+  </data>
+  <data name="Settings_FastMirrorName" xml:space="preserve">
+    <value>FastMirror (fourni par Monogatari Cloud Computing)</value>
+  </data>
+  <data name="Settings_PolarsMirrorName" xml:space="preserve">
+    <value>Image du nuage Polestar (avec l’aimable autorisation de Polestar Network)</value>
+  </data>
+  <data name="Settings_ZCloudFileName" xml:space="preserve">
+    <value>Fichier ZCloud (fourni par Z__Tsin membre de l’équipe de développement)</value>
+  </data>
+  <data name="Settings_MSLAPIName" xml:space="preserve">
+    <value>Source de téléchargement MSL (fournie par MSL Server Builder)</value>
+  </data>
+  <data name="Settings_MCSLSyncName" xml:space="preserve">
+    <value>Mise en miroir synchrone MCSL-Sync</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Title" xml:space="preserve">
+    <value>Nombre de threads du moteur de téléchargement</value>
+  </data>
+  <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
+    <value>Dans le cas de performances informatiques suffisantes, plus le nombre de threads est élevé, plus la vitesse de téléchargement théorique du fichier est rapide. En général, un réglage de 16 threads est suffisant.</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
+    <value>Comment gérer les échecs de téléchargement</value>
+  </data>
+  <data name="Settings_ActionWhenDownloadError_Description" xml:space="preserve">
+    <value>Que faire si le téléchargement du fichier échoue.</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Title" xml:space="preserve">
+    <value>Confirmer la méthode de suppression d’une instance</value>
+  </data>
+  <data name="Settings_ActionWhenDeleteConfirm_Description" xml:space="preserve">
+    <value>Cette fonctionnalité empêche la suppression d’instances en raison d’un mauvais fonctionnement.</value>
+  </data>
+  <data name="Settings_AppTheme_Title" xml:space="preserve">
+    <value>Appliquer un thème</value>
+  </data>
+  <data name="Settings_AppTheme_Description" xml:space="preserve">
+    <value>La valeur par défaut suit les modifications du système, bien sûr, vous pouvez également le définir vous-même.</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Title" xml:space="preserve">
+    <value>Démarrage automatique (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_FollowStartupForLauncher_Description" xml:space="preserve">
+    <value>Lorsque le système démarre, le programme graphique est automatiquement lancé. Lorsqu’il est activé, les opérations sensibles peuvent être touchées sur le système, veuillez donc les autoriser dans votre logiciel antivirus.</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Rechercher les mises à jour (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Vérifiez les mises à jour de ce programme graphique.</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Rechercher des mises à jour</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Description" xml:space="preserve">
+    <value>Vérifiez les mises à jour de ce programme graphique à chaque démarrage.</value>
+  </data>
+  <data name="Settings_AutoCheckUpdateForLauncher_Title" xml:space="preserve">
+    <value>Vérification automatique des mises à jour (MCServerLauncher.WPF)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Title" xml:space="preserve">
+    <value>Rechercher les mises à jour (MCServerLauncher.Daemon)</value>
+  </data>
+  <data name="Settings_CheckUpdateForDaemon_Description" xml:space="preserve">
+    <value>Vérifiez les mises à jour du démon.</value>
+  </data>
+  <data name="Settings_About_Title" xml:space="preserve">
+    <value>À propos de MCServerLauncher Future (WPF)</value>
+  </data>
+  <data name="Settings_About_LegalProtected" xml:space="preserve">
+    <value>Ce projet est protégé par la loi sur le droit d’auteur de la République populaire de Chine et les traités internationaux, et la reproduction ou la distribution non autorisée du programme ou de toute partie de celui-ci est soumise à des sanctions civiles et pénales sévères et à des poursuites dans toute la mesure permise par la loi.</value>
+  </data>
+  <data name="Settings_About_OpenSourceLicenseProtected" xml:space="preserve">
+    <value>Ce projet est protégé par la licence publique générale GNU version 3.0 et le code source est hébergé à l’adresse</value>
+  </data>
+  <data name="PeriodSymbol" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="Settings_About_CertProtected" xml:space="preserve">
+    <value>Le certificat signé numériquement utilisé par MCServerLauncher Future garantit que le programme ne peut pas être altéré. Matricule：59cbf9b5207eeabb45417d148120ac9a。 S’il est différent, ne l’utilisez pas et donnez votre avis à services@mcsl.com.cn.</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_FastMirror" xml:space="preserve">
+    <value>Mise en miroir infinie</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_PolarsMirror" xml:space="preserve">
+    <value>Image de la nébuleuse polaire</value>
+  </data>
+  <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
+    <value>Mise en miroir synchrone MCSL-Sync</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>annonce</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Es-tu sûr?</value>
+  </data>
+  <data name="EulaDisagreeTip" xml:space="preserve">
+    <value>Si vous refusez le Contrat d’utilisation, le Logiciel sera retiré.</value>
+  </data>
+  <data name="FakeEulaAgreeTip" xml:space="preserve">
+    <value>Assurez-vous d’avoir tout lu avant de cliquer sur Accepter. À tout le moins, vous devriez rouler le protocole jusqu’à la fin.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bon</value>
+  </data>
+  <data name="NotNow" xml:space="preserve">
+    <value>Pas maintenant</value>
+  </data>
+  <data name="EulaAgreeTip" xml:space="preserve">
+    <value>Cela signifie que vous acceptez l’ensemble du contenu du présent Accord.</value>
+  </data>
+  <data name="ResDownloadTipSuffix" xml:space="preserve">
+    <value>Télécharger la source)</value>
+  </data>
 </root>
