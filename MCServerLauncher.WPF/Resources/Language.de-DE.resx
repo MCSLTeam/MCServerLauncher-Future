@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Bist du sicher?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Wenn Sie die Nutzungsvereinbarung ablehnen, wird die Software zurückgezogen.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Stellen Sie sicher, dass Sie alles gelesen haben, bevor Sie auf Zustimmen klicken. Zumindest sollten Sie das Protokoll bis zum Ende rollen.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Jetzt nicht</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Das bedeutet, dass Sie mit allen Inhalten dieser Vereinbarung einverstanden sind.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Wählen Sie die Sprache aus, in der das Programm verwendet wird.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Wenn Sie keine Daemons verknüpfen, sind die meisten Funktionen der Software eingeschränkt.\nSie können den Daemon auch später noch in den Einstellungen verknüpfen.</value>
   </data>
 </root>
