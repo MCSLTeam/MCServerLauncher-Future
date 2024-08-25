@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Es-tu sûr?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Si vous refusez le Contrat d’utilisation, le Logiciel sera retiré.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Assurez-vous d’avoir tout lu avant de cliquer sur Accepter. À tout le moins, vous devriez rouler le protocole jusqu’à la fin.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Pas maintenant</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Cela signifie que vous acceptez l’ensemble du contenu du présent Accord.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">

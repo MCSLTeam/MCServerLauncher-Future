@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Er du sikker?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Hvis du avviser brukeravtalen, vil programvaren bli trukket tilbake.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Sørg for at du har lest alt før du klikker på Godta. I det minste bør du rulle protokollen til slutten.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Ikke nå</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Dette betyr at du godtar alt innholdet i denne avtalen.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">

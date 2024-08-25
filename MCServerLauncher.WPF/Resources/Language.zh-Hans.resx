@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>你确定吗？</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>若您拒绝用户协议，本软件将退出。</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>请确保您已完整阅读后再点击同意。您至少要把协议滚动到底吧。</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>不是现在</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>这代表您同意本协议的所有内容。</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>选择本程序使用的语言。</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可在设置中链接守护进程。</value>
   </data>
 </root>
