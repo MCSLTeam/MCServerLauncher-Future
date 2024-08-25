@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>Eşti sigur?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>Dacă respingeți Acordul de utilizare, Software-ul va fi retras.</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>Asigurați-vă că ați citit totul înainte de a da clic pe De acord. Cel puțin, ar trebui să rulați protocolul până la sfârșit.</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>Nu acum</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>Aceasta înseamnă că sunteți de acord cu întregul conținut al acestui Acord.</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Selectați limba în care este utilizat programul.</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Dacă nu conectați niciun demon, majoritatea funcțiilor software-ului vor fi limitate.\nPuteți lega în continuare demonul mai târziu în setări.</value>
   </data>
 </root>
