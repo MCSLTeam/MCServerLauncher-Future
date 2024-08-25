@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -410,7 +410,7 @@
     <value>其他規定</value>
   </data>
   <data name="Eula17" xml:space="preserve">
-    <value>本協定適用於中華人民共和國法律，並且排除一切衝突法規規定地適用; \n開發者不行使、未能及時行使或者充分行使本協定或者依照法律規定所享有的權利，不應被視為放棄行使該權利，也不得影響開發者在將來行使該等權利; \n在法律許可範圍內，開發者享有對本協定條款的解釋權; \n使用者可以通過電子郵件投訴、舉報各類違法違規行為，郵件請發送至郵箱 services@mcsl.com.cn</value>
+    <value>本協定適用於中華人民共和國法律，並且排除一切衝突法規規定地適用; \n開發者不行使、未能及時行使或者充分行使本協定或者依照法律規定所享有的權利，不應被視為放棄行使該權利，也不得影響開發者在將來行使該等權利; \n在法律許可範圍內，開發者享有對本協定條款的解釋權; \n使用者可以通過電子郵件投訴、舉報各類違法違規行為，郵件請發送至郵箱 services@mcsl.com.cn。</value>
   </data>
   <data name="Eula18" xml:space="preserve">
     <value>條款可分性</value>
@@ -636,9 +636,6 @@
   </data>
   <data name="ResDownloadPage_ProviderName_MCSLSync" xml:space="preserve">
     <value>MCSL-Sync 同步鏡像</value>
-  </data>
-  <data name="ResDownloadTipSuffix" xml:space="preserve">
-    <value>下載源）</value>
   </data>
   <data name="Announcement" xml:space="preserve">
     <value>公告</value>
