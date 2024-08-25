@@ -661,7 +661,4 @@
   <data name="ResDownloadTipSuffix" xml:space="preserve">
     <value>下载源）</value>
   </data>
-  <data name="Settings_AppLanguage_Description" xml:space="preserve">
-    <value>选择本程序使用的语言。</value>
-  </data>
 </root>
