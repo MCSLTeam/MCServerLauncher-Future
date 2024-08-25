@@ -26,7 +26,7 @@
                        Text="{Binding [CreateInstance_SelectMinecraftJavaJvm_Description], Source={x:Static h:LanguageManager.Instance}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2"
-                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="Java 路径" />
+                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_SelectMinecraftJavaJvm_Title], Source={x:Static h:LanguageManager.Instance}}" />
             <ui:DropDownButton ShowChevronArrow="False" Height="32" Margin="0,15,20,0" Grid.Row="2"
                                Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
                 <ui:DropDownButton.Content>

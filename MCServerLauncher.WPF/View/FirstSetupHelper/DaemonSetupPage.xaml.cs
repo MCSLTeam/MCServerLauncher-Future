@@ -27,15 +27,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var parent = this.TryFindParent<FirstSetup>();
             ContentDialog dialog = new()
             {
-                Title = "确定？",
-                PrimaryButtonText = "跳过",
-                SecondaryButtonText = "返回",
+                Title = LanguageManager.Instance["AreYouSure"],
+                PrimaryButtonText = LanguageManager.Instance["TempSkip"],
+                SecondaryButtonText = LanguageManager.Instance["Back"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = "若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可在设置中链接守护进程。"
+                    Text = LanguageManager.Instance["FirstSetup_SkipConnectDaemonTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent.GoWelcomeSetup();

@@ -26,14 +26,14 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             ContentDialog dialog = new()
             {
                 Title = LanguageManager.Instance["AreYouSure"],
-                PrimaryButtonText = "再想想",
+                PrimaryButtonText = LanguageManager.Instance["NotNow"],
                 SecondaryButtonText = LanguageManager.Instance["Disagree"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Instance["EulaDisagreeTip"]
+                    Text = LanguageManager.Instance["FirstSetup_EulaDisagreeTip"]
                 }
             };
             dialog.SecondaryButtonClick += (o, args) => Application.Current.Shutdown();
@@ -67,7 +67,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                     Content = new TextBlock
                     {
                         TextWrapping = TextWrapping.WrapWithOverflow,
-                        Text = LanguageManager.Instance["FakeEulaAgreeTip"]
+                        Text = LanguageManager.Instance["FirstSetup_FakeEulaAgreeTip"]
                     }
                 };
                 try
@@ -92,7 +92,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Instance["EulaAgreeTip"]
+                    Text = LanguageManager.Instance["FirstSetup_EulaAgreeTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent.GoDaemonSetup();
