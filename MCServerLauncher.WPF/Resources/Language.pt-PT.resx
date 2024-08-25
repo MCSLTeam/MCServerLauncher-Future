@@ -664,4 +664,7 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Selecione o idioma em que o programa é usado.</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Se você não vincular nenhum daemons, a maioria das funções do software será limitada.\nVocê ainda pode vincular o daemon mais tarde nas configurações.</value>
+  </data>
 </root>

@@ -664,4 +664,7 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Виберіть мову, на якій використовується програма.</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Якщо ви не зв'яжете жодних демонів, більшість функцій програмного забезпечення буде обмежено.\nВи все ще можете зв'язати демон пізніше в налаштуваннях.</value>
+  </data>
 </root>

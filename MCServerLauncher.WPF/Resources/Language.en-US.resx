@@ -664,4 +664,7 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Select the language used in this program.</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>If you do not add any MCSL Daemons, most of the functions of the software will be limited.\nYou can still connect to MCSL Daemons later in the settings.</value>
+  </data>
 </root>

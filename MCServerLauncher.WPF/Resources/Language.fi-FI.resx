@@ -664,4 +664,7 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Valitse kieli, jolla ohjelmaa käytetään.</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Jos et linkitä mitään demoneja, suurin osa ohjelmiston toiminnoista on rajoitettuja.\nVoit silti linkittää demonin myöhemmin asetuksissa.</value>
+  </data>
 </root>
