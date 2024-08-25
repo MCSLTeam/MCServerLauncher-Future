@@ -661,4 +661,7 @@
   <data name="ResDownloadTipSuffix" xml:space="preserve">
     <value>Laai bron af)</value>
   </data>
+  <data name="Settings_AppLanguage_Description" xml:space="preserve">
+    <value></value>
+  </data>
 </root>
