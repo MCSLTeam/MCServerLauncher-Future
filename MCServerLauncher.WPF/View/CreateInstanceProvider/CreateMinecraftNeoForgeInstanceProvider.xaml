@@ -57,7 +57,7 @@
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
-                                  Width="Auto" HorizontalAlignment="Stretch" />
+                                  Width="Auto" HorizontalAlignment="Stretch" MaxDropDownHeight="300" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" Click="FetchNeoForgeData"
                                 x:Name="FetchMinecraftVersionsButton">
@@ -99,7 +99,7 @@
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <ComboBox x:Name="NeoForgeVersionComboBox" Grid.Row="2" Grid.ColumnSpan="2"
-                                  Margin="20,15,20,20"
+                                  Margin="20,15,20,20" MaxDropDownHeight="300"
                                   Width="Auto" HorizontalAlignment="Stretch" />
 
                         <ui:DropDownButton Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right"

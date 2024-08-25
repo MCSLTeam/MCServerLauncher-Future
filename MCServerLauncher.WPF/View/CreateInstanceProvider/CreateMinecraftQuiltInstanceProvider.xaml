@@ -60,7 +60,7 @@
                         <CheckBox x:Name="ToggleStableMinecraftVersionCheckBox" Grid.Row="2" Grid.Column="0"
                                   Content="{Binding [OnlyShowReleaseVersion], Source={x:Static h:LanguageManager.Instance}}" IsChecked="True" Margin="20,0,10,0" />
                         <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="3" Grid.Column="0" Margin="20,5,10,20"
-                                  Width="Auto" HorizontalAlignment="Stretch" />
+                                  Width="Auto" HorizontalAlignment="Stretch" MaxDropDownHeight="300" />
                         <Button Height="32" Margin="0,5,20,0" Grid.Row="3" Grid.Column="1" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" Click="FetchMinecraftVersions"
                                 x:Name="FetchMinecraftVersionsButton">
@@ -101,7 +101,7 @@
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                         <ComboBox x:Name="QuiltVersionComboBox" Grid.Row="2" Grid.Column="0" Margin="20,15,10,20"
-                                  Width="Auto" HorizontalAlignment="Stretch" />
+                                  Width="Auto" HorizontalAlignment="Stretch" MaxDropDownHeight="300" />
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" x:Name="FetchQuiltVersionButton" Click="FetchQuiltVersions">
                             <Button.Content>
