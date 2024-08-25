@@ -362,7 +362,7 @@
     <value>Disagree</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value>欢迎使用 MCSL开发组 提供的 MCServerLauncher（以下简称“本软件”）的软件与服务。为了保障用户权益，请在使用本软件前，详细阅读本协议的所有内容。我们可能随时更新本协议，一旦公布即有效代替原用户协议书。&amp;#x000A;请您仔细阅读以下内容，当您使用本软件时，即代表您已经详细阅读并同意本协议的全部内容，且同意遵守本协议的规定。</value>
+    <value/>
   </data>
   <data name="Eula2" xml:space="preserve">
     <value>Instructions for use</value>
@@ -404,7 +404,7 @@
     <value>Change of terms</value>
   </data>
   <data name="Eula15" xml:space="preserve">
-    <value>开发者有权在必要的时候修改本协议。本协议一旦发生变动，开发者将在重要页面展示修改内容。若用户不同意本协议的修订或更新，可以主动停止使用本软件及服务。若用户在本协议修订后仍继续使用本软件及服务，即表示用户同意本协议所做的所有修订或更新。 若用户在本协议修订后因未熟悉变更而引起的损失，开发者不承担任何责任。</value>
+    <value>The developer has the right to modify this EULA when necessary. If there are changes to this EULA, the developer will display the modifications on important pages. If the user does not agree with the revisions or updates to this EULA, they are able to choose to stop using the software and services. If the user continues to use the software and services after the EULA has been revised, it signifies the user's acceptance of all the changes or updates to the EULA. The developer will not be liable for any losses incurred by the user due to unfamiliarity with the changes after the EULA has been revised.</value>
   </data>
   <data name="Eula16" xml:space="preserve">
     <value>Other terms</value>
@@ -416,7 +416,7 @@
     <value>Terms separability</value>
   </data>
   <data name="Eula19" xml:space="preserve">
-    <value>如果本协议的任何条款被认定为无效，或不可执行，其余条款仍应完全有效。</value>
+    <value>If any provision of this EULA is regarded as invalid or unenforceable, the remaining provisions should still remain in full force and effect.</value>
   </data>
   <data name="PreCreateInstanceTip" xml:space="preserve">
     <value>请选择欲操作的方式：</value>
@@ -509,7 +509,7 @@
     <value>Dark</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Title" xml:space="preserve">
-    <value>自动同意 EULA (Minecraft Java 版服务器 实例 )</value>
+    <value>Automatically accept the EULA (Minecraft : Java Edition Server Instance)</value>
   </data>
   <data name="Settings_AutoAcceptMinecraftJavaEula_Description" xml:space="preserve">
     <value>自动同意即代表您遵守 Minecraft 最终用户许可协议，且认同 MCSL 不承担任何连带责任。</value>
@@ -566,7 +566,7 @@
     <value>Download Thread Count</value>
   </data>
   <data name="Settings_DownloadThreadCnt_Description" xml:space="preserve">
-    <value>线程数越多，在计算机性能足够的情况下，文件下载越快；反之会造成严重的卡顿。一般来说，设置为 16 线程即可满足需求。</value>
+    <value>With sufficient computer performance, higher number of threads means faster download speed, Generally, setting it to 16 threads should be sufficient to meet the needs.</value>
   </data>
   <data name="Settings_ActionWhenDownloadError_Title" xml:space="preserve">
     <value>下载失败处理方式</value>
