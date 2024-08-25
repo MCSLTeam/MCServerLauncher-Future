@@ -643,10 +643,10 @@
   <data name="AreYouSure" xml:space="preserve">
     <value>確かですか?</value>
   </data>
-  <data name="EulaDisagreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaDisagreeTip" xml:space="preserve">
     <value>ユーザー契約を拒否した場合、ソフトウェアは撤回されます。</value>
   </data>
-  <data name="FakeEulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_FakeEulaAgreeTip" xml:space="preserve">
     <value>「同意する」をクリックする前に、すべてを読み終えていることを確認してください。 少なくとも、プロトコルを最後までロールする必要があります。</value>
   </data>
   <data name="OK" xml:space="preserve">
@@ -655,7 +655,7 @@
   <data name="NotNow" xml:space="preserve">
     <value>今ではありません</value>
   </data>
-  <data name="EulaAgreeTip" xml:space="preserve">
+  <data name="FirstSetup_EulaAgreeTip" xml:space="preserve">
     <value>これは、本契約のすべての内容に同意したことを意味します。</value>
   </data>
   <data name="ResDownloadTipSuffix" xml:space="preserve">
@@ -663,5 +663,8 @@
   </data>
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>プログラムの使用言語を選択します。</value>
+  </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>デーモンをリンクしないと、ソフトウェアのほとんどの機能が制限されます。\n後で設定でデーモンをリンクすることもできます。</value>
   </data>
 </root>
