@@ -419,6 +419,7 @@ namespace MCServerLauncher.WPF.Helpers
             LanguageManager.Instance.ChangeLanguage(new CultureInfo(AppSettings.App.Language));
         }
     }
+    
     public class LanguageManager : INotifyPropertyChanged
     {
         private readonly ResourceManager _resourceManager = new("MCServerLauncher.WPF.Resources.Language", typeof(LanguageManager).Assembly);
