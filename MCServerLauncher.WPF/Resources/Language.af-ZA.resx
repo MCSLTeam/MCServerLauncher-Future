@@ -665,6 +665,6 @@
     <value>Kies die taal waarin die program gebruik word.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value></value>
+    <value>As u geen daemons koppel nie, sal die meeste funksies van die sagteware beperk word.\nU kan die daemon steeds later in die instellings koppel.</value>
   </data>
 </root>

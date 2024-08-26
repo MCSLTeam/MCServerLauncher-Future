@@ -664,4 +664,7 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>בחר את השפה שבה נעשה שימוש בתוכנית.</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>אם לא תקשר דימונים כלשהם, רוב הפונקציות של התוכנה יהיו מוגבלות.\nעדיין תוכל לקשר את הדמון מאוחר יותר בהגדרות.</value>
+  </data>
 </root>

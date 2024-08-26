@@ -664,4 +664,7 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Selectați limba în care este utilizat programul.</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value>Dacă nu conectați niciun demon, majoritatea funcțiilor software-ului vor fi limitate.\nPuteți lega în continuare demonul mai târziu în setări.</value>
+  </data>
 </root>
