@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -101,7 +101,7 @@
     <value>MCServerLauncher WPF 遇到錯誤</value>
   </data>
   <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆棧已復製到剪貼板。您可直接進入 GitHub 進行反饋。</value>
+    <value>堆棧已拷貝到剪貼板。您可直接進入 GitHub 進行反饋。</value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF 客戶端 ( 僅 Windows )</value>
@@ -149,10 +149,10 @@
     <value>調試頁面</value>
   </data>
   <data name="Main_SettingsNavMenu" xml:space="preserve">
-    <value>程序設置</value>
+    <value>程式設定</value>
   </data>
   <data name="Tip" xml:space="preserve">
-    <value>訊息</value>
+    <value>提示訊息</value>
   </data>
   <data name="NotAllowedOverOpening" xml:space="preserve">
     <value>MCServerLauncher WPF 不支持重復啟動。</value>
@@ -362,7 +362,7 @@
     <value>拒絕</value>
   </data>
   <data name="Eula1" xml:space="preserve">
-    <value>歡迎使用 MCSL開發組 提供的 MCServerLauncher（以下簡稱為“本軟體”）的軟件與服務。為了保障用戶權益，在使用本軟體前，請詳細閱讀本協議的所有內容。我們可能隨時更新該協議，一旦公佈幾有效代替原用戶協定。\n請您仔細閱讀以下內容，當您使用本協議的全部內容，且同意遵守本協議的規定。</value>
+    <value>歡迎使用 MCSL開發組 提供的 MCServerLauncher（以下簡稱為“本軟體”）的軟体與服務。為了保障用戶權益，在使用本軟體前，請詳細閱讀本協議的所有內容。我們可能隨時更新該協議，一旦公佈幾有效代替原用戶協定。\n請您仔細閱讀以下內容，當您使用本協議的全部內容，且同意遵守本協議的規定。</value>
   </data>
   <data name="Eula2" xml:space="preserve">
     <value>使用須知</value>
