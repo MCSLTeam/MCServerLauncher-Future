@@ -1,4 +1,6 @@
-﻿using MCServerLauncher.Daemon.Remote;
+﻿using System.Diagnostics;
+using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -12,11 +14,12 @@ namespace MCServerLauncher.Daemon;
 
 public class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
-        Serve();
+        //Serve();
+        await RunMCServerAsync();
     }
 
     public static void TestJavaScanner()
@@ -71,6 +74,32 @@ public class Program
         };
         Console.WriteLine(JsonConvert.SerializeObject(InstanceConfig, Formatting.Indented));
         await Manager.CreateInstance(InstanceConfig);
+    }
+
+    public static async Task RunMCServerAsync()
+    {
+        ServerConfig config = new()
+        {
+            WorkingDirectory = @"./instance",
+            JavaArgs = Array.Empty<string>(),
+            JavaPath = "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath\\java.exe",
+            Name = "TestServer",
+            ServerType = ServerType.Fabric,
+            Target = "run.bat",
+            TargetType = TargetType.Script
+        };
+        ServerInstance instance = new(config);
+        await instance.Start();
+        await Task.WhenAny(
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    instance.ServerProcess.StandardInput.WriteLine(Console.ReadLine());
+                }
+            }),
+            Task.Run(instance.ServerProcess.WaitForExit)
+        );
     }
 
     public static void TestServer()
