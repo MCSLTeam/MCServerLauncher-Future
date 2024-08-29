@@ -665,6 +665,12 @@
     <value>Vælg det sprog, som programmet bruges på.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Hvis du ikke forbinder nogen dæmoner, vil de fleste af softwarens funktioner være begrænsede.\nDu kan stadig linke dæmonen senere i indstillingerne.</value>
+    <value>若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可链接守护进程。</value>
+  </data>
+  <data name="ConnectDaemon" xml:space="preserve">
+    <value>新建连接</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
+    <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
   </data>
 </root>
