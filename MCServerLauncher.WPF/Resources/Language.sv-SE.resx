@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Välj det språk som programmet används på.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Om du inte länkar några demoner kommer de flesta av programvarans funktioner att vara begränsade.\nDu kan fortfarande länka demonen senare i inställningarna.</value>
-  </data>
 </root>

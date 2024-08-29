@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Vyberte jazyk, ve kterém se program používá.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Pokud nepropojíte žádné démony, většina funkcí softwaru bude omezena.\nDémona můžete propojit i později v nastavení.</value>
-  </data>
 </root>

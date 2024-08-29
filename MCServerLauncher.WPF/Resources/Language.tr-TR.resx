@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Programın kullanıldığı dili seçin.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Herhangi bir arka plan programı bağlamazsanız, yazılımın işlevlerinin çoğu sınırlı olacaktır.\nDaemon'u daha sonra ayarlardan bağlamaya devam edebilirsiniz.</value>
-  </data>
 </root>

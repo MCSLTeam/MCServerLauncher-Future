@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Sélectionnez la langue dans laquelle le programme est utilisé.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Si vous ne liez aucun démon, la plupart des fonctions du logiciel seront limitées.\nVous pouvez toujours lier le démon plus tard dans les paramètres.</value>
-  </data>
 </root>

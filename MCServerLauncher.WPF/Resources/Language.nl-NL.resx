@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Selecteer de taal waarin het programma wordt gebruikt.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Als je geen daemons koppelt, zijn de meeste functies van de software beperkt.\nJe kunt de daemon later nog koppelen in de instellingen.</value>
-  </data>
 </root>

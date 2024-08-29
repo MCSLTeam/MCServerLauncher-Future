@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Válassza ki a program használatának nyelvét.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Ha nem kapcsol össze démonokat, a szoftver legtöbb funkciója korlátozott lesz.\nA démont később is összekapcsolhatja a beállításokban.</value>
-  </data>
 </root>

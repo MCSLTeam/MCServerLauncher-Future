@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Vælg det sprog, som programmet bruges på.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Hvis du ikke forbinder nogen dæmoner, vil de fleste af softwarens funktioner være begrænsede.\nDu kan stadig linke dæmonen senere i indstillingerne.</value>
-  </data>
 </root>

@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>حدد اللغة التي يتم استخدام البرنامج بها.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>إذا لم تقم بربط أي شياطين ، فستكون معظم وظائف البرنامج محدودة.\nلا يزال بإمكانك ربط البرنامج الخفي لاحقا في الإعدادات.</value>
-  </data>
 </root>

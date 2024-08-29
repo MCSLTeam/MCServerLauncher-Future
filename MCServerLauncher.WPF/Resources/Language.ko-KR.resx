@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>프로그램이 사용되는 언어를 선택합니다.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>데몬을 연결하지 않으면 소프트웨어의 대부분의 기능이 제한됩니다.\n나중에 설정에서 데몬을 계속 연결할 수 있습니다.</value>
-  </data>
 </root>

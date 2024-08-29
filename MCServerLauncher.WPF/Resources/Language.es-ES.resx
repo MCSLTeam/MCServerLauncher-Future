@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Seleccione el idioma en el que se utiliza el programa.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Si no vincula ningún demonio, la mayoría de las funciones del software serán limitadas.\nTodavía puede vincular el demonio más adelante en la configuración.</value>
-  </data>
 </root>

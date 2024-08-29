@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Seleccioneu l'idioma en què s'utilitza el programa.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Si no enllaceu cap dimoni, la majoria de les funcions del programari seran limitades.\nEncara podeu enllaçar el dimoni més endavant a la configuració.</value>
-  </data>
 </root>

@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Επιλέξτε τη γλώσσα στην οποία χρησιμοποιείται το πρόγραμμα.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Εάν δεν συνδέσετε δαίμονες, οι περισσότερες από τις λειτουργίες του λογισμικού θα είναι περιορισμένες.\nΜπορείτε ακόμα να συνδέσετε τον δαίμονα αργότερα στις ρυθμίσεις.</value>
-  </data>
 </root>

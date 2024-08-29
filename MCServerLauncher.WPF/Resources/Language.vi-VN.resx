@@ -664,7 +664,4 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>Chọn ngôn ngữ mà chương trình được sử dụng.</value>
   </data>
-  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>Nếu bạn không liên kết bất kỳ daemon nào, hầu hết các chức năng của phần mềm sẽ bị hạn chế.\nBạn vẫn có thể liên kết daemon sau này trong cài đặt.</value>
-  </data>
 </root>
