@@ -17,7 +17,7 @@
         <Grid Grid.Row="0">
             <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" Margin="0,35,0,0" />
-            <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}" Text="{Binding [ResDownloadTip], Source={x:Static i18n:LanguageManager.Localize}}"
+            <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,10,0"
                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
         </Grid>

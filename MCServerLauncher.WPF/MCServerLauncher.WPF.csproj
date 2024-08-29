@@ -228,6 +228,9 @@
     <Compile Include="View\Components\CreateInstance\SetMinecraftJvmRam.xaml.cs">
       <DependentUpon>SetMinecraftJvmRam.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\DaemonManager\DaemonBorder.xaml.cs">
+      <DependentUpon>DaemonBorder.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\SettingCard\ActionSettingCard.xaml.cs">
       <DependentUpon>ActionSettingCard.xaml</DependentUpon>
     </Compile>
@@ -261,7 +264,7 @@
     <Compile Include="View\FirstSetupHelper\FirstSetup.xaml.cs">
       <DependentUpon>FirstSetup.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\InstanceBorder.xaml.cs">
+    <Compile Include="View\Components\InstanceManager\InstanceBorder.xaml.cs">
       <DependentUpon>InstanceBorder.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\JvmArgumentItem.xaml.cs">
@@ -332,6 +335,9 @@
     </Compile>
     <Compile Include="View\Pages\HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Pages\DaemonManagerPage.xaml.cs">
+      <DependentUpon>DaemonManagerPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Pages\InstanceManagerPage.xaml.cs">
       <DependentUpon>InstanceManagerPage.xaml</DependentUpon>
@@ -404,6 +410,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="View\Components\DaemonManager\DaemonBorder.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\Components\SettingCard\ActionSettingCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -448,7 +458,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\Components\InstanceBorder.xaml">
+    <Page Include="View\Components\InstanceManager\InstanceBorder.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -540,6 +550,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\Pages\HomePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Pages\DaemonManagerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
