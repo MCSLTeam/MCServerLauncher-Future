@@ -202,6 +202,7 @@
     <Compile Include="Modules\Initializer.cs" />
     <Compile Include="Modules\LanguageManager.cs" />
     <Compile Include="Modules\Network.cs" />
+    <Compile Include="Modules\Remote\IDaemon.cs" />
     <Compile Include="Modules\SettingsManager.cs" />
     <Compile Include="Modules\VisualTreeHelper.cs" />
     <Compile Include="Modules\Remote\ActionType.cs" />
