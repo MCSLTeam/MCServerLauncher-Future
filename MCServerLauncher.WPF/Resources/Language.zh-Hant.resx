@@ -665,6 +665,12 @@
     <value>選擇本程式使用的語言。</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>若不連結任何守護進程，本軟體大部分功能都將受限。\n您稍後仍可在設置中鏈接守護進程。</value>
+    <value>若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可链接守护进程。</value>
+  </data>
+  <data name="ConnectDaemon" xml:space="preserve">
+    <value>新建连接</value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
+    <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
   </data>
 </root>
