@@ -145,9 +145,7 @@
 ```json
 {
     "action": "get_java_list",
-    "params":{
-        "file_id": "..."
-    }
+    "params":{}
 }
 ```
 

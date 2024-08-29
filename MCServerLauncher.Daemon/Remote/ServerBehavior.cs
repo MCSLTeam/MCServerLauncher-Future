@@ -35,7 +35,7 @@ internal class ServerBehavior : WebSocketBehavior
         _eventService.Signal += (type, data) => Context.WebSocket.Send(_webJsonConverter.Serialize(
             new Dictionary<string, object>
             {
-                ["event_type"] = type,
+                ["event"] = type,
                 ["data"] = data,
                 ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
             }
