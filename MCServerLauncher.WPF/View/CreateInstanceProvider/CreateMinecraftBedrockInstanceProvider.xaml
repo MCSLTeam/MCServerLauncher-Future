@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
-             xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
+             xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              xmlns:ci="clr-namespace:MCServerLauncher.WPF.View.Components.CreateInstance"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -23,15 +23,15 @@
             <Button Grid.Column="0" Grid.Row="0" Click="GoPreCreateInstance" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static h:LanguageManager.Instance}}" />
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
-            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static h:LanguageManager.Instance}}"
+            <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static i18n:LanguageManager.Localize}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0" />
             <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static h:LanguageManager.Instance}}" />
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
         </Grid>

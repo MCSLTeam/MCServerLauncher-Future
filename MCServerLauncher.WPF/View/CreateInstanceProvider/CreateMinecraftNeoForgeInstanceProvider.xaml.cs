@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Pages;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.View.Pages;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
@@ -47,7 +47,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             // Legacy version (1.20.1)
             var legacyMavenResponse =
-                await NetworkUtils.SendGetRequest(
+                await Network.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", true);
             var legacyMavenData =
                 JsonConvert.DeserializeObject<JToken>(await legacyMavenResponse.Content.ReadAsStringAsync())
@@ -58,7 +58,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             NeoForgeVersions = legacyMavenData;
             // NeoForge
             var response =
-                await NetworkUtils.SendGetRequest(
+                await Network.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", true);
             var mavenData =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
@@ -79,7 +79,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private async Task FetchNeoForgeDataByBmclapi()
         {
             // Legacy version (1.20.1)
-            var legacyMavenResponse = await NetworkUtils.SendGetRequest(
+            var legacyMavenResponse = await Network.SendGetRequest(
                 "https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/forge", true);
             var legacyMavenData =
                 JObject.Parse(await legacyMavenResponse.Content.ReadAsStringAsync()).SelectToken("files")!
@@ -87,7 +87,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             legacyMavenData.RemoveAll(version => version.Contains("maven-metadata"));
             NeoForgeVersions = legacyMavenData;
             // NeoForge
-            var response = await NetworkUtils.SendGetRequest(
+            var response = await Network.SendGetRequest(
                 "https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/neoforge",
                 true);
             var mavenData = JObject.Parse(await response.Content.ReadAsStringAsync()).SelectToken("files")!
@@ -114,11 +114,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
             NeoForgeVersionComboBox.IsEnabled = false;
-            if (BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+            if (SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
                 await FetchNeoForgeDataByBmclapi();
             else
                 await FetchNeoForgeDataByOfficial();
-            MinecraftVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(MinecraftVersions);
+            MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(MinecraftVersions);
             FetchMinecraftVersionsButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
             MinecraftVersionComboBox.SelectionChanged += MinecraftVersionChanged;
@@ -135,13 +135,13 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             if (MinecraftVersionComboBox.SelectedItem.ToString() == "1.20.1")
             {
                 NeoForgeVersionComboBox.ItemsSource =
-                    ResDownloadUtils.SequenceMinecraftVersion(NeoForgeVersions
+                    Download.SequenceMinecraftVersion(NeoForgeVersions
                         .Where(version => version.StartsWith("47")).ToList());
                 NeoForgeVersionComboBox.IsEnabled = true;
                 return;
             }
 
-            NeoForgeVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(NeoForgeVersions
+            NeoForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(NeoForgeVersions
                 .Where(version => version.StartsWith(MinecraftVersionComboBox.SelectedItem.ToString().Substring(2)))
                 .ToList());
             NeoForgeVersionComboBox.IsEnabled = true;

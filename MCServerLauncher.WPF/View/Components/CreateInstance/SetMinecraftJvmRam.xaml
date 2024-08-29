@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-             xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
+             xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Border Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
@@ -19,10 +19,10 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Title], Source={x:Static h:LanguageManager.Instance}}" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Description], Source={x:Static h:LanguageManager.Instance}}"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Description], Source={x:Static i18n:LanguageManager.Localize}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="20,15,20,20">
@@ -35,12 +35,12 @@
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
                               InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
                               Width="200" Margin="0,0,10,0" SpinButtonPlacementMode="Inline"
-                              PlaceholderText="{Binding [MinimumMemory], Source={x:Static h:LanguageManager.Instance}}" />
+                              PlaceholderText="{Binding [MinimumMemory], Source={x:Static i18n:LanguageManager.Localize}}" />
                 <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~" />
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
                               InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
                               Width="200" Margin="10,0,10,0" SpinButtonPlacementMode="Inline"
-                              PlaceholderText="{Binding [MaximumMemory], Source={x:Static h:LanguageManager.Instance}}" />
+                              PlaceholderText="{Binding [MaximumMemory], Source={x:Static i18n:LanguageManager.Localize}}" />
                 <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
                     <ComboBoxItem Content="M" IsSelected="True" />
                     <ComboBoxItem Content="G" />
@@ -53,7 +53,7 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:Flyout Placement="TopEdgeAlignedRight">
-                        <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Tip], Source={x:Static h:LanguageManager.Instance}}" />
+                        <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Tip], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </ui:Flyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>

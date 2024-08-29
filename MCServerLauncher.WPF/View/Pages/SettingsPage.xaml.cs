@@ -1,13 +1,13 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.SettingCard;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern;
-using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.View.Components.SettingCard;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -24,13 +24,13 @@ namespace MCServerLauncher.WPF.View.Pages
             # region Initialize nums
 
             InitDownloadSourceSelection();
-            ResDownload_DownloadThreadCnt.SettingSlider.Value = BasicUtils.AppSettings.Download.ThreadCnt;
+            ResDownload_DownloadThreadCnt.SettingSlider.Value = SettingsManager.AppSettings.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex =
-                _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError);
+                _actionWhenDownloadErrorList.IndexOf(SettingsManager.AppSettings.Download.ActionWhenDownloadError);
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex =
-                _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm);
-            More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(BasicUtils.AppSettings.App.Theme);
-            More_LauncherLanguage.SettingComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(BasicUtils.AppSettings.App.Language);
+                _actionWhenDeleteConfirmList.IndexOf(SettingsManager.AppSettings.Instance.ActionWhenDeleteConfirm);
+            More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(SettingsManager.AppSettings.App.Theme);
+            More_LauncherLanguage.SettingComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.AppSettings.App.Language);
 
             #endregion
 
@@ -83,12 +83,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MinecraftJavaAutoAcceptEula",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.MinecraftJavaAutoAcceptEula)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.MinecraftJavaAutoAcceptEula)
             );
 
         private void OnMinecraftJavaAutoAcceptEulaChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.MinecraftJavaAutoAcceptEula",
+            SettingsManager.SaveSetting("InstanceCreation.MinecraftJavaAutoAcceptEula",
                 InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.IsOn);
         }
 
@@ -107,12 +107,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MinecraftJavaAutoSwitchOnlineMode",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.MinecraftJavaAutoSwitchOnlineMode)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.MinecraftJavaAutoSwitchOnlineMode)
             );
 
         private void OnMinecraftJavaAutoSwitchOnlineModeChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.MinecraftJavaAutoSwitchOnlineMode",
+            SettingsManager.SaveSetting("InstanceCreation.MinecraftJavaAutoSwitchOnlineMode",
                 InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.IsOn);
         }
 
@@ -131,12 +131,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MinecraftBedrockAutoSwitchOnlineMode",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode)
             );
 
         private void OnMinecraftBedrockAutoSwitchOnlineModeChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode",
+            SettingsManager.SaveSetting("InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode",
                 InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.IsOn);
         }
 
@@ -155,12 +155,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftForgeInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall)
             );
 
         private void OnUseMirrorForMinecraftForgeInstallChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftForgeInstall",
+            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftForgeInstall",
                 InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.IsOn);
         }
 
@@ -179,12 +179,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftNeoForgeInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
             );
 
         private void OnUseMirrorForMinecraftNeoForgeInstallChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftNeoForgeInstall",
+            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftNeoForgeInstall",
                 InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.IsOn);
         }
 
@@ -203,12 +203,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftFabricInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall)
             );
 
         private void OnUseMirrorForMinecraftFabricInstallChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftFabricInstall",
+            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftFabricInstall",
                 InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.IsOn);
         }
 
@@ -227,12 +227,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftQuiltInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall)
+                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall)
             );
 
         private void OnUseMirrorForMinecraftQuiltInstallChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("InstanceCreation.UseMirrorForMinecraftQuiltInstall",
+            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftQuiltInstall",
                 InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.IsOn);
         }
 
@@ -242,18 +242,18 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void InitDownloadSourceSelection()
         {
-            FastMirrorSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "FastMirror";
-            PolarsMirrorSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "PolarsMirror";
-            ZCloudFileSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "ZCloudFile";
-            MSLAPISrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "MSLAPI";
-            MCSLSyncSrc.IsChecked = BasicUtils.AppSettings.Download.DownloadSource == "MCSLSync";
+            FastMirrorSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "FastMirror";
+            PolarsMirrorSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "PolarsMirror";
+            ZCloudFileSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "ZCloudFile";
+            MSLAPISrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "MSLAPI";
+            MCSLSyncSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "MCSLSync";
         }
 
         private void OnResDownloadSourceSelectionChanged(object sender, RoutedEventArgs e)
         {
             try
             {
-                BasicUtils.SaveSetting("ResDownload.DownloadSource",
+                SettingsManager.SaveSetting("ResDownload.DownloadSource",
                     ((RadioButton)sender).GetType().GetProperty("Name")?.GetValue(sender).ToString()
                     .Replace("Src", ""));
             }
@@ -278,12 +278,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "DownloadThreadValue",
                 typeof(int),
                 typeof(RangeSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.Download.ThreadCnt)
+                new PropertyMetadata(SettingsManager.AppSettings.Download.ThreadCnt)
             );
 
         private void OnDownloadThreadValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            BasicUtils.SaveSetting("ResDownload.ThreadCnt", (int)ResDownload_DownloadThreadCnt.SettingSlider.Value);
+            SettingsManager.SaveSetting("ResDownload.ThreadCnt", (int)ResDownload_DownloadThreadCnt.SettingSlider.Value);
         }
 
         #endregion
@@ -294,9 +294,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ActionWhenDownloadError { get; set; } = new List<string>
         {
-            LanguageManager.Instance["Settings_ActionWhenDownloadError_Stop"],
-            LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry1"],
-            LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry3"]
+            LanguageManager.Localize["Settings_ActionWhenDownloadError_Stop"],
+            LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry1"],
+            LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry3"]
         };
 
         public int ActionWhenDownloadErrorIndex
@@ -311,14 +311,14 @@ namespace MCServerLauncher.WPF.View.Pages
                 typeof(int),
                 typeof(ComboSettingCard),
                 new PropertyMetadata(
-                    _actionWhenDownloadErrorList.IndexOf(BasicUtils.AppSettings.Download.ActionWhenDownloadError))
+                    _actionWhenDownloadErrorList.IndexOf(SettingsManager.AppSettings.Download.ActionWhenDownloadError))
             );
 
         private void OnActionWhenDownloadErrorSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
             {
-                BasicUtils.SaveSetting("ResDownload.ActionWhenDownloadError",
+                SettingsManager.SaveSetting("ResDownload.ActionWhenDownloadError",
                     _actionWhenDownloadErrorList[ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex]);
             }
             catch (ArgumentOutOfRangeException)
@@ -333,8 +333,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ActionWhenDeleteConfirm { get; set; } = new List<string>
         {
-            LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeName"],
-            LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeKey"]
+            LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeName"],
+            LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeKey"]
         };
 
         private static readonly List<string> _actionWhenDeleteConfirmList = new() { "name", "key" };
@@ -351,14 +351,14 @@ namespace MCServerLauncher.WPF.View.Pages
                 typeof(int),
                 typeof(ComboSettingCard),
                 new PropertyMetadata(
-                    _actionWhenDeleteConfirmList.IndexOf(BasicUtils.AppSettings.Instance.ActionWhenDeleteConfirm))
+                    _actionWhenDeleteConfirmList.IndexOf(SettingsManager.AppSettings.Instance.ActionWhenDeleteConfirm))
             );
 
         private void OnActionWhenDeleteConfirmIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
             {
-                BasicUtils.SaveSetting("Instance.ActionWhenDeleteConfirm",
+                SettingsManager.SaveSetting("Instance.ActionWhenDeleteConfirm",
                     _actionWhenDeleteConfirmList[Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex]);
             }
             catch (ArgumentOutOfRangeException)
@@ -373,9 +373,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ThemeForApp { get; set; } = new List<string>
         {
-            LanguageManager.Instance["Settings_AppTheme_Auto"],
-            LanguageManager.Instance["Settings_AppTheme_Light"],
-            LanguageManager.Instance["Settings_AppTheme_Dark"]
+            LanguageManager.Localize["Settings_AppTheme_Auto"],
+            LanguageManager.Localize["Settings_AppTheme_Light"],
+            LanguageManager.Localize["Settings_AppTheme_Dark"]
         };
 
         private static readonly List<string> _themeList = new() { "auto", "light", "dark" };
@@ -391,14 +391,14 @@ namespace MCServerLauncher.WPF.View.Pages
                 "LauncherThemeIndex",
                 typeof(int),
                 typeof(ComboSettingCard),
-                new PropertyMetadata(_themeList.IndexOf(BasicUtils.AppSettings.App.Theme))
+                new PropertyMetadata(_themeList.IndexOf(SettingsManager.AppSettings.App.Theme))
             );
 
         private void OnLauncherThemeIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
             {
-                BasicUtils.SaveSetting("App.Theme", _themeList[More_LauncherTheme.SettingComboBox.SelectedIndex]);
+                SettingsManager.SaveSetting("App.Theme", _themeList[More_LauncherTheme.SettingComboBox.SelectedIndex]);
                 ThemeManager.Current.ApplicationTheme = More_LauncherTheme.SettingComboBox.SelectedIndex switch
                 {
                     0 => null,
@@ -424,10 +424,10 @@ namespace MCServerLauncher.WPF.View.Pages
         /// <param name="e"></param>
         private void OnLauncherLanguageIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!BasicUtils.AppSettings.App.IsFirstSetupFinished) return;
-            LanguageManager.Instance.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
+            if (!SettingsManager.AppSettings.App.IsFirstSetupFinished) return;
+            LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
             OnLanguageChanged();
-            BasicUtils.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
+            SettingsManager.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
         }
         /// <summary>
         /// Update language for ComboBox due to failure of TwoWay binding mode.
@@ -439,9 +439,9 @@ namespace MCServerLauncher.WPF.View.Pages
             var actionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
             ActionWhenDownloadError = new List<string>
             {
-                LanguageManager.Instance["Settings_ActionWhenDownloadError_Stop"],
-                LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry1"],
-                LanguageManager.Instance["Settings_ActionWhenDownloadError_Retry3"]
+                LanguageManager.Localize["Settings_ActionWhenDownloadError_Stop"],
+                LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry1"],
+                LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry3"]
             };
             ResDownload_ActionWhenDownloadError.SettingComboBox.ItemsSource = ActionWhenDownloadError;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = actionWhenDownloadErrorIndex;
@@ -453,8 +453,8 @@ namespace MCServerLauncher.WPF.View.Pages
             var actionWhenDeleteConfirmIndex = Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex;
             ActionWhenDeleteConfirm = new List<string>
             {
-                LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeName"],
-                LanguageManager.Instance["Settings_ActionWhenDeleteConfirm_TypeKey"]
+                LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeName"],
+                LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeKey"]
             };
             Instance_ActionWhenDeleteConfirm.SettingComboBox.ItemsSource = ActionWhenDeleteConfirm;
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = actionWhenDeleteConfirmIndex;
@@ -465,9 +465,9 @@ namespace MCServerLauncher.WPF.View.Pages
             var themeForAppIndex = More_LauncherTheme.SettingComboBox.SelectedIndex;
             ThemeForApp = new List<string>
             {
-                LanguageManager.Instance["Settings_AppTheme_Auto"],
-                LanguageManager.Instance["Settings_AppTheme_Light"],
-                LanguageManager.Instance["Settings_AppTheme_Dark"]
+                LanguageManager.Localize["Settings_AppTheme_Auto"],
+                LanguageManager.Localize["Settings_AppTheme_Light"],
+                LanguageManager.Localize["Settings_AppTheme_Dark"]
             };
             More_LauncherTheme.SettingComboBox.ItemsSource = ThemeForApp;
             More_LauncherTheme.SettingComboBox.SelectedIndex = themeForAppIndex;
@@ -489,12 +489,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "FollowStartupForLauncher",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.App.FollowStartup)
+                new PropertyMetadata(SettingsManager.AppSettings.App.FollowStartup)
             );
 
         private void OnFollowStartupForLauncherChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("App.FollowStartup", More_FollowStartupForLauncher.SettingSwitch.IsOn);
+            SettingsManager.SaveSetting("App.FollowStartup", More_FollowStartupForLauncher.SettingSwitch.IsOn);
         }
 
         #endregion
@@ -512,12 +512,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 "AutoCheckUpdateForLauncher",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(BasicUtils.AppSettings.App.AutoCheckUpdate)
+                new PropertyMetadata(SettingsManager.AppSettings.App.AutoCheckUpdate)
             );
 
         private void OnAutoCheckUpdateForLauncherChanged(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("App.AutoCheckUpdate", More_AutoCheckUpdateForLauncher.SettingSwitch.IsOn);
+            SettingsManager.SaveSetting("App.AutoCheckUpdate", More_AutoCheckUpdateForLauncher.SettingSwitch.IsOn);
         }
 
         # endregion

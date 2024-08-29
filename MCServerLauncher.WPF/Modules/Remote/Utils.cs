@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Remote
+namespace MCServerLauncher.WPF.Modules.Remote
 {
     internal class Utils
     {

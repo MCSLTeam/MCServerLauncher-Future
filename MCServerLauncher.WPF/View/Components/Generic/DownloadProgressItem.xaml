@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
+             xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -37,17 +37,17 @@
                            VerticalAlignment="Center" />
                 <Button Grid.Column="1" Margin="0,0,10,0">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Link}" Content="{Binding [CopyUrl], Source={x:Static h:LanguageManager.Instance}}" />
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Link}" Content="{Binding [CopyUrl], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
                 <Button Grid.Column="2" Margin="0,0,10,0">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Pause}" Content="{Binding [Pause], Source={x:Static h:LanguageManager.Instance}}" />
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Pause}" Content="{Binding [Pause], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
                 <Button Grid.Column="3">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Cancel], Source={x:Static h:LanguageManager.Instance}}" />
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Cancel], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
             </Grid>

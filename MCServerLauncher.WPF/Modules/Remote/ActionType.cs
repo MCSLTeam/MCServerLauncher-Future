@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace MCServerLauncher.WPF.Remote
+namespace MCServerLauncher.WPF.Modules.Remote
 {
     internal static class ActionTypeExtensions
     {

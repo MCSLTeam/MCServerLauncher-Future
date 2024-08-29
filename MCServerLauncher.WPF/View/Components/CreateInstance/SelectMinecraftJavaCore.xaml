@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-             xmlns:h="clr-namespace:MCServerLauncher.WPF.Helpers"
+             xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Border Style="{StaticResource StyledBorder}" Margin="0,0,0,0">
@@ -19,16 +19,16 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftJavaCore_Title], Source={x:Static h:LanguageManager.Instance}}"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftJavaCore_Title], Source={x:Static i18n:LanguageManager.Localize}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftJavaCore_Description], Source={x:Static h:LanguageManager.Instance}}"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftJavaCore_Description], Source={x:Static i18n:LanguageManager.Localize}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" IsEnabled="False" Grid.Row="2"
-                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [MinecraftCoreFileName], Source={x:Static h:LanguageManager.Instance}}" />
+                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [MinecraftCoreFileName], Source={x:Static i18n:LanguageManager.Localize}}" />
             <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"
-                    HorizontalAlignment="Right" Content="{Binding [Browse], Source={x:Static h:LanguageManager.Instance}}" />
+                    HorizontalAlignment="Right" Content="{Binding [Browse], Source={x:Static i18n:LanguageManager.Localize}}" />
 
             <ui:DropDownButton ShowChevronArrow="False" Grid.Row="0" Grid.Column="1"
                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">

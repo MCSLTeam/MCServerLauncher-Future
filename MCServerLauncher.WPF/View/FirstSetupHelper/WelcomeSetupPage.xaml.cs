@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using MCServerLauncher.WPF.Helpers;
+﻿using MCServerLauncher.WPF.Modules;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
@@ -20,7 +20,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         /// <param name="e"></param>
         private void Next(object sender, RoutedEventArgs e)
         {
-            BasicUtils.SaveSetting("App.IsFirstSetupFinished", true);
+            SettingsManager.SaveSetting("App.IsFirstSetupFinished", true);
             var parent = this.TryFindParent<FirstSetup>();
             parent.FinishSetup();
         }

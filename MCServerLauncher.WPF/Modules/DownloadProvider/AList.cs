@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MCServerLauncher.WPF.Helpers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
-namespace MCServerLauncher.WPF.Modules.Download
+namespace MCServerLauncher.WPF.Modules.DownloadProvider
 {
     internal class AList
     {
@@ -20,13 +19,14 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns></returns>
         public async Task<List<AListFileStructure>> GetFileList(string host, string path)
         {
-            var response = await NetworkUtils.SendGetRequest($"{host}{_fileListApi}?path={path}");
+            var response = await Network.SendGetRequest($"{host}{_fileListApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFileList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                 .SelectToken("data")!.SelectToken("content");
             return remoteFileList!.Select(file => new AListFileStructure
             {
-                FileName = file.SelectToken("name")!.ToString(), FileSize = file.SelectToken("size")!.ToString(),
+                FileName = file.SelectToken("name")!.ToString(),
+                FileSize = file.SelectToken("size")!.ToString(),
                 IsDirectory = file.SelectToken("is_dir")!.ToObject<bool>()
             }).ToList();
         }
@@ -39,7 +39,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns></returns>
         public async Task<string> GetFileUrl(string host, string path)
         {
-            var response = await NetworkUtils.SendGetRequest($"{host}{_fileUrlApi}?path={path}");
+            var response = await Network.SendGetRequest($"{host}{_fileUrlApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFileDetail = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                 .SelectToken("data");

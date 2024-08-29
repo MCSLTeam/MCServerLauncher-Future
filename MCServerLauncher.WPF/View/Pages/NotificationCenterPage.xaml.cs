@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using iNKORE.UI.WPF.Modern.Controls;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Pages
 {

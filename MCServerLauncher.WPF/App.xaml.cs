@@ -1,8 +1,8 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Modules;
+using System;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
-using MCServerLauncher.WPF.Helpers;
 using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 
 namespace MCServerLauncher.WPF
@@ -21,7 +21,7 @@ namespace MCServerLauncher.WPF
             DispatcherUnhandledException += (s, e) =>
             {
                 Clipboard.SetText(e.Exception.ToString());
-                MessageBox.Show($"{LanguageManager.Instance["ErrorDialogStackCopiedTip"]}\n\n{e.Exception}", LanguageManager.Instance["ErrorDialogTitle"],
+                MessageBox.Show($"{LanguageManager.Localize["ErrorDialogStackCopiedTip"]}\n\n{e.Exception}", LanguageManager.Localize["ErrorDialogTitle"],
                     MessageBoxButton.OK);
                 e.Handled = true; // Set `Handled` to `true` to prevent from exiting
             };
@@ -31,11 +31,11 @@ namespace MCServerLauncher.WPF
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            new BasicUtils().InitApp();
+            new Initializer().InitApp();
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
-                MessageBox.Show(LanguageManager.Instance["NotAllowedOverOpening"], LanguageManager.Instance["Tip"], MessageBoxButton.OK, MessageBoxImage.Asterisk);
+                MessageBox.Show(LanguageManager.Localize["NotAllowedOverOpening"], LanguageManager.Localize["Tip"], MessageBoxButton.OK, MessageBoxImage.Asterisk);
 
                 Environment.Exit(0);
             }

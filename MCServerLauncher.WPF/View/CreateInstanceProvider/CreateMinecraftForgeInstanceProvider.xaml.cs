@@ -1,4 +1,8 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Pages;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -6,10 +10,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.View.Pages;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
@@ -47,7 +47,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private static async Task<List<string>> FetchMinecraftVersionsByOfficial()
         {
             var response =
-                await NetworkUtils.SendGetRequest(
+                await Network.SendGetRequest(
                     "https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_1.2.4.html", true);
             var minecraftVersions = Regex.Matches(await response.Content.ReadAsStringAsync(),
                     "(?<=a href=\"index_)[0-9.]+(_pre[0-9]?)?(?=.html)")
@@ -63,7 +63,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// </summary>
         private static async Task<List<string>> FetchMinecraftVersionsByBmclapi()
         {
-            var response = await NetworkUtils.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
+            var response = await Network.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
             return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
         }
 
@@ -75,8 +75,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= PreFetchForgeVersions;
-            MinecraftVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(
-                BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
+            MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
+                SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
                     ? await FetchMinecraftVersionsByBmclapi()
                     : await FetchMinecraftVersionsByOfficial()
             );
@@ -96,7 +96,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private static async Task<List<ForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
         {
             var results = new List<ForgeBuild>();
-            var response = await NetworkUtils.SendGetRequest(
+            var response = await Network.SendGetRequest(
                 $"https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_{mcVersion.Replace("-", "_")}.html",
                 true);
             var html = await response.Content.ReadAsStringAsync();
@@ -170,7 +170,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private static async Task<List<ForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
         {
             var response =
-                await NetworkUtils.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
+                await Network.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             return apiData!.Select(forgeBuild => new ForgeBuild
             {
@@ -193,10 +193,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchForgeVersionButton.IsEnabled = false;
             ForgeVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            CurrentForgeBuilds = BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
+            CurrentForgeBuilds = SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
                 ? await FetchForgeVersionsByBmclapi(MinecraftVersionComboBox.SelectedItem.ToString())
                 : await FetchForgeVersionsByOfficial(MinecraftVersionComboBox.SelectedItem.ToString());
-            ForgeVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(
+            ForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
                 CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion).ToList()
             );
             ForgeVersionComboBox.IsEnabled = true;

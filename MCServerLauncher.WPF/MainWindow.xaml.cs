@@ -1,11 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Windows;
-using iNKORE.UI.WPF.Modern;
+﻿using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
-using MCServerLauncher.WPF.Helpers;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
+using System;
+using System.Threading.Tasks;
+using System.Windows;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF
@@ -26,7 +26,7 @@ namespace MCServerLauncher.WPF
         public MainWindow()
         {
             // Set correct theme
-            ThemeManager.Current.ApplicationTheme = BasicUtils.AppSettings.App.Theme switch
+            ThemeManager.Current.ApplicationTheme = SettingsManager.AppSettings.App.Theme switch
             {
                 "light" => ApplicationTheme.Light,
                 "dark" => ApplicationTheme.Dark,
@@ -46,7 +46,7 @@ namespace MCServerLauncher.WPF
             await Task.Delay(1500);
             LoadingScreen.Visibility = Visibility.Hidden;
             TitleBarGrid.Visibility = Visibility.Visible;
-            if (!BasicUtils.AppSettings.App.IsFirstSetupFinished)
+            if (!SettingsManager.AppSettings.App.IsFirstSetupFinished)
             {
                 SetupView.Visibility = Visibility.Visible;
                 return;

@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls.Primitives;
-using MCServerLauncher.WPF.Helpers;
+﻿
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls.Primitives;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
@@ -49,7 +50,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <returns>The correct endpoint.</returns>
         private string GetEndPoint()
         {
-            return BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall
+            return SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall
                 ? "https://bmclapi2.bangbang93.com/quilt-meta"
                 : "https://meta.quiltmc.org";
         }
@@ -63,7 +64,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            var response = await NetworkUtils.SendGetRequest($"{GetEndPoint()}/v3/versions/game", true);
+            var response = await Network.SendGetRequest($"{GetEndPoint()}/v3/versions/game", true);
             var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             SupportedAllMinecraftVersions = allSupportedVersionsList!.Select(mcVersion => new QuiltMinecraftVersion
             {
@@ -84,7 +85,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             ToggleStableMinecraftVersionCheckBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            MinecraftVersionComboBox.ItemsSource = ResDownloadUtils.SequenceMinecraftVersion(
+            MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
                 ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
                     ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList()
                         .Select(mcVersion => mcVersion.MinecraftVersion).ToList()
@@ -103,7 +104,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             FetchQuiltVersionButton.IsEnabled = false;
             QuiltVersionComboBox.IsEnabled = false;
-            var response = await NetworkUtils.SendGetRequest($"{GetEndPoint()}/v3/versions/loader");
+            var response = await Network.SendGetRequest($"{GetEndPoint()}/v3/versions/loader");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             QuiltLoaderVersions = apiData!.Select(version => version.SelectToken("version")!.ToString()).ToList();
             QuiltVersionComboBox.ItemsSource = QuiltLoaderVersions;

@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using MCServerLauncher.WPF.Modules;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using MCServerLauncher.WPF.Helpers;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
@@ -18,7 +17,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             InitializeComponent();
             LanguageComboBox.ItemsSource = LanguageManager.LanguageNameList;
             LanguageComboBox.SelectionChanged -= LanguageChanged;
-            LanguageComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(BasicUtils.AppSettings.App.Language);
+            LanguageComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.AppSettings.App.Language);
             LanguageComboBox.SelectionChanged += LanguageChanged;
         }
         /// <summary>
@@ -31,7 +30,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var parent = this.TryFindParent<FirstSetup>();
             parent.GoEulaSetup();
         }
-        
+
         /// <summary>
         ///     Handle language combo box changes.
         /// </summary>
@@ -39,9 +38,9 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         /// <param name="e"></param>
         private void LanguageChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (BasicUtils.AppSettings.App.IsFirstSetupFinished) return;
-            LanguageManager.Instance.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex)));
-            BasicUtils.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex));
+            if (SettingsManager.AppSettings.App.IsFirstSetupFinished) return;
+            LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex)));
+            SettingsManager.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex));
             // restart this app
             System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
             Application.Current.Shutdown();

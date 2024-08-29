@@ -1,8 +1,8 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Helpers;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
@@ -27,15 +27,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var parent = this.TryFindParent<FirstSetup>();
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Instance["AreYouSure"],
-                PrimaryButtonText = LanguageManager.Instance["TempSkip"],
-                SecondaryButtonText = LanguageManager.Instance["Back"],
+                Title = LanguageManager.Localize["AreYouSure"],
+                PrimaryButtonText = LanguageManager.Localize["TempSkip"],
+                SecondaryButtonText = LanguageManager.Localize["Back"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Instance["FirstSetup_SkipConnectDaemonTip"]
+                    Text = LanguageManager.Localize["FirstSetup_SkipConnectDaemonTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent.GoWelcomeSetup();

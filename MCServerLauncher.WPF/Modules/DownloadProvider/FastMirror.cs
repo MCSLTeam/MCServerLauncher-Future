@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MCServerLauncher.WPF.Helpers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
-namespace MCServerLauncher.WPF.Modules.Download
+namespace MCServerLauncher.WPF.Modules.DownloadProvider
 {
     internal class FastMirror
     {
@@ -20,11 +19,11 @@ namespace MCServerLauncher.WPF.Modules.Download
         {
             return originalTag switch
             {
-                "proxy" => LanguageManager.Instance["DownloadModule_FastMirrorProxyType"],
-                "vanilla" => LanguageManager.Instance["DownloadModule_FastMirrorVanillaType"],
-                "pure" => LanguageManager.Instance["DownloadModule_FastMirrorPureType"],
-                "mod" => LanguageManager.Instance["DownloadModule_FastMirrorModType"],
-                "bedrock" => LanguageManager.Instance["DownloadModule_FastMirrorBedrockType"],
+                "proxy" => LanguageManager.Localize["DownloadModule_FastMirrorProxyType"],
+                "vanilla" => LanguageManager.Localize["DownloadModule_FastMirrorVanillaType"],
+                "pure" => LanguageManager.Localize["DownloadModule_FastMirrorPureType"],
+                "mod" => LanguageManager.Localize["DownloadModule_FastMirrorModType"],
+                "bedrock" => LanguageManager.Localize["DownloadModule_FastMirrorBedrockType"],
                 _ => originalTag
             };
         }
@@ -35,18 +34,18 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>List of core name.</returns>
         public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
         {
-            var response = await NetworkUtils.SendGetRequest(_endPoint);
+            var response = await Network.SendGetRequest(_endPoint);
             if (!response.IsSuccessStatusCode) return null;
             var remoteFastMirrorCoreInfoList = JsonConvert
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data");
             return remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
-                {
-                    Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
-                    Tag = FormatFastMirrorCoreTag(fastMirrorCoreInfo.SelectToken("tag")!.ToString()),
-                    HomePage = fastMirrorCoreInfo.SelectToken("homepage")!.ToString(),
-                    Recommend = fastMirrorCoreInfo.SelectToken("recommend")!.ToObject<bool>(),
-                    MinecraftVersions = fastMirrorCoreInfo.SelectToken("mc_versions")!.ToObject<List<string>>()
-                })
+            {
+                Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
+                Tag = FormatFastMirrorCoreTag(fastMirrorCoreInfo.SelectToken("tag")!.ToString()),
+                HomePage = fastMirrorCoreInfo.SelectToken("homepage")!.ToString(),
+                Recommend = fastMirrorCoreInfo.SelectToken("recommend")!.ToObject<bool>(),
+                MinecraftVersions = fastMirrorCoreInfo.SelectToken("mc_versions")!.ToObject<List<string>>()
+            })
                 .ToList();
         }
 
@@ -59,7 +58,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         public async Task<List<FastMirrorCoreDetail>> GetCoreDetail(string core, string minecraftVersion)
         {
             var response =
-                await NetworkUtils.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
+                await Network.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFastMirrorCoreDetailList = JsonConvert
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!

@@ -1,13 +1,12 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using Serilog;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.Modules.Download;
-using MCServerLauncher.WPF.View.Components.ResDownloadItem;
-using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -16,7 +15,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class PolarsMirrorProvider : IResDownloadProvider
     {
-        public string ResProviderName => LanguageManager.Instance["ResDownloadPage_ProviderName_PolarsMirror"];
+        public string ResProviderName => LanguageManager.Localize["ResDownloadPage_ProviderName_PolarsMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
@@ -38,12 +37,12 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 var polarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
 
                 foreach (var coreItem in polarsMirrorInfo.Select(result => new PolarsMirrorResCoreItem
-                         {
-                             CoreName = result.Name,
-                             CoreId = result.Id,
-                             CoreDescription = result.Description,
-                             CoreIconUrl = result.IconUrl
-                         }))
+                {
+                    CoreName = result.Name,
+                    CoreId = result.Id,
+                    CoreDescription = result.Description,
+                    CoreIconUrl = result.IconUrl
+                }))
                     CoreGridView.Items.Add(coreItem);
 
                 _isDataLoading = false;

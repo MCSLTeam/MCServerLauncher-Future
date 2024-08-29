@@ -1,9 +1,9 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Media.Animation;
+using System;
 using System.Collections.Generic;
 using System.Windows;
-using iNKORE.UI.WPF.Modern.Controls;
-using iNKORE.UI.WPF.Modern.Media.Animation;
-using MCServerLauncher.WPF.Helpers;
+using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper

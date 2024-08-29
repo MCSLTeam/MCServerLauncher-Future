@@ -197,10 +197,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Remote\ActionType.cs" />
-    <Compile Include="Remote\ClientConnection.cs" />
-    <Compile Include="Remote\Utils.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="Modules\CreateInstance\Files.cs" />
+    <Compile Include="Modules\Download.cs" />
+    <Compile Include="Modules\Initializer.cs" />
+    <Compile Include="Modules\LanguageManager.cs" />
+    <Compile Include="Modules\Network.cs" />
+    <Compile Include="Modules\SettingsManager.cs" />
+    <Compile Include="Modules\VisualTreeHelper.cs" />
+    <Compile Include="Modules\Remote\ActionType.cs" />
+    <Compile Include="Modules\Remote\ClientConnection.cs" />
+    <Compile Include="Modules\Remote\Utils.cs" />
     <Compile Include="View\Components\CreateInstance\SelectMinecraftBedrockArchive.xaml.cs">
       <DependentUpon>SelectMinecraftBedrockArchive.xaml</DependentUpon>
     </Compile>
@@ -579,11 +585,11 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Modules\Download\AList.cs" />
-    <Compile Include="Modules\Download\FastMirror.cs" />
-    <Compile Include="Modules\Download\MCSLSync.cs" />
-    <Compile Include="Modules\Download\MSLAPI.cs" />
-    <Compile Include="Modules\Download\PolarsMirror.cs" />
+    <Compile Include="Modules\DownloadProvider\AList.cs" />
+    <Compile Include="Modules\DownloadProvider\FastMirror.cs" />
+    <Compile Include="Modules\DownloadProvider\MCSLSync.cs" />
+    <Compile Include="Modules\DownloadProvider\MSLAPI.cs" />
+    <Compile Include="Modules\DownloadProvider\PolarsMirror.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -648,9 +654,7 @@
   <ItemGroup>
     <Resource Include="Resources\MCServerLauncherFuture.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Modules\CreateInstance\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

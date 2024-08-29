@@ -1,8 +1,8 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Helpers;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
@@ -25,15 +25,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Instance["AreYouSure"],
-                PrimaryButtonText = LanguageManager.Instance["NotNow"],
-                SecondaryButtonText = LanguageManager.Instance["Disagree"],
+                Title = LanguageManager.Localize["AreYouSure"],
+                PrimaryButtonText = LanguageManager.Localize["NotNow"],
+                SecondaryButtonText = LanguageManager.Localize["Disagree"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Instance["FirstSetup_EulaDisagreeTip"]
+                    Text = LanguageManager.Localize["FirstSetup_EulaDisagreeTip"]
                 }
             };
             dialog.SecondaryButtonClick += (o, args) => Application.Current.Shutdown();
@@ -60,14 +60,14 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 ContentDialog fakeFinishedDialog = new()
                 {
-                    Title = LanguageManager.Instance["AreYouSure"],
-                    PrimaryButtonText = LanguageManager.Instance["OK"],
+                    Title = LanguageManager.Localize["AreYouSure"],
+                    PrimaryButtonText = LanguageManager.Localize["OK"],
                     DefaultButton = ContentDialogButton.Primary,
                     FullSizeDesired = false,
                     Content = new TextBlock
                     {
                         TextWrapping = TextWrapping.WrapWithOverflow,
-                        Text = LanguageManager.Instance["FirstSetup_FakeEulaAgreeTip"]
+                        Text = LanguageManager.Localize["FirstSetup_FakeEulaAgreeTip"]
                     }
                 };
                 try
@@ -84,15 +84,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Instance["AreYouSure"],
-                PrimaryButtonText = LanguageManager.Instance["Agree"],
-                SecondaryButtonText = LanguageManager.Instance["NotNow"],
+                Title = LanguageManager.Localize["AreYouSure"],
+                PrimaryButtonText = LanguageManager.Localize["Agree"],
+                SecondaryButtonText = LanguageManager.Localize["NotNow"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Instance["FirstSetup_EulaAgreeTip"]
+                    Text = LanguageManager.Localize["FirstSetup_EulaAgreeTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent.GoDaemonSetup();

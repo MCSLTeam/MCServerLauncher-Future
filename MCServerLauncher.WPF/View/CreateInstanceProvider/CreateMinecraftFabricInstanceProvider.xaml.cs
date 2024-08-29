@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls.Primitives;
-using MCServerLauncher.WPF.Helpers;
+﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls.Primitives;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
@@ -58,7 +58,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <returns>The correct endpoint.</returns>
         private string GetEndPoint()
         {
-            return BasicUtils.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall
+            return SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall
                 ? "https://bmclapi2.bangbang93.com/fabric-meta/v2/versions"
                 : "https://meta.fabricmc.net/v2/versions";
         }
@@ -72,7 +72,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            var response = await NetworkUtils.SendGetRequest($"{GetEndPoint()}/game", true);
+            var response = await Network.SendGetRequest($"{GetEndPoint()}/game", true);
             var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             SupportedAllMinecraftVersions = allSupportedVersionsList!.Select(mcVersion => new FabricUniversalVersion
             {
@@ -109,7 +109,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             FetchFabricVersionButton.IsEnabled = false;
             FabricVersionComboBox.IsEnabled = false;
-            var response = await NetworkUtils.SendGetRequest($"{GetEndPoint()}/loader");
+            var response = await Network.SendGetRequest($"{GetEndPoint()}/loader");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             SupportedAllFabricVersions = apiData!.Select(mcVersion => new FabricUniversalVersion
             {

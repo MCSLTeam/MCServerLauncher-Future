@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using MCServerLauncher.WPF.Helpers;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.Download
+namespace MCServerLauncher.WPF.Modules.DownloadProvider
 {
     internal class MSLAPI
     {
@@ -16,7 +15,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>List of core name.</returns>
         public async Task<List<string>> GetCoreInfo()
         {
-            var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_server_types");
+            var response = await Network.SendGetRequest($"{_endPoint}/query/available_server_types");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     .SelectToken("data")!.SelectToken("types")!.ToObject<List<string>>();
@@ -30,11 +29,11 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>String of the description.</returns>
         public async Task<string> GetCoreDescription(string Core)
         {
-            var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
+            var response = await Network.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     .SelectToken("data")!.SelectToken("description")!.ToString();
-            return LanguageManager.Instance["DownloadModule_MSLAPIGetCoreDescriptionFailed"];
+            return LanguageManager.Localize["DownloadModule_MSLAPIGetCoreDescriptionFailed"];
         }
 
         /// <summary>
@@ -44,7 +43,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>List of Minecraft version.</returns>
         public async Task<List<string>> GetMinecraftVersions(string core)
         {
-            var response = await NetworkUtils.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
+            var response = await Network.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
             return response.IsSuccessStatusCode
                 ? JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!
                     .SelectToken("versionList")!.ToObject<List<string>>()
@@ -59,7 +58,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>String of the url.</returns>
         public async Task<string> GetDownloadUrl(string core, string minecraftVersion)
         {
-            var response = await NetworkUtils.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
+            var response = await Network.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     .SelectToken("data")!.SelectToken("url")!.ToString();

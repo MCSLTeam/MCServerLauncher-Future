@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MCServerLauncher.WPF.Helpers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
-namespace MCServerLauncher.WPF.Modules.Download
+namespace MCServerLauncher.WPF.Modules.DownloadProvider
 {
     internal class PolarsMirror
     {
@@ -27,7 +26,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>List of core name.</returns>
         public async Task<List<PolarsMirrorCoreInfo>> GetCoreInfo()
         {
-            var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core");
+            var response = await Network.SendGetRequest($"{_endPoint}/core");
             if (!response.IsSuccessStatusCode) return null;
             var remotePolarsCoreInfoList =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
@@ -47,7 +46,7 @@ namespace MCServerLauncher.WPF.Modules.Download
         /// <returns>List of core.</returns>
         public async Task<List<PolarsMirrorCoreDetail>> GetCoreDetail(int coreId)
         {
-            var response = await NetworkUtils.SendGetRequest($"{_endPoint}/core/{coreId}");
+            var response = await Network.SendGetRequest($"{_endPoint}/core/{coreId}");
             if (!response.IsSuccessStatusCode) return null;
             var remotePolarsCoreDetailList =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());

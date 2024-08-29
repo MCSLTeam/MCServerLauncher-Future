@@ -1,13 +1,13 @@
+using iNKORE.UI.WPF.Helpers;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using Serilog;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Helpers;
-using MCServerLauncher.WPF.Helpers;
-using MCServerLauncher.WPF.Modules.Download;
-using MCServerLauncher.WPF.View.Components.ResDownloadItem;
-using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class FastMirrorProvider : IResDownloadProvider
     {
-        public string ResProviderName => LanguageManager.Instance["ResDownloadPage_ProviderName_FastMirror"];
+        public string ResProviderName => LanguageManager.Localize["ResDownloadPage_ProviderName_FastMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
@@ -39,13 +39,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 var fastMirrorInfo = await new FastMirror().GetCoreInfo();
 
                 foreach (var coreItem in fastMirrorInfo.Select(result => new FastMirrorResCoreItem
-                         {
-                             CoreName = result.Name,
-                             CoreTag = result.Tag,
-                             Recommend = result.Recommend,
-                             HomePage = result.HomePage,
-                             MinecraftVersions = ResDownloadUtils.SequenceMinecraftVersion(result.MinecraftVersions)
-                         }))
+                {
+                    CoreName = result.Name,
+                    CoreTag = result.Tag,
+                    Recommend = result.Recommend,
+                    HomePage = result.HomePage,
+                    MinecraftVersions = Download.SequenceMinecraftVersion(result.MinecraftVersions)
+                }))
                     CoreGridView.Items.Add(coreItem);
 
                 _isDataLoading = false;
@@ -92,7 +92,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         /// <param name="e"></param>
         private void OpenHomePage(object sender, RoutedEventArgs e)
         {
-            NetworkUtils.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString());
+            Network.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString());
         }
 
         /// <summary>
@@ -115,11 +115,11 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     await new FastMirror().GetCoreDetail(currentCore.CoreName, currentMinecraftVersion);
                 CoreVersionStackPanel.Children.Clear();
                 foreach (var coreDetailItem in fastMirrorCoreDetails.Select(detail => new FastMirrorResCoreVersionItem
-                         {
-                             Core = detail.Name,
-                             CoreVersion = detail.CoreVersion,
-                             MinecraftVersion = detail.MinecraftVersion
-                         }))
+                {
+                    Core = detail.Name,
+                    CoreVersion = detail.CoreVersion,
+                    MinecraftVersion = detail.MinecraftVersion
+                }))
                     CoreVersionStackPanel.Children.Add(coreDetailItem);
 
                 Log.Information($"[Res] [FastMirror] Core detail loaded. Count: {fastMirrorCoreDetails.Count}");
