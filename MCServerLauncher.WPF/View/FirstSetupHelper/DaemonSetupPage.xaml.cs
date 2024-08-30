@@ -48,5 +48,6 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 // ignored
             }
         }
+        
     }
 }

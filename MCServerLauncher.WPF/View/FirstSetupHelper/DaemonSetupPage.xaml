@@ -29,13 +29,13 @@
                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:LanguageManager.Localize}}"/>
             </Button.Content>
         </Button>
-        <ui:ScrollViewerEx Grid.Row="3" Margin="40,10,40,10">
-            <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" IsHitTestVisible="False">
+        <ui:ScrollViewerEx Grid.Row="3" Margin="35,10,35,10">
+            <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False">
                 <dmc:DaemonBorder Address="localhost:11451" Status="true"/>
-                <dmc:DaemonBorder Address="localhost:11452" Status="true"/>
-                <dmc:DaemonBorder Address="localhost:11453" Status="true"/>
+                <dmc:DaemonBorder Address="localhost:11452" Status="false"/>
+                <dmc:DaemonBorder Address="localhost:11453" Status="false"/>
                 <dmc:DaemonBorder Address="localhost:11454" Status="true"/>
-                <dmc:DaemonBorder Address="localhost:11455" Status="true"/>
+                <dmc:DaemonBorder Address="localhost:11455" Status="false"/>
                 <dmc:DaemonBorder Address="localhost:11456" Status="true"/>
             </ui:ListView>
         </ui:ScrollViewerEx>

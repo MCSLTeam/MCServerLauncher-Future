@@ -1,5 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using iNKORE.UI.WPF.Modern.Themes;
+using MCServerLauncher.WPF.Modules;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -43,12 +43,16 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         {
             if (d is not DaemonBorder control) return;
             if (e.NewValue is not string status) return;
-            bool realStatus = status switch {
+            bool realStatus = status switch
+            {
                 "true" => true,
                 "false" => false,
+                _ => throw new System.NotImplementedException(),
             };
-            control.StatusLine.Content = realStatus ? "正常" : "异常";
-            control.StatusLine.Content = realStatus ? SegoeFluentIcons.Accept : SegoeFluentIcons.Error;
+            control.StatusLine.Content = realStatus ? LanguageManager.Localize["Status_OK"] : LanguageManager.Localize["Status_Error"];
+            control.StatusLine.Icon = realStatus ? SegoeFluentIcons.Accept : SegoeFluentIcons.Error;
+            control.ConnectionControlLine.Content = realStatus ? LanguageManager.Localize["Disconnect"] : LanguageManager.Localize["Retry"];
+            control.ConnectionControlLine.Icon = realStatus ? SegoeFluentIcons.DisconnectDrive : SegoeFluentIcons.Refresh;
+        }
     }
-}
 }
