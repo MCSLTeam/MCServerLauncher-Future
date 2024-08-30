@@ -673,4 +673,64 @@
   <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
     <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
   </data>
+  <data name="Edit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="Daemon_RemoteUri" xml:space="preserve">
+    <value>远端地址:</value>
+  </data>
+  <data name="Daemon_ConnectionStatus" xml:space="preserve">
+    <value>链接状态:</value>
+  </data>
+  <data name="Status_OK" xml:space="preserve">
+    <value>正常</value>
+  </data>
+  <data name="Status_Error" xml:space="preserve">
+    <value>异常</value>
+  </data>
+  <data name="Disconnect" xml:space="preserve">
+    <value>断连</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>连接</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="Settings_Components_Title" xml:space="preserve">
+    <value>开源项目引用列表</value>
+  </data>
+  <data name="Settings_Components_Description" xml:space="preserve">
+    <value>由衷感谢他们的付出，为 MCSL Future 的前进提供了持续的动力。</value>
+  </data>
+  <data name="Settings_Acknowledgments_Title" xml:space="preserve">
+    <value>鸣谢列表</value>
+  </data>
+  <data name="Settings_Acknowledgments_Description" xml:space="preserve">
+    <value>为 MCSL 做出了巨大贡献！</value>
+  </data>
+  <data name="Donate" xml:space="preserve">
+    <value>赞助一下</value>
+  </data>
+  <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
+    <value>提供了性能强大的 BMCLAPI 镜像！</value>
+  </data>
+  <data name="Settings_Acknowledgments_PCL2_Description" xml:space="preserve">
+    <value>提供了 Minecraft 加载器的获取思路！</value>
+  </data>
+  <data name="Settings_Acknowledgments_BakaXL_Description" xml:space="preserve">
+    <value>提供了 Quilt 加载器的部署思路！</value>
+  </data>
+  <data name="Settings_Acknowledgments_iNKORE_Description" xml:space="preserve">
+    <value>在开发过程中给予了大量技术支持！</value>
+  </data>
+  <data name="Settings_Acknowledgments_MCSLQQ_Title" xml:space="preserve">
+    <value>MCSL QQ 交流群的各位群友</value>
+  </data>
+  <data name="Settings_Acknowledgments_MCSLQQ_Description" xml:space="preserve">
+    <value>一直陪伴着我们，还给予了很多建议！</value>
+  </data>
+  <data name="JoinGroup" xml:space="preserve">
+    <value>加入群聊</value>
+  </data>
 </root>
