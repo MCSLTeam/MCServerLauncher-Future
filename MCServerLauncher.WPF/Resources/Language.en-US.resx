@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -665,42 +665,81 @@
     <value>Select the language used in this program.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>If you do not add any MCSL Daemons, most of the functions of the software will be limited.\nYou can still connect to MCSL Daemons later.</value>
+    <value></value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
-    <value>Connect</value>
+    <value></value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
+    <value></value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>Edit</value>
+    <value></value>
   </data>
   <data name="Daemon_RemoteUri" xml:space="preserve">
-    <value>Remote Uri:</value>
+    <value></value>
   </data>
   <data name="Daemon_ConnectionStatus" xml:space="preserve">
-    <value>Status:</value>
+    <value></value>
   </data>
   <data name="Status_OK" xml:space="preserve">
-    <value>OK</value>
+    <value></value>
   </data>
   <data name="Status_Error" xml:space="preserve">
-    <value>Error</value>
+    <value></value>
   </data>
   <data name="Disconnect" xml:space="preserve">
-    <value>Disconnect</value>
+    <value></value>
   </data>
   <data name="Connect" xml:space="preserve">
-    <value>Connect</value>
+    <value></value>
   </data>
   <data name="Retry" xml:space="preserve">
-    <value>Retry</value>
+    <value></value>
+  </data>
+  <data name="Settings_Components_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Components_Description" xml:space="preserve">
+    <value></value>
   </data>
   <data name="Settings_Acknowledgments_Title" xml:space="preserve">
-    <value>Acknowledgments</value>
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_Description" xml:space="preserve">
+    <value></value>
   </data>
   <data name="Donate" xml:space="preserve">
-    <value>Donate</value>
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_PCL2_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_BakaXL_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_iNKORE_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_MCSLQQ_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_MCSLQQ_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="JoinGroup" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DaemonWsAddress" xml:space="preserve">
+    <value></value>
   </data>
   <data name="DaemonJwtSecret" xml:space="preserve">
-    <value>JWT Secret</value>
+    <value></value>
+  </data>
+  <data name="Connecting" xml:space="preserve">
+    <value></value>
   </data>
 </root>

@@ -664,4 +664,82 @@
   <data name="Settings_AppLanguage_Description" xml:space="preserve">
     <value>プログラムの使用言語を選択します。</value>
   </data>
+  <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ConnectDaemon" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Daemon_RemoteUri" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Daemon_ConnectionStatus" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Status_OK" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Status_Error" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Disconnect" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Components_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Components_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Donate" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_PCL2_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_BakaXL_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_iNKORE_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_MCSLQQ_Title" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Settings_Acknowledgments_MCSLQQ_Description" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="JoinGroup" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DaemonWsAddress" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DaemonJwtSecret" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Connecting" xml:space="preserve">
+    <value></value>
+  </data>
 </root>
