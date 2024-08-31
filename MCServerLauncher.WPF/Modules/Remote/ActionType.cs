@@ -23,10 +23,10 @@ namespace MCServerLauncher.WPF.Modules.Remote
 
     internal enum ActionType
     {
-        Message,
         Ping,
+        GetJavaList,
         FileUploadRequest,
         FileUploadChunk,
-        NewToken
+        FileUploadCancel
     }
 }

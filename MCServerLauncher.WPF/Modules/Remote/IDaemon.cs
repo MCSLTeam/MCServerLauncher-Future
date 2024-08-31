@@ -12,16 +12,18 @@ namespace MCServerLauncher.WPF.Modules.Remote
         public string Version { get; set; }
         public string Architecture { get; set; }
     }
-    
+
     /// <summary>
-    ///   Daemon Rpc Interface
+    ///     Daemon Rpc Interface
     /// </summary>
     public interface IDaemon
     {
-        Task<UploadFileToken> UploadFileOpenAsync(string path, int chunkSize);
-        Task<(bool,long)> UploadFileWriteAsync(UploadFileToken token,long offset ,byte[] data);
+        bool IsClosed { get; }
+        DateTime LastPing { get; }
+        Task<UploadFileToken> UploadFileRequestAsync(string path, string dst, int chunkSize);
+        Task<(bool, long)> UploadFileChunkAsync(UploadFileToken token, long offset, byte[] data, int bytes);
         Task UploadFileCancelAsync(UploadFileToken token);
-        
         Task<List<JavaInfo>> GetJavaListAsync();
+        Task CloseAsync();
     }
 }
