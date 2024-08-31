@@ -666,80 +666,81 @@
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
     <value>若不連結任何守護進程，本軟體大部分功能都將受限。\n您稍後仍可鏈接守護進程。</value>
+    <value>若不連結任何守護進程，本軟體大部分功能都將受限。\n您稍後仍可鏈接守護進程。</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
-    <value></value>
+    <value>新建連接</value>
   </data>
   <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
-    <value></value>
+    <value>MCServerLauncher 的所有實例均移交給守護進程管理。 請在此處連結已部署好的守護進程。</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value></value>
+    <value>編輯</value>
   </data>
   <data name="Daemon_RemoteUri" xml:space="preserve">
-    <value></value>
+    <value>遠端位址：</value>
   </data>
   <data name="Daemon_ConnectionStatus" xml:space="preserve">
-    <value></value>
+    <value>連結狀態：</value>
   </data>
   <data name="Status_OK" xml:space="preserve">
     <value></value>
   </data>
   <data name="Status_Error" xml:space="preserve">
-    <value></value>
+    <value>異常</value>
   </data>
   <data name="Disconnect" xml:space="preserve">
-    <value></value>
+    <value>斷連</value>
   </data>
   <data name="Connect" xml:space="preserve">
-    <value></value>
+    <value>連接</value>
   </data>
   <data name="Retry" xml:space="preserve">
-    <value></value>
+    <value>重試</value>
   </data>
   <data name="Settings_Components_Title" xml:space="preserve">
-    <value></value>
+    <value>開源專案引用清單</value>
   </data>
   <data name="Settings_Components_Description" xml:space="preserve">
-    <value></value>
+    <value>由衷感謝他們的付出，為 MCSL Future 的前進提供了持續的動力。</value>
   </data>
   <data name="Settings_Acknowledgments_Title" xml:space="preserve">
-    <value></value>
+    <value>鳴謝清單</value>
   </data>
   <data name="Settings_Acknowledgments_Description" xml:space="preserve">
-    <value></value>
+    <value>為 MCSL 做出了巨大貢獻！</value>
   </data>
   <data name="Donate" xml:space="preserve">
-    <value></value>
+    <value>贊助一下</value>
   </data>
   <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
-    <value></value>
+    <value>提供了性能強大的 BMCLAPI 鏡像！</value>
   </data>
   <data name="Settings_Acknowledgments_PCL2_Description" xml:space="preserve">
-    <value></value>
+    <value>提供了 Minecraft 載入器的獲取思路！</value>
   </data>
   <data name="Settings_Acknowledgments_BakaXL_Description" xml:space="preserve">
-    <value></value>
+    <value>提供了 Quilt 載入器的部署思路！</value>
   </data>
   <data name="Settings_Acknowledgments_iNKORE_Description" xml:space="preserve">
-    <value></value>
+    <value>在開發過程中給予了大量技術支援！</value>
   </data>
   <data name="Settings_Acknowledgments_MCSLQQ_Title" xml:space="preserve">
     <value></value>
   </data>
   <data name="Settings_Acknowledgments_MCSLQQ_Description" xml:space="preserve">
-    <value></value>
+    <value>一直陪伴著我們，還給予了很多建議！</value>
   </data>
   <data name="JoinGroup" xml:space="preserve">
     <value></value>
   </data>
   <data name="DaemonWsAddress" xml:space="preserve">
-    <value></value>
+    <value>守護進程 WebSocket 位址</value>
   </data>
   <data name="DaemonJwtSecret" xml:space="preserve">
     <value></value>
   </data>
   <data name="Connecting" xml:space="preserve">
-    <value></value>
+    <value>連接中</value>
   </data>
 </root>
