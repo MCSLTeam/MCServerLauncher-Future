@@ -32,12 +32,12 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <Button Grid.Row="0" Margin="0,0,0,5" >
+                <Button Grid.Row="0" Margin="0,0,0,5" x:Name="ConnectionEditButton" >
                     <Button.Content>
                         <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Edit}" Content="{Binding [Edit], Source={x:Static i18n:LanguageManager.Localize}}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                     </Button.Content>
                 </Button>
-                <Button Grid.Row="1">
+                <Button Grid.Row="1" x:Name="ConnectionControlButton">
                     <Button.Content>
                         <ui:IconAndText HorizontalAlignment="Right" VerticalAlignment="Center" x:Name="ConnectionControlLine"/>
                     </Button.Content>

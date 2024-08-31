@@ -24,20 +24,13 @@
         <TextBlock Margin="40,10,40,0" Grid.Row="1" Style="{StaticResource MinititleTextBlock}"
                    Text="{Binding [FirstSetup_ConnectDaemonTip], Source={x:Static i18n:LanguageManager.Localize}}" TextTrimming="CharacterEllipsis"
                    TextWrapping="WrapWithOverflow" HorizontalAlignment="Left" />
-        <Button Grid.Row="2" Margin="40,10,40,0">
+        <Button Grid.Row="2" Margin="40,10,40,0" Click="AddDaemonConnection">
             <Button.Content>
                 <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:LanguageManager.Localize}}"/>
             </Button.Content>
         </Button>
         <ui:ScrollViewerEx Grid.Row="3" Margin="35,10,35,10">
-            <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False">
-                <dmc:DaemonBorder Address="localhost:11451" Status="true"/>
-                <dmc:DaemonBorder Address="localhost:11452" Status="false"/>
-                <dmc:DaemonBorder Address="localhost:11453" Status="false"/>
-                <dmc:DaemonBorder Address="localhost:11454" Status="true"/>
-                <dmc:DaemonBorder Address="localhost:11455" Status="false"/>
-                <dmc:DaemonBorder Address="localhost:11456" Status="true"/>
-            </ui:ListView>
+            <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" x:Name="DaemonListView" />
         </ui:ScrollViewerEx>
         <Border Grid.Row="4" Style="{StaticResource StyledBorder}" Height="80">
             <Grid>

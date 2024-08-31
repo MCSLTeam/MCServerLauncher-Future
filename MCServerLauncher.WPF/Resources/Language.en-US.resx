@@ -700,4 +700,7 @@
   <data name="Donate" xml:space="preserve">
     <value>Donate</value>
   </data>
+  <data name="DaemonJwtSecret" xml:space="preserve">
+    <value>JWT Secret</value>
+  </data>
 </root>

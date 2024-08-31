@@ -43,16 +43,38 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         {
             if (d is not DaemonBorder control) return;
             if (e.NewValue is not string status) return;
-            bool realStatus = status switch
+            control.StatusLine.Content = status switch
             {
-                "true" => true,
-                "false" => false,
+                "ok" => LanguageManager.Localize["Status_OK"],
+                "err" => LanguageManager.Localize["Status_Error"],
+                "ing" => LanguageManager.Localize["Connecting"],
                 _ => throw new System.NotImplementedException(),
             };
-            control.StatusLine.Content = realStatus ? LanguageManager.Localize["Status_OK"] : LanguageManager.Localize["Status_Error"];
-            control.StatusLine.Icon = realStatus ? SegoeFluentIcons.Accept : SegoeFluentIcons.Error;
-            control.ConnectionControlLine.Content = realStatus ? LanguageManager.Localize["Disconnect"] : LanguageManager.Localize["Retry"];
-            control.ConnectionControlLine.Icon = realStatus ? SegoeFluentIcons.DisconnectDrive : SegoeFluentIcons.Refresh;
+            control.StatusLine.Icon = status switch
+            {
+                "ok" => SegoeFluentIcons.Accept,
+                "err" => SegoeFluentIcons.Error,
+                "ing" => SegoeFluentIcons.HangUp,
+                _ => throw new System.NotImplementedException(),
+            }; 
+            control.ConnectionControlLine.Content = status switch
+            {
+                "ok" => LanguageManager.Localize["Disconnect"],
+                "err" => LanguageManager.Localize["Retry"],
+                "ing" => LanguageManager.Localize["Retry"],
+                _ => throw new System.NotImplementedException(),
+            };
+            //control.ConnectionEditButton.IsEnabled = status != "ing";
+            control.ConnectionControlButton.IsEnabled = status != "ing";
+            control.ConnectionControlLine.Icon = status switch
+            {
+                "ok" => SegoeFluentIcons.DisconnectDrive,
+                "err" => SegoeFluentIcons.Refresh,
+                "ing" => SegoeFluentIcons.Refresh,
+                _ => throw new System.NotImplementedException(),
+            };
         }
+
+        public string JWT { get; set; }
     }
 }

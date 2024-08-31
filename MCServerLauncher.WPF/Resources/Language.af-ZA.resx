@@ -733,4 +733,13 @@
   <data name="JoinGroup" xml:space="preserve">
     <value></value>
   </data>
+  <data name="DaemonWsAddress" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DaemonJwtSecret" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Connecting" xml:space="preserve">
+    <value></value>
+  </data>
 </root>
