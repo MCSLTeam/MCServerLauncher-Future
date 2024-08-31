@@ -733,4 +733,13 @@
   <data name="JoinGroup" xml:space="preserve">
     <value>加入群聊</value>
   </data>
+  <data name="DaemonWsAddress" xml:space="preserve">
+    <value>守护进程 WebSocket 地址</value>
+  </data>
+  <data name="DaemonJwtSecret" xml:space="preserve">
+    <value>JWT 密钥</value>
+  </data>
+  <data name="Connecting" xml:space="preserve">
+    <value>连接中</value>
+  </data>
 </root>
