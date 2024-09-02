@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.Modules.Remote
 {
-    using UploadFileToken = String;
-
     public struct JavaInfo
     {
         public string Path { get; set; }
@@ -19,10 +17,14 @@ namespace MCServerLauncher.WPF.Modules.Remote
     public interface IDaemon
     {
         bool IsClosed { get; }
+        bool PingLost { get; }
         DateTime LastPing { get; }
-        Task<UploadFileToken> UploadFileRequestAsync(string path, string dst, int chunkSize);
-        Task<(bool, long)> UploadFileChunkAsync(UploadFileToken token, long offset, byte[] data, int bytes);
-        Task UploadFileCancelAsync(UploadFileToken token);
+        ClientConnection Connection { get; }
+
+        Task<UploadContext> UploadFileAsync(string path, string dst, int chunkSize);
+
+        // Task<(bool, long)> UploadFileChunkAsync(UploadFileToken token, long offset, byte[] data, int bytes);
+        Task UploadFileCancelAsync(UploadContext context);
         Task<List<JavaInfo>> GetJavaListAsync();
         Task CloseAsync();
     }
