@@ -7,6 +7,12 @@ namespace MCServerLauncher.WPF.Modules.Remote
 {
     internal class Utils
     {
+        /// <summary>
+        ///     根据给定的FileStream计算文件SHA1,计算完成后恢复文件读取位置
+        /// </summary>
+        /// <param name="fs"></param>
+        /// <param name="bufferSize"></param>
+        /// <returns></returns>
         public static Task<string> FileSha1(FileStream fs, uint bufferSize = 16384)
         {
             return Task.Run(() =>
@@ -32,6 +38,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
         }
     }
 
+    /// <summary>
+    ///     用于表示上传/下载任务的速度和ETA,同时提供了Updated事件
+    /// </summary>
     public class NetworkLoadSpeed
     {
         public NetworkLoadSpeed()

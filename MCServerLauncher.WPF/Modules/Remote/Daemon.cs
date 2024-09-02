@@ -47,10 +47,10 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 TotalBytes = size
             };
 
-            var context = new UploadContext(fileId, cts, uploadSpeed, fs);
+            var context = new UploadContext(fileId, cts, uploadSpeed, fs, this);
 
             // 后台异步的分块上传文件
-            Task.Run(async () =>
+            var uploadTask = Task.Run(async () =>
             {
                 var buffer = new byte[chunkSize];
                 var offset = 0;
@@ -81,8 +81,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
                         context.Received = response["received"]!.ToObject<long>();
                         uploadSpeed.Push(bytesRead);
 
-                        if (context.Done)
-                            context.UploadFileStream.Close();
+                        if (context.Done) context.OnDone();
                     }
                     catch (Exception e)
                     {
@@ -92,18 +91,24 @@ namespace MCServerLauncher.WPF.Modules.Remote
                     offset += bytesRead;
                 }
             });
-
+            context.UploadTask = uploadTask;
             return context;
         }
 
         public async Task UploadFileCancelAsync(UploadContext context)
         {
-            context.Cancel();
-            await RequestAsync(ActionType.FileUploadCancel, new Dictionary<string, object>
+            await (context.State switch
             {
-                { "file_id", context.FileId }
+                UploadContextState.Opening => context.Cancel(),
+                UploadContextState.Cancelling => RequestAsync(ActionType.FileUploadCancel,
+                    new Dictionary<string, object>
+                    {
+                        { "file_id", context.FileId }
+                    }),
+                _ => Task.CompletedTask
             });
         }
+        
 
         public async Task<List<JavaInfo>> GetJavaListAsync()
         {
