@@ -19,18 +19,19 @@ namespace MCServerLauncher.WPF.Modules.Remote
         public SynchronizationContext ConnectionContext { get; set; }
     }
 
-    internal class ClientConnection
+    public class ClientConnection
     {
         private const int ProtocolVersion = 1;
         private const int BufferSize = 1024;
+
         private CancellationTokenSource _cts;
         private Timer _heartbeatTimer;
-
         private Channel<(string, TaskCompletionSource<JObject>)> _pendingRequests;
-        private bool PingLost { get; set; }
+
 
         public bool Closed => WebSocket.State == WebSocketState.Closed;
         public DateTime LastPong { get; private set; } = DateTime.Now;
+        public bool PingLost { get; private set; }
         public ClientWebSocket WebSocket { get; } = new();
         public ClientConnectionConfig Config { get; private set; }
 
@@ -60,7 +61,6 @@ namespace MCServerLauncher.WPF.Modules.Remote
             connection._heartbeatTimer =
                 new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
 
-
             // connect ws
             var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}?token={token}");
             await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
@@ -84,30 +84,33 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 timeout: conn.Config.PingTimeout
             );
 
-            pingTask.RunSynchronously();
-
-            if (pingTask.Exception?.InnerException is TimeoutException)
+            pingTask.ContinueWith(task =>
             {
-                state.PingPacketLost++;
-                // 切换到ClientConnection所在线程,防止数据竞争
-                state.ConnectionContext.Post(_ => { conn.PingLost = true; }, null);
-            }
-            else
-            {
-                state.PingPacketLost = 0;
-                var timestamp = pingTask.Result["time"]!.ToObject<long>();
+                if (task.Exception?.InnerException is TimeoutException)
+                {
+                    state.PingPacketLost++;
+                    Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
+                    // 切换到ClientConnection所在线程,防止数据竞争
+                    state.ConnectionContext.Post(_ => { conn.PingLost = true; }, null);
+                }
+                else
+                {
+                    state.PingPacketLost = 0;
+                    var timestamp = task.Result["time"]!.ToObject<long>();
+                    Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
 
-                // 切换到ClientConnection所在线程,防止数据竞争
-                state.ConnectionContext.Post(
-                    _ => { conn.LastPong = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime; }, null);
-            }
+                    // 切换到ClientConnection所在线程,防止数据竞争
+                    state.ConnectionContext.Post(
+                        _ => { conn.LastPong = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime; }, null);
+                }
 
-            if (state.PingPacketLost >= conn.Config.MaxPingPacketLost)
-            {
-                Log.Error("Ping packet lost too many times, close connection.");
-                // 关闭连接
-                conn.CloseAsync().RunSynchronously();
-            }
+                if (state.PingPacketLost >= conn.Config.MaxPingPacketLost)
+                {
+                    Log.Error("Ping packet lost too many times, close connection.");
+                    // 关闭连接
+                    conn.CloseAsync();
+                }
+            });
         }
 
         /// <summary>
@@ -117,8 +120,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="actionType"></param>
         /// <param name="args"></param>
         /// <param name="echo"></param>
+        /// <param name="cancellationToken"></param>
         private static async Task SendAsync(ClientWebSocket ws, ActionType actionType, Dictionary<string, object> args,
-            string echo = null)
+            string echo, CancellationToken cancellationToken)
         {
             Dictionary<string, object> data = new()
             {
@@ -129,7 +133,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
             if (!string.IsNullOrEmpty(echo)) data.Add("echo", echo);
 
             var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.Indented));
-            await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, CancellationToken.None);
+            await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
         }
 
         /// <summary>
@@ -138,9 +142,11 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="actionType"></param>
         /// <param name="args"></param>
         /// <param name="echo"></param>
-        public async Task SendAsync(ActionType actionType, Dictionary<string, object> args, string echo = null)
+        /// <param name="cancellationToken"></param>
+        public async Task SendAsync(ActionType actionType, Dictionary<string, object> args, string echo = null,
+            CancellationToken cancellationToken = default)
         {
-            await SendAsync(WebSocket, actionType, args, echo);
+            await SendAsync(WebSocket, actionType, args, echo, cancellationToken);
         }
 
         /// <summary>
@@ -150,11 +156,12 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="args">该action参数</param>
         /// <param name="echo">echo</param>
         /// <param name="timeout">微秒</param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
-            string echo = null, int timeout = 5000)
+            string echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
         {
-            await SendAsync(actionType, args, echo);
+            await SendAsync(actionType, args, echo, cancellationToken);
             return await ExpectAsync(timeout, echo);
         }
 
