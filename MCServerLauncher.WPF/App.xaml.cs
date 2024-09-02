@@ -10,8 +10,9 @@ namespace MCServerLauncher.WPF
 {
     /// <summary>
     ///    App.xaml 的交互逻辑
+    ///    (不要删掉冗余的 : Application继承，否则无法正确使用docfx生成文档)
     /// </summary>
-    public partial class App
+    public partial class App : Application
     {
         // Prevent over-opening
         private Mutex _mutex;
@@ -22,7 +23,8 @@ namespace MCServerLauncher.WPF
             DispatcherUnhandledException += (s, e) =>
             {
                 Clipboard.SetText(e.Exception.ToString());
-                MessageBox.Show($"{LanguageManager.Localize["ErrorDialogStackCopiedTip"]}\n\n{e.Exception}", LanguageManager.Localize["ErrorDialogTitle"],
+                MessageBox.Show($"{LanguageManager.Localize["ErrorDialogStackCopiedTip"]}\n\n{e.Exception}",
+                    LanguageManager.Localize["ErrorDialogTitle"],
                     MessageBoxButton.OK);
                 e.Handled = true; // Set `Handled` to `true` to prevent from exiting
             };
@@ -36,7 +38,8 @@ namespace MCServerLauncher.WPF
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
-                MessageBox.Show(LanguageManager.Localize["NotAllowedOverOpening"], LanguageManager.Localize["Tip"], MessageBoxButton.OK, MessageBoxImage.Asterisk);
+                MessageBox.Show(LanguageManager.Localize["NotAllowedOverOpening"], LanguageManager.Localize["Tip"],
+                    MessageBoxButton.OK, MessageBoxImage.Asterisk);
 
                 Environment.Exit(0);
             }

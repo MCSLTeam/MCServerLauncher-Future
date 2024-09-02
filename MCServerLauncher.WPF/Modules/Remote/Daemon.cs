@@ -108,7 +108,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 _ => Task.CompletedTask
             });
         }
-        
+
 
         public async Task<List<JavaInfo>> GetJavaListAsync()
         {

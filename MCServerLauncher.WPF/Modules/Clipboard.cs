@@ -24,12 +24,29 @@ namespace MCServerLauncher.WPF.Modules
         public static extern IntPtr SetClipboardData(int uFormat, IntPtr hMem);
 
         /// <summary>
-        ///     向剪贴板中添加文本.
-        ///     Q: 为什么不用原版的Clipboard.SetText(...)?
-        ///     A: 某些软件占用剪贴板，导致Clipboard.SetText(...)无法写入：
-        ///        System.Runtime.InteropServices.COMException (0x800401D0): OpenClipboard failed (0x800401D0 (CLIPBRD_E_CANT_OPEN))。
-        ///        故使用win api来实现。
+        ///     向剪贴板中添加文本。
         /// </summary>
+        /// <remarks>
+        ///     <list type="bullet">
+        ///         <item>
+        ///             <term>Q:</term>
+        ///             <description>为什么不用原版的 <c>Clipboard.SetText(...)</c>?</description>
+        ///         </item>
+        ///         <item>
+        ///             <term>A:</term>
+        ///             <description>
+        ///                 某些软件占用剪贴板，导致 <c>Clipboard.SetText(...)</c> 无法写入：
+        ///                 <para>
+        ///                     <c>
+        ///                         System.Runtime.InteropServices.COMException (0x800401D0): OpenClipboard failed (0x800401D0
+        ///                         (CLIPBRD_E_CANT_OPEN))。
+        ///                     </c>
+        ///                 </para>
+        ///                 因此使用 WinAPI 来实现。
+        ///             </description>
+        ///         </item>
+        ///     </list>
+        /// </remarks>
         /// <param name="text">文本</param>
         public static void SetText(string text)
         {
