@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
+using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
 
 namespace MCServerLauncher.WPF
 {
