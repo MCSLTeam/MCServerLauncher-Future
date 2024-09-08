@@ -44,7 +44,7 @@ internal class ActionService : IActionService
             {
                 ActionType.FileUploadChunk => await FileUploadChunkHandler(Actions.FileUploadChunk.RequestOf(data)),
                 ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
-                ActionType.HeartBeat => HeartBeatHandler(Actions.Empty.RequestOf()),
+                ActionType.Ping => HeartBeatHandler(Actions.Empty.RequestOf()),
                 ActionType.FileUploadCancel => FileUploadCancelHandler(Actions.FileUploadCancel.RequestOf(data)),
                 ActionType.GetJavaList => await GetJavaListHandler(Actions.Empty.RequestOf()),
                 _ => throw new NotImplementedException()

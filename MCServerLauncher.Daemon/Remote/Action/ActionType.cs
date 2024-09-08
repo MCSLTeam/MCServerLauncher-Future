@@ -5,7 +5,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 internal enum ActionType
 {
-    HeartBeat,
+    Ping,
     GetJavaList,
     FileUploadRequest,
     FileUploadChunk,

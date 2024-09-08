@@ -195,7 +195,7 @@ public struct JavaInfo
 }
 ```
 
-### HeartBeat
+### Ping
 
 最简单的请求：客户端发送一个包，服务端返回一个应答。
 
@@ -203,7 +203,7 @@ public struct JavaInfo
 
 ```json
 {
-    "action": "get_java_list",
+    "action": "ping",
     "params":{}
 }
 ```
