@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -149,6 +148,13 @@ namespace MCServerLauncher.WPF.Modules.Remote
             return await RequestAsync(ActionType.FileUploadChunk, data, cancellationToken: cancellationToken);
         }
 
+        public static async Task<string> LoginAsync(string address, int port, string usr, string pwd, uint? expired)
+        {
+            var url = $"http://{address}:{port}/login?username={usr}&password={pwd}";
+            if (expired.HasValue) url += $"&expired={expired}";
+            return await Utils.HttpGet(url);
+        }
+
         /// <summary>
         ///     连接远程服务器
         /// </summary>
@@ -156,6 +162,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="port">端口</param>
         /// <param name="token">jwt token</param>
         /// <param name="config">Daemon连接配置</param>
+        /// <exception cref="WebSocketException">Daemon连接失败</exception>
         /// <returns></returns>
         public static async Task<IDaemon> OpenAsync(string address, int port, string token,
             ClientConnectionConfig config)
@@ -186,23 +193,28 @@ namespace MCServerLauncher.WPF.Modules.Remote
         {
             var usr = "admin";
             var pwd = "c4fd4f5b-cab3-443b-b2d1-1778a009dc9b";
+            var pwd1 = "dLkbxo7jedcnHIgL6OQdcg==";
             var ip = "127.0.0.1";
-            var port = 11451;
+            var port = 11452;
 
             // login
-            var httpClient = new HttpClient();
-            var loginRequest =
-                new HttpRequestMessage(HttpMethod.Post, $"http://{ip}:{port}/login?usr={usr}&pwd={pwd}");
-            var response = await httpClient.SendAsync(loginRequest);
-            var token = await response.Content.ReadAsStringAsync();
+            var token = await LoginAsync(ip, port, usr, pwd, 86400);
+            Log.Debug($"Token got: {token}");
 
-            await OpenAsync(ip, port, token, new ClientConnectionConfig
+            try
             {
-                MaxPingPacketLost = 3,
-                PendingRequestCapacity = 100,
-                PingInterval = TimeSpan.FromSeconds(5),
-                PingTimeout = 3000
-            });
+                await OpenAsync(ip, port, "hahaha", new ClientConnectionConfig
+                {
+                    MaxPingPacketLost = 3,
+                    PendingRequestCapacity = 100,
+                    PingInterval = TimeSpan.FromSeconds(5),
+                    PingTimeout = 3000
+                });
+            }
+            catch (WebSocketException e)
+            {
+                Log.Error($"[Daemon] Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
+            }
         }
     }
 }

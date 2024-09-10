@@ -27,6 +27,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         private CancellationTokenSource _cts;
         private Timer _heartbeatTimer;
         private Channel<(string, TaskCompletionSource<JObject>)> _pendingRequests;
+        private Task _receiveLoopTask;
 
 
         public bool Closed => WebSocket.State == WebSocketState.Closed;
@@ -38,10 +39,11 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <summary>
         ///     建立连接
         /// </summary>
-        /// <param name="address"></param>
-        /// <param name="port"></param>
-        /// <param name="token"></param>
-        /// <param name="config"></param>
+        /// <param name="address">ip地址</param>
+        /// <param name="port">端口</param>
+        /// <param name="token">jwt</param>
+        /// <param name="config">连接配置</param>
+        /// <exception cref="WebSocketException">WebSocket连接失败</exception>
         /// <returns></returns>
         public static async Task<ClientConnection> OpenAsync(string address, int port, string token,
             ClientConnectionConfig config)
@@ -63,10 +65,12 @@ namespace MCServerLauncher.WPF.Modules.Remote
 
             // connect ws
             var uri = new Uri($"ws://{address}:{port}/api/v{ProtocolVersion}?token={token}");
+
+            // TODO : Connect failed process
             await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
 
             // start receive loop
-            _ = Task.Run(connection.ReceiveLoop);
+            connection._receiveLoopTask = Task.Run(connection.ReceiveLoop);
             return connection;
         }
 
@@ -170,14 +174,8 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// </summary>
         public async Task CloseAsync()
         {
-            try
-            {
-                _cts.Cancel();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
+            _cts.Cancel();
+            await _receiveLoopTask; // 等待接收循环结束
 
             await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
         }
@@ -293,11 +291,17 @@ namespace MCServerLauncher.WPF.Modules.Remote
             while (!_cts.Token.IsCancellationRequested)
             {
                 while (!_cts.Token.IsCancellationRequested)
-                {
-                    WebSocketReceiveResult result;
                     try
                     {
-                        result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        var result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _cts.Token);
+                        ms.Write(buffer, 0, result.Count);
+                        if (result.EndOfMessage) break;
+
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            ms.Dispose();
+                            return;
+                        }
                     }
                     catch (WebSocketException e)
                     {
@@ -305,22 +309,11 @@ namespace MCServerLauncher.WPF.Modules.Remote
                         ms.Dispose();
                         return;
                     }
-
-                    if (result.MessageType == WebSocketMessageType.Close)
+                    catch (OperationCanceledException)
                     {
                         ms.Dispose();
                         return;
                     }
-
-                    ms.Write(buffer, 0, result.Count);
-                    if (result.EndOfMessage) break;
-                }
-
-                if (_cts.Token.IsCancellationRequested)
-                {
-                    ms.Dispose();
-                    return;
-                }
 
                 Dispatch(Encoding.UTF8.GetString(ms.ToArray()));
 

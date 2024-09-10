@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -35,6 +36,14 @@ namespace MCServerLauncher.WPF.Modules.Remote
                     return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                 }
             });
+        }
+
+        public static async Task<string> HttpGet(string url)
+        {
+            var response = await Network.SendGetRequest(url);
+            return response.StatusCode == HttpStatusCode.OK
+                ? await response.Content.ReadAsStringAsync()
+                : null;
         }
     }
 
