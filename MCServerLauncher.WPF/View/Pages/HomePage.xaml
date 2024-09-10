@@ -26,6 +26,7 @@
                                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,45,20,20" />
                     </Grid>
                 </Border>
+                <Button Content="Show Console Window" Click="ShowConsoleWindow" Style="{StaticResource AccentButtonStyle}" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

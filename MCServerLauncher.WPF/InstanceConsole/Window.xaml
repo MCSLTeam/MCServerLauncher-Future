@@ -1,0 +1,84 @@
+﻿<Window x:Class="MCServerLauncher.WPF.InstanceConsole.Window"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True"
+        ui:ThemeManager.IsThemeAware="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
+        ui:TitleBar.IsIconVisible="True"
+        ui:TitleBar.Height="40"
+        ui:TitleBar.IsBackEnabled="False"
+        ui:TitleBar.IsBackButtonVisible="False"
+        Title="控制台 - "
+        MinHeight="600"
+        MinWidth="330"
+        Height="700"
+        Width="1000">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="10,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality"
+                   Source="../Resources/MCServerLauncherFutureConsole.ico" Width="20" Height="20" />
+            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="控制台 - " HorizontalAlignment="Left" />
+        </Grid>
+        <!-- 导航 -->
+        <ui:NavigationView x:Name="NavView"
+                           IsPaneOpen="False"
+                           ItemInvoked="NavigationTriggered"
+                           IsBackButtonVisible="Collapsed"
+                           PaneDisplayMode="Top"
+                           Grid.Row="1">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="实例看板" Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.BoardPage"
+                                       IsSelected="True">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AllApps}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="实时终端" Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.CommandPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CommandPrompt}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="文件管理" Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.FileManagerPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.FileExplorer}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="触发事件" Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.EventTriggerPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Event12}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="组件管理"
+                                       Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.ComponentManagerPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Puzzle}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="其他功能" Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.OthersPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="实例设置"
+                                       Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.InstanceSettingsPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+            <ui:Frame x:Name="CurrentPage" />
+        </ui:NavigationView>
+    </Grid>
+</Window>
