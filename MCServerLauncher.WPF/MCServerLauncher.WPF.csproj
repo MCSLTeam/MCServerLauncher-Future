@@ -236,12 +236,16 @@
     <Compile Include="InstanceConsole\View\Pages\FileManagerPage.xaml.cs">
       <DependentUpon>FileManagerPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Modules\Clipboard.cs" />
     <Compile Include="Modules\CreateInstance\Files.cs" />
     <Compile Include="Modules\Download.cs" />
     <Compile Include="Modules\Initializer.cs" />
     <Compile Include="Modules\LanguageManager.cs" />
     <Compile Include="Modules\Network.cs" />
+    <Compile Include="Modules\Remote\Daemon.cs" />
+    <Compile Include="Modules\Remote\ClientConnectionConfig.cs" />
     <Compile Include="Modules\Remote\IDaemon.cs" />
+    <Compile Include="Modules\Remote\UploadContext.cs" />
     <Compile Include="Modules\SettingsManager.cs" />
     <Compile Include="Modules\VisualTreeHelper.cs" />
     <Compile Include="Modules\Remote\ActionType.cs" />

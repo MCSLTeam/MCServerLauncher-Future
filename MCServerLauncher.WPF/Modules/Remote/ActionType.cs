@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace MCServerLauncher.WPF.Modules.Remote
 {
-    internal static class ActionTypeExtensions
+    public static class ActionTypeExtensions
     {
         public static string ToShakeCase(this ActionType actionType)
         {
@@ -21,12 +21,12 @@ namespace MCServerLauncher.WPF.Modules.Remote
         }
     }
 
-    internal enum ActionType
+    public enum ActionType
     {
-        Message,
         Ping,
+        GetJavaList,
         FileUploadRequest,
         FileUploadChunk,
-        NewToken
+        FileUploadCancel
     }
 }

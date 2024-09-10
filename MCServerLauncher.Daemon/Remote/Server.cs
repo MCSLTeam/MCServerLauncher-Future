@@ -11,9 +11,9 @@ public class Server : IServer
 {
     private readonly IServiceProvider _container;
 
-    public Server(IServiceProvider Container)
+    public Server(IServiceProvider container)
     {
-        _container = Container;
+        _container = container;
     }
 
     /// <summary>
