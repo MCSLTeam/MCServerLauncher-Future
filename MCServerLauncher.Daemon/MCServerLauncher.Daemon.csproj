@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <PlatformTarget>AnyCPU</PlatformTarget>
         <OutputType>Exe</OutputType>
@@ -14,6 +13,8 @@
         <Product>MCServerLauncher Future Daemon</Product>
         <Description>Daemon for MCServerLauncher Future.</Description>
 		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+		<Nullable>enable</Nullable>
+		<TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -37,6 +38,10 @@
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0"/>
         <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
     </ItemGroup>
 
 </Project>

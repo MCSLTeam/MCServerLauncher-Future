@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Serilog;
 
@@ -5,9 +6,6 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class ServerInstance
 {
-    private static readonly Mutex _mutex = new();
-
-
     public ServerInstance(ServerConfig config)
     {
         Config = config;
@@ -15,15 +13,19 @@ public class ServerInstance
 
     public ServerConfig Config { get; private set; }
     public Process ServerProcess { get; private set; }
+    public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
+
+    private HashSet<string> Players { get; } = new();
+    private List<string> Properties { get; } = new();
 
     /// <summary>
     ///    获取mc服务器进程
     ///    在创建服务器进程时,使用互斥锁修改Daemon进程的环境变量是为了同时兼容jar启动和bat/sh脚本启动的情况
     /// </summary>
     /// <param name="config">带创建进程的配置文件</param>
-    /// <param name="beforeStart">在启动前执行的操作</param>
+    /// <param name="beforeStart">在启动前执行的操作(连接stdout等)</param>
     /// <returns></returns>
-    public static Task<Process> GetProcess(ServerConfig config, Action<Process> beforeStart)
+    private Process GetProcess(ServerConfig config, Action<Process> beforeStart)
     {
         var (target, args) = config.GetLaunchScript();
 
@@ -37,45 +39,77 @@ public class ServerInstance
         };
 
         var originPath = Environment.GetEnvironmentVariable("PATH");
-        var newPath = BasicUtils.IsWindows()
+        startInfo.EnvironmentVariables["PATH"] = BasicUtils.IsWindows()
             ? $"{Path.GetDirectoryName(config.JavaPath)};{originPath}"
             : $"{Path.GetDirectoryName(config.JavaPath)}:{originPath}";
 
-
-        return Task.Run(() =>
+        var process = new Process
         {
-            _mutex.WaitOne();
-            try
-            {
-                Environment.SetEnvironmentVariable("PATH", newPath, EnvironmentVariableTarget.Process);
-                var process = new Process
-                {
-                    StartInfo = startInfo
-                };
-                beforeStart?.Invoke(process);
-                process.Start();
-                Environment.SetEnvironmentVariable("PATH", originPath, EnvironmentVariableTarget.Process);
-                return process;
-            }
-            finally
-            {
-                _mutex.ReleaseMutex();
-            }
-        });
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
+        beforeStart?.Invoke(process);
+
+        // refresh server.properties
+        Properties.Clear();
+        Properties.AddRange(GetServerProperties());
+
+        process.Start();
+
+        Status = ServerStatus.Starting;
+
+        return process;
     }
 
-    public async Task Start()
+    private IEnumerable<string> GetServerProperties()
     {
-        ServerProcess = await GetProcess(Config, process =>
+        var path = Path.Combine(Config.WorkingDirectory, "server.properties");
+        return File.Exists(path) ? File.ReadAllLines(path).ToList() : Enumerable.Empty<string>();
+    }
+
+    public void Start()
+    {
+        ServerProcess = GetProcess(Config, process =>
         {
             process.OutputDataReceived += (sender, args) =>
             {
-                if (args.Data != null)
+                var msg = args.Data;
+
+                if (msg == null) return;
+
+                if (msg.Contains("Done")) Status = ServerStatus.Running;
+                else if (msg.Contains("Stopping the server")) Status = ServerStatus.Stopping;
+                else if (msg.Contains("Minecraft has crashed")) Status = ServerStatus.Crashed;
+                else if (msg.Contains("joined the game"))
                 {
-                    Log.Information("[MinecraftServer] " + args.Data);
+                    // [18:26:19] [Worker-Main-14/INFO] (MinecraftServer) Alex joined the game
+                    var substring = msg[..^16];
+                    var player = substring[(substring.LastIndexOf(' ') + 1) ..];
+                    Players.Add(player);
                 }
+                else if (msg.Contains("left the game"))
+                {
+                    // [18:27:03] [Server thread/INFO] (MinecraftServer) Ares_Connor left the game
+                    var substring = msg[..^14];
+                    var player = substring[(substring.LastIndexOf(' ') + 1) ..];
+                    Players.Remove(player);
+                }
+
+                Log.Information($"[Server({Config.Name})] {args.Data}");
             };
+
+            process.Exited += (_, _) => Status = ServerStatus.Stopped;
         });
         ServerProcess.BeginOutputReadLine();
+    }
+
+    public InstanceStatus GetStatus()
+    {
+        return new(
+            Status,
+            Config,
+            Players.ToList(),
+            Properties
+        );
     }
 }
