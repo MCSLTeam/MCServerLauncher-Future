@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:vc="clr-namespace:MCServerLauncher.WPF.InstanceConsole.View.Components"
+      xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="ComponentManagerPage">
@@ -13,7 +14,7 @@
         <TabControl Grid.Row="0"
                     FontSize="24"
                     Style="{StaticResource TabControlPivotStyle}">
-            <TabItem Header="模组">
+            <TabItem Header="{Binding [Mods], Source={x:Static i18n:LanguageManager.Localize}}">
                 <ui:ListView Margin="0,15,0,0">
                     <vc:InstanceComponentItem ComponentFileName="1.jar" />
                     <vc:InstanceComponentItem ComponentFileName="2.jar" />
@@ -23,7 +24,7 @@
                     <vc:InstanceComponentItem ComponentFileName="6.jar" />
                 </ui:ListView>
             </TabItem>
-            <TabItem Header="插件">
+            <TabItem Header="{Binding [Plugins], Source={x:Static i18n:LanguageManager.Localize}}">
                 <ui:ListView Margin="0,15,0,0">
                     <vc:InstanceComponentItem ComponentFileName="7.jar" />
                     <vc:InstanceComponentItem ComponentFileName="8.jar" />

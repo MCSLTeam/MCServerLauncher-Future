@@ -197,26 +197,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="InstanceConsole\App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-    </Compile>
     <Compile Include="InstanceConsole\Window.xaml.cs">
       <DependentUpon>Window.xaml</DependentUpon>
     </Compile>
     <Compile Include="InstanceConsole\View\Components\InstanceComponentItem.xaml.cs">
       <DependentUpon>InstanceComponentItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="InstanceConsole\View\Components\MinecraftBedrockInstanceAddress.xaml.cs">
-      <DependentUpon>MinecraftBedrockInstanceAddress.xaml</DependentUpon>
+    <Compile Include="InstanceConsole\View\Components\MinecraftInstanceAddress.xaml.cs">
+      <DependentUpon>MinecraftInstanceAddress.xaml</DependentUpon>
     </Compile>
-    <Compile Include="InstanceConsole\View\Components\MinecraftBedrockInstancePlayerList.xaml.cs">
-      <DependentUpon>MinecraftBedrockInstancePlayerList.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="InstanceConsole\View\Components\MinecraftJavaInstanceAddress.xaml.cs">
-      <DependentUpon>MinecraftJavaInstanceAddress.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="InstanceConsole\View\Components\MinecraftJavaInstancePlayerList.xaml.cs">
-      <DependentUpon>MinecraftJavaInstancePlayerList.xaml</DependentUpon>
+    <Compile Include="InstanceConsole\View\Components\MinecraftInstancePlayerList.xaml.cs">
+      <DependentUpon>MinecraftInstancePlayerList.xaml</DependentUpon>
     </Compile>
     <Compile Include="InstanceConsole\View\Components\PlayerItem.xaml.cs">
       <DependentUpon>PlayerItem.xaml</DependentUpon>
@@ -423,10 +414,6 @@
     <Compile Include="View\Pages\DebugPage.xaml.cs">
       <DependentUpon>DebugPage.xaml</DependentUpon>
     </Compile>
-    <Page Include="InstanceConsole\App.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="InstanceConsole\Window.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -435,19 +422,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="InstanceConsole\View\Components\MinecraftBedrockInstanceAddress.xaml">
+    <Page Include="InstanceConsole\View\Components\MinecraftInstanceAddress.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="InstanceConsole\View\Components\MinecraftBedrockInstancePlayerList.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="InstanceConsole\View\Components\MinecraftJavaInstanceAddress.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="InstanceConsole\View\Components\MinecraftJavaInstancePlayerList.xaml">
+    <Page Include="InstanceConsole\View\Components\MinecraftInstancePlayerList.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

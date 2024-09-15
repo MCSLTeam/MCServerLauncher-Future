@@ -6,6 +6,7 @@
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
       xmlns:vc="clr-namespace:MCServerLauncher.WPF.InstanceConsole.View.Components"
+      xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800">
 
@@ -23,7 +24,7 @@
                             <RowDefinition />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="通用：实例 RAM 占用"
+                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="{Binding [ConsoleBoard_Universal_RAM], Source={x:Static i18n:LanguageManager.Localize}}"
                                    VerticalAlignment="Top" />
                         <TextBlock Margin="15,15,15,12" Grid.Column="1" Grid.Row="0" x:Name="MemoryStatusTextBlock"
                                    Text="114.51 MB / 1145.14 MB" TextAlignment="Right" />
@@ -42,7 +43,7 @@
                             <RowDefinition />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="通用：实例 CPU 占用"
+                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="{Binding [ConsoleBoard_Universal_CPU], Source={x:Static i18n:LanguageManager.Localize}}"
                                    VerticalAlignment="Top" />
                         <TextBlock Margin="15,15,15,12" Grid.Column="1" Grid.Row="0" x:Name="CPUStatusTextBlock"
                                    Text="11.45 %" TextAlignment="Right" />
@@ -56,31 +57,14 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Margin="15,15,15,10" Grid.Column="0" Text="通用：当前 WebSocket 延迟"
+                        <TextBlock Margin="15,15,15,10" Grid.Column="0" Text="{Binding [ConsoleBoard_Universal_WebSocketLatency], Source={x:Static i18n:LanguageManager.Localize}}"
                                    VerticalAlignment="Top" />
                         <TextBlock Margin="15,15,15,15" Grid.Column="1" x:Name="WebSocketPingStatusTextBlock"
                                    Text="11 ms" TextAlignment="Right" />
                     </Grid>
                 </Border>
-                <vc:MinecraftJavaInstanceAddress ServerIP="114.514.114.514" />
-                <vc:MinecraftBedrockInstanceAddress ServerIP="114.514.114.514" />
-                <Border Style="{StaticResource StyledBorder}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="通用：最新输出" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                   Margin="20,15,0,0" />
-                        <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Grid.Row="1"
-                                 x:Name="LatestOutputTextBox" IsReadOnly="True" TextWrapping="Wrap"
-                                 AcceptsReturn="True" Margin="20,10,20,20"
-                                 Text="Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua." />
-                    </Grid>
-                </Border>
-                <vc:MinecraftJavaInstancePlayerList
-                    PlayerList="LxHTT1@192.168.3.1,LxHTT2@192.168.3.2,LxHTT3@192.168.3.3" />
-                <vc:MinecraftBedrockInstancePlayerList
+                <vc:MinecraftInstanceAddress ServerIP="114.514.114.514" />
+                <vc:MinecraftInstancePlayerList
                     PlayerList="LxHTT5@192.168.3.5,LxHTT6@192.168.3.6,LxHTT7@192.168.3.7" Margin="0,0,0,35" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
