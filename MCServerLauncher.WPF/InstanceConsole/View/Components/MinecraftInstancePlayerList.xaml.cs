@@ -1,11 +1,11 @@
 ﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
-    ///    MinecraftBedrockInstancePlayerList.xaml 的交互逻辑
+    ///    MinecraftInstancePlayerList.xaml 的交互逻辑
     /// </summary>
-    public partial class MinecraftBedrockInstancePlayerList
+    public partial class MinecraftInstancePlayerList
     {
-        public MinecraftBedrockInstancePlayerList()
+        public MinecraftInstancePlayerList()
         {
             InitializeComponent();
         }

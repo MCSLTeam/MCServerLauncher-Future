@@ -1,11 +1,11 @@
 ﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
-    ///    MinecraftJavaInstanceAddress.xaml 的交互逻辑
+    ///    MinecraftInstanceAddress.xaml 的交互逻辑
     /// </summary>
-    public partial class MinecraftJavaInstanceAddress
+    public partial class MinecraftInstanceAddress
     {
-        public MinecraftJavaInstanceAddress()
+        public MinecraftInstanceAddress()
         {
             InitializeComponent();
         }
