@@ -12,7 +12,7 @@ public class ServerInstance
     }
 
     public ServerConfig Config { get; private set; }
-    public Process ServerProcess { get; private set; }
+    public Process? ServerProcess { get; private set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
 
     private HashSet<string> Players { get; } = new();

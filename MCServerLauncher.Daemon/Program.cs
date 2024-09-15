@@ -19,7 +19,7 @@ public class Program
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
         //Serve();
-        await RunMCServerAsync();
+        await RunMcServerAsync();
     }
 
     public static void TestJavaScanner()
@@ -76,7 +76,7 @@ public class Program
         await Manager.CreateInstance(InstanceConfig);
     }
 
-    public static async Task RunMCServerAsync()
+    public static async Task RunMcServerAsync()
     {
         ServerConfig config = new()
         {
@@ -89,7 +89,7 @@ public class Program
             TargetType = TargetType.Script
         };
         ServerInstance instance = new(config);
-        await instance.Start();
+        instance.Start();
         await Task.WhenAny(
             Task.Run(() =>
             {
