@@ -148,7 +148,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
             return await RequestAsync(ActionType.FileUploadChunk, data, cancellationToken: cancellationToken);
         }
 
-        public static async Task<string> LoginAsync(string address, int port, string usr, string pwd, uint? expired)
+        public static async Task<string?> LoginAsync(string address, int port, string usr, string pwd, uint? expired)
         {
             var url = $"http://{address}:{port}/login?username={usr}&password={pwd}";
             if (expired.HasValue) url += $"&expired={expired}";
@@ -199,7 +199,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
 
             // login
             var token = await LoginAsync(ip, port, usr, pwd, 86400);
-            Log.Debug($"Token got: {token}");
+            Log.Debug($"Token got: {token ?? "token not found"}");
 
             try
             {

@@ -38,7 +38,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
             });
         }
 
-        public static async Task<string> HttpGet(string url)
+        public static async Task<string?> HttpGet(string url)
         {
             var response = await Network.SendGetRequest(url);
             return response.StatusCode == HttpStatusCode.OK
