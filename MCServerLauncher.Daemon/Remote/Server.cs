@@ -17,9 +17,9 @@ public class Server : IServer
     }
 
     /// <summary>
-    ///    读取配置,添加/api/v1和/login路由的handler,并启动HttpServer。
-    ///    路由/api/v1: ws长连接，实现rpc。
-    ///    路由/login: http请求，实现登录，返回一个jwt。
+    ///     读取配置,添加/api/v1和/login路由的handler,并启动HttpServer。
+    ///     路由/api/v1: ws长连接，实现rpc。
+    ///     路由/login: http请求，实现登录，返回一个jwt。
     /// </summary>
     public void Start()
     {
@@ -52,9 +52,9 @@ public class Server : IServer
     }
 
     /// <summary>
-    ///    路由/login处理逻辑，注册为event handler，用于验证用户名密码，生成验证凭证（jwt），方便网页记忆用户，过期时长可根据参数设定。
-    ///    验证失败直接401.
-    ///    登录使用query，接收参数usr,pwd[,expired]，返回jwt。
+    ///     路由/login处理逻辑，注册为event handler，用于验证用户名密码，生成验证凭证（jwt），方便网页记忆用户，过期时长可根据参数设定。
+    ///     验证失败直接401.
+    ///     登录使用query，接收参数usr,pwd[,expired]，返回jwt。
     /// </summary>
     /// <param name="_">Event发出者</param>
     /// <param name="e">Event参数</param>

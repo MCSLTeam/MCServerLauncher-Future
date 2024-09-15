@@ -13,7 +13,7 @@ public class UsersException : Exception
 }
 
 /// <summary>
-///    用户服务实现类
+///     用户服务实现类
 /// </summary>
 public class UserService : IUserService
 {
@@ -21,7 +21,7 @@ public class UserService : IUserService
 
 
     /// <summary>
-    ///    创建用户,并创建用户目录
+    ///     创建用户,并创建用户目录
     /// </summary>
     /// <param name="name">用户名</param>
     /// <param name="password">密码</param>
@@ -43,7 +43,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    ///    删除用户和用户目录
+    ///     删除用户和用户目录
     /// </summary>
     /// <param name="name">用户名</param>
     /// <exception cref="UsersException"></exception>
@@ -59,7 +59,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    ///    获取所有用户信息的快照
+    ///     获取所有用户信息的快照
     /// </summary>
     /// <returns></returns>
     public Dictionary<string, UserMeta> GetUsers()
@@ -68,7 +68,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    ///    用户登录,若登录成功则返回用户信息
+    ///     用户登录,若登录成功则返回用户信息
     /// </summary>
     /// <param name="name">用户名</param>
     /// <param name="password">密码</param>
@@ -87,7 +87,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    ///    验证JWT,若验证成功则返回用户信息
+    ///     验证JWT,若验证成功则返回用户信息
     /// </summary>
     /// <param name="jwt"></param>
     /// <param name="user"></param>
@@ -112,7 +112,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    ///    从文件加载用户信息
+    ///     从文件加载用户信息
     /// </summary>
     /// <returns></returns>
     private static ConcurrentDictionary<string, UserMeta> LoadUsers()
@@ -122,7 +122,7 @@ public class UserService : IUserService
 
 
     /// <summary>
-    ///    检查默认admin用户，若不存在则创建
+    ///     检查默认admin用户，若不存在则创建
     /// </summary>
     /// <param name="userMap"></param>
     /// <returns></returns>

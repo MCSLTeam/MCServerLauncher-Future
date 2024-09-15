@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 /// <summary>
-///    用户服务接口
+///     用户服务接口
 /// </summary>
 public interface IUserService
 {

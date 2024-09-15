@@ -6,8 +6,8 @@ using Newtonsoft.Json.Linq;
 namespace MCServerLauncher.Daemon.Remote.Action;
 
 /// <summary>
-///    Action(rpc)处理器。
-///    Action是ws交互格式的一种，他代表的是一个远程过程调用: C->S,处理后返回json数据给C
+///     Action(rpc)处理器。
+///     Action是ws交互格式的一种，他代表的是一个远程过程调用: C->S,处理后返回json数据给C
 /// </summary>
 internal class ActionService : IActionService
 {
@@ -27,7 +27,7 @@ internal class ActionService : IActionService
     }
 
     /// <summary>
-    ///    Action(rpc)处理中枢
+    ///     Action(rpc)处理中枢
     /// </summary>
     /// <param name="type">Action类型</param>
     /// <param name="data">Action数据</param>

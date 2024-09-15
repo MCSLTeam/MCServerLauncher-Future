@@ -5,7 +5,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 public class ServerConfig
 {
     public const string FileName = "daemon_instance.json";
-    
+
     public Encoding InputEncoding { get; set; } = Encoding.UTF8;
     public string WorkingDirectory { get; set; }
     public string[] JavaArgs { get; set; }

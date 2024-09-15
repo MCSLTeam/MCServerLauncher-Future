@@ -55,11 +55,9 @@ public class InstanceManager : IInstanceManager
                 process = instance.ServerProcess;
                 return true;
             }
-            else
-            {
-                instance.ServerProcess.Kill();
-                return false;
-            }
+
+            instance.ServerProcess.Kill();
+            return false;
         }
         catch (Exception e)
         {

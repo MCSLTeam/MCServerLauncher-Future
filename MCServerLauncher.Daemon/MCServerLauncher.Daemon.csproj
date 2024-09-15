@@ -12,9 +12,9 @@
         <Copyright>Copyright © 2022-2024 MCSLTeam. All rights reserved.</Copyright>
         <Product>MCServerLauncher Future Daemon</Product>
         <Description>Daemon for MCServerLauncher Future.</Description>
-		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-		<Nullable>enable</Nullable>
-		<TargetFramework>net6.0</TargetFramework>
+        <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+        <Nullable>enable</Nullable>
+        <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -41,7 +41,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
+        <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj"/>
     </ItemGroup>
 
 </Project>

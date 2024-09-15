@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Diagnostics;
 using Serilog;
 
@@ -11,7 +10,7 @@ public class ServerInstance
         Config = config;
     }
 
-    public ServerConfig Config { get; private set; }
+    public ServerConfig Config { get; }
     public Process? ServerProcess { get; private set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
 
@@ -19,8 +18,8 @@ public class ServerInstance
     private List<string> Properties { get; } = new();
 
     /// <summary>
-    ///    获取mc服务器进程
-    ///    在创建服务器进程时,使用互斥锁修改Daemon进程的环境变量是为了同时兼容jar启动和bat/sh脚本启动的情况
+    ///     获取mc服务器进程
+    ///     在创建服务器进程时,使用互斥锁修改Daemon进程的环境变量是为了同时兼容jar启动和bat/sh脚本启动的情况
     /// </summary>
     /// <param name="config">带创建进程的配置文件</param>
     /// <param name="beforeStart">在启动前执行的操作(连接stdout等)</param>
@@ -77,9 +76,18 @@ public class ServerInstance
 
                 if (msg == null) return;
 
-                if (msg.Contains("Done")) Status = ServerStatus.Running;
-                else if (msg.Contains("Stopping the server")) Status = ServerStatus.Stopping;
-                else if (msg.Contains("Minecraft has crashed")) Status = ServerStatus.Crashed;
+                if (msg.Contains("Done"))
+                {
+                    Status = ServerStatus.Running;
+                }
+                else if (msg.Contains("Stopping the server"))
+                {
+                    Status = ServerStatus.Stopping;
+                }
+                else if (msg.Contains("Minecraft has crashed"))
+                {
+                    Status = ServerStatus.Crashed;
+                }
                 else if (msg.Contains("joined the game"))
                 {
                     // [18:26:19] [Worker-Main-14/INFO] (MinecraftServer) Alex joined the game
@@ -105,7 +113,7 @@ public class ServerInstance
 
     public InstanceStatus GetStatus()
     {
-        return new(
+        return new InstanceStatus(
             Status,
             Config,
             Players.ToList(),

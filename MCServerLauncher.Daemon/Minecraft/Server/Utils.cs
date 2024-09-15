@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
@@ -9,34 +8,23 @@ public class Utils
 {
     // PInvoke declarations
     [DllImport("kernel32.dll", SetLastError = true)]
-    static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
+    private static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
 
     [DllImport("ntdll.dll")]
-    static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass,
+    private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass,
         ref ProcessBasicInformation processInformation, uint processInformationLength, ref uint returnLength);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize,
+    private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer,
+        int dwSize,
         out int lpNumberOfBytesRead);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool CloseHandle(IntPtr hObject);
-
-    // Struct to hold process information
-    [StructLayout(LayoutKind.Sequential)]
-    private struct ProcessBasicInformation
-    {
-        public IntPtr Reserved1;
-        public IntPtr PebBaseAddress;
-        public IntPtr Reserved2_0;
-        public IntPtr Reserved2_1;
-        public IntPtr UniqueProcessId;
-        public IntPtr Reserved3;
-    }
+    private static extern bool CloseHandle(IntPtr hObject);
 
     private static IEnumerable<string> GetEnvironmentVariablesWin(int pid)
     {
-        IntPtr processHandle =
+        var processHandle =
             OpenProcess(0x0010 | 0x0400 | 0x0008, false, pid); // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ
 
         if (processHandle == IntPtr.Zero)
@@ -45,9 +33,9 @@ public class Utils
             return Enumerable.Empty<string>();
         }
 
-        ProcessBasicInformation pbi = new ProcessBasicInformation();
+        var pbi = new ProcessBasicInformation();
         uint returnLength = 0;
-        int status =
+        var status =
             NtQueryInformationProcess(processHandle, 0, ref pbi, (uint)Marshal.SizeOf(pbi), ref returnLength);
 
         if (status != 0)
@@ -57,10 +45,10 @@ public class Utils
             return Enumerable.Empty<string>();
         }
 
-        IntPtr pebAddress = pbi.PebBaseAddress;
+        var pebAddress = pbi.PebBaseAddress;
 
         // Read PEB memory
-        byte[] pebBuffer = new byte[IntPtr.Size];
+        var pebBuffer = new byte[IntPtr.Size];
         int bytesRead;
         if (!ReadProcessMemory(processHandle, pebAddress + 0x20 /* Offset for ProcessParameters */, pebBuffer,
                 pebBuffer.Length, out bytesRead))
@@ -70,10 +58,10 @@ public class Utils
             return Enumerable.Empty<string>();
         }
 
-        IntPtr processParametersAddress = (IntPtr)BitConverter.ToInt64(pebBuffer, 0);
+        var processParametersAddress = (IntPtr)BitConverter.ToInt64(pebBuffer, 0);
 
         // Read environment variables block address
-        byte[] environmentBuffer = new byte[IntPtr.Size];
+        var environmentBuffer = new byte[IntPtr.Size];
         if (!ReadProcessMemory(processHandle, processParametersAddress + 0x80 /* Offset for Environment */,
                 environmentBuffer, environmentBuffer.Length, out bytesRead))
         {
@@ -82,10 +70,10 @@ public class Utils
             return Enumerable.Empty<string>();
         }
 
-        IntPtr environmentAddress = (IntPtr)BitConverter.ToInt64(environmentBuffer, 0);
+        var environmentAddress = (IntPtr)BitConverter.ToInt64(environmentBuffer, 0);
 
         // Read the environment block (arbitrary large buffer to read environment variables)
-        byte[] environmentData = new byte[0x4000]; // Adjust size if needed
+        var environmentData = new byte[0x4000]; // Adjust size if needed
         if (!ReadProcessMemory(processHandle, environmentAddress, environmentData, environmentData.Length,
                 out bytesRead))
         {
@@ -95,20 +83,20 @@ public class Utils
         }
 
         // Convert environment data to string and split by null terminators
-        string environmentString = Encoding.Unicode.GetString(environmentData).Trim();
+        var environmentString = Encoding.Unicode.GetString(environmentData).Trim();
 
         // split \0\0
         environmentString = environmentString.Substring(0, FindEnvironStringEnd(environmentString));
 
-        string[] environmentVariables =
-            environmentString.Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+        var environmentVariables =
+            environmentString.Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
 
         CloseHandle(processHandle);
         return environmentVariables;
     }
 
     /// <summary>
-    ///  查找'\0''\0'的位置
+    ///     查找'\0''\0'的位置
     /// </summary>
     /// <param name="environ"></param>
     /// <returns></returns>
@@ -118,10 +106,7 @@ public class Utils
         while (lastIndex != -1)
         {
             var index = environ.IndexOf('\0', lastIndex + 1);
-            if (index == lastIndex + 1)
-            {
-                return lastIndex;
-            }
+            if (index == lastIndex + 1) return lastIndex;
 
             lastIndex = index;
         }
@@ -139,5 +124,17 @@ public class Utils
     public static IEnumerable<string> GetEnvironmentVariables(int pid)
     {
         return GetEnvironmentVariablesWin(pid);
+    }
+
+    // Struct to hold process information
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ProcessBasicInformation
+    {
+        public IntPtr Reserved1;
+        public IntPtr PebBaseAddress;
+        public IntPtr Reserved2_0;
+        public IntPtr Reserved2_1;
+        public IntPtr UniqueProcessId;
+        public IntPtr Reserved3;
     }
 }
