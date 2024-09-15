@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.Console.View.Components
+﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
     ///    InstanceComponentItem.xaml 的交互逻辑

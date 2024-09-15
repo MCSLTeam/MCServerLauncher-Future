@@ -197,6 +197,36 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="InstanceConsole\Window.xaml.cs">
+      <DependentUpon>Window.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Components\InstanceComponentItem.xaml.cs">
+      <DependentUpon>InstanceComponentItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Components\MinecraftInstanceAddress.xaml.cs">
+      <DependentUpon>MinecraftInstanceAddress.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Components\MinecraftInstancePlayerList.xaml.cs">
+      <DependentUpon>MinecraftInstancePlayerList.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Components\PlayerItem.xaml.cs">
+      <DependentUpon>PlayerItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Pages\BoardPage.xaml.cs">
+      <DependentUpon>BoardPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Pages\CommandPage.xaml.cs">
+      <DependentUpon>CommandPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Pages\ComponentManagerPage.xaml.cs">
+      <DependentUpon>ComponentManagerPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Pages\EventTriggerPage.xaml.cs">
+      <DependentUpon>EventTriggerPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="InstanceConsole\View\Pages\FileManagerPage.xaml.cs">
+      <DependentUpon>FileManagerPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Modules\Clipboard.cs" />
     <Compile Include="Modules\CreateInstance\Files.cs" />
     <Compile Include="Modules\Download.cs" />
@@ -384,6 +414,46 @@
     <Compile Include="View\Pages\DebugPage.xaml.cs">
       <DependentUpon>DebugPage.xaml</DependentUpon>
     </Compile>
+    <Page Include="InstanceConsole\Window.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Components\InstanceComponentItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Components\MinecraftInstanceAddress.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Components\MinecraftInstancePlayerList.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Components\PlayerItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Pages\BoardPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Pages\CommandPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Pages\ComponentManagerPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Pages\EventTriggerPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="InstanceConsole\View\Pages\FileManagerPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -701,6 +771,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\iNKORE.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\MCServerLauncherFutureConsole.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

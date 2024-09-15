@@ -1,11 +1,11 @@
-﻿namespace MCServerLauncher.WPF.Console.View.Components
+﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
-    ///    MinecraftJavaInstancePlayerList.xaml 的交互逻辑
+    ///    MinecraftInstancePlayerList.xaml 的交互逻辑
     /// </summary>
-    public partial class MinecraftJavaInstancePlayerList
+    public partial class MinecraftInstancePlayerList
     {
-        public MinecraftJavaInstancePlayerList()
+        public MinecraftInstancePlayerList()
         {
             InitializeComponent();
         }

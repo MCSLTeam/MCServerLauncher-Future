@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
-using MCServerLauncher.WPF.Console.View.Pages;
+using MCServerLauncher.WPF.InstanceConsole.View.Pages;
 using Page = System.Windows.Controls.Page;
 
-namespace MCServerLauncher.WPF.Console
+namespace MCServerLauncher.WPF.InstanceConsole
 {
     /// <summary>
-    ///    MainWindow.xaml 的交互逻辑
+    ///    Window.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow
+    public partial class Window
     {
         private readonly Page _board = new BoardPage();
         private readonly Page _command = new CommandPage();
@@ -18,7 +18,7 @@ namespace MCServerLauncher.WPF.Console
         private readonly Page _eventTrigger = new EventTriggerPage();
         private readonly Page _fileManager = new FileManagerPage();
 
-        public MainWindow()
+        public Window()
         {
             InitializeComponent();
             CurrentPage.Navigate(_board);

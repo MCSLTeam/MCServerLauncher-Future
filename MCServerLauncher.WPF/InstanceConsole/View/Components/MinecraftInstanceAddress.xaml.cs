@@ -1,15 +1,14 @@
-﻿namespace MCServerLauncher.WPF.Console.View.Components
+﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
-    ///    MinecraftBedrockInstanceAddress.xaml 的交互逻辑
+    ///    MinecraftInstanceAddress.xaml 的交互逻辑
     /// </summary>
-    public partial class MinecraftBedrockInstanceAddress
+    public partial class MinecraftInstanceAddress
     {
-        public MinecraftBedrockInstanceAddress()
+        public MinecraftInstanceAddress()
         {
             InitializeComponent();
         }
-
 
         /// <summary>
         ///    Server IP address.

@@ -3,11 +3,17 @@
 </br>
 此仓库仅包含 守护进程 和 WPF桌面启动器 的源码。若想了解更多关于 Web面板 的信息，请点击[这里](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)。
 
+[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
+![平台 Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
+[![Crowdin 国际化](https://badges.crowdin.net/mcserverlauncher-wpf/localized.svg)](https://wpf.i18n.mcsl.com.cn)
+
 ## 特色
 
 **高效**：顷刻即可创建新实例。  
 
 **全面**：支持大多数控制台应用程序的管理。  
+
+**多语言支持**: 官方支持 29 种语言，国际化无压力。  
 
 **多实例管理**：从一处同时控制多个实例。
 
@@ -29,6 +35,8 @@ MCServerLauncher Future 是新一代的服务器管理软件，提供直观的�
 WPF桌面启动器：需要 [.NET Framework 4.6.2+](http://go.microsoft.com/fwlink/?linkid=780600)
 
 ## 贡献
+
+我们正在通过 Crowdin 进行如火如荼的国际化工作。如果您有这方面的特长，欢迎前往 <https://wpf.i18n.mcsl.com.cn> 贡献您的一份力量。  
 
 如需报告问题或提出改进建议，请 [提交 Issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose) 或 [提交 Pull Request](https://github.com/MCSLTeam/MCServerLauncher-Future/compare) 。
 

@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.Console.View.Pages
+﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 {
     /// <summary>
     ///    ComponentManagerPage.xaml 的交互逻辑
