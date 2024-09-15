@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
@@ -9,7 +10,10 @@ namespace MCServerLauncher.Daemon.Storage;
 
 internal static class FileManager
 {
-    public const string Root = "mcsl_future";
+    public const string Root = "daemon";
+    public static string InstancesRoot = Path.Combine(Root, "instances");
+    public static string LogRoot = Path.Combine(Root, "logs");
+
     private static readonly ConcurrentDictionary<Guid, FileUploadInfo> _uploadSessions = new();
 
     /// <summary>

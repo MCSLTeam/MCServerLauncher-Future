@@ -62,9 +62,9 @@ internal class ServerBehavior : WebSocketBehavior
             _logHelper.Error($"Failed to authenticate user: {e.Message}");
         }
 
-#if DEBUG
-        authenticated = true;
-#endif
+// #if DEBUG
+//         authenticated = true;
+// #endif
 
         if (!authenticated)
         {

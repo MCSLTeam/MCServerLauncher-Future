@@ -1,4 +1,5 @@
 using System.Reflection;
+using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
 namespace MCServerLauncher.Daemon;
@@ -12,12 +13,9 @@ public class BasicUtils
     {
         var dataFolders = new List<string>
         {
-            "Data",
-            Path.Combine("Data", "Logs"),
-            Path.Combine("Data", "Logs", "Daemon"),
-            Path.Combine("Data", "InstanceData"),
-            Path.Combine("Data", "Configuration"),
-            Path.Combine("Data", "Configuration", "Instance")
+            FileManager.Root,
+            FileManager.InstancesRoot,
+            FileManager.LogRoot
         };
 
         foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
@@ -28,7 +26,7 @@ public class BasicUtils
     {
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
-            .WriteTo.Async(a => a.File("Data/Logs/Daemon/DaemonLog-.txt", rollingInterval: RollingInterval.Day,
+            .WriteTo.Async(a => a.File($"{FileManager.LogRoot}/daemon-.txt", rollingInterval: RollingInterval.Day,
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
