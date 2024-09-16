@@ -10,18 +10,55 @@ public class InstanceManager : IInstanceManager
     public ConcurrentDictionary<string, ServerConfig> Instances { get; } = new();
     public ConcurrentDictionary<string, ServerInstance> RunningInstances { get; } = new();
 
-    public bool TryAddServer(string instanceName, Action<ServerConfig> serverFactory)
+    public async Task<bool> TryAddServer(string instanceName, ServerConfig config, Action<ServerConfig> serverFactory)
     {
-        throw new NotImplementedException();
+        var instanceRoot = Path.Combine(FileManager.InstancesRoot, instanceName);
+        // validate dir name
+        try
+        {
+            Directory.CreateDirectory(instanceRoot);
+        }
+        catch (Exception e)
+        {
+            Log.Error("[InstanceManager] Failed to create instance directory '{0}': {1}", instanceRoot, e);
+            FileManager.TryRemove(instanceRoot); // rollback
+            return false;
+        }
+
+
+        // async run
+        var configTask = Task.Run(() => serverFactory.Invoke(config));
+        await configTask;
+        if (configTask.IsFaulted)
+        {
+            Log.Error("[InstanceManager] Failed to create server config: {0}", configTask.Exception?.InnerExceptions);
+            FileManager.TryRemove(instanceRoot); // rollback
+            return false;
+        }
+
+        try
+        {
+            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, ServerConfig.FileName), config);
+        }
+        catch (Exception e)
+        {
+            Log.Error("[InstanceManager] Failed to write server config: {0}", e);
+            FileManager.TryRemove(instanceRoot); // rollback
+            return false;
+        }
+
+        return true;
     }
 
-    public bool TryRemoveServer(string instanceName)
+    public async Task<bool> TryRemoveServer(string instanceName)
     {
         if (!Instances.TryRemove(instanceName, out var config)) return false;
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return false;
 
-        instance.ServerProcess.Kill();
-        instance.ServerProcess.WaitForExit(1000);
+        instance.ServerProcess?.Kill();
+
+        // wait for process exit
+        await (instance.ServerProcess?.WaitForExitAsync() ?? Task.CompletedTask);
 
         // remove server directory
         try
@@ -56,12 +93,12 @@ public class InstanceManager : IInstanceManager
                 return true;
             }
 
-            instance.ServerProcess.Kill();
+            instance.ServerProcess?.Kill();
             return false;
         }
         catch (Exception e)
         {
-            instance.ServerProcess.Kill();
+            instance.ServerProcess?.Kill();
             Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", config.Name, e);
             return false;
         }
@@ -70,7 +107,7 @@ public class InstanceManager : IInstanceManager
     public bool TryStopServer(string instanceName)
     {
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return false;
-        instance.ServerProcess.StandardInput.WriteLine("stop");
+        instance.ServerProcess?.StandardInput.WriteLine("stop");
         // 不等待服务器退出
         return true;
     }
@@ -79,13 +116,13 @@ public class InstanceManager : IInstanceManager
     {
         if (!RunningInstances.TryGetValue(instanceName, out var instance))
             throw new ArgumentException("Instance not found.");
-        instance.ServerProcess.StandardInput.WriteLine(message);
+        instance.ServerProcess?.StandardInput.WriteLine(message);
     }
 
     public void KillServer(string instanceName)
     {
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return;
-        instance.ServerProcess.Kill();
+        instance.ServerProcess?.Kill();
     }
 
     public InstanceStatus GetServerStatus(string instanceName)
