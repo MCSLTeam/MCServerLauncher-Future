@@ -47,14 +47,14 @@ public class WebJsonConverter : IWebJsonConverter
     /// <typeparam name="T"></typeparam>
     private class SnakeCaseEnumConverter<T> : JsonConverter where T : struct, Enum
     {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             var pascalCase = value!.ToString();
             var snakeCase = ConvertPascalCaseToSnakeCase(pascalCase);
             writer.WriteValue(snakeCase);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
             JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.String)
@@ -90,12 +90,12 @@ public class WebJsonConverter : IWebJsonConverter
     /// </summary>
     private class GuidJsonConverter : JsonConverter
     {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             writer.WriteValue(value!.ToString());
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
             JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.String)

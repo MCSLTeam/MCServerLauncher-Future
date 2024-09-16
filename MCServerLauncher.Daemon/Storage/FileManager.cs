@@ -197,4 +197,26 @@ internal static class FileManager
     {
         BackupAndWriteText(path, JsonConvert.SerializeObject(obj));
     }
+
+    public static bool TryRemove(string path, bool recursive = true)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive);
+            }
+            else
+            {
+                File.Delete(path);
+            }
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error("[FileManager] Failed to Remove '{0}': {1}", path, e);
+            return false;
+        }
+    }
 }

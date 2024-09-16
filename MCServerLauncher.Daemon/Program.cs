@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using MCServerLauncher.Daemon.Minecraft.Server;
+﻿using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
@@ -18,8 +17,8 @@ public class Program
     {
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
-        //Serve();
-        await RunMcServerAsync();
+        Serve();
+        // await RunMcServerAsync();
     }
 
     public static void TestJavaScanner()
@@ -93,10 +92,7 @@ public class Program
         await Task.WhenAny(
             Task.Run(() =>
             {
-                while (true)
-                {
-                    instance.ServerProcess.StandardInput.WriteLine(Console.ReadLine());
-                }
+                while (true) instance.ServerProcess.StandardInput.WriteLine(Console.ReadLine());
             }),
             Task.Run(instance.ServerProcess.WaitForExit)
         );
@@ -109,7 +105,7 @@ public class Program
     }
 
     /// <summary>
-    ///    app开始服务,包含配置DI和HttpServer启动
+    ///     app开始服务,包含配置DI和HttpServer启动
     /// </summary>
     private static void Serve()
     {
@@ -133,7 +129,7 @@ public class Program
     }
 
     /// <summary>
-    ///    配置DI服务
+    ///     配置DI服务
     /// </summary>
     /// <param name="services"></param>
     private static void ConfigureServices(IServiceCollection services)
