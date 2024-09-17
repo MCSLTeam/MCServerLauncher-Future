@@ -1,6 +1,6 @@
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
-public enum ServerType
+public enum InstanceType
 {
     Vanilla,
     Fabric,

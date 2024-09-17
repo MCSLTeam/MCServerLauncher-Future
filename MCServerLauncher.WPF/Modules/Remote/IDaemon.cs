@@ -9,6 +9,11 @@ namespace MCServerLauncher.WPF.Modules.Remote
         public string Path { get; set; }
         public string Version { get; set; }
         public string Architecture { get; set; }
+
+        public override string ToString()
+        {
+            return $"Java({Version} - {Architecture}) @ {Path}";
+        }
     }
 
     /// <summary>

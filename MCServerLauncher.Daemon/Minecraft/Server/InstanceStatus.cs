@@ -11,7 +11,7 @@ public enum ServerStatus
 
 public class InstanceStatus
 {
-    public InstanceStatus(ServerStatus status, ServerConfig config, List<string> properties,
+    public InstanceStatus(ServerStatus status, InstanceConfig config, List<string> properties,
         IEnumerable<string> players)
     {
         Status = status;
@@ -21,7 +21,7 @@ public class InstanceStatus
     }
 
     public ServerStatus Status { get; set; }
-    public ServerConfig Config { get; private set; }
+    public InstanceConfig Config { get; private set; }
     public List<string> Properties { get; private set; }
     public List<string> Players { get; } = new();
 }

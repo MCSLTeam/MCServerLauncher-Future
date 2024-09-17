@@ -3,14 +3,14 @@ using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
-public class ServerInstance
+public class Instance
 {
-    public ServerInstance(ServerConfig config)
+    public Instance(InstanceConfig config)
     {
         Config = config;
     }
 
-    public ServerConfig Config { get; }
+    public InstanceConfig Config { get; }
     public Process? ServerProcess { get; private set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
 
@@ -24,7 +24,7 @@ public class ServerInstance
     /// <param name="config">带创建进程的配置文件</param>
     /// <param name="beforeStart">在启动前执行的操作(连接stdout等)</param>
     /// <returns></returns>
-    private Process GetProcess(ServerConfig config, Action<Process> beforeStart)
+    private Process GetProcess(InstanceConfig config, Action<Process> beforeStart)
     {
         var (target, args) = config.GetLaunchScript();
 
