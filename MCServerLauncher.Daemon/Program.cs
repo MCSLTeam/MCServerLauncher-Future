@@ -77,17 +77,17 @@ public class Program
 
     public static async Task RunMcServerAsync()
     {
-        ServerConfig config = new()
+        InstanceConfig config = new()
         {
             WorkingDirectory = @"./instance",
             JavaArgs = Array.Empty<string>(),
             JavaPath = "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath\\java.exe",
             Name = "TestServer",
-            ServerType = ServerType.Fabric,
+            InstanceType = InstanceType.Fabric,
             Target = "run.bat",
             TargetType = TargetType.Script
         };
-        ServerInstance instance = new(config);
+        Instance instance = new(config);
         instance.Start();
         await Task.WhenAny(
             Task.Run(() =>

@@ -9,9 +9,9 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceName">实例名称</param>
     /// <param name="config">服务器配置</param>
-    /// <param name="serverFactory">服务器实例工厂，会被异步执行，根据<see cref="ServerConfig" />执行服务器安装</param>
+    /// <param name="serverFactory">服务器实例工厂，会被异步执行，根据<see cref="InstanceConfig" />执行服务器安装</param>
     /// <returns></returns>
-    Task<bool> TryAddServer(string instanceName, ServerConfig config, Action<ServerConfig> serverFactory);
+    Task<bool> TryAddServer(string instanceName, InstanceConfig config, Action<InstanceConfig> serverFactory);
 
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。
