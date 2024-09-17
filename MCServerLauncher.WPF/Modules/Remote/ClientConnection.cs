@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,8 +15,54 @@ namespace MCServerLauncher.WPF.Modules.Remote
     internal class HeartBeatTimerState
     {
         public ClientConnection Connection { get; set; }
-        public int PingPacketLost { get; set; }
+        public int PingPacketLost { get; set; } = 0;
         public SynchronizationContext ConnectionContext { get; set; }
+
+        public HeartBeatTimerState(ClientConnection conn, SynchronizationContext ctx)
+        {
+            Connection = conn;
+            ConnectionContext = ctx;
+        }
+    }
+
+    internal class ConnectionPendingRequest
+    {
+        public readonly int Size;
+        private SemaphoreSlim _full;
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<JObject>> _pendings = new();
+
+        public ConnectionPendingRequest(int size)
+        {
+            Size = size;
+            _full = new SemaphoreSlim(size);
+        }
+
+        public async Task<bool> AddPendingAsync(string echo, TaskCompletionSource<JObject> tcs, int timeout,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+
+            return _pendings.TryAdd(echo, tcs); // 确保echo在size范围内不会重复
+        }
+
+        public bool TryRemovePending(string echo, out TaskCompletionSource<JObject> tcs)
+        {
+            var rv = _pendings.TryRemove(echo, out tcs);
+            _full.Release();
+            return rv;
+        }
+
+        public bool TryGetPending(string echo, out TaskCompletionSource<JObject> tcs)
+        {
+            return _pendings.TryGetValue(echo, out tcs);
+        }
     }
 
     public class ClientConnection
@@ -25,9 +71,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
         private const int BufferSize = 1024;
 
         private CancellationTokenSource _cts;
-        private Timer _heartbeatTimer;
-        private Channel<(string, TaskCompletionSource<JObject>)> _pendingRequests;
-        private Task _receiveLoopTask;
+        private Timer? _heartbeatTimer;
+        private ConnectionPendingRequest _pendingRequests;
+        private Task? _receiveLoopTask;
 
 
         public bool Closed => WebSocket.State == WebSocketState.Closed;
@@ -35,6 +81,13 @@ namespace MCServerLauncher.WPF.Modules.Remote
         public bool PingLost { get; private set; }
         public ClientWebSocket WebSocket { get; } = new();
         public ClientConnectionConfig Config { get; private set; }
+
+        private ClientConnection(ClientConnectionConfig config)
+        {
+            _cts = new CancellationTokenSource();
+            _pendingRequests = new ConnectionPendingRequest(config.PendingRequestCapacity);
+            Config = config;
+        }
 
         /// <summary>
         ///     建立连接
@@ -49,17 +102,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
             ClientConnectionConfig config)
         {
             // create instance
-            ClientConnection connection = new();
-            connection._cts = new CancellationTokenSource();
-            connection.Config = config;
-            connection._pendingRequests =
-                Channel.CreateBounded<(string, TaskCompletionSource<JObject>)>(config.PendingRequestCapacity);
+            ClientConnection connection = new(config);
 
-            var timerState = new HeartBeatTimerState
-            {
-                Connection = connection,
-                ConnectionContext = SynchronizationContext.Current
-            };
+            var timerState = new HeartBeatTimerState(connection, SynchronizationContext.Current);
             connection._heartbeatTimer =
                 new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
 
@@ -85,6 +130,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
             var pingTask = conn.RequestAsync(
                 ActionType.Ping,
                 new Dictionary<string, object>(),
+                echo: Guid.NewGuid().ToString(),
                 timeout: conn.Config.PingTimeout
             );
 
@@ -126,7 +172,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="echo"></param>
         /// <param name="cancellationToken"></param>
         private static async Task SendAsync(ClientWebSocket ws, ActionType actionType, Dictionary<string, object> args,
-            string echo, CancellationToken cancellationToken)
+            string? echo, CancellationToken cancellationToken)
         {
             Dictionary<string, object> data = new()
             {
@@ -134,27 +180,27 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 { "params", args }
             };
 
-            if (!string.IsNullOrEmpty(echo)) data.Add("echo", echo);
+            if (!string.IsNullOrEmpty(echo)) data.Add("echo", echo!);
 
             var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.Indented));
             await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
         }
 
         /// <summary>
-        ///     发送一个action
+        ///     发送一个action(不等待应答 / 丢弃应答)
         /// </summary>
         /// <param name="actionType"></param>
         /// <param name="args"></param>
         /// <param name="echo"></param>
         /// <param name="cancellationToken"></param>
-        public async Task SendAsync(ActionType actionType, Dictionary<string, object> args, string echo = null,
+        public async Task SendAsync(ActionType actionType, Dictionary<string, object> args, string? echo = null,
             CancellationToken cancellationToken = default)
         {
             await SendAsync(WebSocket, actionType, args, echo, cancellationToken);
         }
 
         /// <summary>
-        ///     一个RPC过程,包含了发送和等待回复
+        ///     一个RPC过程,包含了发送和等待回复。若echo为null，则会生成一个随机的echo作为rpc标识，并等待回复。
         /// </summary>
         /// <param name="actionType">action类型</param>
         /// <param name="args">该action参数</param>
@@ -163,10 +209,11 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
-            string echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
+            string? echo=null, int timeout = 5000, CancellationToken cancellationToken = default)
         {
+            echo ??= Guid.NewGuid().ToString();
             await SendAsync(actionType, args, echo, cancellationToken);
-            return await ExpectAsync(timeout, echo);
+            return await ExpectAsync(echo, timeout, cancellationToken);
         }
 
         /// <summary>
@@ -175,7 +222,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         public async Task CloseAsync()
         {
             _cts.Cancel();
-            await _receiveLoopTask; // 等待接收循环结束
+            if (_receiveLoopTask != null) await _receiveLoopTask; // 等待接收循环结束
 
             await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
         }
@@ -185,100 +232,48 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// </summary>
         /// <param name="timeout">回复超时</param>
         /// <param name="echo">echo校验</param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         /// <exception cref="TimeoutException">期待超时</exception>
-        private async Task<JObject> ExpectAsync(int timeout, string echo = null)
+        private async Task<JObject> ExpectAsync(string echo, int timeout, CancellationToken cancellationToken = default)
         {
             var tcs = new TaskCompletionSource<JObject>();
 
-            // enqueue
-            if (!_pendingRequests.Writer.TryWrite((echo, tcs)))
+            // add to pending
+            if (!await _pendingRequests.AddPendingAsync(echo, tcs, timeout, cancellationToken))
             {
-                Log.Error("[ClientConnection] failed to enqueue request, queue is full");
-                throw new Exception("failed to enqueue request, queue is full");
+                Log.Error("[ClientConnection] failed to add pending request: pending list is full");
+                throw new Exception("failed to add pending request: pending list is full");
             }
 
-            var task = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-
-            if (task != tcs.Task) throw new TimeoutException();
+            var task = await Task.WhenAny(tcs.Task, Task.Delay(timeout, cancellationToken));
+            
+            // timeout or cancelled
+            if (task != tcs.Task)
+            {
+                // remove from pending
+                if (!_pendingRequests.TryRemovePending(echo, out _))
+                {
+                    Log.Error("[ClientConnection] failed to remove pending request, echo: {0}", echo);
+                    throw new Exception($"failed to remove pending request, echo: {echo}");
+                }
+                throw new TimeoutException();
+            }
 
             var received = tcs.Task.Result;
 
-            // TODO 错误处理 (!)
+            // error handling
             var status = received["status"]!.ToString();
             if (status == null) throw new Exception($"status is null: {received}");
 
             return status switch
             {
-                "ok" => received["data"]! as JObject,
+                "ok" => (received["data"]! as JObject)!,
                 "error" => throw new Exception(received["data"]!["message"]?.ToString() ?? "unknown error"),
                 _ => throw new Exception($"unknown status: {status}")
             };
         }
-
-        // private async Task<JObject> UploadFileChunk(string fileId, int offset, string strData)
-        // {
-        //     var data = new Dictionary<string, object>
-        //     {
-        //         { "file_id", fileId },
-        //         { "offset", offset },
-        //         { "data", strData }
-        //     };
-        //     await SendAsync(WebSocket, ActionType.FileUploadChunk, data);
-        //     data = null; // 释放
-        //     return await ExpectAsync(5000);
-        // }
-        //
-        // public async Task<string> UploadFile(string path, string dst, int chunkSize)
-        // {
-        //     using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        //     var sha1 = await Utils.FileSha1(fs);
-        //     var size = new FileInfo(path).Length;
-        //     var fileId = (await RequestAsync(ActionType.FileUploadRequest, new Dictionary<string, object>
-        //     {
-        //         { "path", dst },
-        //         { "sha1", sha1 },
-        //         { "chunk_size", chunkSize },
-        //         { "size", size }
-        //     }))["file_id"]!.ToString();
-        //
-        //     var tasks = new List<Task<JObject>>();
-        //
-        //     var buffer = new byte[chunkSize];
-        //     var offset = 0;
-        //     int bytesRead;
-        //     while ((bytesRead = fs.Read(buffer, 0, chunkSize)) > 0)
-        //     {
-        //         string strData;
-        //         if (bytesRead == chunkSize)
-        //         {
-        //             strData = Encoding.BigEndianUnicode.GetString(buffer, 0, chunkSize);
-        //         }
-        //         else if (bytesRead % 2 != 0) // 末尾补0x00
-        //         {
-        //             buffer[bytesRead] = 0x00;
-        //             strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead + 1);
-        //         }
-        //         else
-        //         {
-        //             strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead);
-        //         }
-        //
-        //         try
-        //         {
-        //             Log.Information((await UploadFileChunk(fileId, offset, strData)).ToString());
-        //         }
-        //         catch (Exception e)
-        //         {
-        //             Log.Information(e.ToString());
-        //         }
-        //
-        //         offset += bytesRead;
-        //     }
-        //
-        //     return null;
-        // }
 
         /// <summary>
         ///     消息接收循环, 被设计运行在某一个线程中
@@ -325,70 +320,29 @@ namespace MCServerLauncher.WPF.Modules.Remote
         ///     派发从服务器接收的应答并根据Action的规则解析包, 判断echo的一致性, 并为等待的任务设置相应的结果或异常
         /// </summary>
         /// <param name="json">从服务器接收的json</param>
+        /// <exception cref="ArgumentNullException">echo为空</exception>
         private void Dispatch(string json)
         {
             var data = JObject.Parse(json);
-            data.TryGetValue("echo", out var echo);
+            data.TryGetValue("echo", out var rawEcho);
 
-
-            if (_pendingRequests.Reader.TryRead(out var pending))
+            if (rawEcho == null)
             {
-                if (echo?.ToString() == pending.Item1)
-                {
-                    pending.Item2.SetResult(data);
-                }
-                else
-                {
-                    var msg =
-                        $"[ClientConnection] Received unexpect message: mismatched echo, expected: {pending.Item1}, received: {echo}";
-                    Log.Error(msg);
-                    pending.Item2.SetException(new Exception(msg));
-                }
+                Log.Error(
+                    "[ClientConnection] [ReceiveLoop] Received unexpected message: echo is null. may be connected to a unofficial daemon?");
+                throw new ArgumentNullException(nameof(rawEcho));
+            }
+
+            var echo = rawEcho.ToString();
+
+            if (_pendingRequests.TryRemovePending(echo, out var pending))
+            {
+                pending.SetResult(data);
             }
             else
             {
                 Log.Warning($"[ClientConnection] Received redundant message: redundant message: {json}");
             }
         }
-
-        // public static void Test()
-        // {
-        //     Task.Run(async () =>
-        //     {
-        //         var connection = await OpenAsync("127.0.0.1", 11451, "8e648c37-677f-43a5-8cd1-792668fc7e29",
-        //             new ClientConnectionConfig());
-        //         // sleep
-        //         await Task.Delay(1000);
-        //
-        //         #region Ping
-        //
-        //         var rv = await connection.RequestAsync(
-        //             ActionType.Ping,
-        //             new Dictionary<string, object>(),
-        //             "halo"
-        //         );
-        //         var data = rv["time"];
-        //         Console.WriteLine($@"Received Pong: {data}");
-        //
-        //         #endregion
-        //
-        //
-        //         #region UploadFile
-        //
-        //         var err = await connection.UploadFile(
-        //             "Newtonsoft.Json.xml", "Newtonsoft.Json.xml",
-        //             1024);
-        //         if (err == null)
-        //             Console.WriteLine(@"Upload Success");
-        //         else
-        //             Console.WriteLine($@"Upload Failed:{err}");
-        //
-        //         #endregion
-        //
-        //
-        //         await Task.Delay(5000);
-        //         await connection.CloseAsync();
-        //     });
-        // }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -111,8 +112,8 @@ namespace MCServerLauncher.WPF.Modules.Remote
 
         public async Task<List<JavaInfo>> GetJavaListAsync()
         {
-            return (await RequestAsync(ActionType.GetJavaList, new Dictionary<string, object>()))
-                .ToObject<List<JavaInfo>>();
+            var rv = await RequestAsync(ActionType.GetJavaList, new Dictionary<string, object>());
+            return rv["java_list"]!.ToObject<List<JavaInfo>>()!;
         }
 
         public async Task CloseAsync()
@@ -150,9 +151,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
 
         public static async Task<string?> LoginAsync(string address, int port, string usr, string pwd, uint? expired)
         {
-            var url = $"http://{address}:{port}/login?username={usr}&password={pwd}";
+            var url = $"http://{address}:{port}/login?usr={usr}&pwd={pwd}";
             if (expired.HasValue) url += $"&expired={expired}";
-            return await Utils.HttpGet(url);
+            return await Utils.HttpPost(url);
         }
 
         /// <summary>
@@ -184,7 +185,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         private async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
-            string echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
+            string? echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
         {
             return await Connection.RequestAsync(actionType, args, echo, timeout, cancellationToken);
         }
@@ -193,23 +194,28 @@ namespace MCServerLauncher.WPF.Modules.Remote
         {
             var usr = "admin";
             var pwd = "c4fd4f5b-cab3-443b-b2d1-1778a009dc9b";
-            var pwd1 = "dLkbxo7jedcnHIgL6OQdcg==";
+            var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
             var ip = "127.0.0.1";
-            var port = 11452;
+            var port = 11451;
 
             // login
-            var token = await LoginAsync(ip, port, usr, pwd, 86400);
-            Log.Debug($"Token got: {token ?? "token not found"}");
+            var token = await LoginAsync(ip, port, usr, pwd, 86400) ?? "token not found";
+            Log.Debug($"Token got: {token}");
 
             try
             {
-                await OpenAsync(ip, port, "hahaha", new ClientConnectionConfig
+                var daemon = await OpenAsync(ip, port, token, new ClientConnectionConfig
                 {
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
                     PingInterval = TimeSpan.FromSeconds(5),
                     PingTimeout = 3000
                 });
+                await Task.Delay(5000);
+                var rv = await daemon.GetJavaListAsync();
+                rv.ForEach(x => Log.Debug($"Java: {x.ToString()}"));
+                await Task.Delay(1000);
+                await daemon.CloseAsync();
             }
             catch (WebSocketException e)
             {
