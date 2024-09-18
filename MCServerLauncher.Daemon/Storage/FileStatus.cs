@@ -5,5 +5,5 @@ public enum FileStatus
     Exist,
     NotExist,
     Downloading,
-    Uploading,
+    Uploading
 }

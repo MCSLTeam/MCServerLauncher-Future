@@ -1,11 +1,7 @@
 using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Downloader;
-using MCServerLauncher.Daemon.Exception;
 using Newtonsoft.Json;
 using Serilog;
 using WebSocketSharp;
@@ -65,7 +61,7 @@ internal static class FileManager
             Log.Debug("[FileUploadChunk] Uploading file {0}", Path.GetFileName(fileName));
             return guid;
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return Guid.Empty;
         }
@@ -191,7 +187,7 @@ internal static class FileManager
         var fileId = Guid.NewGuid();
         Log.Debug("[FileManager] Downloading file {0} from {1}", filename, url);
 
-        var downloadOpt = new DownloadConfiguration()
+        var downloadOpt = new DownloadConfiguration
         {
             ChunkCount = maxThreads,
             ParallelDownload = true
@@ -208,7 +204,8 @@ internal static class FileManager
             }
             else if (!sha1.IsNullOrEmpty())
             {
-                var fileSha1 = await FileSha1(new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                var fileSha1 =
+                    await FileSha1(new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read));
                 if (sha1 != fileSha1)
                 {
                     Log.Warning("[FileManager] Downloaded file {0} SHA1 mismatch!", filename);
@@ -266,10 +263,7 @@ internal static class FileManager
             return t;
         var task = Task.Run(() =>
         {
-            while (!_filePath.ContainsKey(fileId))
-            {
-                Thread.Sleep(100);
-            }
+            while (!_filePath.ContainsKey(fileId)) Thread.Sleep(100);
         });
 
         return task;
@@ -352,17 +346,13 @@ internal static class FileManager
         try
         {
             if (Directory.Exists(path))
-            {
                 Directory.Delete(path, recursive);
-            }
             else
-            {
                 File.Delete(path);
-            }
 
             return true;
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             Log.Error("[FileManager] Failed to remove file {0}: {1}", path, e);
             return false;
