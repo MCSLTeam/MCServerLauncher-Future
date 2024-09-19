@@ -117,7 +117,7 @@ public class Utils
         return -1;
     }
 
-    private static IEnumerable<string> GetEnvironmentVariablesLinux(int pid)
+    private static IEnumerable<string> GetEnvironmentVariablesUnix(int pid)
     {
         var process = Process.Start("cat", $"/proc/{pid}/environ");
         process?.WaitForExit();
@@ -126,7 +126,13 @@ public class Utils
 
     public static IEnumerable<string> GetEnvironmentVariables(int pid)
     {
-        return GetEnvironmentVariablesWin(pid);
+        return Environment.OSVersion.Platform switch
+        {
+            PlatformID.Win32NT => GetEnvironmentVariablesWin(pid),
+            PlatformID.Unix => GetEnvironmentVariablesUnix(pid),
+            PlatformID.MacOSX => GetEnvironmentVariablesUnix(pid),
+            _ => throw new NotSupportedException("Unsupported platform"),
+        };
     }
 
     // Struct to hold process information
