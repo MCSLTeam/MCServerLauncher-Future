@@ -7,10 +7,11 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class InstanceManager : IInstanceManager
 {
-    public ConcurrentDictionary<string, ServerConfig> Instances { get; } = new();
-    public ConcurrentDictionary<string, ServerInstance> RunningInstances { get; } = new();
+    public ConcurrentDictionary<string, InstanceConfig> Instances { get; } = new();
+    public ConcurrentDictionary<string, Instance> RunningInstances { get; } = new();
 
-    public async Task<bool> TryAddServer(string instanceName, ServerConfig config, Action<ServerConfig> serverFactory)
+    public async Task<bool> TryAddServer(string instanceName, InstanceConfig config,
+        Action<InstanceConfig> serverFactory)
     {
         var instanceRoot = Path.Combine(FileManager.InstancesRoot, instanceName);
         // validate dir name
@@ -38,7 +39,7 @@ public class InstanceManager : IInstanceManager
 
         try
         {
-            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, ServerConfig.FileName), config);
+            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
         }
         catch (Exception e)
         {
@@ -82,7 +83,7 @@ public class InstanceManager : IInstanceManager
         var config = Instances.GetValueOrDefault(instanceName);
         if (config == null) return false;
 
-        var instance = new ServerInstance(config);
+        var instance = new Instance(config);
 
         try
         {
@@ -146,18 +147,22 @@ public class InstanceManager : IInstanceManager
                      SearchOption.TopDirectoryOnly))
         {
             var dir = new DirectoryInfo(directory);
-            var serverConfig = dir.GetFiles(ServerConfig.FileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
+            var serverConfig = dir.GetFiles(InstanceConfig.FileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
 
             if (serverConfig == null) continue;
 
             try
             {
-                var config = FileManager.ReadJson<ServerConfig>(serverConfig.FullName);
+                var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName);
                 instanceManager.Instances.TryAdd(config.Name, config);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Log.Error(
+                    "[InstanceManager] Failed to load instance at '{0}', ignored: {1}",
+                    Path.Combine(FileManager.InstancesRoot, directory),
+                    e
+                );
             }
         }
 
