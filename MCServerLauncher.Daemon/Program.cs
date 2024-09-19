@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.Daemon.Minecraft.Server;
+﻿using MCServerLauncher.Common.Network;
+using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
@@ -8,6 +9,7 @@ using MCServerLauncher.Daemon.Utils.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
 
 namespace MCServerLauncher.Daemon;
 
@@ -17,6 +19,12 @@ public class Program
     {
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
+        var info = await SlpClient.GetStatusModern("pve-net.xiexilin.com", 30042);
+        Log.Information("[SlpClient] Get Server List Ping data: {0}",
+            JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
+        Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
+
+
         Serve();
         // await RunMcServerAsync();
     }
