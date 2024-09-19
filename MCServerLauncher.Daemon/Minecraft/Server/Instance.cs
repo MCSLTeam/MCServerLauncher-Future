@@ -11,6 +11,7 @@ public class Instance
     }
 
     public InstanceConfig Config { get; }
+    public ushort? Port { get; private set; }
     public Process? ServerProcess { get; private set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
 
@@ -52,6 +53,18 @@ public class Instance
         // refresh server.properties
         Properties.Clear();
         Properties.AddRange(GetServerProperties());
+
+        // do something with server.properties
+        if (ushort.TryParse(Properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
+                out var parsed))
+        {
+            Port = parsed;
+        }
+        else
+        {
+            Port = null;
+            Log.Warning("[Instance({0})]Can't find or parse server port in server.properties", Config.Name);
+        }
 
         process.Start();
 
