@@ -49,6 +49,8 @@
 |---------|-----|-----------|
 | file_id | str | 文件上传句柄/标识 |
 
+
+
 ### FileUploadChunk
 
 成功申请到file_id后，即可上传文件的分块数据，此时需要提供file_id，分块偏移量，分块数据。
@@ -97,6 +99,8 @@
 | done     | bool | 是否上传完毕  |
 | received | long | 已接受的字节数 |
 
+
+
 ### FileUploadCancel
 
 通过file_id取消上传的任务
@@ -131,7 +135,220 @@
 }
 ```
 
-该响应无参数
+| 参数名 | 值   | 含义 |
+| ------ | ---- | ---- |
+
+
+
+### GetFileInfo
+
+获取指定路径文件的信息
+
+##### 请求
+
+```json
+{
+    "action": "get_file_info",
+    "params":{
+        "path": "..."
+    }
+}
+```
+
+| 参数名 | 值   | 含义                   |
+| ------ | ---- | ---------------------- |
+| path   | str  | 目标路径文件(相对路径) |
+
+##### 响应
+
+```json
+{
+    "status": "ok",
+    "retcode": 0,
+    "data": {
+        "type": "file | dir | link",
+        "read_only": false,
+    	"size": 114514,
+    	"creation_time": ...,
+    	"last_write_time": ...,
+    	"last_access_time": ...,
+    }
+}
+```
+
+| 参数名           | 值                    | 含义                         |
+| ---------------- | --------------------- | ---------------------------- |
+| type             | enum[file, dir, link] | 文件类型（文件、目录、链接） |
+| read_only        | bool                  | 是否为只读                   |
+| size             | long                  | 文件大小                     |
+| create_time      | long                  | 文件创建时间戳               |
+| last_write_time  | long                  | 文件上次写入时间戳           |
+| last_access_time | long                  | 文件上次访问时间戳           |
+
+
+
+### GetDirectoryInfo
+
+获取目标目录目录项
+
+##### 请求
+
+```json
+{
+    "action": "get_directory_info",
+    "params":{
+        "path": "..."
+    }
+}
+```
+
+| 参数名 | 值   | 含义                   |
+| ------ | ---- | ---------------------- |
+| path   | str  | 目标路径文件(相对路径) |
+
+##### 响应
+
+```json
+{
+    "status": "ok",
+    "retcode": 0,
+    "data": {
+        files:[{
+            	"name": "file1",
+                "meta": {
+                    "type": "file | dir | link",
+                    "read_only": false,
+                    "size": 114514,
+                    "creation_time": ...,
+                    "last_write_time": ...,
+                    "last_access_time": ...,
+                }
+            },
+    		...
+        ]
+    }
+}
+```
+
+| 参数名 | 值             | 含义       |
+| ------ | -------------- | ---------- |
+| files  | list[DirEntry] | 目录项列表 |
+
+
+
+### FileDownloadRequest
+
+客户端请求下载文件，服务端打开文件流并创建Guid作为handle发回客户端
+
+##### 请求
+
+```json
+{
+    "action": "file_download_request",
+    "params":{
+		"path": "..."
+    }
+}
+```
+
+| 参数名 | 值   | 含义     |
+| ------ | ---- | -------- |
+| path   | str  | 相对路径 |
+
+##### 应答
+
+```json
+{
+    "status": "ok",
+    "retcode": 0,
+    "data": {
+        "file_id": "xxxx"
+        "sha1": "114514114514114514114514114514",
+        "size": 1919810
+    }
+}
+```
+
+| 参数名  | 值   | 含义           |
+| ------- | ---- | -------------- |
+| file_id | str  | 下载文件的句柄 |
+| sha1    | str  | SHA-1校验码    |
+| size    | long | 文件大小       |
+
+
+
+### FileDownloadRange
+
+客户端请求下载 句柄为file_id文件 的一部分
+
+##### 请求
+
+```json
+{
+    "action": "file_download_range",
+    "params":{
+        "file_id": "...",
+		"range": "0..114514"
+    }
+}
+```
+
+| 参数名  | 值                  | 含义                   |
+| ------- | ------------------- | ---------------------- |
+| file_id | str                 | 下载文件句柄           |
+| range   | Pattern[long..long] | 下载文件范围，左闭右开 |
+
+##### 响应
+
+```json
+{
+    "status": "ok",
+    "retcode": 0,
+    "data":{
+        "content": "????????????????????????????????????????????????????????????????????????????????????????????????????????"
+    }
+}
+```
+
+| 参数名 | 值   | 含义                |
+| ------ | ---- | ------------------- |
+| data   | str  | 字符串形式的bytes[] |
+
+
+
+### FileDownloadClose
+
+客户端终止或者完成下载文件，请求服务端关闭和释放相关文件资源
+
+##### 请求
+
+```json
+{
+    "action": "file_download_close",
+    "params":{
+        "file_id": "..."
+    }
+}
+```
+
+| 参数名  | 值   | 含义         |
+| ------- | ---- | ------------ |
+| file_id | str  | 下载文件句柄 |
+
+##### 响应
+
+```json
+{
+    "status": "ok",
+    "retcode": 0,
+    "data": {}
+}
+```
+
+| 参数名 | 值   | 含义 |
+| ------ | ---- | ---- |
+
+
 
 ### GetJavaList
 
@@ -194,6 +411,8 @@ public struct JavaInfo
     }
 }
 ```
+
+
 
 ### Ping
 
