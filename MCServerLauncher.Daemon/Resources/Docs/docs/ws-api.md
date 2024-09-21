@@ -26,12 +26,12 @@
 }
 ```
 
-| 参数         | 值    | 含义           |
-|------------|------|--------------|
-| path       | str  | 上传的文件将要存放的位置 |
-| sha1       | str  | 文件SHA-1校验码   |
-| chunk_size | long | 分块传输的分块大小    |
-| size       | long | 文件总大小        |
+| 参数         | 值             | 含义                                                |
+|------------|---------------|---------------------------------------------------|
+| path       | Optional[str] | 上传的文件将要存放的位置，若为空，上传到默认文件夹(FileManager.UploadRoot) |
+| sha1       | str           | 文件SHA-1校验码                                        |
+| chunk_size | long          | 分块传输的分块大小                                         |
+| size       | long          | 文件总大小                                             |
 
 ##### 响应
 
@@ -48,8 +48,6 @@
 | 参数      | 值   | 含义        |
 |---------|-----|-----------|
 | file_id | str | 文件上传句柄/标识 |
-
-
 
 ### FileUploadChunk
 
@@ -99,8 +97,6 @@
 | done     | bool | 是否上传完毕  |
 | received | long | 已接受的字节数 |
 
-
-
 ### FileUploadCancel
 
 通过file_id取消上传的任务
@@ -135,10 +131,8 @@
 }
 ```
 
-| 参数名 | 值   | 含义 |
-| ------ | ---- | ---- |
-
-
+| 参数名 | 值 | 含义 |
+|-----|---|----|
 
 ### GetFileInfo
 
@@ -155,9 +149,9 @@
 }
 ```
 
-| 参数名 | 值   | 含义                   |
-| ------ | ---- | ---------------------- |
-| path   | str  | 目标路径文件(相对路径) |
+| 参数名  | 值   | 含义           |
+|------|-----|--------------|
+| path | str | 目标路径文件(相对路径) |
 
 ##### 响应
 
@@ -166,26 +160,30 @@
     "status": "ok",
     "retcode": 0,
     "data": {
-        "type": "file | dir | link",
-        "read_only": false,
-    	"size": 114514,
-    	"creation_time": ...,
-    	"last_write_time": ...,
-    	"last_access_time": ...,
+        "meta":{
+            "read_only": false,
+            "size": 114514,
+            "creation_time": 17777777777,
+            "last_write_time": 17777777777,
+            "last_access_time": 17777777777,
+        }
     }
 }
 ```
 
-| 参数名           | 值                    | 含义                         |
-| ---------------- | --------------------- | ---------------------------- |
-| type             | enum[file, dir, link] | 文件类型（文件、目录、链接） |
-| read_only        | bool                  | 是否为只读                   |
-| size             | long                  | 文件大小                     |
-| create_time      | long                  | 文件创建时间戳               |
-| last_write_time  | long                  | 文件上次写入时间戳           |
-| last_access_time | long                  | 文件上次访问时间戳           |
+| 参数名  | 值            | 含义    |
+|------|--------------|-------|
+| meta | FileMetadata | 文件元信息 |
 
+##### FileMetadata
 
+| 参数名              | 值    | 含义        |
+|------------------|------|-----------|
+| read_only        | bool | 是否为只读     |
+| size             | long | 文件大小      |
+| create_time      | long | 文件创建时间戳   |
+| last_write_time  | long | 文件上次写入时间戳 |
+| last_access_time | long | 文件上次访问时间戳 |
 
 ### GetDirectoryInfo
 
@@ -202,39 +200,107 @@
 }
 ```
 
-| 参数名 | 值   | 含义                   |
-| ------ | ---- | ---------------------- |
-| path   | str  | 目标路径文件(相对路径) |
+| 参数名  | 值   | 含义           |
+|------|-----|--------------|
+| path | str | 目标路径文件(相对路径) |
 
 ##### 响应
 
 ```json
 {
-    "status": "ok",
-    "retcode": 0,
-    "data": {
-        files:[{
-            	"name": "file1",
-                "meta": {
-                    "type": "file | dir | link",
-                    "read_only": false,
-                    "size": 114514,
-                    "creation_time": ...,
-                    "last_write_time": ...,
-                    "last_access_time": ...,
-                }
-            },
-    		...
-        ]
-    }
+  "status": "ok",
+  "retcode": 0,
+  "data": {
+    "parent": "relative/to/daemon/root",
+    "files": [
+      {
+        "name": "file1",
+        "type": "file",
+        "meta": {
+          "read_only": false,
+          "size": 114514,
+          "link_target": "some/path",
+          "hidden": false,
+          "creation_time": 17777777777,
+          "last_write_time": 17777777777,
+          "last_access_time": 17777777777
+        }
+      }
+    ],
+    "directories": [
+      {
+        "name": ".dir1",
+        "type": "directory",
+        "meta": {
+          "hidden": true,
+          "link_target": "some/path",
+          "creation_time": 17777777777,
+          "last_write_time": 17777777777,
+          "last_access_time": 17777777777
+        }
+      }
+    ]
+  }
 }
 ```
 
-| 参数名 | 值             | 含义       |
-| ------ | -------------- | ---------- |
-| files  | list[DirEntry] | 目录项列表 |
+| 参数名         | 值                                         | 含义                  |
+|-------------|-------------------------------------------|---------------------|
+| parent      | str                                       | 相对于daemon root的相对路径 |
+| files       | list[DirectoryEntry.FileInformation]      | 当前目录下子文件的信息列表       |
+| directories | list[DirectoryEntry.DirectoryInformation] | 当前目录下子文件夹的信息列表      |
 
+```c#
+internal record FileSystemMetadata
+{
+    public DateTime CreationTime;
+    public DateTime LastAccessTime;
+    public DateTime LastWriteTime;
+    public bool Hidden;
+    public string? LinkTarget;
 
+    // ...
+}
+
+internal record FileMetadata : FileSystemMetadata
+{
+    public long Size;
+    public bool ReadOnly;
+
+    // ...
+}
+
+internal record DirectoryMetadata : FileSystemMetadata
+{
+    
+    // ...
+}
+
+internal record DirectoryEntry
+{
+    public FileInformation[] Files;
+    public DirectoryInformation[] Directories;
+    public string? Parent;
+
+	// ...
+
+    public record FileInformation
+    {
+        public string Name;
+        public FileMetadata Meta;
+		
+        // ...
+    }
+
+    public record DirectoryInformation
+    {
+        public string Name;
+        public DirectoryMetadata Meta;
+        
+        // ...
+    }
+}
+```
 
 ### FileDownloadRequest
 
@@ -251,9 +317,9 @@
 }
 ```
 
-| 参数名 | 值   | 含义     |
-| ------ | ---- | -------- |
-| path   | str  | 相对路径 |
+| 参数名  | 值             | 含义                                          |
+|------|---------------|---------------------------------------------|
+| path | Optional[str] | 相对路径，若为空，上传到默认文件夹(FileManager.DownloadRoot) |
 
 ##### 应答
 
@@ -262,20 +328,18 @@
     "status": "ok",
     "retcode": 0,
     "data": {
-        "file_id": "xxxx"
-        "sha1": "114514114514114514114514114514",
-        "size": 1919810
+        "file_id": "xxxx",
+        "size": 1919810,
+        "sha1": "114514114514114514114514114514"
     }
 }
 ```
 
-| 参数名  | 值   | 含义           |
-| ------- | ---- | -------------- |
-| file_id | str  | 下载文件的句柄 |
-| sha1    | str  | SHA-1校验码    |
-| size    | long | 文件大小       |
-
-
+| 参数名     | 值    | 含义       |
+|---------|------|----------|
+| file_id | str  | 下载文件的句柄  |
+| sha1    | str  | SHA-1校验码 |
+| size    | long | 文件大小     |
 
 ### FileDownloadRange
 
@@ -293,10 +357,10 @@
 }
 ```
 
-| 参数名  | 值                  | 含义                   |
-| ------- | ------------------- | ---------------------- |
-| file_id | str                 | 下载文件句柄           |
-| range   | Pattern[long..long] | 下载文件范围，左闭右开 |
+| 参数名     | 值                 | 含义          |
+|---------|-------------------|-------------|
+| file_id | str               | 下载文件句柄      |
+| range   | Pattern[int..int] | 下载文件范围，左闭右开 |
 
 ##### 响应
 
@@ -310,11 +374,9 @@
 }
 ```
 
-| 参数名 | 值   | 含义                |
-| ------ | ---- | ------------------- |
-| data   | str  | 字符串形式的bytes[] |
-
-
+| 参数名  | 值   | 含义            |
+|------|-----|---------------|
+| data | str | 字符串形式的bytes[] |
 
 ### FileDownloadClose
 
@@ -331,9 +393,9 @@
 }
 ```
 
-| 参数名  | 值   | 含义         |
-| ------- | ---- | ------------ |
-| file_id | str  | 下载文件句柄 |
+| 参数名     | 值   | 含义     |
+|---------|-----|--------|
+| file_id | str | 下载文件句柄 |
 
 ##### 响应
 
@@ -345,10 +407,8 @@
 }
 ```
 
-| 参数名 | 值   | 含义 |
-| ------ | ---- | ---- |
-
-
+| 参数名 | 值 | 含义 |
+|-----|---|----|
 
 ### GetJavaList
 
@@ -411,8 +471,6 @@ public struct JavaInfo
     }
 }
 ```
-
-
 
 ### Ping
 
