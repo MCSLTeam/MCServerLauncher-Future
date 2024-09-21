@@ -12,7 +12,7 @@ internal class AppConfig
     /// <summary>
     ///     不可变单例
     /// </summary>
-    [JsonIgnore] private static AppConfig _appConfig;
+    [JsonIgnore] private static AppConfig? _appConfig;
 
     /// <summary>
     ///     端口
@@ -25,10 +25,13 @@ internal class AppConfig
     /// </summary>
     public readonly string Secret;
 
-    public AppConfig(ushort Port, string Secret)
+    public int SingleFileMaxDownloadSessions { get; private set; }
+
+    public AppConfig(ushort port, string secret, int sfmds = 3)
     {
-        this.Port = Port;
-        this.Secret = Secret;
+        Port = port;
+        Secret = secret;
+        SingleFileMaxDownloadSessions = sfmds;
     }
 
     private static AppConfig GetDefault()

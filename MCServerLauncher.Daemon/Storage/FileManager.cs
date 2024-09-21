@@ -117,6 +117,8 @@ internal static class FileManager
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
     private static readonly ConcurrentDictionary<Guid, DownloadService> Downloading = new();
 
+    #region File Upload Service
+
     /// <summary>
     ///     请求上传文件:首先检查是否有同名文件正在上传,若没有,则预分配空间并添加后缀.tmp,返回file_id
     /// </summary>
@@ -227,7 +229,12 @@ internal static class FileManager
         Log.Debug("[FileUploadChunk] File {0} upload complete", Path.GetFileName(info.Path));
         return (true, info.Size - info.RemainLength);
     }
-
+    
+    /// <summary>
+    ///    取消上传文件
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     public static bool FileUploadCancel(Guid id)
     {
         if (!UploadSessions.TryRemove(id, out var info)) return false;
@@ -240,13 +247,27 @@ internal static class FileManager
         return true;
     }
 
-    public static async Task<DownloadRequestInfo> FileDownloadRequest(string? path)
+    #endregion
+
+    #region File Download Service
+    
+    /// <summary>
+    ///  客户端请求下载服务端的文件
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    /// <exception cref="IOException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static async Task<DownloadRequestInfo> FileDownloadRequest(string path)
     {
         // Validate path
         if (ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        if (!File.Exists(path)) throw new IOException("File not found");
 
         // do not check if file in download session
-        // TODO : balance the concurrency of file downloads (limited number of download sessions for a single file or other methods)
+        // balance the concurrency of file downloads (limited number of download sessions for a single file)
+        if (DownloadSessions.Count(kv => kv.Value.Path == path) >= AppConfig.Get().SingleFileMaxDownloadSessions)
+            throw new InvalidOperationException($"Max download sessions of file '{path}' reached");
 
         // set file share to None, declined any access. For example: downloading & upload session.
         // this operation can raise various exceptions, attention.
@@ -256,7 +277,15 @@ internal static class FileManager
         var sha1 = await FileSha1(fs);
         return new DownloadRequestInfo(Guid.NewGuid(), size, sha1);
     }
-
+    
+    /// <summary>
+    ///  客户端使用服务端分配的文件下载句柄请求文件分片
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="from"></param>
+    /// <param name="to"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
     public static async Task<string> FileDownloadRange(Guid id, int from, int to)
     {
         if (!DownloadSessions.TryGetValue(id, out var info)) throw new ArgumentException("Invalid download session id");
@@ -272,7 +301,12 @@ internal static class FileManager
 
         return Encoding.BigEndianUnicode.GetString(buffer, 0, buffer.Length);
     }
-
+    
+    /// <summary>
+    ///  客户端请求关闭文件下载会话
+    /// </summary>
+    /// <param name="id"></param>
+    /// <exception cref="ArgumentException"></exception>
     public static void FileDownloadClose(Guid id)
     {
         if (!DownloadSessions.TryRemove(id, out var info)) throw new ArgumentException("Invalid download session id");
@@ -282,6 +316,16 @@ internal static class FileManager
             Log.Warning("[FileDownloadClose] Download session {0} not completed, delete file at {1}", id, info.Path);
     }
 
+    #endregion
+
+    #region File System Info
+    
+    /// <summary>
+    ///  获取文件基本信息
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    /// <exception cref="IOException"></exception>
     public static FileMetadata GetFileInfo(string path)
     {
         // validate path
@@ -292,12 +336,23 @@ internal static class FileManager
 
         return new FileMetadata(fileInfo);
     }
-
+    
+    /// <summary>
+    ///  获取目录信息
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
     public static DirectoryEntry GetDirectoryInfo(string path)
     {
         return new DirectoryEntry(path);
     }
-
+    
+    /// <summary>
+    ///  计算文件 SHA1, 计算完成后恢复文件指针
+    /// </summary>
+    /// <param name="fs"></param>
+    /// <param name="bufferSize"></param>
+    /// <returns></returns>
     private static Task<string> FileSha1(FileStream fs, uint bufferSize = 16384)
     {
         return Task.Run(() =>
@@ -321,7 +376,11 @@ internal static class FileManager
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         });
     }
+    
+    #endregion
 
+
+    #region Download From Url
 
     // TODO 完善代码逻辑：1.下载失败时处理，2.考虑改用downloader的DownloadBuilder创建下载实例
     /// <summary>
@@ -407,17 +466,55 @@ internal static class FileManager
         return Downloading.TryGetValue(downloadingFileId, out downloadService);
     }
 
+    #endregion
+
+    #region Validate Path
+
     /// <summary>
-    ///     检查path是否在root范围下,若root在./之外,也返回false
+    ///     检查path是否在root范围下,若root在./之外,也返回false (不访问磁盘)
     /// </summary>
     /// <param name="path"></param>
     /// <param name="root"></param>
     /// <returns></returns>
     public static bool ValidatePath(string path, string root = Root)
     {
-        return Path.GetFullPath(path).StartsWith(Directory.GetCurrentDirectory())
-               && Path.GetFullPath(path).StartsWith(Path.GetFullPath(root));
+        var normalizedPath = NormalizePath(path);
+        var normalizedRoot = NormalizePath(root);
+        
+        return !normalizedPath.StartsWith(".") && normalizedPath.StartsWith(normalizedRoot);
     }
+    
+    /// <summary>
+    ///  从算法层面，将包含..和.的相对路径，转化为绝对路径
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    private static string NormalizePath(string path)
+    {
+        var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+        var normalized = new Stack<string>();
+        foreach (var part in parts)
+        {
+            switch (part)
+            {
+                case ".": continue;
+                case "..":
+                    if (normalized.Count > 0)
+                        normalized.Pop();
+                    break;
+                default:
+                    normalized.Push(part);
+                    break;
+            }
+        }
+
+        return string.Join("/", normalized.Reverse());
+    }
+
+    #endregion
+
+    #region IO Operation
 
     /// <summary>
     ///     读取文件。
@@ -448,11 +545,11 @@ internal static class FileManager
     /// <param name="defaultFactory">默认配置项</param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static T? ReadJsonOr<T>(string path, Func<T> defaultFactory)
+    public static T ReadJsonOr<T>(string path, Func<T> defaultFactory)
     {
         try
         {
-            return ReadJson<T>(path);
+            return ReadJson<T>(path)!;
         }
         catch (FileNotFoundException)
         {
@@ -490,4 +587,6 @@ internal static class FileManager
             return false;
         }
     }
+
+    #endregion
 }
