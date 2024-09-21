@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
@@ -11,6 +12,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 internal class ActionService : IActionService
 {
+    private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
 
     // DI
@@ -44,9 +46,16 @@ internal class ActionService : IActionService
             {
                 ActionType.FileUploadChunk => await FileUploadChunkHandler(Actions.FileUploadChunk.RequestOf(data)),
                 ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
-                ActionType.Ping => HeartBeatHandler(Actions.Empty.RequestOf()),
+                ActionType.Ping => PingHandler(Actions.Empty.RequestOf()),
                 ActionType.FileUploadCancel => FileUploadCancelHandler(Actions.FileUploadCancel.RequestOf(data)),
                 ActionType.GetJavaList => await GetJavaListHandler(Actions.Empty.RequestOf()),
+                ActionType.FileDownloadRequest => await FileDownloadRequestHandler(
+                    Actions.FileDownloadRequest.RequestOf(data)),
+                ActionType.FileDownloadClose => FileDownloadCloseHandler(Actions.FileDownloadClose.RequestOf(data)),
+                ActionType.FileDownloadRange => await FileDownloadRangeHandler(
+                    Actions.FileDownloadRange.RequestOf(data)),
+                ActionType.GetDirectoryInfo => GetDirectoryInfoHandler(Actions.GetDirectoryInfo.RequestOf(data)),
+                ActionType.GetFileInfo => GetFileInfoHandler(Actions.GetFileInfo.RequestOf(data)),
                 _ => throw new NotImplementedException()
             };
         }
@@ -56,14 +65,14 @@ internal class ActionService : IActionService
         }
     }
 
-    public Dictionary<string, object> Err(string message, int code = 1400)
+    public Dictionary<string, object> Err(string? message, int code = 1400)
     {
         return new Dictionary<string, object>
         {
             { "status", "error" },
             { "retcode", code },
             {
-                "data", new Dictionary<string, string>
+                "data", new Dictionary<string, string?>
                 {
                     { "error_message", message }
                 }
@@ -71,7 +80,7 @@ internal class ActionService : IActionService
         };
     }
 
-    public Dictionary<string, object> Ok(Actions.ActionResponse data = null)
+    public Dictionary<string, object> Ok(Actions.ActionResponse? data = null)
     {
         return new Dictionary<string, object>
         {
@@ -108,9 +117,9 @@ internal class ActionService : IActionService
             : Ok(Actions.FileUploadRequest.ResponseOf(fileId));
     }
 
-    private Dictionary<string, object> HeartBeatHandler(Actions.Empty.Request data)
+    private Dictionary<string, object> PingHandler(Actions.Empty.Request data)
     {
-        return Ok(Actions.HeartBeat.ResponseOf(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()));
+        return Ok(Actions.Ping.ResponseOf(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()));
     }
 
     private Dictionary<string, object> FileUploadCancelHandler(Actions.FileUploadCancel.Request data)
@@ -118,6 +127,38 @@ internal class ActionService : IActionService
         return FileManager.FileUploadCancel(data.FileId)
             ? Ok()
             : Err("Failed to cancel file upload", ActionType.FileUploadCancel, 1402);
+    }
+
+    private Dictionary<string, object> FileDownloadCloseHandler(Actions.FileDownloadClose.Request data)
+    {
+        FileManager.FileDownloadClose(data.FileId);
+        return Ok(Actions.FileDownloadClose.ResponseOf());
+    }
+
+    private async Task<Dictionary<string, object>> FileDownloadRangeHandler(Actions.FileDownloadRange.Request data)
+    {
+        var match = RangePattern.Match(data.Range);
+        if (!match.Success) return Err("Invalid range format", ActionType.FileDownloadRange);
+
+        var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
+        return Ok(Actions.FileDownloadRange.ResponseOf(await FileManager.FileDownloadRange(data.FileId, from, to)));
+    }
+
+    private Dictionary<string, object> GetDirectoryInfoHandler(Actions.GetDirectoryInfo.Request data)
+    {
+        var dirEntry = FileManager.GetDirectoryInfo(data.Path);
+        return Ok(Actions.GetDirectoryInfo.ResponseOf(dirEntry.Parent, dirEntry.Files, dirEntry.Directories));
+    }
+
+    private Dictionary<string, object> GetFileInfoHandler(Actions.GetFileInfo.Request data)
+    {
+        return Ok(Actions.GetFileInfo.ResponseOf(FileManager.GetFileInfo(data.Path)));
+    }
+
+    private async Task<Dictionary<string, object>> FileDownloadRequestHandler(Actions.FileDownloadRequest.Request data)
+    {
+        var info = await FileManager.FileDownloadRequest(data.Path);
+        return Ok(Actions.FileDownloadRequest.ResponseOf(info.Id, info.Size, info.Sha1));
     }
 
     private Dictionary<string, object> Err(string message, ActionType type, int code = 1400)

@@ -21,7 +21,7 @@ internal static class {class_name}
 {
     private static T Deserialize<T>(JObject data)
     {
-        return JsonConvert.DeserializeObject<T>(data.ToString(), WebJsonConverter.Settings);
+        return JsonConvert.DeserializeObject<T>(data.ToString(), WebJsonConverter.Settings) ?? throw new ArgumentException("Action request deserialize failed.");
     }
 
     internal abstract class ActionResponse

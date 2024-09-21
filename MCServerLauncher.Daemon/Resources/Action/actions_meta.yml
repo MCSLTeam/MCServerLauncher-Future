@@ -1,5 +1,5 @@
 actions:
-  - heart_beat:
+  - ping:
       req:
       resp:
         time: long
@@ -11,7 +11,7 @@ actions:
 
   - file_upload_request:
       req:
-        path: string
+        path: string?
         sha1: string
         chunk_size: long
         size: long
@@ -34,3 +34,42 @@ actions:
         file_id: Guid
       
       resp:
+
+  - file_download_request:
+      req:
+        path: string?
+      
+      resp:
+        file_id: Guid
+        size: long
+        sha1: string
+
+  - file_download_range:
+      req:
+        file_id: Guid
+        range: string
+      
+      resp:
+        content: string
+
+  - file_download_close:
+      req:
+        file_id: Guid
+      
+      resp:
+
+  - get_file_info:
+      req:
+        path: string
+      
+      resp:
+        meta: FileMetadata
+
+  - get_directory_info:
+      req:
+        path: string
+      
+      resp:
+        parent: string?
+        files: DirectoryEntry.FileInformation[]
+        directories: DirectoryEntry.DirectoryInformation[]

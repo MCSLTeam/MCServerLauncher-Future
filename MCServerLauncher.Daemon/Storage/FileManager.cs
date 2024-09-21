@@ -8,6 +8,100 @@ using WebSocketSharp;
 
 namespace MCServerLauncher.Daemon.Storage;
 
+internal struct DownloadRequestInfo
+{
+    public Guid Id;
+    public long Size;
+    public string Sha1;
+
+    public DownloadRequestInfo(Guid id, long size, string sha1)
+    {
+        Id = id;
+        Size = size;
+        Sha1 = sha1;
+    }
+}
+
+internal record FileSystemMetadata
+{
+    public DateTime CreationTime;
+    public bool Hidden;
+    public DateTime LastAccessTime;
+    public DateTime LastWriteTime;
+    public string? LinkTarget;
+
+    protected FileSystemMetadata(FileSystemInfo info)
+    {
+        CreationTime = info.CreationTime;
+        LastAccessTime = info.LastAccessTime;
+        LastWriteTime = info.LastWriteTime;
+        LinkTarget = info.LinkTarget;
+        Hidden = info.Attributes.HasFlag(FileAttributes.Hidden);
+    }
+}
+
+internal record FileMetadata : FileSystemMetadata
+{
+    public bool ReadOnly;
+    public long Size;
+
+
+    public FileMetadata(FileInfo info) : base(info)
+    {
+        Size = info.Length;
+        ReadOnly = info.IsReadOnly;
+    }
+}
+
+internal record DirectoryMetadata : FileSystemMetadata
+{
+    public DirectoryMetadata(DirectoryInfo info) : base(info)
+    {
+    }
+}
+
+internal record DirectoryEntry
+{
+    public DirectoryInformation[] Directories;
+    public FileInformation[] Files;
+    public string? Parent;
+
+    public DirectoryEntry(string path) : this(new DirectoryInfo(path))
+    {
+    }
+
+    private DirectoryEntry(DirectoryInfo info)
+    {
+        Files = info.GetFiles().Select(x => new FileInformation(x)).ToArray();
+        Directories = info.GetDirectories().Select(x => new DirectoryInformation(x)).ToArray();
+        Parent = Path.GetRelativePath(FileManager.Root, info.FullName);
+    }
+
+    public record FileInformation
+    {
+        public FileMetadata Meta;
+        public string Name;
+
+        public FileInformation(FileInfo info)
+        {
+            Name = info.Name;
+            Meta = new FileMetadata(info);
+        }
+    }
+
+    public record DirectoryInformation
+    {
+        public DirectoryMetadata Meta;
+        public string Name;
+
+        public DirectoryInformation(DirectoryInfo info)
+        {
+            Name = info.Name;
+            Meta = new DirectoryMetadata(info);
+        }
+    }
+}
+
 internal static class FileManager
 {
     public const string Root = "daemon";
@@ -18,9 +112,10 @@ internal static class FileManager
     public static readonly string CoreRoot = Path.Combine(Root, "cores");
     public static readonly string LogRoot = Path.Combine(Root, "logs");
 
-    private static readonly ConcurrentDictionary<Guid, FileUploadInfo> _uploadSessions = new();
-    private static readonly ConcurrentDictionary<Guid, Task> _downloadSessions = new();
-    private static readonly ConcurrentDictionary<Guid, string> _filePath = new();
+    private static readonly ConcurrentDictionary<Guid, FileUploadInfo> UploadSessions = new();
+
+    private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
+    private static readonly ConcurrentDictionary<Guid, DownloadService> Downloading = new();
 
     /// <summary>
     ///     请求上传文件:首先检查是否有同名文件正在上传,若没有,则预分配空间并添加后缀.tmp,返回file_id
@@ -29,36 +124,41 @@ internal static class FileManager
     /// <param name="size">文件总大小</param>
     /// <param name="chunkSize">文件分片传输大小</param>
     /// <param name="sha1">预期的SHA1，为空为null不进行校验</param>
+    /// <exception cref="IOException">非法路径、已存在正在上传的文件等</exception>
     /// <returns>分配的file_id</returns>
-    public static Guid FileUploadRequest(string path, long size, long chunkSize, string? sha1 = "")
+    public static Guid FileUploadRequest(string? path, long size, long chunkSize, string? sha1 = null)
     {
+        // Validate path
+        if (path != null && ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+
+        // path is null means upload to upload root
+        path ??= UploadRoot;
+
         // 由于FileStream.WriteAsync只支持int,故提前检查,若大于2G,则返回空
         if ((int)size != size || (int)chunkSize != chunkSize || size < 0 || chunkSize < 0) return Guid.Empty;
 
-        var fileName = Path.Combine(UploadRoot, path);
-
-        // check if file is uploading
-        foreach (var info in _uploadSessions.Values)
-            if (info.FileName == path)
-                throw new IOException("File is uploading");
+        // check if file is in upload session
+        if (UploadSessions.Values.Any(info => info.Path == path)) throw new IOException("File is uploading");
 
         // pre-allocate file in disk
         try
         {
             // ensure directory exists
             Directory.CreateDirectory(UploadRoot);
-            var tmpFile = fileName + ".tmp";
+            var tmpFile = path + ".tmp";
             // delete file if exists
             if (File.Exists(tmpFile)) File.Delete(tmpFile);
-            if (File.Exists(fileName)) File.Delete(fileName);
+            if (File.Exists(path)) File.Delete(path);
 
+            // set file share to None, declined any access. For example: downloading, download session and uploading session.
+            // this operation can raise various exceptions, attention.
             FileStream fs = new(tmpFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
             fs.SetLength(size);
             fs.Seek(0, SeekOrigin.Begin);
             var guid = Guid.NewGuid();
 
-            _uploadSessions.TryAdd(guid, new FileUploadInfo(fileName, size, chunkSize, sha1, fs));
-            Log.Debug("[FileUploadChunk] Uploading file {0}", Path.GetFileName(fileName));
+            UploadSessions.TryAdd(guid, new FileUploadInfo(path, size, chunkSize, sha1, fs));
+            Log.Debug("[FileUploadChunk] Uploading file {0}", Path.GetFileName(path));
             return guid;
         }
         catch (Exception)
@@ -74,10 +174,10 @@ internal static class FileManager
     /// <param name="offset">分片文件偏移量</param>
     /// <param name="strData">分片文件的字符串形式的数据</param>
     /// <returns>范围值为done</returns>
-    /// <exception cref="Exception"></exception>
+    /// <exception cref="IOException">文件操作相关</exception>
     public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, string strData)
     {
-        if (!_uploadSessions.TryGetValue(id, out var info))
+        if (!UploadSessions.TryGetValue(id, out var info))
             throw new IOException("File not found");
 
         if (offset < 0L || offset >= info.Size) throw new IOException("Offset out of range");
@@ -106,82 +206,144 @@ internal static class FileManager
         info.File.Close();
 
         // rename tmp file to its origin name
-        File.Move(info.FileName + ".tmp", info.FileName, true);
+        File.Move(info.Path + ".tmp", info.Path, true);
 
         if (!sha1.IsNullOrEmpty())
         {
             if (sha1 != info.Sha1)
             {
-                Log.Warning("[FileUploadChunk] Uploaded file {0} SHA1 mismatch!", Path.GetFileName(info.FileName));
-                File.Delete(info.FileName);
+                Log.Warning("[FileUploadChunk] Uploaded file {0} SHA1 mismatch!", Path.GetFileName(info.Path));
+                File.Delete(info.Path);
                 throw new IOException("File SHA1 mismatch");
             }
         }
         else
         {
             Log.Debug("[FileUploadChunk] Uploaded file {0} did not provide expected sha1, skipping check",
-                Path.GetFileName(info.FileName));
+                Path.GetFileName(info.Path));
         }
 
-        _uploadSessions.TryRemove(id, out _);
-        _filePath.TryAdd(id, info.FileName);
-        Log.Debug("[FileUploadChunk] File {0} upload complete", Path.GetFileName(info.FileName));
+        UploadSessions.TryRemove(id, out _);
+        Log.Debug("[FileUploadChunk] File {0} upload complete", Path.GetFileName(info.Path));
         return (true, info.Size - info.RemainLength);
     }
 
     public static bool FileUploadCancel(Guid id)
     {
-        if (_uploadSessions.TryRemove(id, out var info))
-        {
-            info.File.Close();
-            // delete tmp file 
-            if (File.Exists(info.FileName + ".tmp"))
-                File.Delete(info.FileName + ".tmp");
-            Log.Debug("[FileUploadChunk] File {0} upload canceled", Path.GetFileName(info.FileName));
-            return true;
-        }
+        if (!UploadSessions.TryRemove(id, out var info)) return false;
 
-        return false;
+        info.File.Close();
+        // delete tmp file 
+        if (File.Exists(info.Path + ".tmp"))
+            File.Delete(info.Path + ".tmp");
+        Log.Debug("[FileUploadChunk] File {0} upload canceled", Path.GetFileName(info.Path));
+        return true;
+    }
+
+    public static async Task<DownloadRequestInfo> FileDownloadRequest(string? path)
+    {
+        // Validate path
+        if (ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+
+        // do not check if file in download session
+        // TODO : balance the concurrency of file downloads (limited number of download sessions for a single file or other methods)
+
+        // set file share to None, declined any access. For example: downloading & upload session.
+        // this operation can raise various exceptions, attention.
+        var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        var size = fs.Length;
+        var sha1 = await FileSha1(fs);
+        return new DownloadRequestInfo(Guid.NewGuid(), size, sha1);
+    }
+
+    public static async Task<string> FileDownloadRange(Guid id, int from, int to)
+    {
+        if (!DownloadSessions.TryGetValue(id, out var info)) throw new ArgumentException("Invalid download session id");
+        if (from < 0 || to < 0 || from > to || to >= info.Size) throw new ArgumentException("Invalid range");
+
+        var size = to - from;
+        var buffer = new byte[size % 2 == 0 ? size : size + 1];
+
+        info.File.Seek(from, SeekOrigin.Begin);
+        var _ = await info.File.ReadAsync(buffer, 0, size);
+        info.Remain.Reduce(from, to);
+
+
+        return Encoding.BigEndianUnicode.GetString(buffer, 0, buffer.Length);
+    }
+
+    public static void FileDownloadClose(Guid id)
+    {
+        if (!DownloadSessions.TryRemove(id, out var info)) throw new ArgumentException("Invalid download session id");
+        info.File.Close();
+        Log.Debug("[FileDownloadClose] Download session {0} closed", id);
+        if (!info.Remain.Done())
+            Log.Warning("[FileDownloadClose] Download session {0} not completed, delete file at {1}", id, info.Path);
+    }
+
+    public static FileMetadata GetFileInfo(string path)
+    {
+        // validate path
+        if (ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+
+        var fileInfo = new FileInfo(path);
+        if (!fileInfo.Exists) throw new IOException("File not found");
+
+        return new FileMetadata(fileInfo);
+    }
+
+    public static DirectoryEntry GetDirectoryInfo(string path)
+    {
+        return new DirectoryEntry(path);
     }
 
     private static Task<string> FileSha1(FileStream fs, uint bufferSize = 16384)
     {
         return Task.Run(() =>
         {
-            using (var sha1 = SHA1.Create())
-            {
-                var ptr = fs.Position;
-                fs.Seek(0, SeekOrigin.Begin);
+            // using var
+            using var sha1 = SHA1.Create();
 
-                var buffer = new byte[bufferSize];
-                int bytesRead;
-                while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
-                    sha1.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+            var ptr = fs.Position;
+            fs.Seek(0, SeekOrigin.Begin);
 
-                sha1.TransformFinalBlock(buffer, 0, 0);
+            var buffer = new byte[bufferSize];
+            int bytesRead;
+            while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                sha1.TransformBlock(buffer, 0, bytesRead, buffer, 0);
 
-                var hashBytes = sha1.Hash!;
+            sha1.TransformFinalBlock(buffer, 0, 0);
 
-                fs.Seek(ptr, SeekOrigin.Begin);
-                return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-            }
+            var hashBytes = sha1.Hash!;
+
+            fs.Seek(ptr, SeekOrigin.Begin);
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         });
     }
 
+
+    // TODO 完善代码逻辑：1.下载失败时处理，2.考虑改用downloader的DownloadBuilder创建下载实例
     /// <summary>
-    ///     下载文件
+    ///     下载文件到<see cref="DownloadRoot" />
     /// </summary>
+    /// <param name="targetDir">目标目录</param>
     /// <param name="filename">文件名称</param>
     /// <param name="url">下载URL</param>
+    /// <param name="downloadService">下载服务实例,可以订阅下载事件(进度更新/下载完成)</param>
     /// <param name="sha1">预期的SHA1，为空为null不进行校验</param>
     /// <param name="maxThreads">下载最大线程数</param>
     /// <returns>分配的file_id</returns>
-    public static async Task<Guid> DownloadFile(string filename, string url, string? sha1 = "", int maxThreads = 16)
+    public static Guid DownloadFromUrl(string? targetDir, string filename, string url,
+        out DownloadService downloadService,
+        string? sha1 = null, int maxThreads = 16)
     {
+        if (targetDir != null && ValidatePath(targetDir)) throw new IOException("Invalid path: out of daemon root");
+
         // 确保存在
         Directory.CreateDirectory(DownloadRoot);
-        var filePath = Path.Combine(DownloadRoot, filename);
-        var tmpFilePath = Path.Combine(DownloadRoot, filename + ".tmp");
+        var filePath = Path.Combine(targetDir ?? DownloadRoot, filename);
+        var tmpFilePath = filePath + ".tmp";
         File.Delete(tmpFilePath);
         File.Delete(filePath);
         var fileId = Guid.NewGuid();
@@ -194,6 +356,7 @@ internal static class FileManager
         };
 
         var downloader = new DownloadService(downloadOpt);
+        downloadService = downloader;
 
         downloader.DownloadFileCompleted += async (_, args) =>
         {
@@ -204,27 +367,31 @@ internal static class FileManager
             }
             else if (!sha1.IsNullOrEmpty())
             {
-                var fileSha1 =
-                    await FileSha1(new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                await using var fs = new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var fileSha1 = await FileSha1(fs);
                 if (sha1 != fileSha1)
                 {
-                    Log.Warning("[FileManager] Downloaded file {0} SHA1 mismatch!", filename);
+                    Log.Warning("[FileManager] Downloaded file {0} SHA-1 mismatch!", filename);
                     File.Delete(tmpFilePath);
                     return;
                 }
             }
             else
             {
-                Log.Debug("[FileManager] Downloaded file {0} did not provide expected sha1, skipping check",
+                Log.Debug("[FileManager] Downloaded file {0} did not provide expected SHA-1, skipping check",
                     filename);
             }
 
             File.Move(tmpFilePath, filePath, true);
+
+            // remove
+            Downloading.TryRemove(fileId, out var downloadService);
+            downloadService?.Dispose();
         };
 
-        var task = downloader.DownloadFileTaskAsync(url, tmpFilePath);
+        downloader.DownloadFileTaskAsync(url, tmpFilePath);
 
-        _downloadSessions.TryAdd(fileId, task);
+        Downloading.TryAdd(fileId, downloader);
 
         return fileId;
     }
@@ -232,59 +399,24 @@ internal static class FileManager
     /// <summary>
     ///     根据file_id获取文件路径，不存在为null
     /// </summary>
-    /// <param name="fileId">file_id</param>
+    /// <param name="downloadingFileId">file_id</param>
+    /// <param name="downloadService"></param>
     /// <returns>文件路径</returns>
-    public static string? GetFilePathById(Guid fileId)
+    public static bool TryGetDownloadService(Guid downloadingFileId, out DownloadService? downloadService)
     {
-        if (!_filePath.TryGetValue(fileId, out var path))
-            throw new FileNotFoundException("File id " + fileId + " not found");
-        return path;
+        return Downloading.TryGetValue(downloadingFileId, out downloadService);
     }
 
     /// <summary>
-    ///     根据file_id获取文件状态，不存在为null
+    ///     检查path是否在root范围下,若root在./之外,也返回false
     /// </summary>
-    /// <param name="fileId">file_id</param>
-    /// <returns>文件状态</returns>
-    public static FileStatus GetFileStatusById(Guid fileId)
+    /// <param name="path"></param>
+    /// <param name="root"></param>
+    /// <returns></returns>
+    public static bool ValidatePath(string path, string root = Root)
     {
-        if (_uploadSessions.ContainsKey(fileId))
-            return FileStatus.Uploading;
-        if (_downloadSessions.ContainsKey(fileId))
-            return FileStatus.Downloading;
-        if (_filePath.ContainsKey(fileId))
-            return FileStatus.Exist;
-        return FileStatus.NotExist;
-    }
-
-    private static Task WaitUntilExistTask(Guid fileId)
-    {
-        if (_downloadSessions.TryGetValue(fileId, out var t))
-            return t;
-        var task = Task.Run(() =>
-        {
-            while (!_filePath.ContainsKey(fileId)) Thread.Sleep(100);
-        });
-
-        return task;
-    }
-
-    /// <summary>
-    ///     等待直到文件存在（同步）
-    /// </summary>
-    /// <param name="fileId">file_id</param>
-    public static void WaitUntilExist(Guid fileId)
-    {
-        WaitUntilExistTask(fileId).Wait();
-    }
-
-    /// <summary>
-    ///     等待直到文件存在（异步）
-    /// </summary>
-    /// <param name="fileId">file_id</param>
-    public static async Task WaitUntilExistAsync(Guid fileId)
-    {
-        await WaitUntilExistTask(fileId);
+        return Path.GetFullPath(path).StartsWith(Directory.GetCurrentDirectory())
+               && Path.GetFullPath(path).StartsWith(Path.GetFullPath(root));
     }
 
     /// <summary>

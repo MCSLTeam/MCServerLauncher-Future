@@ -88,13 +88,12 @@ public class Settings
     public AppSettings App { get; set; }
 }
 
-// TODO 可将链表优化成树
 /// <summary>
 ///     -2^63 ~ 2^63 - 1内的整数区间(只支持减去某一子区间)，用于上传文件数据的记录
 /// </summary>
 public class LongRemain
 {
-    private LongRemainNode _head;
+    private LongRemainNode? _head;
 
     /// <summary>
     ///     整数区间: [Begin, End)
@@ -119,7 +118,7 @@ public class LongRemain
     /// <returns>自身,用于链式操作</returns>
     public LongRemain Reduce(long from, long to)
     {
-        LongRemainNode lastNode = null;
+        LongRemainNode? lastNode = null;
         var node = _head;
         while (node != null)
         {
@@ -214,6 +213,6 @@ public class LongRemain
 
         public long Begin { get; set; }
         public long End { get; set; }
-        public LongRemainNode Next { get; set; }
+        public LongRemainNode? Next { get; set; }
     }
 }
