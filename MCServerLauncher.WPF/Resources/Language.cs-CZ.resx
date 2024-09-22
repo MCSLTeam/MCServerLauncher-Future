@@ -454,8 +454,8 @@
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
     <value>Strana skupiny Minecraft Travertine</value>
   </data>
-  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>Klientský program FRP (FRPC)</value>
+  <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
+    <value>通用 Frp 客户端程序 (Frpc)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Herní servery Terraria</value>
@@ -816,5 +816,11 @@
   </data>
   <data name="Console_InstanceSettingsNavMenu" xml:space="preserve">
     <value>实例设置</value>
+  </data>
+  <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
+    <value>Minecraft 服务器</value>
+  </data>
+  <data name="CreateFrpcInstanceCategory" xml:space="preserve">
+    <value>快速反向代理客户端 Frpc</value>
   </data>
 </root>
