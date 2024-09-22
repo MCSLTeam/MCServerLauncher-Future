@@ -454,8 +454,8 @@
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
     <value>Minecraft Travertine groep kant</value>
   </data>
-  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>FRP-kliëntprogram (FRPC)</value>
+  <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
+    <value></value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Terraria-speletjiebedieners</value>

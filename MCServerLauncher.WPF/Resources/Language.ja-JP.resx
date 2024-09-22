@@ -454,9 +454,6 @@
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
     <value>Minecraft Travertine グループ側</value>
   </data>
-  <data name="CreateFastReverseProxyClientInstance" xml:space="preserve">
-    <value>FRPクライアントプログラム(FRPC)</value>
-  </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Terrariaゲームサーバー</value>
   </data>
