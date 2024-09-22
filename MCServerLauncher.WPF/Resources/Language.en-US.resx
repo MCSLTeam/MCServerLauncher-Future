@@ -665,49 +665,49 @@
     <value>Select the language used in this program.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可链接守护进程。</value>
+    <value>If you do not add any MCSL Daemons, most of the functions of the software will be limited.\nYou can still connect to MCSL Daemons later in the settings.</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
-    <value>新建连接</value>
+    <value>New Connection</value>
   </data>
   <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
-    <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
+    <value>All MCServerLauncher instances are handed over to daemon management. Please link daemons here.</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>编辑</value>
+    <value>Edit</value>
   </data>
   <data name="Daemon_RemoteUri" xml:space="preserve">
-    <value>远端地址:</value>
+    <value>Remote Address:</value>
   </data>
   <data name="Daemon_ConnectionStatus" xml:space="preserve">
-    <value>链接状态:</value>
+    <value>Connection Status:</value>
   </data>
   <data name="Status_OK" xml:space="preserve">
-    <value>正常</value>
+    <value>OK</value>
   </data>
   <data name="Status_Error" xml:space="preserve">
-    <value>异常</value>
+    <value>Error</value>
   </data>
   <data name="Disconnect" xml:space="preserve">
-    <value>断连</value>
+    <value>Disconnect</value>
   </data>
   <data name="Connect" xml:space="preserve">
     <value>Connect</value>
   </data>
   <data name="Retry" xml:space="preserve">
-    <value>重试</value>
+    <value>Retry</value>
   </data>
   <data name="Settings_Components_Title" xml:space="preserve">
-    <value>开源项目引用列表</value>
+    <value>Open Source Project References</value>
   </data>
   <data name="Settings_Components_Description" xml:space="preserve">
-    <value>由衷感谢他们的付出，为 MCSL Future 的前进提供了持续的动力。</value>
+    <value>Thank them sincerely for their contribution, which has provided sustained impetus to the MCSL Future.</value>
   </data>
   <data name="Settings_Acknowledgments_Title" xml:space="preserve">
-    <value>鸣谢列表</value>
+    <value>Credits</value>
   </data>
   <data name="Settings_Acknowledgments_Description" xml:space="preserve">
-    <value>为 MCSL 做出了巨大贡献！</value>
+    <value>Significant contribution to MCSL!</value>
   </data>
   <data name="Donate" xml:space="preserve">
     <value>赞助一下</value>
