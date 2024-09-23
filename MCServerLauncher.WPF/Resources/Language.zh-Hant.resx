@@ -455,7 +455,7 @@
     <value>Minecraft Travertine 群組端</value>
   </data>
   <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
-    <value>通用 Frp 客户端程序 (Frpc)</value>
+    <value>通用 Frp 用戶端程式 （Frpc）</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Terraria 遊戲伺服器</value>
@@ -818,9 +818,9 @@
     <value>實例設置</value>
   </data>
   <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
-    <value>Minecraft 服务器</value>
+    <value>Minecraft 伺服器</value>
   </data>
   <data name="CreateFrpcInstanceCategory" xml:space="preserve">
-    <value>快速反向代理客户端 Frpc</value>
+    <value>快速反向代理用戶端Frpc</value>
   </data>
 </root>
