@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.CreateInstance.SelectMinecraftBedrockArchive"
+﻿<UserControl x:Class="MCServerLauncher.WPF.View.Components.CreateInstance.SelectTerrariaArchive"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -19,7 +19,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftBedrockArchive_Title], Source={x:Static i18n:LanguageManager.Localize}}"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectTerrariaArchive_Title], Source={x:Static i18n:LanguageManager.Localize}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
                        Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectArchive_Description], Source={x:Static i18n:LanguageManager.Localize}}"

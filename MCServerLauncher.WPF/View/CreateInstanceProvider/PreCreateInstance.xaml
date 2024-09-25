@@ -7,7 +7,7 @@
              xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="1300" d:DesignWidth="800">
     <FrameworkElement.Resources>
         <ResourceDictionary>
 
@@ -90,9 +90,8 @@
                         Content="MossFrp" ToolTip="没做完呢，别急" />
                     </ikw:SimpleStackPanel>
                 </Expander>
-                <Button IsEnabled="False" x:Name="TerrariaGameServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateTerrariaServerInstance], Source={x:Static i18n:LanguageManager.Localize}}"
-                        ToolTip="没做完呢，别急" />
+                <Button x:Name="TerrariaGameServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateTerrariaServerInstance], Source={x:Static i18n:LanguageManager.Localize}}"/>
                 <Button x:Name="OtherExecutable" Padding="20,13,0,13" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateOtherExecutableInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
                 <Button IsEnabled="False" x:Name="ImportInstance" Padding="20,13,0,13" Click="GoCreateNewInstance"
