@@ -178,8 +178,8 @@
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
     <value>Minecraft Bedrock Edition-pakket met ritssluiting</value>
   </data>
-  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
-    <value>Importeer het gedownloade pakket hier. Als je niet weet waar je moet downloaden, kun je op de knop aan de rechterkant klikken om te springen.</value>
+  <data name="CreateInstance_SelectArchive_Description" xml:space="preserve">
+    <value>请在此处导入下载的压缩包。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
   </data>
   <data name="Archive" xml:space="preserve">
     <value>Zip pakket</value>
@@ -822,5 +822,8 @@
   </data>
   <data name="CreateFrpcInstanceCategory" xml:space="preserve">
     <value>快速反向代理客户端 Frpc</value>
+  </data>
+  <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
+    <value>Terraria 服务器压缩包</value>
   </data>
 </root>
