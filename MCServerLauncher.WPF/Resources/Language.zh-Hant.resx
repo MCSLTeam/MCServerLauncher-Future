@@ -178,8 +178,8 @@
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
     <value>Minecraft 基岩版壓縮包</value>
   </data>
-  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
-    <value>在這裡放入下載的壓縮包，如果不知道下載方位，可以點擊右側按鈕前往。</value>
+  <data name="CreateInstance_SelectArchive_Description" xml:space="preserve">
+    <value>请在此处导入下载的压缩包。如果不知道在哪里下载，可点击右侧按钮跳转。</value>
   </data>
   <data name="Archive" xml:space="preserve">
     <value>壓縮包</value>
@@ -822,5 +822,8 @@
   </data>
   <data name="CreateFrpcInstanceCategory" xml:space="preserve">
     <value>快速反向代理用戶端Frpc</value>
+  </data>
+  <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
+    <value>Terraria 服务器压缩包</value>
   </data>
 </root>
