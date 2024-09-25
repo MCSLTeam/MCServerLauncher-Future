@@ -115,7 +115,7 @@ internal static class FileManager
     private static readonly ConcurrentDictionary<Guid, FileUploadInfo> UploadSessions = new();
 
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
-    private static readonly ConcurrentDictionary<Guid, DownloadService> Downloading = new();
+    private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
 
     #region File Upload Service
 
@@ -229,9 +229,9 @@ internal static class FileManager
         Log.Debug("[FileUploadChunk] File {0} upload complete", Path.GetFileName(info.Path));
         return (true, info.Size - info.RemainLength);
     }
-    
+
     /// <summary>
-    ///    取消上传文件
+    ///     取消上传文件
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
@@ -250,9 +250,9 @@ internal static class FileManager
     #endregion
 
     #region File Download Service
-    
+
     /// <summary>
-    ///  客户端请求下载服务端的文件
+    ///     客户端请求下载服务端的文件
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>
@@ -277,9 +277,9 @@ internal static class FileManager
         var sha1 = await FileSha1(fs);
         return new DownloadRequestInfo(Guid.NewGuid(), size, sha1);
     }
-    
+
     /// <summary>
-    ///  客户端使用服务端分配的文件下载句柄请求文件分片
+    ///     客户端使用服务端分配的文件下载句柄请求文件分片
     /// </summary>
     /// <param name="id"></param>
     /// <param name="from"></param>
@@ -301,9 +301,9 @@ internal static class FileManager
 
         return Encoding.BigEndianUnicode.GetString(buffer, 0, buffer.Length);
     }
-    
+
     /// <summary>
-    ///  客户端请求关闭文件下载会话
+    ///     客户端请求关闭文件下载会话
     /// </summary>
     /// <param name="id"></param>
     /// <exception cref="ArgumentException"></exception>
@@ -319,9 +319,9 @@ internal static class FileManager
     #endregion
 
     #region File System Info
-    
+
     /// <summary>
-    ///  获取文件基本信息
+    ///     获取文件基本信息
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>
@@ -336,9 +336,9 @@ internal static class FileManager
 
         return new FileMetadata(fileInfo);
     }
-    
+
     /// <summary>
-    ///  获取目录信息
+    ///     获取目录信息
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>
@@ -346,9 +346,9 @@ internal static class FileManager
     {
         return new DirectoryEntry(path);
     }
-    
+
     /// <summary>
-    ///  计算文件 SHA1, 计算完成后恢复文件指针
+    ///     计算文件 SHA1, 计算完成后恢复文件指针
     /// </summary>
     /// <param name="fs"></param>
     /// <param name="bufferSize"></param>
@@ -376,48 +376,52 @@ internal static class FileManager
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         });
     }
-    
+
     #endregion
 
 
     #region Download From Url
 
-    // TODO 完善代码逻辑：1.下载失败时处理，2.考虑改用downloader的DownloadBuilder创建下载实例
     /// <summary>
     ///     下载文件到<see cref="DownloadRoot" />
     /// </summary>
     /// <param name="targetDir">目标目录</param>
     /// <param name="filename">文件名称</param>
     /// <param name="url">下载URL</param>
-    /// <param name="downloadService">下载服务实例,可以订阅下载事件(进度更新/下载完成)</param>
+    /// <param name="download">下载实例,可以订阅下载事件(进度更新/下载完成)</param>
     /// <param name="sha1">预期的SHA1，为空为null不进行校验</param>
     /// <param name="maxThreads">下载最大线程数</param>
     /// <returns>分配的file_id</returns>
     public static Guid DownloadFromUrl(string? targetDir, string filename, string url,
-        out DownloadService downloadService,
+        out IDownload download,
         string? sha1 = null, int maxThreads = 16)
     {
         if (targetDir != null && ValidatePath(targetDir)) throw new IOException("Invalid path: out of daemon root");
 
         // 确保存在
         Directory.CreateDirectory(DownloadRoot);
+
         var filePath = Path.Combine(targetDir ?? DownloadRoot, filename);
         var tmpFilePath = filePath + ".tmp";
-        File.Delete(tmpFilePath);
-        File.Delete(filePath);
+
+        if (File.Exists(tmpFilePath)) File.Delete(tmpFilePath);
+        if (File.Exists(filePath)) File.Delete(filePath);
+
         var fileId = Guid.NewGuid();
         Log.Debug("[FileManager] Downloading file {0} from {1}", filename, url);
 
-        var downloadOpt = new DownloadConfiguration
-        {
-            ChunkCount = maxThreads,
-            ParallelDownload = true
-        };
 
-        var downloader = new DownloadService(downloadOpt);
-        downloadService = downloader;
+        download = DownloadBuilder.New()
+            .WithUrl(url)
+            .WithFileLocation(tmpFilePath)
+            .WithConfiguration(new DownloadConfiguration
+            {
+                ChunkCount = maxThreads,
+                ParallelDownload = true
+            })
+            .Build();
 
-        downloader.DownloadFileCompleted += async (_, args) =>
+        download.DownloadFileCompleted += async (_, args) =>
         {
             if (args.Error != null)
             {
@@ -444,13 +448,13 @@ internal static class FileManager
             File.Move(tmpFilePath, filePath, true);
 
             // remove
-            Downloading.TryRemove(fileId, out var downloadService);
-            downloadService?.Dispose();
+            Downloading.TryRemove(fileId, out var _);
         };
 
-        downloader.DownloadFileTaskAsync(url, tmpFilePath);
 
-        Downloading.TryAdd(fileId, downloader);
+        download.StartAsync();
+
+        Downloading.TryAdd(fileId, download);
 
         return fileId;
     }
@@ -459,11 +463,11 @@ internal static class FileManager
     ///     根据file_id获取文件路径，不存在为null
     /// </summary>
     /// <param name="downloadingFileId">file_id</param>
-    /// <param name="downloadService"></param>
+    /// <param name="download"></param>
     /// <returns>文件路径</returns>
-    public static bool TryGetDownloadService(Guid downloadingFileId, out DownloadService? downloadService)
+    public static bool TryGetDownloading(Guid downloadingFileId, out IDownload? download)
     {
-        return Downloading.TryGetValue(downloadingFileId, out downloadService);
+        return Downloading.TryGetValue(downloadingFileId, out download);
     }
 
     #endregion
@@ -480,12 +484,12 @@ internal static class FileManager
     {
         var normalizedPath = NormalizePath(path);
         var normalizedRoot = NormalizePath(root);
-        
+
         return !normalizedPath.StartsWith(".") && normalizedPath.StartsWith(normalizedRoot);
     }
-    
+
     /// <summary>
-    ///  从算法层面，将包含..和.的相对路径，转化为绝对路径
+    ///     从算法层面，将包含..和.的相对路径，转化为绝对路径
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>
@@ -495,7 +499,6 @@ internal static class FileManager
 
         var normalized = new Stack<string>();
         foreach (var part in parts)
-        {
             switch (part)
             {
                 case ".": continue;
@@ -507,7 +510,6 @@ internal static class FileManager
                     normalized.Push(part);
                     break;
             }
-        }
 
         return string.Join("/", normalized.Reverse());
     }
