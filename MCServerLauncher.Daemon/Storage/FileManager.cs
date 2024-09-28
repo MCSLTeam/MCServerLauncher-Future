@@ -8,7 +8,7 @@ using WebSocketSharp;
 
 namespace MCServerLauncher.Daemon.Storage;
 
-internal struct DownloadRequestInfo
+public struct DownloadRequestInfo
 {
     public Guid Id;
     public long Size;
@@ -22,7 +22,7 @@ internal struct DownloadRequestInfo
     }
 }
 
-internal record FileSystemMetadata
+public record FileSystemMetadata
 {
     public DateTime CreationTime;
     public bool Hidden;
@@ -40,7 +40,7 @@ internal record FileSystemMetadata
     }
 }
 
-internal record FileMetadata : FileSystemMetadata
+public record FileMetadata : FileSystemMetadata
 {
     public bool ReadOnly;
     public long Size;
@@ -53,14 +53,14 @@ internal record FileMetadata : FileSystemMetadata
     }
 }
 
-internal record DirectoryMetadata : FileSystemMetadata
+public record DirectoryMetadata : FileSystemMetadata
 {
     public DirectoryMetadata(DirectoryInfo info) : base(info)
     {
     }
 }
 
-internal record DirectoryEntry
+public record DirectoryEntry
 {
     public DirectoryInformation[] Directories;
     public FileInformation[] Files;
