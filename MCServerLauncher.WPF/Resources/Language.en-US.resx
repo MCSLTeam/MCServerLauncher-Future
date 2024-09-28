@@ -178,7 +178,7 @@
   <data name="CreateInstance_SelectMinecraftBedrockArchive_Title" xml:space="preserve">
     <value>Compressed package for Minecraft Bedrock Edition</value>
   </data>
-  <data name="CreateInstance_SelectMinecraftBedrockArchive_Description" xml:space="preserve">
+  <data name="CreateInstance_SelectArchive_Description" xml:space="preserve">
     <value>Please import the downloaded zip file here. If you don't know where to download, click the button on the right to jump.</value>
   </data>
   <data name="Archive" xml:space="preserve">

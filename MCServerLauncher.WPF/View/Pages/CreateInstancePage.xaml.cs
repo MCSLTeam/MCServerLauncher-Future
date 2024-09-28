@@ -71,6 +71,15 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
         /// <summary>
+        ///    Spawn a new Terraria Server instance creation page.
+        /// </summary>
+        /// <returns>The user control.</returns>
+        public UserControl NewTerrariaServerPage()
+        {
+            return new CreateTerrariaInstanceProvider();
+        }
+
+        /// <summary>
         ///    Spawn a new other executable instance creation page.
         /// </summary>
         /// <returns>The user control.</returns>

@@ -255,6 +255,9 @@
     <Compile Include="View\Components\CreateInstance\SelectOtherExecutableInstanceDependency.xaml.cs">
       <DependentUpon>SelectOtherExecutableInstanceDependency.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\CreateInstance\SelectTerrariaArchive.xaml.cs">
+      <DependentUpon>SelectTerrariaArchive.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\CreateInstance\SetInstanceName.xaml.cs">
       <DependentUpon>SetInstanceName.xaml</DependentUpon>
     </Compile>
@@ -302,6 +305,9 @@
     </Compile>
     <Compile Include="View\Components\CreateInstance\SetCreateOtherExecutableInstanceRunCommand.xaml.cs">
       <DependentUpon>SetCreateOtherExecutableInstanceRunCommand.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\CreateInstanceProvider\CreateTerrariaInstanceProvider.xaml.cs">
+      <DependentUpon>CreateTerrariaInstanceProvider.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\FirstSetupHelper\DaemonSetupPage.xaml.cs">
       <DependentUpon>DaemonSetupPage.xaml</DependentUpon>
@@ -483,6 +489,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="View\Components\CreateInstance\SelectTerrariaArchive.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\Components\CreateInstance\SetInstanceName.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -546,6 +556,10 @@
     <Page Include="View\Components\CreateInstance\SetCreateOtherExecutableInstanceRunCommand.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\CreateInstanceProvider\CreateTerrariaInstanceProvider.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="View\FirstSetupHelper\DaemonSetupPage.xaml">
       <SubType>Designer</SubType>

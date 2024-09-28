@@ -55,6 +55,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     parent.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
+                case "TerrariaGameServer":
+                    parent.CurrentCreateInstance.Navigate(parent.NewTerrariaServerPage(),
+                new DrillInNavigationTransitionInfo());
+                    break;
                 case "OtherExecutable":
                     parent.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(),
                         new DrillInNavigationTransitionInfo());
