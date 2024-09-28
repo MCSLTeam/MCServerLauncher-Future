@@ -4,7 +4,6 @@ using System.Text;
 using Downloader;
 using Newtonsoft.Json;
 using Serilog;
-using WebSocketSharp;
 
 namespace MCServerLauncher.Daemon.Storage;
 
@@ -210,7 +209,7 @@ internal static class FileManager
         // rename tmp file to its origin name
         File.Move(info.Path + ".tmp", info.Path, true);
 
-        if (!sha1.IsNullOrEmpty())
+        if (!string.IsNullOrEmpty(sha1))
         {
             if (sha1 != info.Sha1)
             {
@@ -428,7 +427,7 @@ internal static class FileManager
                 File.Delete(tmpFilePath);
                 Log.Warning("[FileManager] Failed to download file {0}: {1}", filename, args.Error.Message);
             }
-            else if (!sha1.IsNullOrEmpty())
+            else if (!string.IsNullOrEmpty(sha1))
             {
                 await using var fs = new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var fileSha1 = await FileSha1(fs);
