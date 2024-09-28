@@ -1,6 +1,5 @@
 namespace MCServerLauncher.Daemon.Remote.Action;
-
-internal enum ActionType
+public enum ActionType
 {
     Ping,
     GetJavaList,
