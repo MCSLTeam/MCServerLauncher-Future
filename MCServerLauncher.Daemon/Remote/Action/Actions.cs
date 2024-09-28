@@ -92,7 +92,7 @@ public static class Actions
             public struct Request
             {
                 public string? Path;
-                public string Sha1;
+                public string? Sha1;
                 public long ChunkSize;
                 public long Size;
             }

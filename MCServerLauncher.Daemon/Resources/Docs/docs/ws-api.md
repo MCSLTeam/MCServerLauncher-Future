@@ -29,7 +29,7 @@
 | 参数         | 值             | 含义                                                |
 |------------|---------------|---------------------------------------------------|
 | path       | Optional[str] | 上传的文件将要存放的位置，若为空，上传到默认文件夹(FileManager.UploadRoot) |
-| sha1       | str           | 文件SHA-1校验码                                        |
+| sha1       | Optional[str] | 文件SHA-1校验码,为空则不检查SHA-1                            |
 | chunk_size | long          | 分块传输的分块大小                                         |
 | size       | long          | 文件总大小                                             |
 
