@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Σαρώστε τη μεγάλη εικόνα για να δείτε τον κόσμο.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Προς όλες τις κατευθύνσεις, η αποστολή πρέπει να επιτευχθεί.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Μπορείτε να το ονομάσετε, είναι εδώ. (Προς το παρόν σε χρήση.)</value>
   </data>

@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Розгорніть загальну картину, щоб побачити світ.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>У всіх напрямках місія має бути досягнута.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Що завгодно, це тут. (В даний час використовується.)</value>
   </data>

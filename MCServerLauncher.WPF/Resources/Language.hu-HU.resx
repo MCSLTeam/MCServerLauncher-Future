@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Söpörje végig a teljes képet, hogy lássa a világot.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>A küldetést minden irányban el kell érni.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Nevezd meg, itt van. (Jelenleg használatban van.)</value>
   </data>

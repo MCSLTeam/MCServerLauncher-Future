@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Escombra el panorama general per veure el món.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>En totes direccions, la missió s'ha d'aconseguir.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>El que sigui, ha arribat aquí. (Actualment en ús.)</value>
   </data>

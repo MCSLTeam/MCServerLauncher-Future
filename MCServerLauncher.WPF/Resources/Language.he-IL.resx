@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>טאטאו את התמונה הגדולה כדי לראות את העולם.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>לכל הכיוונים יש להשיג את המשימה.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>תקראו לזה, זה הגיע לכאן. (נמצא כעת בשימוש.)</value>
   </data>

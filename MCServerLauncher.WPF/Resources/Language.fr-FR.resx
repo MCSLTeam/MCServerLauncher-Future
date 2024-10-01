@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Balayez la vue d’ensemble pour voir le monde.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Dans toutes les directions, la mission doit être accomplie.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Vous l’appelez, il est là. (Actuellement utilisé.)</value>
   </data>

@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Spójrz na świat z szerszej perspektywy.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>We wszystkich kierunkach misja musi zostać zrealizowana.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Nazwij to, ma tutaj. (Obecnie w użyciu.)</value>
   </data>

@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-
+using MCServerLauncher.WPF.View.Components.Generic;
 namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
@@ -16,6 +16,12 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             InitializeComponent();
         }
+
+
+        //private void TestNotification(object sender, RoutedEventArgs e)
+        //{
+        //    PushNotification("Test", "Test", true, InfoBarSeverity.Success);
+        //}
 
         /// <summary>
         ///    Show debug dialog.

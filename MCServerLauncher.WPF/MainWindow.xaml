@@ -1,6 +1,7 @@
 ﻿<Window x:Class="MCServerLauncher.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:fs="clr-namespace:MCServerLauncher.WPF.View.FirstSetupHelper"
         xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
@@ -24,13 +25,48 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <ge:LoadingScreen x:Name="LoadingScreen" Grid.RowSpan="2" />
+        <Border x:Name="Border_TitleBarRoot"
+                Height="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=(ui:TitleBar.Height)}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Rectangle Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=(ui:TitleBar.SystemOverlayRightInset)}"
+                    Grid.Column="3"/>
+
+                <ui:TitleBarButton x:Name="NotificationCenterButton" Grid.Column="2" Margin="0,-10,0,0" Height="40" Click="ShowNotificationCenter">
+                    <ui:TitleBarButton.Content>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ActionCenter}" FontSize="14" VerticalAlignment="Top"/>
+                    </ui:TitleBarButton.Content>
+                </ui:TitleBarButton>
+
+                <ui:TitleBarButton x:Name="DownloadHistoryButton" Grid.Column="1" Margin="0,-10,0,0" Height="40" Click="ShowDownloadHistory">
+                    <ui:TitleBarButton.Content>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Download}" FontSize="14" VerticalAlignment="Top"/>
+                    </ui:TitleBarButton.Content>
+                </ui:TitleBarButton>
+
+                <ikw:XamlCachedElements>
+                    <ui:Flyout x:Name="NotificationCenterFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True">
+                        <ge:NotificationCenterFlyoutContent />
+                    </ui:Flyout>
+                    <ui:Flyout x:Name="DownloadHistoryFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True">
+                        <ge:DownloadHistoryFlyoutContent />
+                    </ui:Flyout>
+                </ikw:XamlCachedElements>
+            </Grid>
+        </Border>
         <Grid x:Name="TitleBarGrid" Visibility="Hidden" Grid.Row="0" Margin="10,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Image Margin="1,-5,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality"
-                   Source="Resources/MCServerLauncherFuture.png" Width="30" Height="30" />
+                   Source="Resources/MCServerLauncherFuture.png" Width="30" Height="30"/>
             <Grid Grid.Column="1" Margin="10,0,0,0" Grid.Row="0" Height="50">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="6*" />
@@ -94,23 +130,18 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="{Binding [Main_NotificationCenterNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
-                                       Tag="MCServerLauncher.WPF.View.Pages.NotificationCenterPage">
+                <ui:NavigationViewItem Content="{Binding [Main_DebugNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.DebugPage"
+                                       Visibility="Hidden"
+                                       x:Name="DebugItem">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ActionCenterNotification}" FontSize="16" />
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{Binding [Main_SettingsNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
                                        Tag="MCServerLauncher.WPF.View.Pages.SettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Main_DebugNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
-                                       Tag="MCServerLauncher.WPF.View.Pages.DebugPage"
-                                       Visibility="Collapsed">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>

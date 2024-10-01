@@ -20,7 +20,6 @@ namespace MCServerLauncher.WPF
         private readonly Page _instanceManager = new InstanceManagerPage();
         private readonly Page _resDownload = new ResDownloadPage();
         private readonly Page _help = new HelpPage();
-        private readonly Page _notificationCenter = new NotificationCenterPage();
         private readonly Page _settings = new SettingsPage();
 
         public MainWindow()
@@ -92,9 +91,6 @@ namespace MCServerLauncher.WPF
                 case not null when navPageType == typeof(ResDownloadPage):
                     CurrentPage.Navigate(_resDownload);
                     break;
-                case not null when navPageType == typeof(NotificationCenterPage):
-                    CurrentPage.Navigate(_notificationCenter);
-                    break;
                 case not null when navPageType == typeof(HelpPage):
                     CurrentPage.Navigate(_help);
                     break;
@@ -105,6 +101,16 @@ namespace MCServerLauncher.WPF
                     CurrentPage.Navigate(new DebugPage());
                     break;
             }
+        }
+
+        private void ShowNotificationCenter(object sender, RoutedEventArgs e)
+        {
+            NotificationCenterFlyout.ShowAt(NotificationCenterButton);
+        }
+
+        private void ShowDownloadHistory(object sender, RoutedEventArgs e)
+        {
+            DownloadHistoryFlyout.ShowAt(DownloadHistoryButton);
         }
     }
 }

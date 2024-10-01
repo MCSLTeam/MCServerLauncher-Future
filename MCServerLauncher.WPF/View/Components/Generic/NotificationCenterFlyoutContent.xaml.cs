@@ -1,14 +1,14 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
-using System.Windows;
+using System.Windows.Controls;
 
-namespace MCServerLauncher.WPF.View.Pages
+namespace MCServerLauncher.WPF.View.Components.Generic
 {
     /// <summary>
-    ///    NotificationCenterPage.xaml 的交互逻辑
+    ///     NotificationCenterFlyoutContent.xaml 的交互逻辑
     /// </summary>
-    public partial class NotificationCenterPage
+    public partial class NotificationCenterFlyoutContent
     {
-        public NotificationCenterPage()
+        public NotificationCenterFlyoutContent()
         {
             InitializeComponent();
         }
@@ -33,11 +33,6 @@ namespace MCServerLauncher.WPF.View.Pages
                     IsOpen = true
                 }
             );
-        }
-
-        private void TestNotification(object sender, RoutedEventArgs e)
-        {
-            PushNotification("Test", "Test", true, InfoBarSeverity.Success);
         }
     }
 }

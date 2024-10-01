@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Svep med dig den stora bilden för att se världen.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>I alla riktningar måste uppdraget uppnås.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>You name it, det finns här. (Används för närvarande.)</value>
   </data>

@@ -276,6 +276,12 @@
     <Compile Include="View\Components\Generic\AcknowledgmentItem.xaml.cs">
       <DependentUpon>AcknowledgmentItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\Components\Generic\DownloadHistoryFlyoutContent.xaml.cs">
+      <DependentUpon>DownloadHistoryFlyoutContent.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\Generic\NotificationCenterFlyoutContent.xaml.cs">
+      <DependentUpon>NotificationCenterFlyoutContent.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\Components\Generic\OpenSourceAcknowledgmentItem.xaml.cs">
       <DependentUpon>OpenSourceAcknowledgmentItem.xaml</DependentUpon>
     </Compile>
@@ -392,9 +398,6 @@
     </Compile>
     <Compile Include="View\Pages\InstanceManagerPage.xaml.cs">
       <DependentUpon>InstanceManagerPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="View\Pages\NotificationCenterPage.xaml.cs">
-      <DependentUpon>NotificationCenterPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Pages\ResDownloadPage.xaml.cs">
       <DependentUpon>ResDownloadPage.xaml</DependentUpon>
@@ -514,6 +517,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\Components\Generic\AcknowledgmentItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\Generic\DownloadHistoryFlyoutContent.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Components\Generic\NotificationCenterFlyoutContent.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -671,10 +682,6 @@
     <Page Include="View\Pages\InstanceManagerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="View\Pages\NotificationCenterPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\Pages\ResDownloadPage.xaml">
       <Generator>MSBuild:Compile</Generator>

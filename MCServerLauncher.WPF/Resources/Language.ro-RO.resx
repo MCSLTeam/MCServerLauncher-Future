@@ -469,9 +469,6 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Măturați imaginea de ansamblu pentru a vedea lumea.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>În toate direcțiile, misiunea trebuie îndeplinită.</value>
-  </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Îl numiți, a ajuns aici. (În prezent în uz.)</value>
   </data>
