@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Pyyhkäise iso kuva nähdäksesi maailman.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Tehtävä on saavutettava kaikkiin suuntiin.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Sinä nimeät sen, se on täällä. (Tällä hetkellä käytössä.)</value>
