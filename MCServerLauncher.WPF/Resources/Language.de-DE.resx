@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Werfen Sie den Blick über das große Ganze, um die Welt zu sehen.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>In alle Richtungen muss die Mission erfüllt werden.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Was auch immer, es ist hier. (Derzeit in Gebrauch.)</value>
