@@ -27,6 +27,7 @@ public class Application
                     // a.AddConsoleLogger();
                     a.RegisterSingleton<IWebJsonConverter, WebJsonConverter>();
                     a.RegisterSingleton<IUserService, UserService>();
+                    a.RegisterSingleton<UserDatabase>();
                     a.RegisterSingleton<IActionService, ActionService>();
                     a.RegisterSingleton<IEventService, EventService>();
 
@@ -43,7 +44,7 @@ public class Application
                     a.Add<HttpPlugin>();
                     a.UseWebSocket()
                         .SetWSUrl("/api/v1")
-                        .SetVerifyConnection((client, context) =>
+                        .SetVerifyConnection(async (_, context) =>
                         {
                             if (!context.Request.IsUpgrade()) return false;
 
@@ -51,26 +52,27 @@ public class Application
                             {
                                 var userService = a.Resolver.Resolve<IUserService>();
 
-                                var (usr, pwd) = JwtUtils.ValidateToken(context.Request.Query["token"] ?? "");
-                                if (userService.Authenticate(usr, pwd, out _))
+                                var user = await userService.AuthenticateAsync(context.Request.Query["token"] ?? "");
+                                if (user != null)
                                 {
-                                    context.Request.Headers["user"] = usr;
+                                    context.Request.Headers["user"] = user.Name;
                                     return true;
                                 }
 
-                                context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
+                                await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
                                 return false;
                             }
                             catch (Exception e)
                             {
                                 Console.WriteLine(e);
-                                context.Response.SetStatus(500, e.Message).AnswerAsync();
+                                await context.Response.SetStatus(500, e.Message).AnswerAsync();
                                 return false;
                             }
                         })
                         .UseAutoPong();
 
                     a.Add<WebsocketPlugin>();
+                    a.UseDefaultHttpServicePlugin();
                 })
         );
     }

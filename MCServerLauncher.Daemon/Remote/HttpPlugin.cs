@@ -26,7 +26,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
         await e.InvokeNext();
     }
 
-    private Task HandlePostRequest(IHttpSessionClient client, HttpContextEventArgs e)
+    private async Task HandlePostRequest(IHttpSessionClient client, HttpContextEventArgs e)
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
@@ -39,22 +39,23 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                 var pwd = request.Query.Get("pwd") ?? "";
                 var expired = int.Parse(request.Query.Get("expired") ?? "30");
 
-                if (!_userService.Authenticate(usr, pwd, out _))
-                    return response.SetStatus(401, "Unauthorized").AnswerAsync();
+                if (!await _userService.AuthenticateAsync(usr, pwd))
+                {
+                    await response.SetStatus(401, "Unauthorized").AnswerAsync();
+                    return;
+                }
 
-                var token = JwtUtils.GenerateToken(usr, pwd, expired);
-                Log.Information("[Authenticator] Login Success: {0}, token will expire in {1}s",usr,expired);
-                return response
+                var token = await _userService.GenerateTokenAsync(usr, expired);
+                Log.Information("[Authenticator] Login Success: {0}, token will expire in {1}s", usr, expired);
+                await response
                     .SetStatus(200, "success")
                     .SetContent(token)
                     .AnswerAsync();
             }
-
-            return response.SetStatus(404, "Not Found").AnswerAsync();
         }
         catch (Exception ex)
         {
-            return response.SetStatus(500, ex.Message).AnswerAsync();
+            await response.SetStatus(500, ex.Message).AnswerAsync();
         }
     }
 }

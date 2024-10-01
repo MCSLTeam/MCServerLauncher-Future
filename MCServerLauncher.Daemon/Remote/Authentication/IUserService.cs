@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 /// <summary>
@@ -7,9 +5,14 @@ namespace MCServerLauncher.Daemon.Remote.Authentication;
 /// </summary>
 public interface IUserService
 {
-    void AddUser(string name, string password, PermissionGroups group, Permission[] permissions = null);
-    void RemoveUser(string name);
-    Dictionary<string, UserMeta> GetUsers();
-    bool Authenticate([NotNull] string name, string password, [AllowNull] out UserMeta user);
-    bool Authenticate([NotNull] string jwt, [AllowNull] out User user);
+    Task AddUserAsync(string name, string password, PermissionGroups group, string? secret = null,
+        Permission[]? permissions = null);
+
+    Task RemoveUserAsync(string name);
+    Task<IDictionary<string, UserMeta>> GetUsersAsync();
+    Task<UserMeta?> GetUserMetaAsync(string name);
+    Task<bool> AuthenticateAsync(string name, string password);
+    Task<User?> AuthenticateAsync(string jwt);
+
+    Task<string?> GenerateTokenAsync(string name, int expired);
 }
