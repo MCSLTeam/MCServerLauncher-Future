@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>全体像を一掃して世界を見渡してください。</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>あらゆる方向で、ミッションを達成する必要があります。</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>何でもいい、ここにある。 (現在使用中)</value>
