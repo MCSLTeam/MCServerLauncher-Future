@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Fei det store bildet for å se verden.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>I alle retninger må oppdraget oppnås.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>You name it, den er her. (For tiden i bruk.)</value>
