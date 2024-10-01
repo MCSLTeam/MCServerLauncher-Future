@@ -25,14 +25,14 @@ internal class AppConfig
     /// </summary>
     public readonly string Secret;
 
-    public int SingleFileMaxDownloadSessions { get; private set; }
-
     public AppConfig(ushort port, string secret, int sfmds = 3)
     {
         Port = port;
         Secret = secret;
         SingleFileMaxDownloadSessions = sfmds;
     }
+
+    public int SingleFileMaxDownloadSessions { get; private set; }
 
     private static AppConfig GetDefault()
     {

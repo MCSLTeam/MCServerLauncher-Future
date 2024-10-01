@@ -19,13 +19,14 @@ public class Program
     {
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
-        var info = await SlpClient.GetStatusModern("pve-net.xiexilin.com", 30042);
-        Log.Information("[SlpClient] Get Server List Ping data: {0}",
-            JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
-        Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
+        // var info = await SlpClient.GetStatusModern("pve-net.xiexilin.com", 30042);
+        // Log.Information("[SlpClient] Get Server List Ping data: {0}",
+        //     JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
+        // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
 
 
-        Serve();
+        // Serve();
+        await ServeAsync();
         // await RunMcServerAsync();
     }
 
@@ -106,60 +107,12 @@ public class Program
         );
     }
 
-    public static void TestServer()
-    {
-        BasicUtils.InitApp();
-        Serve();
-    }
-
     /// <summary>
     ///     app开始服务,包含配置DI和HttpServer启动
     /// </summary>
-    private static void Serve()
+    private static async Task ServeAsync()
     {
-        // DI
-        var containerBuilder = new ServiceCollection();
-
-        ConfigureServices(containerBuilder);
-
-        var container = containerBuilder.BuildServiceProvider(
-#if DEBUG
-            new ServiceProviderOptions() // TODO 生产模式应删去
-            {
-                ValidateOnBuild = true,
-                ValidateScopes = true
-            }
-#endif
-        );
-
-        var server = container.GetRequiredService<IServer>();
-        server.Start();
-    }
-
-    /// <summary>
-    ///     配置DI服务
-    /// </summary>
-    /// <param name="services"></param>
-    private static void ConfigureServices(IServiceCollection services)
-    {
-        services.AddTransient<IServer, Server>();
-
-        services.AddScoped<ServerBehavior>();
-
-        services.AddScoped<IActionService, ActionService>();
-        services.AddScoped<IEventService, EventService>();
-
-        services.AddSingleton<IWebJsonConverter, WebJsonConverter>();
-        services.AddSingleton<IUserService, UserService>();
-        services.AddSingleton<
-            IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>,
-            AsyncTimedCache<List<JavaScanner.JavaInfo>>
-        >(_ => new AsyncTimedCache<List<JavaScanner.JavaInfo>>(
-            JavaScanner.ScanJavaAsync,
-            TimeSpan.FromSeconds(60))
-        ); // add java scanner cache
-
-        // logger
-        services.AddSingleton<RemoteLogHelper>();
+        var app = new Application();
+        await app.StartAsync();
     }
 }

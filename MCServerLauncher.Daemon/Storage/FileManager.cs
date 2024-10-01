@@ -4,11 +4,10 @@ using System.Text;
 using Downloader;
 using Newtonsoft.Json;
 using Serilog;
-using WebSocketSharp;
 
 namespace MCServerLauncher.Daemon.Storage;
 
-internal struct DownloadRequestInfo
+public struct DownloadRequestInfo
 {
     public Guid Id;
     public long Size;
@@ -22,7 +21,7 @@ internal struct DownloadRequestInfo
     }
 }
 
-internal record FileSystemMetadata
+public record FileSystemMetadata
 {
     public DateTime CreationTime;
     public bool Hidden;
@@ -40,7 +39,7 @@ internal record FileSystemMetadata
     }
 }
 
-internal record FileMetadata : FileSystemMetadata
+public record FileMetadata : FileSystemMetadata
 {
     public bool ReadOnly;
     public long Size;
@@ -53,14 +52,14 @@ internal record FileMetadata : FileSystemMetadata
     }
 }
 
-internal record DirectoryMetadata : FileSystemMetadata
+public record DirectoryMetadata : FileSystemMetadata
 {
     public DirectoryMetadata(DirectoryInfo info) : base(info)
     {
     }
 }
 
-internal record DirectoryEntry
+public record DirectoryEntry
 {
     public DirectoryInformation[] Directories;
     public FileInformation[] Files;
@@ -131,7 +130,7 @@ internal static class FileManager
     public static Guid FileUploadRequest(string? path, long size, long chunkSize, string? sha1 = null)
     {
         // Validate path
-        if (path != null && ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        if (path != null && !ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
 
         // path is null means upload to upload root
         path ??= UploadRoot;
@@ -210,7 +209,7 @@ internal static class FileManager
         // rename tmp file to its origin name
         File.Move(info.Path + ".tmp", info.Path, true);
 
-        if (!sha1.IsNullOrEmpty())
+        if (!string.IsNullOrEmpty(sha1))
         {
             if (sha1 != info.Sha1)
             {
@@ -261,7 +260,7 @@ internal static class FileManager
     public static async Task<DownloadRequestInfo> FileDownloadRequest(string path)
     {
         // Validate path
-        if (ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
         if (!File.Exists(path)) throw new IOException("File not found");
 
         // do not check if file in download session
@@ -329,7 +328,7 @@ internal static class FileManager
     public static FileMetadata GetFileInfo(string path)
     {
         // validate path
-        if (ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
 
         var fileInfo = new FileInfo(path);
         if (!fileInfo.Exists) throw new IOException("File not found");
@@ -344,6 +343,9 @@ internal static class FileManager
     /// <returns></returns>
     public static DirectoryEntry GetDirectoryInfo(string path)
     {
+        // validate path
+        if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        
         return new DirectoryEntry(path);
     }
 
@@ -428,7 +430,7 @@ internal static class FileManager
                 File.Delete(tmpFilePath);
                 Log.Warning("[FileManager] Failed to download file {0}: {1}", filename, args.Error.Message);
             }
-            else if (!sha1.IsNullOrEmpty())
+            else if (!string.IsNullOrEmpty(sha1))
             {
                 await using var fs = new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var fileSha1 = await FileSha1(fs);

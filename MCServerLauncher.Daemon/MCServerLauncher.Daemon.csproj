@@ -38,7 +38,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0"/>
-        <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11"/>
+        <PackageReference Include="TouchSocket.Http" Version="2.1.5" />
     </ItemGroup>
 
     <ItemGroup>

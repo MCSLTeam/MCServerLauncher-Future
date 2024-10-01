@@ -3,6 +3,7 @@ using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
 using Newtonsoft.Json.Linq;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -16,14 +17,12 @@ internal class ActionService : IActionService
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
 
     // DI
-    private readonly ILogHelper _logger;
     private readonly IWebJsonConverter _webJsonConverter;
 
     // DI constructor
-    public ActionService(RemoteLogHelper logger, IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
+    public ActionService(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
         IWebJsonConverter webJsonConverter)
     {
-        _logger = logger;
         _javaScannerCache = javaScannerCache;
         _webJsonConverter = webJsonConverter;
     }
@@ -37,7 +36,7 @@ internal class ActionService : IActionService
     /// <exception cref="NotImplementedException">未实现的Action</exception>
     public async Task<Dictionary<string, object>> Routine(
         ActionType type,
-        JObject data
+        JObject? data
     )
     {
         try
@@ -80,7 +79,7 @@ internal class ActionService : IActionService
         };
     }
 
-    public Dictionary<string, object> Ok(Actions.ActionResponse? data = null)
+    public Dictionary<string, object> Ok(Actions.IActionResponse? data = null)
     {
         return new Dictionary<string, object>
         {
@@ -163,7 +162,7 @@ internal class ActionService : IActionService
 
     private Dictionary<string, object> Err(string message, ActionType type, int code = 1400)
     {
-        _logger.Error($"Error while handling Action {type}: {message}");
+        Log.Error("Error while handling Action {0}: {1}", type, message);
         return new Dictionary<string, object>
         {
             { "status", "error" },

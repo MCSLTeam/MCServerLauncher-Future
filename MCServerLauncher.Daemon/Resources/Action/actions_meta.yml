@@ -12,7 +12,7 @@ actions:
   - file_upload_request:
       req:
         path: string?
-        sha1: string
+        sha1: string?
         chunk_size: long
         size: long
       
