@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Vydejte se na svět v širších souvislostech.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Ve všech směrech musí být mise splněna.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Na co si vzpomenete, je to tady. (V současné době se používá.)</value>
