@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>اكتسح الصورة الكبيرة لرؤية العالم.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>في جميع الاتجاهات ، يجب تحقيق المهمة.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>سمها ما شئت ، لقد وصلت إلى هنا. (قيد الاستخدام حاليا.)</value>
