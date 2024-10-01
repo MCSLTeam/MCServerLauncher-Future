@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Dünyayı görmek için büyük resmi tarayın.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Her yönde, misyon başarılmalıdır.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Adını siz koyun, burada var. (Şu anda kullanımda.)</value>
