@@ -3,6 +3,7 @@ using iNKORE.UI.WPF.Modern.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Media.Animation;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 using Page = System.Windows.Controls.Page;
 
@@ -89,12 +90,35 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 ? SlideNavigationTransitionEffect.FromRight
                 : SlideNavigationTransitionEffect.FromLeft;
         }
-
         public void FinishSetup()
         {
-            Visibility = Visibility.Hidden;
+            var fadeOutAnimation = new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.0,
+                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fadeOutAnimation.Completed += (s, e) =>
+            {
+                Visibility = Visibility.Hidden;
+            };
+
             var parent = this.TryFindParent<MainWindow>();
-            parent.NavView.Visibility = Visibility.Visible;
+            var fadeInAnimation = new DoubleAnimation
+            {
+                From = 0.0,
+                To = 1.0,
+                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fadeInAnimation.Completed += (s, e) =>
+            {
+                parent.NavView.Visibility = Visibility.Visible;
+            };
+
+            BeginAnimation(OpacityProperty, fadeOutAnimation);
+            parent.NavView.BeginAnimation(OpacityProperty, fadeInAnimation);
         }
         public void GoEulaSetup()
         {
