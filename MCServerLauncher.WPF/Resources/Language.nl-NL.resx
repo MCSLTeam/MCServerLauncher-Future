@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Veeg het grote geheel om de wereld te zien.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>In alle richtingen moet de missie worden volbracht.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Noem maar op, het is hier gekomen. (Momenteel in gebruik.)</value>
