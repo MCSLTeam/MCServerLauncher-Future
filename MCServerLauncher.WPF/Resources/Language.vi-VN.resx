@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Quét bức tranh lớn để nhìn thế giới.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Trong tất cả các hướng, nhiệm vụ phải đạt được.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Bạn đặt tên cho nó, nó có ở đây. (Hiện đang được sử dụng.)</value>
