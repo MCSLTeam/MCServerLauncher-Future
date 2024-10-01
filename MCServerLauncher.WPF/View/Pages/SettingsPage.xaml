@@ -262,7 +262,7 @@
                     <ikw:SimpleStackPanel Margin="5,0,5,0">
                         <g:AcknowledgmentItem Title="bangbang93"
                                               Description="{Binding [Settings_Acknowledgments_BMCLAPI_Description], Source={x:Static i18n:LanguageManager.Localize}}"
-                                              ImagePath="../../../Resources/bangbang93.png"
+                                              ImagePath="../../../Resources/bangbang93.jpg"
                                               ButtonUrl="https://afdian.com/a/bangbang93/"
                                               ButtonText="{Binding [Donate], Source={x:Static i18n:LanguageManager.Localize}}"/>
                         <g:AcknowledgmentItem Title="Plain Craft Launcher 2"

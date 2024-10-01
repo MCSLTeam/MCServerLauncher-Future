@@ -788,7 +788,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\BakaXL.png" />
-    <Resource Include="Resources\bangbang93.png" />
     <Resource Include="Resources\PCL2.png" />
   </ItemGroup>
   <ItemGroup>
@@ -796,6 +795,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\MCServerLauncherFutureConsole.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\bangbang93.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
