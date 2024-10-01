@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
@@ -18,7 +17,7 @@ public static class PasswordHasher
     /// </summary>
     /// <param name="password"></param>
     /// <returns></returns>
-    public static string HashPassword(string password)
+    public static string? HashPassword(string password)
     {
         // 生成Salt
         var salt = new byte[SaltSize];
@@ -42,7 +41,7 @@ public static class PasswordHasher
     /// <param name="password"></param>
     /// <param name="hashedPassword"></param>
     /// <returns></returns>
-    public static bool VerifyPassword(string password, [AllowNull] string hashedPassword)
+    public static bool VerifyPassword(string password, string? hashedPassword)
     {
         if (hashedPassword == null) return false;
 

@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
@@ -17,7 +15,15 @@ public class UsersException : Exception
 /// </summary>
 public class UserService : IUserService
 {
-    private readonly ConcurrentDictionary<string, UserMeta> _userMap = CheckInternalAdmin(LoadUsers());
+    private readonly UserDatabase _db;
+
+    public UserService(UserDatabase db)
+    {
+        _db = db;
+        // 启动时检查用户文件
+        var task = CheckInternalAdminAsync();
+        task.ConfigureAwait(false).GetAwaiter().GetResult();
+    }
 
 
     /// <summary>
@@ -26,17 +32,16 @@ public class UserService : IUserService
     /// <param name="name">用户名</param>
     /// <param name="password">密码</param>
     /// <param name="group">权限组</param>
+    /// <param name="secret">用户secret(用于生成token)</param>
     /// <param name="permissions">权限列表(PermissionGroup.Custom时才有意义)</param>
     /// <exception cref="UsersException"></exception>
-    public void AddUser(string name, string password, PermissionGroups group, Permission[] permissions = null)
+    public async Task AddUserAsync(string name, string password, PermissionGroups group, string? secret = null,
+        Permission[]? permissions = null)
     {
-        if (_userMap.ContainsKey(name)) throw new UsersException("User already exists");
+        if (await _db.HasUser(name)) throw new UsersException("User already exists");
+        var notNullSecret = secret ?? Guid.NewGuid().ToString();
 
-        _userMap.TryAdd(
-            name,
-            new UserMeta(PasswordHasher.HashPassword(password), group, permissions ?? Array.Empty<Permission>())
-        );
-        SaveUsers();
+        await _db.AddUser(name, notNullSecret, password, group, permissions ?? Array.Empty<Permission>());
 
         // make user directory
         Directory.CreateDirectory(Path.Combine(FileManager.Root, "users", name));
@@ -47,103 +52,127 @@ public class UserService : IUserService
     /// </summary>
     /// <param name="name">用户名</param>
     /// <exception cref="UsersException"></exception>
-    public void RemoveUser(string name)
+    public async Task RemoveUserAsync(string name)
     {
-        if (!_userMap.ContainsKey(name)) throw new UsersException("User does not exist");
-
-        _userMap.TryRemove(name, out _);
-        SaveUsers();
+        if (await _db.HasUser(name))
+            await _db.RemoveUser(name);
+        else throw new UsersException("User not found");
 
         // delete user directory
         Directory.Delete(Path.Combine(FileManager.Root, "users", name), true);
     }
 
     /// <summary>
-    ///     获取所有用户信息的快照
+    ///     获取所有用户信息
     /// </summary>
     /// <returns></returns>
-    public Dictionary<string, UserMeta> GetUsers()
+    public Task<IDictionary<string, UserMeta>> GetUsersAsync()
     {
-        return _userMap.ToDictionary(x => x.Key, x => x.Value);
+        return _db.GetUsers();
     }
 
     /// <summary>
-    ///     用户登录,若登录成功则返回用户信息
+    ///     获取用户元信息
     /// </summary>
-    /// <param name="name">用户名</param>
-    /// <param name="password">密码</param>
-    /// <param name="user">用户信息</param>
-    /// <returns>是否登录成功</returns>
-    public bool Authenticate([NotNull] string name, string password, [AllowNull] out UserMeta user)
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public async Task<UserMeta?> GetUserMetaAsync(string name)
     {
-        if (VerifyPassword(name, password))
+        var e = await _db.GetUserEntry(name);
+        return e?.Meta;
+    }
+
+    /// <summary>
+    ///     验证Jwt
+    /// </summary>
+    /// <param name="jwt">jwt字符串</param>
+    /// <returns>
+    ///     <see cref="User" />
+    /// </returns>
+    public async Task<User?> AuthenticateAsync(string jwt)
+    {
+        var usr = JwtUtils.ExtractUsername(jwt);
+        var e = await _db.GetUserEntry(usr);
+
+        if (e == null) return null;
+
+        // 不需要验证密码是否一致，因为改过密码后.secret也会改，那么验证自然也就不会通过了
+        return JwtUtils.ValidateToken(e.Secret, jwt)
+            ? new User(usr!, e.Meta) // 此时usr必不为null,因为数据库中有条目
+            : null;
+    }
+
+    /// <summary>
+    ///     验证用户名密码
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="password"></param>
+    /// <returns></returns>
+    public async Task<bool> AuthenticateAsync(string name, string password)
+    {
+        var entry = await _db.GetUserEntry(name);
+
+        return entry != null && PasswordHasher.VerifyPassword(password, entry.Meta.PasswordHash);
+    }
+
+    /// <summary>
+    ///     生成Jwt
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="expired"></param>
+    /// <returns></returns>
+    public async Task<string?> GenerateTokenAsync(string name, int expired)
+    {
+        var userEntry = await _db.GetUserEntry(name);
+        return userEntry != null ? JwtUtils.GenerateToken(name, userEntry.Secret, expired) : null;
+    }
+
+    /// <summary>
+    ///     修改用户密码
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="newPassword"></param>
+    public async Task UserChangePassword(string name, string newPassword)
+    {
+        var hashed = PasswordHasher.HashPassword(newPassword);
+        await using var transaction = await _db.BeginTransactionAsync();
+
+        try
         {
-            user = _userMap[name];
-            return true;
+            await ExpireUserTokens(name);
+            await _db.UpdateUser(name, password: hashed);
+            await transaction.CommitAsync();
         }
-
-        user = null;
-        return false;
-    }
-
-    /// <summary>
-    ///     验证JWT,若验证成功则返回用户信息
-    /// </summary>
-    /// <param name="jwt"></param>
-    /// <param name="user"></param>
-    /// <returns></returns>
-    public bool Authenticate([NotNull] string jwt, [AllowNull] out User user)
-    {
-        var (usr, pwd) = JwtUtils.ValidateToken(jwt);
-        var rv = Authenticate(usr, pwd, out var userMeta);
-        user = rv ? new User(usr, userMeta) : null;
-        return rv;
-    }
-
-    private bool VerifyPassword(string name, string password)
-    {
-        return PasswordHasher.VerifyPassword(password,
-            _userMap.TryGetValue(name, out var userMeta) ? userMeta.PasswordHash : null);
-    }
-
-    private void SaveUsers()
-    {
-        FileManager.WriteJsonAndBackup("users.json", _userMap);
-    }
-
-    /// <summary>
-    ///     从文件加载用户信息
-    /// </summary>
-    /// <returns></returns>
-    private static ConcurrentDictionary<string, UserMeta> LoadUsers()
-    {
-        return FileManager.ReadJsonOr("users.json", () => new ConcurrentDictionary<string, UserMeta>());
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
 
     /// <summary>
     ///     检查默认admin用户，若不存在则创建
     /// </summary>
-    /// <param name="userMap"></param>
     /// <returns></returns>
-    private static ConcurrentDictionary<string, UserMeta> CheckInternalAdmin(
-        ConcurrentDictionary<string, UserMeta> userMap)
+    private async Task CheckInternalAdminAsync()
     {
-        if (!userMap.ContainsKey("admin"))
-        {
-            string pwd;
-            userMap.TryAdd(
-                "admin",
-                new UserMeta(PasswordHasher.HashPassword(pwd = Guid.NewGuid().ToString()),
-                    PermissionGroups.Admin,
-                    null)
-            );
+        if (await _db.HasUser("admin")) return;
 
-            FileManager.WriteJsonAndBackup("users.json", userMap);
+        var secret = Guid.NewGuid().ToString();
+        var pwd = Guid.NewGuid().ToString();
+        await AddUserAsync("admin", pwd, PermissionGroups.Admin, secret);
 
-            Log.Information($" [Users] *** Internal user created: admin, password: {pwd} ***");
-        }
+        Log.Information($" [Users] *** Internal user created: admin, password: {pwd} ***");
+    }
 
-        return userMap;
+    /// <summary>
+    ///     通过更改用户的secret来使所有已分发的Jwt失效
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    private async Task<bool> ExpireUserTokens(string name)
+    {
+        return await _db.UpdateUser(name, Guid.NewGuid().ToString());
     }
 }

@@ -1,4 +1,5 @@
 namespace MCServerLauncher.Daemon.Remote.Action;
+
 public enum ActionType
 {
     Ping,
