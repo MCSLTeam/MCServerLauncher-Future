@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Varra o quadro geral para ver o mundo.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Em todas as direções, a missão deve ser alcançada.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Você escolhe, tem aqui. (Atualmente em uso.)</value>
