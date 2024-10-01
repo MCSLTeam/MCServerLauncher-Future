@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>纵览全局，以观天下。</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>四面八方，使命必达。</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>你想要的，这里都有。 (当前正在使用</value>
