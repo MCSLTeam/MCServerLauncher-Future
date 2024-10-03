@@ -6,6 +6,7 @@ using MCServerLauncher.WPF.View.Pages;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Animation;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF
@@ -43,15 +44,26 @@ namespace MCServerLauncher.WPF
             SetupView.Visibility = Visibility.Hidden;
             CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
             await Task.Delay(1500);
-            LoadingScreen.Visibility = Visibility.Hidden;
-            TitleBarGrid.Visibility = Visibility.Visible;
-            if (!SettingsManager.AppSettings.App.IsFirstSetupFinished)
+            var fadeOutAnimation = new DoubleAnimation
             {
-                SetupView.Visibility = Visibility.Visible;
-                return;
-            }
-
-            NavView.Visibility = Visibility.Visible;
+                From = 1.0,
+                To = 0.0,
+                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fadeOutAnimation.Completed += (s, e) =>
+            {
+                LoadingScreen.Visibility = Visibility.Hidden;
+                TitleBarGrid.Visibility = Visibility.Visible;
+                if (!SettingsManager.AppSettings.App.IsFirstSetupFinished)
+                {
+                    SetupView.Visibility = Visibility.Visible;
+                    return;
+                }
+                NavView.Visibility = Visibility.Visible;
+                TitleBarRootBorder.Visibility = Visibility.Visible;
+            };
+            LoadingScreen.BeginAnimation(OpacityProperty, fadeOutAnimation);
         }
 
         /// <summary>

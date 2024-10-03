@@ -25,7 +25,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <ge:LoadingScreen x:Name="LoadingScreen" Grid.RowSpan="2" />
-        <Border x:Name="Border_TitleBarRoot"
+        <Border x:Name="TitleBarRootBorder" Visibility="Hidden"
                 Height="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=(ui:TitleBar.Height)}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -38,13 +38,13 @@
                 <Rectangle Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=(ui:TitleBar.SystemOverlayRightInset)}"
                     Grid.Column="3"/>
 
-                <ui:TitleBarButton x:Name="NotificationCenterButton" Grid.Column="2" Margin="0,-10,0,0" Height="40" Click="ShowNotificationCenter">
+                <ui:TitleBarButton x:Name="NotificationCenterButton" Grid.Column="2" Margin="0,-10,0,0" Height="40" Click="ShowNotificationCenter" IsActive="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}">
                     <ui:TitleBarButton.Content>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ActionCenter}" FontSize="14" VerticalAlignment="Top"/>
                     </ui:TitleBarButton.Content>
                 </ui:TitleBarButton>
 
-                <ui:TitleBarButton x:Name="DownloadHistoryButton" Grid.Column="1" Margin="0,-10,0,0" Height="40" Click="ShowDownloadHistory">
+                <ui:TitleBarButton x:Name="DownloadHistoryButton" Grid.Column="1" Margin="0,-10,0,0" Height="40" Click="ShowDownloadHistory" IsActive="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}">
                     <ui:TitleBarButton.Content>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Download}" FontSize="14" VerticalAlignment="Top"/>
                     </ui:TitleBarButton.Content>

@@ -228,6 +228,7 @@
     <Compile Include="InstanceConsole\View\Pages\FileManagerPage.xaml.cs">
       <DependentUpon>FileManagerPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Modules\Animation.cs" />
     <Compile Include="Modules\Clipboard.cs" />
     <Compile Include="Modules\CreateInstance\Files.cs" />
     <Compile Include="Modules\Download.cs" />
