@@ -2,6 +2,7 @@
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Modules
@@ -39,6 +41,17 @@ namespace MCServerLauncher.WPF.Modules
                 Directory.CreateDirectory(dataFolder);
         }
 
+        private static void TryRunAsAdmin()
+        {
+            if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) return;
+            Process.Start(new ProcessStartInfo(Assembly.GetExecutingAssembly().CodeBase)
+            {
+                UseShellExecute = true,
+                Verb = "runas"
+            });
+            Environment.Exit(0);
+        }
+
         /// <summary>
         ///    Import cert.
         /// </summary>
@@ -47,6 +60,7 @@ namespace MCServerLauncher.WPF.Modules
             try
             {
                 Log.Information("[Cer] Importing certificate");
+                TryRunAsAdmin();
                 using var certStream = Assembly.GetExecutingAssembly()
                     .GetManifestResourceStream("MCServerLauncher.WPF.Resources.MCSLTeam.cer");
                 if (certStream == null) throw new FileNotFoundException("Embedded resource not found");
@@ -97,6 +111,7 @@ namespace MCServerLauncher.WPF.Modules
             var fontRegistryKey = "Segoe Fluent Icons (TrueType)";
             var fontSysPath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR")!, "fonts", fontFileName);
 
+            TryRunAsAdmin();
             using (var fontsKey =
                    Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"))
             {
@@ -127,8 +142,14 @@ namespace MCServerLauncher.WPF.Modules
             Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
             InitDataDirectory();
             new SettingsManager().InitSettings();
-            if (!SettingsManager.AppSettings.App.IsCertImported) InitCert();
-            if (!SettingsManager.AppSettings.App.IsFontInstalled) InitFont();
+            bool needImport = false;
+            if (!SettingsManager.AppSettings.App.IsCertImported) { InitCert(); needImport = true; }
+            if (!SettingsManager.AppSettings.App.IsFontInstalled) { InitFont(); needImport = true; }
+            if (needImport)
+            {
+                Process.Start(Assembly.GetExecutingAssembly().Location);
+                Environment.Exit(0);
+            }
             LanguageManager.Localize.ChangeLanguage(new CultureInfo(SettingsManager.AppSettings.App.Language));
         }
     }

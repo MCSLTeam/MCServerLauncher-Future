@@ -228,7 +228,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                       Text="Copyright © 2022-2024 " VerticalAlignment="Center"
+                                       Text="Copyright © 2022-2025 " VerticalAlignment="Center"
                                        HorizontalAlignment="Left" />
                             <ui:HyperlinkButton Grid.Column="1" Padding="0" NavigateUri="https://mcsl.com.cn">MCSLTeam</ui:HyperlinkButton>
                             <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"

@@ -1,9 +1,11 @@
 ﻿using MCServerLauncher.WPF.Modules;
 using System.Globalization;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Page = System.Windows.Controls.Page;
+using System;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
@@ -42,8 +44,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex)));
             SettingsManager.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex));
             // restart this app
-            System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
-            Application.Current.Shutdown();
+            Process.Start(Application.ResourceAssembly.Location);
+            Environment.Exit(0);
         }
     }
 }
