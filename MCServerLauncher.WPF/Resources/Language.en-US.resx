@@ -455,7 +455,7 @@
     <value>Minecraft Travertine Proxy Server</value>
   </data>
   <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
-    <value>Universal Frp Client (Frpc)</value>
+    <value>通用 Frp 客户端程序 (Frpc)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Terraria Server</value>
@@ -471,6 +471,9 @@
   </data>
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Panoramic view, all within your rule.</value>
+  </data>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>Downloads</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Whatever you want, is here to be found. (Currently using</value>
@@ -812,9 +815,15 @@
     <value>Others</value>
   </data>
   <data name="Console_InstanceSettingsNavMenu" xml:space="preserve">
-    <value>Instance Settings</value>
+    <value>Settings</value>
   </data>
-  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
-    <value>Downloads</value>
+  <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateFrpcInstanceCategory" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
+    <value></value>
   </data>
 </root>
