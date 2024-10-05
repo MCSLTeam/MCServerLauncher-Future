@@ -1,5 +1,6 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.View.Components.Generic;
+using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -14,6 +15,7 @@ namespace MCServerLauncher.WPF.Modules
         /// <param name="severity">Level.</param>
         public static void PushNotification(string title, string message, bool isClosable, InfoBarSeverity severity)
         {
+            // application layer notification
             NotificationCenterFlyoutContent.Instance.NotificationContainer.Children.Insert(
                 0,
                 new InfoBar
@@ -25,6 +27,11 @@ namespace MCServerLauncher.WPF.Modules
                     IsOpen = true
                 }
             );
+            // system layer notification
+            new ToastContentBuilder()
+            .AddText(title)
+            .AddText(message)
+            .Show();
         }
     }
 }
