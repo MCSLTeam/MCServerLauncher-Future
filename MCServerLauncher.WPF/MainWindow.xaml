@@ -17,7 +17,7 @@
         ui:TitleBar.Height="40"
         ui:TitleBar.IsBackEnabled="False"
         ui:TitleBar.IsBackButtonVisible="False"
-        MinHeight="600" MinWidth="330"
+        MinHeight="600" MinWidth="480"
         Width="1138" Height="750">
     <Grid>
         <Grid.RowDefinitions>
