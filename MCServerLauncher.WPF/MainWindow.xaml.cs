@@ -2,10 +2,12 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.Pages;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Animation;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF
@@ -20,7 +22,6 @@ namespace MCServerLauncher.WPF
         private readonly Page _instanceManager = new InstanceManagerPage();
         private readonly Page _resDownload = new ResDownloadPage();
         private readonly Page _help = new HelpPage();
-        private readonly Page _notificationCenter = new NotificationCenterPage();
         private readonly Page _settings = new SettingsPage();
 
         public MainWindow()
@@ -41,18 +42,31 @@ namespace MCServerLauncher.WPF
         /// </summary>
         private async void InitializeView()
         {
+            NotificationCenterFlyout.Content = NotificationCenterFlyoutContent.Instance;
+            DownloadHistoryFlyout.Content = DownloadHistoryFlyoutContent.Instance;
             SetupView.Visibility = Visibility.Hidden;
             CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
             await Task.Delay(1500);
-            LoadingScreen.Visibility = Visibility.Hidden;
-            TitleBarGrid.Visibility = Visibility.Visible;
-            if (!SettingsManager.AppSettings.App.IsFirstSetupFinished)
+            var fadeOutAnimation = new DoubleAnimation
             {
-                SetupView.Visibility = Visibility.Visible;
-                return;
-            }
-
-            NavView.Visibility = Visibility.Visible;
+                From = 1.0,
+                To = 0.0,
+                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fadeOutAnimation.Completed += (s, e) =>
+            {
+                LoadingScreen.Visibility = Visibility.Hidden;
+                TitleBarGrid.Visibility = Visibility.Visible;
+                if (!SettingsManager.AppSettings.App.IsFirstSetupFinished)
+                {
+                    SetupView.Visibility = Visibility.Visible;
+                    return;
+                }
+                NavView.Visibility = Visibility.Visible;
+                TitleBarRootBorder.Visibility = Visibility.Visible;
+            };
+            LoadingScreen.BeginAnimation(OpacityProperty, fadeOutAnimation);
         }
 
         /// <summary>
@@ -92,9 +106,6 @@ namespace MCServerLauncher.WPF
                 case not null when navPageType == typeof(ResDownloadPage):
                     CurrentPage.Navigate(_resDownload);
                     break;
-                case not null when navPageType == typeof(NotificationCenterPage):
-                    CurrentPage.Navigate(_notificationCenter);
-                    break;
                 case not null when navPageType == typeof(HelpPage):
                     CurrentPage.Navigate(_help);
                     break;
@@ -105,6 +116,16 @@ namespace MCServerLauncher.WPF
                     CurrentPage.Navigate(new DebugPage());
                     break;
             }
+        }
+
+        private void ShowNotificationCenter(object sender, RoutedEventArgs e)
+        {
+            NotificationCenterFlyout.ShowAt(NotificationCenterButton);
+        }
+
+        private void ShowDownloadHistory(object sender, RoutedEventArgs e)
+        {
+            DownloadHistoryFlyout.ShowAt(DownloadHistoryButton);
         }
     }
 }

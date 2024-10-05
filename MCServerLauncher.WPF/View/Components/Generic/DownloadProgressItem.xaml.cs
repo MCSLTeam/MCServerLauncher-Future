@@ -26,6 +26,7 @@
         {
             get => (int)DownloadProgressBar.Value;
             set => DownloadProgressBar.Value = value;
+            
         }
     }
 }

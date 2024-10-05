@@ -454,6 +454,9 @@
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
     <value>Minecraft Travertí costat del grup</value>
   </data>
+  <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
+    <value>通用 Frp 客户端程序 (Frpc)</value>
+  </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Servidors de jocs Terraria</value>
   </data>
@@ -469,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Escombra el panorama general per veure el món.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>En totes direccions, la missió s'ha d'aconseguir.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>El que sigui, ha arribat aquí. (Actualment en ús.)</value>

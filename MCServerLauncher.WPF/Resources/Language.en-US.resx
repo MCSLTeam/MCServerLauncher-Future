@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -143,7 +143,7 @@
     <value>Help Center</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>Nofitications</value>
+    <value>Notifications</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
     <value>Debug</value>
@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>Panoramic view, all within your rule.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>Running silently, tasks accomplished efficiently.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>Downloads</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Whatever you want, is here to be found. (Currently using</value>
@@ -816,5 +816,14 @@
   </data>
   <data name="Console_InstanceSettingsNavMenu" xml:space="preserve">
     <value>Instance Settings</value>
+  </data>
+  <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
+    <value>Minecraft Server</value>
+  </data>
+  <data name="CreateFrpcInstanceCategory" xml:space="preserve">
+    <value>Fast Reverse Proxy Client (Frpc)</value>
+  </data>
+  <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
+    <value>Terraria Server Archive</value>
   </data>
 </root>

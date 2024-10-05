@@ -47,15 +47,15 @@ public class UserDatabase : IDisposable, IAsyncDisposable
         // 创建用户表
         await using (var cmd = _connection.CreateCommand())
         {
-            cmd.CommandText = """
+            cmd.CommandText = @"
                               CREATE TABLE IF NOT EXISTS users(
-                                  "name" TEXT PRIMARY KEY,
-                                  "secret" TEXT,
-                                  "passwordHash" TEXT,
-                                  "group" TEXT,
-                                  "permissions" TEXT
+                                  `name` TEXT PRIMARY KEY,
+                                  `secret` TEXT,
+                                  `passwordHash` TEXT,
+                                  `group` TEXT,
+                                  `permissions` TEXT
                               );
-                              """;
+                              ";
             await cmd.ExecuteNonQueryAsync();
         }
     }
@@ -128,10 +128,10 @@ public class UserDatabase : IDisposable, IAsyncDisposable
         Permission[] permissions)
     {
         await using var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-                          INSERT INTO users(name, secret, passwordHash, "group", permissions)
+        cmd.CommandText = @"
+                          INSERT INTO users(name, secret, passwordHash, `group`, permissions)
                           VALUES(@name, @secret, @passwordHash, @group, @permissions)
-                          """;
+                          ";
         cmd.Parameters.AddWithValue("@name", name);
         cmd.Parameters.AddWithValue("@secret", secret);
         cmd.Parameters.AddWithValue("@passwordHash", PasswordHasher.HashPassword(password));

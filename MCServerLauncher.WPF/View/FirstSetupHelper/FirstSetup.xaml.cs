@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media.Animation;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
+using static MCServerLauncher.WPF.Modules.Animation;
 using Page = System.Windows.Controls.Page;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
@@ -92,31 +94,19 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
         public void FinishSetup()
         {
-            var fadeOutAnimation = new DoubleAnimation
-            {
-                From = 1.0,
-                To = 0.0,
-                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
-                FillBehavior = FillBehavior.HoldEnd
-            };
+            var fadeOutAnimation = FadeOutAnimation();
             fadeOutAnimation.Completed += (s, e) =>
             {
                 Visibility = Visibility.Hidden;
             };
 
             var parent = this.TryFindParent<MainWindow>();
-            var fadeInAnimation = new DoubleAnimation
-            {
-                From = 0.0,
-                To = 1.0,
-                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
-                FillBehavior = FillBehavior.HoldEnd
-            };
+            var fadeInAnimation = FadeInAnimation();
             fadeInAnimation.Completed += (s, e) =>
             {
                 parent.NavView.Visibility = Visibility.Visible;
+                parent.TitleBarRootBorder.Visibility = Visibility.Visible;
             };
-
             BeginAnimation(OpacityProperty, fadeOutAnimation);
             parent.NavView.BeginAnimation(OpacityProperty, fadeInAnimation);
         }

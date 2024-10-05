@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -179,7 +179,7 @@
     <value>Minecraft 基岩版壓縮包</value>
   </data>
   <data name="CreateInstance_SelectArchive_Description" xml:space="preserve">
-    <value>在這裡放入下載的壓縮包，如果不知道下載方位，可以點擊右側按鈕前往。</value>
+    <value>請在此處導入下載的壓縮包。 如果不知道在哪裡下載，可點擊右側按鈕跳轉</value>
   </data>
   <data name="Archive" xml:space="preserve">
     <value>壓縮包</value>
@@ -455,7 +455,7 @@
     <value>Minecraft Travertine 群組端</value>
   </data>
   <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
-    <value>通用 Frp 客戶端程式 (Frpc)</value>
+    <value>通用 Frp 用戶端程式 （Frpc）</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Terraria 遊戲伺服器</value>
@@ -472,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>縱覽全局，以觀天下。</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>四面八方，使命必達。</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下載歷史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>你想要的，這裡都有。 (當前正在使用</value>
@@ -816,5 +816,14 @@
   </data>
   <data name="Console_InstanceSettingsNavMenu" xml:space="preserve">
     <value>實例設置</value>
+  </data>
+  <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
+    <value>Minecraft 伺服器</value>
+  </data>
+  <data name="CreateFrpcInstanceCategory" xml:space="preserve">
+    <value>快速反向代理用戶端Frpc</value>
+  </data>
+  <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
+    <value>Terraria 伺服器壓縮包</value>
   </data>
 </root>

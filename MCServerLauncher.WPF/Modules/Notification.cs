@@ -1,18 +1,11 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
-using System.Windows;
+using MCServerLauncher.WPF.View.Components.Generic;
+using Microsoft.Toolkit.Uwp.Notifications;
 
-namespace MCServerLauncher.WPF.View.Pages
+namespace MCServerLauncher.WPF.Modules
 {
-    /// <summary>
-    ///    NotificationCenterPage.xaml 的交互逻辑
-    /// </summary>
-    public partial class NotificationCenterPage
+    public class Notification
     {
-        public NotificationCenterPage()
-        {
-            InitializeComponent();
-        }
-
         /// <summary>
         ///    Send a notification.
         /// </summary>
@@ -20,9 +13,10 @@ namespace MCServerLauncher.WPF.View.Pages
         /// <param name="message">Content of the notification.</param>
         /// <param name="isClosable">Controls whether notifications can be turned off.</param>
         /// <param name="severity">Level.</param>
-        public void PushNotification(string title, string message, bool isClosable, InfoBarSeverity severity)
+        public static void PushNotification(string title, string message, bool isClosable, InfoBarSeverity severity)
         {
-            NotificationContainer.Children.Insert(
+            // application layer notification
+            NotificationCenterFlyoutContent.Instance.NotificationContainer.Children.Insert(
                 0,
                 new InfoBar
                 {
@@ -33,11 +27,11 @@ namespace MCServerLauncher.WPF.View.Pages
                     IsOpen = true
                 }
             );
-        }
-
-        private void TestNotification(object sender, RoutedEventArgs e)
-        {
-            PushNotification("Test", "Test", true, InfoBarSeverity.Success);
+            // system layer notification
+            new ToastContentBuilder()
+            .AddText(title)
+            .AddText(message)
+            .Show();
         }
     }
 }

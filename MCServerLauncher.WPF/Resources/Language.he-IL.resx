@@ -454,6 +454,9 @@
   <data name="CreateMinecraftTravertineInstance" xml:space="preserve">
     <value>צד הקבוצה Minecraft Travertine</value>
   </data>
+  <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
+    <value>通用 Frp 客户端程序 (Frpc)</value>
+  </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>שרתי משחק Terraria</value>
   </data>
@@ -469,8 +472,8 @@
   <data name="InstanceManagerTip" xml:space="preserve">
     <value>טאטאו את התמונה הגדולה כדי לראות את העולם.</value>
   </data>
-  <data name="NotificationCenterTip" xml:space="preserve">
-    <value>לכל הכיוונים יש להשיג את המשימה.</value>
+  <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
+    <value>下载历史</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>תקראו לזה, זה הגיע לכאן. (נמצא כעת בשימוש.)</value>

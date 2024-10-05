@@ -1,4 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern;
+using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.SettingCard;
 using System;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -16,6 +18,7 @@ namespace MCServerLauncher.WPF.View.Pages
     /// </summary>
     public partial class SettingsPage
     {
+        public int _debugClickCount = 0;
         public SettingsPage()
         {
             InitializeComponent();
@@ -520,6 +523,17 @@ namespace MCServerLauncher.WPF.View.Pages
             SettingsManager.SaveSetting("App.AutoCheckUpdate", More_AutoCheckUpdateForLauncher.SettingSwitch.IsOn);
         }
 
-        # endregion
+        #endregion
+
+
+        private void CheckDebugMode(object sender, MouseButtonEventArgs e)
+        {
+            _debugClickCount += 1;
+            if (_debugClickCount >= 5)
+            {
+                var parent = this.TryFindParent<MainWindow>();
+                parent.DebugItem.Visibility = Visibility.Visible;
+            }
+        }
     }
 }

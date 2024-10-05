@@ -10,7 +10,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MCSLTeam")]
 [assembly: AssemblyProduct("MCServerLauncher Future")]
-[assembly: AssemblyCopyright("Copyright © 2022-2024 MCSLTeam. All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright © 2022-2025 MCSLTeam. All rights reserved.")]
 [assembly: AssemblyTrademark("MCSL")]
 [assembly: AssemblyCulture("")]
 

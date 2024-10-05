@@ -3,7 +3,7 @@
    Original Author: LxHTT & AresConnor & Tigercrl
    You can only use this file if you are permitted to do so,
    otherwise you may be prosecuted for violating the law.
-   Copyright (c) 2022-2024 MCSLTeam. All rights reserved.
+   Copyright (c) 2022-2025 MCSLTeam. All rights reserved.
 --------------------------------------------------------------------------------------------- */
 
 using System.Collections.Concurrent;
