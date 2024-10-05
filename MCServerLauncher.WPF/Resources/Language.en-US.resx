@@ -143,7 +143,7 @@
     <value>Help Center</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>Nofitications</value>
+    <value>Notifications</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
     <value>Debug</value>
