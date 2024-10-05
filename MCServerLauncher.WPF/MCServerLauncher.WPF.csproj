@@ -235,6 +235,7 @@
     <Compile Include="Modules\Initializer.cs" />
     <Compile Include="Modules\LanguageManager.cs" />
     <Compile Include="Modules\Network.cs" />
+    <Compile Include="Modules\Notification.cs" />
     <Compile Include="Modules\Remote\Daemon.cs" />
     <Compile Include="Modules\Remote\ClientConnectionConfig.cs" />
     <Compile Include="Modules\Remote\IDaemon.cs" />

@@ -2,6 +2,7 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.Pages;
 using System;
 using System.Threading.Tasks;
@@ -41,6 +42,8 @@ namespace MCServerLauncher.WPF
         /// </summary>
         private async void InitializeView()
         {
+            NotificationCenterFlyout.Content = NotificationCenterFlyoutContent.Instance;
+            DownloadHistoryFlyout.Content = DownloadHistoryFlyoutContent.Instance;
             SetupView.Visibility = Visibility.Hidden;
             CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
             await Task.Delay(1500);

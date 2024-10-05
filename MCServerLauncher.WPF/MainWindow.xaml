@@ -51,12 +51,8 @@
                 </ui:TitleBarButton>
 
                 <ikw:XamlCachedElements>
-                    <ui:Flyout x:Name="NotificationCenterFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True">
-                        <ge:NotificationCenterFlyoutContent />
-                    </ui:Flyout>
-                    <ui:Flyout x:Name="DownloadHistoryFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True">
-                        <ge:DownloadHistoryFlyoutContent />
-                    </ui:Flyout>
+                    <ui:Flyout x:Name="NotificationCenterFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True" />
+                    <ui:Flyout x:Name="DownloadHistoryFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True" />
                 </ikw:XamlCachedElements>
             </Grid>
         </Border>
