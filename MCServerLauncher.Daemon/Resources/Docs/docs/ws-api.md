@@ -415,7 +415,7 @@ internal record DirectoryEntry
 获取java列表不一定是实时的，他是基于时间缓存的，一次请求后最多**<u>60s</u>**
 就会使得下次请求重新扫描java列表（由于人们并不会频繁的为计算机增减jre，故使用IAsyncTimedCacheable去缓存java扫描结果以优化整体性能，尤其是请求高峰期）。
 
-具体代码细节参考Daemon\Program.cs的ConfigureService中IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>单例。
+具体代码细节参考Daemon\Application.cs的ConfigureContainer中IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>单例。
 
 ##### 请求
 
