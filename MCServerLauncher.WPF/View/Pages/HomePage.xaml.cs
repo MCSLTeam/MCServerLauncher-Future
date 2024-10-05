@@ -1,4 +1,8 @@
 ﻿using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
+using static MCServerLauncher.WPF.Modules.Notification;
+using System.Windows;
+using iNKORE.UI.WPF.Modern.Controls;
+
 namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
@@ -11,9 +15,14 @@ namespace MCServerLauncher.WPF.View.Pages
             InitializeComponent();
         }
 
-        private void ShowConsoleWindow(object sender, System.Windows.RoutedEventArgs e)
+        private void ShowConsoleWindow(object sender, RoutedEventArgs e)
         {
             new ConsoleWindow().Show();
+        }
+
+        private void PushSimpleNotification(object sender, RoutedEventArgs e)
+        {
+            PushNotification("Title", "Message", true, InfoBarSeverity.Informational);
         }
     }
 }
