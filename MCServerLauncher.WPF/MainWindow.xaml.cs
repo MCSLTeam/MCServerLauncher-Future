@@ -27,7 +27,7 @@ namespace MCServerLauncher.WPF
         public MainWindow()
         {
             // Set correct theme
-            ThemeManager.Current.ApplicationTheme = SettingsManager.AppSettings.App.Theme switch
+            ThemeManager.Current.ApplicationTheme = SettingsManager.AppSettings?.App?.Theme switch
             {
                 "light" => ApplicationTheme.Light,
                 "dark" => ApplicationTheme.Dark,
@@ -58,7 +58,7 @@ namespace MCServerLauncher.WPF
             {
                 LoadingScreen.Visibility = Visibility.Hidden;
                 TitleBarGrid.Visibility = Visibility.Visible;
-                if (!SettingsManager.AppSettings.App.IsFirstSetupFinished)
+                if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsFirstSetupFinished)
                 {
                     SetupView.Visibility = Visibility.Visible;
                     return;

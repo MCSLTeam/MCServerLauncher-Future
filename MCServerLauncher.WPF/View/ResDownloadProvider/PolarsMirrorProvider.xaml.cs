@@ -3,6 +3,7 @@ using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -36,7 +37,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 _isDataLoading = true;
                 var polarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
 
-                foreach (var coreItem in polarsMirrorInfo.Select(result => new PolarsMirrorResCoreItem
+                foreach (var coreItem in (polarsMirrorInfo ?? throw new InvalidOperationException()).Select(result => new PolarsMirrorResCoreItem
                 {
                     CoreName = result.Name,
                     CoreId = result.Id,
@@ -77,14 +78,17 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 var polarsMirrorCoreDetails = await new PolarsMirror().GetCoreDetail(selectedCore.CoreId);
                 CoreVersionStackPanel.Children.Clear();
                 CoreGridView.IsEnabled = false;
-                foreach (var coreDetailItem in polarsMirrorCoreDetails.Select(detail =>
-                             new PolarsMirrorResCoreVersionItem
-                             {
-                                 FileName = detail.FileName
-                             }))
-                    CoreVersionStackPanel.Children.Add(coreDetailItem);
+                if (polarsMirrorCoreDetails != null)
+                {
+                    foreach (var coreDetailItem in polarsMirrorCoreDetails.Select(detail =>
+                                 new PolarsMirrorResCoreVersionItem
+                                 {
+                                     FileName = detail.FileName
+                                 }))
+                        CoreVersionStackPanel.Children.Add(coreDetailItem);
 
-                Log.Information($"[Res] [PolarsMirror] Core detail loaded. Count: {polarsMirrorCoreDetails.Count}");
+                    Log.Information($"[Res] [PolarsMirror] Core detail loaded. Count: {polarsMirrorCoreDetails.Count}");
+                }
             }
             catch (Exception ex)
             {

@@ -11,7 +11,7 @@ namespace MCServerLauncher.WPF.Modules
         private readonly ResourceManager _resourceManager = new("MCServerLauncher.WPF.Resources.Language", typeof(LanguageManager).Assembly);
         private static readonly Lazy<LanguageManager> Lazy = new(() => new LanguageManager());
         public static LanguageManager Localize => Lazy.Value;
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public string this[string name]
         {
@@ -32,7 +32,7 @@ namespace MCServerLauncher.WPF.Modules
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("item[]"));
         }
 
-        public static readonly List<string> LanguageList = new()
+        public static readonly List<string?> LanguageList = new()
         {
             "af-ZA",
             "ar-SA",

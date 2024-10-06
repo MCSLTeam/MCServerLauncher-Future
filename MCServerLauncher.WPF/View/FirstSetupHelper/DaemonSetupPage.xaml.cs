@@ -42,7 +42,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                     Text = LanguageManager.Localize["FirstSetup_SkipConnectDaemonTip"]
                 }
             };
-            dialog.PrimaryButtonClick += (o, args) => parent.GoWelcomeSetup();
+            dialog.PrimaryButtonClick += (o, args) => parent?.GoWelcomeSetup();
             try
             {
                 await dialog.ShowAsync();
@@ -53,7 +53,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string address = "", string jwt = "")
+        private Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string address = "", string? jwt = "")
         {
             NewDaemonConnectionInput newDaemonConnectionInput = new();
             newDaemonConnectionInput.wsEdit.Text = address;
@@ -87,7 +87,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string address, string jwt, DaemonBorder daemon)
+        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string address, string? jwt, DaemonBorder daemon)
         {
             (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog(address, jwt);
             dialog.PrimaryButtonClick += (o, args) =>

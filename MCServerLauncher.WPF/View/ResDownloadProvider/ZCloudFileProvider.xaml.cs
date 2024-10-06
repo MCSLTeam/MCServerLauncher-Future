@@ -2,6 +2,7 @@
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -43,7 +44,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
 
                 _isDataLoading = false;
                 _isDataLoaded = true;
-                Log.Information($"[Res] [ZCloudFile] Core info loaded. Count: {zCloudFileInfo.Count}");
+                if (zCloudFileInfo != null)
+                    Log.Information($"[Res] [ZCloudFile] Core info loaded. Count: {zCloudFileInfo.Count}");
                 return true;
             }
             catch (Exception ex)
@@ -69,13 +71,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 var zCloudFileInfo = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244",
                     $"MCSL2/MCSLAPI/{selectedCore.CoreName}");
-                zCloudFileInfo.Reverse();
+                zCloudFileInfo?.Reverse();
                 CoreVersionStackPanel.Children.Clear();
-                foreach (var coreDetailItem in zCloudFileInfo.Select(detail => new ZCloudFileResCoreVersionItem
+                foreach (var coreDetailItem in (zCloudFileInfo ?? throw new InvalidOperationException()).Select(detail => new ZCloudFileResCoreVersionItem
                 {
                     Core = selectedCore.CoreName,
                     FileName = detail.FileName,
-                    FileSize = $"{int.Parse(detail.FileSize) / 1024.00 / 1024.00:0.00} MB"
+                    FileSize = $"{int.Parse(detail.FileSize ?? throw new InvalidOperationException()) / 1024.00 / 1024.00:0.00} MB"
                 }))
                     CoreVersionStackPanel.Children.Add(coreDetailItem);
 

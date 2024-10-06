@@ -30,7 +30,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Core name.
         /// </summary>
-        public string CoreName
+        public string? CoreName
         {
             get => CoreNameReplacer.Text;
             set => CoreNameReplacer.Text = value;
@@ -39,7 +39,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Tag of core.
         /// </summary>
-        public string CoreTag
+        public string? CoreTag
         {
             get => CoreTagReplacer.Text;
             set => CoreTagReplacer.Text = value;
@@ -57,12 +57,12 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Homepage of core.
         /// </summary>
-        public string HomePage { get; set; }
+        public string? HomePage { get; set; }
 
         /// <summary>
         ///    Support Minecraft versions.
         /// </summary>
-        public List<string> MinecraftVersions { get; set; }
+        public List<string?>? MinecraftVersions { get; set; }
 
         private void SetRecommendStatus(bool recommendStatus)
         {

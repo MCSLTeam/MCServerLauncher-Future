@@ -28,12 +28,12 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchFabricVersionButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
-        private List<FabricUniversalVersion> SupportedAllMinecraftVersions { get; set; }
-        private List<FabricUniversalVersion> SupportedAllFabricVersions { get; set; }
+        private List<FabricUniversalVersion>? SupportedAllMinecraftVersions { get; set; }
+        private List<FabricUniversalVersion>? SupportedAllFabricVersions { get; set; }
 
         private class FabricUniversalVersion
         {
-            public string Version { get; set; }
+            public string? Version { get; set; }
             public bool IsStable { get; set; }
         }
 
@@ -45,7 +45,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
-            parent.CurrentCreateInstance.GoBack();
+            parent?.CurrentCreateInstance.GoBack();
         }
 
         //private void FinishSetup(object sender, RoutedEventArgs e)
@@ -58,7 +58,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <returns>The correct endpoint.</returns>
         private string GetEndPoint()
         {
-            return SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall
+            return SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall
                 ? "https://bmclapi2.bangbang93.com/fabric-meta/v2/versions"
                 : "https://meta.fabricmc.net/v2/versions";
         }

@@ -15,7 +15,7 @@ namespace MCServerLauncher.WPF
     public partial class App : Application
     {
         // Prevent over-opening
-        private Mutex _mutex;
+        private Mutex? _mutex;
 
         public App()
         {

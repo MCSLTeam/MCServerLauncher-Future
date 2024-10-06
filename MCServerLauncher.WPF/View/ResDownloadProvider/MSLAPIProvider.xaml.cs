@@ -2,6 +2,7 @@
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -78,13 +79,16 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 var mslapiCoreDetails = await new MSLAPI().GetMinecraftVersions(selectedCore.ApiActualName);
                 CoreVersionStackPanel.Children.Clear();
-                foreach (var coreDetailItem in mslapiCoreDetails.Select(detail => new MSLAPIResCoreVersionItem
+                if (mslapiCoreDetails != null)
                 {
-                    MinecraftVersion = detail
-                }))
-                    CoreVersionStackPanel.Children.Add(coreDetailItem);
+                    foreach (var coreDetailItem in mslapiCoreDetails.Select(detail => new MSLAPIResCoreVersionItem
+                             {
+                                 MinecraftVersion = detail
+                             }))
+                        CoreVersionStackPanel.Children.Add(coreDetailItem);
 
-                Log.Information($"[Res] [MSLAPI] Core detail loaded. Count: {mslapiCoreDetails.Count}");
+                    Log.Information($"[Res] [MSLAPI] Core detail loaded. Count: {mslapiCoreDetails.Count}");
+                }
             }
             catch (Exception ex)
             {

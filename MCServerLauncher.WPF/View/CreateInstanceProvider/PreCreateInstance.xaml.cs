@@ -32,35 +32,35 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             switch (_creatingInstanceType)
             {
                 case "MinecraftJavaServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftJavaServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftJavaServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
                 case "MinecraftForgeServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
                 case "MinecraftNeoForgeServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftNeoForgeServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftNeoForgeServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
                 case "MinecraftFabricServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftFabricServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftFabricServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
                 case "MinecraftQuiltServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftQuiltServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftQuiltServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
                 case "MinecraftBedrockServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(),
                         new DrillInNavigationTransitionInfo());
                     break;
                 case "TerrariaGameServer":
-                    parent.CurrentCreateInstance.Navigate(parent.NewTerrariaServerPage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewTerrariaServerPage(),
                 new DrillInNavigationTransitionInfo());
                     break;
                 case "OtherExecutable":
-                    parent.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(),
+                    parent?.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(),
                         new DrillInNavigationTransitionInfo());
                     break;
             }

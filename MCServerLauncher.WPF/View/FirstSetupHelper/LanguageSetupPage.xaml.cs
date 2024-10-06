@@ -19,7 +19,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             InitializeComponent();
             LanguageComboBox.ItemsSource = LanguageManager.LanguageNameList;
             LanguageComboBox.SelectionChanged -= LanguageChanged;
-            LanguageComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.AppSettings.App.Language);
+            LanguageComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.AppSettings?.App?.Language);
             LanguageComboBox.SelectionChanged += LanguageChanged;
         }
         /// <summary>
@@ -30,7 +30,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         private void Next(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<FirstSetup>();
-            parent.GoEulaSetup();
+            parent?.GoEulaSetup();
         }
 
         /// <summary>
@@ -40,8 +40,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         /// <param name="e"></param>
         private void LanguageChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (SettingsManager.AppSettings.App.IsFirstSetupFinished) return;
-            LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex)));
+            if (SettingsManager.AppSettings?.App != null && SettingsManager.AppSettings.App.IsFirstSetupFinished) return;
+            LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex) ?? throw new InvalidOperationException()));
             SettingsManager.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(LanguageComboBox.SelectedIndex));
             // restart this app
             Process.Start(Application.ResourceAssembly.Location);

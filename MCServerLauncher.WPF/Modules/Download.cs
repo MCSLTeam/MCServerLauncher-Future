@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+#pragma warning disable CS8602 // 解引用可能出现空引用。
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -41,9 +42,9 @@ namespace MCServerLauncher.WPF.Modules
             return $"{versionTuple.Item1:D3}.{versionTuple.Item2:D3}.{versionTuple.Item3:D3}";
         };
 
-        public static List<string> SequenceMinecraftVersion(List<string> originalList)
+        public static List<string?> SequenceMinecraftVersion(List<string>? originalList)
         {
-            return originalList.OrderByDescending(VersionComparator).ToList();
+            return (originalList ?? throw new ArgumentNullException(nameof(originalList))).OrderByDescending(VersionComparator!).ToList()!;
         }
 
         /// <summary>
@@ -62,7 +63,7 @@ namespace MCServerLauncher.WPF.Modules
             EventHandler<DownloadStartedEventArgs> startHandler,
             EventHandler<DownloadProgressChangedEventArgs> progressHandler,
             EventHandler<AsyncCompletedEventArgs> finishHandler,
-            string fileName = null
+            string fileName
         )
         {
             DownloadConfiguration downloaderOption = new()

@@ -95,7 +95,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                     Text = LanguageManager.Localize["FirstSetup_EulaAgreeTip"]
                 }
             };
-            dialog.PrimaryButtonClick += (o, args) => parent.GoDaemonSetup();
+            dialog.PrimaryButtonClick += (o, args) => parent?.GoDaemonSetup();
             try
             {
                 await dialog.ShowAsync();

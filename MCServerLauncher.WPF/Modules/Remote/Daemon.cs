@@ -8,13 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Serilog;
+#pragma warning disable CS8602 // 解引用可能出现空引用。
 
 namespace MCServerLauncher.WPF.Modules.Remote
 {
     public class Daemon : IDaemon
     {
         public WebSocketState WebsocketState => Connection.WebSocket.State;
-        public ClientConnection Connection { get; private set; }
+        public ClientConnection? Connection { get; private set; }
         public bool IsClosed => Connection.Closed;
 
         /// <summary>
@@ -118,7 +119,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
 
         public async Task CloseAsync()
         {
-            await Connection.CloseAsync();
+#pragma warning disable CS8602
+            await Connection?.CloseAsync();
+#pragma warning restore CS8602
         }
 
         private async Task<string> UploadFileRequestAsync(string path, string dst, int chunkSize)
@@ -187,14 +190,16 @@ namespace MCServerLauncher.WPF.Modules.Remote
         private async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
             string? echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
         {
-            return await Connection.RequestAsync(actionType, args, echo, timeout, cancellationToken);
+#pragma warning disable CS8602
+            return await Connection?.RequestAsync(actionType, args, echo, timeout, cancellationToken);
+#pragma warning restore CS8602
         }
 
         public static async Task RunTest()
         {
             var usr = "admin";
             var pwd = "c4fd4f5b-cab3-443b-b2d1-1778a009dc9b";
-            var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
+            // var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
             var ip = "127.0.0.1";
             var port = 11451;
 

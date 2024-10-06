@@ -22,7 +22,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             SettingsManager.SaveSetting("App.IsFirstSetupFinished", true);
             var parent = this.TryFindParent<FirstSetup>();
-            parent.FinishSetup();
+            parent?.FinishSetup();
         }
     }
 }

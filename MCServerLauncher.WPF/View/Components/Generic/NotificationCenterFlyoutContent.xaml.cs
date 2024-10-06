@@ -8,14 +8,14 @@ namespace MCServerLauncher.WPF.View.Components.Generic
     /// </summary>
     public partial class NotificationCenterFlyoutContent
     {
-        private static NotificationCenterFlyoutContent instance;
+        private static NotificationCenterFlyoutContent? _instance;
 
         public static NotificationCenterFlyoutContent Instance
         {
             get
             {
-                instance ??= new NotificationCenterFlyoutContent();
-                return instance;
+                _instance ??= new NotificationCenterFlyoutContent();
+                return _instance;
             }
         }
 

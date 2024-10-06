@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Core name.
         /// </summary>
-        public string Core { get; set; }
+        public string? Core { get; set; }
 
         /// <summary>
         ///    Minecraft version.
@@ -39,10 +39,10 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Download URL.
         /// </summary>
-        public async Task<string> GetDownloadUrl()
+        public async Task<string?> GetDownloadUrl()
         {
             var coreDetail = await new MCSLSync().GetCoreDetail(Core, MinecraftVersion, CoreVersion);
-            return coreDetail.DownloadUrl;
+            return coreDetail?.DownloadUrl;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static Task _writeTask = Task.CompletedTask;
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
-        public static Settings AppSettings { get; set; }
+        public static Settings? AppSettings { get; set; }
 
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace MCServerLauncher.WPF.Modules
                     Instance = new InstanceSettings
                     {
                         ActionWhenDeleteConfirm = "name",
-                        FollowStart = new List<string>()
+                        FollowStart = new List<string?>()
                     },
                     App = new AppSettings
                     {
@@ -91,16 +91,16 @@ namespace MCServerLauncher.WPF.Modules
             var settingClass = settingParts[0];
             var settingTarget = settingParts[1];
 
-            object settings = settingClass switch
+            object? settings = settingClass switch
             {
-                "InstanceCreation" => AppSettings.InstanceCreation,
-                "ResDownload" => AppSettings.Download,
-                "Instance" => AppSettings.Instance,
-                "App" => AppSettings.App,
+                "InstanceCreation" => AppSettings?.InstanceCreation,
+                "ResDownload" => AppSettings?.Download,
+                "Instance" => AppSettings?.Instance,
+                "App" => AppSettings?.App,
                 _ => throw new ArgumentOutOfRangeException(nameof(settingClass), settingClass, "Invalid setting class.")
             };
 
-            var property = settings.GetType().GetProperty(settingTarget);
+            var property = settings?.GetType().GetProperty(settingTarget);
             if (property == null || property.PropertyType != typeof(T))
                 throw new InvalidOperationException($"Property {settingTarget} not found or type mismatch.");
 
@@ -112,7 +112,7 @@ namespace MCServerLauncher.WPF.Modules
                 if (_writeTask.IsCompleted)
                 {
                     _writeTask = Task.Run(ProcessQueue);
-                    Log.Information($"[Set] Saved Setting: {settingPath} = {value.ToString()}");
+                    Log.Information($"[Set] Saved Setting: {settingPath} = {value?.ToString()}");
                 }
             }
         }
@@ -125,17 +125,17 @@ namespace MCServerLauncher.WPF.Modules
         {
             while (Queue.TryDequeue(out var setting))
             {
-                object settingClass = setting.Key switch
+                object? settingClass = setting.Key switch
                 {
-                    "InstanceCreation" => AppSettings.InstanceCreation,
-                    "ResDownload" => AppSettings.Download,
-                    "Instance" => AppSettings.Instance,
-                    "App" => AppSettings.App,
+                    "InstanceCreation" => AppSettings?.InstanceCreation,
+                    "ResDownload" => AppSettings?.Download,
+                    "Instance" => AppSettings?.Instance,
+                    "App" => AppSettings?.App,
                     _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key,
                         "Invalid setting class.")
                 };
 
-                var property = settingClass.GetType().GetProperty(setting.Value);
+                var property = settingClass?.GetType().GetProperty(setting.Value);
                 if (property == null) continue;
                 var value = property.GetValue(settingClass);
                 File.WriteAllText(
@@ -160,21 +160,21 @@ public class InstanceCreationSettings
 
 public class ResDownloadSettings
 {
-    public string DownloadSource { get; set; }
+    public string? DownloadSource { get; set; }
     public int ThreadCnt { get; set; }
-    public string ActionWhenDownloadError { get; set; }
+    public string? ActionWhenDownloadError { get; set; }
 }
 
 public class InstanceSettings
 {
-    public string ActionWhenDeleteConfirm { get; set; }
-    public List<string> FollowStart { get; set; }
+    public string? ActionWhenDeleteConfirm { get; set; }
+    public List<string?>? FollowStart { get; set; }
 }
 
 public class AppSettings
 {
-    public string Theme { get; set; }
-    public string Language { get; set; }
+    public string? Theme { get; set; }
+    public string? Language { get; set; }
     public bool FollowStartup { get; set; }
     public bool AutoCheckUpdate { get; set; }
     public bool IsCertImported { get; set; }
@@ -184,8 +184,8 @@ public class AppSettings
 
 public class Settings
 {
-    public InstanceCreationSettings InstanceCreation { get; set; }
-    public ResDownloadSettings Download { get; set; }
-    public InstanceSettings Instance { get; set; }
-    public AppSettings App { get; set; }
+    public InstanceCreationSettings? InstanceCreation { get; set; }
+    public ResDownloadSettings? Download { get; set; }
+    public InstanceSettings? Instance { get; set; }
+    public AppSettings? App { get; set; }
 }

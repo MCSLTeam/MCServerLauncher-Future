@@ -13,7 +13,7 @@
         /// <summary>
         ///    File name.
         /// </summary>
-        public string FileName
+        public string? FileName
         {
             get => FileNameReplacer.Text;
             set => FileNameReplacer.Text = value;

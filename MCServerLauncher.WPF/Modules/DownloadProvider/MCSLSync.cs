@@ -13,12 +13,12 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         ///    Get core info from MCSL-Sync
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<string>> GetCoreInfo()
+        public async Task<List<string>?> GetCoreInfo()
         {
             var response = await Network.SendGetRequest($"{_endPoint}/core");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    .SelectToken("data")!.ToObject<List<string>>();
+                    ?.SelectToken("data")!.ToObject<List<string>>();
             return null;
         }
 
@@ -27,12 +27,12 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         /// </summary>
         /// <param name="core"></param>
         /// <returns></returns>
-        public async Task<List<string>> GetMinecraftVersions(string core)
+        public async Task<List<string>?> GetMinecraftVersions(string core)
         {
             var response = await Network.SendGetRequest($"{_endPoint}/core/{core}");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    .SelectToken("data")!.SelectToken("versions")!.ToObject<List<string>>();
+                    ?.SelectToken("data")!.SelectToken("versions")!.ToObject<List<string>>();
             return null;
         }
 
@@ -42,12 +42,12 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>
         /// <returns></returns>
-        public async Task<List<string>> GetCoreVersions(string core, string minecraftVersion)
+        public async Task<List<string>?> GetCoreVersions(string core, string minecraftVersion)
         {
             var response = await Network.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    .SelectToken("data")!.SelectToken("builds")!.ToObject<List<string>>();
+                    ?.SelectToken("data")!.SelectToken("builds")!.ToObject<List<string>>();
             return null;
         }
 
@@ -58,13 +58,13 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         /// <param name="minecraftVersion"></param>
         /// <param name="coreVersion"></param>
         /// <returns></returns>
-        public async Task<MCSLSyncCoreDetail> GetCoreDetail(string core, string minecraftVersion, string coreVersion)
+        public async Task<MCSLSyncCoreDetail?> GetCoreDetail(string? core, string minecraftVersion, string coreVersion)
         {
             var response =
                 await Network.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}/{coreVersion}");
             if (!response.IsSuccessStatusCode) return null;
             var remoteMCSLSyncCoreDetail = JsonConvert
-                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!
+                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())!.SelectToken("data")!
                 .SelectToken("build");
             return new MCSLSyncCoreDetail
             {
@@ -75,15 +75,16 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
                 //SHA1 = RemoteMCSLSyncCoreDetail.SelectToken("sha1").ToString()
             };
         }
-
+#nullable enable
         public class MCSLSyncCoreDetail
         {
-            public string Core { get; set; }
-            public string MinecraftVersion { get; set; }
-            public string CoreVersion { get; set; }
+            public string? Core { get; set; }
+            public string? MinecraftVersion { get; set; }
+            public string? CoreVersion { get; set; }
 
-            public string DownloadUrl { get; set; }
+            public string? DownloadUrl { get; set; }
             //public string SHA1 { get; set; }
         }
+#nullable disable
     }
 }

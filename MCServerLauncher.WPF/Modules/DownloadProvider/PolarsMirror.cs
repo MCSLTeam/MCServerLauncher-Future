@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,13 +25,13 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         ///    Get core info from Polars Mirror.
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<PolarsMirrorCoreInfo>> GetCoreInfo()
+        public async Task<List<PolarsMirrorCoreInfo>?> GetCoreInfo()
         {
             var response = await Network.SendGetRequest($"{_endPoint}/core");
             if (!response.IsSuccessStatusCode) return null;
             var remotePolarsCoreInfoList =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return remotePolarsCoreInfoList.Select(polarsCoreInfo => new PolarsMirrorCoreInfo
+            return (remotePolarsCoreInfoList ?? throw new InvalidOperationException()).Select(polarsCoreInfo => new PolarsMirrorCoreInfo
             {
                 Name = polarsCoreInfo.SelectToken("name")?.ToString(),
                 Id = polarsCoreInfo.SelectToken("id")!.ToObject<int>(),
@@ -44,13 +45,13 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         /// </summary>
         /// <param name="coreId">Index of core.</param>
         /// <returns>List of core.</returns>
-        public async Task<List<PolarsMirrorCoreDetail>> GetCoreDetail(int coreId)
+        public async Task<List<PolarsMirrorCoreDetail>?> GetCoreDetail(int coreId)
         {
             var response = await Network.SendGetRequest($"{_endPoint}/core/{coreId}");
             if (!response.IsSuccessStatusCode) return null;
             var remotePolarsCoreDetailList =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return remotePolarsCoreDetailList.Select(polarsCoreDetail => new PolarsMirrorCoreDetail
+            return (remotePolarsCoreDetailList ?? throw new InvalidOperationException()).Select(polarsCoreDetail => new PolarsMirrorCoreDetail
             {
                 FileName = polarsCoreDetail.SelectToken("name")?.ToString(),
                 DownloadUrl = polarsCoreDetail.SelectToken("downloadUrl")?.ToString()
@@ -59,16 +60,16 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
 
         public class PolarsMirrorCoreInfo
         {
-            public string Name { get; set; }
+            public string? Name { get; set; }
             public int Id { get; set; }
-            public string Description { get; set; }
-            public string IconUrl { get; set; }
+            public string? Description { get; set; }
+            public string? IconUrl { get; set; }
         }
 
         public class PolarsMirrorCoreDetail
         {
-            public string FileName { get; set; }
-            public string DownloadUrl { get; set; }
+            public string? FileName { get; set; }
+            public string? DownloadUrl { get; set; }
         }
         // Unavailable service for now
         //public async Task<List<PolarsServerPackInfo>> GetServerPackInfo()

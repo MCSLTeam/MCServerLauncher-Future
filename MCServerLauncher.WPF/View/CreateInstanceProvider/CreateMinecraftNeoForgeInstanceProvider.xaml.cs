@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.Modules;
+﻿using System;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -22,8 +23,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
-        private List<string> NeoForgeVersions { get; set; }
-        private List<string> MinecraftVersions { get; set; }
+        private List<string>? NeoForgeVersions { get; set; }
+        private List<string>? MinecraftVersions { get; set; }
 
         /// <summary>
         ///    Go back.
@@ -33,7 +34,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
-            parent.CurrentCreateInstance.GoBack();
+            parent?.CurrentCreateInstance.GoBack();
         }
 
         //private void FinishSetup(object sender, RoutedEventArgs e)
@@ -50,8 +51,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 await Network.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", true);
             var legacyMavenData =
-                JsonConvert.DeserializeObject<JToken>(await legacyMavenResponse.Content.ReadAsStringAsync())
-                    .SelectToken("versions")!.ToObject<List<string>>()
+                (JsonConvert.DeserializeObject<JToken>(await legacyMavenResponse.Content.ReadAsStringAsync())
+                    ?.SelectToken("versions")!.ToObject<List<string>>() ?? throw new InvalidOperationException())
                     .Select(version => version.ToString().Replace("1.20.1-", "")).ToList();
             // Bad version 47.1.82 should be removed
             legacyMavenData.Remove("47.1.82");
@@ -62,15 +63,19 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", true);
             var mavenData =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    .SelectToken("versions")!.ToObject<List<string>>();
-            NeoForgeVersions.AddRange(mavenData);
-            // "1." + the first four digits of mavenData = list of Minecraft versions.
-            MinecraftVersions = mavenData.Select(version => "1." + version.Substring(0, 4)).Distinct().ToList();
+                    ?.SelectToken("versions")!.ToObject<List<string>>();
+            if (mavenData != null)
+            {
+                NeoForgeVersions.AddRange(mavenData);
+                // "1." + the first four digits of mavenData = list of Minecraft versions.
+                MinecraftVersions = mavenData.Select(version => "1." + version.Substring(0, 4)).Distinct().ToList();
+            }
+
             // Add 1.20.1 to MinecraftVersions
-            MinecraftVersions.Add("1.20.1");
+            MinecraftVersions?.Add("1.20.1");
             // Replace 1.21.0 with 1.21
-            MinecraftVersions.Remove("1.21.0");
-            MinecraftVersions.Add("1.21");
+            MinecraftVersions?.Remove("1.21.0");
+            MinecraftVersions?.Add("1.21");
         }
 
         /// <summary>
@@ -114,7 +119,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
             NeoForgeVersionComboBox.IsEnabled = false;
-            if (SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+            if (SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
                 await FetchNeoForgeDataByBmclapi();
             else
                 await FetchNeoForgeDataByOfficial();
@@ -134,16 +139,18 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             if (MinecraftVersionComboBox.SelectedItem == null) return;
             if (MinecraftVersionComboBox.SelectedItem.ToString() == "1.20.1")
             {
-                NeoForgeVersionComboBox.ItemsSource =
-                    Download.SequenceMinecraftVersion(NeoForgeVersions
-                        .Where(version => version.StartsWith("47")).ToList());
+                if (NeoForgeVersions != null)
+                    NeoForgeVersionComboBox.ItemsSource =
+                        Download.SequenceMinecraftVersion(NeoForgeVersions
+                            .Where(version => version.StartsWith("47")).ToList());
                 NeoForgeVersionComboBox.IsEnabled = true;
                 return;
             }
 
-            NeoForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(NeoForgeVersions
-                .Where(version => version.StartsWith(MinecraftVersionComboBox.SelectedItem.ToString().Substring(2)))
-                .ToList());
+            if (NeoForgeVersions != null)
+                NeoForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(NeoForgeVersions
+                    .Where(version => version.StartsWith(MinecraftVersionComboBox.SelectedItem.ToString().Substring(2)))
+                    .ToList());
             NeoForgeVersionComboBox.IsEnabled = true;
         }
     }

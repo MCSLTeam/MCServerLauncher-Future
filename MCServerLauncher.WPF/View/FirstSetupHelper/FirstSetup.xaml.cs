@@ -104,11 +104,12 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var fadeInAnimation = FadeInAnimation();
             fadeInAnimation.Completed += (s, e) =>
             {
+                if (parent == null) return;
                 parent.NavView.Visibility = Visibility.Visible;
                 parent.TitleBarRootBorder.Visibility = Visibility.Visible;
             };
             BeginAnimation(OpacityProperty, fadeOutAnimation);
-            parent.NavView.BeginAnimation(OpacityProperty, fadeInAnimation);
+            parent?.NavView.BeginAnimation(OpacityProperty, fadeInAnimation);
         }
         public void GoEulaSetup()
         {

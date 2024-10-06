@@ -123,7 +123,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         ///     心跳定时器超时逻辑: 根据连接情况设定ClientConnection的PingLost，根据config判断是否关闭连接
         /// </summary>
         /// <param name="timerState"></param>
-        private static void OnHeartBeatTimer(object timerState)
+        private static async void OnHeartBeatTimer(object timerState)
         {
             var state = (HeartBeatTimerState)timerState;
             var conn = state.Connection;
@@ -134,7 +134,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 timeout: conn.Config.PingTimeout
             );
 
-            pingTask.ContinueWith(task =>
+            await pingTask.ContinueWith(task =>
             {
                 if (task.Exception?.InnerException is TimeoutException)
                 {
@@ -154,12 +154,10 @@ namespace MCServerLauncher.WPF.Modules.Remote
                         _ => { conn.LastPong = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime; }, null);
                 }
 
-                if (state.PingPacketLost >= conn.Config.MaxPingPacketLost)
-                {
-                    Log.Error("Ping packet lost too many times, close connection.");
-                    // 关闭连接
-                    conn.CloseAsync();
-                }
+                if (state.PingPacketLost < conn.Config.MaxPingPacketLost) return;
+                Log.Error("Ping packet lost too many times, close connection.");
+                // 关闭连接
+                _ = conn.CloseAsync();
             });
         }
 

@@ -5,14 +5,14 @@
     /// </summary>
     public partial class DownloadHistoryFlyoutContent
     {
-        private static DownloadHistoryFlyoutContent instance;
+        private static DownloadHistoryFlyoutContent? _instance;
 
         public static DownloadHistoryFlyoutContent Instance
         {
             get
             {
-                instance ??= new DownloadHistoryFlyoutContent();
-                return instance;
+                _instance ??= new DownloadHistoryFlyoutContent();
+                return _instance;
             }
         }
 

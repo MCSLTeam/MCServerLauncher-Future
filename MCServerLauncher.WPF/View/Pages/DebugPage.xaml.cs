@@ -1,6 +1,7 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -170,7 +171,7 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             var result = await new MCSLSync().GetCoreDetail("Paper", "1.20.6", "build148");
             ShowTextResultContentDialog(
-                $"Core: {result.Core}\nMinecraftVersion: {result.MinecraftVersion}\nCoreVersion: {result.CoreVersion}\nDownloadUrl: {result.DownloadUrl}\n");
+                $"Core: {result?.Core}\nMinecraftVersion: {result?.MinecraftVersion}\nCoreVersion: {result?.CoreVersion}\nDownloadUrl: {result?.DownloadUrl}\n");
         }
 
         #endregion

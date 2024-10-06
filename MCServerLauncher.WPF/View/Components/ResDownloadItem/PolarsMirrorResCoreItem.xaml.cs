@@ -15,7 +15,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Core name.
         /// </summary>
-        public string CoreName
+        public string? CoreName
         {
             get => CoreNameReplacer.Text;
             set => CoreNameReplacer.Text = value;
@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Description of the core.
         /// </summary>
-        public string CoreDescription { get; set; }
+        public string? CoreDescription { get; set; }
 
         /// <summary>
         ///    Index of the core.
@@ -34,11 +34,11 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Raw icon URL of the core.
         /// </summary>
-        public string CoreIconUrl { get; set; }
+        public string? CoreIconUrl { get; set; }
 
         /// <summary>
         ///    Supported Minecraft versions for the core.
         /// </summary>
-        public List<string> MinecraftVersions { get; set; }
+        public List<string>? MinecraftVersions { get; set; }
     }
 }

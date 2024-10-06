@@ -10,6 +10,8 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+// ReSharper disable UseNameofForDependencyProperty
+#pragma warning disable CS8602 // 解引用可能出现空引用。
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -18,7 +20,7 @@ namespace MCServerLauncher.WPF.View.Pages
     /// </summary>
     public partial class SettingsPage
     {
-        public int _debugClickCount = 0;
+        private int _debugClickCount = 0;
         public SettingsPage()
         {
             InitializeComponent();
@@ -293,7 +295,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         #region ActionWhenDownloadErrorIndex
 
-        private static readonly List<string> _actionWhenDownloadErrorList = new() { "stop", "retry1", "retry3" };
+        private static readonly List<string?> _actionWhenDownloadErrorList = new() { "stop", "retry1", "retry3" };
 
         public static IEnumerable<string> ActionWhenDownloadError { get; set; } = new List<string>
         {
@@ -340,7 +342,7 @@ namespace MCServerLauncher.WPF.View.Pages
             LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeKey"]
         };
 
-        private static readonly List<string> _actionWhenDeleteConfirmList = new() { "name", "key" };
+        private static readonly List<string?> _actionWhenDeleteConfirmList = new() { "name", "key" };
 
         public int ActionWhenDeleteConfirmIndex
         {
@@ -381,7 +383,7 @@ namespace MCServerLauncher.WPF.View.Pages
             LanguageManager.Localize["Settings_AppTheme_Dark"]
         };
 
-        private static readonly List<string> _themeList = new() { "auto", "light", "dark" };
+        private static readonly List<string?> _themeList = new() { "auto", "light", "dark" };
 
         public int LauncherThemeIndex
         {

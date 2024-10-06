@@ -32,12 +32,13 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         ///    Get FastMirror core info.
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<FastMirrorCoreInfo>> GetCoreInfo()
+        public async Task<List<FastMirrorCoreInfo>?> GetCoreInfo()
         {
             var response = await Network.SendGetRequest(_endPoint);
             if (!response.IsSuccessStatusCode) return null;
             var remoteFastMirrorCoreInfoList = JsonConvert
-                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data");
+                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
+                ?.SelectToken("data");
             return remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
             {
                 Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
@@ -55,13 +56,14 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>
         /// <returns></returns>
-        public async Task<List<FastMirrorCoreDetail>> GetCoreDetail(string core, string minecraftVersion)
+        public async Task<List<FastMirrorCoreDetail>?> GetCoreDetail(string? core, string minecraftVersion)
         {
             var response =
                 await Network.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFastMirrorCoreDetailList = JsonConvert
-                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync()).SelectToken("data")!
+                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
+                ?.SelectToken("data")!
                 .SelectToken("builds");
             return remoteFastMirrorCoreDetailList!.Select(remoteFastMirrorCoreDetail => new FastMirrorCoreDetail
             {
@@ -83,22 +85,23 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         {
             return $"https://download.fastmirror.net/download/{core}/{minecraftVersion}/{coreVersion}";
         }
-
+#nullable enable
         public class FastMirrorCoreInfo
         {
-            public string Name { get; set; }
-            public string Tag { get; set; }
-            public string HomePage { get; set; }
+            public string? Name { get; set; }
+            public string? Tag { get; set; }
+            public string? HomePage { get; set; }
             public bool Recommend { get; set; }
-            public List<string> MinecraftVersions { get; set; }
+            public List<string>? MinecraftVersions { get; set; }
         }
 
         public class FastMirrorCoreDetail
         {
-            public string Name { get; set; }
-            public string MinecraftVersion { get; set; }
-            public string CoreVersion { get; set; }
-            public string Sha1 { get; set; }
+            public string? Name { get; set; }
+            public string? MinecraftVersion { get; set; }
+            public string? CoreVersion { get; set; }
+            public string? Sha1 { get; set; }
         }
+#nullable disable
     }
 }

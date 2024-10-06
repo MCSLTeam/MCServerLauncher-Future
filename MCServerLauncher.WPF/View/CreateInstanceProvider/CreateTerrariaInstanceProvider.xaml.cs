@@ -22,7 +22,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
-            parent.CurrentCreateInstance.GoBack();
+            parent?.CurrentCreateInstance.GoBack();
         }
 
         //private void FinishSetup(object sender, RoutedEventArgs e)

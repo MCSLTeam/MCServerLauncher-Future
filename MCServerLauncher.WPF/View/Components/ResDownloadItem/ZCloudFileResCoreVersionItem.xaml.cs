@@ -16,12 +16,12 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <summary>
         ///    Core name.
         /// </summary>
-        public string Core { get; set; }
+        public string? Core { get; set; }
 
         /// <summary>
         ///    Core version.
         /// </summary>
-        public string FileName
+        public string? FileName
         {
             get => FileNameReplacer.Text;
             set => FileNameReplacer.Text = value;
@@ -40,7 +40,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         ///    Get raw download url.
         ///    Only use this when downloading, cuz it takes much time.
         /// </summary>
-        public async Task<string> FetchRawUrl()
+        public async Task<string?> FetchRawUrl()
         {
             return await new AList().GetFileUrl("https://jn.sv.ztsin.cn:5244", $"MCSL2/MCSLAPI/{Core}/{FileName}");
         }

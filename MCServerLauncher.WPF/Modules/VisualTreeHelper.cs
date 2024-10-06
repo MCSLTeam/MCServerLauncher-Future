@@ -4,7 +4,7 @@ namespace MCServerLauncher.WPF.Modules
 {
     internal static class VisualTreeHelper
     {
-        public static T TryFindParent<T>(this DependencyObject child) where T : DependencyObject
+        public static T? TryFindParent<T>(this DependencyObject child) where T : DependencyObject
         {
             var parent = System.Windows.Media.VisualTreeHelper.GetParent(child);
             while (parent != null)

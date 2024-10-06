@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         bool IsClosed { get; }
         bool PingLost { get; }
         DateTime LastPing { get; }
-        ClientConnection Connection { get; }
+        ClientConnection? Connection { get; }
 
         /// <summary>
         ///     rpc: 上传文件

@@ -75,7 +75,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <summary>
         ///     下载速度(B/s) & ETA(s)
         /// </summary>
-        private event Action<(double, double)> Updated;
+        private event Action<(double, double)>? Updated;
 
         /// <summary>
         ///     更新下载速度

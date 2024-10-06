@@ -51,7 +51,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// </summary>
         public IDaemon Daemon { get; }
 
-        public Task UploadTask { get; set; }
+        public Task? UploadTask { get; set; }
 
         /// <summary>
         ///     服务端已接收的字节数
@@ -86,7 +86,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
             State = UploadContextState.Cancelling;
 
             UploadCts.Cancel(); // 发送取消信号
-            await UploadTask; // 等待各分区上传任务完成
+            if (UploadTask != null) await UploadTask; // 等待各分区上传任务完成
             UploadFileStream.Close();
             await Daemon.UploadFileCancelAsync(this); // 向服务端发出取消信号
 

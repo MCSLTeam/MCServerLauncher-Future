@@ -22,6 +22,6 @@
         /// <summary>
         ///    Raw API core name.
         /// </summary>
-        public string ApiActualName { get; set; }
+        public string? ApiActualName { get; set; }
     }
 }

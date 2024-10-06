@@ -26,8 +26,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchQuiltVersionButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
-        private List<QuiltMinecraftVersion> SupportedAllMinecraftVersions { get; set; }
-        private List<string> QuiltLoaderVersions { get; set; }
+        private List<QuiltMinecraftVersion>? SupportedAllMinecraftVersions { get; set; }
+        private List<string>? QuiltLoaderVersions { get; set; }
 
         /// <summary>
         ///    Go back.
@@ -37,7 +37,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
-            parent.CurrentCreateInstance.GoBack();
+            parent?.CurrentCreateInstance.GoBack();
         }
 
         //private void FinishSetup(object sender, RoutedEventArgs e)
@@ -50,7 +50,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <returns>The correct endpoint.</returns>
         private string GetEndPoint()
         {
-            return SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall
+            return SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall
                 ? "https://bmclapi2.bangbang93.com/quilt-meta"
                 : "https://meta.quiltmc.org";
         }
@@ -85,12 +85,13 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         {
             ToggleStableMinecraftVersionCheckBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
-                ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
-                    ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList()
-                        .Select(mcVersion => mcVersion.MinecraftVersion).ToList()
-                    : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.MinecraftVersion).ToList()
-            );
+            if (SupportedAllMinecraftVersions != null)
+                MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
+                    (ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
+                        ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList()
+                            .Select(mcVersion => mcVersion.MinecraftVersion).ToList()
+                        : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.MinecraftVersion).ToList())!
+                );
             MinecraftVersionComboBox.IsEnabled = true;
             ToggleStableMinecraftVersionCheckBox.IsEnabled = true;
         }
@@ -114,7 +115,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 
         private class QuiltMinecraftVersion
         {
-            public string MinecraftVersion { get; set; }
+            public string? MinecraftVersion { get; set; }
             public bool IsStable { get; set; }
         }
     }

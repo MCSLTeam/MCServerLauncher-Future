@@ -5,7 +5,7 @@ namespace MCServerLauncher.WPF.Modules.CreateInstance
 {
     internal class Files
     {
-        public static string SelectFile(string title, string filter)
+        public static string? SelectFile(string title, string filter)
         {
             var dialog = new OpenFileDialog
             {
@@ -15,7 +15,7 @@ namespace MCServerLauncher.WPF.Modules.CreateInstance
             return dialog.ShowDialog() == DialogResult.OK ? dialog.FileName : null;
         }
 
-        public static string SelectFolder(string title)
+        public static string? SelectFolder(string title)
         {
             FolderBrowserDialog folderBrowserDialog = new();
             folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;

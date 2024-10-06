@@ -3,6 +3,7 @@ using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -36,15 +37,19 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 _isDataLoading = true;
                 var mcslSyncCoreInfo = await new MCSLSync().GetCoreInfo();
 
-                foreach (var coreItem in mcslSyncCoreInfo.Select(result => new MCSLSyncResCoreItem
+                if (mcslSyncCoreInfo != null)
                 {
-                    CoreName = result
-                }))
-                    CoreGridView.Items.Add(coreItem);
+                    foreach (var coreItem in mcslSyncCoreInfo.Select(result => new MCSLSyncResCoreItem
+                             {
+                                 CoreName = result
+                             }))
+                        CoreGridView.Items.Add(coreItem);
 
-                _isDataLoading = false;
-                _isDataLoaded = true;
-                Log.Information($"[Res] [MCSL-Sync] Core info loaded. Count: {mcslSyncCoreInfo.Count}");
+                    _isDataLoading = false;
+                    _isDataLoaded = true;
+                    Log.Information($"[Res] [MCSL-Sync] Core info loaded. Count: {mcslSyncCoreInfo.Count}");
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -68,8 +73,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             MinecraftVersionComboBox.Items.Clear();
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            var minecraftVersions = await new MCSLSync().GetMinecraftVersions(selectedCore.CoreName);
-            minecraftVersions = Download.SequenceMinecraftVersion(minecraftVersions);
+            List<string?> minecraftVersions = Download.SequenceMinecraftVersion((await new MCSLSync().GetMinecraftVersions(selectedCore.CoreName))!);
             foreach (var minecraftVersion in minecraftVersions)
                 MinecraftVersionComboBox.Items.Add($"Minecraft {minecraftVersion}");
             MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;
@@ -87,7 +91,6 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         {
             var currentCore = (MCSLSyncResCoreItem)CoreGridView.SelectedItem;
             var currentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
-            if (currentCore.CoreName == null || currentMinecraftVersion == null) return;
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             Log.Information(
@@ -105,7 +108,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 }))
                     CoreVersionStackPanel.Children.Add(coreDetailItem);
 
-                Log.Information($"[Res] [MCSL-Sync] Core list loaded. Count: {mcslSyncCoreVersions.Count}");
+                if (mcslSyncCoreVersions != null)
+                    Log.Information($"[Res] [MCSL-Sync] Core list loaded. Count: {mcslSyncCoreVersions.Count}");
             }
             catch (Exception ex)
             {

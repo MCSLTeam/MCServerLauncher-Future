@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
-        private List<ForgeBuild> CurrentForgeBuilds { get; set; }
+        private List<ForgeBuild>? CurrentForgeBuilds { get; set; }
 
         /// <summary>
         ///    Go back.
@@ -34,7 +34,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
             var parent = this.TryFindParent<CreateInstancePage>();
-            parent.CurrentCreateInstance.GoBack();
+            parent?.CurrentCreateInstance.GoBack();
         }
 
         //private void FinishSetup(object sender, RoutedEventArgs e)
@@ -44,7 +44,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         ///    Method to get specific version of Minecraft with Forge through Official source.
         /// </summary>
-        private static async Task<List<string>> FetchMinecraftVersionsByOfficial()
+        private static async Task<List<string>?> FetchMinecraftVersionsByOfficial()
         {
             var response =
                 await Network.SendGetRequest(
@@ -61,7 +61,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         ///    Method to get specific version of Minecraft with Forge through BMCLAPI source.
         /// </summary>
-        private static async Task<List<string>> FetchMinecraftVersionsByBmclapi()
+        private static async Task<List<string>?> FetchMinecraftVersionsByBmclapi()
         {
             var response = await Network.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
             return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
@@ -76,7 +76,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= PreFetchForgeVersions;
             MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
-                SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
+                SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
                     ? await FetchMinecraftVersionsByBmclapi()
                     : await FetchMinecraftVersionsByOfficial()
             );
@@ -93,7 +93,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         ///    Method to get version of Forge with a particular Minecraft version through Official source.
         /// </summary>
-        private static async Task<List<ForgeBuild>> FetchForgeVersionsByOfficial(string mcVersion)
+        private static async Task<List<ForgeBuild>?> FetchForgeVersionsByOfficial(string mcVersion)
         {
             var results = new List<ForgeBuild>();
             var response = await Network.SendGetRequest(
@@ -167,7 +167,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         ///    Method to get version of Forge with a particular Minecraft version through BMCLAPI source.
         /// </summary>
-        private static async Task<List<ForgeBuild>> FetchForgeVersionsByBmclapi(string mcVersion)
+        private static async Task<List<ForgeBuild>?> FetchForgeVersionsByBmclapi(string mcVersion)
         {
             var response =
                 await Network.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
@@ -193,12 +193,13 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchForgeVersionButton.IsEnabled = false;
             ForgeVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            CurrentForgeBuilds = SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
+            CurrentForgeBuilds = SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
                 ? await FetchForgeVersionsByBmclapi(MinecraftVersionComboBox.SelectedItem.ToString())
                 : await FetchForgeVersionsByOfficial(MinecraftVersionComboBox.SelectedItem.ToString());
-            ForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
-                CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion).ToList()
-            );
+            if (CurrentForgeBuilds != null)
+                ForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
+                    CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion).ToList()!
+                );
             ForgeVersionComboBox.IsEnabled = true;
             FetchForgeVersionButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
@@ -207,24 +208,25 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <summary>
         ///    Generated from Plain Craft Launcher 2.
         /// </summary>
-        private static string RegexSeek(string str, string regex, RegexOptions options = RegexOptions.None)
+        private static string? RegexSeek(string str, string regex, RegexOptions options = RegexOptions.None)
         {
             var result = Regex.Match(str, regex, options).Value;
             return string.IsNullOrEmpty(result) ? null : result;
         }
-
+#nullable enable
         private class ForgeAttachment
         {
-            public string Format { get; set; }
-            public string Category { get; set; }
-            public string Hash { get; set; }
+            public string? Format { get; set; }
+            public string? Category { get; set; }
+            public string? Hash { get; set; }
         }
 
         private class ForgeBuild
         {
-            public string MinecraftVersion { get; set; }
-            public string ForgeVersion { get; set; }
-            public List<ForgeAttachment> Attachments { get; set; }
+            public string? MinecraftVersion { get; set; }
+            public string? ForgeVersion { get; set; }
+            public List<ForgeAttachment>? Attachments { get; set; }
         }
+#nullable disable
     }
 }

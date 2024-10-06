@@ -79,7 +79,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             control.AckDesc.Visibility = string.IsNullOrEmpty(desc) ? Visibility.Hidden : Visibility.Visible;
         }
 
-        public string ButtonUrl { get; set; }
+        public string? ButtonUrl { get; set; }
 
         private void ActionButtonTriggered(object sender, RoutedEventArgs e)
         {

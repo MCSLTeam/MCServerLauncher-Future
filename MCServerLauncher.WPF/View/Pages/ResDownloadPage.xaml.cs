@@ -8,11 +8,11 @@ namespace MCServerLauncher.WPF.View.Pages
     /// </summary>
     public partial class ResDownloadPage
     {
-        public readonly FastMirrorProvider FastMirror = new();
-        public readonly MCSLSyncProvider MCSLSync = new();
-        public readonly MSLAPIProvider MSLAPI = new();
-        public readonly PolarsMirrorProvider PolarsMirror = new();
-        public readonly ZCloudFileProvider ZCloudFile = new();
+        public readonly FastMirrorProvider? FastMirror = new();
+        public readonly MCSLSyncProvider? MCSLSync = new();
+        public readonly MSLAPIProvider? MSLAPI = new();
+        public readonly PolarsMirrorProvider? PolarsMirror = new();
+        public readonly ZCloudFileProvider? ZCloudFile = new();
 
         public ResDownloadPage()
         {
@@ -29,7 +29,7 @@ namespace MCServerLauncher.WPF.View.Pages
         /// </summary>
         public async void Refresh()
         {
-            IResDownloadProvider currentResDownloadProvider = SettingsManager.AppSettings.Download.DownloadSource switch
+            IResDownloadProvider? currentResDownloadProvider = SettingsManager.AppSettings?.Download?.DownloadSource switch
             {
                 "FastMirror" => FastMirror,
                 "PolarsMirror" => PolarsMirror,
