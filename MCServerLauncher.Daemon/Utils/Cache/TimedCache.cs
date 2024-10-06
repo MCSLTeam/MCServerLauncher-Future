@@ -45,8 +45,34 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
         _valueFactory = valueFactory;
         CacheDuration = cacheDuration;
     }
-
-    public DateTime LastUpdated { get; private set; }
+    
+    private readonly ReaderWriterLockSlim _lastUpdatedLock = new ();
+    private  DateTime _lastUpdated;
+    
+    public DateTime LastUpdated {  get
+        {
+            _lastUpdatedLock.EnterReadLock();
+            try
+            {
+                return _lastUpdated;
+            }
+            finally
+            {
+                _lastUpdatedLock.ExitReadLock();
+            }
+        }
+        private set
+        {
+            _lastUpdatedLock.EnterWriteLock();
+            try
+            {
+                _lastUpdated = value;
+            }
+            finally
+            {
+                _lastUpdatedLock.ExitWriteLock();
+            }
+        } }
     public TimeSpan CacheDuration { get; }
     public Task<T> Value => GetValue();
 
@@ -57,8 +83,8 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
 
     public async Task Update()
     {
-        _value = await _valueFactory();
         LastUpdated = DateTime.Now;
+        _value = await _valueFactory();
     }
 
     private async Task<T> GetValue()
