@@ -23,7 +23,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             InitializeComponent();
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
-
+#nullable enable
         private List<ForgeBuild>? CurrentForgeBuilds { get; set; }
 
         /// <summary>
@@ -213,7 +213,6 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             var result = Regex.Match(str, regex, options).Value;
             return string.IsNullOrEmpty(result) ? null : result;
         }
-#nullable enable
         private class ForgeAttachment
         {
             public string? Format { get; set; }
