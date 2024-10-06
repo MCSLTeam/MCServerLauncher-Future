@@ -6,7 +6,7 @@ namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 /// <summary>
 ///     用户数据库,包含两个表: 1.用户表(users), 2.登录信息表(login)
-///     用户表: name, secret, passwordHash, group, permissions
+///     用户表: name, secret, password_hash, group, permissions
 ///     登录信息表: name, expired
 /// </summary>
 public class UserDatabase : IDisposable, IAsyncDisposable
@@ -51,7 +51,7 @@ public class UserDatabase : IDisposable, IAsyncDisposable
                               CREATE TABLE IF NOT EXISTS users(
                                   `name` TEXT PRIMARY KEY,
                                   `secret` TEXT,
-                                  `passwordHash` TEXT,
+                                  `password_hash` TEXT,
                                   `group` TEXT,
                                   `permissions` TEXT
                               );
@@ -129,12 +129,12 @@ public class UserDatabase : IDisposable, IAsyncDisposable
     {
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = @"
-                          INSERT INTO users(name, secret, passwordHash, `group`, permissions)
-                          VALUES(@name, @secret, @passwordHash, @group, @permissions)
+                          INSERT INTO users(name, secret, password_hash, `group`, permissions)
+                          VALUES(@name, @secret, @password_hash, @group, @permissions)
                           ";
         cmd.Parameters.AddWithValue("@name", name);
         cmd.Parameters.AddWithValue("@secret", secret);
-        cmd.Parameters.AddWithValue("@passwordHash", PasswordHasher.HashPassword(password));
+        cmd.Parameters.AddWithValue("@password_hash", PasswordHasher.HashPassword(password));
         cmd.Parameters.AddWithValue("@group", group.ToString());
         cmd.Parameters.AddWithValue("@permissions", JsonConvert.SerializeObject(permissions));
         return await cmd.ExecuteNonQueryAsync() > 0;
@@ -169,8 +169,8 @@ public class UserDatabase : IDisposable, IAsyncDisposable
 
         if (password != null)
         {
-            setClauses.Add("\"passwordHash\" = @passwordHash");
-            parameters.Add(("@passwordHash", password));
+            setClauses.Add("\"password_hash\" = @password_hash");
+            parameters.Add(("@password_hash", password));
         }
 
         if (group.HasValue)
@@ -179,7 +179,7 @@ public class UserDatabase : IDisposable, IAsyncDisposable
             parameters.Add(("@group", group.Value.ToString()));
         }
 
-        if (permissions != null && permissions.Length > 0)
+        if (permissions?.Length > 0)
         {
             // 假设permissions需要转换成字符串形式存储
             var permissionsStr = JsonConvert.SerializeObject(permissions);
