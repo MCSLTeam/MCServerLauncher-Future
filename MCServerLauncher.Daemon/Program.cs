@@ -1,12 +1,6 @@
 ﻿using MCServerLauncher.Common.Network;
 using MCServerLauncher.Daemon.Minecraft.Server;
-using MCServerLauncher.Daemon.Remote;
-using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Authentication;
-using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils.Cache;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -19,10 +13,10 @@ public class Program
     {
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
-        // var info = await SlpClient.GetStatusModern("pve-net.xiexilin.com", 30042);
-        // Log.Information("[SlpClient] Get Server List Ping data: {0}",
-        //     JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
-        // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
+        var info = await SlpClient.GetStatusModern("pve-net.xiexilin.com", 30042);
+        Log.Information("[SlpClient] Get Server List Ping data: {0}",
+            JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
+        Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
 
 
         // Serve();
@@ -88,7 +82,7 @@ public class Program
     {
         InstanceConfig config = new()
         {
-            WorkingDirectory = @"./instance",
+            WorkingDirectory = "./instance",
             JavaArgs = Array.Empty<string>(),
             JavaPath = "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath\\java.exe",
             Name = "TestServer",

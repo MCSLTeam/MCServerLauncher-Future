@@ -5,7 +5,6 @@ namespace MCServerLauncher.Daemon.Remote.Authentication;
 /// </summary>
 public enum PermissionGroups
 {
-    Token,
     Admin,
     User,
     Custom

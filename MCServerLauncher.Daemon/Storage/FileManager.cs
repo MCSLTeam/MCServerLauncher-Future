@@ -345,7 +345,7 @@ internal static class FileManager
     {
         // validate path
         if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
-        
+
         return new DirectoryEntry(path);
     }
 

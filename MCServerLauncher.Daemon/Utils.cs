@@ -7,7 +7,7 @@ namespace MCServerLauncher.Daemon;
 public class BasicUtils
 {
     public Settings AppSettings { get; set; }
-    public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version;
+    public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version!;
 
     private static void InitDataDirectory()
     {
@@ -125,7 +125,7 @@ public class LongRemain
             if (from <= node.Begin && to >= node.End)
             {
                 if (lastNode == null)
-                    _head = _head.Next;
+                    _head = _head?.Next;
                 else lastNode.Next = node.Next;
 
                 break;

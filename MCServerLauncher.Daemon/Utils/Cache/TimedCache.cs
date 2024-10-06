@@ -4,7 +4,7 @@ public class TimedCache<T> : ITimedCacheable<T>
 {
     private readonly Func<T> _valueFactory;
 
-    private T _value;
+    private T? _value;
 
     public TimedCache(Func<T> valueFactory, TimeSpan cacheDuration)
     {
@@ -36,7 +36,9 @@ public class TimedCache<T> : ITimedCacheable<T>
 
 public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
 {
+    private readonly ReaderWriterLockSlim _lastUpdatedLock = new();
     private readonly Func<Task<T>> _valueFactory;
+    private DateTime _lastUpdated;
 
     private T _value;
 
@@ -45,11 +47,10 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
         _valueFactory = valueFactory;
         CacheDuration = cacheDuration;
     }
-    
-    private readonly ReaderWriterLockSlim _lastUpdatedLock = new ();
-    private  DateTime _lastUpdated;
-    
-    public DateTime LastUpdated {  get
+
+    public DateTime LastUpdated
+    {
+        get
         {
             _lastUpdatedLock.EnterReadLock();
             try
@@ -72,7 +73,9 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
             {
                 _lastUpdatedLock.ExitWriteLock();
             }
-        } }
+        }
+    }
+
     public TimeSpan CacheDuration { get; }
     public Task<T> Value => GetValue();
 
