@@ -1,4 +1,4 @@
-![Header Image](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=Future%20version%20of%20MCSL.%20Redefined%2C%20Versatile%2C%20Easy%20to%20use.&font=Jost&forks=1&language=1&logo=https%3A%2F%2Fimg.fastmirror.net%2Fs%2F2025%2F07%2F24%2F66a0f36d0242c.png&name=1&pattern=Circuit%20Board&stargazers=1&theme=Auto)  
+![Header Image](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=Future%20version%20of%20MCSL.%20Redefined%2C%20Versatile%2C%20Easy%20to%20use.&font=Jost&forks=1&language=1&logo=https%3A%2F%2Fimages.mcsl.com.cn%2Fnew%2FMCServerLauncher.webp&name=1&pattern=Circuit%20Board&stargazers=1&theme=Auto)  
 English | [中文](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/README_ZH.md)  
 </br>
 This repository only includes sources of the Daemon and the WPF Desktop Launcher. If you want to know more about the web
