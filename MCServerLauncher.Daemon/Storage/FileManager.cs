@@ -256,6 +256,7 @@ internal static class FileManager
     /// <param name="path"></param>
     /// <returns></returns>
     /// <exception cref="IOException"></exception>
+    /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
     public static async Task<DownloadRequestInfo> FileDownloadRequest(string path)
     {
@@ -274,7 +275,16 @@ internal static class FileManager
 
         var size = fs.Length;
         var sha1 = await FileSha1(fs);
-        return new DownloadRequestInfo(Guid.NewGuid(), size, sha1);
+        var id = Guid.NewGuid();
+        if (DownloadSessions.TryAdd(id, new FileDownloadInfo(size, sha1, fs, path)))
+        {
+            return new DownloadRequestInfo(id, size, sha1);
+        }
+        else
+        {
+            fs.Close();
+            throw  new ArgumentException("Failed to add download session");
+        }
     }
 
     /// <summary>
