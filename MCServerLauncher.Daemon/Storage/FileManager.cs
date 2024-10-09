@@ -265,7 +265,7 @@ internal static class FileManager
 
         // do not check if file in download session
         // balance the concurrency of file downloads (limited number of download sessions for a single file)
-        if (DownloadSessions.Count(kv => kv.Value.Path == path) >= AppConfig.Get().SingleFileMaxDownloadSessions)
+        if (DownloadSessions.Count(kv => kv.Value.Path == path) >= AppConfig.Get().FileDownloadSessions)
             throw new InvalidOperationException($"Max download sessions of file '{path}' reached");
 
         // set file share to None, declined any access. For example: downloading & upload session.
