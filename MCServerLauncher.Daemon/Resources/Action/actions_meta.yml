@@ -37,7 +37,7 @@ actions:
 
   - file_download_request:
       req:
-        path: string?
+        path: string
       
       resp:
         file_id: Guid

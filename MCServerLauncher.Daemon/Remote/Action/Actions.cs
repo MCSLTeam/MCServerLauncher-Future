@@ -179,7 +179,7 @@ public static class Actions
 
         public struct Request
         {
-            public string? Path;
+            public string Path;
         }
 
         private struct Response : IActionResponse
