@@ -710,7 +710,7 @@
     <value>为 MCSL 做出了巨大贡献！</value>
   </data>
   <data name="Donate" xml:space="preserve">
-    <value>赞助一下</value>
+    <value>Получить спонсорскую поддержку</value>
   </data>
   <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
     <value>提供了性能强大的 BMCLAPI 镜像！</value>
