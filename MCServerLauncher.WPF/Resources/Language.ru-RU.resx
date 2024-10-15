@@ -455,7 +455,7 @@
     <value>Minecraft Травертин групповая сторона</value>
   </data>
   <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
-    <value>通用 Frp 客户端程序 (Frpc)</value>
+    <value>Универсальная клиентская программа Frp (Frpc)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>Игровые серверы Terraria</value>
@@ -473,7 +473,7 @@
     <value>Взгляните на общую картину, чтобы увидеть мир.</value>
   </data>
   <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
-    <value>下载历史</value>
+    <value>История скачивания</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>Вы называете это, оно здесь. (В настоящее время используется.)</value>
@@ -665,73 +665,73 @@
     <value>Выберите язык, на котором используется программа.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可链接守护进程。</value>
+    <value>Если вы не свяжете никаких демонов, большинство функций программного обеспечения будут ограничены. \nВы все еще можете связать демон позже.</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
-    <value>新建连接</value>
+    <value>Создание нового подключения</value>
   </data>
   <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
-    <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
+    <value>Все экземпляры MCServerLauncher передаются в управление демонами. Пожалуйста, дайте ссылку на развернутый демон здесь.</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>编辑</value>
+    <value>редактировать</value>
   </data>
   <data name="Daemon_RemoteUri" xml:space="preserve">
-    <value>远端地址:</value>
+    <value>Удаленный адрес:</value>
   </data>
   <data name="Daemon_ConnectionStatus" xml:space="preserve">
-    <value>链接状态:</value>
+    <value>Статус ссылки</value>
   </data>
   <data name="Status_OK" xml:space="preserve">
-    <value>正常</value>
+    <value>обычный</value>
   </data>
   <data name="Status_Error" xml:space="preserve">
-    <value>异常</value>
+    <value>ненормальный</value>
   </data>
   <data name="Disconnect" xml:space="preserve">
-    <value>断连</value>
+    <value>разъединять</value>
   </data>
   <data name="Connect" xml:space="preserve">
-    <value>连接</value>
+    <value>соединять</value>
   </data>
   <data name="Retry" xml:space="preserve">
-    <value>重试</value>
+    <value>Снова пробовать</value>
   </data>
   <data name="Settings_Components_Title" xml:space="preserve">
-    <value>开源项目引用列表</value>
+    <value>Список ссылок на проекты с открытым исходным кодом</value>
   </data>
   <data name="Settings_Components_Description" xml:space="preserve">
-    <value>由衷感谢他们的付出，为 MCSL Future 的前进提供了持续的动力。</value>
+    <value>Мы хотели бы выразить им искреннюю благодарность за их усилия и за то, что они постоянно стимулируют прогресс MCSL Future.</value>
   </data>
   <data name="Settings_Acknowledgments_Title" xml:space="preserve">
-    <value>鸣谢列表</value>
+    <value>Список благодарностей</value>
   </data>
   <data name="Settings_Acknowledgments_Description" xml:space="preserve">
-    <value>为 MCSL 做出了巨大贡献！</value>
+    <value>Внес большой вклад в MCSL!</value>
   </data>
   <data name="Donate" xml:space="preserve">
     <value>Получить спонсорскую поддержку</value>
   </data>
   <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
-    <value>提供了性能强大的 BMCLAPI 镜像！</value>
+    <value>Обеспечивает мощное изображение BMCLAPI!</value>
   </data>
   <data name="Settings_Acknowledgments_PCL2_Description" xml:space="preserve">
-    <value>提供了 Minecraft 加载器的获取思路！</value>
+    <value>Идеи по приобретению загрузчика Майнкрафт предоставлены!</value>
   </data>
   <data name="Settings_Acknowledgments_BakaXL_Description" xml:space="preserve">
-    <value>提供了 Quilt 加载器的部署思路！</value>
+    <value>Идея развертывания загрузчика Quilt обеспечена!</value>
   </data>
   <data name="Settings_Acknowledgments_iNKORE_Description" xml:space="preserve">
-    <value>在开发过程中给予了大量技术支持！</value>
+    <value>Большая техническая поддержка в процессе разработки!</value>
   </data>
   <data name="Settings_Acknowledgments_MCSLQQ_Title" xml:space="preserve">
-    <value>MCSL QQ 交流群的各位群友</value>
+    <value>Друзья биржевой группы MCSL QQ</value>
   </data>
   <data name="Settings_Acknowledgments_MCSLQQ_Description" xml:space="preserve">
-    <value>一直陪伴着我们，还给予了很多建议！</value>
+    <value>Всегда сопровождал нас и давал много советов!</value>
   </data>
   <data name="JoinGroup" xml:space="preserve">
-    <value>加入群聊</value>
+    <value>Присоединяйтесь к группе</value>
   </data>
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守护进程 WebSocket 地址</value>
