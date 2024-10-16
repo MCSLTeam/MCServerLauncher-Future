@@ -734,7 +734,7 @@
     <value>Присоединяйтесь к группе</value>
   </data>
   <data name="DaemonWsAddress" xml:space="preserve">
-    <value>守护进程 WebSocket 地址</value>
+    <value>Адрес WebSocket демона</value>
   </data>
   <data name="DaemonJwtSecret" xml:space="preserve">
     <value>JWT 密钥</value>
@@ -812,18 +812,18 @@
     <value>组件管理</value>
   </data>
   <data name="Console_OthersNavMenu" xml:space="preserve">
-    <value>其他功能</value>
+    <value>Другие особенности</value>
   </data>
   <data name="Console_InstanceSettingsNavMenu" xml:space="preserve">
-    <value>实例设置</value>
+    <value>Настройки экземпляра</value>
   </data>
   <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
-    <value>Minecraft 服务器</value>
+    <value>Серверы Minecraft</value>
   </data>
   <data name="CreateFrpcInstanceCategory" xml:space="preserve">
-    <value>快速反向代理客户端 Frpc</value>
+    <value>Быстрый клиент обратного прокси Frpc</value>
   </data>
   <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
-    <value>Terraria 服务器压缩包</value>
+    <value>Сжатый пакет сервера Terraria</value>
   </data>
 </root>
