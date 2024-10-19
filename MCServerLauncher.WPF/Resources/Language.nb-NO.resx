@@ -838,4 +838,7 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value>下载已取消</value>
   </data>
+  <data name="ClickToHide" xml:space="preserve">
+    <value>点击隐藏</value>
+  </data>
 </root>
