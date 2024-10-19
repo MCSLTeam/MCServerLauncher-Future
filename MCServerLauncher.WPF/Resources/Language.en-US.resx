@@ -143,7 +143,7 @@
     <value>Help Center</value>
   </data>
   <data name="Main_NotificationCenterNavMenu" xml:space="preserve">
-    <value>Notifications</value>
+    <value>Nofitications</value>
   </data>
   <data name="Main_DebugNavMenu" xml:space="preserve">
     <value>Debug</value>
@@ -825,5 +825,17 @@
   </data>
   <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
     <value>Terraria Server Archive</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>线程</value>
+  </data>
+  <data name="DownloadFinished" xml:space="preserve">
+    <value>下载完毕</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>下载失败</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>下载已取消</value>
   </data>
 </root>
