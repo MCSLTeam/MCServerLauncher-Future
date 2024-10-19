@@ -19,7 +19,8 @@
         <TextBox Visibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" Padding="10,5,10,5"
                  Grid.Column="1" VerticalAlignment="Center" x:Name="IPTextBox" IsReadOnly="True" Margin="15,0,15,0"
                  Height="30" />
-        <Button HorizontalAlignment="Right" Margin="0,0,15,0" Grid.Column="2" Content="{Binding [ViewIPAddress], Source={x:Static i18n:LanguageManager.Localize}}" Height="30" />
+        <Button HorizontalAlignment="Right" Margin="0,0,15,0" Grid.Column="2" Height="30" x:Name="ToggleIPButton" Click="ToggleIP"
+        Content="{Binding [ViewIPAddress], Source={x:Static i18n:LanguageManager.Localize}}" />
         <Button Grid.Column="3" Height="30" Margin="0,0,15,0">
             <Button.Content>
                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.More}" FontSize="16" />

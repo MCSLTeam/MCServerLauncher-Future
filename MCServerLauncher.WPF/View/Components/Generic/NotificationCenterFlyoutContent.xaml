@@ -17,20 +17,7 @@
         <TextBlock Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Main_NotificationCenterNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Grid.Row="0" Margin="0,0,0,15"/>
         <ui:ScrollViewerEx Width="350" Height="600" Grid.Row="1">
-            <ikw:SimpleStackPanel Spacing="10" x:Name="NotificationContainer">
-                <ui:InfoBar Title="Infomational Message" IsOpen="True" IsClosable="True" Severity="Informational"
-                        Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit." />
-
-                <ui:InfoBar Title="Warning Message" IsOpen="True" IsClosable="True" Severity="Warning"
-                        Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit." />
-
-                <ui:InfoBar Title="Success Message" IsOpen="True" IsClosable="True" Severity="Success"
-                        Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit." />
-
-                <ui:InfoBar Title="Error Message" IsOpen="True" IsClosable="True" Severity="Error"
-                        Message="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque metus ipsum, ornare quis quam ac, tristique commodo diam. In at vestibulum ipsum. Donec turpis erat, viverra ac ex at, ullamcorper sagittis elit." />
-
-            </ikw:SimpleStackPanel>
+            <ikw:SimpleStackPanel Spacing="10" x:Name="NotificationContainer" />
         </ui:ScrollViewerEx>
     </Grid>
 </UserControl>

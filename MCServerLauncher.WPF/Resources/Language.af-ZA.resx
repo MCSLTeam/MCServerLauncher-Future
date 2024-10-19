@@ -838,4 +838,7 @@
   <data name="DownloadCancelled" xml:space="preserve">
     <value></value>
   </data>
+  <data name="ClickToHide" xml:space="preserve">
+    <value></value>
+  </data>
 </root>

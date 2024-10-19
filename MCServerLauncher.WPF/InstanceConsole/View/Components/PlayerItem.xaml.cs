@@ -1,4 +1,7 @@
-﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
+﻿using MCServerLauncher.WPF.Modules;
+using System.Windows;
+
+namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
     ///    PlayerItem.xaml 的交互逻辑
@@ -26,6 +29,11 @@
         {
             get => IPTextBox.Text;
             set => IPTextBox.Text = value;
+        }
+        private void ToggleIP(object sender, RoutedEventArgs e)
+        {
+            IPTextBox.Visibility = IPTextBox.Visibility == Visibility.Hidden ? Visibility.Visible : Visibility.Hidden;
+            ToggleIPButton.Content = IPTextBox.Visibility == Visibility.Hidden ? LanguageManager.Localize["ViewIPAddress"] : LanguageManager.Localize["ClickToHide"];
         }
     }
 }

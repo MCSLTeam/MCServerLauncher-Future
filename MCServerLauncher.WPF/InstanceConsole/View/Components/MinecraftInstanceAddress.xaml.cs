@@ -1,4 +1,7 @@
-﻿namespace MCServerLauncher.WPF.InstanceConsole.View.Components
+﻿using MCServerLauncher.WPF.Modules;
+using System.Windows;
+
+namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {
     /// <summary>
     ///    MinecraftInstanceAddress.xaml 的交互逻辑
@@ -17,6 +20,12 @@
         {
             get => AddressTextBox.Text;
             set => AddressTextBox.Text = value;
+        }
+
+        private void ToggleIP(object sender, RoutedEventArgs e)
+        {
+            AddressTextBox.Visibility = AddressTextBox.Visibility == Visibility.Hidden ? Visibility.Visible : Visibility.Hidden;
+            ToggleIPButton.Content = AddressTextBox.Visibility == Visibility.Hidden ? LanguageManager.Localize["ClickToView"] : LanguageManager.Localize["ClickToHide"];
         }
     }
 }

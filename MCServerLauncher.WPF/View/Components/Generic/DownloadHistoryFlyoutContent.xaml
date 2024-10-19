@@ -17,8 +17,7 @@
         <TextBlock Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Main_DownloadHistoryNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Grid.Row="0" Margin="0,0,0,15"/>
         <ui:ScrollViewerEx Width="350" Height="600" Grid.Row="1">
-            <ikw:SimpleStackPanel Spacing="10" x:Name="DownloadsContainer">
-            </ikw:SimpleStackPanel>
+            <ikw:SimpleStackPanel Spacing="10" x:Name="DownloadsContainer" />
         </ui:ScrollViewerEx>
     </Grid>
 </UserControl>
