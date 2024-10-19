@@ -1,5 +1,7 @@
-﻿using MCServerLauncher.WPF.Modules.DownloadProvider;
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
@@ -43,6 +45,17 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         public async Task<string?> FetchRawUrl()
         {
             return await new AList().GetFileUrl("https://jn.sv.ztsin.cn:5244", $"MCSL2/MCSLAPI/{Core}/{FileName}");
+        }
+
+        /// <summary>
+        ///   Download file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void Download(object sender, RoutedEventArgs e)
+        {
+            var downloadUrl = await FetchRawUrl();
+            await new DownloadManager().TriggerPreDownloadFile(downloadUrl, FileName);
         }
     }
 }

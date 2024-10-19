@@ -1,5 +1,8 @@
-﻿using MCServerLauncher.WPF.Modules.DownloadProvider;
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
@@ -43,6 +46,18 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         {
             var coreDetail = await new MCSLSync().GetCoreDetail(Core, MinecraftVersion, CoreVersion);
             return coreDetail?.DownloadUrl;
+        }
+
+        /// <summary>
+        /// Download file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void Download(object sender, RoutedEventArgs e)
+        {
+            var downloadUrl = await GetDownloadUrl();
+            string defaultFileName = $"{Core}-{MinecraftVersion}-{CoreVersion}.jar";
+            await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
         }
     }
 }

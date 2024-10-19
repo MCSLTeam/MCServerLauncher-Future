@@ -81,11 +81,15 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 CoreVersionStackPanel.Children.Clear();
                 if (mslapiCoreDetails != null)
                 {
-                    foreach (var coreDetailItem in mslapiCoreDetails.Select(detail => new MSLAPIResCoreVersionItem
-                             {
-                                 MinecraftVersion = detail
-                             }))
-                        CoreVersionStackPanel.Children.Add(coreDetailItem);
+                    foreach (var coreDetailItem in mslapiCoreDetails.Select(
+                        detail => new MSLAPIResCoreVersionItem
+                            {
+                                ApiActualName = selectedCore.ApiActualName,
+                                MinecraftVersion = detail
+                            }
+                        )
+                    )
+                    CoreVersionStackPanel.Children.Add(coreDetailItem);
 
                     Log.Information($"[Res] [MSLAPI] Core detail loaded. Count: {mslapiCoreDetails.Count}");
                 }

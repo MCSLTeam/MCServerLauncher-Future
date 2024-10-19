@@ -1,7 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
-using System.Windows.Controls;
-
-namespace MCServerLauncher.WPF.View.Components.Generic
+﻿namespace MCServerLauncher.WPF.View.Components.Generic
 {
     /// <summary>
     ///     NotificationCenterFlyoutContent.xaml 的交互逻辑

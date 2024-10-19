@@ -123,7 +123,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 await FetchNeoForgeDataByBmclapi();
             else
                 await FetchNeoForgeDataByOfficial();
-            MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(MinecraftVersions);
+            MinecraftVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(MinecraftVersions);
             FetchMinecraftVersionsButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
             MinecraftVersionComboBox.SelectionChanged += MinecraftVersionChanged;
@@ -141,14 +141,14 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             {
                 if (NeoForgeVersions != null)
                     NeoForgeVersionComboBox.ItemsSource =
-                        Download.SequenceMinecraftVersion(NeoForgeVersions
+                        DownloadManager.SequenceMinecraftVersion(NeoForgeVersions
                             .Where(version => version.StartsWith("47")).ToList());
                 NeoForgeVersionComboBox.IsEnabled = true;
                 return;
             }
 
             if (NeoForgeVersions != null)
-                NeoForgeVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(NeoForgeVersions
+                NeoForgeVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(NeoForgeVersions
                     .Where(version => version.StartsWith(MinecraftVersionComboBox.SelectedItem.ToString().Substring(2)))
                     .ToList());
             NeoForgeVersionComboBox.IsEnabled = true;

@@ -114,7 +114,7 @@
     <Compile Include="Modules\Animation.cs" />
     <Compile Include="Modules\Clipboard.cs" />
     <Compile Include="Modules\CreateInstance\Files.cs" />
-    <Compile Include="Modules\Download.cs" />
+    <Compile Include="Modules\DownloadManager.cs" />
     <Compile Include="Modules\Initializer.cs" />
     <Compile Include="Modules\LanguageManager.cs" />
     <Compile Include="Modules\Network.cs" />

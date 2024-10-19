@@ -33,7 +33,7 @@
                            Style="{StaticResource MinititleTextBlock}" HorizontalAlignment="Left"
                            TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
             </Grid>
-            <Button Height="50" Width="50" Margin="15,15,15,15" Grid.Column="1"
+            <Button Height="50" Width="50" Margin="15,15,15,15" Grid.Column="1" Click="Download"
                     Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}" FontSize="18" />

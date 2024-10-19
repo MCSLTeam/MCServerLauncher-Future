@@ -47,7 +47,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                                  CoreTag = result.Tag,
                                  Recommend = result.Recommend,
                                  HomePage = result.HomePage,
-                                 MinecraftVersions = Download.SequenceMinecraftVersion(result.MinecraftVersions)
+                                 MinecraftVersions = DownloadManager.SequenceMinecraftVersion(result.MinecraftVersions)
                              }))
                         CoreGridView.Items.Add(coreItem);
 
@@ -127,7 +127,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                                  {
                                      Core = detail.Name,
                                      CoreVersion = detail.CoreVersion,
-                                     MinecraftVersion = detail.MinecraftVersion
+                                     MinecraftVersion = detail.MinecraftVersion,
                                  }))
                         CoreVersionStackPanel.Children.Add(coreDetailItem);
 

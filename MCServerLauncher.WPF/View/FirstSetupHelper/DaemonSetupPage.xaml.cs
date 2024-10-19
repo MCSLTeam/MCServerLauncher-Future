@@ -2,11 +2,9 @@
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.DaemonManager;
 using System;
-using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper

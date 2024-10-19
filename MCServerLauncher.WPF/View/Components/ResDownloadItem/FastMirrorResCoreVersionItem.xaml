@@ -34,7 +34,7 @@
                            TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
             </Grid>
             <Button Height="50" Width="50" Margin="15,15,15,15" Grid.Column="1"
-                    Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center">
+                    Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center" Click="Download">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}" FontSize="18" />
                 </Button.Content>

@@ -1,4 +1,8 @@
-﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
+﻿using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.WPF.Modules;
+using System.Windows;
+
+namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///    PolarsMirrorResCoreVersionItem.xaml 的交互逻辑
@@ -17,6 +21,21 @@
         {
             get => FileNameReplacer.Text;
             set => FileNameReplacer.Text = value;
+        }
+
+        /// <summary>
+        ///   Download URL.
+        /// </summary>
+        public string? DownloadUrl { get; set; }
+
+        /// <summary>
+        ///   Download file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void Download(object sender, RoutedEventArgs e)
+        {
+            await new DownloadManager().TriggerPreDownloadFile(DownloadUrl, FileName);
         }
     }
 }

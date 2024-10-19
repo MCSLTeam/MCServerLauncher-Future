@@ -73,7 +73,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             MinecraftVersionComboBox.Items.Clear();
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            List<string?> minecraftVersions = Download.SequenceMinecraftVersion((await new MCSLSync().GetMinecraftVersions(selectedCore.CoreName))!);
+            List<string?> minecraftVersions = DownloadManager.SequenceMinecraftVersion((await new MCSLSync().GetMinecraftVersions(selectedCore.CoreName))!);
             foreach (var minecraftVersion in minecraftVersions)
                 MinecraftVersionComboBox.Items.Add($"Minecraft {minecraftVersion}");
             MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;

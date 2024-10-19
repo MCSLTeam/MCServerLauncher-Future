@@ -86,7 +86,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             ToggleStableMinecraftVersionCheckBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             if (SupportedAllMinecraftVersions != null)
-                MinecraftVersionComboBox.ItemsSource = Download.SequenceMinecraftVersion(
+                MinecraftVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
                     (ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
                         ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList()
                             .Select(mcVersion => mcVersion.MinecraftVersion).ToList()

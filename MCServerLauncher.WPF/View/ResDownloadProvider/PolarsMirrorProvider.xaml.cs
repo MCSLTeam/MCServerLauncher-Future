@@ -83,6 +83,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     foreach (var coreDetailItem in polarsMirrorCoreDetails.Select(detail =>
                                  new PolarsMirrorResCoreVersionItem
                                  {
+                                     DownloadUrl = detail.DownloadUrl,
                                      FileName = detail.FileName
                                  }))
                         CoreVersionStackPanel.Children.Add(coreDetailItem);

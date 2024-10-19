@@ -1,13 +1,15 @@
-﻿using Downloader;
+﻿using MCServerLauncher.WPF.View.Components.Generic;
+using Serilog;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 
 namespace MCServerLauncher.WPF.Modules
 {
-    public class Download
+    public class DownloadManager
     {
         private static readonly Func<string, (int, int, int, int)> VersionToTuple = version =>
         {
@@ -47,8 +49,21 @@ namespace MCServerLauncher.WPF.Modules
             return (originalList ?? throw new ArgumentNullException(nameof(originalList))).OrderByDescending(VersionComparator!).ToList()!;
         }
 
+        public async Task TriggerPreDownloadFile(string downloadUrl, string defaultFileName)
+        {
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "All Files (*.*)|*.*",
+                FileName = defaultFileName
+            };
+            saveFileDialog.ShowDialog();
+
+            var saveFileName = saveFileDialog.FileName.Split('\\').Last();
+            var savePath = saveFileDialog.FileName.Substring(0, saveFileDialog.FileName.Length - saveFileName.Length);
+            await PreDownloadFile(url: downloadUrl, savePath, saveFileName);
+        }
         /// <summary>
-        ///    下载常规文件。
+        ///    Download
         /// </summary>
         /// <param name="url">Download url.</param>
         /// <param name="savePath">Where to save the file.</param>
@@ -57,30 +72,21 @@ namespace MCServerLauncher.WPF.Modules
         /// <param name="progressHandler">Event handler of Progress</param>
         /// <param name="finishHandler">Event handler of Finish</param>
         /// <returns></returns>
-        public DownloadService DownloadFile(
+        private async Task PreDownloadFile(
             string url,
             string savePath,
-            EventHandler<DownloadStartedEventArgs> startHandler,
-            EventHandler<DownloadProgressChangedEventArgs> progressHandler,
-            EventHandler<AsyncCompletedEventArgs> finishHandler,
             string fileName
         )
         {
-            DownloadConfiguration downloaderOption = new()
+            DownloadProgressItem item = new() 
             {
-                Timeout = 5000,
-                ChunkCount = SettingsManager.AppSettings.Download.ThreadCnt,
-                ParallelDownload = true,
-                RequestConfiguration =
-                {
-                    UserAgent = Network.CommonUserAgent
-                }
+                SavePath = savePath,
+                FileName = fileName,
+                Url = url
             };
-            DownloadService downloader = new(downloaderOption);
-            downloader.DownloadStarted += startHandler;
-            downloader.DownloadProgressChanged += progressHandler;
-            downloader.DownloadFileCompleted += finishHandler;
-            return downloader;
+            DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Insert(0, item);
+            Log.Information("[Download] Task added: {0} from {1}", Path.Combine(savePath, fileName), url);
+            await item.StartDownload();
         }
     }
 }

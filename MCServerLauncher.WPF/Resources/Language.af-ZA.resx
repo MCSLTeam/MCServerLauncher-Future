@@ -826,4 +826,16 @@
   <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
     <value></value>
   </data>
+  <data name="Thread" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadFinished" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value></value>
+  </data>
 </root>

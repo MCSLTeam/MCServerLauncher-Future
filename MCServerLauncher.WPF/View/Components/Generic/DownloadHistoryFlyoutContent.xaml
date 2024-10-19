@@ -18,10 +18,6 @@
                    HorizontalAlignment="Left" Grid.Row="0" Margin="0,0,0,15"/>
         <ui:ScrollViewerEx Width="350" Height="600" Grid.Row="1">
             <ikw:SimpleStackPanel Spacing="10" x:Name="DownloadsContainer">
-                <ge:DownloadProgressItem FileName="Paper-1.21-build99.jar" Progress="56" />
-                <ge:DownloadProgressItem FileName="Forge-1.20.6-50.1.9.jar" Progress="41" />
-                <ge:DownloadProgressItem FileName="Java-18-x64.msi" Progress="21" />
-                <ge:DownloadProgressItem FileName="Spigot-1.19.2-Latest.jar" Progress="82" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>
