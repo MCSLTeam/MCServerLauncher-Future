@@ -827,18 +827,18 @@
     <value>Terraria 伺服器壓縮包</value>
   </data>
   <data name="Thread" xml:space="preserve">
-    <value>线程</value>
+    <value>線程</value>
   </data>
   <data name="DownloadFinished" xml:space="preserve">
-    <value>下载完毕</value>
+    <value>下載完畢</value>
   </data>
   <data name="DownloadFailed" xml:space="preserve">
-    <value>下载失败</value>
+    <value>下載失敗</value>
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
-    <value>下载已取消</value>
+    <value>下載已取消</value>
   </data>
   <data name="ClickToHide" xml:space="preserve">
-    <value>点击隐藏</value>
+    <value>點擊隱藏</value>
   </data>
 </root>
