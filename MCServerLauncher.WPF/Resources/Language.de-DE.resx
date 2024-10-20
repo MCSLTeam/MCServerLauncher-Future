@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Bei MCServerLauncher WPF ist ein Fehler aufgetreten</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Der Stack wurde in die Zwischenablage kopiert. Sie können direkt zu GitHub gehen, um Feedback zu geben.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF-Client (nur Windows)</value>
   </data>

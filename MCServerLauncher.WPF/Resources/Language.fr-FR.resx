@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Une erreur s’est produite avec MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>La pile a été copiée dans le presse-papiers. Vous pouvez vous rendre directement sur GitHub pour donner votre avis.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Client WPF (Windows uniquement)</value>
   </data>

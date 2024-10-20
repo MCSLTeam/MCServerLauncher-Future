@@ -27,6 +27,7 @@
                     </Grid>
                 </Border>
                 <Button Content="Show Console Window" Click="ShowConsoleWindow" Style="{StaticResource AccentButtonStyle}" />
+                <Button Content="Show Exception Window" Click="ShowExceptionWindow" Style="{StaticResource AccentButtonStyle}" />
                 <Button Content="Push Notification" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>

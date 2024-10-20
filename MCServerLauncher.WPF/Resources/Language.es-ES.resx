@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Se encontró un error con MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>La pila se ha copiado en el portapapeles. Puedes ir directamente a GitHub para dar tu opinión.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Cliente WPF (solo Windows)</value>
   </data>

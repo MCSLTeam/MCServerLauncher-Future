@@ -100,8 +100,8 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>'N Fout is ondervind met MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Die stapel is na die knipbord gekopieër. U kan direk na GitHub gaan om terugvoer te gee.</value>
+  <data name="ErrorDialogTip" xml:space="preserve">
+    <value></value>
   </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF-kliënt (slegs Windows)</value>
@@ -839,6 +839,12 @@
     <value></value>
   </data>
   <data name="ClickToHide" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="FeedbackViaGitHub" xml:space="preserve">
     <value></value>
   </data>
 </root>

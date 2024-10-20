@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Er is een fout opgetreden met MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>De stapel is gekopieerd naar het klembord. Je kunt direct naar GitHub gaan om feedback te geven.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF-client (alleen Windows)</value>
   </data>

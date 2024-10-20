@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>U souboru WPF MCServerLauncher došlo k chybě</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Balíček byl zkopírován do schránky. Můžete přejít přímo na GitHub a poskytnout zpětnou vazbu.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Klient WPF (pouze Windows)</value>
   </data>

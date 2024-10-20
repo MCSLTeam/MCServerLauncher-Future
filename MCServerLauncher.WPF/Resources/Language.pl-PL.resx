@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Wystąpił błąd w MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Stos został skopiowany do schowka. Możesz przejść bezpośrednio do usługi GitHub, aby przekazać opinię.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Klient WPF (tylko system Windows)</value>
   </data>

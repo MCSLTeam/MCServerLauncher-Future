@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Đã gặp lỗi với MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Ngăn xếp đã được sao chép vào khay nhớ tạm. Bạn có thể truy cập trực tiếp vào GitHub để đưa ra phản hồi.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF Client (chỉ dành cho Windows)</value>
   </data>

@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>MCServerLauncher WPF:ssä ilmeni virhe</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Pino on kopioitu leikepöydälle. Voit siirtyä suoraan GitHubiin antamaan palautetta.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF-asiakas (vain Windows)</value>
   </data>

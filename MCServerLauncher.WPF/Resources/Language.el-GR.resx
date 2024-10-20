@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Παρουσιάστηκε σφάλμα με το MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Η στοίβα έχει αντιγραφεί στο πρόχειρο. Μπορείτε να μεταβείτε απευθείας στο GitHub για να δώσετε σχόλια.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Πρόγραμμα-πελάτης WPF (μόνο για Windows)</value>
   </data>

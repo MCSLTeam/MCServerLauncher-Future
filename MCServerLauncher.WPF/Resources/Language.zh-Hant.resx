@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>MCServerLauncher WPF 遇到錯誤</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>堆棧已拷貝到剪貼板。您可直接進入 GitHub 進行反饋。</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF 客戶端 ( 僅 Windows )</value>
   </data>

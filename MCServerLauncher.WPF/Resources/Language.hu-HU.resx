@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Hiba történt az MCServerLauncher WPF használatakor</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>A verem a vágólapra lett másolva. Közvetlenül a GitHubon küldhet visszajelzést.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF-ügyfél (csak Windows)</value>
   </data>

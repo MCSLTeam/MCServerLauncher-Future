@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>MCServerLauncher WPF ile ilgili bir hatayla karşılaşıldı</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Yığın panoya kopyalandı. Geri bildirimde bulunmak için doğrudan GitHub'a gidebilirsiniz.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF İstemcisi (yalnızca Windows)</value>
   </data>

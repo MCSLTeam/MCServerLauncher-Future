@@ -1,6 +1,7 @@
 ﻿using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
 using MCServerLauncher.WPF.Modules;
 using System.Windows;
+using System;
 using iNKORE.UI.WPF.Modern.Controls;
 
 namespace MCServerLauncher.WPF.View.Pages
@@ -18,6 +19,10 @@ namespace MCServerLauncher.WPF.View.Pages
         private void ShowConsoleWindow(object sender, RoutedEventArgs e)
         {
             new ConsoleWindow().Show();
+        }
+        private void ShowExceptionWindow(object sender, RoutedEventArgs e)
+        {
+            throw new Exception("Test Exception");
         }
 
         private void PushSimpleNotification(object sender, RoutedEventArgs e)

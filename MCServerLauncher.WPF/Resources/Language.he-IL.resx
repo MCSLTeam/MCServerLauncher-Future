@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>אירעה שגיאה עם MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>הערימה הועתקה ללוח. אתה יכול לעבור ישירות ל- GitHub כדי לתת משוב.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>לקוח WPF (Windows בלבד)</value>
   </data>

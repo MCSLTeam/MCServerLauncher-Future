@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>S-a întâmpinat o eroare cu MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Stiva a fost copiată în clipboard. Puteți accesa direct GitHub pentru a oferi feedback.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Client WPF (numai Windows)</value>
   </data>

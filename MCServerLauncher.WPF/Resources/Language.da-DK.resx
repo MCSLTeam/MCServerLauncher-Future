@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Der opstod en fejl med MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Stakken er blevet kopieret til udklipsholderen. Du kan gå direkte til GitHub for at give feedback.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF-klient (kun Windows)</value>
   </data>

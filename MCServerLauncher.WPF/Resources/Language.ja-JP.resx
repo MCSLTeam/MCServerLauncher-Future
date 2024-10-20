@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>MCServerLauncher WPF でエラーが発生しました</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>スタックがクリップボードにコピーされました。 GitHub に直接アクセスしてフィードバックを送信できます。</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>WPF Client (Windows のみ)</value>
   </data>

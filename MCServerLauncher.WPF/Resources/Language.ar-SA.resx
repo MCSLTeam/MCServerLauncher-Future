@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>تمت مصادفة خطأ مع MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>تم نسخ المكدس إلى الحافظة. يمكنك الانتقال مباشرة إلى GitHub لتقديم ملاحظات.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>عميل WPF (ويندوز فقط)</value>
   </data>

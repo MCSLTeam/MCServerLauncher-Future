@@ -5,6 +5,7 @@ using System.Threading;
 using System.Windows;
 using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
+using ExceptionWindow = MCServerLauncher.WPF.ExceptionDialog.Window;
 
 namespace MCServerLauncher.WPF
 {
@@ -23,9 +24,7 @@ namespace MCServerLauncher.WPF
             DispatcherUnhandledException += (s, e) =>
             {
                 Clipboard.SetText(e.Exception.ToString());
-                MessageBox.Show($"{LanguageManager.Localize["ErrorDialogStackCopiedTip"]}\n\n{e.Exception}",
-                    LanguageManager.Localize["ErrorDialogTitle"],
-                    MessageBoxButton.OK);
+                new ExceptionWindow(e.Exception.ToString()).ShowDialog();
                 e.Handled = true; // Set `Handled` to `true` to prevent from exiting
             };
         }

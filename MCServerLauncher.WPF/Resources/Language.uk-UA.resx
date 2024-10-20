@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Сталася помилка під час роботи з MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>Стек був скопійований в буфер обміну. Ви можете перейти безпосередньо на GitHub, щоб залишити відгук.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Клієнт WPF (лише для Windows)</value>
   </data>
