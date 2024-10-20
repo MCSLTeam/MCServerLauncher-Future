@@ -100,9 +100,6 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Foi encontrado um erro com o MCServerLauncher WPF</value>
   </data>
-  <data name="ErrorDialogStackCopiedTip" xml:space="preserve">
-    <value>A pilha foi copiada para a área de transferência. Você pode ir diretamente ao GitHub para dar feedback.</value>
-  </data>
   <data name="OnlyForWindows" xml:space="preserve">
     <value>Cliente WPF (somente Windows)</value>
   </data>
@@ -840,5 +837,14 @@
   </data>
   <data name="ClickToHide" xml:space="preserve">
     <value>点击隐藏</value>
+  </data>
+  <data name="ErrorDialogTip" xml:space="preserve">
+    <value>我们遇到了意料之外的异常，但获得了如下关键的错误信息。您可以选择继续运行本程序，或进行重启、关闭应用等操作。</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="FeedbackViaGitHub" xml:space="preserve">
+    <value>在 GitHub 进行反馈</value>
   </data>
 </root>
