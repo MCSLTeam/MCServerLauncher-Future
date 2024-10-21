@@ -24,8 +24,8 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Margin="15,10,15,10" Grid.Row="0" HorizontalAlignment="Left" Text="{Binding [ErrorDialogTip], Source={x:Static i18n:LanguageManager.Localize}}" Style="{StaticResource BodyTextBlock}"  TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
-        <TextBox IsReadOnly="True" Margin="15,0,15,15" Grid.Row="1" x:Name="StackLogTextBox" FontFamily="Consolas" FontSize="13" Opacity="0.85"/>
+        <TextBlock Margin="15,10,15,10" Grid.Row="0" HorizontalAlignment="Left" Text="{Binding [ErrorDialogTip], Source={x:Static i18n:LanguageManager.Localize}}" Style="{StaticResource BodyTextBlock}" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
+        <TextBox IsReadOnly="True" Margin="15,0,15,15" Grid.Row="1" x:Name="StackLogTextBox" FontFamily="Consolas" FontSize="13" Opacity="0.85" TextWrapping="WrapWithOverflow" />
         <Border Grid.Row="2" Style="{StaticResource StyledBorder}" Height="60">
             <Grid>
                 <Grid.ColumnDefinitions>
