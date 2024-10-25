@@ -85,7 +85,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string address, string? jwt, DaemonBorder daemon)
+        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string address, string? jwt, string?friendlyName, DaemonBorder daemon)
         {
             (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog(address, jwt);
             dialog.PrimaryButtonClick += (o, args) =>
@@ -93,7 +93,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 DaemonListView.Items.Remove(daemon);
                 TryConnectDaemon(
                     address: newDaemonConnectionInput.wsEdit.Text,
-                    jwt: newDaemonConnectionInput.jwtEdit.Password
+                    jwt: newDaemonConnectionInput.jwtEdit.Password,
+                    friendlyName: newDaemonConnectionInput.nameEdit.Text
                 );
             };
             try
@@ -107,12 +108,18 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             return (o, args) => { };
         }
 
-        private void TryConnectDaemon(string address, string jwt)
+        private void TryConnectDaemon(string address, string jwt, string friendlyName)
         {
-            DaemonBorder daemon = new() { Address = address, JWT = jwt, Status = "ing" };
-            daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.Address, daemon.JWT, daemon));
+            DaemonBorder daemon = new() { Address = address, JWT = jwt, Status = "ing", FriendlyName = friendlyName };
+            daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.Address, daemon.JWT, daemon.FriendlyName, daemon));
             DaemonListView.Items.Add(daemon);
+            NextButton.IsEnabled = DaemonListView.Items.Count > 0;
         }
 
+        private void Next(object sender, RoutedEventArgs e)
+        {
+            var parent = this.TryFindParent<FirstSetup>();
+            parent?.GoWelcomeSetup();
+        }
     }
 }
