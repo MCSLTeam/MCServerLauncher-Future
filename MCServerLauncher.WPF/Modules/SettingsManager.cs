@@ -33,7 +33,7 @@ namespace MCServerLauncher.WPF.Modules
                 Log.Information("[Set] Profile not found, creating");
                 AppSettings = new Settings
                 {
-                    InstanceCreation = new InstanceCreationSettings
+                    InstanceCreation = new InstanceCreationSettingsModel
                     {
                         MinecraftJavaAutoAcceptEula = false,
                         MinecraftJavaAutoSwitchOnlineMode = false,
@@ -43,18 +43,18 @@ namespace MCServerLauncher.WPF.Modules
                         UseMirrorForMinecraftFabricInstall = true,
                         UseMirrorForMinecraftQuiltInstall = true
                     },
-                    Download = new ResDownloadSettings
+                    Download = new ResDownloadSettingsModel
                     {
                         DownloadSource = "FastMirror",
                         ThreadCnt = 16,
                         ActionWhenDownloadError = "stop"
                     },
-                    Instance = new InstanceSettings
+                    Instance = new InstanceSettingsModel
                     {
                         ActionWhenDeleteConfirm = "name",
                         FollowStart = new List<string?>()
                     },
-                    App = new AppSettings
+                    App = new AppSettingsModel
                     {
                         Theme = "auto",
                         Language = "zh-Hans",
@@ -145,47 +145,47 @@ namespace MCServerLauncher.WPF.Modules
                 );
             }
         }
+        public class InstanceCreationSettingsModel
+        {
+            public bool MinecraftJavaAutoAcceptEula { get; set; }
+            public bool MinecraftJavaAutoSwitchOnlineMode { get; set; }
+            public bool MinecraftBedrockAutoSwitchOnlineMode { get; set; }
+            public bool UseMirrorForMinecraftForgeInstall { get; set; }
+            public bool UseMirrorForMinecraftNeoForgeInstall { get; set; }
+            public bool UseMirrorForMinecraftFabricInstall { get; set; }
+            public bool UseMirrorForMinecraftQuiltInstall { get; set; }
+        }
+
+        public class ResDownloadSettingsModel
+        {
+            public string? DownloadSource { get; set; }
+            public int ThreadCnt { get; set; }
+            public string? ActionWhenDownloadError { get; set; }
+        }
+
+        public class InstanceSettingsModel
+        {
+            public string? ActionWhenDeleteConfirm { get; set; }
+            public List<string?>? FollowStart { get; set; }
+        }
+
+        public class AppSettingsModel
+        {
+            public string? Theme { get; set; }
+            public string? Language { get; set; }
+            public bool FollowStartup { get; set; }
+            public bool AutoCheckUpdate { get; set; }
+            public bool IsCertImported { get; set; }
+            public bool IsFontInstalled { get; set; }
+            public bool IsFirstSetupFinished { get; set; }
+        }
+
+        public class Settings
+        {
+            public InstanceCreationSettingsModel? InstanceCreation { get; set; }
+            public ResDownloadSettingsModel? Download { get; set; }
+            public InstanceSettingsModel? Instance { get; set; }
+            public AppSettingsModel? App { get; set; }
+        }
     }
-}
-public class InstanceCreationSettings
-{
-    public bool MinecraftJavaAutoAcceptEula { get; set; }
-    public bool MinecraftJavaAutoSwitchOnlineMode { get; set; }
-    public bool MinecraftBedrockAutoSwitchOnlineMode { get; set; }
-    public bool UseMirrorForMinecraftForgeInstall { get; set; }
-    public bool UseMirrorForMinecraftNeoForgeInstall { get; set; }
-    public bool UseMirrorForMinecraftFabricInstall { get; set; }
-    public bool UseMirrorForMinecraftQuiltInstall { get; set; }
-}
-
-public class ResDownloadSettings
-{
-    public string? DownloadSource { get; set; }
-    public int ThreadCnt { get; set; }
-    public string? ActionWhenDownloadError { get; set; }
-}
-
-public class InstanceSettings
-{
-    public string? ActionWhenDeleteConfirm { get; set; }
-    public List<string?>? FollowStart { get; set; }
-}
-
-public class AppSettings
-{
-    public string? Theme { get; set; }
-    public string? Language { get; set; }
-    public bool FollowStartup { get; set; }
-    public bool AutoCheckUpdate { get; set; }
-    public bool IsCertImported { get; set; }
-    public bool IsFontInstalled { get; set; }
-    public bool IsFirstSetupFinished { get; set; }
-}
-
-public class Settings
-{
-    public InstanceCreationSettings? InstanceCreation { get; set; }
-    public ResDownloadSettings? Download { get; set; }
-    public InstanceSettings? Instance { get; set; }
-    public AppSettings? App { get; set; }
 }
