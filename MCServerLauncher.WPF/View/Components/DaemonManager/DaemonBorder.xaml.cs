@@ -76,5 +76,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         }
 
         public string? JWT { get; set; }
+        public string? FriendlyName { get; set; }
     }
 }

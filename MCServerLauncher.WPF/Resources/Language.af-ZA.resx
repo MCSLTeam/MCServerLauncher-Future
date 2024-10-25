@@ -847,4 +847,7 @@
   <data name="FeedbackViaGitHub" xml:space="preserve">
     <value></value>
   </data>
+  <data name="DaemonFriendlyName" xml:space="preserve">
+    <value></value>
+  </data>
 </root>
