@@ -847,4 +847,7 @@
   <data name="FeedbackViaGitHub" xml:space="preserve">
     <value>在 GitHub 进行反馈</value>
   </data>
+  <data name="DaemonFriendlyName" xml:space="preserve">
+    <value>友好昵称</value>
+  </data>
 </root>
