@@ -24,7 +24,7 @@
             <Button Grid.Column="0" Grid.Row="0" Click="GoPreCreateInstance" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
             <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static i18n:LanguageManager.Localize}}"
@@ -32,7 +32,7 @@
             <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
         </Grid>
@@ -65,7 +65,7 @@
                                 HorizontalAlignment="Right" Click="FetchMinecraftVersions"
                                 x:Name="FetchMinecraftVersionsButton">
                             <Button.Content>
-                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
                             </Button.Content>
                         </Button>
 
@@ -105,7 +105,7 @@
                         <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"
                                 HorizontalAlignment="Right" x:Name="FetchQuiltVersionButton" Click="FetchQuiltVersions">
                             <Button.Content>
-                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
                             </Button.Content>
                         </Button>
 

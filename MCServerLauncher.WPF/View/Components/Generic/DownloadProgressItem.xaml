@@ -47,20 +47,20 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="1" Margin="0,0,10,0" Click="CopyDownloadUrl">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Link}" Content="{Binding [CopyUrl], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Link}" Content="{Binding [CopyUrl], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
                 <Button Grid.Column="2" Margin="0,0,10,0" Click="PauseOrContinueDownload">
                     <Button.Content>
                         <Grid>
-                            <ui:IconAndText x:Name="PauseIconAndText" Icon="{x:Static ui:SegoeFluentIcons.Pause}" Content="{Binding [Pause], Source={x:Static i18n:LanguageManager.Localize}}" />
-                            <ui:IconAndText x:Name="ContinueIconAndText" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            <ui:IconAndText IsTabStop="False" x:Name="PauseIconAndText" Icon="{x:Static ui:SegoeFluentIcons.Pause}" Content="{Binding [Pause], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            <ui:IconAndText IsTabStop="False" x:Name="ContinueIconAndText" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
                         </Grid>
                     </Button.Content>
                 </Button>
                 <Button Grid.Column="3" Click="CancelDownload">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Cancel], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Cancel], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
             </Grid>

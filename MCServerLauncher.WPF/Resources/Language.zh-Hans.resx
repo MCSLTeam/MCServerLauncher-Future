@@ -850,4 +850,7 @@
   <data name="DaemonFriendlyName" xml:space="preserve">
     <value>友好昵称</value>
   </data>
+  <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
+    <value>守护进程</value>
+  </data>
 </root>

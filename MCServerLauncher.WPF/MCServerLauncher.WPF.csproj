@@ -156,8 +156,11 @@
     <Compile Include="View\Components\CreateInstance\SetMinecraftJvmRam.xaml.cs">
       <DependentUpon>SetMinecraftJvmRam.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\DaemonManager\DaemonBorder.xaml.cs">
-      <DependentUpon>DaemonBorder.xaml</DependentUpon>
+    <Compile Include="View\Components\DaemonManager\DaemonSetupCard.xaml.cs">
+      <DependentUpon>DaemonSetupCard.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Components\DaemonManager\DaemonCard.xaml.cs">
+      <DependentUpon>DaemonCard.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\DaemonManager\NewDaemonConnectionInput.xaml.cs">
       <DependentUpon>NewDaemonConnectionInput.xaml</DependentUpon>
@@ -210,8 +213,8 @@
     <Compile Include="View\FirstSetupHelper\FirstSetup.xaml.cs">
       <DependentUpon>FirstSetup.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\Components\InstanceManager\InstanceBorder.xaml.cs">
-      <DependentUpon>InstanceBorder.xaml</DependentUpon>
+    <Compile Include="View\Components\InstanceManager\InstanceCard.xaml.cs">
+      <DependentUpon>InstanceCard.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Components\JvmArgumentItem.xaml.cs">
       <DependentUpon>JvmArgumentItem.xaml</DependentUpon>
@@ -401,7 +404,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\Components\DaemonManager\DaemonBorder.xaml">
+    <Page Include="View\Components\DaemonManager\DaemonSetupCard.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Components\DaemonManager\DaemonCard.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -473,7 +480,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="View\Components\InstanceManager\InstanceBorder.xaml">
+    <Page Include="View\Components\InstanceManager\InstanceCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

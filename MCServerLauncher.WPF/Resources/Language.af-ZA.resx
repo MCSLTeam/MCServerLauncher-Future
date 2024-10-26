@@ -850,4 +850,7 @@
   <data name="DaemonFriendlyName" xml:space="preserve">
     <value></value>
   </data>
+  <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
+    <value></value>
+  </data>
 </root>

@@ -25,7 +25,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <ui:IconAndText Grid.Row="0" VerticalAlignment="Center" FontSize="40" FontWeight="SemiBold" Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" IconSize="40" 
+                <ui:IconAndText IsTabStop="False" Grid.Row="0" VerticalAlignment="Center" FontSize="40" FontWeight="SemiBold" Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" IconSize="40"
                            Content="{Binding [FirstSetup_SetLanguageHint], Source={x:Static i18n:LanguageManager.Localize}}"/>
                 <TextBlock Grid.Row="1" VerticalAlignment="Center" FontSize="46"
                            FontFamily="{StaticResource Montserrat}" Style="{StaticResource LargeTitleTextBlock}"
@@ -43,7 +43,7 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="Next" Style="{StaticResource AccentButtonStyle}">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
             </Grid>

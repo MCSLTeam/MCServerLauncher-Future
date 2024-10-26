@@ -30,7 +30,7 @@
             <Button Click="AddJvmArgument" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="20,15,0,0">
                 <Button.Content>
-                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_AddArgument], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_AddArgument], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
             <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JVMArgumentListView"

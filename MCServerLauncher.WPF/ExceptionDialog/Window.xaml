@@ -36,12 +36,12 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" HorizontalAlignment="Right" Margin="15,0,0,0" Click="ExitApp">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Exit], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Exit], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
                 <Button Grid.Column="1" HorizontalAlignment="Right" Margin="15,0,0,0" Click="RestartApp">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Sync}" Content="{Binding [Restart], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}" Content="{Binding [Restart], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
                 <ui:HyperlinkButton Content="{Binding [FeedbackViaGitHub], Source={x:Static i18n:LanguageManager.Localize}}" Height="32" Hyperlink.Click="Feedback" Grid.Column="2"
@@ -49,7 +49,7 @@
                 <Button Grid.Column="3" HorizontalAlignment="Right" Margin="0,0,15,0" Click="CloseWindow"
                         Style="{StaticResource AccentButtonStyle}">
                     <Button.Content>
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
                     </Button.Content>
                 </Button>
             </Grid>
