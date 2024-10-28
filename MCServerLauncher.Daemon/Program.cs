@@ -1,5 +1,4 @@
-﻿using MCServerLauncher.Common.Network;
-using MCServerLauncher.Daemon.Minecraft.Server;
+﻿using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
@@ -18,12 +17,12 @@ public class Program
         // Log.Information("[SlpClient] Get Server List Ping data: {0}",
         //     JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
         // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
-        
+
         // var manager = Minecraft.Server.InstanceManager.Create();
         // await manager.TryRemoveServer("1-21-1");
         // await CreateInstance(manager);
         // await RunMcServerAsync(manager, "1-21-1");
-        
+
         await ServeAsync();
     }
 
@@ -106,10 +105,9 @@ public class Program
         await Manager.CreateInstance(InstanceConfig);
     }
 
-    public static async Task RunMcServerAsync(IInstanceManager manager,string name)
+    public static async Task RunMcServerAsync(IInstanceManager manager, string name)
     {
         if (manager.TryStartServer(name, out var instance))
-        {
             await Task.WhenAny(
                 Task.Run(() =>
                 {
@@ -117,11 +115,8 @@ public class Program
                 }),
                 Task.Run(instance.ServerProcess.WaitForExit)
             );
-        }
         else
-        {
             Log.Error("[InstanceManager] Failed to start server: {0}", name);
-        }
     }
 
     /// <summary>
