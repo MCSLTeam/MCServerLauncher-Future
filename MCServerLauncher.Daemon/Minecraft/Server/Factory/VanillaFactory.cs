@@ -12,9 +12,9 @@ public class VanillaFactory : ICoreInstanceFactory
         setting.WorkingDirectory = Path.Combine(FileManager.InstancesRoot, setting.Name);
         Directory.CreateDirectory(setting.WorkingDirectory);
 
-        await InstanceFactoryExtensions.CopyAndRenameTarget(setting);
+        await setting.CopyAndRenameTarget();
         setting.TargetType = TargetType.Jar;
-        await InstanceFactoryExtensions.FixEula(setting);
+        await setting.FixEula();
 
         return setting.GetInstanceConfig();
     }
