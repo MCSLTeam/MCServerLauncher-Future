@@ -8,6 +8,29 @@ public class Instance
     public Instance(InstanceConfig config)
     {
         Config = config;
+
+        StatusChanged += status =>
+        {
+            if (status == ServerStatus.Running)
+            {
+                // refresh server.properties
+                Properties.Clear();
+                Properties.AddRange(GetServerProperties());
+
+                // do something with server.properties
+                if (ushort.TryParse(Properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
+                        out var parsed))
+                {
+                    Port = parsed;
+                    Log.Debug("[Instance({0})] Server Port: {1}", Config.Name, Port);
+                }
+                else
+                {
+                    Port = null;
+                    Log.Warning("[Instance({0})]Can't find or parse server port in server.properties", Config.Name);
+                }
+            }
+        };
     }
 
     public InstanceConfig Config { get; }
@@ -17,6 +40,7 @@ public class Instance
 
     private HashSet<string> Players { get; } = new();
     private List<string> Properties { get; } = new();
+    public event Action<ServerStatus>? StatusChanged;
 
     /// <summary>
     ///     获取mc服务器进程
@@ -50,22 +74,6 @@ public class Instance
         };
         beforeStart?.Invoke(process);
 
-        // refresh server.properties
-        Properties.Clear();
-        Properties.AddRange(GetServerProperties());
-
-        // do something with server.properties
-        if (ushort.TryParse(Properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
-                out var parsed))
-        {
-            Port = parsed;
-        }
-        else
-        {
-            Port = null;
-            Log.Warning("[Instance({0})]Can't find or parse server port in server.properties", Config.Name);
-        }
-
         process.Start();
 
         Status = ServerStatus.Starting;
@@ -91,16 +99,17 @@ public class Instance
 
                 if (msg.Contains("Done"))
                 {
-                    Status = ServerStatus.Running;
+                    ChangeStatus(ServerStatus.Running);
                 }
                 else if (msg.Contains("Stopping the server"))
                 {
-                    Status = ServerStatus.Stopping;
+                    ChangeStatus(ServerStatus.Stopping);
                 }
                 else if (msg.Contains("Minecraft has crashed"))
                 {
-                    Status = ServerStatus.Crashed;
+                    ChangeStatus(ServerStatus.Crashed);
                 }
+
                 else if (msg.Contains("joined the game"))
                 {
                     // [18:26:19] [Worker-Main-14/INFO] (MinecraftServer) Alex joined the game
@@ -119,9 +128,15 @@ public class Instance
                 Log.Information($"[Server({Config.Name})] {args.Data}");
             };
 
-            process.Exited += (_, _) => Status = ServerStatus.Stopped;
+            process.Exited += (_, _) => ChangeStatus(ServerStatus.Stopped);
         });
         ServerProcess.BeginOutputReadLine();
+    }
+
+    private void ChangeStatus(ServerStatus newStatus)
+    {
+        Status = newStatus;
+        StatusChanged?.Invoke(newStatus);
     }
 
     public InstanceStatus GetStatus()

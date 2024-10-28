@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
@@ -7,11 +7,10 @@ public interface IInstanceManager
     /// <summary>
     ///     尝试添加一个服务器实例
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
-    /// <param name="config">服务器配置</param>
+    /// <param name="setting"></param>
     /// <param name="serverFactory">服务器实例工厂，会被异步执行，根据<see cref="InstanceConfig" />执行服务器安装</param>
     /// <returns></returns>
-    Task<bool> TryAddServer(string instanceName, InstanceConfig config, Action<InstanceConfig> serverFactory);
+    Task<bool> TryAddServer(InstanceFactorySetting setting, IInstanceFactory serverFactory);
 
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。
@@ -24,9 +23,9 @@ public interface IInstanceManager
     ///     尝试启动一个服务器实例，如果服务器正在运行，返回false
     /// </summary>
     /// <param name="instanceName">实例名称</param>
-    /// <param name="process">服务器进程</param>
+    /// <param name="instance">启动的服务器实例</param>
     /// <returns></returns>
-    bool TryStartServer(string instanceName, out Process? process);
+    bool TryStartServer(string instanceName, out Instance? instance);
 
     /// <summary>
     ///     尝试停止一个服务器实例, 如果服务器不在运行，返回false

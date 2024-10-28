@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.Common.Network;
 using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,15 +14,17 @@ public class Program
     {
         Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
-        var info = await SlpClient.GetStatusModern("pve-net.xiexilin.com", 30042);
-        Log.Information("[SlpClient] Get Server List Ping data: {0}",
-            JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
-        Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
-
-
-        // Serve();
+        // var info = await SlpClient.GetStatusModern("balabala", 11451);
+        // Log.Information("[SlpClient] Get Server List Ping data: {0}",
+        //     JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
+        // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
+        
+        // var manager = Minecraft.Server.InstanceManager.Create();
+        // await manager.TryRemoveServer("1-21-1");
+        // await CreateInstance(manager);
+        // await RunMcServerAsync(manager, "1-21-1");
+        
         await ServeAsync();
-        // await RunMcServerAsync();
     }
 
     public static void TestJavaScanner()
@@ -40,6 +43,31 @@ public class Program
                 Version = "8"
             }
         );
+    }
+
+    public static async Task<bool> CreateInstance(IInstanceManager manager)
+    {
+        Log.Information("[InstanceManager] All instance: {0}",
+            JsonConvert.SerializeObject(manager.GetAllStatus(), Formatting.Indented));
+        var setting = new InstanceFactorySetting
+        {
+            Name = "1-21-1",
+            InstanceType = InstanceType.Vanilla,
+            Target = "server.jar",
+            TargetType = TargetType.Jar,
+            JavaPath = "java",
+            JavaArgs = Array.Empty<string>(),
+            SourceType = SourceType.Core,
+            Source = "daemon/downloads/Vanilla-release-1.21.1-59353f.jar"
+        };
+        if (await manager.TryAddServer(setting, new VanillaFactory()))
+        {
+            Log.Information("[InstanceManager] Created Server: {0}", setting.Name);
+            return true;
+        }
+
+        Log.Information("[InstanceManager] Failed to create server");
+        return false;
     }
 
     public static async void TestCreateInstance()
@@ -78,27 +106,22 @@ public class Program
         await Manager.CreateInstance(InstanceConfig);
     }
 
-    public static async Task RunMcServerAsync()
+    public static async Task RunMcServerAsync(IInstanceManager manager,string name)
     {
-        InstanceConfig config = new()
+        if (manager.TryStartServer(name, out var instance))
         {
-            WorkingDirectory = "./instance",
-            JavaArgs = Array.Empty<string>(),
-            JavaPath = "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath\\java.exe",
-            Name = "TestServer",
-            InstanceType = InstanceType.Fabric,
-            Target = "run.bat",
-            TargetType = TargetType.Script
-        };
-        Instance instance = new(config);
-        instance.Start();
-        await Task.WhenAny(
-            Task.Run(() =>
-            {
-                while (true) instance.ServerProcess.StandardInput.WriteLine(Console.ReadLine());
-            }),
-            Task.Run(instance.ServerProcess.WaitForExit)
-        );
+            await Task.WhenAny(
+                Task.Run(() =>
+                {
+                    while (true) instance.ServerProcess.StandardInput.WriteLine(Console.ReadLine());
+                }),
+                Task.Run(instance.ServerProcess.WaitForExit)
+            );
+        }
+        else
+        {
+            Log.Error("[InstanceManager] Failed to start server: {0}", name);
+        }
     }
 
     /// <summary>
