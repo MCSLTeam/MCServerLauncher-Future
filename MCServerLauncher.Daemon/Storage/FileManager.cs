@@ -280,11 +280,9 @@ internal static class FileManager
         {
             return new DownloadRequestInfo(id, size, sha1);
         }
-        else
-        {
-            fs.Close();
-            throw  new ArgumentException("Failed to add download session");
-        }
+
+        fs.Close();
+        throw new ArgumentException("Failed to add download session");
     }
 
     /// <summary>
@@ -573,15 +571,40 @@ internal static class FileManager
         }
     }
 
-    private static void BackupAndWriteText(string path, string text)
+    private static void BackupAndWriteText(string path, string text, Func<string, bool>? validator = null)
     {
-        if (File.Exists(path)) File.Copy(path, path + ".bak", true);
+        if (validator?.Invoke(File.ReadAllText(path)) ?? true)
+        {
+            if (File.Exists(path)) File.Copy(path, path + ".bak", true);
+        }
+        else
+        {
+            Log.Warning("[FileManager] File({0})'s content is not valid, skip backup", path);
+        }
+
         File.WriteAllText(path, text);
     }
 
-    public static void WriteJsonAndBackup(string path, object obj)
+    /// <summary>
+    ///     写入json,并备份。通常是配置文件等json schema固定的json文件
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="obj"></param>
+    /// <typeparam name="T"></typeparam>
+    public static void WriteJsonAndBackup<T>(string path, T obj)
     {
-        BackupAndWriteText(path, JsonConvert.SerializeObject(obj));
+        BackupAndWriteText(path, JsonConvert.SerializeObject(obj), content =>
+        {
+            try
+            {
+                JsonConvert.DeserializeObject<T>(content);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        });
     }
 
     public static bool TryRemove(string path, bool recursive = true)
