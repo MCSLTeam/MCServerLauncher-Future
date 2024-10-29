@@ -2,7 +2,6 @@
 using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace MCServerLauncher.Daemon;
@@ -18,8 +17,8 @@ public class Program
         //     JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
         // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
 
-        // var manager = Minecraft.Server.InstanceManager.Create();
-        // await manager.TryRemoveServer("1-21-1");
+        // var manager = InstanceManager.Create();
+        // await manager.TryRemoveInstance("1-21-1");
         // await CreateInstance(manager);
         // await RunMcServerAsync(manager, "1-21-1");
 
@@ -75,9 +74,9 @@ public class Program
             await Task.WhenAny(
                 Task.Run(() =>
                 {
-                    while (true) instance.ServerProcess.StandardInput.WriteLine(Console.ReadLine());
+                    while (true) instance!.WriteLine(Console.ReadLine());
                 }),
-                Task.Run(instance.ServerProcess.WaitForExit)
+                Task.Run(instance!.WaitForExit)
             );
         else
             Log.Error("[InstanceManager] Failed to start server: {0}", name);

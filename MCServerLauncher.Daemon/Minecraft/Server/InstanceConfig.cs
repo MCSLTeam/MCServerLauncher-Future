@@ -58,7 +58,7 @@ public class InstanceConfig
     {
         return TargetType switch
         {
-            TargetType.Jar => ("java", $"{string.Join(" ", JavaArgs)} -jar {Target} nogui"),
+            TargetType.Jar => (JavaPath, $"{string.Join(" ", JavaArgs)} -jar {Target} nogui"),
             TargetType.Script => (Path.Combine(Directory.GetCurrentDirectory(), WorkingDirectory, Target), "")
         };
     }

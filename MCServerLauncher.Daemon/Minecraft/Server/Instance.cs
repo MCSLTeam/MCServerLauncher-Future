@@ -5,20 +5,21 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class Instance
 {
+    private readonly List<string> _properties = new();
+
     public Instance(InstanceConfig config)
     {
         Config = config;
 
-        StatusChanged += status =>
+        OnStatusChanged += status =>
         {
             if (status == ServerStatus.Running)
             {
                 // refresh server.properties
-                Properties.Clear();
-                Properties.AddRange(GetServerProperties());
+                SetServerProperties();
 
                 // do something with server.properties
-                if (ushort.TryParse(Properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
+                if (ushort.TryParse(_properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
                         out var parsed))
                 {
                     Port = parsed;
@@ -35,12 +36,24 @@ public class Instance
 
     public InstanceConfig Config { get; }
     public ushort? Port { get; private set; }
-    public Process? ServerProcess { get; private set; }
+    private Process? ServerProcess { get; set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
 
     private HashSet<string> Players { get; } = new();
-    private List<string> Properties { get; } = new();
-    public event Action<ServerStatus>? StatusChanged;
+
+    public List<string> ServerProperties
+    {
+        // 如果缓存为空，则尝试刷新一次
+        get
+        {
+            if (_properties.Count == 0) SetServerProperties();
+            return _properties;
+        }
+    }
+
+    public event Action<ServerStatus>? OnStatusChanged;
+
+    public event Action<string?>? OnLog;
 
     /// <summary>
     ///     获取mc服务器进程
@@ -74,9 +87,8 @@ public class Instance
         };
         beforeStart?.Invoke(process);
 
+        ChangeStatus(ServerStatus.Starting);
         process.Start();
-
-        Status = ServerStatus.Starting;
 
         return process;
     }
@@ -87,6 +99,13 @@ public class Instance
         return File.Exists(path) ? File.ReadAllLines(path).ToList() : Enumerable.Empty<string>();
     }
 
+    private void SetServerProperties()
+    {
+        _properties.Clear();
+        _properties.AddRange(GetServerProperties());
+    }
+
+    // TODO ,stderr的接收；Player List改为使用MC SLP协议
     public void Start()
     {
         ServerProcess = GetProcess(Config, process =>
@@ -127,16 +146,43 @@ public class Instance
 
                 Log.Information($"[Server({Config.Name})] {args.Data}");
             };
+            process.OutputDataReceived += (_, arg) => OnLog?.Invoke(arg.Data);
+            process.ErrorDataReceived += (_, arg) => Log.Error($"[Server({Config.Name})] [STDERR] {arg.Data}");
 
-            process.Exited += (_, _) => ChangeStatus(ServerStatus.Stopped);
+            process.Exited += (_, _) =>
+            {
+                if (Status != ServerStatus.Crashed) ChangeStatus(ServerStatus.Stopped);
+            };
         });
         ServerProcess.BeginOutputReadLine();
+        ServerProcess.BeginErrorReadLine();
+    }
+
+    public void KillProcess()
+    {
+        ServerProcess?.Kill();
+        ChangeStatus(ServerStatus.Stopped);
+    }
+
+    public Task WaitForExitAsync()
+    {
+        return ServerProcess?.WaitForExitAsync() ?? Task.CompletedTask;
+    }
+
+    public void WaitForExit()
+    {
+        ServerProcess?.WaitForExit();
+    }
+
+    public void WriteLine(string? message)
+    {
+        ServerProcess?.StandardInput.WriteLine(message);
     }
 
     private void ChangeStatus(ServerStatus newStatus)
     {
         Status = newStatus;
-        StatusChanged?.Invoke(newStatus);
+        OnStatusChanged?.Invoke(newStatus);
     }
 
     public InstanceStatus GetStatus()
@@ -144,8 +190,8 @@ public class Instance
         return new InstanceStatus(
             Status,
             Config,
-            Players.ToList(),
-            Properties
+            ServerProperties,
+            Players.ToList()
         );
     }
 }
