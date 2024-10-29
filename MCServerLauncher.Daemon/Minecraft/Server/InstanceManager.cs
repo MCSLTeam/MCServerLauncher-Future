@@ -10,7 +10,7 @@ public class InstanceManager : IInstanceManager
     private ConcurrentDictionary<string, InstanceConfig> Instances { get; } = new();
     private ConcurrentDictionary<string, Instance> RunningInstances { get; } = new();
 
-    public async Task<bool> TryAddServer(InstanceFactorySetting setting,
+    public async Task<bool> TryAddInstance(InstanceFactorySetting setting,
         IInstanceFactory serverFactory)
     {
         var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Name);
@@ -48,7 +48,7 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public async Task<bool> TryRemoveServer(string instanceName)
+    public async Task<bool> TryRemoveInstance(string instanceName)
     {
         if (!Instances.TryRemove(instanceName, out var config)) return false;
         if (RunningInstances.ContainsKey(instanceName))
@@ -74,7 +74,7 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public bool TryStartServer(string instanceName, out Instance? instance)
+    public bool TryStartInstance(string instanceName, out Instance? instance)
     {
         instance = default;
         if (RunningInstances.ContainsKey(instanceName)) return false;
@@ -104,7 +104,7 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public bool TryStopServer(string instanceName)
+    public bool TryStopInstance(string instanceName)
     {
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return false;
         instance.ServerProcess?.StandardInput.WriteLine("stop");
@@ -112,20 +112,20 @@ public class InstanceManager : IInstanceManager
         return true;
     }
 
-    public void SendToServer(string instanceName, string message)
+    public void SendToInstance(string instanceName, string message)
     {
         if (!RunningInstances.TryGetValue(instanceName, out var instance))
             throw new ArgumentException("Instance not found.");
         instance.ServerProcess?.StandardInput.WriteLine(message);
     }
 
-    public void KillServer(string instanceName)
+    public void KillInstance(string instanceName)
     {
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return;
         instance.ServerProcess?.Kill();
     }
 
-    public InstanceStatus GetServerStatus(string instanceName)
+    public InstanceStatus GetInstanceStatus(string instanceName)
     {
         if (!RunningInstances.TryGetValue(instanceName, out var instance))
             throw new ArgumentException("Instance not found.");

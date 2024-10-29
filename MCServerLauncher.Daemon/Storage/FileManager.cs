@@ -277,9 +277,7 @@ internal static class FileManager
         var sha1 = await FileSha1(fs);
         var id = Guid.NewGuid();
         if (DownloadSessions.TryAdd(id, new FileDownloadInfo(size, sha1, fs, path)))
-        {
             return new DownloadRequestInfo(id, size, sha1);
-        }
 
         fs.Close();
         throw new ArgumentException("Failed to add download session");
