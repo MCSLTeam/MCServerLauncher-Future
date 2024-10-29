@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Cache;
 using Newtonsoft.Json.Linq;
@@ -17,13 +19,17 @@ internal class ActionService : IActionService
 
     // DI
     private readonly IWebJsonConverter _webJsonConverter;
+    private readonly IInstanceManager _instanceManager;
+    private readonly IEventService _eventService;
 
     // DI constructor
     public ActionService(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
-        IWebJsonConverter webJsonConverter)
+        IWebJsonConverter webJsonConverter,IInstanceManager instanceManager, IEventService eventService)
     {
         _javaScannerCache = javaScannerCache;
         _webJsonConverter = webJsonConverter;
+        _instanceManager = instanceManager;
+        _eventService = eventService;
     }
 
     /// <summary>
@@ -54,6 +60,10 @@ internal class ActionService : IActionService
                     Actions.FileDownloadRange.RequestOf(data)),
                 ActionType.GetDirectoryInfo => GetDirectoryInfoHandler(Actions.GetDirectoryInfo.RequestOf(data)),
                 ActionType.GetFileInfo => GetFileInfoHandler(Actions.GetFileInfo.RequestOf(data)),
+                ActionType.TryStartInstance => TryStartInstanceHandler(Actions.TryStartInstance.RequestOf(data)),
+                ActionType.SendToInstance => SendToInstanceHandler(Actions.SendToInstance.RequestOf(data)),
+                ActionType.GetAllStatus => GetAllStatusHandler(Actions.Empty.RequestOf()),
+                ActionType.TryStopInstance => TryStopInstanceHandler(Actions.TryStopInstance.RequestOf(data)),
                 _ => throw new NotImplementedException()
             };
         }
@@ -157,6 +167,41 @@ internal class ActionService : IActionService
     {
         var info = await FileManager.FileDownloadRequest(data.Path);
         return Ok(Actions.FileDownloadRequest.ResponseOf(info.Id, info.Size, info.Sha1));
+    }
+
+    private Dictionary<string, object> TryStartInstanceHandler(Actions.TryStartInstance.Request data)
+    {
+        var rv = _instanceManager.TryStartInstance(data.Name, out var instance);
+        if(instance==null) return Err("Instance not found", ActionType.TryStartInstance);
+        
+        if (rv)
+        {
+            Action<string?> handler = msg =>
+            {
+                if (msg != null)
+                    _eventService.OnEvent(EventType.InstanceLog, new Events.InstanceLogEvent(data.Name, msg));
+            };
+            instance.OnLog -= handler;
+            instance.OnLog += handler;
+        }
+
+        return Ok(Actions.TryStartInstance.ResponseOf(rv));
+    }
+    
+    private Dictionary<string, object> TryStopInstanceHandler(Actions.TryStopInstance.Request data)
+    {
+        return Ok(Actions.TryStopInstance.ResponseOf(_instanceManager.TryStopInstance(data.Name)));
+    }
+
+    private Dictionary<string, object> SendToInstanceHandler(Actions.SendToInstance.Request data)
+    {
+        _instanceManager.SendToInstance(data.Name, data.Message);
+        return Ok(Actions.SendToInstance.ResponseOf());
+    }
+
+    private Dictionary<string, object> GetAllStatusHandler(Actions.Empty.Request data)
+    {
+        return Ok(Actions.GetAllStatus.ResponseOf(_instanceManager.GetAllStatus()));
     }
 
     private Dictionary<string, object> Err(string message, ActionType type, int code = 1400)
