@@ -19,6 +19,7 @@ namespace MCServerLauncher.WPF
     {
         private readonly Page _home = new HomePage();
         private readonly Page _createInstance = new CreateInstancePage();
+        private readonly Page _daemonManager = new DaemonManagerPage();
         private readonly Page _instanceManager = new InstanceManagerPage();
         private readonly Page _resDownload = new ResDownloadPage();
         private readonly Page _help = new HelpPage();
@@ -99,6 +100,9 @@ namespace MCServerLauncher.WPF
                     break;
                 case not null when navPageType == typeof(CreateInstancePage):
                     CurrentPage.Navigate(_createInstance);
+                    break;
+                case not null when navPageType == typeof(DaemonManagerPage):
+                    CurrentPage.Navigate(_daemonManager);
                     break;
                 case not null when navPageType == typeof(InstanceManagerPage):
                     CurrentPage.Navigate(_instanceManager);

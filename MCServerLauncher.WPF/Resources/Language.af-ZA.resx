@@ -853,4 +853,7 @@
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value></value>
   </data>
+  <data name="DaemonManagerTip" xml:space="preserve">
+    <value></value>
+  </data>
 </root>
