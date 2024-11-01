@@ -9,6 +9,7 @@ public enum ServerStatus
     Crashed
 }
 
+// TODO:更好的序列化
 public class InstanceStatus
 {
     public InstanceStatus(ServerStatus status, InstanceConfig config, List<string> properties,
@@ -24,4 +25,12 @@ public class InstanceStatus
     public InstanceConfig Config { get; private set; }
     public List<string> Properties { get; private set; }
     public List<string> Players { get; } = new();
+}
+
+public static class InstanceStatusExtensions
+{
+    public static bool IsStoppedOrCrashed(this ServerStatus status)
+    {
+        return status is ServerStatus.Stopped or ServerStatus.Crashed;
+    }
 }

@@ -1,3 +1,4 @@
+using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
@@ -30,6 +31,8 @@ public class Application
                     a.RegisterSingleton<UserDatabase>();
                     a.RegisterSingleton<IActionService, ActionService>();
                     a.RegisterSingleton<IEventService, EventService>();
+
+                    a.RegisterSingleton<IInstanceManager>(InstanceManager.Create());
 
                     a.RegisterSingleton<IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>>(
                         new AsyncTimedCache<List<JavaScanner.JavaInfo>>(

@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
@@ -7,13 +7,13 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class InstanceManager : IInstanceManager
 {
-    public ConcurrentDictionary<string, InstanceConfig> Instances { get; } = new();
-    public ConcurrentDictionary<string, Instance> RunningInstances { get; } = new();
+    private ConcurrentDictionary<string, Instance> Instances { get; } = new();
+    private ConcurrentDictionary<string, Instance> RunningInstances { get; } = new();
 
-    public async Task<bool> TryAddServer(string instanceName, InstanceConfig config,
-        Action<InstanceConfig> serverFactory)
+    public async Task<bool> TryAddInstance(InstanceFactorySetting setting,
+        IInstanceFactory serverFactory)
     {
-        var instanceRoot = Path.Combine(FileManager.InstancesRoot, instanceName);
+        var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Name);
         // validate dir name
         try
         {
@@ -28,38 +28,37 @@ public class InstanceManager : IInstanceManager
 
 
         // async run
-        var configTask = Task.Run(() => serverFactory.Invoke(config));
-        await configTask;
-        if (configTask.IsFaulted)
-        {
-            Log.Error("[InstanceManager] Failed to create server config: {0}", configTask.Exception?.InnerExceptions);
-            FileManager.TryRemove(instanceRoot); // rollback
-            return false;
-        }
-
         try
         {
+            var config = await serverFactory.CreateInstance(setting);
             FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
+            if (!Instances.TryAdd(config.Name, new Instance(config)))
+            {
+                Log.Error("[InstanceManager] Failed to add instance '{0}' to manager.", config.Name);
+                return false; // we need not to rollback here, because the new instance has been correctly installed
+            }
+
+            return true;
         }
         catch (Exception e)
         {
-            Log.Error("[InstanceManager] Failed to write server config: {0}", e);
+            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", setting.Name, e);
             FileManager.TryRemove(instanceRoot); // rollback
             return false;
         }
-
-        return true;
     }
 
-    public async Task<bool> TryRemoveServer(string instanceName)
+    public async Task<bool> TryRemoveInstance(string instanceName)
     {
         if (!Instances.TryRemove(instanceName, out var config)) return false;
-        if (!RunningInstances.TryRemove(instanceName, out var instance)) return false;
+        if (RunningInstances.ContainsKey(instanceName))
+        {
+            if (!RunningInstances.TryRemove(instanceName, out var instance)) return false;
+            instance.KillProcess();
 
-        instance.ServerProcess?.Kill();
-
-        // wait for process exit
-        await (instance.ServerProcess?.WaitForExitAsync() ?? Task.CompletedTask);
+            // wait for process exit
+            await instance.WaitForExitAsync();
+        }
 
         // remove server directory
         try
@@ -75,67 +74,72 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public bool TryStartServer(string instanceName, out Process? process)
+    public bool TryStartInstance(string instanceName, out Instance? instance)
     {
-        process = null;
+        instance = default;
         if (RunningInstances.ContainsKey(instanceName)) return false;
 
-        var config = Instances.GetValueOrDefault(instanceName);
-        if (config == null) return false;
-
-        var instance = new Instance(config);
+        var target = Instances.GetValueOrDefault(instanceName);
+        if (target == null) return false;
 
         try
         {
-            instance.Start();
-            if (RunningInstances.TryAdd(instanceName, instance))
+            if (RunningInstances.TryAdd(instanceName, target))
             {
-                process = instance.ServerProcess;
+                instance = target;
+                Action<ServerStatus> handler = status =>
+                {
+                    Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceName,
+                        status.ToString());
+                    if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceName, out _);
+                };
+                instance.OnStatusChanged -= handler;
+                instance.OnStatusChanged += handler;
+                target.Start();
                 return true;
             }
 
-            instance.ServerProcess?.Kill();
             return false;
         }
         catch (Exception e)
         {
-            instance.ServerProcess?.Kill();
-            Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", config.Name, e);
+            target.KillProcess();
+            Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
             return false;
         }
     }
 
-    public bool TryStopServer(string instanceName)
+    public bool TryStopInstance(string instanceName)
     {
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return false;
-        instance.ServerProcess?.StandardInput.WriteLine("stop");
+        instance.WriteLine("stop");
         // 不等待服务器退出
         return true;
     }
 
-    public void SendToServer(string instanceName, string message)
+    public void SendToInstance(string instanceName, string message)
     {
         if (!RunningInstances.TryGetValue(instanceName, out var instance))
             throw new ArgumentException("Instance not found.");
-        instance.ServerProcess?.StandardInput.WriteLine(message);
+        instance.WriteLine(message);
     }
 
-    public void KillServer(string instanceName)
+    public void KillInstance(string instanceName)
     {
         if (!RunningInstances.TryRemove(instanceName, out var instance)) return;
-        instance.ServerProcess?.Kill();
+        instance.KillProcess();
     }
 
-    public InstanceStatus GetServerStatus(string instanceName)
+    public InstanceStatus GetInstanceStatus(string instanceName)
     {
-        if (!RunningInstances.TryGetValue(instanceName, out var instance))
+        if (!Instances.TryGetValue(instanceName, out var instance))
             throw new ArgumentException("Instance not found.");
         return instance.GetStatus();
     }
 
     public IDictionary<string, InstanceStatus> GetAllStatus()
     {
-        return RunningInstances.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetStatus());
+        return Instances.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetStatus());
     }
 
     public static IInstanceManager Create()
@@ -154,7 +158,7 @@ public class InstanceManager : IInstanceManager
             try
             {
                 var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName);
-                instanceManager.Instances.TryAdd(config.Name, config);
+                instanceManager.Instances.TryAdd(config!.Name, new Instance(config));
             }
             catch (Exception e)
             {

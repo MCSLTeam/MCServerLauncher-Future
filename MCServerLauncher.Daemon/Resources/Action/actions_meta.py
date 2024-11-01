@@ -8,6 +8,8 @@ proj_root = file_dir.parent.parent.parent
 
 
 cs_pattern = """using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

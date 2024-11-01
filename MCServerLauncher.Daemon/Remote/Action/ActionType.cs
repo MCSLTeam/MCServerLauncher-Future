@@ -1,5 +1,4 @@
 namespace MCServerLauncher.Daemon.Remote.Action;
-
 public enum ActionType
 {
     Ping,
@@ -11,5 +10,13 @@ public enum ActionType
     FileDownloadRange,
     FileDownloadClose,
     GetFileInfo,
-    GetDirectoryInfo
+    GetDirectoryInfo,
+    TryAddInstance,
+    TryRemoveInstance,
+    TryStartInstance,
+    TryStopInstance,
+    SendToInstance,
+    KillInstance,
+    GetInstanceStatus,
+    GetAllStatus
 }

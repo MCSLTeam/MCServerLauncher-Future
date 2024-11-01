@@ -1,5 +1,6 @@
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -13,17 +14,33 @@ namespace MCServerLauncher.Daemon.Remote;
 public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocketReceivedPlugin, IWebSocketClosedPlugin
 {
     private readonly IActionService _actionService;
+    private readonly IEventService _eventService;
     private readonly IUserService _userService;
     private readonly IWebJsonConverter _webJsonConverter;
-
+    
+    private WeakReference? websocketRef;
 
     private User? _user;
 
-    public WebsocketPlugin(IUserService userService, IActionService actionService, IWebJsonConverter webJsonConverter)
+    public WebsocketPlugin(IUserService userService, IActionService actionService,IEventService eventService ,IWebJsonConverter webJsonConverter)
     {
         _userService = userService;
         _actionService = actionService;
+        _eventService = eventService;
         _webJsonConverter = webJsonConverter;
+
+        _eventService.Signal += async (type, data) =>
+        {
+            if (!websocketRef?.IsAlive ?? true) return;
+            
+            var text = _webJsonConverter.Serialize(new Dictionary<string, object>
+            {
+                ["event"] = type,
+                ["data"] = data,
+                ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
+            });
+            await ((websocketRef?.Target as IWebSocket)?.SendAsync(text) ?? Task.CompletedTask);
+        };
     }
 
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
@@ -39,7 +56,10 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
         // get peer ip
         Log.Debug("[Remote] Accept user: {0} from {1}", name, webSocket.Client.GetIPPort());
-
+        
+        // set websocket's weak reference
+        websocketRef = new(webSocket);
+        
         await e.InvokeNext();
     }
 

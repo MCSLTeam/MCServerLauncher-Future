@@ -58,8 +58,39 @@ public class InstanceConfig
     {
         return TargetType switch
         {
-            TargetType.Jar => ("java", $"{string.Join(" ", JavaArgs)} -jar {Target} nogui"),
+            TargetType.Jar => (JavaPath, $"{string.Join(" ", JavaArgs)} -jar {Target} nogui"),
             TargetType.Script => (Path.Combine(Directory.GetCurrentDirectory(), WorkingDirectory, Target), "")
         };
+    }
+}
+
+public static class InstanceConfigExtensions
+{
+    /// <summary>
+    ///     生成同意 EULA 的文本
+    /// </summary>
+    /// <returns></returns>
+    private static string[] GenerateEula()
+    {
+        var text = new string[3];
+        text[0] =
+            "#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).";
+        text[1] = "#" + DateTime.Now.ToString("ddd MMM dd HH:mm:ss zzz yyyy");
+        text[2] = "eula=true";
+        return text;
+    }
+
+    /// <summary>
+    ///     为实例生成 EULA 文件
+    /// </summary>
+    /// <param name="config"></param>
+    public static async Task FixEula(this InstanceConfig config)
+    {
+        var eulaPath = Path.Combine(config.WorkingDirectory, "eula.txt");
+        var text = File.Exists(eulaPath)
+            ? (await File.ReadAllLinesAsync(eulaPath)).Select(x => eulaPath.Trim().StartsWith("eula") ? "eula=true" : x)
+            .ToArray()
+            : GenerateEula();
+        await File.WriteAllLinesAsync(eulaPath, text, Encoding.UTF8);
     }
 }
