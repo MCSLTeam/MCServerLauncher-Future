@@ -6,11 +6,11 @@ using System.Windows.Controls;
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
     /// <summary>
-    /// DaemonBorder.xaml 的交互逻辑
+    ///     DaemonSetupCard.xaml 的交互逻辑
     /// </summary>
-    public partial class DaemonBorder : UserControl
+    public partial class DaemonSetupCard
     {
-        public DaemonBorder()
+        public DaemonSetupCard()
         {
             InitializeComponent();
         }
@@ -20,12 +20,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             set => SetValue(AddressProperty, value);
         }
         public static readonly DependencyProperty AddressProperty =
-            DependencyProperty.Register("Address", typeof(string), typeof(DaemonBorder),
+            DependencyProperty.Register("Address", typeof(string), typeof(DaemonSetupCard),
                 new PropertyMetadata("", OnAddressChanged));
 
         private static void OnAddressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is not DaemonBorder control) return;
+            if (d is not DaemonSetupCard control) return;
             if (e.NewValue is not string address) return;
             control.AddressLine.Text = address;
         }
@@ -36,12 +36,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             set => SetValue(StatusProperty, value);
         }
         public static readonly DependencyProperty StatusProperty =
-            DependencyProperty.Register("Status", typeof(string), typeof(DaemonBorder),
+            DependencyProperty.Register("Status", typeof(string), typeof(DaemonSetupCard),
                 new PropertyMetadata("", OnStatusChanged));
 
         private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is not DaemonBorder control) return;
+            if (d is not DaemonSetupCard control) return;
             if (e.NewValue is not string status) return;
             control.StatusLine.Content = status switch
             {
@@ -75,7 +75,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             };
         }
 
-        public string? JWT { get; set; }
-        public string? FriendlyName { get; set; }
+        public string JWT { get; set; }
+        public string FriendlyName { get; set; }
     }
 }

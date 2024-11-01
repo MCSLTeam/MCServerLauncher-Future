@@ -4,14 +4,28 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
+      xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+      xmlns:dm="clr-namespace:MCServerLauncher.WPF.View.Components.DaemonManager"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="DaemonManagerPage">
 
     <Grid>
-        <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_DaemonManagerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,35,0,0" />
-        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [InstanceManagerTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [DaemonManagerTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
+        <ui:ScrollViewerEx Margin="35,120,35,0">
+            <ui:GridView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Padding="0,0,0,15" >
+                <dm:DaemonCard SystemType="Windows" FriendlyName="Test1" />
+                <dm:DaemonCard SystemType="Apple" FriendlyName="Test2" />
+                <dm:DaemonCard SystemType="Linux" FriendlyName="Test3" />
+                <dm:DaemonCard SystemType="SUSE" FriendlyName="Test4" />
+                <dm:DaemonCard SystemType="Ubuntu" FriendlyName="Test5" />
+                <dm:DaemonCard SystemType="Fedora" FriendlyName="Test6" />
+                <dm:DaemonCard SystemType="CentOS" FriendlyName="Test7" />
+                <dm:DaemonCard SystemType="Debian" FriendlyName="Test8" />
+            </ui:GridView>
+        </ui:ScrollViewerEx>
     </Grid>
 </Page>

@@ -51,11 +51,12 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string address = "", string? jwt = "")
+        private Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string address = "", string jwt = "", string name = "")
         {
             NewDaemonConnectionInput newDaemonConnectionInput = new();
             newDaemonConnectionInput.wsEdit.Text = address;
             newDaemonConnectionInput.jwtEdit.Password = jwt;
+            newDaemonConnectionInput.nameEdit.Text = name;
             ContentDialog dialog = new()
             {
                 Title = LanguageManager.Localize["ConnectDaemon"],
@@ -73,7 +74,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog();
             dialog.PrimaryButtonClick += (o, args) => TryConnectDaemon(
                 address: newDaemonConnectionInput.wsEdit.Text,
-                jwt: newDaemonConnectionInput.jwtEdit.Password
+                jwt: newDaemonConnectionInput.jwtEdit.Password,
+                friendlyName: newDaemonConnectionInput.nameEdit.Text
             );
             try
             {
@@ -85,7 +87,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string address, string? jwt, string?friendlyName, DaemonBorder daemon)
+        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string address, string jwt, string friendlyName, DaemonSetupCard daemon)
         {
             (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog(address, jwt);
             dialog.PrimaryButtonClick += (o, args) =>
@@ -110,7 +112,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
         private void TryConnectDaemon(string address, string jwt, string friendlyName)
         {
-            DaemonBorder daemon = new() { Address = address, JWT = jwt, Status = "ing", FriendlyName = friendlyName };
+            DaemonSetupCard daemon = new() { Address = address, JWT = jwt, Status = "ing", FriendlyName = friendlyName };
             daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.Address, daemon.JWT, daemon.FriendlyName, daemon));
             DaemonListView.Items.Add(daemon);
             NextButton.IsEnabled = DaemonListView.Items.Count > 0;
