@@ -1,5 +1,5 @@
-﻿using MCServerLauncher.WPF.Modules;
-using System.Windows;
+﻿using System.Windows;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Components
 {

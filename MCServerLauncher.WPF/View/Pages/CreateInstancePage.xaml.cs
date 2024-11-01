@@ -1,5 +1,5 @@
-﻿using MCServerLauncher.WPF.View.CreateInstanceProvider;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
+using MCServerLauncher.WPF.View.CreateInstanceProvider;
 
 namespace MCServerLauncher.WPF.View.Pages
 {

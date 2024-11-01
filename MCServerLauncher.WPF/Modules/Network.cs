@@ -1,9 +1,9 @@
-﻿using Serilog;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Serilog;
 using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Modules

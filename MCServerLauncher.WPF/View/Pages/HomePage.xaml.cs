@@ -1,8 +1,8 @@
-﻿using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
-using MCServerLauncher.WPF.Modules;
+﻿using System;
 using System.Windows;
-using System;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
 
 namespace MCServerLauncher.WPF.View.Pages
 {

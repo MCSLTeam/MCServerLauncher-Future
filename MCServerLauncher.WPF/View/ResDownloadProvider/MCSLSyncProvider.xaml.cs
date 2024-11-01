@@ -1,12 +1,12 @@
-using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.DownloadProvider;
-using MCServerLauncher.WPF.View.Components.ResDownloadItem;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -40,9 +40,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 if (mcslSyncCoreInfo != null)
                 {
                     foreach (var coreItem in mcslSyncCoreInfo.Select(result => new MCSLSyncResCoreItem
-                             {
-                                 CoreName = result
-                             }))
+                    {
+                        CoreName = result
+                    }))
                         CoreGridView.Items.Add(coreItem);
 
                     _isDataLoading = false;

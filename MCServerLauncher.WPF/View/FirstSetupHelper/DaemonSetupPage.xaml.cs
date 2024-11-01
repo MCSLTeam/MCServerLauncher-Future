@@ -1,10 +1,10 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.DaemonManager;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.DaemonManager;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper

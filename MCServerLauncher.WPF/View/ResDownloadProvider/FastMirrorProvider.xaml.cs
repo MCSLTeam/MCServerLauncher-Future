@@ -1,14 +1,14 @@
-using iNKORE.UI.WPF.Helpers;
-using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.DownloadProvider;
-using MCServerLauncher.WPF.View.Components.ResDownloadItem;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using iNKORE.UI.WPF.Helpers;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -42,13 +42,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 if (fastMirrorInfo != null)
                 {
                     foreach (var coreItem in fastMirrorInfo.Select(result => new FastMirrorResCoreItem
-                             {
-                                 CoreName = result.Name,
-                                 CoreTag = result.Tag,
-                                 Recommend = result.Recommend,
-                                 HomePage = result.HomePage,
-                                 MinecraftVersions = DownloadManager.SequenceMinecraftVersion(result.MinecraftVersions)
-                             }))
+                    {
+                        CoreName = result.Name,
+                        CoreTag = result.Tag,
+                        Recommend = result.Recommend,
+                        HomePage = result.HomePage,
+                        MinecraftVersions = DownloadManager.SequenceMinecraftVersion(result.MinecraftVersions)
+                    }))
                         CoreGridView.Items.Add(coreItem);
 
                     _isDataLoading = false;

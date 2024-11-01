@@ -1,8 +1,8 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {

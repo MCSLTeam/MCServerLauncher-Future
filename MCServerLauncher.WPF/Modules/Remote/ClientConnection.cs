@@ -207,7 +207,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
-            string? echo=null, int timeout = 5000, CancellationToken cancellationToken = default)
+            string? echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
         {
             echo ??= Guid.NewGuid().ToString();
             await SendAsync(actionType, args, echo, cancellationToken);
@@ -246,7 +246,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
             }
 
             var task = await Task.WhenAny(tcs.Task, Task.Delay(timeout, cancellationToken));
-            
+
             // timeout or cancelled
             if (task != tcs.Task)
             {

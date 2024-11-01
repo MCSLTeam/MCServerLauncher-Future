@@ -1,6 +1,4 @@
-﻿using Microsoft.Win32;
-using Serilog;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -11,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using Microsoft.Win32;
+using Serilog;
 using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Modules

@@ -1,7 +1,7 @@
-﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using MCServerLauncher.WPF.Modules;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -56,7 +56,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 "err" => SegoeFluentIcons.Error,
                 "ing" => SegoeFluentIcons.HangUp,
                 _ => throw new System.NotImplementedException(),
-            }; 
+            };
             control.ConnectionControlLine.Content = status switch
             {
                 "ok" => LanguageManager.Localize["Disconnect"],
