@@ -851,9 +851,9 @@
     <value>友好暱稱</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
-    <value>守护进程</value>
+    <value>守護進程</value>
   </data>
   <data name="DaemonManagerTip" xml:space="preserve">
-    <value>安全护航，只在指掌。</value>
+    <value>安全護航，只在指掌。</value>
   </data>
 </root>
