@@ -823,4 +823,37 @@
   <data name="CreateInstance_SelectTerrariaArchive_Title" xml:space="preserve">
     <value>Terraria 伺服器壓縮包</value>
   </data>
+  <data name="Thread" xml:space="preserve">
+    <value>線程</value>
+  </data>
+  <data name="DownloadFinished" xml:space="preserve">
+    <value>下載完畢</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>下載失敗</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>下載已取消</value>
+  </data>
+  <data name="ClickToHide" xml:space="preserve">
+    <value>點擊隱藏</value>
+  </data>
+  <data name="ErrorDialogTip" xml:space="preserve">
+    <value>我們遇到了意料之外的異常，但獲得了如下關鍵的錯誤資訊。 您可以選擇繼續運行本程式，或進行重啟、關閉應用等操作。</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="FeedbackViaGitHub" xml:space="preserve">
+    <value>在 GitHub 進行反饋</value>
+  </data>
+  <data name="DaemonFriendlyName" xml:space="preserve">
+    <value>友好暱稱</value>
+  </data>
+  <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
+    <value>守護進程</value>
+  </data>
+  <data name="DaemonManagerTip" xml:space="preserve">
+    <value>安全護航，只在指掌。</value>
+  </data>
 </root>
