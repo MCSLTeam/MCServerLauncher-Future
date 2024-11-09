@@ -20,7 +20,7 @@ public class Program
         // var manager = InstanceManager.Create();
         // await manager.TryRemoveInstance("1-21-1");
         // await CreateInstance(manager);
-        // await RunMcServerAsync(manager, "1-21-1");
+        // await RunMcServerAsync(manager, Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
 
         await ServeAsync();
     }
@@ -49,6 +49,7 @@ public class Program
             JsonConvert.SerializeObject(manager.GetAllStatus(), Formatting.Indented));
         var setting = new InstanceFactorySetting
         {
+            Uuid = Guid.NewGuid(),
             Name = "1-21-1",
             InstanceType = InstanceType.Vanilla,
             Target = "server.jar",
@@ -60,7 +61,7 @@ public class Program
         };
         if (await manager.TryAddInstance(setting, new VanillaFactory()))
         {
-            Log.Information("[InstanceManager] Created Server: {0}", setting.Name);
+            Log.Information("[InstanceManager] Created Server: {0}({1})", setting.Name,setting.Uuid);
             return true;
         }
 
@@ -68,9 +69,9 @@ public class Program
         return false;
     }
 
-    public static async Task RunMcServerAsync(IInstanceManager manager, string name)
+    public static async Task RunMcServerAsync(IInstanceManager manager, Guid id)
     {
-        if (manager.TryStartInstance(name, out var instance))
+        if (manager.TryStartInstance(id, out var instance))
             await Task.WhenAny(
                 Task.Run(() =>
                 {
@@ -79,7 +80,7 @@ public class Program
                 Task.Run(instance!.WaitForExit)
             );
         else
-            Log.Error("[InstanceManager] Failed to start server: {0}", name);
+            Log.Error("[InstanceManager] Failed to start server: {0}", $"{instance?.Config.Name}({id})");
     }
 
     /// <summary>

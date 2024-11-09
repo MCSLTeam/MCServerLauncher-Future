@@ -571,7 +571,7 @@ internal static class FileManager
 
     private static void BackupAndWriteText(string path, string text, Func<string, bool>? validator = null)
     {
-        if (validator?.Invoke(File.ReadAllText(path)) ?? true)
+        if (File.Exists(path) && (validator?.Invoke(File.ReadAllText(path)) ?? true))
         {
             if (File.Exists(path)) File.Copy(path, path + ".bak", true);
         }

@@ -15,16 +15,16 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 internal class ActionService : IActionService
 {
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
+    private readonly IEventService _eventService;
+    private readonly IInstanceManager _instanceManager;
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
 
     // DI
     private readonly IWebJsonConverter _webJsonConverter;
-    private readonly IInstanceManager _instanceManager;
-    private readonly IEventService _eventService;
 
     // DI constructor
     public ActionService(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
-        IWebJsonConverter webJsonConverter,IInstanceManager instanceManager, IEventService eventService)
+        IWebJsonConverter webJsonConverter, IInstanceManager instanceManager, IEventService eventService)
     {
         _javaScannerCache = javaScannerCache;
         _webJsonConverter = webJsonConverter;
@@ -171,15 +171,23 @@ internal class ActionService : IActionService
 
     private Dictionary<string, object> TryStartInstanceHandler(Actions.TryStartInstance.Request data)
     {
-        var rv = _instanceManager.TryStartInstance(data.Name, out var instance);
-        if(instance==null) return Err("Instance not found", ActionType.TryStartInstance);
-        
+        var rv = _instanceManager.TryStartInstance(data.Id, out var instance);
+        if (instance == null) return Err("Instance not found", ActionType.TryStartInstance);
+
+        var logPrefix = $"{instance.Config.Name}({data.Id})";
+
         if (rv)
         {
             Action<string?> handler = msg =>
             {
                 if (msg != null)
-                    _eventService.OnEvent(EventType.InstanceLog, new Events.InstanceLogEvent(data.Name, msg));
+                    _eventService.OnEvent(
+                        EventType.InstanceLog,
+                        new Events.InstanceLogEvent(
+                            logPrefix,
+                            msg
+                        )
+                    );
             };
             instance.OnLog -= handler;
             instance.OnLog += handler;
@@ -187,15 +195,15 @@ internal class ActionService : IActionService
 
         return Ok(Actions.TryStartInstance.ResponseOf(rv));
     }
-    
+
     private Dictionary<string, object> TryStopInstanceHandler(Actions.TryStopInstance.Request data)
     {
-        return Ok(Actions.TryStopInstance.ResponseOf(_instanceManager.TryStopInstance(data.Name)));
+        return Ok(Actions.TryStopInstance.ResponseOf(_instanceManager.TryStopInstance(data.Id)));
     }
 
     private Dictionary<string, object> SendToInstanceHandler(Actions.SendToInstance.Request data)
     {
-        _instanceManager.SendToInstance(data.Name, data.Message);
+        _instanceManager.SendToInstance(data.Id, data.Message);
         return Ok(Actions.SendToInstance.ResponseOf());
     }
 

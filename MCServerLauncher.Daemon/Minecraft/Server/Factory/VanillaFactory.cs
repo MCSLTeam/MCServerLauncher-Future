@@ -9,7 +9,7 @@ public class VanillaFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
-        setting.WorkingDirectory = Path.Combine(FileManager.InstancesRoot, setting.Name);
+        setting.WorkingDirectory = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
         Directory.CreateDirectory(setting.WorkingDirectory);
 
         await setting.CopyAndRenameTarget();

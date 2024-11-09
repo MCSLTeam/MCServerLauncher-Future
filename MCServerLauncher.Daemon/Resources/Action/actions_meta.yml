@@ -73,58 +73,58 @@ actions:
         parent: string?
         files: DirectoryEntry.FileInformation[]
         directories: DirectoryEntry.DirectoryInformation[]
-        
+
   - try_add_instance:
-      req: 
+      req:
         setting: InstanceFactorySetting
         factory: InstanceFactories
-        
-      resp:
-        done: bool
-        
-  - try_remove_instance:
-      req: 
-        name: string
-        
-      resp:
-        done: bool
-  
-  - try_start_instance:
-      req:
-        name: string
-        
-      resp:
-        done: bool
-        
-  - try_stop_instance:
-      req:
-        name: string
-        
-      resp:
-        done: bool
-        
-  - send_to_instance:
-      req:
-        name: string
-        message: string
-        
-      resp:
-  
-  - kill_instance:
-      req:
-        name: string
       
       resp:
-        
+        done: bool
+
+  - try_remove_instance:
+      req:
+        id: Guid
+      
+      resp:
+        done: bool
+
+  - try_start_instance:
+      req:
+        id: Guid
+      
+      resp:
+        done: bool
+
+  - try_stop_instance:
+      req:
+        id: Guid
+      
+      resp:
+        done: bool
+
+  - send_to_instance:
+      req:
+        id: Guid
+        message: string
+      
+      resp:
+
+  - kill_instance:
+      req:
+        id: Guid
+      
+      resp:
+
   - get_instance_status:
       req:
-        name: string
-        
+        id: Guid
+      
       resp:
         status: InstanceStatus
-        
+
   - get_all_status:
       req:
       
       resp:
-        status: IDictionary<string, InstanceStatus>
+        status: IDictionary<Guid, InstanceStatus>
