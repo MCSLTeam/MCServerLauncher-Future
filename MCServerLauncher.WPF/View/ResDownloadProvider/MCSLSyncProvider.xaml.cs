@@ -35,6 +35,15 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [MCSL-Sync] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                MinecraftVersionComboBox.SelectionChanged -= GetCoreDetail;
+                MinecraftVersionComboBox.Items.Clear();
+
+                MinecraftVersionComboBox.IsEnabled = false;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var mcslSyncCoreInfo = await new MCSLSync().GetCoreInfo();
 
@@ -50,6 +59,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     _isDataLoaded = true;
                     Log.Information($"[Res] [MCSL-Sync] Core info loaded. Count: {mcslSyncCoreInfo.Count}");
                 }
+
+                MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;
+                IsEnabled = true;
 
                 return true;
             }

@@ -37,23 +37,37 @@ namespace MCServerLauncher.WPF.View.Pages
             ShowLoadingLayer();
             if (CurrentResDownloadProvider.Content is IResDownloadProvider provider)
             {
-                await provider.Refresh();
+                if (SettingsManager.AppSettings?.Download?.DownloadSource != provider.ResProviderName)
+                {
+                    IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
+                    await currentResDownloadProvider.Refresh();
+                }
+                else
+                {
+                    await provider.Refresh();
+                }
             }
             else
             {
-                IResDownloadProvider? currentResDownloadProvider = SettingsManager.AppSettings?.Download?.DownloadSource switch
-                {
-                    "FastMirror" => FastMirror,
-                    "PolarsMirror" => PolarsMirror,
-                    "ZCloudFile" => ZCloudFile,
-                    "MSLAPI" => MSLAPI,
-                    "MCSLSync" => MCSLSync,
-                    _ => null
-                };
-                Subtitle.Text = $"{LanguageManager.Localize["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {LanguageManager.Localize["ResDownloadTipSuffix"]}";
-                CurrentResDownloadProvider.Content = currentResDownloadProvider;
+                IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
                 await currentResDownloadProvider.Refresh();
             }
+        }
+
+        private IResDownloadProvider ToggleResDownloadProvider()
+        {
+            IResDownloadProvider? currentResDownloadProvider = SettingsManager.AppSettings?.Download?.DownloadSource switch
+            {
+                "FastMirror" => FastMirror,
+                "PolarsMirror" => PolarsMirror,
+                "ZCloudFile" => ZCloudFile,
+                "MSLAPI" => MSLAPI,
+                "MCSLSync" => MCSLSync,
+                _ => null
+            };
+            Subtitle.Text = $"{LanguageManager.Localize["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {LanguageManager.Localize["ResDownloadTipSuffix"]}";
+            CurrentResDownloadProvider.Content = currentResDownloadProvider;
+            return currentResDownloadProvider;
         }
 
         public void ShowLoadingLayer()

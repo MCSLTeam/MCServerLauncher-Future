@@ -37,6 +37,16 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [FastMirror] Loading core info");
+
+                MinecraftVersionComboBox.SelectionChanged -= GetCoreDetail;
+                CoreGridView.Items.Clear();
+                MinecraftVersionComboBox.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+
+                MinecraftVersionComboBox.IsEnabled = false;
+                CoreHomePageButton.IsEnabled = false;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var fastMirrorInfo = await new FastMirror().GetCoreInfo();
 
@@ -56,6 +66,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     _isDataLoaded = true;
                     Log.Information($"[Res] [FastMirror] Core info loaded. Count: {fastMirrorInfo.Count}");
                 }
+
+                MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;
+                IsEnabled = true;
 
                 return true;
             }
@@ -81,9 +94,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         private void SetCore(object sender, SelectionChangedEventArgs e)
         {
             if (CoreGridView.SelectedIndex == -1) return;
+            MinecraftVersionComboBox.SelectionChanged -= GetCoreDetail;
             var selectedCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
             Log.Information($"[Res] [FastMirror] Selected core \"{selectedCore.CoreName}\"");
-            MinecraftVersionComboBox.SelectionChanged -= GetCoreDetail;
             MinecraftVersionComboBox.Items.Clear();
             CoreGridView.IsEnabled = false;
             CoreHomePageButton.IsEnabled = false;

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -35,6 +34,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [MSLAPI] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                CurrentCoreName.Text = string.Empty;
+                CurrentCoreDescription.Text = string.Empty;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var mslapiInfo = await new MSLAPI().GetCoreInfo();
                 if (mslapiInfo == null)
@@ -51,6 +57,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                             ApiActualName = result
                         }
                     );
+
+                IsEnabled = true;
 
                 _isDataLoading = false;
                 _isDataLoaded = true;

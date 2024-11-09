@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -35,6 +34,14 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [PolarsMirror] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                CurrentCoreName.Text = string.Empty;
+                CurrentCoreDescription.Text = string.Empty;
+                CurrentCoreIcon.Source = null;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var polarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
 
@@ -46,6 +53,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     CoreIconUrl = result.IconUrl
                 }))
                     CoreGridView.Items.Add(coreItem);
+
+                IsEnabled = true;
 
                 _isDataLoading = false;
                 _isDataLoaded = true;
@@ -79,7 +88,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             CurrentCoreName.Text = selectedCore.CoreName;
             CurrentCoreDescription.Text = selectedCore.CoreDescription;
             CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(selectedCore.CoreIconUrl), BitmapCreateOptions.None,
-                BitmapCacheOption.Default);
+                BitmapCacheOption.OnDemand);
             CoreGridView.IsEnabled = false;
             try
             {
