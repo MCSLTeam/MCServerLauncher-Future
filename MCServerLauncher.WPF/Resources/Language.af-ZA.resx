@@ -856,34 +856,4 @@
   <data name="DaemonManagerTip" xml:space="preserve">
     <value></value>
   </data>
-  <data name="Thread" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="DownloadFinished" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="DownloadFailed" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="DownloadCancelled" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="ClickToHide" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Exit" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="FeedbackViaGitHub" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="DaemonFriendlyName" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="DaemonManagerTip" xml:space="preserve">
-    <value></value>
-  </data>
 </root>
