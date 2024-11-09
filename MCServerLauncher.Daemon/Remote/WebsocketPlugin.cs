@@ -17,12 +17,13 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     private readonly IEventService _eventService;
     private readonly IUserService _userService;
     private readonly IWebJsonConverter _webJsonConverter;
-    
-    private WeakReference? websocketRef;
 
     private User? _user;
 
-    public WebsocketPlugin(IUserService userService, IActionService actionService,IEventService eventService ,IWebJsonConverter webJsonConverter)
+    private WeakReference? websocketRef;
+
+    public WebsocketPlugin(IUserService userService, IActionService actionService, IEventService eventService,
+        IWebJsonConverter webJsonConverter)
     {
         _userService = userService;
         _actionService = actionService;
@@ -32,7 +33,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         _eventService.Signal += async (type, data) =>
         {
             if (!websocketRef?.IsAlive ?? true) return;
-            
+
             var text = _webJsonConverter.Serialize(new Dictionary<string, object>
             {
                 ["event"] = type,
@@ -56,10 +57,10 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
         // get peer ip
         Log.Debug("[Remote] Accept user: {0} from {1}", name, webSocket.Client.GetIPPort());
-        
+
         // set websocket's weak reference
-        websocketRef = new(webSocket);
-        
+        websocketRef = new WeakReference(webSocket);
+
         await e.InvokeNext();
     }
 

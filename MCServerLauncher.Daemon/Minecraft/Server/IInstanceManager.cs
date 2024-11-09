@@ -15,49 +15,50 @@ public interface IInstanceManager
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
+    /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    Task<bool> TryRemoveInstance(string instanceName);
+    /// ƒ
+    Task<bool> TryRemoveInstance(Guid instanceId);
 
     /// <summary>
     ///     尝试启动一个服务器实例，如果服务器正在运行，返回false
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
+    /// <param name="instanceId">实例Uuid</param>
     /// <param name="instance">启动的服务器实例</param>
     /// <returns></returns>
-    bool TryStartInstance(string instanceName, out Instance? instance);
+    bool TryStartInstance(Guid instanceId, out Instance? instance);
 
     /// <summary>
     ///     尝试停止一个服务器实例, 如果服务器不在运行，返回false
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
+    /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    bool TryStopInstance(string instanceName);
+    bool TryStopInstance(Guid instanceId);
 
     /// <summary>
     ///     向服务器进程的stdin发送消息
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
+    /// <param name="instanceId">实例Uuid</param>
     /// <param name="message">消息</param>
-    void SendToInstance(string instanceName, string message);
+    void SendToInstance(Guid instanceId, string message);
 
     /// <summary>
     ///     杀死服务器进程
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
-    void KillInstance(string instanceName);
+    /// <param name="instanceId">实例Uuid</param>
+    void KillInstance(Guid instanceId);
 
     /// <summary>
     ///     获取服务器实例状态
     /// </summary>
-    /// <param name="instanceName">实例名称</param>
+    /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    InstanceStatus GetInstanceStatus(string instanceName);
+    InstanceStatus GetInstanceStatus(Guid instanceId);
 
 
     /// <summary>
     ///     获取所有服务器实例状态
     /// </summary>
     /// <returns></returns>
-    IDictionary<string, InstanceStatus> GetAllStatus();
+    IDictionary<Guid, InstanceStatus> GetAllStatus();
 }

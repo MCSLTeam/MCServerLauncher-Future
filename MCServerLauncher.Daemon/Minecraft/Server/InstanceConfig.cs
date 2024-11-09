@@ -10,6 +10,11 @@ public class InstanceConfig
     public const string FileName = "daemon_instance.json";
 
     /// <summary>
+    ///     服务器Uuid,实例化<see cref="InstanceConfig" />会默认生成
+    /// </summary>
+    public Guid Uuid = Guid.NewGuid();
+
+    /// <summary>
     ///     控制台输入编码
     /// </summary>
     public Encoding InputEncoding { get; set; } = Encoding.UTF8;
