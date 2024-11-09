@@ -1,5 +1,10 @@
 ﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
+using System;
+using System.Windows;
+using System.Windows.Media.Animation;
+using System.Windows.Controls.Primitives;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -20,27 +25,64 @@ namespace MCServerLauncher.WPF.View.Pages
             // Refresh trigger when page is visible
             IsVisibleChanged += (s, e) =>
             {
-                if (IsVisible) Refresh();
+                if (IsVisible) RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             };
         }
 
         /// <summary>
         ///    Refresh current download provider
         /// </summary>
-        public async void Refresh()
+        public async void Refresh(object sender, RoutedEventArgs e)
         {
-            IResDownloadProvider? currentResDownloadProvider = SettingsManager.AppSettings?.Download?.DownloadSource switch
+            ShowLoadingLayer();
+            if (CurrentResDownloadProvider.Content is IResDownloadProvider provider)
             {
-                "FastMirror" => FastMirror,
-                "PolarsMirror" => PolarsMirror,
-                "ZCloudFile" => ZCloudFile,
-                "MSLAPI" => MSLAPI,
-                "MCSLSync" => MCSLSync,
-                _ => null
+                await provider.Refresh();
+            }
+            else
+            {
+                IResDownloadProvider? currentResDownloadProvider = SettingsManager.AppSettings?.Download?.DownloadSource switch
+                {
+                    "FastMirror" => FastMirror,
+                    "PolarsMirror" => PolarsMirror,
+                    "ZCloudFile" => ZCloudFile,
+                    "MSLAPI" => MSLAPI,
+                    "MCSLSync" => MCSLSync,
+                    _ => null
+                };
+                Subtitle.Text = $"{LanguageManager.Localize["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {LanguageManager.Localize["ResDownloadTipSuffix"]}";
+                CurrentResDownloadProvider.Content = currentResDownloadProvider;
+                await currentResDownloadProvider.Refresh();
+            }
+        }
+
+        public void ShowLoadingLayer()
+        {
+            LoadingLayer.Visibility = Visibility.Visible;
+            var fadeInAnimation = new DoubleAnimation
+            {
+                From = 0.0,
+                To = 1.0,
+                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
+                FillBehavior = FillBehavior.HoldEnd
             };
-            Subtitle.Text = $"{LanguageManager.Localize["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {LanguageManager.Localize["ResDownloadTipSuffix"]}";
-            CurrentResDownloadProvider.Content = currentResDownloadProvider;
-            await currentResDownloadProvider.Refresh();
+            LoadingLayer.BeginAnimation(OpacityProperty, fadeInAnimation);
+        }
+
+        public void HideLoadingLayer()
+        {
+            var fadeOutAnimation = new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.0,
+                Duration = new Duration(TimeSpan.FromSeconds(0.4)),
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fadeOutAnimation.Completed += (s, e) =>
+            {
+                LoadingLayer.Visibility = Visibility.Hidden;
+            };
+            LoadingLayer.BeginAnimation(OpacityProperty, fadeOutAnimation);
         }
     }
 }
