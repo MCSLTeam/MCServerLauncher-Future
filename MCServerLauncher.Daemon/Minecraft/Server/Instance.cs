@@ -158,9 +158,10 @@ public class Instance
         ServerProcess.BeginErrorReadLine();
     }
 
-    public void KillProcess()
+    public async Task KillProcess()
     {
         ServerProcess?.Kill();
+        await WaitForExitAsync();
         ChangeStatus(ServerStatus.Stopped);
     }
 

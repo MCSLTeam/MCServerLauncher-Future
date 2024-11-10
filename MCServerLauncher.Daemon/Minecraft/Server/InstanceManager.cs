@@ -54,10 +54,7 @@ public class InstanceManager : IInstanceManager
         if (RunningInstances.ContainsKey(instanceId))
         {
             if (!RunningInstances.TryRemove(instanceId, out var instance)) return false;
-            instance.KillProcess();
-
-            // wait for process exit
-            await instance.WaitForExitAsync();
+            await instance.KillProcess();
         }
 
         // remove server directory
@@ -103,7 +100,7 @@ public class InstanceManager : IInstanceManager
         }
         catch (Exception e)
         {
-            target.KillProcess();
+            target.KillProcess().ConfigureAwait(false).GetAwaiter().GetResult();
             Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
             return false;
         }
@@ -124,10 +121,9 @@ public class InstanceManager : IInstanceManager
         instance.WriteLine(message);
     }
 
-    public void KillInstance(Guid instanceId)
+    public Task KillInstance(Guid instanceId)
     {
-        if (!RunningInstances.TryRemove(instanceId, out var instance)) return;
-        instance.KillProcess();
+        return RunningInstances.TryGetValue(instanceId, out var instance) ? instance.KillProcess() : Task.CompletedTask;
     }
 
     public InstanceStatus GetInstanceStatus(Guid instanceId)
@@ -159,7 +155,7 @@ public class InstanceManager : IInstanceManager
             {
                 var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName);
                 instanceManager.Instances.TryAdd(config!.Uuid, new Instance(config));
-                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", config.Name,config.Uuid);
+                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", config.Name, config.Uuid);
             }
             catch (Exception e)
             {
@@ -170,7 +166,7 @@ public class InstanceManager : IInstanceManager
                 );
             }
         }
-        
+
         Log.Debug("[InstanceManager] Loaded {0} instances.", instanceManager.Instances.Count);
 
         return instanceManager;
