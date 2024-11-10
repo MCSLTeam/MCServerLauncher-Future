@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -7,6 +6,7 @@ using System.Windows.Media.Imaging;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using MCServerLauncher.WPF.View.Pages;
 using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
@@ -34,6 +34,14 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [PolarsMirror] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                CurrentCoreName.Text = string.Empty;
+                CurrentCoreDescription.Text = string.Empty;
+                CurrentCoreIcon.Source = null;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var polarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
 
@@ -46,6 +54,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 }))
                     CoreGridView.Items.Add(coreItem);
 
+                IsEnabled = true;
+
                 _isDataLoading = false;
                 _isDataLoaded = true;
                 Log.Information($"[Res] [PolarsMirror] Core info loaded. Count: {polarsMirrorInfo.Count}");
@@ -55,6 +65,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 Log.Error($"[Res] [PolarsMirror] Failed to load core info. Reason: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                _isDataLoading = false;
+                _isDataLoaded = false;
+                var parent = this.TryFindParent<ResDownloadPage>();
+                parent?.HideLoadingLayer();
             }
         }
 
@@ -71,7 +88,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             CurrentCoreName.Text = selectedCore.CoreName;
             CurrentCoreDescription.Text = selectedCore.CoreDescription;
             CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(selectedCore.CoreIconUrl), BitmapCreateOptions.None,
-                BitmapCacheOption.Default);
+                BitmapCacheOption.OnDemand);
             CoreGridView.IsEnabled = false;
             try
             {

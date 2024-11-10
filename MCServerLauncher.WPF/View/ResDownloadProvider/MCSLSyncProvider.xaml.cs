@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using MCServerLauncher.WPF.View.Pages;
 using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
@@ -34,6 +35,15 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [MCSL-Sync] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                MinecraftVersionComboBox.SelectionChanged -= GetCoreDetail;
+                MinecraftVersionComboBox.Items.Clear();
+
+                MinecraftVersionComboBox.IsEnabled = false;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var mcslSyncCoreInfo = await new MCSLSync().GetCoreInfo();
 
@@ -50,12 +60,22 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     Log.Information($"[Res] [MCSL-Sync] Core info loaded. Count: {mcslSyncCoreInfo.Count}");
                 }
 
+                MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;
+                IsEnabled = true;
+
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Error($"[Res] [MCSL-Sync] Failed to load core info. Reason: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                _isDataLoading = false;
+                _isDataLoaded = false;
+                var parent = this.TryFindParent<ResDownloadPage>();
+                parent?.HideLoadingLayer();
             }
         }
 

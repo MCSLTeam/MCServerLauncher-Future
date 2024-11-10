@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using MCServerLauncher.WPF.View.Pages;
 using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
@@ -33,6 +35,12 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [ZCloudFile] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                CurrentCoreName.Text = string.Empty;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var zCloudFileInfo = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI");
 
@@ -41,6 +49,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     CoreName = result.FileName
                 }))
                     CoreGridView.Items.Add(coreItem);
+
+                IsEnabled = true;
 
                 _isDataLoading = false;
                 _isDataLoaded = true;
@@ -52,6 +62,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 Log.Error($"[Res] [ZCloudFile] Failed to load core info. Reason: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                _isDataLoading = false;
+                _isDataLoaded = false;
+                var parent = this.TryFindParent<ResDownloadPage>();
+                parent?.HideLoadingLayer();
             }
         }
 

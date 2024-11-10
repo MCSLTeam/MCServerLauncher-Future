@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
+using MCServerLauncher.WPF.View.Pages;
 using Serilog;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
@@ -33,6 +34,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 Log.Information("[Res] [MSLAPI] Loading core info");
+
+                CoreGridView.Items.Clear();
+                CoreVersionStackPanel.Children.Clear();
+                CurrentCoreName.Text = string.Empty;
+                CurrentCoreDescription.Text = string.Empty;
+                IsEnabled = false;
+
                 _isDataLoading = true;
                 var mslapiInfo = await new MSLAPI().GetCoreInfo();
                 if (mslapiInfo == null)
@@ -50,6 +58,8 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                         }
                     );
 
+                IsEnabled = true;
+
                 _isDataLoading = false;
                 _isDataLoaded = true;
                 Log.Information($"[Res] [MSLAPI] Core info loaded. Count: {mslapiInfo.Count}");
@@ -59,6 +69,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 Log.Error($"[Res] [MSLAPI] Failed to load core info. Reason: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                _isDataLoading = false;
+                _isDataLoaded = false;
+                var parent = this.TryFindParent<ResDownloadPage>();
+                parent?.HideLoadingLayer();
             }
         }
 
