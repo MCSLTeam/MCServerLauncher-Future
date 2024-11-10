@@ -142,6 +142,7 @@ namespace MCServerLauncher.WPF.Modules
             Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
             InitDataDirectory();
             new SettingsManager().InitSettings();
+            new DaemonsListManager().InitDaemonListConfig();
             bool needImport = false;
             if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsCertImported) { InitCert(); needImport = true; }
             if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsFontInstalled) { InitFont(); needImport = true; }

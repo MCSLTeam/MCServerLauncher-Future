@@ -112,6 +112,10 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
         private void TryConnectDaemon(string address, string jwt, string friendlyName)
         {
+            if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(jwt))
+            {
+                return;
+            }
             DaemonSetupCard daemon = new() { Address = address, JWT = jwt, Status = "ing", FriendlyName = friendlyName };
             daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.Address, daemon.JWT, daemon.FriendlyName, daemon));
             DaemonListView.Items.Add(daemon);

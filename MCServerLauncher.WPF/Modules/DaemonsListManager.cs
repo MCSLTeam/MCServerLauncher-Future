@@ -11,7 +11,7 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
         private static readonly object QueueLock = new();
-        public static List<DaemonConfig> DaemonList { get; set; }
+        public static List<DaemonConfigModel>? DaemonList { get; set; }
 
         /// <summary>
         ///    Initialize daemon list.
@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.Modules
                 {
                     Log.Information("[Set] Found daemon list, reading");
                     DaemonList =
-                        JsonConvert.DeserializeObject<List<DaemonConfig>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
+                        JsonConvert.DeserializeObject<List<DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
                             Encoding.UTF8));
                 }
                 else
@@ -32,26 +32,26 @@ namespace MCServerLauncher.WPF.Modules
                     Log.Information("[Set] Daemon list not found, creating");
                     List<string> newList = new();
                     File.WriteAllText(
-                        "Data/Configuration/MCSL/Settings.json",
+                        "Data/Configuration/MCSL/Daemons.json",
                         JsonConvert.SerializeObject(newList, Formatting.Indented),
                         Encoding.UTF8
                     );
                 }
             }
         }
-        public void AddDaemon(DaemonConfig config)
+        public void AddDaemon(DaemonConfigModel config)
         {
             lock (QueueLock)
             {
-                DaemonList.Add(config);
+                DaemonList?.Add(config);
                 SaveDaemonList();
             }
         }
-        public void RemoveDaemon(DaemonConfig config)
+        public void RemoveDaemon(DaemonConfigModel config)
         {
             lock (QueueLock)
             {
-                DaemonList.Remove(config);
+                DaemonList?.Remove(config);
                 SaveDaemonList();
             }
         }
@@ -66,12 +66,13 @@ namespace MCServerLauncher.WPF.Modules
                 );
             }
         }
-    }
-}
 
-public class DaemonConfig
-{
-    public string WebSocketAddress { get; set; }
-    public string JWT { get; set; }
-    public string FriendlyName { get; set; }
+        public class DaemonConfigModel
+        {
+            public string? WebSocketAddress { get; set; }
+            public string? JWT { get; set; }
+            public string? FriendlyName { get; set; }
+        }
+
+    }
 }
