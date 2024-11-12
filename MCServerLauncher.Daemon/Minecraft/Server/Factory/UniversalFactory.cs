@@ -5,7 +5,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 /// <summary>
 ///     原版服务器实例的安装工厂
 /// </summary>
-public class VanillaFactory : ICoreInstanceFactory
+public class UniversalFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
