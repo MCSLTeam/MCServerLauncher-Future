@@ -30,9 +30,18 @@ public class InstanceManager : IInstanceManager
         // async run
         try
         {
+            Log.Information("[InstanceManager] Creating instance '{0}'", setting.Name);
             var config = await serverFactory.CreateInstance(setting);
             FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
-            if (!Instances.TryAdd(config.Uuid, new Instance(config)))
+
+            var instance = new Instance(config);
+            if (setting.UsePostProcess && serverFactory is IInstancePostProcessor processor)
+            {
+                Log.Information("[InstanceManager] Running post process for instance '{0}'", config.Name);
+                await processor.PostProcess(instance);
+            }
+
+            if (!Instances.TryAdd(config.Uuid, instance))
             {
                 Log.Error("[InstanceManager] Failed to add instance '{0}' to manager.", config.Name);
                 return false; // we need not to rollback here, because the new instance has been correctly installed
@@ -159,7 +168,7 @@ public class InstanceManager : IInstanceManager
             {
                 var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName);
                 instanceManager.Instances.TryAdd(config!.Uuid, new Instance(config));
-                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", config.Name,config.Uuid);
+                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", config.Name, config.Uuid);
             }
             catch (Exception e)
             {
@@ -170,7 +179,7 @@ public class InstanceManager : IInstanceManager
                 );
             }
         }
-        
+
         Log.Debug("[InstanceManager] Loaded {0} instances.", instanceManager.Instances.Count);
 
         return instanceManager;

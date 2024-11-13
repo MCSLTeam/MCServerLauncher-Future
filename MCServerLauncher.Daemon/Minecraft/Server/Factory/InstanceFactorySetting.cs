@@ -7,6 +7,7 @@ public class InstanceFactorySetting : InstanceConfig
     // TODO 支持网络上的Source
     public string Source { get; set; }
     public SourceType SourceType { get; set; }
+    public bool UsePostProcess { get; set; } = false;
 
     public InstanceConfig GetInstanceConfig()
     {
