@@ -10,8 +10,7 @@ public class InstanceManager : IInstanceManager
     private ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
     private ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
 
-    public async Task<bool> TryAddInstance(InstanceFactorySetting setting,
-        IInstanceFactory serverFactory)
+    public async Task<bool> TryAddInstance(InstanceFactorySetting setting)
     {
         var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
         // validate dir name
@@ -26,19 +25,26 @@ public class InstanceManager : IInstanceManager
             return false;
         }
 
+        var instanceFactory = setting.GetInstanceFactory();
 
         // async run
         try
         {
-            Log.Information("[InstanceManager] Creating instance '{0}'", setting.Name);
-            var config = await serverFactory.CreateInstance(setting);
+            Log.Information("[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
+                setting.InstanceType.ToString(), setting.Name);
+            var config = await instanceFactory.CreateInstance(setting);
             FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
 
             var instance = new Instance(config);
-            if (setting.UsePostProcess && serverFactory is IInstancePostProcessor processor)
+            if (setting.UsePostProcess)
             {
-                Log.Information("[InstanceManager] Running post process for instance '{0}'", config.Name);
-                await processor.PostProcess(instance);
+                var processors = instanceFactory.GetPostProcessors();
+                for (var i = 0; i < processors.Length; i++)
+                {
+                    Log.Information("[InstanceManager] Running PostProcessor({0}/{1}) for instance '{2}'", i,
+                        processors.Length, setting.Name);
+                    await processors[i].Invoke(instance);
+                }
             }
 
             if (!Instances.TryAdd(config.Uuid, instance))

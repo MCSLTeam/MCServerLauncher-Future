@@ -67,4 +67,15 @@ public static class InstanceFactorySettingExtensions
         // rename
         if (setting.Target != dst) File.Move(dst, Path.Combine(setting.WorkingDirectory, setting.Target));
     }
+
+    public static IInstanceFactory GetInstanceFactory(this InstanceFactorySetting setting)
+    {
+        return setting.InstanceType switch
+        {
+            InstanceType.Vanilla => new UniversalFactory(),
+            InstanceType.Fabric => new FabricFactory(),
+            InstanceType.Spigot => new SpigotFactory(),
+            _ => throw new NotImplementedException()
+        };
+    }
 }

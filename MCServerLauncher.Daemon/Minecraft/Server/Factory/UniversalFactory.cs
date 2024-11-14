@@ -5,7 +5,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 /// <summary>
 ///     原版服务器实例的安装工厂
 /// </summary>
-public class UniversalFactory : ICoreInstanceFactory, IInstancePostProcessor
+public class UniversalFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
@@ -19,10 +19,16 @@ public class UniversalFactory : ICoreInstanceFactory, IInstancePostProcessor
         return setting.GetInstanceConfig();
     }
 
-    public Task PostProcess(Instance instance)
+    public Func<Instance, Task>[] GetPostProcessors()
     {
-        instance.Start();
-        instance.WriteLine("stop");
-        return instance.WaitForExitAsync();
+        return new List<Func<Instance, Task>>
+        {
+            async instance =>
+            {
+                instance.Start();
+                instance.WriteLine("stop");
+                await instance.WaitForExitAsync();
+            }
+        }.ToArray();
     }
 }
