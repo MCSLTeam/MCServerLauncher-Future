@@ -13,6 +13,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public DaemonSetupCard()
         {
             InitializeComponent();
+            SetValue(AddressProperty, $"{(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}");
         }
         public string Address
         {
@@ -74,7 +75,9 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 _ => throw new System.NotImplementedException(),
             };
         }
-
+        public bool IsSecure { get; set; }
+        public string EndPoint { get; set; }
+        public int Port { get; set; }
         public string JWT { get; set; }
         public string FriendlyName { get; set; }
     }

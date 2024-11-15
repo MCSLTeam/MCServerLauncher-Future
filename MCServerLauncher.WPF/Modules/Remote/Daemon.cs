@@ -153,9 +153,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
             return await RequestAsync(ActionType.FileUploadChunk, data, cancellationToken: cancellationToken);
         }
 
-        public static async Task<string?> LoginAsync(string address, int port, string usr, string pwd, uint? expired)
+        public static async Task<string?> LoginAsync(string address, int port, string usr, string pwd, bool isSecure, uint? expired)
         {
-            var url = $"http://{address}:{port}/login?usr={usr}&pwd={pwd}";
+            var url = $"{(isSecure ? "https" : "http")}://{address}:{port}/login?usr={usr}&pwd={pwd}";
             if (expired.HasValue) url += $"&expired={expired}";
             return await Utils.HttpPost(url);
         }
@@ -170,9 +170,9 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <exception cref="WebSocketException">Daemon连接失败</exception>
         /// <returns></returns>
         public static async Task<IDaemon> OpenAsync(string address, int port, string token,
-            ClientConnectionConfig config)
+            bool isSecure, ClientConnectionConfig config)
         {
-            var connection = await ClientConnection.OpenAsync(address, port, token, config);
+            var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config);
             return new Daemon
             {
                 Connection = connection
@@ -201,16 +201,17 @@ namespace MCServerLauncher.WPF.Modules.Remote
             var usr = "admin";
             var pwd = "c4fd4f5b-cab3-443b-b2d1-1778a009dc9b";
             // var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
+            var isSecure = false;
             var ip = "127.0.0.1";
             var port = 11451;
 
             // login
-            var token = await LoginAsync(ip, port, usr, pwd, 86400) ?? "token not found";
+            var token = await LoginAsync(ip, port, usr, pwd, isSecure, 86400) ?? "token not found";
             Log.Debug($"Token got: {token}");
 
             try
             {
-                var daemon = await OpenAsync(ip, port, token, new ClientConnectionConfig
+                var daemon = await OpenAsync(ip, port, token, isSecure, new ClientConnectionConfig
                 {
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,

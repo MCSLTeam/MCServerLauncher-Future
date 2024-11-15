@@ -856,4 +856,7 @@
   <data name="DaemonManagerTip" xml:space="preserve">
     <value></value>
   </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
 </root>

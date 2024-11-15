@@ -1,4 +1,7 @@
-﻿using System.Windows.Controls;
+﻿using System;
+using System.Text.RegularExpressions;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -10,6 +13,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public NewDaemonConnectionInput()
         {
             InitializeComponent();
+            WebSocketScheme.Text = SecureWebSocketCheckBox.IsChecked == true ? "wss://" : "ws://";
+        }
+
+        private void ToggleWebSocketScheme(object sender, RoutedEventArgs e)
+        {
+            WebSocketScheme.Text = SecureWebSocketCheckBox.IsChecked == true ? "wss://" : "ws://";
         }
     }
 }
