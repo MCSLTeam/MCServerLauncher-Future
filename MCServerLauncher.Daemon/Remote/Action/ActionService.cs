@@ -94,7 +94,7 @@ internal class ActionService : IActionService
         {
             { "status", "ok" },
             { "retcode", 0 },
-            { "data", data?.Into(_webJsonConverter.getSerializer()) ?? new JObject() }
+            { "data", data?.Into(_webJsonConverter.GetSerializer()) ?? new JObject() }
         };
     }
 

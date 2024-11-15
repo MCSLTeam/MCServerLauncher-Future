@@ -1,6 +1,6 @@
-using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Event;
+using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Storage;
@@ -18,9 +18,9 @@ public class WebJsonConverter : IWebJsonConverter
         },
         Converters = new List<JsonConverter>
         {
-            new SnakeCaseEnumConverter<ActionType>(),
-            new SnakeCaseEnumConverter<EventType>(),
-            new GuidJsonConverter()
+            new StringEnumConverter(new SnakeCaseNamingStrategy()),
+            new GuidJsonConverter(),
+            new WebEncodingJsonConverter()
         }
     };
 
@@ -31,58 +31,14 @@ public class WebJsonConverter : IWebJsonConverter
         return JsonConvert.SerializeObject(obj, Formatting.Indented, Settings);
     }
 
-    public T Deserialize<T>(string json)
+    public T? Deserialize<T>(string json)
     {
         return JsonConvert.DeserializeObject<T>(json, Settings);
     }
 
-    public JsonSerializer getSerializer()
+    public JsonSerializer GetSerializer()
     {
         return Serializer;
-    }
-
-    /// <summary>
-    ///     Enum 转换器, 使枚举字面值(BigCamelCase)与json(snake_case)互转
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    private class SnakeCaseEnumConverter<T> : JsonConverter where T : struct, Enum
-    {
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            var pascalCase = value!.ToString();
-            var snakeCase = ConvertPascalCaseToSnakeCase(pascalCase);
-            writer.WriteValue(snakeCase);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
-            JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.String)
-            {
-                var snakeCase = reader.Value!.ToString();
-                var pascalCase = ConvertSnakeCaseToPascalCase(snakeCase);
-                if (Enum.TryParse(pascalCase, out T result)) return result;
-            }
-
-            throw new JsonSerializationException($"Cannot convert {reader.Value} to {typeof(T)}");
-        }
-
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(T);
-        }
-
-        private static string ConvertSnakeCaseToPascalCase(string snakeCase)
-        {
-            return string.Join(string.Empty,
-                snakeCase.Split('_').Select(s => char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant()));
-        }
-
-        private static string ConvertPascalCaseToSnakeCase(string pascalCase)
-        {
-            return string.Concat(pascalCase.Select((x, i) =>
-                i > 0 && char.IsUpper(x) ? "_" + x.ToString().ToLowerInvariant() : x.ToString().ToLowerInvariant()));
-        }
     }
 
     /// <summary>
@@ -108,9 +64,24 @@ public class WebJsonConverter : IWebJsonConverter
             throw new JsonSerializationException($"Cannot convert {reader.Value} to Guid");
         }
 
-        public override bool CanConvert(Type objectType)
+        public override bool CanConvert(Type objectType) => objectType == typeof(Guid);
+    }
+    
+    private class WebEncodingJsonConverter : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
-            return objectType == typeof(Guid);
+            var encoding = (Encoding)value!;
+            Console.WriteLine(encoding);
+            writer.WriteValue(encoding.WebName);
         }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.String) return  Encoding.GetEncoding(reader.Value!.ToString());
+            throw new JsonSerializationException($"Cannot convert {reader.Value} to Encoding");
+        }
+
+        public override bool CanConvert(Type objectType) => objectType.IsSubclassOf(typeof(Encoding));
     }
 }

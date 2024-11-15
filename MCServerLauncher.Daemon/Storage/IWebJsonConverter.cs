@@ -4,7 +4,7 @@ namespace MCServerLauncher.Daemon.Storage;
 
 public interface IWebJsonConverter
 {
-    JsonSerializer getSerializer();
+    JsonSerializer GetSerializer();
     string Serialize(object obj);
-    T Deserialize<T>(string json);
+    T? Deserialize<T>(string json);
 }
