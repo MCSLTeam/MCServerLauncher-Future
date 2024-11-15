@@ -117,6 +117,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
         public void GoDaemonSetup()
         {
+            SettingsManager.SaveSetting("App.IsAppEulaAccepted", true);
             RefreshNavMenu(2);
         }
 

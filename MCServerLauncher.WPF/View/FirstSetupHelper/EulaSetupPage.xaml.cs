@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
+using Serilog;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
@@ -14,6 +16,18 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         public EulaSetupPage()
         {
             InitializeComponent();
+            IsVisibleChanged += (s, e) =>
+            {
+                if (IsVisible)
+                {
+                    if (SettingsManager.AppSettings?.App != null && SettingsManager.AppSettings.App.IsAppEulaAccepted)
+                    {
+                        Log.Information("[Set] Eula already accepted, skipping.");
+                        var parent = this.TryFindParent<FirstSetup>();
+                        parent?.GoDaemonSetup();
+                    }
+                }
+            };
         }
 
         /// <summary>

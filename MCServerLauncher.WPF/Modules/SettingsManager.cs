@@ -62,6 +62,7 @@ namespace MCServerLauncher.WPF.Modules
                         AutoCheckUpdate = true,
                         IsCertImported = false,
                         IsFontInstalled = false,
+                        IsAppEulaAccepted = false,
                         IsFirstSetupFinished = false
                     }
                 };
@@ -177,6 +178,7 @@ namespace MCServerLauncher.WPF.Modules
             public bool AutoCheckUpdate { get; set; }
             public bool IsCertImported { get; set; }
             public bool IsFontInstalled { get; set; }
+            public bool IsAppEulaAccepted { get; set; }
             public bool IsFirstSetupFinished { get; set; }
         }
 
