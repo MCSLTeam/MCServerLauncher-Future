@@ -70,7 +70,8 @@ namespace MCServerLauncher.WPF.Modules
         public class DaemonConfigModel
         {
             public bool? IsSecure { get; set; }
-            public string? WebSocketAddress { get; set; }
+            public string? WebSocketEndpoint { get; set; }
+            public int Port { get; set; }
             public string? JWT { get; set; }
             public string? FriendlyName { get; set; }
         }
