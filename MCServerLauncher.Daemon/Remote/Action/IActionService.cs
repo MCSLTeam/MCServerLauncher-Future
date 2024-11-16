@@ -7,7 +7,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public interface IActionService
 {
-    public Task<Dictionary<string, object>> Routine(ActionType type, JObject? data);
-    Dictionary<string, object> Err(string? message, int code = 1400);
-    Dictionary<string, object> Ok(Actions.IActionResponse? data = null);
+    public Task<JObject> Routine(ActionType type, JObject? data);
+    JObject Err(string? message, int code = 1400);
+    JObject Ok(JObject? data = null);
 }

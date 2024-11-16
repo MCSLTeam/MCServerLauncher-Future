@@ -39,7 +39,7 @@ internal class ActionService : IActionService
     /// <param name="data">Action数据</param>
     /// <returns>Action响应</returns>
     /// <exception cref="NotImplementedException">未实现的Action</exception>
-    public async Task<Dictionary<string, object>> Routine(
+    public async Task<JObject> Routine(
         ActionType type,
         JObject? data
     )
@@ -48,70 +48,68 @@ internal class ActionService : IActionService
         {
             return type switch
             {
-                ActionType.FileUploadChunk => await FileUploadChunkHandler(Actions.FileUploadChunk.RequestOf(data)),
-                ActionType.FileUploadRequest => FileUploadRequestHandler(Actions.FileUploadRequest.RequestOf(data)),
-                ActionType.Ping => PingHandler(Actions.Empty.RequestOf()),
-                ActionType.FileUploadCancel => FileUploadCancelHandler(Actions.FileUploadCancel.RequestOf(data)),
-                ActionType.GetJavaList => await GetJavaListHandler(Actions.Empty.RequestOf()),
+                ActionType.FileUploadChunk => await FileUploadChunkHandler(FileUploadChunk.Of(data)),
+                ActionType.FileUploadRequest => FileUploadRequestHandler(FileUploadRequest.Of(data)),
+                ActionType.Ping => PingHandler(Ping.Of(data)),
+                ActionType.FileUploadCancel => FileUploadCancelHandler(FileUploadCancel.Of(data)),
+                ActionType.GetJavaList => await GetJavaListHandler(GetJavaList.Of(data)),
                 ActionType.FileDownloadRequest => await FileDownloadRequestHandler(
-                    Actions.FileDownloadRequest.RequestOf(data)),
-                ActionType.FileDownloadClose => FileDownloadCloseHandler(Actions.FileDownloadClose.RequestOf(data)),
+                    FileDownloadRequest.Of(data)),
+                ActionType.FileDownloadClose => FileDownloadCloseHandler(FileDownloadClose.Of(data)),
                 ActionType.FileDownloadRange => await FileDownloadRangeHandler(
-                    Actions.FileDownloadRange.RequestOf(data)),
-                ActionType.GetDirectoryInfo => GetDirectoryInfoHandler(Actions.GetDirectoryInfo.RequestOf(data)),
-                ActionType.GetFileInfo => GetFileInfoHandler(Actions.GetFileInfo.RequestOf(data)),
-                ActionType.TryStartInstance => TryStartInstanceHandler(Actions.TryStartInstance.RequestOf(data)),
-                ActionType.SendToInstance => SendToInstanceHandler(Actions.SendToInstance.RequestOf(data)),
-                ActionType.GetAllStatus => GetAllStatusHandler(Actions.Empty.RequestOf()),
-                ActionType.TryStopInstance => TryStopInstanceHandler(Actions.TryStopInstance.RequestOf(data)),
+                    FileDownloadRange.Of(data)),
+                ActionType.GetDirectoryInfo => GetDirectoryInfoHandler(GetDirectoryInfo.Of(data)),
+                ActionType.GetFileInfo => GetFileInfoHandler(GetFileInfo.Of(data)),
+                ActionType.TryStartInstance => TryStartInstanceHandler(TryStartInstance.Of(data)),
+                ActionType.SendToInstance => SendToInstanceHandler(SendToInstance.Of(data)),
+                ActionType.GetAllStatus => GetAllStatusHandler(GetAllStatus.Of(data)),
+                ActionType.TryStopInstance => TryStopInstanceHandler(TryStopInstance.Of(data)),
                 _ => throw new NotImplementedException()
             };
         }
         catch (Exception e)
         {
-            return Err(e.Message);
+            return Err(e.Message, 1500);
         }
     }
 
-    public Dictionary<string, object> Err(string? message, int code = 1400)
+    public JObject Err(string? message, int code = 1400)
     {
-        return new Dictionary<string, object>
+        return new JObject
         {
-            { "status", "error" },
-            { "retcode", code },
+            ["status"] = "error",
+            ["retcode"] = code,
+            ["data"] = new JObject
             {
-                "data", new Dictionary<string, string?>
-                {
-                    { "error_message", message }
-                }
+                ["error_message"] = message
             }
         };
     }
 
-    public Dictionary<string, object> Ok(Actions.IActionResponse? data = null)
+    public JObject Ok(JObject? data = null)
     {
-        return new Dictionary<string, object>
+        return new JObject
         {
-            { "status", "ok" },
-            { "retcode", 0 },
-            { "data", data?.Into(_webJsonConverter.GetSerializer()) ?? new JObject() }
+            ["status"] = "ok",
+            ["retcode"] = 0,
+            ["data"] = data ?? new JObject()
         };
     }
 
-    private async Task<Dictionary<string, object>> FileUploadChunkHandler(Actions.FileUploadChunk.Request data)
+    private async Task<JObject> FileUploadChunkHandler(FileUploadChunk data)
     {
         if (data.FileId == Guid.Empty) return Err("Invalid file id", ActionType.FileUploadChunk);
 
         var (done, received) = await FileManager.FileUploadChunk(data.FileId, data.Offset, data.Data);
-        return Ok(Actions.FileUploadChunk.ResponseOf(done, received));
+        return Ok(FileUploadChunk.Response(done, received));
     }
 
-    private async Task<Dictionary<string, object>> GetJavaListHandler(Actions.Empty.Request data)
+    private async Task<JObject> GetJavaListHandler(GetJavaList data)
     {
-        return Ok(Actions.GetJavaList.ResponseOf(await _javaScannerCache.Value));
+        return Ok(GetJavaList.Response(await _javaScannerCache.Value));
     }
 
-    private Dictionary<string, object> FileUploadRequestHandler(Actions.FileUploadRequest.Request data)
+    private JObject FileUploadRequestHandler(FileUploadRequest data)
     {
         var fileId = FileManager.FileUploadRequest(
             data.Path,
@@ -122,54 +120,54 @@ internal class ActionService : IActionService
 
         return fileId == Guid.Empty
             ? Err("Failed to pre-allocate space", ActionType.FileUploadRequest, 1401)
-            : Ok(Actions.FileUploadRequest.ResponseOf(fileId));
+            : Ok(FileUploadRequest.Response(fileId));
     }
 
-    private Dictionary<string, object> PingHandler(Actions.Empty.Request data)
+    private JObject PingHandler(Ping data)
     {
-        return Ok(Actions.Ping.ResponseOf(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()));
+        return Ok(Ping.Response(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()));
     }
 
-    private Dictionary<string, object> FileUploadCancelHandler(Actions.FileUploadCancel.Request data)
+    private JObject FileUploadCancelHandler(FileUploadCancel data)
     {
         return FileManager.FileUploadCancel(data.FileId)
             ? Ok()
             : Err("Failed to cancel file upload", ActionType.FileUploadCancel, 1402);
     }
 
-    private Dictionary<string, object> FileDownloadCloseHandler(Actions.FileDownloadClose.Request data)
+    private JObject FileDownloadCloseHandler(FileDownloadClose data)
     {
         FileManager.FileDownloadClose(data.FileId);
-        return Ok(Actions.FileDownloadClose.ResponseOf());
+        return Ok(FileDownloadClose.Response());
     }
 
-    private async Task<Dictionary<string, object>> FileDownloadRangeHandler(Actions.FileDownloadRange.Request data)
+    private async Task<JObject> FileDownloadRangeHandler(FileDownloadRange data)
     {
         var match = RangePattern.Match(data.Range);
         if (!match.Success) return Err("Invalid range format", ActionType.FileDownloadRange);
 
         var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
-        return Ok(Actions.FileDownloadRange.ResponseOf(await FileManager.FileDownloadRange(data.FileId, from, to)));
+        return Ok(FileDownloadRange.Response(await FileManager.FileDownloadRange(data.FileId, from, to)));
     }
 
-    private Dictionary<string, object> GetDirectoryInfoHandler(Actions.GetDirectoryInfo.Request data)
+    private JObject GetDirectoryInfoHandler(GetDirectoryInfo data)
     {
         var dirEntry = FileManager.GetDirectoryInfo(data.Path);
-        return Ok(Actions.GetDirectoryInfo.ResponseOf(dirEntry.Parent, dirEntry.Files, dirEntry.Directories));
+        return Ok(GetDirectoryInfo.Response(dirEntry.Parent, dirEntry.Files, dirEntry.Directories));
     }
 
-    private Dictionary<string, object> GetFileInfoHandler(Actions.GetFileInfo.Request data)
+    private JObject GetFileInfoHandler(GetFileInfo data)
     {
-        return Ok(Actions.GetFileInfo.ResponseOf(FileManager.GetFileInfo(data.Path)));
+        return Ok(GetFileInfo.Response(FileManager.GetFileInfo(data.Path)));
     }
 
-    private async Task<Dictionary<string, object>> FileDownloadRequestHandler(Actions.FileDownloadRequest.Request data)
+    private async Task<JObject> FileDownloadRequestHandler(FileDownloadRequest data)
     {
         var info = await FileManager.FileDownloadRequest(data.Path);
-        return Ok(Actions.FileDownloadRequest.ResponseOf(info.Id, info.Size, info.Sha1));
+        return Ok(FileDownloadRequest.Response(info.Id, info.Size, info.Sha1));
     }
 
-    private Dictionary<string, object> TryStartInstanceHandler(Actions.TryStartInstance.Request data)
+    private JObject TryStartInstanceHandler(TryStartInstance data)
     {
         var rv = _instanceManager.TryStartInstance(data.Id, out var instance);
         if (instance == null) return Err("Instance not found", ActionType.TryStartInstance);
@@ -193,38 +191,28 @@ internal class ActionService : IActionService
             instance.OnLog += handler;
         }
 
-        return Ok(Actions.TryStartInstance.ResponseOf(rv));
+        return Ok(TryStartInstance.Response(rv));
     }
 
-    private Dictionary<string, object> TryStopInstanceHandler(Actions.TryStopInstance.Request data)
+    private JObject TryStopInstanceHandler(TryStopInstance data)
     {
-        return Ok(Actions.TryStopInstance.ResponseOf(_instanceManager.TryStopInstance(data.Id)));
+        return Ok(TryStopInstance.Response(_instanceManager.TryStopInstance(data.Id)));
     }
 
-    private Dictionary<string, object> SendToInstanceHandler(Actions.SendToInstance.Request data)
+    private JObject SendToInstanceHandler(SendToInstance data)
     {
         _instanceManager.SendToInstance(data.Id, data.Message);
-        return Ok(Actions.SendToInstance.ResponseOf());
+        return Ok(SendToInstance.Response());
     }
 
-    private Dictionary<string, object> GetAllStatusHandler(Actions.Empty.Request data)
+    private JObject GetAllStatusHandler(GetAllStatus data)
     {
-        return Ok(Actions.GetAllStatus.ResponseOf(_instanceManager.GetAllStatus()));
+        return Ok(GetAllStatus.Response(_instanceManager.GetAllStatus()));
     }
 
-    private Dictionary<string, object> Err(string message, ActionType type, int code = 1400)
+    private JObject Err(string message, ActionType type, int code = 1400)
     {
         Log.Error("Error while handling Action {0}: {1}", type, message);
-        return new Dictionary<string, object>
-        {
-            { "status", "error" },
-            { "retcode", code },
-            {
-                "data", new Dictionary<string, string>
-                {
-                    { "error_message", message }
-                }
-            }
-        };
+        return Err(message, code);
     }
 }
