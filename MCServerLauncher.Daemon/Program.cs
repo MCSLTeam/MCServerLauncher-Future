@@ -61,7 +61,7 @@ public class Program
         };
         if (await manager.TryAddInstance(setting, new VanillaFactory()))
         {
-            Log.Information("[InstanceManager] Created Server: {0}({1})", setting.Name,setting.Uuid);
+            Log.Information("[InstanceManager] Created Server: {0}({1})", setting.Name, setting.Uuid);
             return true;
         }
 
