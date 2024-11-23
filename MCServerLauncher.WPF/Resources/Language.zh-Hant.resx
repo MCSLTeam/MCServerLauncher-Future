@@ -733,8 +733,8 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守護進程 WebSocket 位址</value>
   </data>
-  <data name="DaemonJwtSecret" xml:space="preserve">
-    <value>JWT 金鑰</value>
+  <data name="DaemonPassword" xml:space="preserve">
+    <value>密码</value>
   </data>
   <data name="Connecting" xml:space="preserve">
     <value>連接中</value>
@@ -858,5 +858,8 @@
   </data>
   <data name="Port" xml:space="preserve">
     <value>端口</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>用户名</value>
   </data>
 </root>
