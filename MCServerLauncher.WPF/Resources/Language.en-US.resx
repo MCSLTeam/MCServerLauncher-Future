@@ -260,7 +260,7 @@
     <value>JVM Memory Heap</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Tip" xml:space="preserve">
-    <value>Minimum memory ≤ maximum memory</value>
+    <value>Minimum memory should always be smaller than maximum memory</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
     <value>Copy URL</value>
@@ -857,6 +857,6 @@
     <value>Secure escort, in the palm of your hand.</value>
   </data>
   <data name="Port" xml:space="preserve">
-    <value>端口</value>
+    <value>Port</value>
   </data>
 </root>
