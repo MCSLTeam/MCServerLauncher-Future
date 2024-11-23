@@ -22,7 +22,7 @@ public class Ping
 
     public static JObject Response(long time) => new JObject
     {
-        [nameof(time)] = JToken.FromObject(time, Actions.Serializer)
+        [nameof(time).ToSnakeCase()] = JToken.FromObject(time, Actions.Serializer)
     };
 }
 public class GetJavaList
@@ -31,7 +31,7 @@ public class GetJavaList
 
     public static JObject Response(List<JavaScanner.JavaInfo> javaList) => new JObject
     {
-        [nameof(javaList)] = JToken.FromObject(javaList, Actions.Serializer)
+        [nameof(javaList).ToSnakeCase()] = JToken.FromObject(javaList, Actions.Serializer)
     };
 }
 public class FileUploadRequest
@@ -45,7 +45,7 @@ public class FileUploadRequest
 
     public static JObject Response(Guid fileId) => new JObject
     {
-        [nameof(fileId)] = JToken.FromObject(fileId, Actions.Serializer)
+        [nameof(fileId).ToSnakeCase()] = JToken.FromObject(fileId, Actions.Serializer)
     };
 }
 public class FileUploadChunk
@@ -58,8 +58,8 @@ public class FileUploadChunk
 
     public static JObject Response(bool done, long received) => new JObject
     {
-        [nameof(done)] = JToken.FromObject(done, Actions.Serializer),
-        [nameof(received)] = JToken.FromObject(received, Actions.Serializer)
+        [nameof(done).ToSnakeCase()] = JToken.FromObject(done, Actions.Serializer),
+        [nameof(received).ToSnakeCase()] = JToken.FromObject(received, Actions.Serializer)
     };
 }
 public class FileUploadCancel
@@ -81,9 +81,9 @@ public class FileDownloadRequest
 
     public static JObject Response(Guid fileId, long size, string sha1) => new JObject
     {
-        [nameof(fileId)] = JToken.FromObject(fileId, Actions.Serializer),
-        [nameof(size)] = JToken.FromObject(size, Actions.Serializer),
-        [nameof(sha1)] = JToken.FromObject(sha1, Actions.Serializer)
+        [nameof(fileId).ToSnakeCase()] = JToken.FromObject(fileId, Actions.Serializer),
+        [nameof(size).ToSnakeCase()] = JToken.FromObject(size, Actions.Serializer),
+        [nameof(sha1).ToSnakeCase()] = JToken.FromObject(sha1, Actions.Serializer)
     };
 }
 public class FileDownloadRange
@@ -95,7 +95,7 @@ public class FileDownloadRange
 
     public static JObject Response(string content) => new JObject
     {
-        [nameof(content)] = JToken.FromObject(content, Actions.Serializer)
+        [nameof(content).ToSnakeCase()] = JToken.FromObject(content, Actions.Serializer)
     };
 }
 public class FileDownloadClose
@@ -117,7 +117,7 @@ public class GetFileInfo
 
     public static JObject Response(FileMetadata meta) => new JObject
     {
-        [nameof(meta)] = JToken.FromObject(meta, Actions.Serializer)
+        [nameof(meta).ToSnakeCase()] = JToken.FromObject(meta, Actions.Serializer)
     };
 }
 public class GetDirectoryInfo
@@ -128,9 +128,9 @@ public class GetDirectoryInfo
 
     public static JObject Response(string? parent, DirectoryEntry.FileInformation[] files, DirectoryEntry.DirectoryInformation[] directories) => new JObject
     {
-        [nameof(parent)] = JToken.FromObject(parent, Actions.Serializer),
-        [nameof(files)] = JToken.FromObject(files, Actions.Serializer),
-        [nameof(directories)] = JToken.FromObject(directories, Actions.Serializer)
+        [nameof(parent).ToSnakeCase()] = JToken.FromObject(parent, Actions.Serializer),
+        [nameof(files).ToSnakeCase()] = JToken.FromObject(files, Actions.Serializer),
+        [nameof(directories).ToSnakeCase()] = JToken.FromObject(directories, Actions.Serializer)
     };
 }
 public class TryAddInstance
@@ -142,7 +142,7 @@ public class TryAddInstance
 
     public static JObject Response(bool done) => new JObject
     {
-        [nameof(done)] = JToken.FromObject(done, Actions.Serializer)
+        [nameof(done).ToSnakeCase()] = JToken.FromObject(done, Actions.Serializer)
     };
 }
 public class TryRemoveInstance
@@ -153,7 +153,7 @@ public class TryRemoveInstance
 
     public static JObject Response(bool done) => new JObject
     {
-        [nameof(done)] = JToken.FromObject(done, Actions.Serializer)
+        [nameof(done).ToSnakeCase()] = JToken.FromObject(done, Actions.Serializer)
     };
 }
 public class TryStartInstance
@@ -164,7 +164,7 @@ public class TryStartInstance
 
     public static JObject Response(bool done) => new JObject
     {
-        [nameof(done)] = JToken.FromObject(done, Actions.Serializer)
+        [nameof(done).ToSnakeCase()] = JToken.FromObject(done, Actions.Serializer)
     };
 }
 public class TryStopInstance
@@ -175,7 +175,7 @@ public class TryStopInstance
 
     public static JObject Response(bool done) => new JObject
     {
-        [nameof(done)] = JToken.FromObject(done, Actions.Serializer)
+        [nameof(done).ToSnakeCase()] = JToken.FromObject(done, Actions.Serializer)
     };
 }
 public class SendToInstance
@@ -209,7 +209,7 @@ public class GetInstanceStatus
 
     public static JObject Response(InstanceStatus status) => new JObject
     {
-        [nameof(status)] = JToken.FromObject(status, Actions.Serializer)
+        [nameof(status).ToSnakeCase()] = JToken.FromObject(status, Actions.Serializer)
     };
 }
 public class GetAllStatus
@@ -218,6 +218,6 @@ public class GetAllStatus
 
     public static JObject Response(IDictionary<Guid, InstanceStatus> status) => new JObject
     {
-        [nameof(status)] = JToken.FromObject(status, Actions.Serializer)
+        [nameof(status).ToSnakeCase()] = JToken.FromObject(status, Actions.Serializer)
     };
 }
