@@ -27,9 +27,9 @@ internal class HeartBeatTimerState
 
 internal class ConnectionPendingRequest
 {
+    private readonly SemaphoreSlim _full;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JObject>> _pendings = new();
     public readonly int Size;
-    private readonly SemaphoreSlim _full;
 
     public ConnectionPendingRequest(int size)
     {
@@ -65,13 +65,99 @@ internal class ConnectionPendingRequest
     }
 }
 
+internal class ConnectionHeartBeatTimer
+{
+    private readonly CancellationTokenSource _cancelTokenSource = new();
+    private readonly TimeSpan _interval;
+    private readonly HeartBeatTimerState _state;
+    private Task? _timerLoopTask;
+
+    public ConnectionHeartBeatTimer(ClientConnection conn, TimeSpan interval)
+    {
+        _state = new HeartBeatTimerState(conn, SynchronizationContext.Current!);
+        _interval = interval;
+    }
+
+    public void Start()
+    {
+        _timerLoopTask = TimerLoop(_state);
+    }
+
+    public async Task Stop()
+    {
+        _cancelTokenSource.Cancel();
+        if (_timerLoopTask != null) await _timerLoopTask;
+    }
+
+    private async Task TimerLoop(HeartBeatTimerState state)
+    {
+        var innerTasks = new HashSet<Task>();
+        while (!_cancelTokenSource.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(_interval, _cancelTokenSource.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+
+            var innerTask = OnTimer(state);
+            innerTasks.Add(innerTask);
+            innerTasks.RemoveWhere(t => t.IsCompleted);
+        }
+
+        await Task.WhenAll(innerTasks);
+    }
+
+    /// <summary>
+    ///     心跳定时器超时逻辑: 根据连接情况设定ClientConnection的PingLost，根据config判断是否关闭连接
+    /// </summary>
+    /// <param name="state">Timer状态</param>
+    private async Task OnTimer(HeartBeatTimerState state)
+    {
+        Log.Debug("[ClientConnection] Heartbeat timer triggered.");
+
+        if (_cancelTokenSource.IsCancellationRequested) return;
+        try
+        {
+            var result = await state.Connection.RequestAsync(
+                ActionType.Ping,
+                new Dictionary<string, object>(),
+                Guid.NewGuid().ToString(),
+                state.Connection.Config.PingTimeout,
+                _cancelTokenSource.Token
+            );
+
+            state.PingPacketLost = 0;
+            var timestamp = result["time"]!.ToObject<long>();
+            Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
+        }
+        catch (TimeoutException)
+        {
+            if (_cancelTokenSource.IsCancellationRequested) return;
+
+            state.PingPacketLost++;
+            Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
+            // 切换到ClientConnection所在线程,防止数据竞争
+            state.ConnectionContext.Post(_ => state.Connection.MarkAsPingLost(), null);
+        }
+
+        if (state.PingPacketLost < state.Connection.Config.MaxPingPacketLost) return;
+        Log.Error("Ping packet lost too many times, close connection.");
+        // 关闭连接
+        await state.Connection.CloseAsync();
+    }
+}
+
 public class ClientConnection
 {
     private const int ProtocolVersion = 1;
     private const int BufferSize = 1024;
 
     private readonly CancellationTokenSource _cts;
-    private Timer? _heartbeatTimer;
+    private readonly ConnectionHeartBeatTimer _heartbeatTimer;
     private readonly ConnectionPendingRequest _pendingRequests;
     private Task? _receiveLoopTask;
 
@@ -79,6 +165,7 @@ public class ClientConnection
     {
         _cts = new CancellationTokenSource();
         _pendingRequests = new ConnectionPendingRequest(config.PendingRequestCapacity);
+        _heartbeatTimer = new ConnectionHeartBeatTimer(this, config.PingInterval);
         Config = config;
     }
 
@@ -110,52 +197,11 @@ public class ClientConnection
         // TODO : Connect failed process
         await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
 
-        var timerState = new HeartBeatTimerState(connection, SynchronizationContext.Current);
-        connection._heartbeatTimer =
-            new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
+        connection._heartbeatTimer.Start();
 
         // start receive loop
         connection._receiveLoopTask = Task.Run(connection.ReceiveLoop);
         return connection;
-    }
-
-    /// <summary>
-    ///     心跳定时器超时逻辑: 根据连接情况设定ClientConnection的PingLost，根据config判断是否关闭连接
-    /// </summary>
-    /// <param name="timerState"></param>
-    private static async void OnHeartBeatTimer(object timerState)
-    {
-        Log.Debug("[ClientConnection] Heartbeat timer triggered.");
-        var state = (HeartBeatTimerState)timerState;
-        var conn = state.Connection;
-        var pingTask = conn.RequestAsync(
-            ActionType.Ping,
-            new Dictionary<string, object>(),
-            Guid.NewGuid().ToString(),
-            conn.Config.PingTimeout
-        );
-
-        await pingTask;
-
-        if (pingTask.Exception?.InnerException is TimeoutException)
-        {
-            state.PingPacketLost++;
-            Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
-            // 切换到ClientConnection所在线程,防止数据竞争
-            state.ConnectionContext.Post(_ => { conn.PingLost = true; }, null);
-        }
-        else
-        {
-            state.PingPacketLost = 0;
-            var timestamp = pingTask.Result["time"]!.ToObject<long>();
-            Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
-        }
-
-        if (state.PingPacketLost < conn.Config.MaxPingPacketLost) return;
-
-        Log.Error("Ping packet lost too many times, close connection.");
-        // 关闭连接
-        await conn.CloseAsync();
     }
 
     /// <summary>
@@ -166,7 +212,7 @@ public class ClientConnection
     /// <param name="args"></param>
     /// <param name="echo"></param>
     /// <param name="cancellationToken"></param>
-    private static async Task SendAsync(ClientWebSocket ws, ActionType actionType, Dictionary<string, object> args,
+    private static Task SendAsync(ClientWebSocket ws, ActionType actionType, Dictionary<string, object> args,
         string? echo, CancellationToken cancellationToken)
     {
         Dictionary<string, object> data = new()
@@ -178,7 +224,7 @@ public class ClientConnection
         if (!string.IsNullOrEmpty(echo)) data.Add("echo", echo!);
 
         var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.Indented));
-        await ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
+        return ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
     }
 
     /// <summary>
@@ -188,10 +234,10 @@ public class ClientConnection
     /// <param name="args"></param>
     /// <param name="echo"></param>
     /// <param name="cancellationToken"></param>
-    public async Task SendAsync(ActionType actionType, Dictionary<string, object> args, string? echo = null,
+    public Task SendAsync(ActionType actionType, Dictionary<string, object> args, string? echo = null,
         CancellationToken cancellationToken = default)
     {
-        await SendAsync(WebSocket, actionType, args, echo, cancellationToken);
+        return SendAsync(WebSocket, actionType, args, echo, cancellationToken);
     }
 
     /// <summary>
@@ -203,12 +249,12 @@ public class ClientConnection
     /// <param name="timeout">微秒</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
+    public Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
         string? echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
     {
         echo ??= Guid.NewGuid().ToString();
-        await SendAsync(actionType, args, echo, cancellationToken);
-        return await ExpectAsync(echo, timeout, cancellationToken);
+        SendAsync(actionType, args, echo, cancellationToken);
+        return ExpectAsync(echo, timeout, cancellationToken);
     }
 
     /// <summary>
@@ -216,11 +262,12 @@ public class ClientConnection
     /// </summary>
     public async Task CloseAsync()
     {
+        await _heartbeatTimer.Stop();
+
         _cts.Cancel();
         if (_receiveLoopTask != null) await _receiveLoopTask; // 等待接收循环结束
-        _heartbeatTimer?.Dispose();
-
         await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+        Log.Debug("[ClientConnection] closed");
     }
 
     /// <summary>
@@ -336,5 +383,10 @@ public class ClientConnection
             pending.SetResult(data);
         else
             Log.Warning($"[ClientConnection] Received redundant message: redundant message: {json}");
+    }
+
+    internal void MarkAsPingLost()
+    {
+        PingLost = true;
     }
 }

@@ -221,14 +221,14 @@ public class Daemon : IDaemon
             {
                 MaxPingPacketLost = 3,
                 PendingRequestCapacity = 100,
-                PingInterval = TimeSpan.FromSeconds(5),
-                PingTimeout = 5000
+                PingInterval = TimeSpan.FromSeconds(1),
+                PingTimeout = 3000
             });
             Log.Information("[daemon] connected: {0}", await daemon.PingAsync());
-            await Task.Delay(5000);
+            await Task.Delay(3000);
             var rv = await daemon.GetJavaListAsync();
             rv.ForEach(x => Log.Debug($"Java: {x.ToString()}"));
-            await Task.Delay(10000);
+            await Task.Delay(3001);
             await daemon.CloseAsync();
         }
         catch (WebSocketException e)
