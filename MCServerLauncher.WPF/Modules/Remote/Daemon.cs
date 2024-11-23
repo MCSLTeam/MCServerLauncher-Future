@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -125,6 +124,12 @@ namespace MCServerLauncher.WPF.Modules.Remote
 #pragma warning restore CS8602
         }
 
+        public async Task<bool> PingAsync()
+        {
+            var pingTask = RequestAsync(ActionType.Ping, new Dictionary<string, object>());
+            return await Task.WhenAny(new[] { pingTask, Task.Delay(Connection?.Config.PingTimeout ?? 5000) })== pingTask;
+        }
+
         private async Task<string> UploadFileRequestAsync(string path, string dst, int chunkSize)
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -199,7 +204,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         public static async Task RunTest()
         {
             var usr = "admin";
-            var pwd = "c4fd4f5b-cab3-443b-b2d1-1778a009dc9b";
+            var pwd = "3a9eff1b-4723-407e-a072-30da28b00f4a";
             // var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
             var isSecure = false;
             var ip = "127.0.0.1";
@@ -216,15 +221,24 @@ namespace MCServerLauncher.WPF.Modules.Remote
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
                     PingInterval = TimeSpan.FromSeconds(5),
-                    PingTimeout = 3000
+                    PingTimeout = 5000
                 });
+                Log.Information("[daemon] connected: {0}",await daemon.PingAsync());
                 await Task.Delay(5000);
                 var rv = await daemon.GetJavaListAsync();
                 rv.ForEach(x => Log.Debug($"Java: {x.ToString()}"));
-                await Task.Delay(1000);
+                await Task.Delay(10000);
                 await daemon.CloseAsync();
             }
             catch (WebSocketException e)
+            {
+                Log.Error($"[Daemon] Websocket Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
+            }
+            catch (TimeoutException e)
+            {
+                Log.Error($"[Daemon] Timeout occurred when connecting to daemon(ws://{ip}:{port}): {e}");
+            }
+            catch (Exception e)
             {
                 Log.Error($"[Daemon] Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -104,15 +105,15 @@ namespace MCServerLauncher.WPF.Modules.Remote
             // create instance
             ClientConnection connection = new(config);
 
-            var timerState = new HeartBeatTimerState(connection, SynchronizationContext.Current);
-            connection._heartbeatTimer =
-                new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
-
             // connect ws
-            var uri = new Uri($"{(isSecure ? "ws" : "wss")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
+            var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
 
             // TODO : Connect failed process
             await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
+            
+            var timerState = new HeartBeatTimerState(connection, SynchronizationContext.Current);
+            connection._heartbeatTimer =
+                new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
 
             // start receive loop
             connection._receiveLoopTask = Task.Run(connection.ReceiveLoop);
@@ -125,6 +126,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// <param name="timerState"></param>
         private static async void OnHeartBeatTimer(object timerState)
         {
+            Log.Debug("[ClientConnection] Heartbeat timer triggered."); 
             var state = (HeartBeatTimerState)timerState;
             var conn = state.Connection;
             var pingTask = conn.RequestAsync(
@@ -134,31 +136,31 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 timeout: conn.Config.PingTimeout
             );
 
-            await pingTask.ContinueWith(task =>
+            await pingTask;
+            
+            if (pingTask.Exception?.InnerException is TimeoutException)
             {
-                if (task.Exception?.InnerException is TimeoutException)
-                {
-                    state.PingPacketLost++;
-                    Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
-                    // 切换到ClientConnection所在线程,防止数据竞争
-                    state.ConnectionContext.Post(_ => { conn.PingLost = true; }, null);
-                }
-                else
-                {
-                    state.PingPacketLost = 0;
-                    var timestamp = task.Result["time"]!.ToObject<long>();
-                    Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
+                state.PingPacketLost++;
+                Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
+                // 切换到ClientConnection所在线程,防止数据竞争
+                state.ConnectionContext.Post(_ => { conn.PingLost = true; }, null);
+            }
+            else
+            {
+                state.PingPacketLost = 0;
+                var timestamp = pingTask.Result["time"]!.ToObject<long>();
+                Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
 
-                    // 切换到ClientConnection所在线程,防止数据竞争
-                    state.ConnectionContext.Post(
-                        _ => { conn.LastPong = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime; }, null);
-                }
+                // 切换到ClientConnection所在线程,防止数据竞争
+                state.ConnectionContext.Post(
+                    _ => { conn.LastPong = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime; }, null);
+            }
 
-                if (state.PingPacketLost < conn.Config.MaxPingPacketLost) return;
-                Log.Error("Ping packet lost too many times, close connection.");
-                // 关闭连接
-                _ = conn.CloseAsync();
-            });
+            if (state.PingPacketLost < conn.Config.MaxPingPacketLost) return;
+            
+            Log.Error("Ping packet lost too many times, close connection.");
+            // 关闭连接
+            await conn.CloseAsync();
         }
 
         /// <summary>
@@ -221,6 +223,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         {
             _cts.Cancel();
             if (_receiveLoopTask != null) await _receiveLoopTask; // 等待接收循环结束
+            _heartbeatTimer?.Dispose();
 
             await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
         }
@@ -256,7 +259,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
                     Log.Error("[ClientConnection] failed to remove pending request, echo: {0}", echo);
                     throw new Exception($"failed to remove pending request, echo: {echo}");
                 }
-                throw new TimeoutException();
+                throw new TimeoutException($"Timeout when waiting for echo: {echo}");
             }
 
             var received = tcs.Task.Result;

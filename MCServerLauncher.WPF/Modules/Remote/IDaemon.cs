@@ -53,5 +53,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
         /// </summary>
         /// <returns></returns>
         Task CloseAsync();
+
+        Task<bool> PingAsync();
     }
 }
