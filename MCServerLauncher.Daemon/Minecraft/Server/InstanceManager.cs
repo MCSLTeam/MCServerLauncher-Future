@@ -10,8 +10,7 @@ public class InstanceManager : IInstanceManager
     private ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
     private ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
 
-    public async Task<bool> TryAddInstance(InstanceFactorySetting setting,
-        IInstanceFactory serverFactory)
+    public async Task<bool> TryAddInstance(InstanceFactorySetting setting)
     {
         var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
         // validate dir name
@@ -26,13 +25,29 @@ public class InstanceManager : IInstanceManager
             return false;
         }
 
+        var instanceFactory = setting.GetInstanceFactory();
 
         // async run
         try
         {
-            var config = await serverFactory.CreateInstance(setting);
+            Log.Information("[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
+                setting.InstanceType.ToString(), setting.Name);
+            var config = await instanceFactory.CreateInstance(setting);
             FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
-            if (!Instances.TryAdd(config.Uuid, new Instance(config)))
+
+            var instance = new Instance(config);
+            if (setting.UsePostProcess)
+            {
+                var processors = instanceFactory.GetPostProcessors();
+                for (var i = 0; i < processors.Length; i++)
+                {
+                    Log.Information("[InstanceManager] Running PostProcessor({0}/{1}) for instance '{2}'", i,
+                        processors.Length, setting.Name);
+                    await processors[i].Invoke(instance);
+                }
+            }
+
+            if (!Instances.TryAdd(config.Uuid, instance))
             {
                 Log.Error("[InstanceManager] Failed to add instance '{0}' to manager.", config.Name);
                 return false; // we need not to rollback here, because the new instance has been correctly installed

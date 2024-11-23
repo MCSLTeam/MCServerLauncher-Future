@@ -72,7 +72,7 @@ namespace MCServerLauncher.WPF.Modules
             public bool? IsSecure { get; set; }
             public string? WebSocketEndpoint { get; set; }
             public int Port { get; set; }
-            public string? JWT { get; set; }
+            public string? Password { get; set; }
             public string? FriendlyName { get; set; }
         }
 

@@ -150,9 +150,19 @@ public class ClientConnection
             var timestamp = pingTask.Result["time"]!.ToObject<long>();
             Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
 
-            // 切换到ClientConnection所在线程,防止数据竞争
-            state.ConnectionContext.Post(
-                _ => { conn.LastPong = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime; }, null);
+            var timerState = new HeartBeatTimerState(connection, SynchronizationContext.Current);
+            connection._heartbeatTimer =
+                new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
+
+            // connect ws
+            var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
+
+            // TODO : Connect failed process
+            await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
+
+            // start receive loop
+            connection._receiveLoopTask = Task.Run(connection.ReceiveLoop);
+            return connection;
         }
 
         if (state.PingPacketLost < conn.Config.MaxPingPacketLost) return;

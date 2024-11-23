@@ -5,6 +5,10 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 /// </summary>
 public interface IInstanceFactory
 {
+    Func<Instance, Task>[] GetPostProcessors()
+    {
+        return Array.Empty<Func<Instance, Task>>();
+    }
 }
 
 /// <summary>

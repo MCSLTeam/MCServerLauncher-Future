@@ -14,9 +14,12 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <CheckBox Grid.Row="0" Content="SSL" x:Name="SecureWebSocketCheckBox" Margin="0,0,0,5" Checked="ToggleWebSocketScheme" Unchecked="ToggleWebSocketScheme" />
-        <Grid Grid.Row="1" Margin="0,0,0,5">
+
+        <TextBox Grid.Row="0" ui:ControlHelper.PlaceholderText="{Binding [DaemonFriendlyName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="nameEdit" Margin="0,0,0,5" MaxLines="1" />
+        <CheckBox Grid.Row="1" Content="SSL" x:Name="SecureWebSocketCheckBox" Margin="0,0,0,5" Checked="ToggleWebSocketScheme" Unchecked="ToggleWebSocketScheme" />
+        <Grid Grid.Row="2" Margin="0,0,0,5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="4*"/>
@@ -28,7 +31,7 @@
             <TextBlock Grid.Column="2" Text=":" Margin="5,0,5,0" VerticalAlignment="Center" Style="{StaticResource MinititleTextBlock}" />
             <TextBox Grid.Column="3" ui:ControlHelper.PlaceholderText="{Binding [Port], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="portEdit" MaxLines="1" />
         </Grid>
-        <PasswordBox Grid.Row="2" ui:ControlHelper.PlaceholderText="{Binding [DaemonJwtSecret], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="jwtEdit" Margin="0,0,0,5" />
-        <TextBox Grid.Row="3" ui:ControlHelper.PlaceholderText="{Binding [DaemonFriendlyName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="nameEdit" Margin="0,5,0,0" MaxLines="1" />
+        <TextBox Grid.Row="3" ui:ControlHelper.PlaceholderText="{Binding [Username], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="userEdit" Margin="0,0,0,5" MaxLines="1" />
+        <PasswordBox Grid.Row="4" ui:ControlHelper.PlaceholderText="{Binding [DaemonPassword], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="pwdEdit" />
     </Grid>
 </UserControl>

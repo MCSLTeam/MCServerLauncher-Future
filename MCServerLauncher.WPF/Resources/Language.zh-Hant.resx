@@ -176,7 +176,7 @@
     <value>Minecraft 基岩版壓縮包</value>
   </data>
   <data name="CreateInstance_SelectArchive_Description" xml:space="preserve">
-    <value>請在此處導入下載的壓縮包。 如果不知道在哪裡下載，可點擊右側按鈕跳轉。</value>
+    <value>請在此處導入下載的壓縮包。 如果不知道在哪裡下載，可點擊右側按鈕跳轉</value>
   </data>
   <data name="Archive" xml:space="preserve">
     <value>壓縮包</value>
@@ -733,9 +733,6 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守護進程 WebSocket 位址</value>
   </data>
-  <data name="DaemonJwtSecret" xml:space="preserve">
-    <value>JWT 金鑰</value>
-  </data>
   <data name="Connecting" xml:space="preserve">
     <value>連接中</value>
   </data>
@@ -855,5 +852,8 @@
   </data>
   <data name="DaemonManagerTip" xml:space="preserve">
     <value>安全護航，只在指掌。</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>端口</value>
   </data>
 </root>
