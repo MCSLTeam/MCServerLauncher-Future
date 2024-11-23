@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using iNKORE.UI.WPF.Modern;
-using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.SettingCard;
 

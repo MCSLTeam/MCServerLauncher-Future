@@ -19,7 +19,7 @@ namespace MCServerLauncher.WPF.Modules
         /// <summary>
         ///    Initialize program settings.
         /// </summary>
-        public void InitSettings()
+        public static void InitSettings()
         {
             if (File.Exists("Data/Configuration/MCSL/Settings.json"))
             {
@@ -105,6 +105,7 @@ namespace MCServerLauncher.WPF.Modules
             if (property == null || property.PropertyType != typeof(T))
                 throw new InvalidOperationException($"Property {settingTarget} not found or type mismatch.");
 
+            if (property.GetValue(settings)?.Equals(value) == true) return;
             property.SetValue(settings, value);
 
             lock (Queue)

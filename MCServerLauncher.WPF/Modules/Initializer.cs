@@ -124,8 +124,7 @@ namespace MCServerLauncher.WPF.Modules
             }
 
             using var fontStream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
-            if (fontStream == null) throw new FileNotFoundException("Embedded resource not found");
+                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf") ?? throw new FileNotFoundException("Embedded resource not found");
             using var fileStream = File.Create(fontSysPath);
             fontStream.CopyTo(fileStream);
             AddFontResource(fontSysPath);
@@ -141,8 +140,8 @@ namespace MCServerLauncher.WPF.Modules
             Log.Information($"[Exe] MCServerLauncher Future v{AppVersion}");
             Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
             InitDataDirectory();
-            new SettingsManager().InitSettings();
-            new DaemonsListManager().InitDaemonListConfig();
+            SettingsManager.InitSettings();
+            DaemonsListManager.InitDaemonListConfig();
             bool needImport = false;
             if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsCertImported) { InitCert(); needImport = true; }
             if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsFontInstalled) { InitFont(); needImport = true; }

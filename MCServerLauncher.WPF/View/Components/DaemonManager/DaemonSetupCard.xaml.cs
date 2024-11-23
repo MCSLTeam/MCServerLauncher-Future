@@ -100,24 +100,29 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
                     PingInterval = TimeSpan.FromSeconds(5),
-                    PingTimeout = 3000
+                    PingTimeout = 5000
                 });
-                await Task.Delay(5000);
-                await daemon.CloseAsync();
+                Log.Information("[Daemon] Connected: {0}", await daemon.PingAsync());
+                await Task.Delay(10000);
                 Status = "ok";
+                await daemon.CloseAsync();
+                DaemonsListManager.AddDaemon(
+                    new DaemonsListManager.DaemonConfigModel
+                    { 
+                        FriendlyName = FriendlyName,
+                        EndPoint = EndPoint,
+                        Port = Port,
+                        Username = Username,
+                        Password = Password,
+                        IsSecure = IsSecure
+                    }
+                );
             }
-            catch (WebSocketException e)
+            catch (Exception e)
             {
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
             }
-            catch (HttpRequestException e)
-            {
-                Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
-                Status = "err";
-            }
-            catch (InvalidOperationException e)
-            { }
         }
     }
 }

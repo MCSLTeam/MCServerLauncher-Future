@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.Modules
         /// <summary>
         ///    Initialize daemon list.
         /// </summary>
-        public void InitDaemonListConfig()
+        public static void InitDaemonListConfig()
         {
             lock (QueueLock)
             {
@@ -39,7 +39,7 @@ namespace MCServerLauncher.WPF.Modules
                 }
             }
         }
-        public void AddDaemon(DaemonConfigModel config)
+        public static void AddDaemon(DaemonConfigModel config)
         {
             lock (QueueLock)
             {
@@ -47,7 +47,7 @@ namespace MCServerLauncher.WPF.Modules
                 SaveDaemonList();
             }
         }
-        public void RemoveDaemon(DaemonConfigModel config)
+        public static void RemoveDaemon(DaemonConfigModel config)
         {
             lock (QueueLock)
             {
@@ -55,7 +55,7 @@ namespace MCServerLauncher.WPF.Modules
                 SaveDaemonList();
             }
         }
-        private void SaveDaemonList()
+        private static void SaveDaemonList()
         {
             lock (QueueLock)
             {
@@ -70,8 +70,9 @@ namespace MCServerLauncher.WPF.Modules
         public class DaemonConfigModel
         {
             public bool? IsSecure { get; set; }
-            public string? WebSocketEndpoint { get; set; }
+            public string? EndPoint { get; set; }
             public int Port { get; set; }
+            public string? Username { get; set; }
             public string? Password { get; set; }
             public string? FriendlyName { get; set; }
         }
