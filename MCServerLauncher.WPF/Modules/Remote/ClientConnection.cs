@@ -149,20 +149,6 @@ public class ClientConnection
             state.PingPacketLost = 0;
             var timestamp = pingTask.Result["time"]!.ToObject<long>();
             Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
-
-            var timerState = new HeartBeatTimerState(connection, SynchronizationContext.Current);
-            connection._heartbeatTimer =
-                new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
-
-            // connect ws
-            var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
-
-            // TODO : Connect failed process
-            await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
-
-            // start receive loop
-            connection._receiveLoopTask = Task.Run(connection.ReceiveLoop);
-            return connection;
         }
 
         if (state.PingPacketLost < conn.Config.MaxPingPacketLost) return;
