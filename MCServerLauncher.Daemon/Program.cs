@@ -59,7 +59,7 @@ public class Program
             SourceType = SourceType.Core,
             Source = "daemon/downloads/Vanilla-release-1.21.1-59353f.jar"
         };
-        if (await manager.TryAddInstance(setting, new VanillaFactory()))
+        if (await manager.TryAddInstance(setting))
         {
             Log.Information("[InstanceManager] Created Server: {0}({1})", setting.Name,setting.Uuid);
             return true;

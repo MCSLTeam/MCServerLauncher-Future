@@ -4,5 +4,6 @@ public enum InstanceType
 {
     Vanilla,
     Fabric,
-    Forge
+    Forge,
+    Spigot
 }
