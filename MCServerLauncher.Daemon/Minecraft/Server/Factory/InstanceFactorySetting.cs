@@ -73,7 +73,7 @@ public static class InstanceFactorySettingExtensions
         return setting.InstanceType switch
         {
             InstanceType.Vanilla => new UniversalFactory(),
-            InstanceType.Fabric => new FabricFactory(),
+            // InstanceType.Fabric => new FabricFactory(),
             InstanceType.Spigot => new SpigotFactory(),
             _ => throw new NotImplementedException()
         };
