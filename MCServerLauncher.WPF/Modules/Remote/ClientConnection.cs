@@ -109,7 +109,7 @@ namespace MCServerLauncher.WPF.Modules.Remote
                 new Timer(OnHeartBeatTimer, timerState, config.PingInterval, config.PingInterval);
 
             // connect ws
-            var uri = new Uri($"{(isSecure ? "ws" : "wss")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
+            var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
 
             // TODO : Connect failed process
             await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
