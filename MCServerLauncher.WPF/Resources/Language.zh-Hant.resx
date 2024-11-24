@@ -734,7 +734,7 @@
     <value>守護進程 WebSocket 位址</value>
   </data>
   <data name="DaemonPassword" xml:space="preserve">
-    <value>密码</value>
+    <value>密碼</value>
   </data>
   <data name="Connecting" xml:space="preserve">
     <value>連接中</value>
@@ -860,6 +860,6 @@
     <value>端口</value>
   </data>
   <data name="Username" xml:space="preserve">
-    <value>用户名</value>
+    <value>用戶名</value>
   </data>
 </root>
