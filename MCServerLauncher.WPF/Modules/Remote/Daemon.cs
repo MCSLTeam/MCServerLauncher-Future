@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MCServerLauncher.Common;
 using Newtonsoft.Json.Linq;
 using Serilog;
 
@@ -91,7 +92,7 @@ public class Daemon : IDaemon
 
                 offset += bytesRead;
             }
-        });
+        }, cts.Token);
         context.UploadTask = uploadTask;
         return context;
     }
@@ -172,13 +173,17 @@ public class Daemon : IDaemon
     /// <param name="address">ip地址</param>
     /// <param name="port">端口</param>
     /// <param name="token">jwt token</param>
+    /// <param name="isSecure">是否使用wss</param>
     /// <param name="config">Daemon连接配置</param>
+    /// <param name="timeout">连接超时时间</param>
+    /// <param name="cancellationToken"></param>
     /// <exception cref="WebSocketException">Daemon连接失败</exception>
+    /// <exception cref="TimeoutException">连接超时</exception>
     /// <returns></returns>
     public static async Task<IDaemon> OpenAsync(string address, int port, string token,
-        bool isSecure, ClientConnectionConfig config)
+        bool isSecure, ClientConnectionConfig config,int timeout=5000,CancellationToken cancellationToken = default)
     {
-        var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config);
+        var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config,cancellationToken).TimeoutAfter(timeout);
         return new Daemon
         {
             Connection = connection

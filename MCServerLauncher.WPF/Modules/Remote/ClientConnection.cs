@@ -6,6 +6,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MCServerLauncher.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -182,20 +183,22 @@ public class ClientConnection
     /// <param name="address">ip地址</param>
     /// <param name="port">端口</param>
     /// <param name="token">jwt</param>
+    /// <param name="isSecure">是否使用SSL</param>
     /// <param name="config">连接配置</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <exception cref="WebSocketException">WebSocket连接失败</exception>
+    /// <exception cref="TimeoutException">连接超时</exception>
     /// <returns></returns>
     public static async Task<ClientConnection> OpenAsync(string address, int port, string token,
-        bool isSecure, ClientConnectionConfig config)
+        bool isSecure, ClientConnectionConfig config,CancellationToken cancellationToken=default)
     {
         // create instance
         ClientConnection connection = new(config);
 
         // connect ws
         var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
-
-        // TODO : Connect failed process
-        await connection.WebSocket.ConnectAsync(uri, CancellationToken.None);
+        
+        await connection.WebSocket.ConnectAsync(uri, cancellationToken);
 
         connection._heartbeatTimer.Start();
 
