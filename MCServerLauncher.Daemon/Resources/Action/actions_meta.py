@@ -43,7 +43,7 @@ FILED_PATTERN = """    public {T} {field_name};"""
 PRODUCE_EMPTY_REQ_EXPR_PATTERN = """new {class_name}()"""
 PRODUCE_REQ_EXPR_PATTERN = """data?.ToObject<{class_name}>()!"""
 
-RESP_JOBJECT_ENTRY_PATTERN = """        [nameof({arg_name})] = JToken.FromObject({arg_name}, Actions.Serializer)"""
+RESP_JOBJECT_ENTRY_PATTERN = """        [nameof({arg_name}).ToSnakeCase()] = JToken.FromObject({arg_name}, Actions.Serializer)"""
 
 FUNC_ARG_PATTERN = """{T} {field_name}"""
 
