@@ -20,7 +20,7 @@ public static class JsonSettings
             new WebEncodingJsonConverter()
         }
     };
-    
+
     /// <summary>
     ///     解析 Guid,若字符串解析失败则返回 Guid.Empty,方便带上下文的异常检查
     /// </summary>

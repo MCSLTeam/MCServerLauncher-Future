@@ -32,7 +32,8 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
         _eventService.Signal += async (type, data) =>
         {
-            if (!websocketRef?.IsAlive ?? true) return;
+            var ws = GetWebSocket();
+            if (ws == null) return;
 
             var text = _webJsonConverter.Serialize(new Dictionary<string, object>
             {
@@ -40,7 +41,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
                 ["data"] = data,
                 ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
             });
-            await ((websocketRef?.Target as IWebSocket)?.SendAsync(text) ?? Task.CompletedTask);
+            await ws.SendAsync(text);
         };
     }
 
@@ -80,19 +81,29 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             Log.Debug("Received message: \n{0}\n", payload);
 
             var (actionType, echo, parameters) = result;
-            var data = await _actionService.Routine(actionType, parameters);
 
-            if (echo != null) data["echo"] = echo;
+            Task.Run(async () =>
+            {
+                var data = await _actionService.Routine(actionType, parameters);
 
-            var text = _webJsonConverter.Serialize(data);
+                if (echo != null) data["echo"] = echo;
 
-            Log.Debug("Sending message: \n{0}", text);
-            await webSocket.SendAsync(text);
+                var text = _webJsonConverter.Serialize(data);
+                Log.Debug("Sending message: \n{0}", text);
+
+                var ws = GetWebSocket();
+                if (ws != null) await ws.SendAsync(text);
+            }).ConfigureFalseAwait();
         }
 
         if (e.DataFrame.IsClose) await webSocket.SafeCloseAsync();
 
         await e.InvokeNext();
+    }
+
+    private IWebSocket? GetWebSocket()
+    {
+        return websocketRef?.Target as IWebSocket;
     }
 
     private static (ActionType, string?, JObject?) ParseMessage(string message)

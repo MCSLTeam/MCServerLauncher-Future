@@ -1,4 +1,7 @@
-﻿namespace MCServerLauncher.WPF.View.Pages
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.DaemonManager;
+
+namespace MCServerLauncher.WPF.View.Pages
 {
     /// <summary>
     ///    DaemonManagerPage.xaml 的交互逻辑
@@ -8,6 +11,21 @@
         public DaemonManagerPage()
         {
             InitializeComponent();
+            DaemonCardContainer.Items.Clear();
+            foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.DaemonList)
+            {
+                DaemonCardContainer.Items.Add(new DaemonCard()
+                    {
+                        Address = $"{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}",
+                        IsSecure = daemon.IsSecure,
+                        EndPoint = daemon.EndPoint,
+                        Port = daemon.Port,
+                        Username = daemon.Username,
+                        Password = daemon.Password,
+                        FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
+                    }
+                );
+            }
         }
     }
 }

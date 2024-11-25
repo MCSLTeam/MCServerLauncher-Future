@@ -138,7 +138,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             DaemonListView.Items.Add(daemon);
             daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.EndPoint, daemon.Port, daemon.IsSecure, daemon.Username, daemon.Password, daemon.FriendlyName, daemon));
             NextButton.IsEnabled = DaemonListView.Items.Count > 0;
-            await daemon.TryConnectDaemon();
+            await daemon.ConnectDaemon();
         }
 
         private void Next(object sender, RoutedEventArgs e)

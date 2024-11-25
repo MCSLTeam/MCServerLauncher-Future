@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.Modules.Remote;
@@ -38,9 +39,10 @@ internal class Utils
         });
     }
 
-    public static async Task<string?> HttpPost(string url)
+    public static async Task<string?> HttpPost(string url,CancellationToken cancellationToken = default)
     {
-        var response = await Network.SendPostRequest(url, "");
+        var response = await Network.SendPostRequest(url, "",cancellationToken:cancellationToken);
+        
         return response.StatusCode == HttpStatusCode.OK
             ? await response.Content.ReadAsStringAsync()
             : null;

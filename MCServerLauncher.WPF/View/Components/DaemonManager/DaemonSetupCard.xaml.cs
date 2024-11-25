@@ -1,12 +1,10 @@
-﻿using System.Net.WebSockets;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System;
 using System.Windows;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.Remote;
 using Serilog;
-using System.Net.Http;
 using iNKORE.UI.WPF.Modern.Controls;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
@@ -14,17 +12,24 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
     /// <summary>
     ///     DaemonSetupCard.xaml 的交互逻辑
     /// </summary>
-    public partial class DaemonSetupCard
+    public partial class DaemonSetupCard: IDaemonCard
     {
         public DaemonSetupCard()
         {
             InitializeComponent();
         }
+        public bool IsSecure { get; set; }
+        public string EndPoint { get; set; }
+        public int Port { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string FriendlyName { get; set; }
         public string Address
         {
             get => (string)GetValue(AddressProperty);
             set => SetValue(AddressProperty, value);
         }
+        #region Address Dependency Property
         public static readonly DependencyProperty AddressProperty =
             DependencyProperty.Register("Address", typeof(string), typeof(DaemonSetupCard),
                 new PropertyMetadata("", OnAddressChanged));
@@ -35,12 +40,14 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             if (e.NewValue is not string address) return;
             control.AddressLine.Text = address;
         }
+        #endregion
 
         public string Status
         {
             get => (string)GetValue(StatusProperty);
             set => SetValue(StatusProperty, value);
         }
+        #region Status Dependency Property
         public static readonly DependencyProperty StatusProperty =
             DependencyProperty.Register("Status", typeof(string), typeof(DaemonSetupCard),
                 new PropertyMetadata("", OnStatusChanged));
@@ -70,14 +77,9 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             control.ConnectionEditButton.IsEnabled = status != "ing";
             control.ConnectionControlButton.IsEnabled = status != "ing";
         }
-        public bool IsSecure { get; set; }
-        public string EndPoint { get; set; }
-        public int Port { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string FriendlyName { get; set; }
+        #endregion
 
-        public async Task TryConnectDaemon()
+        public async Task ConnectDaemon()
         {
             Status = "ing";
             try

@@ -69,7 +69,7 @@ namespace MCServerLauncher.WPF.Modules
 
         public class DaemonConfigModel
         {
-            public bool? IsSecure { get; set; }
+            public bool IsSecure { get; set; }
             public string? EndPoint { get; set; }
             public int Port { get; set; }
             public string? Username { get; set; }
