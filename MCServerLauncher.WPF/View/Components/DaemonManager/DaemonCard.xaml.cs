@@ -57,12 +57,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         }
         #region Address Dependency Property
         public static readonly DependencyProperty AddressProperty =
-            DependencyProperty.Register("Address", typeof(string), typeof(DaemonSetupCard),
+            DependencyProperty.Register("Address", typeof(string), typeof(DaemonCard),
                 new PropertyMetadata("", OnAddressChanged));
 
         private static void OnAddressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is not DaemonSetupCard control) return;
+            if (d is not DaemonCard control) return;
             if (e.NewValue is not string address) return;
             control.AddressLine.Text = address;
         }
@@ -75,12 +75,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         }
         #region Status Dependency Property
         public static readonly DependencyProperty StatusProperty =
-            DependencyProperty.Register("Status", typeof(string), typeof(DaemonSetupCard),
+            DependencyProperty.Register("Status", typeof(string), typeof(DaemonCard),
                 new PropertyMetadata("", OnStatusChanged));
 
         private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is not DaemonSetupCard control) return;
+            if (d is not DaemonCard control) return;
             if (e.NewValue is not string status) return;
             IconAndText NewStatusLine = status switch
             {
@@ -91,17 +91,17 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             };
             control.StatusLine.Children.Clear();
             control.StatusLine.Children.Add(NewStatusLine);
-            IconAndText NewConnectionControlLine = status switch
-            {
-                "err" => new() { Content = LanguageManager.Localize["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
-                "ok" => new() { Content = LanguageManager.Localize["Disconnect"], Icon = SegoeFluentIcons.DisconnectDrive, IsTabStop = false },
-                "ing" => new() { Content = LanguageManager.Localize["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
-                _ => throw new NotImplementedException(),
-            };
-            control.ConnectionControlButton.Content = NewConnectionControlLine;
+            //IconAndText NewConnectionControlLine = status switch
+            //{
+            //    "err" => new() { Content = LanguageManager.Localize["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
+            //    "ok" => new() { Content = LanguageManager.Localize["Disconnect"], Icon = SegoeFluentIcons.DisconnectDrive, IsTabStop = false },
+            //    "ing" => new() { Content = LanguageManager.Localize["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
+            //    _ => throw new NotImplementedException(),
+            //};
+            //control.ConnectionControlButton.Content = NewConnectionControlLine;
 
-            control.ConnectionEditButton.IsEnabled = status != "ing";
-            control.ConnectionControlButton.IsEnabled = status != "ing";
+            //control.ConnectionEditButton.IsEnabled = status != "ing";
+            //control.ConnectionControlButton.IsEnabled = status != "ing";
         }
         #endregion
 
