@@ -305,7 +305,10 @@ public class ClientConnection
                 throw new Exception($"failed to remove pending request, echo: {echo}");
             }
 
-            throw new TimeoutException($"Timeout when waiting for echo: {echo}");
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Log.Debug("[ClientConnection] cancelled when waiting for echo: {0}", echo);
+            }else throw new TimeoutException($"Timeout when waiting for echo: {echo}");
         }
 
         var received = tcs.Task.Result;
