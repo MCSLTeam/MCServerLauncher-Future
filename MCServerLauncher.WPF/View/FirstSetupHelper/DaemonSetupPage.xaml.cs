@@ -59,7 +59,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked = isSecure;
             newDaemonConnectionInput.userEdit.Text = user;
             newDaemonConnectionInput.pwdEdit.Password = pwd;
-            newDaemonConnectionInput.nameEdit.Text = name;
+            newDaemonConnectionInput.friendlyNameEdit.Text = name;
             ContentDialog dialog = new()
             {
                 Title = LanguageManager.Localize["ConnectDaemon"],
@@ -81,7 +81,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                 isSecure: newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked == true,
                 user: newDaemonConnectionInput.userEdit.Text,
                 pwd: newDaemonConnectionInput.pwdEdit.Password,
-                friendlyName: newDaemonConnectionInput.nameEdit.Text
+                friendlyName: newDaemonConnectionInput.friendlyNameEdit.Text
             );
             try
             {
@@ -95,7 +95,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
         private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string endpoint, int port, bool isSecure, string user, string pwd, string friendlyName, DaemonSetupCard daemon)
         {
-            (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog(endpoint, port.ToString() ?? "", isSecure, user, pwd);
+            (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog(endpoint, port.ToString() ?? "", isSecure, user, pwd, friendlyName);
             dialog.PrimaryButtonClick += (o, args) =>
             {
                 DaemonListView.Items.Remove(daemon);
@@ -105,7 +105,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
                     isSecure: newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked == true,
                     user: newDaemonConnectionInput.userEdit.Text,
                     pwd: newDaemonConnectionInput.pwdEdit.Password,
-                    friendlyName: newDaemonConnectionInput.nameEdit.Text
+                    friendlyName: newDaemonConnectionInput.friendlyNameEdit.Text
                 );
             };
             try
