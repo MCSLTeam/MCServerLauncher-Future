@@ -7,6 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <LangVersion>10.0</LangVersion>
+    <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>MCServerLauncher.WPF.App</StartupObject>
@@ -26,8 +27,6 @@
 	<Product>MCServerLauncher Future</Product>
 	<Version>1.0.0.0</Version>
 	<SignAssembly>False</SignAssembly>
-	<AssemblyOriginatorKeyFile>E:\MCSLCode\MCServerLauncher-Future\Sign\MCSLTeam.pfx</AssemblyOriginatorKeyFile>
-	<PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\MCSLTeam.cer" />
