@@ -132,6 +132,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 });
                 Log.Information("[Daemon] Connected: {0}", await daemon.PingAsync());
                 Status = "ok";
+                await daemon.CloseAsync();
             }
             catch (Exception e)
             {
