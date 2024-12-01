@@ -2,6 +2,10 @@ namespace MCServerLauncher.Daemon.Storage;
 
 public class FileSessionInfo
 {
+    private readonly TimeSpan _timeout;
+    private DateTime _lastAccessTime = DateTime.Now;
+    private SpinLock _lock;
+
     protected FileSessionInfo(long size, FileStream file, string? sha1, string path, TimeSpan timeout)
     {
         Size = size;
@@ -12,10 +16,6 @@ public class FileSessionInfo
         _timeout = timeout;
     }
 
-    private readonly TimeSpan _timeout;
-    private DateTime _lastAccessTime = DateTime.Now;
-    private SpinLock _lock;
-
     public long Size { get; }
     public FileStream File { get; }
     public string? Sha1 { get; }
@@ -24,7 +24,7 @@ public class FileSessionInfo
     public long RemainLength => Remain.GetRemain();
 
     public bool Timeout => IsTimeout();
-    
+
     private bool IsTimeout()
     {
         var locked = false;
@@ -42,7 +42,7 @@ public class FileSessionInfo
     public void Touch()
     {
         if (IsTimeout()) return;
-        
+
         var locked = false;
         _lock.Enter(ref locked);
         try
@@ -54,8 +54,11 @@ public class FileSessionInfo
             if (locked) _lock.Exit();
         }
     }
-    
-    public void Close() => File.Close();
+
+    public void Close()
+    {
+        File.Close();
+    }
 }
 
 public class FileUploadInfo : FileSessionInfo

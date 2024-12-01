@@ -117,9 +117,41 @@ internal static class FileManager
 
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
     private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
-    
+
     // File Session Watcher Loop
     private static Task? _fileSessionWatcherLoopTask;
+
+    public static void StartFileSessionsWatcher()
+    {
+        if (_fileSessionWatcherLoopTask != null) return;
+        _fileSessionWatcherLoopTask = Task.Run(FileSessionWatcherLoop);
+    }
+
+    private static async Task FileSessionWatcherLoop()
+    {
+        Log.Information("[FileManager] File session watcher started");
+        while (true)
+        {
+            await Task.Delay(1000);
+            WatchFileSessions(UploadSessions);
+            WatchFileSessions(DownloadSessions);
+        }
+    }
+
+    private static void WatchFileSessions<TSessionInfo>(ConcurrentDictionary<Guid, TSessionInfo> sessions)
+        where TSessionInfo : FileSessionInfo
+    {
+        foreach (var sessionId in sessions.Keys) // avoid concurrent modification exception
+        {
+            if (!sessions.TryGetValue(sessionId, out var session)) continue;
+            if (!session.Timeout) continue;
+
+            if (!sessions.TryRemove(sessionId, out _)) continue;
+
+            Log.Warning("[FileManager] File session {0} timeout", sessionId);
+            session.Close();
+        }
+    }
 
     #region File Upload Service
 
@@ -627,36 +659,4 @@ internal static class FileManager
     }
 
     #endregion
-
-    public static void StartFileSessionsWatcher()
-    {
-        if (_fileSessionWatcherLoopTask != null) return;
-        _fileSessionWatcherLoopTask = Task.Run(FileSessionWatcherLoop);
-    }
-
-    private static async Task FileSessionWatcherLoop()
-    {
-        Log.Information("[FileManager] File session watcher started");
-        while (true)
-        {
-            await Task.Delay(1000);
-            WatchFileSessions(UploadSessions);
-            WatchFileSessions(DownloadSessions);
-        }
-    }
-
-    private static void WatchFileSessions<TSessionInfo>(ConcurrentDictionary<Guid, TSessionInfo> sessions)
-        where TSessionInfo : FileSessionInfo
-    {
-        foreach (var sessionId in sessions.Keys) // avoid concurrent modification exception
-        {
-            if (!sessions.TryGetValue(sessionId, out var session)) continue;
-            if (!session.Timeout) continue;
-            
-            if (!sessions.TryRemove(sessionId, out _)) continue;
-            
-            Log.Warning("[FileManager] File session {0} timeout", sessionId);
-            session.Close();
-        }
-    }
 }

@@ -92,13 +92,12 @@ public class Application
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
 
         var cts = new CancellationTokenSource();
-        Console.CancelKeyPress+=(_, e) =>
+        Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
         while (!cts.IsCancellationRequested)
-        {
             try
             {
                 await Task.Delay(TimeSpan.FromMinutes(1), cts.Token);
@@ -107,8 +106,7 @@ public class Application
             {
                 break;
             }
-        }
-        
+
         Log.Information("[Remote] Stopping...");
         await StopAsync();
     }
