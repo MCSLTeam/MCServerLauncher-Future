@@ -13,7 +13,7 @@ actions:
       req:
         path: string?
         sha1: string?
-        chunk_size: long
+        timeout: long?
         size: long
       
       resp:
@@ -38,6 +38,7 @@ actions:
   - file_download_request:
       req:
         path: string
+        timeout: long?
       
       resp:
         file_id: Guid

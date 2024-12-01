@@ -1,10 +1,12 @@
 using System.Text.RegularExpressions;
+using MCServerLauncher.Common;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Cache;
 using Newtonsoft.Json.Linq;
 using Serilog;
+using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -114,7 +116,7 @@ internal class ActionService : IActionService
         var fileId = FileManager.FileUploadRequest(
             data.Path,
             data.Size,
-            data.ChunkSize,
+            data.Timeout.Map(t=>TimeSpan.FromMilliseconds(t)),
             data.Sha1
         );
 
@@ -163,7 +165,7 @@ internal class ActionService : IActionService
 
     private async Task<JObject> FileDownloadRequestHandler(FileDownloadRequest data)
     {
-        var info = await FileManager.FileDownloadRequest(data.Path);
+        var info = await FileManager.FileDownloadRequest(data.Path,data.Timeout.Map(t=>TimeSpan.FromMilliseconds(t)));
         return Ok(FileDownloadRequest.Response(info.Id, info.Size, info.Sha1));
     }
 

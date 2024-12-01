@@ -38,7 +38,7 @@ public class FileUploadRequest
 {
     public string? Path;
     public string? Sha1;
-    public long ChunkSize;
+    public long? Timeout;
     public long Size;
 
     public static FileUploadRequest Of(JObject? data) => data?.ToObject<FileUploadRequest>()!;
@@ -76,6 +76,7 @@ public class FileUploadCancel
 public class FileDownloadRequest
 {
     public string Path;
+    public long? Timeout;
 
     public static FileDownloadRequest Of(JObject? data) => data?.ToObject<FileDownloadRequest>()!;
 

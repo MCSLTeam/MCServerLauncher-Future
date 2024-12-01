@@ -111,10 +111,15 @@ internal static class FileManager
     public static readonly string CoreRoot = Path.Combine(Root, "cores");
     public static readonly string LogRoot = Path.Combine(Root, "logs");
 
+    public static readonly TimeSpan SessionTimeout = TimeSpan.FromMilliseconds(120000);
+
     private static readonly ConcurrentDictionary<Guid, FileUploadInfo> UploadSessions = new();
 
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
     private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
+    
+    // File Session Watcher Loop
+    private static Task? _fileSessionWatcherLoopTask;
 
     #region File Upload Service
 
@@ -123,20 +128,20 @@ internal static class FileManager
     /// </summary>
     /// <param name="path">文件路径</param>
     /// <param name="size">文件总大小</param>
-    /// <param name="chunkSize">文件分片传输大小</param>
+    /// <param name="timeout">上传回话超时</param>
     /// <param name="sha1">预期的SHA1，为空为null不进行校验</param>
     /// <exception cref="IOException">非法路径、已存在正在上传的文件等</exception>
     /// <returns>分配的file_id</returns>
-    public static Guid FileUploadRequest(string? path, long size, long chunkSize, string? sha1 = null)
+    public static Guid FileUploadRequest(string? path, long size, TimeSpan? timeout, string? sha1 = null)
     {
+        timeout ??= SessionTimeout;
+
         // Validate path
         if (path != null && !ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
 
         // path is null means upload to upload root
         path ??= UploadRoot;
 
-        // 由于FileStream.WriteAsync只支持int,故提前检查,若大于2G,则返回空
-        if ((int)size != size || (int)chunkSize != chunkSize || size < 0 || chunkSize < 0) return Guid.Empty;
 
         // check if file is in upload session
         if (UploadSessions.Values.Any(info => info.Path == path)) throw new IOException("File is uploading");
@@ -158,7 +163,7 @@ internal static class FileManager
             fs.Seek(0, SeekOrigin.Begin);
             var guid = Guid.NewGuid();
 
-            UploadSessions.TryAdd(guid, new FileUploadInfo(path, size, chunkSize, sha1, fs));
+            UploadSessions.TryAdd(guid, new FileUploadInfo(path, size, sha1, fs, timeout.Value));
             Log.Debug("[FileUploadChunk] Uploading file {0}", Path.GetFileName(path));
             return guid;
         }
@@ -179,28 +184,21 @@ internal static class FileManager
     public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, string strData)
     {
         if (!UploadSessions.TryGetValue(id, out var info))
-            throw new IOException("File not found");
+            throw new IOException("File not found or timeout");
+
+        info.Touch(); // update last access time
 
         if (offset < 0L || offset >= info.Size) throw new IOException("Offset out of range");
 
         var data = Encoding.BigEndianUnicode.GetBytes(strData);
-        int remain;
-        var count = (remain = (int)(info.Size - offset)) < info.ChunkSize ? remain : (int)info.ChunkSize;
 
         info.File.Seek(offset, SeekOrigin.Begin);
-        info.File.Write(
-            data,
-            0,
-            count
-        ); // 可能为奇数长度
+        await info.File.WriteAsync(data); // 可能为奇数长度
 
         // 更新文件状态
-        info.RemainLength -= count;
-        info.Remain.Reduce(offset, offset + count);
+        info.Remain.Reduce(offset, offset + data.Length);
 
-        if (info.RemainLength > 0)
-            // partial done
-            return (false, info.Size - info.RemainLength);
+        if (info.RemainLength > 0) return (false, info.Size - info.RemainLength); // partial done
 
         // file upload complete
         var sha1 = await FileSha1(info.File);
@@ -254,12 +252,15 @@ internal static class FileManager
     ///     客户端请求下载服务端的文件
     /// </summary>
     /// <param name="path"></param>
+    /// <param name="timeout"></param>
     /// <returns></returns>
     /// <exception cref="IOException"></exception>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static async Task<DownloadRequestInfo> FileDownloadRequest(string path)
+    public static async Task<DownloadRequestInfo> FileDownloadRequest(string path, TimeSpan? timeout)
     {
+        timeout ??= SessionTimeout;
+
         // Validate path
         if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
         if (!File.Exists(path)) throw new IOException("File not found");
@@ -276,7 +277,7 @@ internal static class FileManager
         var size = fs.Length;
         var sha1 = await FileSha1(fs);
         var id = Guid.NewGuid();
-        if (DownloadSessions.TryAdd(id, new FileDownloadInfo(size, sha1, fs, path)))
+        if (DownloadSessions.TryAdd(id, new FileDownloadInfo(size, sha1, fs, path, timeout.Value)))
             return new DownloadRequestInfo(id, size, sha1);
 
         fs.Close();
@@ -293,14 +294,16 @@ internal static class FileManager
     /// <exception cref="ArgumentException"></exception>
     public static async Task<string> FileDownloadRange(Guid id, int from, int to)
     {
-        if (!DownloadSessions.TryGetValue(id, out var info)) throw new ArgumentException("Invalid download session id");
+        if (!DownloadSessions.TryGetValue(id, out var info))
+            throw new ArgumentException("Invalid download session id or timeout");
         if (from < 0 || to < 0 || from > to || to >= info.Size) throw new ArgumentException("Invalid range");
+        info.Touch();
 
         var size = to - from;
         var buffer = new byte[size % 2 == 0 ? size : size + 1];
 
         info.File.Seek(from, SeekOrigin.Begin);
-        var _ = await info.File.ReadAsync(buffer, 0, size);
+        _ = await info.File.ReadAsync(buffer);
         info.Remain.Reduce(from, to);
 
 
@@ -624,4 +627,36 @@ internal static class FileManager
     }
 
     #endregion
+
+    public static void StartFileSessionsWatcher()
+    {
+        if (_fileSessionWatcherLoopTask != null) return;
+        _fileSessionWatcherLoopTask = Task.Run(FileSessionWatcherLoop);
+    }
+
+    private static async Task FileSessionWatcherLoop()
+    {
+        Log.Information("[FileManager] File session watcher started");
+        while (true)
+        {
+            await Task.Delay(1000);
+            WatchFileSessions(UploadSessions);
+            WatchFileSessions(DownloadSessions);
+        }
+    }
+
+    private static void WatchFileSessions<TSessionInfo>(ConcurrentDictionary<Guid, TSessionInfo> sessions)
+        where TSessionInfo : FileSessionInfo
+    {
+        foreach (var sessionId in sessions.Keys) // avoid concurrent modification exception
+        {
+            if (!sessions.TryGetValue(sessionId, out var session)) continue;
+            if (!session.Timeout) continue;
+            
+            if (!sessions.TryRemove(sessionId, out _)) continue;
+            
+            Log.Warning("[FileManager] File session {0} timeout", sessionId);
+            session.Close();
+        }
+    }
 }
