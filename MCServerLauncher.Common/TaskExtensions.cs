@@ -31,4 +31,9 @@ public static class TaskExtensions
     {
         return task.TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
     }
+
+    public static Task<TResult> MapResult<T, TResult>(this Task<T> task, Func<T, TResult> map)
+    {
+        return task.ContinueWith(t => map(t.Result));
+    }
 }
