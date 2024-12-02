@@ -1,13 +1,11 @@
 using System.Diagnostics;
-using System.Management;
 using System.Runtime.InteropServices;
-using Newtonsoft.Json;
 
 namespace MCServerLauncher.Common.System;
 
 public record struct OsInfo(string Name, string Arch);
 
-public record struct CpuInfo(string Vendor, string Name, int Count, double Usage);
+public record struct CpuInfo(string Vendor, string Name, int Slots, int Count, double Usage);
 
 public record struct MemInfo(ulong Total, ulong Free); // in KB
 
@@ -47,29 +45,52 @@ public class WinSystemInfo : ISystemInfo
 {
     public async ValueTask<CpuInfo> GetCpuInfo()
     {
-        var vendor = "Unknown";
-        var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
-        foreach (var obj in searcher.Get())
+        var vendorTask = this.RunCommandAsync(
+                "powershell",
+                "-c \"Get-CimInstance Win32_Processor | Select-Object Manufacturer\""
+            )
+            .MapResult(x =>
+            {
+                var lines = x.Split('\n');
+                return lines.Length >= 3 ? lines[2].Trim() : "Unknown";
+            });
+        var nameTask = this.RunCommandAsync(
+            "powershell",
+            "-c \"Get-CimInstance Win32_Processor | Select-Object Name\""
+        ).MapResult(x =>
         {
-            vendor = obj["Manufacturer"]?.ToString() ?? "Unknown";
-            break;
-        }
+            var lines = x.Split('\n');
+            return lines.Length >= 3 ? lines[2].Trim() : "Unknown";
+        });
 
-        return new CpuInfo(vendor, GetCpuName(), Environment.ProcessorCount, await GetCpuUsage());
+        var slotsTask = this.RunCommandAsync(
+                "powershell",
+                "-c \"Get-CimInstance Win32_Processor | Select-Object SocketDesignation\""
+            )
+            .MapResult(x => x.Split('\n').Length - 2);
+
+
+        await Task.WhenAll(vendorTask, nameTask, slotsTask);
+        return new CpuInfo(vendorTask.Result, nameTask.Result, slotsTask.Result, Environment.ProcessorCount,
+            await GetCpuUsage());
     }
 
-    public ValueTask<MemInfo> GetMemInfo()
+    public async ValueTask<MemInfo> GetMemInfo()
     {
-        ulong total = 0;
-        ulong free = 0;
-        var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem");
-        foreach (var obj in searcher.Get())
-        {
-            total = (ulong)obj["TotalVisibleMemorySize"]; // TotalVisibleMemorySize is in KB
-            free = (ulong)obj["FreePhysicalMemory"]; // FreePhysicalMemory is in KB
-        }
+        var totalMemTask = this.RunCommandAsync(
+                "powershell",
+                "-c \"Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory\""
+            )
+            .MapResult(x => ulong.Parse(x.Split('\n')[2]));
 
-        return new ValueTask<MemInfo>(new MemInfo(total, free));
+        var freeMemTask = this.RunCommandAsync(
+            "powershell",
+            "-c \"Get-CimInstance Win32_OperatingSystem | Select-Object FreePhysicalMemory\""
+        ).MapResult(x => ulong.Parse(x.Split('\n')[2]));
+
+        await Task.WhenAll(totalMemTask, freeMemTask);
+
+        return new MemInfo(totalMemTask.Result, freeMemTask.Result);
     }
 
     [DllImport("kernel32.dll")]
@@ -101,13 +122,6 @@ public class WinSystemInfo : ISystemInfo
         return totalDiff == 0 ? 0 : (1.0 - (double)idleDiff / totalDiff) * 100;
     }
 
-    private static string GetCpuName()
-    {
-        var name = "Unknown";
-        var searcher = new ManagementObjectSearcher("select Name from Win32_Processor");
-        foreach (var obj in searcher.Get()) name = obj["Name"]?.ToString() ?? "Unknown";
-        return name;
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct FileTime
@@ -125,8 +139,11 @@ public class LinuxSystemInfo : ISystemInfo
         var name = cpuInfo[4].Split(':')[1].Trim();
         var vendor = cpuInfo[1].Split(':')[1].Trim();
 
+        var slots = await this.RunCommandAsync("sh", "-c \"lscpu | grep 'Socket(s)' | awk '{print $2}'\"")
+            .MapResult(int.Parse);
+
         var usage = await GetCpuUsage();
-        return new CpuInfo(vendor, name, Environment.ProcessorCount, usage);
+        return new CpuInfo(vendor, name, slots, Environment.ProcessorCount, usage);
     }
 
     public async ValueTask<MemInfo> GetMemInfo()
@@ -176,10 +193,10 @@ public class MacosSystemInfo : ISystemInfo
         var cpuUsage =
             await this.RunCommandAsync("sh", "-c \"top -l 1 | grep 'CPU usage' | awk '{print $3}' | tr -d '%'\"")
                 .MapResult(double.Parse);
-        
+
         var name = await this.RunCommandAsync("sysctl", "-n machdep.cpu.brand_string");
         var vendor = name.Split(' ')[0];
-        return new CpuInfo(vendor, name, Environment.ProcessorCount, cpuUsage);
+        return new CpuInfo(vendor, name, 1, Environment.ProcessorCount, cpuUsage);
     }
 
     public async ValueTask<MemInfo> GetMemInfo()
@@ -187,11 +204,15 @@ public class MacosSystemInfo : ISystemInfo
         var total = await this.RunCommandAsync("sysctl", "-n vm.pages").MapResult(ulong.Parse);
         var pageSize = await this.RunCommandAsync("getconf", "PAGESIZE").MapResult(ulong.Parse);
         pageSize /= 1024; // in KB
-        
-        var vmStatActivePages = await this.RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages active' | awk '{print $3}'\"").MapResult(s=>ulong.Parse(s.Trim('.')));
-        var vmStatWiredPages = await this.RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages wired down' | awk '{print $4}'\"").MapResult(s=>ulong.Parse(s.Trim('.')));
-        
-        return new MemInfo(total*pageSize, (total -vmStatActivePages-vmStatWiredPages)*pageSize);
+
+        var vmStatActivePages = await this
+            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages active' | awk '{print $3}'\"")
+            .MapResult(s => ulong.Parse(s.Trim('.')));
+        var vmStatWiredPages = await this
+            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages wired down' | awk '{print $4}'\"")
+            .MapResult(s => ulong.Parse(s.Trim('.')));
+
+        return new MemInfo(total * pageSize, (total - vmStatActivePages - vmStatWiredPages) * pageSize);
     }
 }
 
