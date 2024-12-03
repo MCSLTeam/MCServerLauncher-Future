@@ -25,6 +25,7 @@ public enum ActionType
 {
     Ping,
     GetJavaList,
+    GetSystemInfo,
     FileUploadRequest,
     FileUploadChunk,
     FileUploadCancel

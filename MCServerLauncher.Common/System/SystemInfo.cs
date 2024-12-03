@@ -185,7 +185,7 @@ public class LinuxSystemInfo : ISystemInfo
     }
 }
 
-public class MacosSystemInfo : ISystemInfo
+public class MacOSSystemInfo : ISystemInfo
 {
     public async ValueTask<CpuInfo> GetCpuInfo()
     {
@@ -222,7 +222,7 @@ public record struct SystemInfo(OsInfo Os, CpuInfo Cpu, MemInfo Mem)
         ISystemInfo systemInfo = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? new WinSystemInfo()
             : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
-                ? new MacosSystemInfo()
+                ? new MacOSSystemInfo()
                 : new LinuxSystemInfo();
         return new SystemInfo(
             systemInfo.GetOsInfo(),
@@ -230,4 +230,11 @@ public record struct SystemInfo(OsInfo Os, CpuInfo Cpu, MemInfo Mem)
             await systemInfo.GetMemInfo()
         );
     }
+}
+
+public class SystemInfoModel
+{
+    public OsInfo Os { get; set; }
+    public CpuInfo Cpu { get; set; }
+    public MemInfo Mem { get; set; }
 }

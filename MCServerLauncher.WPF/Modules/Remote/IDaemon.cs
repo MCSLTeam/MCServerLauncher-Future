@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -47,6 +48,8 @@ public interface IDaemon
     /// </summary>
     /// <returns></returns>
     Task<List<JavaInfo>> GetJavaListAsync();
+
+    Task<JObject> GetSystemInfoAsync();
 
     /// <summary>
     ///     关闭连接

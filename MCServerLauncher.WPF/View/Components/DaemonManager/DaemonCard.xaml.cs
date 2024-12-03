@@ -7,19 +7,23 @@ using System.Threading.Tasks;
 using System;
 using System.Windows;
 using System.Windows.Media;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using MCServerLauncher.Common.System;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
     /// <summary>
     ///     DaemonCard.xaml 的交互逻辑
     /// </summary>
-    public partial class DaemonCard: IDaemonCard
+    public partial class DaemonCard : IDaemonCard
     {
         public DaemonCard()
         {
             InitializeComponent();
         }
-        private string SystemTypeString;
+        private string token;
+        private string SystemTypeString = string.Empty;
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
         public int Port { get; set; }
@@ -31,16 +35,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             set
             {
                 SystemTypeString = value;
+                Log.Debug($"system type changed, {value}");
                 SystemIcon.Source = SystemTypeString switch
                 {
-                    "Windows" => (ImageSource)Application.Current.Resources["WindowsDrawingImage"],
-                    "Apple" => (ImageSource)Application.Current.Resources["AppleDrawingImage"],
-                    "Linux" => (ImageSource)Application.Current.Resources["GenericLinuxDrawingImage"],
-                    "SUSE" => (ImageSource)Application.Current.Resources["SUSEDrawingImage"],
-                    "Ubuntu" => (ImageSource)Application.Current.Resources["UbuntuDrawingImage"],
-                    "Fedora" => (ImageSource)Application.Current.Resources["FedoraDrawingImage"],
-                    "CentOS" => (ImageSource)Application.Current.Resources["CentOSDrawingImage"],
-                    "Debian" => (ImageSource)Application.Current.Resources["DebianDrawingImage"],
+                    "Windows" => FindResource("WindowsDrawingImage") as ImageSource,
+                    "Darwin" => FindResource("DarwinDrawingImage") as ImageSource,
+                    "Linux" => FindResource("GenericLinuxDrawingImage") as ImageSource,
                     _ => null,
                 };
             }
@@ -110,7 +110,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Status = "ing";
             try
             {
-                var token = await Daemon.LoginAsync(
+                token = await Daemon.LoginAsync(
                     address: EndPoint,
                     port: Port,
                     usr: Username,
@@ -130,7 +130,19 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     PingInterval = TimeSpan.FromSeconds(5),
                     PingTimeout = 5000
                 });
-                Log.Information("[Daemon] Connected: {0}", await daemon.PingAsync());
+                Log.Information("[Daemon] Connected: {0}", Address);
+                JToken systemInfo = (await daemon.GetSystemInfoAsync()).SelectToken("info");
+                if (systemInfo is not null)
+                {
+                    var SystemName = systemInfo.SelectToken("os.name").ToString();
+                    var CpuVendor = systemInfo.SelectToken("cpu.vendor").ToString();
+                    if (SystemName.Contains("Windows NT")) SystemType = "Windows";
+                    else if (SystemName.Contains("Unix"))
+                    {
+                        if (CpuVendor.Contains("Apple")) SystemType = "Darwin";
+                        else SystemType = "Linux";
+                    }
+                }
                 Status = "ok";
                 await daemon.CloseAsync();
             }

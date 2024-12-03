@@ -207,6 +207,11 @@ public class Daemon : IDaemon
 #pragma warning restore CS8602
     }
 
+    public async Task<JObject> GetSystemInfoAsync()
+    {
+        return await RequestAsync(ActionType.GetSystemInfo, new Dictionary<string, object>());
+    }
+
     public static async Task RunTest()
     {
         var usr = "admin";
