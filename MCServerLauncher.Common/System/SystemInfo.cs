@@ -135,11 +135,14 @@ public class LinuxSystemInfo : ISystemInfo
 {
     public async ValueTask<CpuInfo> GetCpuInfo()
     {
-        var cpuInfo = File.ReadAllText("/proc/cpuinfo").Split('\n');
+        var cpuInfo = File.ReadAllLines("/proc/cpuinfo");
         var name = cpuInfo[4].Split(':')[1].Trim();
         var vendor = cpuInfo[1].Split(':')[1].Trim();
 
-        var slots = await this.RunCommandAsync("sh", "-c \"lscpu | grep 'Socket(s)' | awk '{print $2}'\"")
+        var slots = await this.RunCommandAsync(
+                "sh",
+                "-c \"grep 'physical id' /proc/cpuinfo | awk -F: '{print $2 | \"sort -un\"}' | wc -l\""
+            )
             .MapResult(int.Parse);
 
         var usage = await GetCpuUsage();
@@ -148,9 +151,14 @@ public class LinuxSystemInfo : ISystemInfo
 
     public async ValueTask<MemInfo> GetMemInfo()
     {
-        var total = await this.RunCommandAsync("sh", "-c \"free -b | grep Mem | awk '{print $2}'\"");
-        var free = await this.RunCommandAsync("sh", "-c \"free -b | grep Mem | awk '{print $4}'\"");
-        return new MemInfo(ulong.Parse(total.Trim()), ulong.Parse(free.Trim()));
+        var totalMemTask = this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemTotal | awk '{print $2}'\"")
+            .MapResult(ulong.Parse);
+        var availableMemTask =
+            this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemAvailable | awk '{print $4}'\"")
+                .MapResult(ulong.Parse);
+
+        await Task.WhenAll(totalMemTask, availableMemTask);
+        return new MemInfo(totalMemTask.Result, availableMemTask.Result);
     }
 
     private static (ulong, ulong) GetLinuxCpuTime()
