@@ -19,7 +19,6 @@ public class Application
     public Application()
     {
         _httpService = new HttpService();
-
         _httpService.Setup(new TouchSocketConfig()
             .SetListenIPHosts(AppConfig.Get().Port)
             .ConfigureContainer(
@@ -91,7 +90,25 @@ public class Application
         await _httpService.StartAsync();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
-        Console.ReadKey();
+
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            cts.Cancel();
+        };
+        while (!cts.IsCancellationRequested)
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1), cts.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+
+        Log.Information("[Remote] Stopping...");
+        await StopAsync();
     }
 
     public async Task StopAsync()

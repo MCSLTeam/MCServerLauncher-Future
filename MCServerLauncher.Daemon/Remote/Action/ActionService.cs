@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using MCServerLauncher.Common;
+using MCServerLauncher.Common.System;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
@@ -64,6 +66,7 @@ internal class ActionService : IActionService
                 ActionType.SendToInstance => SendToInstanceHandler(SendToInstance.Of(data)),
                 ActionType.GetAllStatus => GetAllStatusHandler(GetAllStatus.Of(data)),
                 ActionType.TryStopInstance => TryStopInstanceHandler(TryStopInstance.Of(data)),
+                ActionType.GetSystemInfo => await GetSystemInfoHandler(GetSystemInfo.Of(data)),
                 _ => throw new NotImplementedException()
             };
         }
@@ -114,7 +117,7 @@ internal class ActionService : IActionService
         var fileId = FileManager.FileUploadRequest(
             data.Path,
             data.Size,
-            data.ChunkSize,
+            data.Timeout.Map(t => TimeSpan.FromMilliseconds(t)),
             data.Sha1
         );
 
@@ -163,7 +166,8 @@ internal class ActionService : IActionService
 
     private async Task<JObject> FileDownloadRequestHandler(FileDownloadRequest data)
     {
-        var info = await FileManager.FileDownloadRequest(data.Path);
+        var info = await FileManager.FileDownloadRequest(data.Path,
+            data.Timeout.Map(t => TimeSpan.FromMilliseconds(t)));
         return Ok(FileDownloadRequest.Response(info.Id, info.Size, info.Sha1));
     }
 
@@ -208,6 +212,11 @@ internal class ActionService : IActionService
     private JObject GetAllStatusHandler(GetAllStatus data)
     {
         return Ok(GetAllStatus.Response(_instanceManager.GetAllStatus()));
+    }
+
+    private async Task<JObject> GetSystemInfoHandler(GetSystemInfo data)
+    {
+        return Ok(GetSystemInfo.Response(await SystemInfo.Get()));
     }
 
     private JObject Err(string message, ActionType type, int code = 1400)
