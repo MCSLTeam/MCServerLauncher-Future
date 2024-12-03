@@ -151,7 +151,7 @@ public class LinuxSystemInfo : ISystemInfo
         var totalMemTask = this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemTotal | awk '{print $2}'\"")
             .MapResult(ulong.Parse);
         var availableMemTask =
-            this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemAvailable | awk '{print $4}'\"")
+            this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemAvailable | awk '{print $2}'\"")
                 .MapResult(ulong.Parse);
 
         await Task.WhenAll(totalMemTask, availableMemTask);
@@ -165,7 +165,7 @@ public class LinuxSystemInfo : ISystemInfo
             "-c \"cat /proc/stat | grep '^cpu ' | awk '{total=$2+$3+$4+$5; idle=$5; print total,idle}'\""
         ).MapResult(x =>
         {
-            var rv = x.Split(',').Select(ulong.Parse).ToArray();
+            var rv = x.Split(' ').Select(ulong.Parse).ToArray();
             return (rv[0], rv[1]);
         });
     }

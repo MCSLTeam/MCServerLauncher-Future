@@ -129,3 +129,9 @@ actions:
       
       resp:
         status: IDictionary<Guid, InstanceStatus>
+
+  - get_system_info:
+      req:
+      
+      resp:
+        info: SystemInfo

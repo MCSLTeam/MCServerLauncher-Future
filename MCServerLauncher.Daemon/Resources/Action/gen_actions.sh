@@ -1,1 +1,1 @@
-python3 actions_meta.py --meta ./actions_meta.yml --out ../../Remote/Action
+python Resources/Action/actions_meta.py --meta /Users/connorzheng/workspace/MCServerLauncher-Future/MCServerLauncher.Daemon/Resources/Action/actions_meta.yml --out /Users/connorzheng/workspace/MCServerLauncher-Future/MCServerLauncher.Daemon/Remote/Action/Actions.cs

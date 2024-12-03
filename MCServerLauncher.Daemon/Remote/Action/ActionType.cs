@@ -19,5 +19,6 @@ public enum ActionType
     SendToInstance,
     KillInstance,
     GetInstanceStatus,
-    GetAllStatus
+    GetAllStatus,
+    GetSystemInfo
 }

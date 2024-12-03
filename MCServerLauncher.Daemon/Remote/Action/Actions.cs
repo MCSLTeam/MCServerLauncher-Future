@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.System;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
@@ -334,6 +335,22 @@ public class GetAllStatus
         return new JObject()
         {
             [nameof(status).ToSnakeCase()] = JToken.FromObject(status, Actions.Serializer)
+        };
+    }
+}
+
+public class GetSystemInfo
+{
+    public static GetSystemInfo Of(JObject? data)
+    {
+        return new GetSystemInfo();
+    }
+
+    public static JObject Response(SystemInfo info)
+    {
+        return new JObject()
+        {
+            [nameof(info).ToSnakeCase()] = JToken.FromObject(info, Actions.Serializer)
         };
     }
 }

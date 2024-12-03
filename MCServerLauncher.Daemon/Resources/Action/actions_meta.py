@@ -7,7 +7,8 @@ file_dir = Path(__file__).parent.absolute()
 proj_root = file_dir.parent.parent.parent
 
 
-CS_PATTERN = """using MCServerLauncher.Daemon.Storage;
+CS_PATTERN = """using MCServerLauncher.Common.System;
+using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Utils;
