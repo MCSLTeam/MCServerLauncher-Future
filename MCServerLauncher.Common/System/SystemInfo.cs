@@ -16,9 +16,9 @@ public interface ISystemInfo
     ValueTask<MemInfo> GetMemInfo();
 }
 
-public static class SystemInfoExtensions
+public static class SystemInfoHelper
 {
-    public static async Task<string> RunCommandAsync(this ISystemInfo _, string command, string arguments)
+    public static async Task<string> RunCommandAsync(string command, string arguments)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -34,6 +34,14 @@ public static class SystemInfoExtensions
         var result = await process.StandardOutput.ReadToEndAsync();
         process.WaitForExit();
         return result.Trim();
+    }
+}
+
+public static class SystemInfoExtensions
+{
+    public static Task<string> RunCommandAsync(this ISystemInfo _, string command, string arguments)
+    {
+        return SystemInfoHelper.RunCommandAsync(command, arguments);
     }
 
     public static OsInfo GetOsInfo(this ISystemInfo _)
@@ -130,7 +138,7 @@ public class LinuxSystemInfo : ISystemInfo
 
         var slots = await this.RunCommandAsync(
                 "sh",
-                "-c \"grep 'physical id' /proc/cpuinfo | awk -F: '{print $2 | \"sort -un\"}' | wc -l\""
+                "-c \"grep 'physical id' /proc/cpuinfo | awk -F: '{print $2 | \\\"sort -un\\\"}' | wc -l\""
             )
             .MapResult(int.Parse);
 
@@ -150,31 +158,25 @@ public class LinuxSystemInfo : ISystemInfo
         return new MemInfo(totalMemTask.Result, availableMemTask.Result);
     }
 
-    private static (ulong, ulong) GetLinuxCpuTime()
+    private static Task<(ulong, ulong)> GetLinuxCpuTime()
     {
-        string[] lines = File.ReadAllLines("/proc/stat");
-        var cpuLine = Array.Find(lines, line => line.StartsWith("cpu "));
-
-        if (cpuLine == null)
-            throw new InvalidOperationException("/proc/stat not found or invalid");
-
-        var cpuStats = cpuLine.Split(new char[' '], StringSplitOptions.RemoveEmptyEntries);
-        var user = ulong.Parse(cpuStats[1]);
-        var nice = ulong.Parse(cpuStats[2]);
-        var system = ulong.Parse(cpuStats[3]);
-        var idle = ulong.Parse(cpuStats[4]);
-
-        var total = user + nice + system + idle;
-        return (total, idle);
+        return SystemInfoHelper.RunCommandAsync(
+            "sh",
+            "-c \"cat /proc/stat | grep '^cpu ' | awk '{total=$2+$3+$4+$5; idle=$5; print total,idle}'\""
+        ).MapResult(x =>
+        {
+            var rv = x.Split(',').Select(ulong.Parse).ToArray();
+            return (rv[0], rv[1]);
+        });
     }
 
     private static async Task<double> GetCpuUsage(int delay = 500)
     {
-        var (total1, idle1) = GetLinuxCpuTime();
+        var (total1, idle1) = await GetLinuxCpuTime();
 
         await Task.Delay(delay);
 
-        var (total2, idle2) = GetLinuxCpuTime();
+        var (total2, idle2) = await GetLinuxCpuTime();
 
         var totalDiff = total2 - total1;
         var idleDiff = idle2 - idle1;
