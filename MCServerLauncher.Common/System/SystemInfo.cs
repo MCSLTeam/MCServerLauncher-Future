@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace MCServerLauncher.Common.System;
 
@@ -94,40 +95,28 @@ public class WinSystemInfo : ISystemInfo
     }
 
     [DllImport("kernel32.dll")]
-    private static extern bool GetSystemTimes(out FileTime lpIdleTime, out FileTime lpKernelTime,
-        out FileTime lpUserTime);
+    private static extern bool GetSystemTimes(out FILETIME lpIdleTime, out FILETIME lpKernelTime,
+        out FILETIME lpUserTime);
 
     private static async Task<double> GetCpuUsage(int delay = 500)
     {
-        if (!GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
-            throw new InvalidOperationException("Failed to get CPU times");
-
-        var idle = ((ulong)idleTime.dwHighDateTime << 32) | idleTime.dwLowDateTime;
-        var kernel = ((ulong)kernelTime.dwHighDateTime << 32) | kernelTime.dwLowDateTime;
-        var user = ((ulong)userTime.dwHighDateTime << 32) | userTime.dwLowDateTime;
-
-        // Wait a short interval for a more accurate calculation
+        var (idle1, total1) = GetCpuTime();
         await Task.Delay(delay);
+        var (idle2, total2) = GetCpuTime();
 
-        if (!GetSystemTimes(out var idleTime2, out var kernelTime2, out var userTime2))
-            throw new InvalidOperationException("Failed to get CPU times");
-
-        var idle2 = ((ulong)idleTime2.dwHighDateTime << 32) | idleTime2.dwLowDateTime;
-        var kernel2 = ((ulong)kernelTime2.dwHighDateTime << 32) | kernelTime2.dwLowDateTime;
-        var user2 = ((ulong)userTime2.dwHighDateTime << 32) | userTime2.dwLowDateTime;
-
-        var idleDiff = idle2 - idle;
-        var totalDiff = kernel2 + user2 - (kernel + user);
-
-        return totalDiff == 0 ? 0 : (1.0 - (double)idleDiff / totalDiff) * 100;
+        return total2 - total1 == 0 ? 0 : (1.0 - (double)(idle2 - idle1) / (total2 - total1)) * 100;
     }
 
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct FileTime
+    private static (ulong, ulong) GetCpuTime()
     {
-        public uint dwLowDateTime;
-        public uint dwHighDateTime;
+        if (!GetSystemTimes(out var lpIdleTime, out var lpKernelTime, out var lpUserTime))
+            throw new InvalidOperationException("Failed to get CPU times");
+
+        var idleTime = ((ulong)lpIdleTime.dwHighDateTime << 32) | (uint)lpIdleTime.dwLowDateTime;
+        var kernelTime = ((ulong)lpKernelTime.dwHighDateTime << 32) | (uint)lpKernelTime.dwLowDateTime;
+        var userTime = ((ulong)lpUserTime.dwHighDateTime << 32) | (uint)lpUserTime.dwLowDateTime;
+
+        return (idleTime, kernelTime + userTime);
     }
 }
 
