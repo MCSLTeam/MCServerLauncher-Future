@@ -58,7 +58,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <returns>The correct endpoint.</returns>
         private string GetEndPoint()
         {
-            return SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall
+            return SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftFabricInstall
                 ? "https://bmclapi2.bangbang93.com/fabric-meta/v2/versions"
                 : "https://meta.fabricmc.net/v2/versions";
         }

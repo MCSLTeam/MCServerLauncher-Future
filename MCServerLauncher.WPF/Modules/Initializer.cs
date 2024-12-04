@@ -143,14 +143,14 @@ namespace MCServerLauncher.WPF.Modules
             SettingsManager.InitSettings();
             DaemonsListManager.InitDaemonListConfig();
             bool needImport = false;
-            if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsCertImported) { InitCert(); needImport = true; }
-            if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsFontInstalled) { InitFont(); needImport = true; }
+            if (SettingsManager.Get?.App != null && !SettingsManager.Get.App.IsCertImported) { InitCert(); needImport = true; }
+            if (SettingsManager.Get?.App != null && !SettingsManager.Get.App.IsFontInstalled) { InitFont(); needImport = true; }
             if (needImport)
             {
                 Process.Start(Assembly.GetExecutingAssembly().Location);
                 Environment.Exit(0);
             }
-            LanguageManager.Localize.ChangeLanguage(new CultureInfo(SettingsManager.AppSettings?.App?.Language ?? throw new InvalidOperationException()));
+            LanguageManager.Localize.ChangeLanguage(new CultureInfo(SettingsManager.Get?.App?.Language ?? throw new InvalidOperationException()));
         }
     }
 }

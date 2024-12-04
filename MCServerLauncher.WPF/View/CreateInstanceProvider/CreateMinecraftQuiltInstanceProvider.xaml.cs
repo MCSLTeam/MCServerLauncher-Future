@@ -50,7 +50,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// <returns>The correct endpoint.</returns>
         private string GetEndPoint()
         {
-            return SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall
+            return SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftQuiltInstall
                 ? "https://bmclapi2.bangbang93.com/quilt-meta"
                 : "https://meta.quiltmc.org";
         }

@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="50" d:DesignWidth="165">
-    <Border Style="{StaticResource StyledBorder}" Width="170" Height="40" x:Name="CoreItemBorder">
+    <Border Style="{StaticResource StyledBorder}" Width="170" Height="40" x:Name="CoreItemBorder" Margin="0,-5,0,-5">
         <Grid Width="Auto">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -13,11 +13,9 @@
             </Grid.ColumnDefinitions>
             <TextBlock Margin="10,0,5,0" TextAlignment="Center" VerticalAlignment="Center" Grid.Column="0"
                        x:Name="CoreNameReplacer" />
-            <Border Height="25" Margin="5,0,10,0" VerticalAlignment="Center" Style="{DynamicResource FastMirrorTag}"
+            <Button IsHitTestVisible="False" Padding="5,2,5,2" x:Name="CoreTagView" Height="25" Margin="5,0,10,0" VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}"
                     Grid.Column="1">
-                <TextBlock Foreground="White" Margin="5,0,5,0" TextAlignment="Center" VerticalAlignment="Center"
-                           x:Name="CoreTagReplacer" />
-            </Border>
+            </Button>
         </Grid>
     </Border>
 </UserControl>

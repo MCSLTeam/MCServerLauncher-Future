@@ -119,7 +119,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
             NeoForgeVersionComboBox.IsEnabled = false;
-            if (SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+            if (SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
                 await FetchNeoForgeDataByBmclapi();
             else
                 await FetchNeoForgeDataByOfficial();

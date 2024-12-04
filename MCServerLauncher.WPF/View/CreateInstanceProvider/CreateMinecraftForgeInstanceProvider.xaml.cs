@@ -76,7 +76,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= PreFetchForgeVersions;
             MinecraftVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
-                SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
+                SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftForgeInstall
                     ? await FetchMinecraftVersionsByBmclapi()
                     : await FetchMinecraftVersionsByOfficial()
             );
@@ -193,7 +193,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             FetchForgeVersionButton.IsEnabled = false;
             ForgeVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            CurrentForgeBuilds = SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall
+            CurrentForgeBuilds = SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftForgeInstall
                 ? await FetchForgeVersionsByBmclapi(MinecraftVersionComboBox.SelectedItem.ToString())
                 : await FetchForgeVersionsByOfficial(MinecraftVersionComboBox.SelectedItem.ToString());
             if (CurrentForgeBuilds != null)
