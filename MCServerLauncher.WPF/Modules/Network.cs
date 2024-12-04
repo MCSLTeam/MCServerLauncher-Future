@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using MCServerLauncher.Common;
 using Serilog;
 using static MCServerLauncher.WPF.App;
 
@@ -16,7 +15,7 @@ namespace MCServerLauncher.WPF.Modules
         public static string CommonUserAgent = $"MCServerLauncher/{AppVersion}";
 
         public static string BrowserUserAgent =
-            $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3 MCServerLauncher/{AppVersion}";
+            $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0 MCServerLauncher/{AppVersion}";
 
         public static async Task<HttpResponseMessage> SendGetRequest(string url, bool useBrowserUserAgent = false,CancellationToken cancellationToken=default)
         {
