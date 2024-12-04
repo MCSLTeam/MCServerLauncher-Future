@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static Task _writeTask = Task.CompletedTask;
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
-        public static Settings? AppSettings { get; set; }
+        public static Settings? Get { get; set; }
 
 
         /// <summary>
@@ -24,14 +24,14 @@ namespace MCServerLauncher.WPF.Modules
             if (File.Exists("Data/Configuration/MCSL/Settings.json"))
             {
                 Log.Information("[Set] Found profile, reading");
-                AppSettings =
+                Get =
                     JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json",
                         Encoding.UTF8));
             }
             else
             {
                 Log.Information("[Set] Profile not found, creating");
-                AppSettings = new Settings
+                Get = new Settings
                 {
                     InstanceCreation = new InstanceCreationSettingsModel
                     {
@@ -68,7 +68,7 @@ namespace MCServerLauncher.WPF.Modules
                 };
                 File.WriteAllText(
                     "Data/Configuration/MCSL/Settings.json",
-                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented),
+                    JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );
             }
@@ -94,10 +94,10 @@ namespace MCServerLauncher.WPF.Modules
 
             object? settings = settingClass switch
             {
-                "InstanceCreation" => AppSettings?.InstanceCreation,
-                "ResDownload" => AppSettings?.Download,
-                "Instance" => AppSettings?.Instance,
-                "App" => AppSettings?.App,
+                "InstanceCreation" => Get?.InstanceCreation,
+                "ResDownload" => Get?.Download,
+                "Instance" => Get?.Instance,
+                "App" => Get?.App,
                 _ => throw new ArgumentOutOfRangeException(nameof(settingClass), settingClass, "Invalid setting class.")
             };
 
@@ -129,10 +129,10 @@ namespace MCServerLauncher.WPF.Modules
             {
                 object? settingClass = setting.Key switch
                 {
-                    "InstanceCreation" => AppSettings?.InstanceCreation,
-                    "ResDownload" => AppSettings?.Download,
-                    "Instance" => AppSettings?.Instance,
-                    "App" => AppSettings?.App,
+                    "InstanceCreation" => Get?.InstanceCreation,
+                    "ResDownload" => Get?.Download,
+                    "Instance" => Get?.Instance,
+                    "App" => Get?.App,
                     _ => throw new ArgumentOutOfRangeException(nameof(setting.Key), setting.Key,
                         "Invalid setting class.")
                 };
@@ -142,7 +142,7 @@ namespace MCServerLauncher.WPF.Modules
                 var value = property.GetValue(settingClass);
                 File.WriteAllText(
                     "Data/Configuration/MCSL/Settings.json",
-                    JsonConvert.SerializeObject(AppSettings, Formatting.Indented),
+                    JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );
             }

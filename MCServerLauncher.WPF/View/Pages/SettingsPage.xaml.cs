@@ -29,13 +29,13 @@ namespace MCServerLauncher.WPF.View.Pages
             # region Initialize nums
 
             InitDownloadSourceSelection();
-            ResDownload_DownloadThreadCnt.SettingSlider.Value = SettingsManager.AppSettings.Download.ThreadCnt;
+            ResDownload_DownloadThreadCnt.SettingSlider.Value = SettingsManager.Get.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex =
-                _actionWhenDownloadErrorList.IndexOf(SettingsManager.AppSettings.Download.ActionWhenDownloadError);
+                _actionWhenDownloadErrorList.IndexOf(SettingsManager.Get.Download.ActionWhenDownloadError);
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex =
-                _actionWhenDeleteConfirmList.IndexOf(SettingsManager.AppSettings.Instance.ActionWhenDeleteConfirm);
-            More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(SettingsManager.AppSettings.App.Theme);
-            More_LauncherLanguage.SettingComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.AppSettings.App.Language);
+                _actionWhenDeleteConfirmList.IndexOf(SettingsManager.Get.Instance.ActionWhenDeleteConfirm);
+            More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(SettingsManager.Get.App.Theme);
+            More_LauncherLanguage.SettingComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.Get.App.Language);
 
             #endregion
 
@@ -88,7 +88,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MinecraftJavaAutoAcceptEula",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.MinecraftJavaAutoAcceptEula)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.MinecraftJavaAutoAcceptEula)
             );
 
         private void OnMinecraftJavaAutoAcceptEulaChanged(object sender, RoutedEventArgs e)
@@ -112,7 +112,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MinecraftJavaAutoSwitchOnlineMode",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.MinecraftJavaAutoSwitchOnlineMode)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.MinecraftJavaAutoSwitchOnlineMode)
             );
 
         private void OnMinecraftJavaAutoSwitchOnlineModeChanged(object sender, RoutedEventArgs e)
@@ -136,7 +136,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MinecraftBedrockAutoSwitchOnlineMode",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode)
             );
 
         private void OnMinecraftBedrockAutoSwitchOnlineModeChanged(object sender, RoutedEventArgs e)
@@ -160,7 +160,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftForgeInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftForgeInstall)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftForgeInstall)
             );
 
         private void OnUseMirrorForMinecraftForgeInstallChanged(object sender, RoutedEventArgs e)
@@ -184,7 +184,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftNeoForgeInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
             );
 
         private void OnUseMirrorForMinecraftNeoForgeInstallChanged(object sender, RoutedEventArgs e)
@@ -208,7 +208,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftFabricInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftFabricInstall)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftFabricInstall)
             );
 
         private void OnUseMirrorForMinecraftFabricInstallChanged(object sender, RoutedEventArgs e)
@@ -232,7 +232,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "UseMirrorForMinecraftQuiltInstall",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftQuiltInstall)
+                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftQuiltInstall)
             );
 
         private void OnUseMirrorForMinecraftQuiltInstallChanged(object sender, RoutedEventArgs e)
@@ -247,11 +247,11 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void InitDownloadSourceSelection()
         {
-            FastMirrorSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "FastMirror";
-            PolarsMirrorSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "PolarsMirror";
-            ZCloudFileSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "ZCloudFile";
-            MSLAPISrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "MSLAPI";
-            MCSLSyncSrc.IsChecked = SettingsManager.AppSettings.Download.DownloadSource == "MCSLSync";
+            FastMirrorSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "FastMirror";
+            PolarsMirrorSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "PolarsMirror";
+            ZCloudFileSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "ZCloudFile";
+            MSLAPISrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "MSLAPI";
+            MCSLSyncSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "MCSLSync";
         }
 
         private void OnResDownloadSourceSelectionChanged(object sender, RoutedEventArgs e)
@@ -283,7 +283,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "DownloadThreadValue",
                 typeof(int),
                 typeof(RangeSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.Download.ThreadCnt)
+                new PropertyMetadata(SettingsManager.Get.Download.ThreadCnt)
             );
 
         private void OnDownloadThreadValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -316,7 +316,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 typeof(int),
                 typeof(ComboSettingCard),
                 new PropertyMetadata(
-                    _actionWhenDownloadErrorList.IndexOf(SettingsManager.AppSettings.Download.ActionWhenDownloadError))
+                    _actionWhenDownloadErrorList.IndexOf(SettingsManager.Get.Download.ActionWhenDownloadError))
             );
 
         private void OnActionWhenDownloadErrorSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -356,7 +356,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 typeof(int),
                 typeof(ComboSettingCard),
                 new PropertyMetadata(
-                    _actionWhenDeleteConfirmList.IndexOf(SettingsManager.AppSettings.Instance.ActionWhenDeleteConfirm))
+                    _actionWhenDeleteConfirmList.IndexOf(SettingsManager.Get.Instance.ActionWhenDeleteConfirm))
             );
 
         private void OnActionWhenDeleteConfirmIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -396,7 +396,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "LauncherThemeIndex",
                 typeof(int),
                 typeof(ComboSettingCard),
-                new PropertyMetadata(_themeList.IndexOf(SettingsManager.AppSettings.App.Theme))
+                new PropertyMetadata(_themeList.IndexOf(SettingsManager.Get.App.Theme))
             );
 
         private void OnLauncherThemeIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -429,7 +429,7 @@ namespace MCServerLauncher.WPF.View.Pages
         /// <param name="e"></param>
         private void OnLauncherLanguageIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!SettingsManager.AppSettings.App.IsFirstSetupFinished) return;
+            if (!SettingsManager.Get.App.IsFirstSetupFinished) return;
             LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
             OnLanguageChanged();
             SettingsManager.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
@@ -494,7 +494,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "FollowStartupForLauncher",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.App.FollowStartup)
+                new PropertyMetadata(SettingsManager.Get.App.FollowStartup)
             );
 
         private void OnFollowStartupForLauncherChanged(object sender, RoutedEventArgs e)
@@ -517,7 +517,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "AutoCheckUpdateForLauncher",
                 typeof(bool),
                 typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.AppSettings.App.AutoCheckUpdate)
+                new PropertyMetadata(SettingsManager.Get.App.AutoCheckUpdate)
             );
 
         private void OnAutoCheckUpdateForLauncherChanged(object sender, RoutedEventArgs e)
