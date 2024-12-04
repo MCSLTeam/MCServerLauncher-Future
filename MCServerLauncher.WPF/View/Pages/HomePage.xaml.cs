@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
@@ -27,7 +28,15 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void PushSimpleNotification(object sender, RoutedEventArgs e)
         {
-            Notification.PushNotification("Title", "Message", true, InfoBarSeverity.Informational);
+            InfoBarSeverity infoBarSeverity = ((Button)sender).Content.ToString() switch 
+            {
+                "Informational" => InfoBarSeverity.Informational,
+                "Success" => InfoBarSeverity.Success,
+                "Warning" => InfoBarSeverity.Warning,
+                "Error" => InfoBarSeverity.Error,
+                _ => InfoBarSeverity.Informational
+            };
+            Notification.Push("Title", "Message", true, infoBarSeverity);
         }
     }
 }

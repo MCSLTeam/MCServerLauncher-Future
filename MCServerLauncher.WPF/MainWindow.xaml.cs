@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Animation;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Controls;
@@ -28,7 +29,7 @@ namespace MCServerLauncher.WPF
         public MainWindow()
         {
             // Set correct theme
-            ThemeManager.Current.ApplicationTheme = SettingsManager.AppSettings?.App?.Theme switch
+            ThemeManager.Current.ApplicationTheme = SettingsManager.Get?.App?.Theme switch
             {
                 "light" => ApplicationTheme.Light,
                 "dark" => ApplicationTheme.Dark,
@@ -43,8 +44,9 @@ namespace MCServerLauncher.WPF
         /// </summary>
         private async void InitializeView()
         {
-            NotificationCenterFlyout.Content = NotificationCenterFlyoutContent.Instance;
             DownloadHistoryFlyout.Content = DownloadHistoryFlyoutContent.Instance;
+            GlobalGrid.Children.Add(NotificationContainer.Instance);
+            Grid.SetRow(NotificationContainer.Instance, 1);
             SetupView.Visibility = Visibility.Hidden;
             CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
             await Task.Delay(1500);
@@ -59,7 +61,7 @@ namespace MCServerLauncher.WPF
             {
                 LoadingScreen.Visibility = Visibility.Hidden;
                 TitleBarGrid.Visibility = Visibility.Visible;
-                if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsFirstSetupFinished)
+                if (SettingsManager.Get?.App != null && !SettingsManager.Get.App.IsFirstSetupFinished)
                 {
                     SetupView.Visibility = Visibility.Visible;
                     return;
@@ -120,11 +122,6 @@ namespace MCServerLauncher.WPF
                     CurrentPage.Navigate(new DebugPage());
                     break;
             }
-        }
-
-        private void ShowNotificationCenter(object sender, RoutedEventArgs e)
-        {
-            NotificationCenterFlyout.ShowAt(NotificationCenterButton);
         }
 
         private void ShowDownloadHistory(object sender, RoutedEventArgs e)
