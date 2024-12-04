@@ -8,8 +8,6 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using MCServerLauncher.Common.System;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -23,6 +21,8 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             InitializeComponent();
         }
         private string token;
+        private IDaemon ThisDaemon { get; set; }
+
         private string SystemTypeString = string.Empty;
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
@@ -35,7 +35,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             set
             {
                 SystemTypeString = value;
-                Log.Debug($"system type changed, {value}");
                 SystemIcon.Source = SystemTypeString switch
                 {
                     "Windows" => FindResource("WindowsDrawingImage") as ImageSource,
@@ -105,7 +104,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         }
         #endregion
 
-        public async Task ConnectDaemon()
+        public async Task<bool> ConnectDaemon()
         {
             Status = "ing";
             try
@@ -121,9 +120,9 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 if (token == "token not found")
                 {
                     Status = "err";
-                    return;
+                    return false;
                 }
-                var daemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
+                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
                 {
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
@@ -131,7 +130,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);
-                JToken systemInfo = (await daemon.GetSystemInfoAsync()).SelectToken("info");
+                JToken systemInfo = (await ThisDaemon.GetSystemInfoAsync()).SelectToken("info");
                 if (systemInfo is not null)
                 {
                     var SystemName = systemInfo.SelectToken("os.name").ToString();
@@ -144,12 +143,15 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     }
                 }
                 Status = "ok";
-                await daemon.CloseAsync();
+                await ThisDaemon.CloseAsync();
+                return true;
             }
             catch (Exception e)
             {
+                try { await ThisDaemon.CloseAsync(); } catch { }
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
+                return false;
             }
         }
     }

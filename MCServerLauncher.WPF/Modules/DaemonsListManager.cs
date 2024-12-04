@@ -11,7 +11,7 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
         private static readonly object QueueLock = new();
-        public static List<DaemonConfigModel>? DaemonList { get; set; }
+        public static List<DaemonConfigModel>? Get { get; set; }
 
         /// <summary>
         ///    Initialize daemon list.
@@ -23,7 +23,7 @@ namespace MCServerLauncher.WPF.Modules
                 if (File.Exists("Data/Configuration/MCSL/Daemons.json"))
                 {
                     Log.Information("[Set] Found daemon list, reading");
-                    DaemonList =
+                    Get =
                         JsonConvert.DeserializeObject<List<DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
                             Encoding.UTF8));
                 }
@@ -43,7 +43,7 @@ namespace MCServerLauncher.WPF.Modules
         {
             lock (QueueLock)
             {
-                DaemonList?.Add(config);
+                Get?.Add(config);
                 SaveDaemonList();
             }
         }
@@ -51,7 +51,7 @@ namespace MCServerLauncher.WPF.Modules
         {
             lock (QueueLock)
             {
-                DaemonList?.Remove(config);
+                Get?.Remove(config);
                 SaveDaemonList();
             }
         }
@@ -61,7 +61,7 @@ namespace MCServerLauncher.WPF.Modules
             {
                 File.WriteAllText(
                     "Data/Configuration/MCSL/Daemons.json",
-                    JsonConvert.SerializeObject(DaemonList, Formatting.Indented),
+                    JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );
             }

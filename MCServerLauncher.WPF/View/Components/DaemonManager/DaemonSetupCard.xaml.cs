@@ -18,6 +18,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         {
             InitializeComponent();
         }
+        private IDaemon ThisDaemon { get; set; }
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
         public int Port { get; set; }
@@ -79,7 +80,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         }
         #endregion
 
-        public async Task ConnectDaemon()
+        public async Task<bool> ConnectDaemon()
         {
             Status = "ing";
             try
@@ -95,19 +96,19 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 if (token == "token not found")
                 {
                     Status = "err";
-                    return;
+                    return false;
                 }
-                var daemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
+                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
                 {
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
                     PingInterval = TimeSpan.FromSeconds(5),
                     PingTimeout = 5000
                 });
-                Log.Information("[Daemon] Connected: {0}", await daemon.PingAsync());
+                Log.Information("[Daemon] Connected: {0}", Address);
                 await Task.Delay(10000);
                 Status = "ok";
-                await daemon.CloseAsync();
+                await ThisDaemon.CloseAsync();
                 DaemonsListManager.AddDaemon(
                     new DaemonsListManager.DaemonConfigModel
                     { 
@@ -119,11 +120,14 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                         IsSecure = IsSecure
                     }
                 );
+                return true;
             }
             catch (Exception e)
             {
+                try { await ThisDaemon.CloseAsync(); } catch { }
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
+                return false;
             }
         }
     }

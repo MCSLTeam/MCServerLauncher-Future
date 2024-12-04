@@ -8,7 +8,7 @@
              xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="450">
-    <Grid>
+    <Grid Width="500">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />

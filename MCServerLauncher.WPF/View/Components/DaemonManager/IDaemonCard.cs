@@ -12,6 +12,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         string Username { get; set; }
         string Password { get; set; }
         string FriendlyName { get; set; }
-        Task ConnectDaemon();
+        Task<bool> ConnectDaemon();
     }
 }

@@ -862,4 +862,7 @@
   <data name="Username" xml:space="preserve">
     <value></value>
   </data>
+  <data name="ConnectDaemonFailedTip" xml:space="preserve">
+    <value></value>
+  </data>
 </root>
