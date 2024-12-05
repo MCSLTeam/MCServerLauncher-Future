@@ -28,7 +28,7 @@ public class Application
                     a.RegisterSingleton<IWebJsonConverter, WebJsonConverter>();
                     a.RegisterSingleton<IUserService, UserService>();
                     a.RegisterSingleton<UserDatabase>();
-                    a.RegisterSingleton<IActionService, ActionService>();
+                    a.RegisterSingleton<IActionService, ActionServiceImpl>();
                     a.RegisterSingleton<IEventService, EventService>();
 
                     a.RegisterSingleton<IInstanceManager>(InstanceManager.Create());

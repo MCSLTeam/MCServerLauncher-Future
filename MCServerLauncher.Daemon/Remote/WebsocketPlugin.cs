@@ -74,17 +74,17 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             if (!TryParseMessage(payload, out var result))
             {
                 Log.Warning("Parse message failed: \n{0}", payload);
-                await webSocket.SendAsync(_webJsonConverter.Serialize(_actionService.Err("Invalid action packet")));
+                await webSocket.SendAsync(_webJsonConverter.Serialize(ResponseUtils.Err("Invalid action packet")));
                 return;
             }
 
             Log.Debug("Received message: \n{0}\n", payload);
 
-            var (actionType, echo, parameters) = result;
+            var (action, echo, parameters) = result;
 
             Task.Run(async () =>
             {
-                var data = await _actionService.Routine(actionType, parameters);
+                var data = await _actionService.Execute(action, parameters);
 
                 if (echo != null) data["echo"] = echo;
 
@@ -106,17 +106,17 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         return websocketRef?.Target as IWebSocket;
     }
 
-    private static (ActionType, string?, JObject?) ParseMessage(string message)
+    private static (string, string?, JObject?) ParseMessage(string message)
     {
         var data = JObject.Parse(message);
         return (
-            ActionTypeExtensions.FromSnakeCase(data["action"]!.ToString()),
+            data["action"]!.ToString(),
             data.TryGetValue("echo", out var echo) ? echo.ToString() : null,
             data["params"] as JObject
         );
     }
 
-    private static bool TryParseMessage(string message, out (ActionType, string?, JObject?) result)
+    private static bool TryParseMessage(string message, out (string, string?, JObject?) result)
     {
         try
         {
