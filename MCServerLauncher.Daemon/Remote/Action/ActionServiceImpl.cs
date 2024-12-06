@@ -45,26 +45,34 @@ internal class ActionServiceImpl : IActionService
                 var name = method.Name;
                 if (name.Contains("Handler") && ToSnakeCase(name.Substring(0, name.Length - 7)) == action)
                 {
-                    var hasParam = method.GetParameters().Length != 0;
-                    var parameterValues = new object?[hasParam ? 1 : 0];
-                    if (hasParam)
-                    {
-                        parameterValues[0] = data;
-                    }
+                    var parameters = method.GetParameters();
+                    var parameterValues = new object?[parameters.Length];
 
                     try
                     {
-                        if (data == null) throw new NullReferenceException();
-                        Object result = method.Invoke(_actionHandler, parameterValues)!;
-                        return ((result is Task<object> task ? await task : result) as JObject)!;
-                    }
-                    catch (ActionExecutionException e)
-                    {
-                        return ResponseUtils.Err(action, e);
+                        foreach (var parameter in parameters)
+                        {
+                            parameterValues[parameter.Position] =
+                                data![ToSnakeCase(parameter.Name!)]!.ToObject(parameter.ParameterType);
+                        }
                     }
                     catch (NullReferenceException)
                     {
                         throw new NullReferenceException("Invalid params");
+                    }
+
+                    try
+                    {
+                        Object result = method.Invoke(_actionHandler, parameterValues)!;
+                        return ((result is Task<object> task ? await task : result) as JObject)!;
+                    }
+                    catch (TargetInvocationException e)
+                    {
+                        if (e.InnerException is ActionExecutionException ex)
+                            return ResponseUtils.Err(action, ex);
+                        if (e.InnerException != null)
+                            throw e.InnerException;
+                        throw;
                     }
                 }
             }
