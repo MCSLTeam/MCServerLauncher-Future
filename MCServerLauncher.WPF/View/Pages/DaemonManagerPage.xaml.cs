@@ -19,23 +19,26 @@ namespace MCServerLauncher.WPF.View.Pages
             // Refresh trigger when page is visible
             IsVisibleChanged += (s, e) =>
             {
-                DaemonCardContainer.Items.Clear();
-                if (DaemonsListManager.Get.Count > 0)
+                if (IsVisible)
                 {
-                    foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.Get)
+                    DaemonCardContainer.Items.Clear();
+                    if (DaemonsListManager.Get.Count > 0)
                     {
-                        DaemonCard daemonCard = new DaemonCard
+                        foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.Get)
                         {
-                            Address = $"{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}",
-                            IsSecure = daemon.IsSecure,
-                            EndPoint = daemon.EndPoint,
-                            Port = daemon.Port,
-                            Username = daemon.Username,
-                            Password = daemon.Password,
-                            FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
-                        };
-                        DaemonCardContainer.Items.Add(daemonCard);
-                        daemonCard.ConnectDaemon();
+                            DaemonCard daemonCard = new DaemonCard
+                            {
+                                Address = $"{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}",
+                                IsSecure = daemon.IsSecure,
+                                EndPoint = daemon.EndPoint,
+                                Port = daemon.Port,
+                                Username = daemon.Username,
+                                Password = daemon.Password,
+                                FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
+                            };
+                            DaemonCardContainer.Items.Add(daemonCard);
+                            daemonCard.ConnectDaemon();
+                        }
                     }
                 }
             };

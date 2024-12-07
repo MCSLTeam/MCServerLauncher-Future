@@ -20,20 +20,23 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             // Refresh trigger when page is visible
             IsVisibleChanged += (s, e) =>
             {
-                if (DaemonsListManager.Get.Count > 0)
+                if (IsVisible)
                 {
-                    if (SettingsManager.Get?.App != null && SettingsManager.Get.App.IsFirstSetupFinished) return;
-                    DaemonListView.Items.Clear();
-                    foreach (var daemon in DaemonsListManager.Get)
+                    if (DaemonsListManager.Get.Count > 0)
                     {
-                        TryConnectDaemon(
-                            daemon.EndPoint,
-                            daemon.Port.ToString(),
-                            daemon.Username,
-                            daemon.Password,
-                            daemon.IsSecure,
-                            daemon.FriendlyName
-                        );
+                        if (SettingsManager.Get?.App != null && SettingsManager.Get.App.IsFirstSetupFinished) return;
+                        DaemonListView.Items.Clear();
+                        foreach (var daemon in DaemonsListManager.Get)
+                        {
+                            TryConnectDaemon(
+                                daemon.EndPoint,
+                                daemon.Port.ToString(),
+                                daemon.Username,
+                                daemon.Password,
+                                daemon.IsSecure,
+                                daemon.FriendlyName
+                            );
+                        }
                     }
                 }
             };
