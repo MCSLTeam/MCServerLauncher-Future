@@ -1,13 +1,13 @@
-ï»¿using System.Windows;
-using System.Windows.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.View.Pages;
+using System.Windows;
+using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
     /// <summary>
-    ///    PreCreateInstance.xaml çš„äº¤äº’é€»è¾‘
+    ///    PreCreateInstance.xaml µÄ½»»¥Âß¼­
     /// </summary>
     public partial class PreCreateInstance
     {
@@ -29,41 +29,18 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             if (_creatingInstanceType == "PreCreating") return;
 
             var parent = this.TryFindParent<CreateInstancePage>();
-            switch (_creatingInstanceType)
+            parent?.CurrentCreateInstance.Navigate(_creatingInstanceType switch
             {
-                case "MinecraftJavaServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftJavaServerPage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-                case "MinecraftForgeServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftForgeServerPage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-                case "MinecraftNeoForgeServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftNeoForgeServerPage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-                case "MinecraftFabricServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftFabricServerPage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-                case "MinecraftQuiltServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftQuiltServerPage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-                case "MinecraftBedrockServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewMinecraftBedrockServerPage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-                case "TerrariaGameServer":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewTerrariaServerPage(),
-                new DrillInNavigationTransitionInfo());
-                    break;
-                case "OtherExecutable":
-                    parent?.CurrentCreateInstance.Navigate(parent.NewOtherExecutablePage(),
-                        new DrillInNavigationTransitionInfo());
-                    break;
-            }
+                "MinecraftJavaServer" => parent.NewMinecraftJavaServerPage(),
+                "MinecraftForgeServer" => parent.NewMinecraftForgeServerPage(),
+                "MinecraftNeoForgeServer" => parent.NewMinecraftNeoForgeServerPage(),
+                "MinecraftFabricServer" => parent.NewMinecraftFabricServerPage(),
+                "MinecraftQuiltServer" => parent.NewMinecraftQuiltServerPage(),
+                "MinecraftBedrockServer" => parent.NewMinecraftBedrockServerPage(),
+                "TerrariaGameServer" => parent.NewTerrariaServerPage(),
+                "OtherExecutable" => parent.NewOtherExecutablePage(),
+                _ => null
+            }, new DrillInNavigationTransitionInfo());
         }
     }
 }
