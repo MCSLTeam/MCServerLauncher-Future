@@ -11,10 +11,8 @@ public class ResponseUtils
         {
             ["status"] = "error",
             ["retcode"] = retcode,
-            ["data"] = new JObject
-            {
-                ["error_message"] = message
-            }
+            ["data"] = new JObject(),
+            ["message"] = message
         };
     }
 
@@ -38,7 +36,8 @@ public class ResponseUtils
         {
             ["status"] = "ok",
             ["retcode"] = 0,
-            ["data"] = data ?? new JObject()
+            ["data"] = data ?? new JObject(),
+            ["message"] = ""
         };
     }
 }

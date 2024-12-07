@@ -27,13 +27,13 @@ public class ActionHandler
         _eventService = eventService;
     }
 
-    private async Task<JObject> FileUploadChunkHandler(JObject data)
+    private async Task<JObject> FileUploadChunkHandler(Guid fileId, long offset, string data)
     {
-        if (data["file_id"]!.ToObject<Guid>() == Guid.Empty)
+        if (fileId == Guid.Empty)
             throw new ActionExecutionException(1400, "Invalid file id");
 
-        var (done, received) = await FileManager.FileUploadChunk(data["file_id"]!.ToObject<Guid>(),
-            data["offset"]!.ToObject<long>(), data["data"]!.ToString());
+        var (done, received) = await FileManager.FileUploadChunk(fileId,
+            offset, data);
         return ResponseUtils.Ok(new JObject
         {
             ["done"] = JToken.FromObject(done, Serializer),
@@ -49,13 +49,13 @@ public class ActionHandler
         });
     }
 
-    private JObject FileUploadRequestHandler(JObject data)
+    private JObject FileUploadRequestHandler(string path, long size, long? timeout, string sha1)
     {
         var fileId = FileManager.FileUploadRequest(
-            data["path"]!.ToString(),
-            data["size"]!.ToObject<long>(),
-            data["timeout"]?.ToObject<long?>().Map(t => TimeSpan.FromMilliseconds(t)),
-            data["sha1"]!.ToString()
+            path,
+            size,
+            timeout.Map(t => TimeSpan.FromMilliseconds(t)),
+            sha1
         );
 
         return fileId == Guid.Empty
@@ -74,56 +74,56 @@ public class ActionHandler
         });
     }
 
-    private JObject FileUploadCancelHandler(JObject data)
+    private JObject FileUploadCancelHandler(Guid fileId)
     {
-        return FileManager.FileUploadCancel(data["file_id"]!.ToObject<Guid>())
+        return FileManager.FileUploadCancel(fileId)
             ? ResponseUtils.Ok()
             : throw new ActionExecutionException(1402, "Failed to cancel file upload");
     }
 
-    private JObject FileDownloadCloseHandler(JObject data)
+    private JObject FileDownloadCloseHandler(Guid fileId)
     {
-        FileManager.FileDownloadClose(data["file_id"]!.ToObject<Guid>());
+        FileManager.FileDownloadClose(fileId);
         return ResponseUtils.Ok();
     }
 
-    private async Task<JObject> FileDownloadRangeHandler(JObject data)
+    private async Task<JObject> FileDownloadRangeHandler(Guid fileId, string range)
     {
-        var match = RangePattern.Match(data["range"]!.ToString());
+        var match = RangePattern.Match(range);
         if (!match.Success) throw new ActionExecutionException(1400, "Invalid range format");
 
         var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
         return ResponseUtils.Ok(new JObject
         {
             ["content"] =
-                JToken.FromObject(await FileManager.FileDownloadRange(data["file_id"]!.ToObject<Guid>(), from, to),
+                JToken.FromObject(await FileManager.FileDownloadRange(fileId, from, to),
                     Serializer)
         });
     }
 
-    private JObject GetDirectoryInfoHandler(JObject data)
+    private JObject GetDirectoryInfoHandler(string path)
     {
-        var dirEntry = FileManager.GetDirectoryInfo(data["path"]!.ToString());
+        var dirEntry = FileManager.GetDirectoryInfo(path);
         return ResponseUtils.Ok(new JObject
         {
-            ["parent"] = JToken.FromObject(dirEntry.Parent, Serializer),
+            ["parent"] = JToken.FromObject(dirEntry.Parent ?? "", Serializer),
             ["files"] = JToken.FromObject(dirEntry.Files, Serializer),
             ["directories"] = JToken.FromObject(dirEntry.Directories, Serializer)
         });
     }
 
-    private JObject GetFileInfoHandler(JObject data)
+    private JObject GetFileInfoHandler(string path)
     {
         return ResponseUtils.Ok(new JObject
         {
-            ["meta"] = JToken.FromObject(FileManager.GetFileInfo(data["path"]!.ToString()), Serializer)
+            ["meta"] = JToken.FromObject(FileManager.GetFileInfo(path), Serializer)
         });
     }
 
-    private async Task<JObject> FileDownloadRequestHandler(JObject data)
+    private async Task<JObject> FileDownloadRequestHandler(string path, long? timeout)
     {
-        var info = await FileManager.FileDownloadRequest(data["path"]!.ToString(),
-            data["timeout"]?.ToObject<long?>().Map(t => TimeSpan.FromMilliseconds(t)));
+        var info = await FileManager.FileDownloadRequest(path,
+            timeout.Map(t => TimeSpan.FromMilliseconds(t)));
         return ResponseUtils.Ok(new JObject
         {
             ["file_id"] = JToken.FromObject(info.Id, Serializer),
@@ -132,12 +132,12 @@ public class ActionHandler
         });
     }
 
-    private JObject TryStartInstanceHandler(JObject data)
+    private JObject TryStartInstanceHandler(Guid id)
     {
-        var rv = _instanceManager.TryStartInstance(data["id"]!.ToObject<Guid>(), out var instance);
+        var rv = _instanceManager.TryStartInstance(id, out var instance);
         if (instance == null) throw new ActionExecutionException(1400, "Instance not found");
 
-        var logPrefix = $"{instance.Config.Name}({data["id"]!.ToObject<Guid>()})";
+        var logPrefix = $"{instance.Config.Name}({id})";
 
         if (rv)
         {
@@ -162,17 +162,17 @@ public class ActionHandler
         });
     }
 
-    private JObject TryStopInstanceHandler(JObject data)
+    private JObject TryStopInstanceHandler(Guid id)
     {
         return ResponseUtils.Ok(new JObject
         {
-            ["done"] = JToken.FromObject(_instanceManager.TryStopInstance(data["id"]!.ToObject<Guid>()), Serializer)
+            ["done"] = JToken.FromObject(_instanceManager.TryStopInstance(id), Serializer)
         });
     }
 
-    private JObject SendToInstanceHandler(JObject data)
+    private JObject SendToInstanceHandler(Guid id, string message)
     {
-        _instanceManager.SendToInstance(data["id"]!.ToObject<Guid>(), data["message"]!.ToString());
+        _instanceManager.SendToInstance(id, message);
         return ResponseUtils.Ok();
     }
 
@@ -180,13 +180,13 @@ public class ActionHandler
     {
         return ResponseUtils.Ok(new JObject
         {
-            ["status"] = JToken.FromObject(_instanceManager.GetAllStatus(), Serializer),
+            ["status"] = JToken.FromObject(_instanceManager.GetAllStatus(), Serializer)
         });
     }
 
     private async Task<JObject> GetSystemInfoHandler()
     {
-        return ResponseUtils.Ok(new JObject()
+        return ResponseUtils.Ok(new JObject
         {
             ["info"] = JToken.FromObject(await SystemInfo.Get(), Serializer)
         });
