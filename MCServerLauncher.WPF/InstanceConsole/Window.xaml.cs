@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using iNKORE.UI.WPF.Modern.Controls;
+﻿using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.InstanceConsole.View.Pages;
+using System;
+using System.Collections.Generic;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.InstanceConsole

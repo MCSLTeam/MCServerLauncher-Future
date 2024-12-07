@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Downloader;
+using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using Downloader;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules;
 using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
 
 namespace MCServerLauncher.WPF.View.Components.Generic

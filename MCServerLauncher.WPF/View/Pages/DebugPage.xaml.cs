@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules.DownloadProvider;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules.DownloadProvider;
-using MCServerLauncher.WPF.View.Components.Generic;
 
 namespace MCServerLauncher.WPF.View.Pages
 {

@@ -1,3 +1,6 @@
+using MCServerLauncher.Common;
+using Newtonsoft.Json.Linq;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,9 +8,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using MCServerLauncher.Common;
-using Newtonsoft.Json.Linq;
-using Serilog;
 
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 
@@ -181,9 +181,9 @@ public class Daemon : IDaemon
     /// <exception cref="TimeoutException">连接超时</exception>
     /// <returns></returns>
     public static async Task<IDaemon> OpenAsync(string address, int port, string token,
-        bool isSecure, ClientConnectionConfig config,int timeout=5000,CancellationToken cancellationToken = default)
+        bool isSecure, ClientConnectionConfig config, int timeout = 5000, CancellationToken cancellationToken = default)
     {
-        var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config,cancellationToken).TimeoutAfter(timeout);
+        var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config, cancellationToken).TimeoutAfter(timeout);
         return new Daemon
         {
             Connection = connection

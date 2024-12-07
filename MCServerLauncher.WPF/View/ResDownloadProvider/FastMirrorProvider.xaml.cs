@@ -1,15 +1,15 @@
-using System;
-using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
 using iNKORE.UI.WPF.Helpers;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using MCServerLauncher.WPF.View.Pages;
 using Serilog;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {

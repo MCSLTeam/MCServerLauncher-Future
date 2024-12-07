@@ -39,10 +39,10 @@ internal class Utils
         });
     }
 
-    public static async Task<string?> HttpPost(string url,CancellationToken cancellationToken = default)
+    public static async Task<string?> HttpPost(string url, CancellationToken cancellationToken = default)
     {
-        var response = await Network.SendPostRequest(url, "",cancellationToken:cancellationToken);
-        
+        var response = await Network.SendPostRequest(url, "", cancellationToken: cancellationToken);
+
         return response.StatusCode == HttpStatusCode.OK
             ? await response.Content.ReadAsStringAsync()
             : null;

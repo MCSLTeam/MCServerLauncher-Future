@@ -1,13 +1,13 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules.Remote;
+﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using MCServerLauncher.WPF.Modules.Remote;
+using Newtonsoft.Json.Linq;
 using Serilog;
-using System.Threading.Tasks;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {

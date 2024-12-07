@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.WPF.Modules;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {

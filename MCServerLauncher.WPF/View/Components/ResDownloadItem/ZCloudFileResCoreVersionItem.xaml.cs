@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
-using System.Windows;
-using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {

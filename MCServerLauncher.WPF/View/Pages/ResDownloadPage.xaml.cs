@@ -1,10 +1,9 @@
 ﻿using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
 using System;
 using System.Windows;
-using System.Windows.Media.Animation;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media.Animation;
 
 namespace MCServerLauncher.WPF.View.Pages
 {

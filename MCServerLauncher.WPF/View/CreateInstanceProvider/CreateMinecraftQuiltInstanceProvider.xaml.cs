@@ -1,12 +1,12 @@
 ﻿
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls.Primitives;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls.Primitives;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {

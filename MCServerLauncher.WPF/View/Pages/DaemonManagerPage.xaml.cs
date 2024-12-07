@@ -1,10 +1,9 @@
-﻿using MCServerLauncher.WPF.Modules;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.DaemonManager;
 using System;
-using System.Windows;
-using iNKORE.UI.WPF.Modern.Controls;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Pages
 {

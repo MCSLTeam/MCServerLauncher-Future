@@ -1,10 +1,10 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Modules;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using MCServerLauncher.WPF.Modules;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper

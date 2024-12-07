@@ -1,8 +1,8 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules;
 using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
 
 namespace MCServerLauncher.WPF.View.Pages
@@ -28,7 +28,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void PushSimpleNotification(object sender, RoutedEventArgs e)
         {
-            InfoBarSeverity infoBarSeverity = ((Button)sender).Content.ToString() switch 
+            InfoBarSeverity infoBarSeverity = ((Button)sender).Content.ToString() switch
             {
                 "Informational" => InfoBarSeverity.Informational,
                 "Success" => InfoBarSeverity.Success,

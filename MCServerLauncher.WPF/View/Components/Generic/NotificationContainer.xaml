@@ -9,5 +9,5 @@
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="350">
-    <local:TransparentClickableStackPanel MaxWidth="450" VerticalAlignment="Top" HorizontalAlignment="Center" Background="Transparent" Grid.Row="1" Spacing="10" x:Name="Panel" />
+    <ikw:SimpleStackPanel Background="{x:Null}" MaxWidth="450" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="1" Spacing="10" x:Name="Panel" />
 </UserControl>

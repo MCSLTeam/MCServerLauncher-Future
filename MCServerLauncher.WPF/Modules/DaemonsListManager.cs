@@ -1,9 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using Newtonsoft.Json;
+using Serilog;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Newtonsoft.Json;
-using Serilog;
 
 namespace MCServerLauncher.WPF.Modules
 {

@@ -3,7 +3,6 @@ using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.View.Components.Generic;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.Windows;
-using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 

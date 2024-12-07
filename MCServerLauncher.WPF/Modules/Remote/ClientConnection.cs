@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Serilog;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -6,10 +9,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using MCServerLauncher.Common;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Serilog;
 
 namespace MCServerLauncher.WPF.Modules.Remote;
 
@@ -190,14 +189,14 @@ public class ClientConnection
     /// <exception cref="TimeoutException">连接超时</exception>
     /// <returns></returns>
     public static async Task<ClientConnection> OpenAsync(string address, int port, string token,
-        bool isSecure, ClientConnectionConfig config,CancellationToken cancellationToken=default)
+        bool isSecure, ClientConnectionConfig config, CancellationToken cancellationToken = default)
     {
         // create instance
         ClientConnection connection = new(config);
 
         // connect ws
         var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
-        
+
         await connection.WebSocket.ConnectAsync(uri, cancellationToken);
 
         connection._heartbeatTimer.Start();
@@ -308,7 +307,8 @@ public class ClientConnection
             if (cancellationToken.IsCancellationRequested)
             {
                 Log.Debug("[ClientConnection] cancelled when waiting for echo: {0}", echo);
-            }else throw new TimeoutException($"Timeout when waiting for echo: {echo}");
+            }
+            else throw new TimeoutException($"Timeout when waiting for echo: {echo}");
         }
 
         var received = tcs.Task.Result;

@@ -1,14 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media.Animation;
-using iNKORE.UI.WPF.Modern;
+﻿using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.Pages;
+using System;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF

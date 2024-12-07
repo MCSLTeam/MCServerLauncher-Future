@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using MCServerLauncher.WPF.View.Pages;
 using Serilog;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {

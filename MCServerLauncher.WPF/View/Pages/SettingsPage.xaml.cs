@@ -1,4 +1,7 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.SettingCard;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -6,9 +9,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using iNKORE.UI.WPF.Modern;
-using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.SettingCard;
 
 // ReSharper disable UseNameofForDependencyProperty
 #pragma warning disable CS8602 // 解引用可能出现空引用。

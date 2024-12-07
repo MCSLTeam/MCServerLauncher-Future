@@ -1,18 +1,18 @@
-﻿using System.Threading.Tasks;
-using System;
-using System.Windows;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
+﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.Remote;
 using Serilog;
-using iNKORE.UI.WPF.Modern.Controls;
+using System;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
     /// <summary>
     ///     DaemonSetupCard.xaml 的交互逻辑
     /// </summary>
-    public partial class DaemonSetupCard: IDaemonCard
+    public partial class DaemonSetupCard : IDaemonCard
     {
         public DaemonSetupCard()
         {
@@ -111,7 +111,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 await ThisDaemon.CloseAsync();
                 DaemonsListManager.AddDaemon(
                     new DaemonsListManager.DaemonConfigModel
-                    { 
+                    {
                         FriendlyName = FriendlyName,
                         EndPoint = EndPoint,
                         Port = Port,
