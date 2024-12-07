@@ -35,9 +35,9 @@ public class HttpPlugin : PluginBase, IHttpPlugin
         {
             if (request.UrlEquals("/login"))
             {
-                var usr = request.Headers.Get("usr") ?? "";
-                var pwd = request.Headers.Get("pwd") ?? "";
-                var expired = int.Parse(request.Headers.Get("expired") ?? "30");
+                var usr = request.Forms["usr"] ?? "";
+                var pwd = request.Forms["pwd"] ?? "";
+                var expired = int.Parse(request.Forms["expired"] ?? "30");
 
                 if (!await _userService.AuthenticateAsync(usr, pwd))
                 {
