@@ -662,7 +662,7 @@
     <value>حدد اللغة التي يتم استخدام البرنامج بها.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>若不链接任何守护进程，本软件大部分功能都将受限。\n您稍后仍可链接守护进程。</value>
+    <value>إذا لم يتم ربط أي برنامج خفي، فستكون معظم وظائف هذا البرنامج محدودة. لا يزال بإمكانك ربط البرنامج الخفي لاحقًا</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
     <value>新建连接</value>
