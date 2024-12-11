@@ -452,7 +452,7 @@
     <value>ماين كرافت الترافرتين جانب المجموعة</value>
   </data>
   <data name="CreateUniversalFastReverseProxyClientInstance" xml:space="preserve">
-    <value>通用 Frp 客户端程序 (Frpc)</value>
+    <value>برنامج عميل Frp العام (Frpc)</value>
   </data>
   <data name="CreateTerrariaServerInstance" xml:space="preserve">
     <value>خوادم ألعاب تيراريا</value>
@@ -662,7 +662,7 @@
     <value>حدد اللغة التي يتم استخدام البرنامج بها.</value>
   </data>
   <data name="FirstSetup_SkipConnectDaemonTip" xml:space="preserve">
-    <value>إذا لم يتم ربط أي برنامج خفي، فستكون معظم وظائف هذا البرنامج محدودة. لا يزال بإمكانك ربط البرنامج الخفي لاحقًا</value>
+    <value>لا داعي للقلق بشأن هذه المشكلة.لا داعي للقلق بشأن هذا الأمر.</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
     <value>新建连接</value>
