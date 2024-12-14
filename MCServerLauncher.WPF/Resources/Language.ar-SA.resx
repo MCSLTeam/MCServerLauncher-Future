@@ -812,7 +812,7 @@
     <value>其他功能</value>
   </data>
   <data name="Console_InstanceSettingsNavMenu" xml:space="preserve">
-    <value>实例设置</value>
+    <value>إعدادات المثيل</value>
   </data>
   <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
     <value>Minecraft 服务器</value>
