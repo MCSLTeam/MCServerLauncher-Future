@@ -683,7 +683,7 @@
     <value>正常</value>
   </data>
   <data name="Status_Error" xml:space="preserve">
-    <value>异常</value>
+    <value>異常</value>
   </data>
   <data name="Disconnect" xml:space="preserve">
     <value>断连</value>
