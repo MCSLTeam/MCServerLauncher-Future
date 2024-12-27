@@ -7,5 +7,5 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public interface IActionService
 {
-    public Task<JObject> Execute(String action, JObject? data);
+    public Task<JObject> Execute(string action, JObject? data);
 }

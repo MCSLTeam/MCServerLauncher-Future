@@ -16,14 +16,14 @@ public class ResponseUtils
         };
     }
 
-    public static JObject Err(String action, string message, int retcode = 1400, bool log = true)
+    public static JObject Err(string action, string message, int retcode = 1400, bool log = true)
     {
         if (log)
             Log.Error("Error while handling Action {0}: {1}", action, message);
         return Err(message, retcode);
     }
 
-    public static JObject Err(String action, ActionExecutionException exception, bool log = true)
+    public static JObject Err(string action, ActionExecutionException exception, bool log = true)
     {
         if (log)
             Log.Error("Error while handling Action {0}: {1}", action, exception.ErrorMessage);
@@ -44,8 +44,8 @@ public class ResponseUtils
 
 public class ActionExecutionException : Exception
 {
-    public readonly int Retcode;
     public readonly string? ErrorMessage;
+    public readonly int Retcode;
 
     public ActionExecutionException(int retcode = 1400, string? errorMessage = null)
     {

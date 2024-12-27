@@ -14,10 +14,10 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 public class ActionHandler
 {
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
+    private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings.Settings);
     private readonly IEventService _eventService;
     private readonly IInstanceManager _instanceManager;
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
-    private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings.Settings);
 
     public ActionHandler(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
         IInstanceManager instanceManager, IEventService eventService)
@@ -34,19 +34,19 @@ public class ActionHandler
 
         var (done, received) = await FileManager.FileUploadChunk(fileId,
             offset, data);
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["done"] = JToken.FromObject(done, Serializer),
             ["received"] = JToken.FromObject(received, Serializer)
-        });
+        };
     }
 
     private async Task<JObject> GetJavaListHandler()
     {
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["java_list"] = JToken.FromObject(await _javaScannerCache.Value, Serializer)
-        });
+        };
     }
 
     private JObject FileUploadRequestHandler(string path, long size, long? timeout, string sha1)
@@ -60,31 +60,31 @@ public class ActionHandler
 
         return fileId == Guid.Empty
             ? throw new ActionExecutionException(1401, "Failed to pre-allocate space")
-            : ResponseUtils.Ok(new JObject
+            : new JObject
             {
                 ["file_id"] = JToken.FromObject(fileId, Serializer)
-            });
+            };
     }
 
     private JObject PingHandler()
     {
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["time"] = JToken.FromObject(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds(), Serializer)
-        });
+        };
     }
 
     private JObject FileUploadCancelHandler(Guid fileId)
     {
         return FileManager.FileUploadCancel(fileId)
-            ? ResponseUtils.Ok()
+            ? new JObject()
             : throw new ActionExecutionException(1402, "Failed to cancel file upload");
     }
 
     private JObject FileDownloadCloseHandler(Guid fileId)
     {
         FileManager.FileDownloadClose(fileId);
-        return ResponseUtils.Ok();
+        return new JObject();
     }
 
     private async Task<JObject> FileDownloadRangeHandler(Guid fileId, string range)
@@ -93,43 +93,43 @@ public class ActionHandler
         if (!match.Success) throw new ActionExecutionException(1400, "Invalid range format");
 
         var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["content"] =
                 JToken.FromObject(await FileManager.FileDownloadRange(fileId, from, to),
                     Serializer)
-        });
+        };
     }
 
     private JObject GetDirectoryInfoHandler(string path)
     {
         var dirEntry = FileManager.GetDirectoryInfo(path);
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["parent"] = JToken.FromObject(dirEntry.Parent ?? "", Serializer),
             ["files"] = JToken.FromObject(dirEntry.Files, Serializer),
             ["directories"] = JToken.FromObject(dirEntry.Directories, Serializer)
-        });
+        };
     }
 
     private JObject GetFileInfoHandler(string path)
     {
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["meta"] = JToken.FromObject(FileManager.GetFileInfo(path), Serializer)
-        });
+        };
     }
 
     private async Task<JObject> FileDownloadRequestHandler(string path, long? timeout)
     {
         var info = await FileManager.FileDownloadRequest(path,
             timeout.Map(t => TimeSpan.FromMilliseconds(t)));
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["file_id"] = JToken.FromObject(info.Id, Serializer),
             ["size"] = JToken.FromObject(info.Size, Serializer),
             ["sha1"] = JToken.FromObject(info.Sha1, Serializer)
-        });
+        };
     }
 
     private JObject TryStartInstanceHandler(Guid id)
@@ -156,39 +156,39 @@ public class ActionHandler
             instance.OnLog += handler;
         }
 
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["done"] = JToken.FromObject(rv, Serializer)
-        });
+        };
     }
 
     private JObject TryStopInstanceHandler(Guid id)
     {
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["done"] = JToken.FromObject(_instanceManager.TryStopInstance(id), Serializer)
-        });
+        };
     }
 
     private JObject SendToInstanceHandler(Guid id, string message)
     {
         _instanceManager.SendToInstance(id, message);
-        return ResponseUtils.Ok();
+        return new JObject();
     }
 
     private JObject GetAllStatusHandler()
     {
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["status"] = JToken.FromObject(_instanceManager.GetAllStatus(), Serializer)
-        });
+        };
     }
 
     private async Task<JObject> GetSystemInfoHandler()
     {
-        return ResponseUtils.Ok(new JObject
+        return new JObject
         {
             ["info"] = JToken.FromObject(await SystemInfo.Get(), Serializer)
-        });
+        };
     }
 }
