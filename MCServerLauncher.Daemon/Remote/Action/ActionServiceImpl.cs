@@ -115,8 +115,6 @@ internal class ActionMethod
         try
         {
             if (_async) return await (_methodInfo.Invoke(obj, parameters) as Task<JObject>)!;
-            ;
-
 
             return _methodInfo.Invoke(obj, parameters) as JObject;
         }
