@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 namespace MCServerLauncher.Daemon.Remote.Action;
 
 /// <summary>
-///     Action handler，返回值只能是JObject, JObject?或<![CDATA[Task<JObject>]]>
+///     Action handler，返回值只能是JObject, JObject?或<![CDATA[ValueTask<JObject>]]>
 /// </summary>
 public class ActionHandler
 {
@@ -30,7 +30,7 @@ public class ActionHandler
         _eventService = eventService;
     }
 
-    private async Task<JObject> FileUploadChunkHandler(Guid fileId, long offset, string data)
+    private async ValueTask<JObject> FileUploadChunkHandler(Guid fileId, long offset, string data)
     {
         if (fileId == Guid.Empty)
             throw new ActionExecutionException(1400, "Invalid file id");
@@ -44,7 +44,7 @@ public class ActionHandler
         };
     }
 
-    private async Task<JObject> GetJavaListHandler()
+    private async ValueTask<JObject> GetJavaListHandler()
     {
         return new JObject
         {
@@ -90,7 +90,7 @@ public class ActionHandler
         return default;
     }
 
-    private async Task<JObject> FileDownloadRangeHandler(Guid fileId, string range)
+    private async ValueTask<JObject> FileDownloadRangeHandler(Guid fileId, string range)
     {
         var match = RangePattern.Match(range);
         if (!match.Success) throw new ActionExecutionException(1400, "Invalid range format");
@@ -123,7 +123,7 @@ public class ActionHandler
         };
     }
 
-    private async Task<JObject> FileDownloadRequestHandler(string path, long? timeout)
+    private async ValueTask<JObject> FileDownloadRequestHandler(string path, long? timeout)
     {
         var info = await FileManager.FileDownloadRequest(path,
             timeout.Map(t => TimeSpan.FromMilliseconds(t)));
@@ -188,7 +188,7 @@ public class ActionHandler
     }
 
 
-    private async Task<JObject> GetSystemInfoHandler()
+    private async ValueTask<JObject> GetSystemInfoHandler()
     {
         return new JObject
         {
