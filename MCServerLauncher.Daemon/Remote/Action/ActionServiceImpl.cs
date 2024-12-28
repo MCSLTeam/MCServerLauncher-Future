@@ -58,46 +58,56 @@ internal class ActionServiceImpl : IActionService
         foreach (var method in methods)
         {
             // validate method return type
-            if (!IsValidActionMethod(method))
+            if (!IsValidActionMethodReturnType(method.ReturnType))
                 throw new ArgumentException(
-                    $"Action method('{method.Name}') return type must be JObject or Task<JObject>");
-            _actionMethods[method.Name[..^7].PascalCaseToSnakeCase()!] = new ActionMethod(method);
+                    $"Action method('{method.Name}') return type({method.ReturnType}) must be JObject(?) or Task<JObject(?)> or ValueTask<JObject(?)>");
+            _actionMethods[method.Name[..^7].PascalCaseToSnakeCase()!] = new ActionMethod(_actionHandler, method);
         }
     }
 
-    private static bool IsValidActionMethod(MethodInfo methodInfo)
+    private static bool IsValidActionMethodReturnType(Type type, bool canBeAsync = true, bool canBeNullable = true)
     {
-        var returnType = methodInfo.ReturnType;
-        if (returnType == typeof(JObject)) return true;
-        if (returnType.IsGenericType)
-        {
-            var genericTypeDefinition = returnType.GetGenericTypeDefinition();
-            if (genericTypeDefinition != typeof(Task<>) && genericTypeDefinition != typeof(Nullable<>))
-                return false;
-            return returnType.GetGenericArguments()[0] == typeof(JObject);
-        }
+        if (type == typeof(JObject)) return true;
+        if (!type.IsGenericType) return false;
 
+        var outerType = type.GetGenericTypeDefinition();
+        var innerType = type.GetGenericArguments()[0];
+        if (canBeNullable && outerType == typeof(Nullable<>))
+            return IsValidActionMethodReturnType(innerType, canBeAsync, false);
+        if ((canBeAsync && outerType == typeof(Task<>)) || outerType == typeof(ValueTask<>))
+            return IsValidActionMethodReturnType(innerType, false, canBeNullable);
         return false;
     }
 }
 
 internal class ActionMethod
 {
-    private readonly bool _async;
-    private readonly MethodInfo _methodInfo;
+    private readonly Func<object?[]?, ValueTask<JObject?>> _method;
     private readonly IDictionary<string, ParameterInfo> _parameters;
 
-    public ActionMethod(MethodInfo methodInfo)
+    public ActionMethod(object obj, MethodInfo methodInfo)
     {
-        _methodInfo = methodInfo;
         _parameters = new Dictionary<string, ParameterInfo>();
         foreach (var parameter in methodInfo.GetParameters())
             _parameters[parameter.Name.PascalCaseToSnakeCase()!] = parameter;
+        _method = WarpActionMethod(obj, methodInfo);
+    }
 
-        var returnType = methodInfo.ReturnType;
-        _async = returnType.IsGenericType &&
-                 returnType.GetGenericTypeDefinition() ==
-                 typeof(Task<>); // ActionHandler中的方法只能返回Task<JObject>或者JObject, 且在构造方法中检查过
+    private static Func<object?[]?, ValueTask<JObject?>> WarpActionMethod(object obj, MethodInfo info)
+    {
+        var retType = info.ReturnType;
+
+        var isValueTask = retType.IsGenericType && retType.GetGenericTypeDefinition() == typeof(ValueTask<>);
+        var isAsync = isValueTask || (retType.IsGenericType && retType.GetGenericTypeDefinition() == typeof(Task<>));
+
+        return isValueTask
+            ? (Func<object?[]?, ValueTask<JObject?>>)(async parameters =>
+                await (ValueTask<JObject?>)info.Invoke(obj, parameters)!)
+            : isAsync
+                ? (Func<object?[]?, ValueTask<JObject?>>)(async parameters =>
+                    await (Task<JObject?>)info.Invoke(obj, parameters)!)
+                : (Func<object?[]?, ValueTask<JObject?>>)(parameters =>
+                    new ValueTask<JObject?>(info.Invoke(obj, parameters) as JObject));
     }
 
     public async ValueTask<JObject?> InvokeAsync(object obj, JObject? data)
@@ -114,9 +124,7 @@ internal class ActionMethod
 
         try
         {
-            if (_async) return await (_methodInfo.Invoke(obj, parameters) as Task<JObject>)!;
-
-            return _methodInfo.Invoke(obj, parameters) as JObject;
+            return await _method(parameters);
         }
         catch (TargetInvocationException e)
         {

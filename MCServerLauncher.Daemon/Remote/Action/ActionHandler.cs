@@ -11,6 +11,9 @@ using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
+/// <summary>
+///     Action handler，返回值只能是JObject, JObject?或<![CDATA[Task<JObject>]]>
+/// </summary>
 public class ActionHandler
 {
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
@@ -74,17 +77,17 @@ public class ActionHandler
         };
     }
 
-    private JObject FileUploadCancelHandler(Guid fileId)
+    private JObject? FileUploadCancelHandler(Guid fileId)
     {
         return FileManager.FileUploadCancel(fileId)
-            ? new JObject()
+            ? default
             : throw new ActionExecutionException(1402, "Failed to cancel file upload");
     }
 
-    private JObject FileDownloadCloseHandler(Guid fileId)
+    private JObject? FileDownloadCloseHandler(Guid fileId)
     {
         FileManager.FileDownloadClose(fileId);
-        return new JObject();
+        return default;
     }
 
     private async Task<JObject> FileDownloadRangeHandler(Guid fileId, string range)
@@ -170,10 +173,10 @@ public class ActionHandler
         };
     }
 
-    private JObject SendToInstanceHandler(Guid id, string message)
+    private JObject? SendToInstanceHandler(Guid id, string message)
     {
         _instanceManager.SendToInstance(id, message);
-        return new JObject();
+        return default;
     }
 
     private JObject GetAllStatusHandler()
@@ -183,6 +186,7 @@ public class ActionHandler
             ["status"] = JToken.FromObject(_instanceManager.GetAllStatus(), Serializer)
         };
     }
+
 
     private async Task<JObject> GetSystemInfoHandler()
     {
