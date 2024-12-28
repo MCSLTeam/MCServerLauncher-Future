@@ -35,7 +35,7 @@ internal class ActionServiceImpl : IActionService
         if (_actionMethods.TryGetValue(action, out var actionMethod))
             try
             {
-                var result = await actionMethod.InvokeAsync(_actionHandler, data);
+                var result = await actionMethod.InvokeAsync(data);
                 return ResponseUtils.Ok(result);
             }
             catch (ActionExecutionException aee)
@@ -110,7 +110,7 @@ internal class ActionMethod
                     new ValueTask<JObject?>(info.Invoke(obj, parameters) as JObject));
     }
 
-    public async ValueTask<JObject?> InvokeAsync(object obj, JObject? data)
+    public async ValueTask<JObject?> InvokeAsync(JObject? data)
     {
         var parameters = _parameters.Count > 0 ? new object?[_parameters.Count] : null;
         foreach (var entry in _parameters)
