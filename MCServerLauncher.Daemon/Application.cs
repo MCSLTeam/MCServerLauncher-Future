@@ -34,7 +34,7 @@ public class Application
 
                     a.RegisterSingleton<IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>>(
                         new AsyncTimedCache<List<JavaScanner.JavaInfo>>(
-                            JavaScanner.ScanJavaAsync,
+                            () => JavaScanner.ScanJava(),
                             TimeSpan.FromMilliseconds(60000)
                         )
                     );

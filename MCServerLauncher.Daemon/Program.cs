@@ -27,7 +27,7 @@ public class Program
     public static void TestJavaScanner()
     {
         BasicUtils.InitApp();
-        JavaScanner.ScanJava();
+        JavaScanner.ScanJava(true).Wait();
     }
 
     public static void WriteTestJavaInfo()
