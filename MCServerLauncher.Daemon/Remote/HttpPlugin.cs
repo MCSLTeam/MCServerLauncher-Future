@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using Serilog;
 using TouchSocket.Core;
@@ -7,13 +8,6 @@ namespace MCServerLauncher.Daemon.Remote;
 
 public class HttpPlugin : PluginBase, IHttpPlugin
 {
-    private readonly IUserService _userService;
-
-    public HttpPlugin(IUserService userService)
-    {
-        _userService = userService;
-    }
-
     public async Task OnHttpRequest(IHttpSessionClient client, HttpContextEventArgs e)
     {
         var request = e.Context.Request;
@@ -33,23 +27,39 @@ public class HttpPlugin : PluginBase, IHttpPlugin
 
         try
         {
-            if (request.UrlEquals("/login"))
+            if (request.UrlEquals("/subtoken"))
             {
-                var usr = request.Forms["usr"] ?? "";
-                var pwd = request.Forms["pwd"] ?? "";
-                var expired = int.Parse(request.Forms["expired"] ?? "30");
+                var token = request.Forms["token"] ?? "";
+                var permissions = request.Forms["permissions"] ?? "*";
+                var expires = 30;
 
-                if (!await _userService.AuthenticateAsync(usr, pwd))
+                try
+                {
+                    expires = int.Parse(request.Forms["expires"] ?? "30");
+                }
+                catch (Exception)
+                {
+                    await response.SetStatus(400, "Invalid expire time").SetContent("").AnswerAsync();
+                    return;
+                }
+
+                if (Permissions.Pattern.IsMatch(permissions))
+                {
+                    await response.SetStatus(400, "Invalid permissions").SetContent("").AnswerAsync();
+                    return;
+                }
+
+                if (!token.Equals(AppConfig.Get().MainToken))
                 {
                     await response.SetStatus(401, "Unauthorized").SetContent("").AnswerAsync();
                     return;
                 }
 
-                var token = await _userService.GenerateTokenAsync(usr, expired);
-                Log.Information("[Authenticator] Login Success: {0}, token will expire in {1}s", usr, expired);
+                var jwt = JwtUtils.GenerateToken(permissions, expires);
+                Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
                 await response
                     .SetStatus(200, "success")
-                    .SetContent(token)
+                    .SetContent(jwt)
                     .AnswerAsync();
             }
         }

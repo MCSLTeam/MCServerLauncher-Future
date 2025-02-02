@@ -15,17 +15,15 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 {
     private readonly IActionService _actionService;
     private readonly IEventService _eventService;
-    private readonly IUserService _userService;
     private readonly IWebJsonConverter _webJsonConverter;
 
-    private User? _user;
+    private Permissions permissions;
 
     private WeakReference? websocketRef;
 
-    public WebsocketPlugin(IUserService userService, IActionService actionService, IEventService eventService,
+    public WebsocketPlugin(IActionService actionService, IEventService eventService,
         IWebJsonConverter webJsonConverter)
     {
-        _userService = userService;
         _actionService = actionService;
         _eventService = eventService;
         _webJsonConverter = webJsonConverter;
@@ -54,7 +52,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
     public async Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
     {
-        var name = e.Context.Request.Headers.Get("user");
+        var name = new Permissions(JwtUtils.ExtractPermissions(e.Context.Request.Query["token"])!);
 
         // get peer ip
         Log.Debug("[Remote] Accept user: {0} from {1}", name, webSocket.Client.GetIPPort());
@@ -84,7 +82,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
             Task.Run(async () =>
             {
-                var data = await _actionService.Execute(action, parameters);
+                var data = await _actionService.Execute(action, parameters, permissions);
 
                 if (echo != null) data["echo"] = echo;
 

@@ -14,7 +14,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// <summary>
 ///     Action handler，返回值只能是JObject, JObject?或<![CDATA[ValueTask<JObject>]]>
 /// </summary>
-public class ActionHandler
+public class ActionHandlers
 {
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
     private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings.Settings);
@@ -22,7 +22,7 @@ public class ActionHandler
     private readonly IInstanceManager _instanceManager;
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
 
-    public ActionHandler(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
+    public ActionHandlers(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
         IInstanceManager instanceManager, IEventService eventService)
     {
         _javaScannerCache = javaScannerCache;

@@ -1,4 +1,5 @@
 using System.Reflection;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 using Exception = System.Exception;
@@ -11,12 +12,12 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 internal class ActionServiceImpl : IActionService
 {
-    private readonly ActionHandler _actionHandler;
+    private readonly ActionHandlers _actionHandlers;
     private readonly IDictionary<string, ActionMethod> _actionMethods;
 
-    public ActionServiceImpl(ActionHandler handler)
+    public ActionServiceImpl(ActionHandlers handlers)
     {
-        _actionHandler = handler;
+        _actionHandlers = handlers;
         _actionMethods = new Dictionary<string, ActionMethod>();
         InitActionMethods();
     }
@@ -26,15 +27,19 @@ internal class ActionServiceImpl : IActionService
     /// </summary>
     /// <param name="action">Action类型</param>
     /// <param name="data">Action数据</param>
+    /// <param name="permissions">令牌权限</param>
     /// <returns>Action响应</returns>
     public async Task<JObject> Execute(
         string action,
-        JObject? data
+        JObject? data,
+        Permissions permissions
     )
     {
         if (_actionMethods.TryGetValue(action, out var actionMethod))
             try
             {
+                if (!permissions.Matches(actionMethod))
+                    throw new Exception("Permission denied");
                 var result = await actionMethod.InvokeAsync(data);
                 return ResponseUtils.Ok(result);
             }
@@ -53,7 +58,7 @@ internal class ActionServiceImpl : IActionService
     // TODO :ActionHandler中添加JObject?返回值
     private void InitActionMethods()
     {
-        var methods = _actionHandler.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+        var methods = _actionHandlers.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
             .Where(m => m.Name.EndsWith("Handler"));
         foreach (var method in methods)
         {
@@ -61,7 +66,7 @@ internal class ActionServiceImpl : IActionService
             if (!IsValidActionMethodReturnType(method.ReturnType))
                 throw new ArgumentException(
                     $"Action method('{method.Name}') return type({method.ReturnType}) must be JObject(?) or Task<JObject(?)> or ValueTask<JObject(?)>");
-            _actionMethods[method.Name[..^7].PascalCaseToSnakeCase()!] = new ActionMethod(_actionHandler, method);
+            _actionMethods[method.Name[..^7].PascalCaseToSnakeCase()!] = new ActionMethod(_actionHandlers, method);
         }
     }
 
@@ -80,10 +85,11 @@ internal class ActionServiceImpl : IActionService
     }
 }
 
-internal class ActionMethod
+internal class ActionMethod : IMatchable
 {
     private readonly Func<object?[]?, ValueTask<JObject?>> _method;
     private readonly IDictionary<string, ParameterInfo> _parameters;
+    private readonly IMatchable _matchable;
 
     public ActionMethod(object obj, MethodInfo methodInfo)
     {
@@ -91,6 +97,13 @@ internal class ActionMethod
         foreach (var parameter in methodInfo.GetParameters())
             _parameters[parameter.Name.PascalCaseToSnakeCase()!] = parameter;
         _method = WarpActionMethod(obj, methodInfo);
+        var requirePermissions = new RequirePermissions(new AlwaysMatchable(true));
+        foreach (var attribute in methodInfo.GetCustomAttributes())
+        {
+            if (attribute is RequirePermissions a) requirePermissions = a;
+        }
+
+        _matchable = requirePermissions;
     }
 
     private static Func<object?[]?, ValueTask<JObject?>> WarpActionMethod(object obj, MethodInfo info)
@@ -134,5 +147,10 @@ internal class ActionMethod
                 throw e.InnerException;
             throw;
         }
+    }
+
+    public bool Matches(Permission permission)
+    {
+        return _matchable.Matches(permission);
     }
 }
