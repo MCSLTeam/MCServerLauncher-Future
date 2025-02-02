@@ -2,9 +2,8 @@
 
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
-        <PlatformTarget>AnyCPU</PlatformTarget>
         <OutputType>Exe</OutputType>
-        <Platforms>AnyCPU</Platforms>
+        <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
         <ApplicationIcon>Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
         <Company>MCSLTeam</Company>
         <Authors>MCSLTeam</Authors>
@@ -18,7 +17,31 @@
         <LangVersion>10</LangVersion>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
         <DebugType>full</DebugType>
     </PropertyGroup>
 

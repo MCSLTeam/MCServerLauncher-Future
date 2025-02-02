@@ -19,7 +19,7 @@
         ui:TitleBar.IsBackButtonVisible="False"
         MinHeight="600" MinWidth="480"
         Width="1138" Height="750">
-    <Grid>
+    <Grid x:Name="GlobalGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -38,12 +38,6 @@
                 <Rectangle Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=(ui:TitleBar.SystemOverlayRightInset)}"
                     Grid.Column="3"/>
 
-                <ui:TitleBarButton x:Name="NotificationCenterButton" Grid.Column="2" Margin="0,-10,0,0" Height="40" Click="ShowNotificationCenter" IsActive="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}">
-                    <ui:TitleBarButton.Content>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ActionCenter}" FontSize="14" VerticalAlignment="Top"/>
-                    </ui:TitleBarButton.Content>
-                </ui:TitleBarButton>
-
                 <ui:TitleBarButton x:Name="DownloadHistoryButton" Grid.Column="1" Margin="0,-10,0,0" Height="40" Click="ShowDownloadHistory" IsActive="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}">
                     <ui:TitleBarButton.Content>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Download}" FontSize="14" VerticalAlignment="Top"/>
@@ -51,7 +45,6 @@
                 </ui:TitleBarButton>
 
                 <ikw:XamlCachedElements>
-                    <ui:Flyout x:Name="NotificationCenterFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True" />
                     <ui:Flyout x:Name="DownloadHistoryFlyout" Placement="Bottom" ScrollViewer.CanContentScroll="True" />
                 </ikw:XamlCachedElements>
             </Grid>

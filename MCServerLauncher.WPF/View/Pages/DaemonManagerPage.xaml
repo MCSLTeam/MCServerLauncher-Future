@@ -1,4 +1,4 @@
-﻿<Page x:Class="MCServerLauncher.WPF.View.Pages.DaemonManagerPage"
+﻿<ui:Page x:Class="MCServerLauncher.WPF.View.Pages.DaemonManagerPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,17 +15,13 @@
                    HorizontalAlignment="Left" Margin="35,35,0,0" />
         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [DaemonManagerTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" Margin="35,80,0,0" />
+        <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,35,40,35" Click="AddDaemonConnection">
+            <Button.Content>
+                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:LanguageManager.Localize}}"/>
+            </Button.Content>
+        </Button>
         <ui:ScrollViewerEx Margin="35,120,35,0">
-            <ui:GridView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Padding="0,0,0,15" >
-                <dm:DaemonCard SystemType="Windows" FriendlyName="Test1" />
-                <dm:DaemonCard SystemType="Apple" FriendlyName="Test2" />
-                <dm:DaemonCard SystemType="Linux" FriendlyName="Test3" />
-                <dm:DaemonCard SystemType="SUSE" FriendlyName="Test4" />
-                <dm:DaemonCard SystemType="Ubuntu" FriendlyName="Test5" />
-                <dm:DaemonCard SystemType="Fedora" FriendlyName="Test6" />
-                <dm:DaemonCard SystemType="CentOS" FriendlyName="Test7" />
-                <dm:DaemonCard SystemType="Debian" FriendlyName="Test8" />
-            </ui:GridView>
+            <ui:GridView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Padding="0,0,0,15" x:Name="DaemonCardContainer" />
         </ui:ScrollViewerEx>
     </Grid>
-</Page>
+</ui:Page>

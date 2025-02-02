@@ -1,8 +1,5 @@
-using System.Text;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Storage;
 
@@ -21,5 +18,8 @@ public class WebJsonConverter : IWebJsonConverter
         return JsonConvert.DeserializeObject<T>(json, JsonSettings.Settings);
     }
 
-    public JsonSerializer GetSerializer()=>JsonSerializer.Create(JsonSettings.Settings);
+    public JsonSerializer GetSerializer()
+    {
+        return JsonSerializer.Create(JsonSettings.Settings);
+    }
 }

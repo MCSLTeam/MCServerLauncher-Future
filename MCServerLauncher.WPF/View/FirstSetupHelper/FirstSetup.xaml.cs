@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Media.Animation;
-using iNKORE.UI.WPF.Modern.Controls;
+﻿using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
+using System;
+using System.Collections.Generic;
+using System.Windows;
 using static MCServerLauncher.WPF.Modules.Animation;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 using Page = System.Windows.Controls.Page;

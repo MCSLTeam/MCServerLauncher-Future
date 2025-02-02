@@ -35,13 +35,13 @@ public class HttpPlugin : PluginBase, IHttpPlugin
         {
             if (request.UrlEquals("/login"))
             {
-                var usr = request.Query.Get("usr") ?? "";
-                var pwd = request.Query.Get("pwd") ?? "";
-                var expired = int.Parse(request.Query.Get("expired") ?? "30");
+                var usr = request.Forms["usr"] ?? "";
+                var pwd = request.Forms["pwd"] ?? "";
+                var expired = int.Parse(request.Forms["expired"] ?? "30");
 
                 if (!await _userService.AuthenticateAsync(usr, pwd))
                 {
-                    await response.SetStatus(401, "Unauthorized").AnswerAsync();
+                    await response.SetStatus(401, "Unauthorized").SetContent("").AnswerAsync();
                     return;
                 }
 

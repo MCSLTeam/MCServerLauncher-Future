@@ -32,7 +32,8 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
         _eventService.Signal += async (type, data) =>
         {
-            if (!websocketRef?.IsAlive ?? true) return;
+            var ws = GetWebSocket();
+            if (ws == null) return;
 
             var text = _webJsonConverter.Serialize(new Dictionary<string, object>
             {
@@ -40,7 +41,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
                 ["data"] = data,
                 ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
             });
-            await ((websocketRef?.Target as IWebSocket)?.SendAsync(text) ?? Task.CompletedTask);
+            await ws.SendAsync(text);
         };
     }
 
@@ -73,21 +74,26 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             if (!TryParseMessage(payload, out var result))
             {
                 Log.Warning("Parse message failed: \n{0}", payload);
-                await webSocket.SendAsync(_webJsonConverter.Serialize(_actionService.Err("Invalid action packet")));
+                await webSocket.SendAsync(_webJsonConverter.Serialize(ResponseUtils.Err("Invalid action packet")));
                 return;
             }
 
             Log.Debug("Received message: \n{0}\n", payload);
 
-            var (actionType, echo, parameters) = result;
-            var data = await _actionService.Routine(actionType, parameters);
+            var (action, echo, parameters) = result;
 
-            if (echo != null) data["echo"] = echo;
+            Task.Run(async () =>
+            {
+                var data = await _actionService.Execute(action, parameters);
 
-            var text = _webJsonConverter.Serialize(data);
+                if (echo != null) data["echo"] = echo;
 
-            Log.Debug("Sending message: \n{0}", text);
-            await webSocket.SendAsync(text);
+                var text = _webJsonConverter.Serialize(data);
+                Log.Debug("Sending message: \n{0}", text);
+
+                var ws = GetWebSocket();
+                if (ws != null) await ws.SendAsync(text);
+            }).ConfigureFalseAwait();
         }
 
         if (e.DataFrame.IsClose) await webSocket.SafeCloseAsync();
@@ -95,17 +101,22 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         await e.InvokeNext();
     }
 
-    private static (ActionType, string?, JObject?) ParseMessage(string message)
+    private IWebSocket? GetWebSocket()
+    {
+        return websocketRef?.Target as IWebSocket;
+    }
+
+    private static (string, string?, JObject?) ParseMessage(string message)
     {
         var data = JObject.Parse(message);
         return (
-            ActionTypeExtensions.FromSnakeCase(data["action"]!.ToString()),
+            data["action"]!.ToString(),
             data.TryGetValue("echo", out var echo) ? echo.ToString() : null,
             data["params"] as JObject
         );
     }
 
-    private static bool TryParseMessage(string message, out (ActionType, string?, JObject?) result)
+    private static bool TryParseMessage(string message, out (string, string?, JObject?) result)
     {
         try
         {

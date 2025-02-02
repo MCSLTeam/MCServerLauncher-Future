@@ -1,8 +1,8 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Modules;
+using System;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
-using MCServerLauncher.WPF.Modules;
 using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
 using ExceptionWindow = MCServerLauncher.WPF.ExceptionDialog.Window;
 using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
@@ -25,7 +25,7 @@ namespace MCServerLauncher.WPF
             {
                 Clipboard.SetText(e.Exception.ToString());
                 new ExceptionWindow(e.Exception.ToString()).ShowDialog();
-                e.Handled = true; // Set `Handled` to `true` to prevent from exiting
+                e.Handled = true; // Set `Handled` to `true` to prevent from crashes
             };
         }
 

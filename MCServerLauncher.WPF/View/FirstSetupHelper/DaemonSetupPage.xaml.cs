@@ -1,10 +1,10 @@
-﻿using System;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.DaemonManager;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.DaemonManager;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
@@ -17,6 +17,29 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         public DaemonSetupPage()
         {
             InitializeComponent();
+            // Refresh trigger when page is visible
+            IsVisibleChanged += (s, e) =>
+            {
+                if (IsVisible)
+                {
+                    if (DaemonsListManager.Get.Count > 0)
+                    {
+                        if (SettingsManager.Get?.App != null && SettingsManager.Get.App.IsFirstSetupFinished) return;
+                        DaemonListView.Items.Clear();
+                        foreach (var daemon in DaemonsListManager.Get)
+                        {
+                            TryConnectDaemon(
+                                daemon.EndPoint,
+                                daemon.Port.ToString(),
+                                daemon.Username,
+                                daemon.Password,
+                                daemon.IsSecure,
+                                daemon.FriendlyName
+                            );
+                        }
+                    }
+                }
+            };
         }
 
         /// <summary>
@@ -51,35 +74,16 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endpoint = "", string port = "", bool isSecure = false, string jwt = "", string name = "")
-        {
-            NewDaemonConnectionInput newDaemonConnectionInput = new();
-            newDaemonConnectionInput.wsEdit.Text = endpoint;
-            newDaemonConnectionInput.portEdit.Text = port;
-            newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked = isSecure;
-            newDaemonConnectionInput.jwtEdit.Password = jwt;
-            newDaemonConnectionInput.nameEdit.Text = name;
-            ContentDialog dialog = new()
-            {
-                Title = LanguageManager.Localize["ConnectDaemon"],
-                PrimaryButtonText = LanguageManager.Localize["Connect"],
-                SecondaryButtonText = LanguageManager.Localize["Cancel"],
-                DefaultButton = ContentDialogButton.Primary,
-                FullSizeDesired = false,
-                Content = newDaemonConnectionInput
-            };
-            return Task.FromResult<(ContentDialog, NewDaemonConnectionInput)>((dialog, newDaemonConnectionInput));
-        }
-
         private async void AddDaemonConnection(object sender, RoutedEventArgs e)
         {
-            (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog();
+            (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await Utils.ConstructConnectDaemonDialog();
             dialog.PrimaryButtonClick += (o, args) => TryConnectDaemon(
-                endpoint: newDaemonConnectionInput.wsEdit.Text,
+                endPoint: newDaemonConnectionInput.wsEdit.Text,
                 port: newDaemonConnectionInput.portEdit.Text,
                 isSecure: newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked == true,
-                jwt: newDaemonConnectionInput.jwtEdit.Password,
-                friendlyName: newDaemonConnectionInput.nameEdit.Text
+                user: newDaemonConnectionInput.userEdit.Text,
+                pwd: newDaemonConnectionInput.pwdEdit.Password,
+                friendlyName: newDaemonConnectionInput.friendlyNameEdit.Text
             );
             try
             {
@@ -91,18 +95,19 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
-        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string endpoint, int port, bool isSecure, string jwt, string friendlyName, DaemonSetupCard daemon)
+        private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string endPoint, int port, bool isSecure, string user, string pwd, string friendlyName, DaemonSetupCard daemon)
         {
-            (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await ConstructConnectDaemonDialog(endpoint, port.ToString() ?? "", isSecure, jwt);
+            (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await Utils.ConstructConnectDaemonDialog(endPoint, port.ToString() ?? "", isSecure, user, pwd, friendlyName);
             dialog.PrimaryButtonClick += (o, args) =>
             {
                 DaemonListView.Items.Remove(daemon);
                 TryConnectDaemon(
-                    endpoint: newDaemonConnectionInput.wsEdit.Text,
+                    endPoint: newDaemonConnectionInput.wsEdit.Text,
                     port: newDaemonConnectionInput.portEdit.Text,
                     isSecure: newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked == true,
-                    jwt: newDaemonConnectionInput.jwtEdit.Password,
-                    friendlyName: newDaemonConnectionInput.nameEdit.Text
+                    user: newDaemonConnectionInput.userEdit.Text,
+                    pwd: newDaemonConnectionInput.pwdEdit.Password,
+                    friendlyName: newDaemonConnectionInput.friendlyNameEdit.Text
                 );
             };
             try
@@ -116,7 +121,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             return (o, args) => { };
         }
 
-        private void TryConnectDaemon(string endpoint, string port, string jwt, bool isSecure, string friendlyName)
+        private async void TryConnectDaemon(string endPoint, string port, string user, string pwd, bool isSecure, string friendlyName)
         {
             try
             {
@@ -126,14 +131,16 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 return;
             }
-            if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(port) || string.IsNullOrWhiteSpace(jwt))
+            if (string.IsNullOrWhiteSpace(endPoint) || string.IsNullOrWhiteSpace(port) || string.IsNullOrWhiteSpace(pwd))
             {
                 return;
             }
-            DaemonSetupCard daemon = new() { EndPoint = endpoint, Port = int.Parse(port), IsSecure = isSecure, JWT = jwt, Status = "ing", FriendlyName = friendlyName };
-            daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.EndPoint, daemon.Port, daemon.IsSecure, daemon.JWT, daemon.FriendlyName, daemon));
+            DaemonSetupCard daemon = new() { EndPoint = endPoint, Port = int.Parse(port), IsSecure = isSecure, Username = user, Password = pwd, Status = "ing", FriendlyName = friendlyName };
+            daemon.Address = $"{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}";
             DaemonListView.Items.Add(daemon);
+            daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.EndPoint, daemon.Port, daemon.IsSecure, daemon.Username, daemon.Password, daemon.FriendlyName, daemon));
             NextButton.IsEnabled = DaemonListView.Items.Count > 0;
+            await daemon.ConnectDaemon();
         }
 
         private void Next(object sender, RoutedEventArgs e)

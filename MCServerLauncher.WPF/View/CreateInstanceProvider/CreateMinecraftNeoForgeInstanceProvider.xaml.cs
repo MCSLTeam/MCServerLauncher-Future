@@ -1,14 +1,14 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Pages;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Pages;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
@@ -119,7 +119,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
             NeoForgeVersionComboBox.IsEnabled = false;
-            if (SettingsManager.AppSettings?.InstanceCreation != null && SettingsManager.AppSettings.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
+            if (SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
                 await FetchNeoForgeDataByBmclapi();
             else
                 await FetchNeoForgeDataByOfficial();

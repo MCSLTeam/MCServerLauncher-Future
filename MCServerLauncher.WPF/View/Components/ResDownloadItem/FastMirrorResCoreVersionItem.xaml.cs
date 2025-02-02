@@ -1,9 +1,6 @@
-﻿using System;
-using System.Linq;
-using System.Windows;
-using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
-using static MCServerLauncher.WPF.Modules.DownloadManager;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {

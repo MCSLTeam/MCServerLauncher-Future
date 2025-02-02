@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -9,8 +11,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
-using Microsoft.Win32;
-using Serilog;
 using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Modules
@@ -124,8 +124,7 @@ namespace MCServerLauncher.WPF.Modules
             }
 
             using var fontStream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf");
-            if (fontStream == null) throw new FileNotFoundException("Embedded resource not found");
+                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.SegoeIcons.ttf") ?? throw new FileNotFoundException("Embedded resource not found");
             using var fileStream = File.Create(fontSysPath);
             fontStream.CopyTo(fileStream);
             AddFontResource(fontSysPath);
@@ -141,17 +140,17 @@ namespace MCServerLauncher.WPF.Modules
             Log.Information($"[Exe] MCServerLauncher Future v{AppVersion}");
             Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
             InitDataDirectory();
-            new SettingsManager().InitSettings();
-            new DaemonsListManager().InitDaemonListConfig();
+            SettingsManager.InitSettings();
+            DaemonsListManager.InitDaemonListConfig();
             bool needImport = false;
-            if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsCertImported) { InitCert(); needImport = true; }
-            if (SettingsManager.AppSettings?.App != null && !SettingsManager.AppSettings.App.IsFontInstalled) { InitFont(); needImport = true; }
+            if (SettingsManager.Get?.App != null && !SettingsManager.Get.App.IsCertImported) { InitCert(); needImport = true; }
+            if (SettingsManager.Get?.App != null && !SettingsManager.Get.App.IsFontInstalled) { InitFont(); needImport = true; }
             if (needImport)
             {
                 Process.Start(Assembly.GetExecutingAssembly().Location);
                 Environment.Exit(0);
             }
-            LanguageManager.Localize.ChangeLanguage(new CultureInfo(SettingsManager.AppSettings?.App?.Language ?? throw new InvalidOperationException()));
+            LanguageManager.Localize.ChangeLanguage(new CultureInfo(SettingsManager.Get?.App?.Language ?? throw new InvalidOperationException()));
         }
     }
 }

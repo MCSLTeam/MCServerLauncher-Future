@@ -41,8 +41,8 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// </summary>
         public string? CoreTag
         {
-            get => CoreTagReplacer.Text;
-            set => CoreTagReplacer.Text = value;
+            get => CoreTagView.Content.ToString();
+            set => CoreTagView.Content = value;
         }
 
         /// <summary>
@@ -75,5 +75,15 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         {
             return CoreItemBorder.Background == _recommendBrush;
         }
+        //private object ConvertColor(object value)
+        //{
+        //    if (value is SolidColorBrush brush)
+        //    {
+        //        Color color = brush.Color;
+        //        Color invertedColor = Color.FromArgb(color.A, (byte)(255 - color.R), (byte)(255 - color.G), (byte)(255 - color.B));
+        //        return new SolidColorBrush(invertedColor);
+        //    }
+        //    return value;
+        //}
     }
 }

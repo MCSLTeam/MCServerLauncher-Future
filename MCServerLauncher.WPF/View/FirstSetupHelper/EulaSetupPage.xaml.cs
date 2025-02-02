@@ -1,10 +1,9 @@
-﻿using System;
-using System.Windows;
-using System.Windows.Controls;
-using iNKORE.UI.WPF.Modern.Controls;
+﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using Serilog;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using System;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
@@ -20,7 +19,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 if (IsVisible)
                 {
-                    if (SettingsManager.AppSettings?.App != null && SettingsManager.AppSettings.App.IsAppEulaAccepted)
+                    if (SettingsManager.Get?.App != null && SettingsManager.Get.App.IsAppEulaAccepted)
                     {
                         Log.Information("[Set] Eula already accepted, skipping.");
                         var parent = this.TryFindParent<FirstSetup>();

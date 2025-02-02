@@ -1,9 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using Newtonsoft.Json;
+using Serilog;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Newtonsoft.Json;
-using Serilog;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -11,19 +11,19 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
         private static readonly object QueueLock = new();
-        public static List<DaemonConfigModel>? DaemonList { get; set; }
+        public static List<DaemonConfigModel>? Get { get; set; }
 
         /// <summary>
         ///    Initialize daemon list.
         /// </summary>
-        public void InitDaemonListConfig()
+        public static void InitDaemonListConfig()
         {
             lock (QueueLock)
             {
                 if (File.Exists("Data/Configuration/MCSL/Daemons.json"))
                 {
                     Log.Information("[Set] Found daemon list, reading");
-                    DaemonList =
+                    Get =
                         JsonConvert.DeserializeObject<List<DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
                             Encoding.UTF8));
                 }
@@ -39,29 +39,29 @@ namespace MCServerLauncher.WPF.Modules
                 }
             }
         }
-        public void AddDaemon(DaemonConfigModel config)
+        public static void AddDaemon(DaemonConfigModel config)
         {
             lock (QueueLock)
             {
-                DaemonList?.Add(config);
+                Get?.Add(config);
                 SaveDaemonList();
             }
         }
-        public void RemoveDaemon(DaemonConfigModel config)
+        public static void RemoveDaemon(DaemonConfigModel config)
         {
             lock (QueueLock)
             {
-                DaemonList?.Remove(config);
+                Get?.Remove(config);
                 SaveDaemonList();
             }
         }
-        private void SaveDaemonList()
+        private static void SaveDaemonList()
         {
             lock (QueueLock)
             {
                 File.WriteAllText(
                     "Data/Configuration/MCSL/Daemons.json",
-                    JsonConvert.SerializeObject(DaemonList, Formatting.Indented),
+                    JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );
             }
@@ -69,10 +69,11 @@ namespace MCServerLauncher.WPF.Modules
 
         public class DaemonConfigModel
         {
-            public bool? IsSecure { get; set; }
-            public string? WebSocketEndpoint { get; set; }
+            public bool IsSecure { get; set; }
+            public string? EndPoint { get; set; }
             public int Port { get; set; }
-            public string? JWT { get; set; }
+            public string? Username { get; set; }
+            public string? Password { get; set; }
             public string? FriendlyName { get; set; }
         }
 

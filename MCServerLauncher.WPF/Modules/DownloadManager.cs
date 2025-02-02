@@ -1,10 +1,11 @@
-﻿using System;
+﻿using MCServerLauncher.WPF.View.Components.Generic;
+using Serilog;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using MCServerLauncher.WPF.View.Components.Generic;
-using Serilog;
 
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 
@@ -28,8 +29,8 @@ namespace MCServerLauncher.WPF.Modules
                     "release" => (0, 0, 0, 0),
                     _ => (0, 0, 0, 0)
                 };
-            version = version.ToLower().Replace("-", ".").Replace("_", ".").Replace("rc", "").Replace("pre", "")
-                .Replace("snapshot", "0");
+            version = Regex.Replace(version.ToLower(), @"[-_]", ".")
+                .Replace("rc", "").Replace("pre", "").Replace("snapshot", "0");
             var parts = version.Split('.');
             if (parts.Length == 2)
                 return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);

@@ -36,6 +36,7 @@ public class BasicUtils
     {
         InitLogger();
         InitDataDirectory();
+        FileManager.StartFileSessionsWatcher();
     }
 
     public static bool IsWindows()

@@ -1,3 +1,12 @@
+imports:
+  - MCServerLauncher.Common.System
+  - MCServerLauncher.Daemon.Minecraft.Server
+  - MCServerLauncher.Daemon.Minecraft.Server.Factory
+  - MCServerLauncher.Daemon.Storage
+  - MCServerLauncher.Daemon.Utils
+  - Newtonsoft.Json
+  - Newtonsoft.Json.Linq
+
 actions:
   - ping:
       req:
@@ -13,7 +22,7 @@ actions:
       req:
         path: string?
         sha1: string?
-        chunk_size: long
+        timeout: long?
         size: long
       
       resp:
@@ -38,6 +47,7 @@ actions:
   - file_download_request:
       req:
         path: string
+        timeout: long?
       
       resp:
         file_id: Guid
@@ -128,3 +138,9 @@ actions:
       
       resp:
         status: IDictionary<Guid, InstanceStatus>
+
+  - get_system_info:
+      req:
+      
+      resp:
+        info: SystemInfo

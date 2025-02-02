@@ -11,5 +11,5 @@ public interface ICacheable<out T>
 
 public interface IAsyncCacheable<T>
 {
-    public Task<T> Value { get; }
+    public ValueTask<T> Value { get; }
 }

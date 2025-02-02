@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Downloader;
+using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.Modules;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using Downloader;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
-using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules;
 using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
 
 namespace MCServerLauncher.WPF.View.Components.Generic
@@ -32,7 +31,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             DownloadConfig = new DownloadConfiguration
             {
                 Timeout = 5000,
-                ChunkCount = SettingsManager.AppSettings.Download.ThreadCnt,
+                ChunkCount = SettingsManager.Get.Download.ThreadCnt,
                 ParallelDownload = true,
                 RequestConfiguration =
                 {
@@ -156,7 +155,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                 Dispatcher.Invoke(() =>
                 {
                     DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
-                    Notification.PushNotification(
+                    Notification.Push(
                         title: LanguageManager.Localize["DownloadCancelled"],
                         message: $"{FileName} {LanguageManager.Localize["DownloadCancelled"]}",
                         isClosable: true,
@@ -170,7 +169,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                 Dispatcher.Invoke(() =>
                 {
                     DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
-                    Notification.PushNotification(
+                    Notification.Push(
                         title: LanguageManager.Localize["DownloadFailed"],
                         message: $"{FileName} {LanguageManager.Localize["DownloadFailed"]}\n{e.Error}",
                         isClosable: true,
@@ -182,7 +181,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             Dispatcher.Invoke(() =>
             {
                 DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
-                Notification.PushNotification(
+                Notification.Push(
                     title: LanguageManager.Localize["DownloadFinished"],
                     message: $"{FileName} {LanguageManager.Localize["DownloadFinished"]}",
                     isClosable: true,

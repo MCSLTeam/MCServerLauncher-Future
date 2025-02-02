@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required"/>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -176,7 +176,7 @@
     <value>Minecraft 基岩版壓縮包</value>
   </data>
   <data name="CreateInstance_SelectArchive_Description" xml:space="preserve">
-    <value>請在此處導入下載的壓縮包。 如果不知道在哪裡下載，可點擊右側按鈕跳轉</value>
+    <value>請在此處導入下載的壓縮包。 如果不知道在哪裡下載，可點擊右側按鈕跳轉。</value>
   </data>
   <data name="Archive" xml:space="preserve">
     <value>壓縮包</value>
@@ -749,7 +749,7 @@
     <value>通用：目前 WebSocket 延遲</value>
   </data>
   <data name="ConsoleCommand_FeedbackTip" xml:space="preserve">
-    <value>反饋錯誤請帶上錯誤日誌，否則一切行為無異於閉眼開車</value>
+    <value>反饋錯誤請帶上錯誤日誌，否則一切行為無異於閉眼開車。</value>
   </data>
   <data name="ConsoleCommand_EnterFullScreenConsole" xml:space="preserve">
     <value>進入全屏終端</value>

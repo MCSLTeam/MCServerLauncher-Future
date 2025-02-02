@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using iNKORE.UI.WPF.Modern.Common.IconKeys;
+﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.SettingCard
 {

@@ -1,10 +1,9 @@
 ﻿using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
 using System;
 using System.Windows;
-using System.Windows.Media.Animation;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media.Animation;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -37,7 +36,7 @@ namespace MCServerLauncher.WPF.View.Pages
             ShowLoadingLayer();
             if (CurrentResDownloadProvider.Content is IResDownloadProvider provider)
             {
-                if (SettingsManager.AppSettings?.Download?.DownloadSource != provider.ResProviderName)
+                if (SettingsManager.Get?.Download?.DownloadSource != provider.ResProviderName)
                 {
                     IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
                     await currentResDownloadProvider.Refresh();
@@ -56,7 +55,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private IResDownloadProvider ToggleResDownloadProvider()
         {
-            IResDownloadProvider? currentResDownloadProvider = SettingsManager.AppSettings?.Download?.DownloadSource switch
+            IResDownloadProvider? currentResDownloadProvider = SettingsManager.Get?.Download?.DownloadSource switch
             {
                 "FastMirror" => FastMirror,
                 "PolarsMirror" => PolarsMirror,
