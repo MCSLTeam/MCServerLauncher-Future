@@ -17,13 +17,14 @@ public class Permission : IMatchable
 
     public bool Matches(Permission p)
     {
-        string pattern = _permission
+        string pattern = p
+            .ToString()
             .Replace(".", "\\s")
             .Replace("**", ".+")
             .Replace("*", "\\S+");
         pattern = "^" + pattern + "(\\s.+)?$";
 
-        string input = p.ToString().Replace(".", " ");
+        string input = _permission.Replace(".", " ");
 
         return Regex.IsMatch(input, pattern);
     }
