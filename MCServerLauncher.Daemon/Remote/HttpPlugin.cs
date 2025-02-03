@@ -1,8 +1,11 @@
+using System.Reflection;
 using System.Text.RegularExpressions;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
+using HttpMethod = TouchSocket.Http.HttpMethod;
 
 namespace MCServerLauncher.Daemon.Remote;
 
@@ -10,24 +13,30 @@ public class HttpPlugin : PluginBase, IHttpPlugin
 {
     public async Task OnHttpRequest(IHttpSessionClient client, HttpContextEventArgs e)
     {
-        var request = e.Context.Request;
-        var response = e.Context.Response;
-
-
-        if (request.IsPost()) await HandlePostRequest(client, e);
-        if (request.IsMethod("head")) await response.AddHeader("x-application", "mcsl_daemon_csharp").AnswerAsync();
-
+        await HandleRequest(client, e.Context.Request.Method, e);
         await e.InvokeNext();
     }
 
-    private async Task HandlePostRequest(IHttpSessionClient client, HttpContextEventArgs e)
+    private async Task HandleRequest(IHttpSessionClient client, HttpMethod method, HttpContextEventArgs e)
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
 
         try
         {
-            if (request.UrlEquals("/subtoken"))
+            if (method == HttpMethod.Get && request.UrlEquals("/info"))
+            {
+                await response
+                    .SetStatus(200, "Success")
+                    .SetContent(new JObject
+                    {
+                        ["name"] = "MCServerLauncher Daemon CSharp",
+                        ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                        ["apiVersion"] = "v1",
+                    }.ToString())
+                    .AnswerAsync();
+            }
+            else if (method == HttpMethod.Post && request.UrlEquals("/subtoken"))
             {
                 var token = request.Forms["token"] ?? "";
                 var permissions = request.Forms["permissions"] ?? "*";
@@ -58,7 +67,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                 var jwt = JwtUtils.GenerateToken(permissions, expires);
                 Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
                 await response
-                    .SetStatus(200, "success")
+                    .SetStatus(200, "Success")
                     .SetContent(jwt)
                     .AnswerAsync();
             }
