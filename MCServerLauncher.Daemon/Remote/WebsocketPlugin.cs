@@ -1,5 +1,6 @@
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json.Linq;

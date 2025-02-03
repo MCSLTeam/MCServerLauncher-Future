@@ -1,4 +1,4 @@
-using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action;

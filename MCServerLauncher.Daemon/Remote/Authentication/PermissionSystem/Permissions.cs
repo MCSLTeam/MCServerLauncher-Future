@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
-using TouchSocket.Core;
 
-namespace MCServerLauncher.Daemon.Remote.Authentication;
+namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
 public class Permissions
 {

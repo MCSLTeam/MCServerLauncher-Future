@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace MCServerLauncher.Daemon.Remote.Authentication;
+namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
 public class Permission : IMatchable
 {
@@ -17,8 +17,7 @@ public class Permission : IMatchable
 
     public bool Matches(Permission p)
     {
-        string pattern = p
-            .ToString()
+        string pattern = p._permission
             .Replace(".", "\\s")
             .Replace("**", ".+")
             .Replace("*", "\\S+");

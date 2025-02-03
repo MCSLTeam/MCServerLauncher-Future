@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using MCServerLauncher.Common;
 using MCServerLauncher.Common.System;
 using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -21,6 +22,19 @@ public class ActionHandlers
     private readonly IEventService _eventService;
     private readonly IInstanceManager _instanceManager;
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
+
+    public static Dictionary<string, IMatchable> RequiredPermissions = new Dictionary<string, IMatchable>
+    {
+        {"get_java_list", new Permission("mcsl.daemon.java_list")},
+        {"file_upload_chunk", new Permission("mcsl.daemon.file.upload")},
+        {"file_upload_request", new Permission("mcsl.daemon.file.upload")},
+        {"file_upload_cancel", new Permission("mcsl.daemon.file.upload")},
+        {"file_download_close", new Permission("mcsl.daemon.file.download")},
+        {"file_download_chunk", new Permission("mcsl.daemon.file.download")},
+        {"file_download_request", new Permission("mcsl.daemon.file.download")},
+        {"get_directory_info", new Permission("mcsl.daemon.file.info.directory")},
+        {"get_file_info", new Permission("mcsl.daemon.file.info.file")},
+    };
 
     public ActionHandlers(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
         IInstanceManager instanceManager, IEventService eventService)
@@ -90,7 +104,7 @@ public class ActionHandlers
         return default;
     }
 
-    private async ValueTask<JObject> FileDownloadRangeHandler(Guid fileId, string range)
+    private async ValueTask<JObject> FileDownloadChunkHandler(Guid fileId, string range)
     {
         var match = RangePattern.Match(range);
         if (!match.Success) throw new ActionExecutionException(1400, "Invalid range format");

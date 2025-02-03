@@ -1,5 +1,5 @@
 using System.Reflection;
-using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 using Exception = System.Exception;
@@ -38,7 +38,7 @@ internal class ActionServiceImpl : IActionService
         if (_actionMethods.TryGetValue(action, out var actionMethod))
             try
             {
-                if (!permissions.Matches(actionMethod))
+                if (!permissions.Matches(ActionHandlers.RequiredPermissions.GetValueOrDefault(action, new AlwaysMatchable(true))))
                     throw new Exception("Permission denied");
                 var result = await actionMethod.InvokeAsync(data);
                 return ResponseUtils.Ok(result);
@@ -97,13 +97,6 @@ internal class ActionMethod : IMatchable
         foreach (var parameter in methodInfo.GetParameters())
             _parameters[parameter.Name.PascalCaseToSnakeCase()!] = parameter;
         _method = WarpActionMethod(obj, methodInfo);
-        var requirePermissions = new RequirePermissions(new AlwaysMatchable(true));
-        foreach (var attribute in methodInfo.GetCustomAttributes())
-        {
-            if (attribute is RequirePermissions a) requirePermissions = a;
-        }
-
-        _matchable = requirePermissions;
     }
 
     private static Func<object?[]?, ValueTask<JObject?>> WarpActionMethod(object obj, MethodInfo info)
