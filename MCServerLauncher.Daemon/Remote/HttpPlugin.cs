@@ -31,7 +31,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                     .AddHeader("Content-type", "application/json")
                     .SetContent(new JObject
                     {
-                        ["name"] = "MCServerLauncher Daemon CSharp",
+                        ["name"] = "MCServerLauncher Future Daemon CSharp",
                         ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                         ["apiVersion"] = "v1",
                     }.ToString())
