@@ -28,6 +28,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
             {
                 await response
                     .SetStatus(200, "Success")
+                    .AddHeader("Content-type", "application/json")
                     .SetContent(new JObject
                     {
                         ["name"] = "MCServerLauncher Daemon CSharp",
@@ -68,6 +69,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                 Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
                 await response
                     .SetStatus(200, "Success")
+                    .AddHeader("Content-type", "text/plain")
                     .SetContent(jwt)
                     .AnswerAsync();
             }
