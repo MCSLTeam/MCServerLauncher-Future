@@ -72,7 +72,7 @@ public static class InstanceFactorySettingExtensions
                     coreFactories[(McVersion.Of(attr.MinVersion), McVersion.Of(attr.MaxVersion))] = setting =>
                         (factoryMethodInfo.Invoke(factoryInstance, new object[] { setting }) as Task<InstanceConfig>)!;
                     Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(type={SourceType.Core}) \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
 
                 if (factoryInstance is IArchiveInstanceFactory archiveInstanceFactory)
@@ -88,7 +88,7 @@ public static class InstanceFactorySettingExtensions
                     archiveFactories[(McVersion.Of(attr.MinVersion), McVersion.Of(attr.MaxVersion))] = setting =>
                         (factoryMethodInfo.Invoke(factoryInstance, new object[] { setting }) as Task<InstanceConfig>)!;
                     Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(type={SourceType.Archive}) \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
 
                 if (factoryInstance is IScriptInstanceFactory scriptInstanceFactory)
@@ -104,7 +104,7 @@ public static class InstanceFactorySettingExtensions
                     scriptFactories[(McVersion.Of(attr.MinVersion), McVersion.Of(attr.MaxVersion))] = setting =>
                         (factoryMethodInfo.Invoke(factoryInstance, new object[] { setting }) as Task<InstanceConfig>)!;
                     Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(type={SourceType.Script}) \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
             }
         }
