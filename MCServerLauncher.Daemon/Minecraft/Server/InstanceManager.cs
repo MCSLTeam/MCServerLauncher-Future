@@ -25,27 +25,28 @@ public class InstanceManager : IInstanceManager
             return false;
         }
 
-        var instanceFactory = setting.GetInstanceFactory();
+        // var instanceFactory = setting.GetInstanceFactory();
 
         // async run
         try
         {
             Log.Information("[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
                 setting.InstanceType.ToString(), setting.Name);
-            var config = await instanceFactory.CreateInstance(setting);
+            var config = await setting.ApplyInstanceFactory();
             FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
 
             var instance = new Instance(config);
-            if (setting.UsePostProcess)
-            {
-                var processors = instanceFactory.GetPostProcessors();
-                for (var i = 0; i < processors.Length; i++)
-                {
-                    Log.Information("[InstanceManager] Running PostProcessor({0}/{1}) for instance '{2}'", i,
-                        processors.Length, setting.Name);
-                    await processors[i].Invoke(instance);
-                }
-            }
+            // TODO 重写apply post processor逻辑，maybe继续用attribute?
+            // if (setting.UsePostProcess)
+            // {
+            //     var processors = instanceFactory.GetPostProcessors();
+            //     for (var i = 0; i < processors.Length; i++)
+            //     {
+            //         Log.Information("[InstanceManager] Running PostProcessor({0}/{1}) for instance '{2}'", i,
+            //             processors.Length, setting.Name);
+            //         await processors[i].Invoke(instance);
+            //     }
+            // }
 
             if (!Instances.TryAdd(config.Uuid, instance))
             {

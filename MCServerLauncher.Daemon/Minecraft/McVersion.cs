@@ -32,16 +32,16 @@ public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch
     {
         return left < right || left == right;
     }
-}
 
-public static class McVersionExtensions
-{
     public static McVersion Of(string version)
     {
         var parts = version.Split('.').Select(ushort.Parse).ToArray();
         return new McVersion(parts[0], parts[1], parts[2]);
     }
+}
 
+public static class McVersionExtensions
+{
     private static bool Is(ushort digital, string pattern)
     {
         return pattern == "*" || digital == ushort.Parse(pattern);
@@ -66,6 +66,6 @@ public static class McVersionExtensions
 
     public static bool Between(this McVersion version, string min, string max)
     {
-        return version.Between(Of(min), Of(max));
+        return version.Between(McVersion.Of(min), McVersion.Of(max));
     }
 }
