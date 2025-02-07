@@ -15,6 +15,11 @@ internal class AppConfig
     [JsonIgnore] private static AppConfig? _appConfig;
 
     /// <summary>
+    ///     主令牌
+    /// </summary>
+    public readonly string MainToken;
+
+    /// <summary>
     ///     端口
     /// </summary>
     public readonly ushort Port;
@@ -24,11 +29,6 @@ internal class AppConfig
     ///     Jwt-secret
     /// </summary>
     public readonly string Secret;
-
-    /// <summary>
-    ///     主令牌
-    /// </summary>
-    public readonly string MainToken;
 
     public AppConfig(ushort port, string secret, string mainToken, byte fileDownloadSessions = 3)
     {

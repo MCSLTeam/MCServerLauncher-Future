@@ -33,7 +33,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                     {
                         ["name"] = "MCServerLauncher Future Daemon CSharp",
                         ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                        ["apiVersion"] = "v1",
+                        ["apiVersion"] = "v1"
                     }.ToString())
                     .AnswerAsync();
             }
@@ -53,7 +53,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                     return;
                 }
 
-                if (Permissions.Pattern.IsMatch(permissions))
+                if (Permissions.IsValid(permissions))
                 {
                     await response.SetStatus(400, "Invalid permissions").SetContent("").AnswerAsync();
                     return;

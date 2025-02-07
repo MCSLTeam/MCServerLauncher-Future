@@ -55,9 +55,7 @@ public class Application
 
                                 if (token != null && (AppConfig.Get().MainToken.Equals(token) ||
                                                       JwtUtils.ValidateToken(token)))
-                                {
                                     return true;
-                                }
 
                                 await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
                                 return false;

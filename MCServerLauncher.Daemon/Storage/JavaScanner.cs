@@ -143,7 +143,7 @@ public static class JavaScanner
                     javaProcesses.Add(StartJava(absoluteFilePath));
                 }
                 else if (!ForceExcludedKeys.Any(lowered.Contains) &&
-                         (!deep && IsMatchedKey(lowered) && recursive || deep && !IsSymlink(absoluteFilePath)))
+                         ((!deep && IsMatchedKey(lowered) && recursive) || (deep && !IsSymlink(absoluteFilePath))))
                 {
                     SingleScanJob(absoluteFilePath, javaProcesses, true, deep);
                 }
