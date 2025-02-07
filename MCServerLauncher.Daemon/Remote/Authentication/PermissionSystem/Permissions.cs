@@ -4,7 +4,7 @@ namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
 public class Permissions
 {
-    public static readonly Regex Pattern =
+    private static readonly Regex Pattern =
         new(
             @"/^(?:(?:[a-zA-Z-_]+|\*{1,2})\.)*(?:[a-zA-Z-_]+|\*{1,2})(?:,(?:(?:[a-zA-Z-_]+|\*{1,2})\.)*(?:[a-zA-Z-_]+|\*{1,2}))*$/gm");
 
@@ -21,6 +21,11 @@ public class Permissions
     public Permissions(params Permission[] permissions)
     {
         _permissions = permissions;
+    }
+
+    public static bool IsValid(string permissions)
+    {
+        return Pattern.IsMatch(permissions);
     }
 
     public bool Matches(IMatchable matchable)

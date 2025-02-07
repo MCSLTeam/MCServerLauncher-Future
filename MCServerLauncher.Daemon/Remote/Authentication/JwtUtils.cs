@@ -78,7 +78,7 @@ public static class JwtUtils
             };
             var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);
             var permissions = ExtractPermissions(jwt);
-            return permissions != null && Permissions.Pattern.IsMatch(permissions);
+            return permissions != null && Permissions.IsValid(permissions);
         }
         catch (Exception e)
         {

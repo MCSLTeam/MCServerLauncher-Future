@@ -4,28 +4,38 @@ namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
 public class Permission : IMatchable
 {
-    public static readonly Regex Pattern = new(@"/^(([a-zA-Z-_]+|\*{1,2})\.)*([a-zA-Z-_]+|\*{1,2})$/");
+    private static readonly Regex Pattern = new(@"/^(([a-zA-Z-_]+|\*{1,2})\.)*([a-zA-Z-_]+|\*{1,2})$/");
 
     private readonly string _permission;
 
     public Permission(string permission)
     {
-        if (Pattern.IsMatch(permission))
+        if (IsValid(permission))
             throw new ArgumentException("Invalid permission");
         _permission = permission;
     }
 
-    public bool Matches(Permission p)
+    public bool Matches(IMatchable p)
     {
-        string pattern = p._permission
-            .Replace(".", "\\s")
-            .Replace("**", ".+")
-            .Replace("*", "\\S+");
-        pattern = "^" + pattern + "(\\s.+)?$";
+        if (p is Permission permission)
+        {
+            var pattern = permission._permission
+                .Replace(".", "\\s")
+                .Replace("**", ".+")
+                .Replace("*", "\\S+");
+            pattern = "^" + pattern + "(\\s.+)?$";
 
-        string input = _permission.Replace(".", " ");
+            var input = _permission.Replace(".", " ");
 
-        return Regex.IsMatch(input, pattern);
+            return Regex.IsMatch(input, pattern);
+        }
+
+        return false;
+    }
+
+    public static bool IsValid(string permissions)
+    {
+        return Pattern.IsMatch(permissions);
     }
 
     public override string ToString()
