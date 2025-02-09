@@ -17,7 +17,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
         await e.InvokeNext();
     }
 
-    private async Task HandleRequest(IHttpSessionClient client, HttpMethod method, HttpContextEventArgs e)
+    private static async Task HandleRequest(IHttpSessionClient client, HttpMethod method, HttpContextEventArgs e)
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
@@ -41,8 +41,8 @@ public class HttpPlugin : PluginBase, IHttpPlugin
             {
                 var token = request.Forms["token"] ?? "";
                 var permissions = request.Forms["permissions"] ?? "*";
-                var expires = 30;
-
+                
+                int expires;
                 try
                 {
                     expires = int.Parse(request.Forms["expires"] ?? "30");

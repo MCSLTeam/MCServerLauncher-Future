@@ -17,8 +17,7 @@ public static class JwtUtils
     /// <summary>
     ///     生成Token(验证pwd 防止出现pwd已更改但token依然有效的情况)，使用HmacSha256生成摘要
     /// </summary>
-    /// <param name="usr"></param>
-    /// <param name="secret"></param>
+    ///<param name="permissions">权限组表达式字符串<see cref="Permissions"/></param>
     /// <param name="expired">过期的秒数</param>
     /// <returns></returns>
     public static string GenerateToken(string permissions, int expired)
@@ -59,7 +58,6 @@ public static class JwtUtils
     /// <summary>
     ///     解析Token，返回是否成功
     /// </summary>
-    /// <param name="secret"></param>
     /// <param name="jwt"></param>
     /// <returns></returns>
     public static bool ValidateToken(string jwt)
