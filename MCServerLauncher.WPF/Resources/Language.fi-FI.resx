@@ -733,6 +733,9 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守护进程 WebSocket 地址</value>
   </data>
+  <data name="DaemonPassword" xml:space="preserve">
+    <value>密码</value>
+  </data>
   <data name="Connecting" xml:space="preserve">
     <value>连接中</value>
   </data>
@@ -855,5 +858,11 @@
   </data>
   <data name="Port" xml:space="preserve">
     <value>端口</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="ConnectDaemonFailedTip" xml:space="preserve">
+    <value>无法连接守护进程，请检查配置。</value>
   </data>
 </root>
