@@ -54,7 +54,8 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     public async Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
     {
         var token = e.Context.Request.Query["token"]!;
-        _permissions = new Permissions(JwtUtils.ExtractPermissions(token)!);
+        // TODO normalization
+        _permissions = new Permissions(token == AppConfig.Get().MainToken ? "*" : JwtUtils.ExtractPermissions(token)!);
 
         // get peer ip
         Log.Debug("[Remote] Accept token: \"{0}...\" from {1}", token[..5], webSocket.Client.GetIPPort());
