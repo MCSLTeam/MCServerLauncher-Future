@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -55,7 +56,15 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         private async void Download(object sender, RoutedEventArgs e)
         {
             var downloadUrl = await FetchRawUrl();
-            await new DownloadManager().TriggerPreDownloadFile(downloadUrl, FileName);
+            if (downloadUrl == null)
+            {
+                throw new ArgumentNullException(nameof(downloadUrl));
+            }
+            if (FileName == null)
+            {
+                throw new ArgumentNullException(nameof(FileName));
+            }
+            await new DownloadManager().TriggerPreDownloadFile(downloadUrl: downloadUrl, defaultFileName: FileName);
         }
     }
 }

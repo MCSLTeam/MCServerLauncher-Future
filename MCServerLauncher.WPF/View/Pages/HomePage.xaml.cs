@@ -28,7 +28,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void PushSimpleNotification(object sender, RoutedEventArgs e)
         {
-            InfoBarSeverity infoBarSeverity = ((Button)sender).Content.ToString() switch
+            InfoBarSeverity infoBarSeverity = ((Button)sender).Content.ToString().Split('-')[0] switch
             {
                 "Informational" => InfoBarSeverity.Informational,
                 "Success" => InfoBarSeverity.Success,
@@ -36,7 +36,19 @@ namespace MCServerLauncher.WPF.View.Pages
                 "Error" => InfoBarSeverity.Error,
                 _ => InfoBarSeverity.Informational
             };
-            Notification.Push("Title", "Message", true, infoBarSeverity);
+
+            Constants.InfoBarPosition infoBarPosition = ((Button)sender).Content.ToString().Split('-')[1] switch
+            {
+                "Top" => Constants.InfoBarPosition.Top,
+                "TopRight" => Constants.InfoBarPosition.TopRight,
+                "Bottom" => Constants.InfoBarPosition.Bottom,
+                "BottomRight" => Constants.InfoBarPosition.BottomRight,
+                _ => Constants.InfoBarPosition.Top
+            };
+
+            var random = new Random();
+            var randomNumber = random.Next(100000, 999999).ToString();
+            Notification.Push("Title", $"Message{randomNumber} - {infoBarPosition}", false, infoBarSeverity, infoBarPosition, 3000);
         }
     }
 }

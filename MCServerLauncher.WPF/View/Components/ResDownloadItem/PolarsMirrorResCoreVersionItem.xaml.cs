@@ -1,4 +1,5 @@
 ﻿using MCServerLauncher.WPF.Modules;
+using System;
 using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
@@ -34,6 +35,10 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <param name="e"></param>
         private async void Download(object sender, RoutedEventArgs e)
         {
+            if (DownloadUrl == null || FileName == null)
+            {
+                throw new ArgumentNullException();
+            }
             await new DownloadManager().TriggerPreDownloadFile(DownloadUrl, FileName);
         }
     }

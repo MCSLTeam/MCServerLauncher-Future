@@ -27,4 +27,18 @@ namespace MCServerLauncher.WPF.Modules
             };
         }
     }
+    
+    public class Constants
+    {
+        public enum InfoBarPosition
+        {
+            Top,
+            TopRight,
+            //TopLeft,
+            Bottom,
+            BottomRight,
+            //BottomLeft,
+            None
+        }
+    }
 }

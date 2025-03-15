@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.DownloadProvider;
+using System;
 using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
@@ -44,7 +45,12 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <param name="e"></param>
         private async void Download(object sender, RoutedEventArgs e)
         {
-            var downloadUrl = new FastMirror().CombineDownloadUrl(Core, MinecraftVersion, CoreVersion);
+            if (Core == null || MinecraftVersion == null || CoreVersion == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            var downloadUrl = new FastMirror().CombineDownloadUrl(core: Core, minecraftVersion: MinecraftVersion, coreVersion: CoreVersion);
             string defaultFileName = $"{Core}-{MinecraftVersion}-{CoreVersion}.jar";
             await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
         }
