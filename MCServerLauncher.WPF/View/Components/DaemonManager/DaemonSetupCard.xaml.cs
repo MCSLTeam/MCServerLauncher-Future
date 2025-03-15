@@ -17,6 +17,14 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public DaemonSetupCard()
         {
             InitializeComponent();
+            ThisDaemon = null!;
+            EndPoint = string.Empty;
+            Username = string.Empty;
+            Password = string.Empty;
+            FriendlyName = string.Empty;
+            IsSecure = false;
+            Address = string.Empty;
+            Status = string.Empty;
         }
         private IDaemon ThisDaemon { get; set; }
         public bool IsSecure { get; set; }

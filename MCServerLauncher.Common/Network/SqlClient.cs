@@ -347,19 +347,19 @@ public class PingPayload
     /// Protocol that the server is using and the given name
     /// </summary>
     [JsonProperty(PropertyName = "version")]
-    public VersionPayload Version { get; set; }
+    public VersionPayload? Version { get; set; }
 
     [JsonProperty(PropertyName = "players")]
-    public PlayersPayload Players { get; set; }
+    public PlayersPayload? Players { get; set; }
 
     [JsonProperty(PropertyName = "description")]
-    public string Motd { get; set; }
+    public string? Motd { get; set; }
 
     /// <summary>
     /// Server icon, important to note that it's encoded in base 64
     /// </summary>
     [JsonProperty(PropertyName = "favicon")]
-    public string Icon { get; set; }
+    public string? Icon { get; set; }
 }
 
 public class VersionPayload
@@ -367,7 +367,7 @@ public class VersionPayload
     [JsonProperty(PropertyName = "protocol")]
     public int Protocol { get; set; }
 
-    [JsonProperty(PropertyName = "name")] public string Name { get; set; }
+    [JsonProperty(PropertyName = "name")] public string? Name { get; set; }
 }
 
 public class PlayersPayload
@@ -378,14 +378,14 @@ public class PlayersPayload
     public int Online { get; set; }
 
     [JsonProperty(PropertyName = "sample")]
-    public List<Player> Sample { get; set; }
+    public List<Player>? Sample { get; set; }
 }
 
 public class Player
 {
-    [JsonProperty(PropertyName = "name")] public string Name { get; set; }
+    [JsonProperty(PropertyName = "name")] public string? Name { get; set; }
 
-    [JsonProperty(PropertyName = "id")] public string Id { get; set; }
+    [JsonProperty(PropertyName = "id")] public string? Id { get; set; }
 }
 
 #endregion

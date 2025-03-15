@@ -19,7 +19,13 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public DaemonCard()
         {
             InitializeComponent();
+            token = string.Empty;
+            ThisDaemon = null!;
+            EndPoint = string.Empty;
+            Username = string.Empty;
+            Password = string.Empty;
         }
+
         private string token;
         private IDaemon ThisDaemon { get; set; }
 
@@ -133,8 +139,8 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 JToken systemInfo = (await ThisDaemon.GetSystemInfoAsync()).SelectToken("info");
                 if (systemInfo is not null)
                 {
-                    var SystemName = systemInfo.SelectToken("os.name").ToString();
-                    var CpuVendor = systemInfo.SelectToken("cpu.vendor").ToString();
+                    var SystemName = systemInfo.SelectToken("os.name")!.ToString();
+                    var CpuVendor = systemInfo.SelectToken("cpu.vendor")!.ToString();
                     if (SystemName.Contains("Windows NT")) SystemType = "Windows";
                     else if (SystemName.Contains("Unix"))
                     {

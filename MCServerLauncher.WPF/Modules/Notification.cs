@@ -17,7 +17,10 @@ namespace MCServerLauncher.WPF.Modules
         /// <param name="message">Content of the notification.</param>
         /// <param name="isClosable">Controls whether notifications can be turned off.</param>
         /// <param name="severity">Level.</param>
-        public static void Push(string title, string message, bool isClosable, InfoBarSeverity severity)
+        /// <param name="position">Position of the notification.</param>
+        /// <param name="durationMs">Duration in milliseconds.</param>
+        public static void Push(string title, string message, bool isClosable, InfoBarSeverity severity, 
+            Constants.InfoBarPosition position = Constants.InfoBarPosition.TopRight, int durationMs = 1500)
         {
             InfoBar infoBar = new()
             {
@@ -29,7 +32,7 @@ namespace MCServerLauncher.WPF.Modules
                 IsHitTestVisible = true,
                 Effect = new DropShadowEffect
                 {
-                    Color = Colors.Black,
+                    Color = Colors.Gray,
                     Direction = 270,
                     ShadowDepth = 2,
                     Opacity = 0.4,
@@ -41,8 +44,7 @@ namespace MCServerLauncher.WPF.Modules
             {
                 if (severity == InfoBarSeverity.Informational) infoBar.Background = new SolidColorBrush((Color)Application.Current.Resources["SystemFillColorSolidNeutralBackground"]);
             };
-            NotificationContainer.Instance.Panel.Children.Insert(0, infoBar);
-            // system layer notification
+            NotificationContainer.Instance.AddNotification(infoBar, position, durationMs);
             new ToastContentBuilder()
             .AddText(title)
             .AddText(message)
