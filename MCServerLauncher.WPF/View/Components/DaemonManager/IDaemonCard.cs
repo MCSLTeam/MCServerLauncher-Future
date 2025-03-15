@@ -9,8 +9,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         bool IsSecure { get; set; }
         string EndPoint { get; set; }
         int Port { get; set; }
-        string Username { get; set; }
-        string Password { get; set; }
+        string Token { get; set; }
         string FriendlyName { get; set; }
         Task<bool> ConnectDaemon();
     }

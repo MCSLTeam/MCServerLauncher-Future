@@ -6,14 +6,13 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
     internal class Utils
     {
-        public static Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endPoint = "", string port = "", bool isSecure = false, string user = "", string pwd = "", string name = "", bool isRetrying = false)
+        public static Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endPoint = "", string port = "", bool isSecure = false, string token = "", string name = "", bool isRetrying = false)
         {
             NewDaemonConnectionInput newDaemonConnectionInput = new();
             newDaemonConnectionInput.wsEdit.Text = endPoint;
             newDaemonConnectionInput.portEdit.Text = port;
-            newDaemonConnectionInput.SecureWebSocketCheckBox.IsChecked = isSecure;
-            newDaemonConnectionInput.userEdit.Text = user;
-            newDaemonConnectionInput.pwdEdit.Password = pwd;
+            newDaemonConnectionInput.WebSocketScheme.SelectedIndex = isSecure ? 1 : 0;
+            newDaemonConnectionInput.tokenEdit.Password = token;
             newDaemonConnectionInput.friendlyNameEdit.Text = name;
             ContentDialog dialog = new()
             {

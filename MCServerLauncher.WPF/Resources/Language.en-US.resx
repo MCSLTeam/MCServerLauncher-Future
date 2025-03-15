@@ -733,7 +733,7 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>Daemon WebSocket Address</value>
   </data>
-  <data name="DaemonPassword" xml:space="preserve">
+  <data name="Password" xml:space="preserve">
     <value>Daemon Password</value>
   </data>
   <data name="Connecting" xml:space="preserve">
@@ -848,7 +848,7 @@
     <value>Feedback via GitHub</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>Name</value>
+    <value>备注名</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>Daemon</value>

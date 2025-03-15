@@ -19,8 +19,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             InitializeComponent();
             ThisDaemon = null!;
             EndPoint = string.Empty;
-            Username = string.Empty;
-            Password = string.Empty;
+            Token = string.Empty;
             FriendlyName = string.Empty;
             IsSecure = false;
             Address = string.Empty;
@@ -30,8 +29,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
         public int Port { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string Token { get; set; }
         public string FriendlyName { get; set; }
         public string Address
         {
@@ -93,20 +91,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Status = "ing";
             try
             {
-                var token = await Daemon.LoginAsync(
-                    address: EndPoint,
-                    port: Port,
-                    usr: Username,
-                    pwd: Password,
-                    isSecure: IsSecure,
-                    86400
-                ) ?? "token not found";
-                if (token == "token not found")
-                {
-                    Status = "err";
-                    return false;
-                }
-                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
+                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, Token, IsSecure, new ClientConnectionConfig
                 {
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
@@ -123,8 +108,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                         FriendlyName = FriendlyName,
                         EndPoint = EndPoint,
                         Port = Port,
-                        Username = Username,
-                        Password = Password,
+                        Token = Token,
                         IsSecure = IsSecure
                     }
                 );

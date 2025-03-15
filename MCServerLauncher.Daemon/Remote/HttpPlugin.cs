@@ -21,58 +21,89 @@ public class HttpPlugin : PluginBase, IHttpPlugin
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
-
+        Log.Information($"Method: {method}, Path: {request.URL}");
         try
         {
-            if (method == HttpMethod.Get && request.UrlEquals("/info"))
+            if (method == HttpMethod.Get)
             {
-                await response
-                    .SetStatus(200, "Success")
-                    .AddHeader("Content-type", "application/json")
-                    .SetContent(new JObject
-                    {
-                        ["name"] = "MCServerLauncher Future Daemon CSharp",
-                        ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                        ["apiVersion"] = "v1"
-                    }.ToString())
-                    .AnswerAsync();
+                switch (request.URL.ToLower())
+                {
+                    case "/":
+                        await response
+                            .SetStatus(200, "Success")
+                            .AddHeader("Content-type", "application/json")
+                            .SetContent(new JObject
+                            {
+                                ["message"] = "MCServerLauncher Future Daemon CSharp",
+                                ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                                ["status"] = "ok",
+                                ["apiVersion"] = "v1"
+                            }.ToString())
+                            .AnswerAsync();
+                        break;
+
+                    case "/info":
+                        await response
+                            .SetStatus(200, "Success")
+                            .AddHeader("Content-type", "application/json")
+                            .SetContent(new JObject
+                            {
+                                ["name"] = "MCServerLauncher Future Daemon CSharp",
+                                ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                                ["apiVersion"] = "v1"
+                            }.ToString())
+                            .AnswerAsync();
+                        break;
+
+                    default:
+                        break;
+                }
             }
-            else if (method == HttpMethod.Post && request.UrlEquals("/subtoken"))
+            else if (method == HttpMethod.Post)
             {
-                var token = request.Forms["token"] ?? "";
-                var permissions = request.Forms["permissions"] ?? "*";
-                
-                int expires;
-                try
+                switch (request.URL.ToLower())
                 {
-                    expires = int.Parse(request.Forms["expires"] ?? "30");
-                }
-                catch (Exception)
-                {
-                    await response.SetStatus(400, "Invalid expire time").SetContent("").AnswerAsync();
-                    return;
-                }
+                    case "/subtoken":
+                        var token = request.Forms["token"] ?? "";
+                        var permissions = request.Forms["permissions"] ?? "*";
+                        
+                        int expires;
+                        try
+                        {
+                            expires = int.Parse(request.Forms["expires"] ?? "30");
+                        }
+                        catch (Exception)
+                        {
+                            await response.SetStatus(400, "Invalid expire time").SetContent("").AnswerAsync();
+                            return;
+                        }
 
-                if (Permissions.IsValid(permissions))
-                {
-                    await response.SetStatus(400, "Invalid permissions").SetContent("").AnswerAsync();
-                    return;
-                }
+                        if (Permissions.IsValid(permissions))
+                        {
+                            await response.SetStatus(400, "Invalid permissions").SetContent("").AnswerAsync();
+                            return;
+                        }
 
-                if (!token.Equals(AppConfig.Get().MainToken))
-                {
-                    await response.SetStatus(401, "Unauthorized").SetContent("").AnswerAsync();
-                    return;
-                }
+                        if (!token.Equals(AppConfig.Get().MainToken))
+                        {
+                            await response.SetStatus(401, "Unauthorized").SetContent("").AnswerAsync();
+                            return;
+                        }
 
-                var jwt = JwtUtils.GenerateToken(permissions, expires);
-                Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
-                await response
-                    .SetStatus(200, "Success")
-                    .AddHeader("Content-type", "text/plain")
-                    .SetContent(jwt)
-                    .AnswerAsync();
+                        var jwt = JwtUtils.GenerateToken(permissions, expires);
+                        Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
+                        await response
+                            .SetStatus(200, "Success")
+                            .AddHeader("Content-type", "text/plain")
+                            .SetContent(jwt)
+                            .AnswerAsync();
+                        break;
+                        
+                    default:
+                        break;
+                }
             }
+            // Others
         }
         catch (Exception ex)
         {

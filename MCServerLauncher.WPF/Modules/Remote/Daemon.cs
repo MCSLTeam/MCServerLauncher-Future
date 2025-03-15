@@ -159,10 +159,10 @@ public class Daemon : IDaemon
         return await RequestAsync(ActionType.FileUploadChunk, data, cancellationToken: cancellationToken);
     }
 
-    public static async Task<string?> LoginAsync(string address, int port, string usr, string pwd, bool isSecure,
+    public static async Task<string?> LoginAsync(string address, int port, string usr, string token, bool isSecure,
         uint? expired)
     {
-        var url = $"{(isSecure ? "https" : "http")}://{address}:{port}/login?usr={usr}&pwd={pwd}";
+        var url = $"{(isSecure ? "https" : "http")}://{address}:{port}/login?usr={usr}&pwd={token}";
         if (expired.HasValue) url += $"&expired={expired}";
         return await Utils.HttpPost(url);
     }
@@ -212,46 +212,46 @@ public class Daemon : IDaemon
         return await RequestAsync(ActionType.GetSystemInfo, new Dictionary<string, object>());
     }
 
-    public static async Task RunTest()
-    {
-        var usr = "admin";
-        var pwd = "3a9eff1b-4723-407e-a072-30da28b00f4a";
-        // var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
-        var isSecure = false;
-        var ip = "127.0.0.1";
-        var port = 11451;
+    //public static async Task RunTest()
+    //{
+    //    var usr = "admin";
+    //    var pwd = "3a9eff1b-4723-407e-a072-30da28b00f4a";
+    //    // var pwd1 = "Hqwd7H5WHLIgeyNu00jMlA==";
+    //    var isSecure = false;
+    //    var ip = "127.0.0.1";
+    //    var port = 11451;
 
-        // login
-        var token = await LoginAsync(ip, port, usr, pwd, isSecure, 86400) ?? "token not found";
-        Log.Debug($"Token got: {token}");
+    //    // login
+    //    var token = await LoginAsync(ip, port, usr, pwd, isSecure, 86400) ?? "token not found";
+    //    Log.Debug($"Token got: {token}");
 
-        try
-        {
-            var daemon = await OpenAsync(ip, port, token, isSecure, new ClientConnectionConfig
-            {
-                MaxPingPacketLost = 3,
-                PendingRequestCapacity = 100,
-                PingInterval = TimeSpan.FromSeconds(1),
-                PingTimeout = 3000
-            });
-            Log.Information("[daemon] connected: {0}", await daemon.PingAsync());
-            await Task.Delay(3000);
-            var rv = await daemon.GetJavaListAsync();
-            rv.ForEach(x => Log.Debug($"Java: {x.ToString()}"));
-            await Task.Delay(3001);
-            await daemon.CloseAsync();
-        }
-        catch (WebSocketException e)
-        {
-            Log.Error($"[Daemon] Websocket Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
-        }
-        catch (TimeoutException e)
-        {
-            Log.Error($"[Daemon] Timeout occurred when connecting to daemon(ws://{ip}:{port}): {e}");
-        }
-        catch (Exception e)
-        {
-            Log.Error($"[Daemon] Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
-        }
-    }
+    //    try
+    //    {
+    //        var daemon = await OpenAsync(ip, port, token, isSecure, new ClientConnectionConfig
+    //        {
+    //            MaxPingPacketLost = 3,
+    //            PendingRequestCapacity = 100,
+    //            PingInterval = TimeSpan.FromSeconds(1),
+    //            PingTimeout = 3000
+    //        });
+    //        Log.Information("[daemon] connected: {0}", await daemon.PingAsync());
+    //        await Task.Delay(3000);
+    //        var rv = await daemon.GetJavaListAsync();
+    //        rv.ForEach(x => Log.Debug($"Java: {x.ToString()}"));
+    //        await Task.Delay(3001);
+    //        await daemon.CloseAsync();
+    //    }
+    //    catch (WebSocketException e)
+    //    {
+    //        Log.Error($"[Daemon] Websocket Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
+    //    }
+    //    catch (TimeoutException e)
+    //    {
+    //        Log.Error($"[Daemon] Timeout occurred when connecting to daemon(ws://{ip}:{port}): {e}");
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        Log.Error($"[Daemon] Error occurred when connecting to daemon(ws://{ip}:{port}): {e}");
+    //    }
+    //}
 }

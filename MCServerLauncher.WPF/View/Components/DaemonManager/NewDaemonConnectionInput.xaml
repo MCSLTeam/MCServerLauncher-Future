@@ -15,23 +15,33 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBox Grid.Row="0" ui:ControlHelper.PlaceholderText="{Binding [DaemonFriendlyName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="friendlyNameEdit" Margin="0,0,0,5" MaxLines="1" />
-        <CheckBox Grid.Row="1" Content="SSL" x:Name="SecureWebSocketCheckBox" Margin="0,0,0,5" Checked="ToggleWebSocketScheme" Unchecked="ToggleWebSocketScheme" />
-        <Grid Grid.Row="2" Margin="0,0,0,5">
+        <TextBlock Grid.Row="0" Margin="0,0,0,5"  VerticalAlignment="Center" Style="{StaticResource CaptionTextBlock}" Text="URL" />
+        <Grid Grid.Row="1" Margin="0,0,0,5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="4*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" x:Name="WebSocketScheme" Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource MinititleTextBlock}" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <ComboBox Grid.Column="0" x:Name="WebSocketScheme" Margin="0,0,5,0" VerticalAlignment="Center" SelectedIndex="0">
+                <ComboBoxItem Content="ws://"/>
+                <ComboBoxItem Content="wss://"/>
+            </ComboBox>
             <TextBox Grid.Column="1" ui:ControlHelper.PlaceholderText="{Binding [DaemonWsAddress], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="wsEdit" MaxLines="1" />
             <TextBlock Grid.Column="2" Text=":" Margin="5,0,5,0" VerticalAlignment="Center" Style="{StaticResource MinititleTextBlock}" />
             <TextBox Grid.Column="3" ui:ControlHelper.PlaceholderText="{Binding [Port], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="portEdit" MaxLines="1" />
         </Grid>
-        <TextBox Grid.Row="3" ui:ControlHelper.PlaceholderText="{Binding [Username], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="userEdit" Margin="0,0,0,5" MaxLines="1" />
-        <PasswordBox Grid.Row="4" ui:ControlHelper.PlaceholderText="{Binding [DaemonPassword], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="pwdEdit" />
+        <TextBlock Grid.Row="2" Margin="0,5,5,5" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Token], Source={x:Static i18n:LanguageManager.Localize}}" />
+        <PasswordBox Grid.Row="3" ui:ControlHelper.PlaceholderText="{Binding [Token], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="tokenEdit" />
+        <TextBlock Grid.Row="4" Margin="0,5,5,5" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlock}" Text="{Binding [DaemonFriendlyName], Source={x:Static i18n:LanguageManager.Localize}}" />
+        <TextBox Grid.Row="5" ui:ControlHelper.PlaceholderText="{Binding [DaemonFriendlyName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="friendlyNameEdit" Margin="0,0,0,5" MaxLines="1" />
+
     </Grid>
 </UserControl>

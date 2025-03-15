@@ -733,7 +733,7 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守護進程 WebSocket 位址</value>
   </data>
-  <data name="DaemonPassword" xml:space="preserve">
+  <data name="Password" xml:space="preserve">
     <value>密碼</value>
   </data>
   <data name="Connecting" xml:space="preserve">
@@ -848,7 +848,7 @@
     <value>在 GitHub 進行反饋</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>友好暱稱</value>
+    <value>备注名</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>守護進程</value>

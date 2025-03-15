@@ -733,7 +733,7 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>Адрес WebSocket демона</value>
   </data>
-  <data name="DaemonPassword" xml:space="preserve">
+  <data name="Password" xml:space="preserve">
     <value>密码</value>
   </data>
   <data name="Connecting" xml:space="preserve">
@@ -848,7 +848,7 @@
     <value>Отзывы на GitHub</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>Дружелюбное прозвище</value>
+    <value>备注名</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>守护进程</value>
