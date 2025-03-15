@@ -12,7 +12,7 @@ public class SlpClient
     private TcpClient Client { get; } = new();
 
     /// <summary>
-    ///  获取SLP的status和ping信息,用于1.7以上
+    ///  获取 SLP 的 status 和 ping 信息,用于1.7以上
     /// </summary>
     /// <param name="host"></param>
     /// <param name="port"></param>
@@ -32,7 +32,7 @@ public class SlpClient
     }
 
     /// <summary>
-    /// 获取SLP的status,用于1.7以下
+    /// 获取 SLP 的 status,用于 1.7 以下
     /// </summary>
     /// <param name="host"></param>
     /// <param name="port"></param>
@@ -124,7 +124,7 @@ public class SlpClient
         await Client.ConnectAsync(host, port);
         if (!Client.Connected)
         {
-            Log.Error("[SLP-Client] Cant connect to {0}:{1}", host, port);
+            Log.Error("[Slp-Client] Cant connect to {0}:{1}", host, port);
             return false;
         }
 
@@ -156,7 +156,7 @@ public class SlpClient
             var length = ReadVarInt(received, ref offset);
             var packetId = ReadVarInt(received, ref offset);
             var jsonLength = ReadVarInt(received, ref offset);
-            Log.Debug("[SlpClient]Received packetId 0x{0:X2} with a length of {1}", packetId, length);
+            Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             var json = ReadString(received, jsonLength, ref offset);
             return JsonConvert.DeserializeObject<PingPayload>(json);
