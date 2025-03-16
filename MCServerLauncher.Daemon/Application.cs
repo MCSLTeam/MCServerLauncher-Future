@@ -25,6 +25,7 @@ public class Application
                 a =>
                 {
                     // a.AddConsoleLogger();
+                    a.RegisterSingleton<IHttpService>(_httpService);
                     a.RegisterSingleton<IWebJsonConverter, WebJsonConverter>();
                     a.RegisterSingleton<ActionHandlers>();
                     a.RegisterSingleton<IActionService, ActionServiceImpl>();

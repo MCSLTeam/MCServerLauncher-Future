@@ -16,18 +16,22 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 {
     private readonly IActionService _actionService;
     private readonly IEventService _eventService;
+    private readonly IHttpService _httpService;
     private readonly IWebJsonConverter _webJsonConverter;
+
+    private string _id;
 
     private Permissions? _permissions;
 
-    private WeakReference? _websocketRef;
-
     public WebsocketPlugin(IActionService actionService, IEventService eventService,
-        IWebJsonConverter webJsonConverter)
+        IWebJsonConverter webJsonConverter, IHttpService httpService)
     {
         _actionService = actionService;
         _eventService = eventService;
         _webJsonConverter = webJsonConverter;
+        _httpService = httpService;
+
+        _id = "";
 
         _eventService.Signal += async (type, data) =>
         {
@@ -57,11 +61,11 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         // TODO normalization
         _permissions = new Permissions(token == AppConfig.Get().MainToken ? "*" : JwtUtils.ExtractPermissions(token)!);
 
-        // get peer ip
-        Log.Debug("[Remote] Accept token: \"{0}...\" from {1}", token[..5], webSocket.Client.GetIPPort());
+        if (webSocket.Client is TcpSessionClientBase tcpClientBase) _id = tcpClientBase.Id;
 
-        // set websocket's weak reference
-        _websocketRef = new WeakReference(webSocket);
+        // get peer ip
+        Log.Debug("[Remote] Accept token: \"{0}...\" from {1} with Id={2}", token[..5], webSocket.Client.GetIPPort(),
+            _id);
 
         await e.InvokeNext();
     }
@@ -74,12 +78,12 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
             if (!TryParseMessage(payload, out var result))
             {
-                Log.Warning("Parse message failed: \n{0}", payload);
+                Log.Warning("[Remote] Parse message failed: \n{0}", payload);
                 await webSocket.SendAsync(_webJsonConverter.Serialize(ResponseUtils.Err("Invalid action packet")));
                 return;
             }
 
-            Log.Debug("Received message: \n{0}\n", payload);
+            Log.Debug("[Remote] Received message: \n{0}\n", payload);
 
             var (action, echo, parameters) = result;
 
@@ -90,10 +94,13 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
                 if (echo != null) data["echo"] = echo;
 
                 var text = _webJsonConverter.Serialize(data);
-                Log.Debug("Sending message: \n{0}", text);
+                Log.Debug("[Remote] Sending message: \n{0}", text);
 
                 var ws = GetWebSocket();
                 if (ws != null) await ws.SendAsync(text);
+                else
+                    Log.Warning("[Remote] Failed to respond action={0}, because websocket connection closed or lost.",
+                        action);
             }).ConfigureFalseAwait();
         }
 
@@ -104,7 +111,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
     private IWebSocket? GetWebSocket()
     {
-        return _websocketRef?.Target as IWebSocket;
+        return _httpService.TryGetClient(_id, out var client) ? client.WebSocket : null;
     }
 
     private static (string, string?, JObject?) ParseMessage(string message)
