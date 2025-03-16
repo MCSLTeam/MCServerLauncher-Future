@@ -42,7 +42,7 @@ public class ActionHandlers
         };
     }
 
-    [Permission("always")]
+    [Permission("never")]
     private async ValueTask<JObject> GetSystemInfoHandler()
     {
         return new JObject

@@ -6,7 +6,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
 public class InstanceFactorySetting : InstanceConfig
 {
-    public string mcVersion { get; set; }
+    public string McVersion { get; set; }
     public string Source { get; set; }
     public SourceType SourceType { get; set; }
     public bool UsePostProcess { get; set; } = false;
@@ -37,6 +37,11 @@ public static class InstanceFactorySettingExtensions
                 >
             >
         > InstanceFactoryMapping = new();
+
+    // static InstanceFactorySettingExtensions()
+    // {
+    //     LoadFactories();
+    // }
 
     /// <summary>
     ///     加载所有IInstanceFactory
@@ -171,7 +176,7 @@ public static class InstanceFactorySettingExtensions
         {
             if (sourceTypeMapping.TryGetValue(setting.SourceType, out var versionMapping))
             {
-                var targetVersion = McVersion.Of(setting.Target);
+                var targetVersion = McVersion.Of(setting.McVersion);
                 var kv = versionMapping.FirstOrDefault(kv => targetVersion.Between(kv.Key.Item1, kv.Key.Item2));
                 if (kv.Value != null)
                 {
@@ -180,7 +185,7 @@ public static class InstanceFactorySettingExtensions
                 }
 
                 throw new Exception(
-                    $"Unsupported minecraft version({setting.mcVersion}) for {setting.InstanceType}(SourceType={setting.SourceType})");
+                    $"Unsupported minecraft version({setting.McVersion}) for {setting.InstanceType}(SourceType={setting.SourceType})");
             }
 
             throw new Exception($"Unsupported source type({setting.SourceType}) for {setting.InstanceType}");

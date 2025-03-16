@@ -140,8 +140,8 @@ internal class ActionMethod : IMatchable
             : isAsync
                 ? async parameters =>
                     await (Task<JObject?>)info.Invoke(obj, parameters)!
-                : (Func<object?[]?, ValueTask<JObject?>>)(parameters =>
-                    new ValueTask<JObject?>(info.Invoke(obj, parameters) as JObject));
+                : parameters =>
+                    new ValueTask<JObject?>(info.Invoke(obj, parameters) as JObject);
     }
 
     public async ValueTask<JObject?> InvokeAsync(JObject? data, Permissions permissions)

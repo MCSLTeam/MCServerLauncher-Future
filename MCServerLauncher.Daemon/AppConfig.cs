@@ -36,6 +36,7 @@ internal class AppConfig
         Secret = secret;
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
+        Log.Information("[AppConfig] Main token: {0}", mainToken);
     }
 
     public int FileDownloadSessions { get; private set; }
