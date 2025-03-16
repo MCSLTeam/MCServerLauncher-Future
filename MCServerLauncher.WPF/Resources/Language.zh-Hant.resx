@@ -734,7 +734,7 @@
     <value>守護進程 WebSocket 位址</value>
   </data>
   <data name="Password" xml:space="preserve">
-    <value>密码</value>
+    <value>密碼</value>
   </data>
   <data name="Connecting" xml:space="preserve">
     <value>連接中</value>
@@ -848,7 +848,7 @@
     <value>在 GitHub 進行反饋</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>备注名</value>
+    <value>備註名</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>守護進程</value>
@@ -857,7 +857,7 @@
     <value>安全護航，只在指掌。</value>
   </data>
   <data name="Port" xml:space="preserve">
-    <value>端口</value>
+    <value>連接埠</value>
   </data>
   <data name="Username" xml:space="preserve">
     <value>用戶名</value>
@@ -866,6 +866,6 @@
     <value>無法連接守護進程，請檢查配置。</value>
   </data>
   <data name="Token" xml:space="preserve">
-    <value>访问密钥</value>
+    <value>令牌</value>
   </data>
 </root>
