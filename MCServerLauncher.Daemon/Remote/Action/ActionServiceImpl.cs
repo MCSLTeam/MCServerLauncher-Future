@@ -1,6 +1,8 @@
 using System.Reflection;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Exception = System.Exception;
 
@@ -15,11 +17,12 @@ internal class ActionServiceImpl : IActionService
     private readonly ActionHandlers _actionHandlers;
     private readonly IDictionary<string, ActionMethod> _actionMethods;
 
-    public ActionServiceImpl(ActionHandlers handlers)
+    public ActionServiceImpl(ActionHandlers handlers, IWebJsonConverter webJsonConverter)
     {
         _actionHandlers = handlers;
         _actionMethods = new Dictionary<string, ActionMethod>();
-        InitActionMethods();
+
+        InitActionMethods(webJsonConverter.GetSerializer());
     }
 
     /// <summary>
@@ -27,12 +30,12 @@ internal class ActionServiceImpl : IActionService
     /// </summary>
     /// <param name="action">Action类型</param>
     /// <param name="data">Action数据</param>
-    /// <param name="permissions">令牌权限</param>
+    /// <param name="context">websocket服务上下文</param>
     /// <returns>Action响应</returns>
     public async Task<JObject> Execute(
         string action,
         JObject? data,
-        Permissions permissions
+        WsServiceContext context
     )
     {
         if (_actionMethods.TryGetValue(action, out var actionMethod))
@@ -41,7 +44,7 @@ internal class ActionServiceImpl : IActionService
                 // if (!permissions.Matches(
                 //         ActionHandlers.RequiredPermissions.GetValueOrDefault(action, new AlwaysMatchable(true))))
                 //     throw new Exception("Permission denied");
-                var result = await actionMethod.InvokeAsync(data, permissions);
+                var result = await actionMethod.InvokeAsync(data, context);
                 return ResponseUtils.Ok(result);
             }
             catch (ActionExecutionException aee)
@@ -61,7 +64,7 @@ internal class ActionServiceImpl : IActionService
     ///     使用反射初始化Action方法并缓存; 通过Attribute设置Action权限
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
-    private void InitActionMethods()
+    private void InitActionMethods(JsonSerializer parameterSerializer)
     {
         var methods = _actionHandlers.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
             .Where(m => m.Name.EndsWith("Handler"));
@@ -81,7 +84,8 @@ internal class ActionServiceImpl : IActionService
                 new ActionMethod(
                     _actionHandlers,
                     method,
-                    methodPermissions.Length != 0 ? IMatchable.Any(methodPermissions) : IMatchable.Never()
+                    methodPermissions.Length != 0 ? IMatchable.Any(methodPermissions) : IMatchable.Never(),
+                    parameterSerializer
                 );
         }
     }
@@ -101,10 +105,11 @@ internal class ActionServiceImpl : IActionService
     }
 }
 
-internal class ActionMethod : IMatchable
+internal class ActionMethod
 {
     private readonly Func<object?[]?, ValueTask<JObject?>> _method;
     private readonly IDictionary<string, ParameterInfo> _parameters;
+    private readonly JsonSerializer _parameterSerializer;
     private readonly IMatchable _permission;
 
     /// <summary>
@@ -113,18 +118,15 @@ internal class ActionMethod : IMatchable
     /// <param name="obj">method所绑定的obj,即<see cref="ActionHandlers" />实例</param>
     /// <param name="methodInfo">反射获取的Action Handler信息</param>
     /// <param name="permission">Action Handler的调用权限</param>
-    public ActionMethod(object obj, MethodInfo methodInfo, IMatchable permission)
+    /// <param name="parameterSerializer">参数序列化器</param>
+    public ActionMethod(object obj, MethodInfo methodInfo, IMatchable permission, JsonSerializer parameterSerializer)
     {
         _parameters = new Dictionary<string, ParameterInfo>();
         _permission = permission;
+        _parameterSerializer = parameterSerializer;
         foreach (var parameter in methodInfo.GetParameters())
             _parameters[parameter.Name.PascalCaseToSnakeCase()!] = parameter;
         _method = WarpActionMethod(obj, methodInfo);
-    }
-
-    public bool Matches(IMatchable permission)
-    {
-        return _permission.Matches(permission);
     }
 
     private static Func<object?[]?, ValueTask<JObject?>> WarpActionMethod(object obj, MethodInfo info)
@@ -144,19 +146,30 @@ internal class ActionMethod : IMatchable
                     new ValueTask<JObject?>(info.Invoke(obj, parameters) as JObject);
     }
 
-    public async ValueTask<JObject?> InvokeAsync(JObject? data, Permissions permissions)
+    public async ValueTask<JObject?> InvokeAsync(JObject? data, WsServiceContext context)
     {
-        if (!permissions.Matches(_permission)) throw new Exception("Permission denied");
+        if (!context.Permissions.Matches(_permission)) throw new Exception("Permission denied");
 
 
         var parameters = _parameters.Count > 0 ? new object?[_parameters.Count] : null;
         foreach (var entry in _parameters)
         {
+            // 注入WsServiceContext
+            if (entry.Value.ParameterType == typeof(WsServiceContext))
+            {
+                parameters![entry.Value.Position] = context;
+                continue;
+            }
+
+            // JToken直接获取原始数据
+
             var parameterToken = data?.GetValue(entry.Key);
             if (parameterToken is null) throw new ArgumentNullException(entry.Key);
 
-            var parameter = parameterToken.ToObject(entry.Value.ParameterType);
-            parameters![entry.Value.Position] = parameter;
+            if (entry.Value.ParameterType == typeof(JToken)) parameters![entry.Value.Position] = parameterToken;
+            else
+                parameters![entry.Value.Position] =
+                    parameterToken.ToObject(entry.Value.ParameterType, _parameterSerializer);
         }
 
         try

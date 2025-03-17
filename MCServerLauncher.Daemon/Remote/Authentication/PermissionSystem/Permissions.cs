@@ -23,6 +23,8 @@ public class Permissions
         _permissions = permissions;
     }
 
+    public static Permissions Never => new("");
+
     public static bool IsValid(string permissions)
     {
         return Pattern.IsMatch(permissions);

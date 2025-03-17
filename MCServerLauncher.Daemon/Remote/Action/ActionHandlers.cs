@@ -5,7 +5,6 @@ using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,23 +12,47 @@ using Newtonsoft.Json.Linq;
 namespace MCServerLauncher.Daemon.Remote.Action;
 
 /// <summary>
+///     Action处理脚本: 以{SomeActionName}Handler命名的private函数将作为some_action_name命名的action的处理函数
+///     函数签名中的各种形参对应action jsonrpc中的data中的各种字段(WsServiceContext类型的形参除外, 它是自动注入的),
+///     函数签名中的各种形参是由data中的各种字段经过IWebJsonSerializer反序列化后得到的, 同时也可以将类型设定为JToken自行反序列化
 ///     Action handler，返回值只能是JObject, JObject?或<![CDATA[ValueTask<JObject>]]>
 /// </summary>
 public class ActionHandlers
 {
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
-    private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings.Settings);
     private readonly IEventService _eventService;
     private readonly IInstanceManager _instanceManager;
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
 
     public ActionHandlers(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
-        IInstanceManager instanceManager, IEventService eventService)
+        IInstanceManager instanceManager, IEventService eventService, IWebJsonConverter webJsonConverter)
     {
         _javaScannerCache = javaScannerCache;
         _instanceManager = instanceManager;
         _eventService = eventService;
+
+        Serializer = webJsonConverter.GetSerializer();
     }
+
+    private JsonSerializer Serializer { get; }
+
+    #region Event System
+
+    [Permission("always")]
+    private JObject? SubscribeEventHandler(EventType type, JToken meta, WsServiceContext ctx)
+    {
+        ctx.SubscribeEvent(type, type.GetEventMeta(meta, Serializer));
+        return default;
+    }
+
+    [Permission("always")]
+    private JObject? UnsubscribeEventHandler(EventType type, JToken meta, WsServiceContext ctx)
+    {
+        ctx.UnsubscribeEvent(type, type.GetEventMeta(meta, Serializer));
+        return default;
+    }
+
+    #endregion
 
     #region MISC
 
@@ -42,7 +65,7 @@ public class ActionHandlers
         };
     }
 
-    [Permission("never")]
+    [Permission("always")]
     private async ValueTask<JObject> GetSystemInfoHandler()
     {
         return new JObject
@@ -180,20 +203,12 @@ public class ActionHandlers
         var rv = _instanceManager.TryStartInstance(id, out var instance);
         if (instance == null) throw new ActionExecutionException(1400, "Instance not found");
 
-        var logPrefix = $"{instance.Config.Name}({id})";
-
         if (rv)
         {
             Action<string?> handler = msg =>
             {
                 if (msg != null)
-                    _eventService.OnEvent(
-                        EventType.InstanceLog,
-                        new Events.InstanceLogEvent(
-                            logPrefix,
-                            msg
-                        )
-                    );
+                    _eventService.OnInstanceLog(id, msg);
             };
             instance.OnLog -= handler;
             instance.OnLog += handler;

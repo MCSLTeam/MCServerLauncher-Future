@@ -1,4 +1,3 @@
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -8,5 +7,5 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public interface IActionService
 {
-    public Task<JObject> Execute(string action, JObject? data, Permissions permissions);
+    public Task<JObject> Execute(string action, JObject? data, WsServiceContext context);
 }

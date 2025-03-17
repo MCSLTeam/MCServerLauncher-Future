@@ -18,10 +18,10 @@ public class Program
         // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
 
         // var manager = InstanceManager.Create();
-        // await manager.TryRemoveInstance("1-21-1");
+        // await manager.TryRemoveInstance(Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
         // await CreateInstance(manager);
         // await RunMcServerAsync(manager, Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
-        InstanceFactorySettingExtensions.LoadFactories();
+
         await ServeAsync();
     }
 
@@ -43,13 +43,13 @@ public class Program
         );
     }
 
-    public static async Task<bool> CreateInstance(IInstanceManager manager)
+    public static async Task<Guid> CreateInstance(IInstanceManager manager)
     {
         Log.Information("[InstanceManager] All instance: {0}",
             JsonConvert.SerializeObject(manager.GetAllStatus(), Formatting.Indented));
         var setting = new InstanceFactorySetting
         {
-            Uuid = Guid.NewGuid(),
+            Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"),
             Name = "1-21-1",
             InstanceType = InstanceType.Vanilla,
             Target = "server.jar",
@@ -57,16 +57,18 @@ public class Program
             JavaPath = "java",
             JavaArgs = Array.Empty<string>(),
             SourceType = SourceType.Core,
-            Source = "daemon/downloads/Vanilla-release-1.21.1-59353f.jar"
+            Source = "daemon/downloads/Vanilla-release-1.21.1-59353f.jar",
+            McVersion = "1.21.1",
+            UsePostProcess = false
         };
         if (await manager.TryAddInstance(setting))
         {
             Log.Information("[InstanceManager] Created Server: {0}({1})", setting.Name, setting.Uuid);
-            return true;
+            return setting.Uuid;
         }
 
         Log.Information("[InstanceManager] Failed to create server");
-        return false;
+        return Guid.Empty;
     }
 
     public static async Task RunMcServerAsync(IInstanceManager manager, Guid id)

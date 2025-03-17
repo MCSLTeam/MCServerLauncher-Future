@@ -1,4 +1,5 @@
 using System.Reflection;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
@@ -37,6 +38,7 @@ public class BasicUtils
         InitLogger();
         InitDataDirectory();
         FileManager.StartFileSessionsWatcher();
+        InstanceFactorySettingExtensions.LoadFactories();
     }
 
     public static bool IsWindows()

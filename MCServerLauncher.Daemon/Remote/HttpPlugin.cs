@@ -25,7 +25,6 @@ public class HttpPlugin : PluginBase, IHttpPlugin
         try
         {
             if (method == HttpMethod.Get)
-            {
                 switch (request.URL.ToLower())
                 {
                     case "/":
@@ -35,7 +34,8 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetContent(new JObject
                             {
                                 ["message"] = "MCServerLauncher Future Daemon CSharp",
-                                ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                                ["version"] =
+                                    Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                                 ["status"] = "ok",
                                 ["apiVersion"] = "v1"
                             }.ToString())
@@ -49,24 +49,20 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetContent(new JObject
                             {
                                 ["name"] = "MCServerLauncher Future Daemon CSharp",
-                                ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                                ["version"] =
+                                    Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                                 ["apiVersion"] = "v1"
                             }.ToString())
                             .AnswerAsync();
                         break;
-
-                    default:
-                        break;
                 }
-            }
             else if (method == HttpMethod.Post)
-            {
                 switch (request.URL.ToLower())
                 {
                     case "/subtoken":
                         var token = request.Forms["token"] ?? "";
                         var permissions = request.Forms["permissions"] ?? "*";
-                        
+
                         int expires;
                         try
                         {
@@ -91,18 +87,15 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                         }
 
                         var jwt = JwtUtils.GenerateToken(permissions, expires);
-                        Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
+                        Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt,
+                            expires);
                         await response
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "text/plain")
                             .SetContent(jwt)
                             .AnswerAsync();
                         break;
-                        
-                    default:
-                        break;
                 }
-            }
             // Others
         }
         catch (Exception ex)
