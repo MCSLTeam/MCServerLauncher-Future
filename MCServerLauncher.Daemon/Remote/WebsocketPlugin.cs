@@ -136,7 +136,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             Log.Debug("[Remote] Received message: \n{0}\n", payload);
 
             var (action, echo, parameters) = result;
-            
+
             // TODO 并发度问题(限制与优化)&背压控制
             Task.Run(async () =>
             {
@@ -164,45 +164,41 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     {
         if (!_context.IsSubscribedEvent(type, meta)) return;
 
-        var eventMetas = _context.GetEventMetas(type).ToArray();
-        if (eventMetas.Length == 0)
+
+        var ws = WebSocket;
+        if (ws == null)
         {
-            var text = _webJsonConverter.Serialize(new Dictionary<string, object?>
-            {
-                ["event"] = type,
-                ["meta"] = meta,
-                ["data"] = data,
-                ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
-            });
-            var ws = WebSocket;
-            if (ws != null) await ws.SendAsync(text);
-            else
-                Log.Warning("[Remote] Failed to send event={0}, because websocket connection closed or lost.",
-                    type);
+            Log.Warning("[Remote] Failed to send event={0}, because websocket connection closed or lost.",
+                type);
+            return;
         }
-        // TODO 合并发送
+
+        if (meta != null)
+        {
+            await PrivateSendEvent(type, meta, data, ws); // 单一发送(只有带meta的事件类型才会触发)
+        }
         else
         {
-            var ws = WebSocket;
-            if (ws == null)
-            {
-                Log.Warning("[Remote] Failed to send event={0}, because websocket connection closed or lost.",
-                    type);
-                return;
-            }
+            var eventMetas = _context.GetEventMetas(type).ToArray();
 
-            foreach (var eventMeta in eventMetas)
-            {
-                var text = _webJsonConverter.Serialize(new Dictionary<string, object?>
-                {
-                    ["event"] = type,
-                    ["meta"] = eventMeta,
-                    ["data"] = data,
-                    ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
-                });
-                await ws.SendAsync(text);
-            }
+            if (eventMetas.Length == 0) await PrivateSendEvent(type, meta, data, ws); // 单一事件(不带meta的事件类型)
+            else // 批量发送(只有带meta的事件类型才会触发)
+                // TODO 合并发送
+                foreach (var eventMeta in eventMetas)
+                    await PrivateSendEvent(type, eventMeta, data, ws);
         }
+    }
+
+    private async ValueTask PrivateSendEvent(EventType type, IEventMeta? meta, object? data, IWebSocket ws)
+    {
+        var text = _webJsonConverter.Serialize(new Dictionary<string, object?>
+        {
+            ["event"] = type,
+            ["meta"] = meta,
+            ["data"] = data,
+            ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
+        });
+        await ws.SendAsync(text);
     }
 
     private static (string, string?, JObject?) ParseMessage(string message)
