@@ -202,7 +202,7 @@ public class ClientConnection
         connection._heartbeatTimer.Start();
 
         // start receive loop
-        connection._receiveLoopTask = Task.Run(connection.ReceiveLoop);
+        connection._receiveLoopTask = Task.Factory.StartNew(connection.ReceiveLoop, TaskCreationOptions.LongRunning);
         return connection;
     }
 
