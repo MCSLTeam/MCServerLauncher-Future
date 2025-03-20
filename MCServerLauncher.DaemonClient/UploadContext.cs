@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.Remote;
+namespace MCServerLauncher.DaemonClient;
 
 public enum UploadContextState
 {

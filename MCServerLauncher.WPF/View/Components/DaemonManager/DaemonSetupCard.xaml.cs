@@ -1,11 +1,11 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.Remote;
 using Serilog;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using MCServerLauncher.DaemonClient;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {

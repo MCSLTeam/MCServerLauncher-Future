@@ -1,11 +1,12 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.Remote;
+namespace MCServerLauncher.DaemonClient;
 
 internal class Utils
 {
@@ -37,15 +38,6 @@ internal class Utils
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
         });
-    }
-
-    public static async Task<string?> HttpPost(string url, CancellationToken cancellationToken = default)
-    {
-        var response = await Network.SendPostRequest(url, "", cancellationToken: cancellationToken);
-
-        return response.StatusCode == HttpStatusCode.OK
-            ? await response.Content.ReadAsStringAsync()
-            : null;
     }
 }
 

@@ -1,22 +1,21 @@
-using MCServerLauncher.Common;
-using Newtonsoft.Json.Linq;
-using Serilog;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MCServerLauncher.Common;
+using Newtonsoft.Json.Linq;
+using Serilog;
 
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-
-namespace MCServerLauncher.WPF.Modules.Remote;
+namespace MCServerLauncher.DaemonClient;
 
 public class Daemon : IDaemon
 {
+    public ClientConnection Connection { get; }
+
     public WebSocketState WebsocketState => Connection.WebSocket.State;
-    public ClientConnection? Connection { get; private set; }
     public bool IsClosed => Connection.Closed;
 
     /// <summary>
@@ -28,6 +27,11 @@ public class Daemon : IDaemon
     ///     上次ping时间
     /// </summary>
     public DateTime LastPing => Connection.LastPong;
+
+    private Daemon(ClientConnection connection)
+    {
+        Connection = connection;
+    }
 
     public async Task<UploadContext> UploadFileAsync(string path, string dst, int chunkSize)
     {
@@ -120,9 +124,7 @@ public class Daemon : IDaemon
 
     public async Task CloseAsync()
     {
-#pragma warning disable CS8602
-        await Connection?.CloseAsync();
-#pragma warning restore CS8602
+        await Connection.CloseAsync();
     }
 
     public async Task<bool> PingAsync()
@@ -159,14 +161,6 @@ public class Daemon : IDaemon
         return await RequestAsync(ActionType.FileUploadChunk, data, cancellationToken: cancellationToken);
     }
 
-    public static async Task<string?> LoginAsync(string address, int port, string usr, string token, bool isSecure,
-        uint? expired)
-    {
-        var url = $"{(isSecure ? "https" : "http")}://{address}:{port}/login?usr={usr}&pwd={token}";
-        if (expired.HasValue) url += $"&expired={expired}";
-        return await Utils.HttpPost(url);
-    }
-
     /// <summary>
     ///     连接远程服务器
     /// </summary>
@@ -183,11 +177,9 @@ public class Daemon : IDaemon
     public static async Task<IDaemon> OpenAsync(string address, int port, string token,
         bool isSecure, ClientConnectionConfig config, int timeout = 5000, CancellationToken cancellationToken = default)
     {
-        var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config, cancellationToken).TimeoutAfter(timeout);
-        return new Daemon
-        {
-            Connection = connection
-        };
+        var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config, cancellationToken)
+            .TimeoutAfter(timeout);
+        return new Daemon(connection);
     }
 
     /// <summary>
@@ -210,6 +202,27 @@ public class Daemon : IDaemon
     public async Task<JObject> GetSystemInfoAsync()
     {
         return await RequestAsync(ActionType.GetSystemInfo, new Dictionary<string, object>());
+    }
+
+    private static async Task Main()
+    {
+         Console.WriteLine("|||||||||||||||||||||||start connecting...");
+        try
+        {
+            var daemon = await OpenAsync("127.0.0.1", 11451, "zqxXnRKBjeOGBQK2NeOyOHPl81pcxxuT", false,
+                new ClientConnectionConfig
+                {
+                    MaxPingPacketLost = 3,
+                    PendingRequestCapacity = 100,
+                    PingInterval = TimeSpan.FromSeconds(1),
+                    PingTimeout = 3000
+                });
+            Console.WriteLine($"|||||||||||||||||||||||connected: {await daemon.PingAsync()}");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     //public static async Task RunTest()

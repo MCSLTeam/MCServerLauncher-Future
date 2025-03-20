@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace MCServerLauncher.WPF.Modules.Remote;
+namespace MCServerLauncher.DaemonClient;
 
 public class ClientConnectionConfig
 {
