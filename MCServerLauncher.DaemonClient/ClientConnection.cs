@@ -268,7 +268,10 @@ public class ClientConnection
 
         _cts.Cancel();
         if (_receiveLoopTask != null) await _receiveLoopTask; // 等待接收循环结束
-        await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+        
+        // TODO use close instead of abort
+        // await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+        WebSocket.Abort();
         Log.Debug("[ClientConnection] closed");
     }
 
