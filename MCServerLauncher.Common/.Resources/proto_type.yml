@@ -1,4 +1,5 @@
 const:
+  should_skip_empty_body: true
   action_base_namespace: MCServerLauncher.Common.ProtoType.Action
   action_imports:
     - using MCServerLauncher.Common.ProtoType.Event;
