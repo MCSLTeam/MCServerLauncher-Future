@@ -1,6 +1,36 @@
-imports:
+const:
+  action_base_namespace: MCServerLauncher.Common.ProtoType.Action
+  action_imports:
+    - using MCServerLauncher.Common.ProtoType.Event;
+    - using MCServerLauncher.Common.ProtoType.Files;
+    - using MCServerLauncher.Common.ProtoType.Instance;
+    - using MCServerLauncher.Common.System;
+    - using Newtonsoft.Json.Linq;
+  event_base_namespace: MCServerLauncher.Common.ProtoType.Event
+  event_imports:
+
 
 actions:
+  - subscribe_event:
+      req:
+        type: EventType
+        meta: JObject?
+      
+      resp:
+
+  - unsubscribe_event:
+      req:
+        type: EventType 
+        meta: JObject?
+      
+      resp:
+
+  - get_permissions:
+      req:
+      
+      resp:
+        permissions: string[]
+
   - ping:
       req:
       resp:
@@ -80,7 +110,6 @@ actions:
   - add_instance:
       req:
         setting: InstanceFactorySetting
-        factory: InstanceFactories
       
       resp:
         done: bool
