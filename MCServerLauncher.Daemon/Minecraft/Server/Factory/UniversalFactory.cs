@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;

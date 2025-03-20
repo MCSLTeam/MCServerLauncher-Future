@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
@@ -33,8 +34,8 @@ public class Application
 
                     a.RegisterSingleton<IInstanceManager>(InstanceManager.Create());
 
-                    a.RegisterSingleton<IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>>(
-                        new AsyncTimedCache<List<JavaScanner.JavaInfo>>(
+                    a.RegisterSingleton<IAsyncTimedCacheable<List<JavaInfo>>>(
+                        new AsyncTimedCache<List<JavaInfo>>(
                             () => JavaScanner.ScanJava(),
                             TimeSpan.FromMilliseconds(60000)
                         )

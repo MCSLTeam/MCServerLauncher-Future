@@ -1,4 +1,4 @@
-using MCServerLauncher.Daemon.Minecraft.Server.Factory;
+using MCServerLauncher.Common.ProtoType.Instance;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 

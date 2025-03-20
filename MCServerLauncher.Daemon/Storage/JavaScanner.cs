@@ -9,7 +9,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
+using MCServerLauncher.Common.ProtoType;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Storage;
@@ -214,20 +214,5 @@ public static class JavaScanner
     private static bool IsSymlink(string path)
     {
         return new FileInfo(path).Attributes.HasFlag(FileAttributes.ReparsePoint);
-    }
-
-    /// <summary>
-    ///     改用struct: 默认实现了值比较
-    /// </summary>
-    public struct JavaInfo
-    {
-        public string Path { get; set; }
-        public string Version { get; set; }
-        public string Architecture { get; set; }
-
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
-        }
     }
 }

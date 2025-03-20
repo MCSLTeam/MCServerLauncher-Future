@@ -1,28 +1,9 @@
 using System.Reflection;
 using Downloader;
+using MCServerLauncher.Common.ProtoType.Instance;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
-
-public class InstanceFactorySetting : InstanceConfig
-{
-    public string McVersion { get; set; }
-    public string Source { get; set; }
-    public SourceType SourceType { get; set; }
-    public bool UsePostProcess { get; set; } = false;
-
-    public InstanceConfig GetInstanceConfig()
-    {
-        return this;
-    }
-}
-
-public enum SourceType
-{
-    Archive,
-    Core,
-    Script
-}
 
 public static class InstanceFactorySettingExtensions
 {

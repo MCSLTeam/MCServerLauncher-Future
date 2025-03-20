@@ -1,4 +1,4 @@
-namespace MCServerLauncher.Daemon.Minecraft.Server;
+namespace MCServerLauncher.Common.ProtoType.Instance;
 
 public enum InstanceType
 {

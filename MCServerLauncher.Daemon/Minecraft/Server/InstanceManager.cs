@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;

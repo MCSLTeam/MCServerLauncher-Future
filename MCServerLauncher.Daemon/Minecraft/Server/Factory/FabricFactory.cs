@@ -1,4 +1,6 @@
-﻿namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+
+namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
 [InstanceFactory(InstanceType.Fabric)]
 public class FabricFactory : ICoreInstanceFactory

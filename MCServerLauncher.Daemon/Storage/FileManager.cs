@@ -2,104 +2,13 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Downloader;
+using MCServerLauncher.Common.ProtoType.Files;
 using Newtonsoft.Json;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Storage;
 
-public struct DownloadRequestInfo
-{
-    public Guid Id;
-    public long Size;
-    public string Sha1;
-
-    public DownloadRequestInfo(Guid id, long size, string sha1)
-    {
-        Id = id;
-        Size = size;
-        Sha1 = sha1;
-    }
-}
-
-public record FileSystemMetadata
-{
-    public DateTime CreationTime;
-    public bool Hidden;
-    public DateTime LastAccessTime;
-    public DateTime LastWriteTime;
-    public string? LinkTarget;
-
-    protected FileSystemMetadata(FileSystemInfo info)
-    {
-        CreationTime = info.CreationTime;
-        LastAccessTime = info.LastAccessTime;
-        LastWriteTime = info.LastWriteTime;
-        LinkTarget = info.LinkTarget;
-        Hidden = info.Attributes.HasFlag(FileAttributes.Hidden);
-    }
-}
-
-public record FileMetadata : FileSystemMetadata
-{
-    public bool ReadOnly;
-    public long Size;
-
-
-    public FileMetadata(FileInfo info) : base(info)
-    {
-        Size = info.Length;
-        ReadOnly = info.IsReadOnly;
-    }
-}
-
-public record DirectoryMetadata : FileSystemMetadata
-{
-    public DirectoryMetadata(DirectoryInfo info) : base(info)
-    {
-    }
-}
-
-public record DirectoryEntry
-{
-    public DirectoryInformation[] Directories;
-    public FileInformation[] Files;
-    public string? Parent;
-
-    public DirectoryEntry(string path) : this(new DirectoryInfo(path))
-    {
-    }
-
-    private DirectoryEntry(DirectoryInfo info)
-    {
-        Files = info.GetFiles().Select(x => new FileInformation(x)).ToArray();
-        Directories = info.GetDirectories().Select(x => new DirectoryInformation(x)).ToArray();
-        Parent = Path.GetRelativePath(FileManager.Root, info.FullName);
-    }
-
-    public record FileInformation
-    {
-        public FileMetadata Meta;
-        public string Name;
-
-        public FileInformation(FileInfo info)
-        {
-            Name = info.Name;
-            Meta = new FileMetadata(info);
-        }
-    }
-
-    public record DirectoryInformation
-    {
-        public DirectoryMetadata Meta;
-        public string Name;
-
-        public DirectoryInformation(DirectoryInfo info)
-        {
-            Name = info.Name;
-            Meta = new DirectoryMetadata(info);
-        }
-    }
-}
+public record struct DownloadRequestInfo(Guid Id, long Size, string Sha1);
 
 internal static class FileManager
 {
@@ -387,7 +296,7 @@ internal static class FileManager
         // validate path
         if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
 
-        return new DirectoryEntry(path);
+        return new DirectoryEntry(path, Root);
     }
 
     /// <summary>

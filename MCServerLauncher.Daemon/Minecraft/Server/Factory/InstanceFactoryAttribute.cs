@@ -1,4 +1,6 @@
-﻿namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+
+namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
 public class InstanceFactoryAttribute : Attribute

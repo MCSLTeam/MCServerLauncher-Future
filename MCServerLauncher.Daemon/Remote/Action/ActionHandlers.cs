@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MCServerLauncher.Common;
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.System;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
@@ -22,9 +23,9 @@ public class ActionHandlers
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
     private readonly IEventService _eventService;
     private readonly IInstanceManager _instanceManager;
-    private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
+    private readonly IAsyncTimedCacheable<List<JavaInfo>> _javaScannerCache;
 
-    public ActionHandlers(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
+    public ActionHandlers(IAsyncTimedCacheable<List<JavaInfo>> javaScannerCache,
         IInstanceManager instanceManager, IEventService eventService, IWebJsonConverter webJsonConverter)
     {
         _javaScannerCache = javaScannerCache;

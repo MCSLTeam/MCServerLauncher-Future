@@ -1,5 +1,6 @@
-﻿using MCServerLauncher.Daemon.Minecraft.Server;
-using MCServerLauncher.Daemon.Minecraft.Server.Factory;
+﻿using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
 using Serilog;
@@ -24,7 +25,7 @@ public class Program
 
         await ServeAsync();
     }
-
+    
     public static void TestJavaScanner()
     {
         BasicUtils.InitApp();
@@ -34,7 +35,7 @@ public class Program
     public static void WriteTestJavaInfo()
     {
         Console.WriteLine(
-            new JavaScanner.JavaInfo
+            new JavaInfo
             {
                 Architecture = "x64",
                 Path = "tmp",
