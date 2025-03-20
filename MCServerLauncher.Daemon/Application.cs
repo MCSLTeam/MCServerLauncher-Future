@@ -48,16 +48,16 @@ public class Application
                         .SetWSUrl("/api/v1")
                         .SetVerifyConnection(async (_, context) =>
                         {
-                            if (!context.Request.IsUpgrade()) return false;
-
+                            // if (!context.Request.IsUpgrade()) return false;
+                        
                             try
                             {
                                 var token = context.Request.Query["token"];
-
+                        
                                 if (token != null && (AppConfig.Get().MainToken.Equals(token) ||
                                                       JwtUtils.ValidateToken(token)))
                                     return true;
-
+                        
                                 await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
                                 return false;
                             }
