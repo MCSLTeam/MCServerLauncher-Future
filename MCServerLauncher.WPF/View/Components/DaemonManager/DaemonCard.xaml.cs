@@ -118,7 +118,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);
-                JToken systemInfo = (await ThisDaemon.GetSystemInfoAsync()).SelectToken("info");
+                var systemInfo = (await ThisDaemon.GetSystemInfoAsync()).SelectToken("info");
                 if (systemInfo is not null)
                 {
                     var SystemName = systemInfo.SelectToken("os.name")!.ToString();
