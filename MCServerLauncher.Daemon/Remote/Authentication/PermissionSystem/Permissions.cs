@@ -8,8 +8,6 @@ public class Permissions
         new(
             @"/^(?:(?:[a-zA-Z-_]+|\*{1,2})\.)*(?:[a-zA-Z-_]+|\*{1,2})(?:,(?:(?:[a-zA-Z-_]+|\*{1,2})\.)*(?:[a-zA-Z-_]+|\*{1,2}))*$/gm");
 
-    private readonly Permission[] _permissions;
-
     public Permissions(string permissions) : this(permissions.Split(','))
     {
     }
@@ -20,8 +18,10 @@ public class Permissions
 
     public Permissions(params Permission[] permissions)
     {
-        _permissions = permissions;
+        PermissionList = permissions;
     }
+
+    public Permission[] PermissionList { get; }
 
     public static Permissions Never => new("");
 
@@ -32,6 +32,6 @@ public class Permissions
 
     public bool Matches(IMatchable matchable)
     {
-        return _permissions.Any(matchable.Matches);
+        return PermissionList.Any(matchable.Matches);
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
@@ -41,5 +42,31 @@ public class Permission : IMatchable
     public override string ToString()
     {
         return _permission;
+    }
+
+    public class PermissionJsonConverter : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        {
+            var permission = (Permission)value!;
+            writer.WriteValue(permission.ToString());
+        }
+
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
+            JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.String)
+            {
+                var str = reader.Value?.ToString();
+                return str == null ? null : new Permission(str);
+            }
+
+            throw new JsonSerializationException($"Cannot convert {reader.Value} to <class: Permission>");
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Permission);
+        }
     }
 }

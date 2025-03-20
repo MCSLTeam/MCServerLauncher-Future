@@ -74,6 +74,15 @@ public class ActionHandlers
         };
     }
 
+    [Permission("always")]
+    private JObject GetPermissionsHandler(WsServiceContext ctx)
+    {
+        return new JObject
+        {
+            ["permissions"] = JToken.FromObject(ctx.Permissions.PermissionList, Serializer)
+        };
+    }
+
     [SimplePermission("mcsl.daemon.java_list")]
     private async ValueTask<JObject> GetJavaListHandler()
     {

@@ -1,4 +1,5 @@
 using System.Text;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -17,7 +18,8 @@ public static class JsonSettings
         {
             new StringEnumConverter(new SnakeCaseNamingStrategy()),
             new GuidJsonConverter(),
-            new WebEncodingJsonConverter()
+            new WebEncodingJsonConverter(),
+            new Permission.PermissionJsonConverter()
         }
     };
 
@@ -55,7 +57,6 @@ public static class JsonSettings
         public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             var encoding = (Encoding)value!;
-            Console.WriteLine(encoding);
             writer.WriteValue(encoding.WebName);
         }
 
