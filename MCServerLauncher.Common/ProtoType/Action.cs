@@ -48,6 +48,8 @@ namespace MCServerLauncher.Common.ProtoType.Action.Parameters
     {
     }
 
+    public sealed record EmptyActionParameter : IActionParameter;
+
     public sealed record SubscribeEventParameter(EventType Type, JObject? Meta) : IActionParameter;
 
     public sealed record UnsubscribeEventParameter(EventType Type, JObject? Meta) : IActionParameter;
@@ -89,6 +91,8 @@ namespace MCServerLauncher.Common.ProtoType.Action.Results
     public interface IActionResult
     {
     }
+
+    public sealed record EmptyActionResult : IActionResult;
 
     public sealed record GetPermissionsResult(string[] Permissions) : IActionResult;
 

@@ -5,7 +5,7 @@ namespace MCServerLauncher.Common.ProtoType.Event
 {
     public enum EventType
     {
-        InstanceLog,
+        InstanceLog
     }
 }
 
@@ -14,6 +14,7 @@ namespace MCServerLauncher.Common.ProtoType.Event.Meta
     public interface IEventMeta
     {
     }
+
     public sealed record InstanceLogEventMeta(Guid InstanceId) : IEventMeta;
 }
 
@@ -22,5 +23,6 @@ namespace MCServerLauncher.Common.ProtoType.Event.Meta
     public interface IEventData
     {
     }
+
     public sealed record InstanceLogEventData(string Log) : IEventData;
 }

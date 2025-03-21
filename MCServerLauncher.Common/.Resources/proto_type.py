@@ -16,6 +16,8 @@ ACTION_PARAMETERS_TEMPLATE = """namespace {ACTION_BASE_NAMESPACE}.Parameters
     }
 {ACTION_PARAMETERS}
 }"""
+EMPTY_ACTION_PARAMETER_RECORD = """    public sealed record EmptyActionParameter : IActionParameter;"""
+
 ACTION_PARAMETER = """    public sealed record {ACTION_TYPE}Parameter({ACTION_PARAMETER_CTOR}) : IActionParameter;"""
 
 EMPTY_ACTION_PARAMETER = (
@@ -31,6 +33,8 @@ ACTION_RESULTS_TEMPLATE = """namespace {ACTION_BASE_NAMESPACE}.Results
     }
 {ACTION_RESULTS}
 }"""
+
+EMPTY_ACTION_RESULT_RECORD = """    public sealed record EmptyActionResult : IActionResult;"""
 
 ACTION_RESULT = """    public sealed record {ACTION_TYPE}Result({ACTION_RESULT_CTOR}) : IActionResult;"""
 
@@ -130,11 +134,11 @@ class StrHelper:
         return template
 
 
-def is_skip_empty_body() -> bool:
+def is_use_empty_record() -> bool:
     """
     是否跳过空body的类型
     """
-    return CONST_MAP["should_skip_empty_body"]
+    return CONST_MAP["use_empty_record"]
 
 
 def __add_imports(imports: list[str] | None, body: str) -> str:
@@ -164,11 +168,13 @@ def __gen_action_enum(actions: list[dict[str, dict[str, str]]]) -> str:
 
 def __gen_action_parameters(params_def: list[tuple[str, dict[str, str]] | None]) -> str:
     parameter_records = []
+    if is_use_empty_record():
+        parameter_records.append(EMPTY_ACTION_PARAMETER_RECORD)
 
     for type_token, action_param_def in params_def:
         parameter_record: str
         if action_param_def is None:
-            if is_skip_empty_body():
+            if is_use_empty_record():
                 continue
 
             parameter_record = StrHelper.format(
@@ -205,11 +211,13 @@ def __gen_action_parameters(params_def: list[tuple[str, dict[str, str]] | None])
 
 def __gen_action_results(results_def: list[tuple[str, dict[str, str]] | None]) -> str:
     result_records = []
+    if is_use_empty_record():
+        result_records.append(EMPTY_ACTION_RESULT_RECORD)
 
     for type_token, action_result_def in results_def:
         result_record: str
         if action_result_def is None:
-            if is_skip_empty_body():
+            if is_use_empty_record():
                 continue
 
             result_record = StrHelper.format(
@@ -285,7 +293,7 @@ def __gen_event_metas(meta_def_list: list[tuple[str, dict[str, str]]]) -> str:
 
     for type_token, event_meta_def in meta_def_list:
         if event_meta_def is None:
-            if is_skip_empty_body():
+            if is_use_empty_record():
                 continue
             meta_records.append(
                 StrHelper.format(
@@ -324,7 +332,7 @@ def __gen_event_data(data_def_list: list[tuple[str, dict[str, str]]]) -> str:
 
     for type_token, event_data_def in data_def_list:
         if event_data_def is None:
-            if is_skip_empty_body():
+            if is_use_empty_record():
                 continue
 
             data_records.append(
