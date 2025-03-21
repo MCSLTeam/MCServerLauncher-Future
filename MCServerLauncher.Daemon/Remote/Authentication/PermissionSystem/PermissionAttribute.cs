@@ -20,8 +20,8 @@ public class PermissionAttribute : Attribute, IPermissionAttribute
     {
         _matchable = combinator.ToLower() switch
         {
-            "any" => IMatchable.Any(permissions.Select(p => new Permission(p))),
-            "all" => IMatchable.All(permissions.Select(p => new Permission(p))),
+            "any" => IMatchable.Any(permissions.Select(Permission.Of)),
+            "all" => IMatchable.All(permissions.Select(Permission.Of)),
             "never" => IMatchable.Never(),
             "always" => IMatchable.Always(),
             _ => throw new ArgumentException("Invalid combinator")
@@ -46,7 +46,7 @@ public class SimplePermissionAttribute : Attribute, IPermissionAttribute
     /// <exception cref="ArgumentException">组合子不在以上4种时会报错</exception>
     public SimplePermissionAttribute(params string[] permissions)
     {
-        _matchable = IMatchable.Any(permissions.Select(p => new Permission(p)));
+        _matchable = IMatchable.Any(permissions.Select(Permission.Of));
     }
 
     public IMatchable GetPermission()

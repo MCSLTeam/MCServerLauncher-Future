@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -7,5 +8,5 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public interface IActionService
 {
-    public Task<JObject> Execute(string action, JObject? data, WsServiceContext context);
+    public Task<JObject> ProcessAsync(JObject data, IResolver resolver, CancellationToken cancellationToken);
 }

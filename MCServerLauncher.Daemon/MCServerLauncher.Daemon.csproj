@@ -64,7 +64,8 @@
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="SQLite" Version="3.13.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2"/>
-        <PackageReference Include="TouchSocket.Http" Version="2.1.5"/>
+        <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="3.0.18" />
+        <PackageReference Include="TouchSocket.Http" Version="3.0.18" />
     </ItemGroup>
 
     <ItemGroup>

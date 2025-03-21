@@ -12,7 +12,7 @@ public class Permissions
     {
     }
 
-    public Permissions(params string[] permissions) : this(permissions.Select(p => new Permission(p)).ToArray())
+    public Permissions(params string[] permissions) : this(permissions.Select(Permission.Of).ToArray())
     {
     }
 

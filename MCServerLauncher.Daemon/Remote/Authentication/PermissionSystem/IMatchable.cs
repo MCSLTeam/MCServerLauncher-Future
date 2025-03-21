@@ -26,6 +26,19 @@ public interface IMatchable
     }
 }
 
+public static class IMatchableExtension
+{
+    public static IMatchable Or(this IMatchable @this, IMatchable other)
+    {
+        return MatchableImpl.Create(m => @this.Matches(m) || other.Matches(m));
+    }
+
+    public static IMatchable And(this IMatchable @this, IMatchable other)
+    {
+        return MatchableImpl.Create(m => @this.Matches(m) && other.Matches(m));
+    }
+}
+
 internal class MatchableImpl : IMatchable
 {
     private readonly Func<IMatchable, bool> _matchFunc;

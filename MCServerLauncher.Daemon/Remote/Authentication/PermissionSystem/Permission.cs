@@ -9,7 +9,7 @@ public class Permission : IMatchable
 
     private readonly string _permission;
 
-    public Permission(string permission)
+    private Permission(string permission)
     {
         if (IsValid(permission))
             throw new ArgumentException("Invalid permission");
@@ -32,6 +32,11 @@ public class Permission : IMatchable
         }
 
         return false;
+    }
+
+    public static Permission Of(string permission)
+    {
+        return new Permission(permission);
     }
 
     public static bool IsValid(string permissions)
@@ -58,7 +63,7 @@ public class Permission : IMatchable
             if (reader.TokenType == JsonToken.String)
             {
                 var str = reader.Value?.ToString();
-                return str == null ? null : new Permission(str);
+                return str == null ? null : Of(str);
             }
 
             throw new JsonSerializationException($"Cannot convert {reader.Value} to <class: Permission>");

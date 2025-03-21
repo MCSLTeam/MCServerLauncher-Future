@@ -4,6 +4,7 @@ using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
@@ -21,6 +22,7 @@ public class WsServiceContext
     private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
 
     public Permissions Permissions { get; set; } = Permissions.Never;
+    public string ClientId { get; set; }
 
     public void SubscribeEvent(EventType type, IEventMeta? meta)
     {
@@ -73,12 +75,9 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 {
     private readonly IActionService _actionService;
 
-    private readonly WsServiceContext _context;
     private readonly IEventService _eventService;
     private readonly IHttpService _httpService;
     private readonly IWebJsonConverter _webJsonConverter;
-
-    private string _id;
 
     public WebsocketPlugin(IActionService actionService, IEventService eventService,
         IWebJsonConverter webJsonConverter, IHttpService httpService)
@@ -88,17 +87,12 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         _webJsonConverter = webJsonConverter;
         _httpService = httpService;
 
-        _id = "";
-        _context = new WsServiceContext();
-
         _eventService.Signal += OnEventReceived;
     }
 
-    private IWebSocket? WebSocket => _httpService.TryGetClient(_id, out var client) ? client.WebSocket : null;
-
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
     {
-        _context.UnsubscribeAllEvents();
+        GetWsServiceContext(webSocket).UnsubscribeAllEvents();
         Log.Debug("[Remote] Websocket connection from {0} disconnected", webSocket.Client.GetIPPort());
 
         await e.InvokeNext();
@@ -107,15 +101,15 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     public async Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
     {
         var token = e.Context.Request.Query["token"]!;
-        // TODO normalization
-        _context.Permissions =
-            new Permissions(token == AppConfig.Get().MainToken ? "*" : JwtUtils.ExtractPermissions(token)!);
+        var context = InitWsServiceContext(webSocket);
 
-        if (webSocket.Client is TcpSessionClientBase tcpClientBase) _id = tcpClientBase.Id;
+        // TODO normalization
+        context.Permissions =
+            new Permissions(token == AppConfig.Get().MainToken ? "*" : JwtUtils.ExtractPermissions(token)!);
 
         // get peer ip
         Log.Debug("[Remote] Accept token: \"{0}...\" from {1} with Id={2}", token[..5], webSocket.Client.GetIPPort(),
-            _id);
+            context.ClientId);
 
         await e.InvokeNext();
     }
@@ -124,34 +118,24 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     {
         if (e.DataFrame.IsText)
         {
-            var payload = e.DataFrame.ToText();
-
-            if (!TryParseMessage(payload, out var result))
-            {
-                Log.Warning("[Remote] Parse message failed: \n{0}", payload);
-                await webSocket.SendAsync(_webJsonConverter.Serialize(ResponseUtils.Err("Invalid action packet")));
-                return;
-            }
-
-            Log.Debug("[Remote] Received message: \n{0}\n", payload);
-
-            var (action, echo, parameters) = result;
+            var actionString = e.DataFrame.ToText();
+            var data = JObject.Parse(actionString);
 
             // TODO 并发度问题(限制与优化)&背压控制
+            var context = GetWsServiceContext(webSocket);
+            var id = context.ClientId;
+            var resolver = webSocket.Client.Resolver;
             Task.Run(async () =>
             {
-                var data = await _actionService.Execute(action, parameters, _context);
+                var result = await _actionService.ProcessAsync(data, resolver, CancellationToken.None);
 
-                if (echo != null) data["echo"] = echo;
-
-                var text = _webJsonConverter.Serialize(data);
+                var text = _webJsonConverter.Serialize(result);
                 Log.Debug("[Remote] Sending message: \n{0}", text);
 
-                var ws = WebSocket;
+                var ws = GetWebSocket(id);
                 if (ws != null) await ws.SendAsync(text);
                 else
-                    Log.Warning("[Remote] Failed to respond action={0}, because websocket connection closed or lost.",
-                        action);
+                    Log.Warning("[Remote] Failed to respond action, because websocket connection closed or lost.");
             }).ConfigureFalseAwait();
         }
 
@@ -160,12 +144,39 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         await e.InvokeNext();
     }
 
-    private async void OnEventReceived(EventType type, IEventMeta? meta, object? data)
+    private IWebSocket? GetWebSocket(string id)
     {
-        if (!_context.IsSubscribedEvent(type, meta)) return;
+        return _httpService.TryGetClient(id, out var client) ? client.WebSocket : null;
+    }
 
+    private static string GetClientId(IWebSocket webSocket)
+    {
+        return webSocket.Client is TcpSessionClientBase tcpClientBase ? tcpClientBase.Id : "";
+    }
 
-        var ws = WebSocket;
+    private static WsServiceContext GetWsServiceContext(IWebSocket webSocket)
+    {
+        return webSocket.Client.Resolver.GetRequiredService<WsServiceContext>();
+    }
+
+    private static WsServiceContext InitWsServiceContext(IWebSocket webSocket)
+    {
+        var ctx = GetWsServiceContext(webSocket);
+        ctx.ClientId = GetClientId(webSocket);
+        return ctx;
+    }
+
+    private void OnEventReceived(EventType type, IEventMeta? meta, object? data)
+    {
+        Task.Run(async () =>
+        {
+            foreach (var id in _httpService.GetIds()) await OnEventReceived(id, type, meta, data);
+        }).ConfigureFalseAwait();
+    }
+
+    private async Task OnEventReceived(string clientId, EventType type, IEventMeta? meta, object? data)
+    {
+        var ws = GetWebSocket(clientId);
         if (ws == null)
         {
             Log.Warning("[Remote] Failed to send event={0}, because websocket connection closed or lost.",
@@ -173,13 +184,16 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             return;
         }
 
+        var context = GetWsServiceContext(ws);
+        if (!context.IsSubscribedEvent(type, meta)) return;
+
         if (meta != null)
         {
             await PrivateSendEvent(type, meta, data, ws); // 单一发送(只有带meta的事件类型才会触发)
         }
         else
         {
-            var eventMetas = _context.GetEventMetas(type).ToArray();
+            var eventMetas = context.GetEventMetas(type).ToArray();
 
             if (eventMetas.Length == 0) await PrivateSendEvent(type, meta, data, ws); // 单一事件(不带meta的事件类型)
             else // 批量发送(只有带meta的事件类型才会触发)

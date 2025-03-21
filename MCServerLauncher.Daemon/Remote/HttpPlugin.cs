@@ -60,18 +60,28 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                 switch (request.URL.ToLower())
                 {
                     case "/subtoken":
-                        var token = request.Forms["token"] ?? "";
-                        var permissions = request.Forms["permissions"] ?? "*";
+                        var token = "";
+                        var permissions = "";
+                        var expires = 30;
 
-                        int expires;
-                        try
+                        var form = await request.GetFormCollectionAsync();
+                        if (form.ContainsKey("token") && form.ContainsKey("permissions"))
                         {
-                            expires = int.Parse(request.Forms["expires"] ?? "30");
+                            token = form["token"];
+                            permissions = form["permissions"];
                         }
-                        catch (Exception)
+
+                        if (form.TryGetValue("expires", out var expiresStr))
                         {
-                            await response.SetStatus(400, "Invalid expire time").SetContent("").AnswerAsync();
-                            return;
+                            if (int.TryParse(expiresStr, out var expiresInt))
+                            {
+                                expires = expiresInt;
+                            }
+                            else
+                            {
+                                await response.SetStatus(400, "Invalid expires").SetContent("").AnswerAsync();
+                                return;
+                            }
                         }
 
                         if (Permissions.IsValid(permissions))

@@ -6,8 +6,10 @@ using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Cache;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Core;
+using TouchSocket.Core.AspNetCore;
 using TouchSocket.Http;
 using TouchSocket.Sockets;
 
@@ -19,29 +21,37 @@ public class Application
 
     public Application()
     {
+        IServiceCollection collection = new ServiceCollection();
+        collection.AddScoped<WsServiceContext>(provider =>
+        {
+            var obj = new WsServiceContext();
+            Log.Debug($"[Remote] WsServiceContext created: {obj.GetHashCode()}");
+            return obj;
+        });
+
+
         _httpService = new HttpService();
         _httpService.Setup(new TouchSocketConfig()
             .SetListenIPHosts(AppConfig.Get().Port)
-            .ConfigureContainer(
-                a =>
-                {
-                    // a.AddConsoleLogger();
-                    a.RegisterSingleton<IHttpService>(_httpService);
-                    a.RegisterSingleton<IWebJsonConverter, WebJsonConverter>();
-                    a.RegisterSingleton<ActionHandlers>();
-                    a.RegisterSingleton<IActionService, ActionServiceImpl>();
-                    a.RegisterSingleton<IEventService, EventService>();
-
-                    a.RegisterSingleton<IInstanceManager>(InstanceManager.Create());
-
-                    a.RegisterSingleton<IAsyncTimedCacheable<List<JavaInfo>>>(
+            .UseAspNetCoreContainer(collection)
+            .ConfigureContainer(a =>
+            {
+                a.RegisterSingleton<IServiceCollection>(collection)
+                    .RegisterSingleton<IHttpService>(_httpService)
+                    .RegisterSingleton<IWebJsonConverter, WebJsonConverter>()
+                    .RegisterSingleton<ActionHandlers>()
+                    .RegisterSingleton<IActionService, ActionProcessor>()
+                    .RegisterSingleton<IEventService, EventService>()
+                    .RegisterSingleton<ActionHandlerRegistry>()
+                    .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
+                    .RegisterSingleton<IAsyncTimedCacheable<List<JavaInfo>>>(
                         new AsyncTimedCache<List<JavaInfo>>(
                             () => JavaScanner.ScanJava(),
                             TimeSpan.FromMilliseconds(60000)
                         )
                     );
-                }
-            ).ConfigurePlugins(
+            })
+            .ConfigurePlugins(
                 a =>
                 {
                     a.Add<HttpPlugin>();
@@ -50,15 +60,15 @@ public class Application
                         .SetVerifyConnection(async (_, context) =>
                         {
                             // if (!context.Request.IsUpgrade()) return false;
-                        
+
                             try
                             {
                                 var token = context.Request.Query["token"];
-                        
+
                                 if (token != null && (AppConfig.Get().MainToken.Equals(token) ||
                                                       JwtUtils.ValidateToken(token)))
                                     return true;
-                        
+
                                 await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
                                 return false;
                             }
@@ -75,6 +85,14 @@ public class Application
                     a.UseDefaultHttpServicePlugin();
                 })
         );
+        
+        PostApplicationContainerBuilt();
+    }
+
+    private void PostApplicationContainerBuilt()
+    {
+        var resolver = _httpService.Resolver;
+        resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
     }
 
     /// <summary>

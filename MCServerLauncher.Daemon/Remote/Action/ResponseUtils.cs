@@ -5,40 +5,47 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 
 public class ResponseUtils
 {
-    public static JObject Err(string? message, int retcode = 1400)
+    public static JObject Err(string? message, int retcode = 1400, string? echo = null)
     {
-        return new JObject
+        return WithEcho(new JObject
         {
             ["status"] = "error",
             ["retcode"] = retcode,
             ["data"] = new JObject(),
             ["message"] = message
-        };
+        }, echo);
     }
 
-    public static JObject Err(string action, string message, int retcode = 1400, bool log = true)
+    public static JObject Err(string action, string message, int retcode = 1400, bool log = true, string? echo = null)
     {
         if (log)
-            Log.Error("Error while handling Action {0}: {1}", action, message);
-        return Err(message, retcode);
+            Log.Error("[Remote] Error while handling Action {0}: {1}", action, message);
+        return Err(message, retcode, echo);
     }
 
-    public static JObject Err(string action, ActionExecutionException exception, bool log = true)
+    public static JObject Err(string action, ActionExecutionException exception, bool log = true, string? echo = null)
     {
         if (log)
-            Log.Error("Error while handling Action {0}: {1}", action, exception.ErrorMessage);
-        return Err(exception.ErrorMessage, exception.Retcode);
+            Log.Error("[Remote] Error while handling Action {0}: {1}", action, exception.ErrorMessage);
+        return Err(exception.ErrorMessage, exception.Retcode, echo);
     }
 
-    public static JObject Ok(JObject? data = null)
+    public static JObject Ok(JObject? data = null, string? echo = null)
     {
-        return new JObject
+        return WithEcho(new JObject
         {
             ["status"] = "ok",
             ["retcode"] = 0,
             ["data"] = data ?? new JObject(),
             ["message"] = ""
-        };
+        }, echo);
+    }
+
+    private static JObject WithEcho(JObject result, string? echo)
+    {
+        if (echo != null) result["echo"] = echo;
+
+        return result;
     }
 }
 
