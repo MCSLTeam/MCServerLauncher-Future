@@ -1,10 +1,13 @@
 using System.Collections.Concurrent;
+using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Event.Meta;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
@@ -119,7 +122,19 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         if (e.DataFrame.IsText)
         {
             var actionString = e.DataFrame.ToText();
-            var data = JObject.Parse(actionString);
+            JObject data;
+
+            try
+            {
+                data = JObject.Parse(actionString);
+            }
+            catch (JsonException)
+            {
+                var err = ResponseUtils.Err("Could not parse json string", 1500, echo: null);
+                await webSocket.SendAsync(_webJsonConverter.Serialize(err));
+                await e.InvokeNext();
+                return;
+            }
 
             // TODO 并发度问题(限制与优化)&背压控制
             var context = GetWsServiceContext(webSocket);

@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace MCServerLauncher.Common.System;
+namespace MCServerLauncher.Common.Helpers;
 
 public static class PathHelper
 {

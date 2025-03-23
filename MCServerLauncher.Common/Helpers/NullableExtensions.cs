@@ -1,4 +1,4 @@
-namespace MCServerLauncher.Common;
+namespace MCServerLauncher.Common.Helpers;
 
 public static class NullableExtensions
 {

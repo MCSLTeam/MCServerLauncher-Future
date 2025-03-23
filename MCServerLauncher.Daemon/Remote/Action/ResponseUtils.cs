@@ -1,33 +1,34 @@
+using MCServerLauncher.Common.ProtoType.Action;
 using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
-public class ResponseUtils
+public static class ResponseUtils
 {
-    public static JObject Err(string? message, int retcode = 1400, string? echo = null)
+    public static JObject Err(string? message, int code, string? echo = null)
     {
         return WithEcho(new JObject
         {
             ["status"] = "error",
-            ["retcode"] = retcode,
-            ["data"] = new JObject(),
+            ["retcode"] = code,
+            ["data"] = null,
             ["message"] = message
         }, echo);
     }
 
-    public static JObject Err(string action, string message, int retcode = 1400, bool log = true, string? echo = null)
+    public static JObject Err(ActionType action, Exception exception, int code, bool fullMessage, string? echo = null)
     {
-        if (log)
-            Log.Error("[Remote] Error while handling Action {0}: {1}", action, message);
-        return Err(message, retcode, echo);
+        Log.Error("[Remote] Error while handling Action {0}: \n{1}", action, exception.ToString());
+        var message = fullMessage ? exception.ToString() : exception.Message;
+        return Err(message, code, echo);
     }
 
-    public static JObject Err(string action, ActionExecutionException exception, bool log = true, string? echo = null)
+    public static JObject Err(ActionType action, ActionExecutionException exception, bool fullMessage,
+        string? echo = null)
     {
-        if (log)
-            Log.Error("[Remote] Error while handling Action {0}: {1}", action, exception.ErrorMessage);
-        return Err(exception.ErrorMessage, exception.Retcode, echo);
+        Log.Error("[Remote] Error while handling Action {0}: {1}", action, exception.Message);
+        return Err(action, exception, exception.Code, fullMessage, echo);
     }
 
     public static JObject Ok(JObject? data = null, string? echo = null)
@@ -36,7 +37,7 @@ public class ResponseUtils
         {
             ["status"] = "ok",
             ["retcode"] = 0,
-            ["data"] = data ?? new JObject(),
+            ["data"] = data,
             ["message"] = ""
         }, echo);
     }
@@ -51,12 +52,25 @@ public class ResponseUtils
 
 public class ActionExecutionException : Exception
 {
-    public readonly string? ErrorMessage;
-    public readonly int Retcode;
+    public int Code { get; }
 
-    public ActionExecutionException(int retcode = 1400, string? errorMessage = null)
+    // 添加包含内部异常的构造函数
+    public ActionExecutionException(int code, string message, Exception innerException)
+        : base(message, innerException) // 将message和innerException传递给基类
     {
-        Retcode = retcode;
-        ErrorMessage = errorMessage;
+        Code = code;
+    }
+
+    // 可选：其他构造函数
+    public ActionExecutionException(int code, string message)
+        : base(message)
+    {
+        Code = code;
+    }
+
+    public ActionExecutionException(int code = 1400)
+        : base()
+    {
+        Code = code;
     }
 }

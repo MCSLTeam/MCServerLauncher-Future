@@ -75,3 +75,16 @@ public class Permission : IMatchable
         }
     }
 }
+
+public static class PermissionExtension
+{
+    public static IMatchable Or(this Permission @this, string other)
+    {
+        return @this.Or(Permission.Of(other));
+    }
+
+    public static IMatchable And(this Permission @this, string other)
+    {
+        return @this.And(Permission.Of(other));
+    }
+}

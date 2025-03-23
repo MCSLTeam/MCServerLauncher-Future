@@ -1,21 +1,21 @@
-using MCServerLauncher.Common.System;
+using MCServerLauncher.Common.Helpers;
 
 namespace MCServerLauncher.Common.ProtoType.Files;
 
 public record FileSystemMetadata
 {
-    public DateTime CreationTime;
+    public long CreationTime;
     public bool Hidden;
-    public DateTime LastAccessTime;
+    public long LastAccessTime;
 
-    public DateTime LastWriteTime;
+    public long LastWriteTime;
     // public string? LinkTarget;
 
     protected FileSystemMetadata(FileSystemInfo info)
     {
-        CreationTime = info.CreationTime;
-        LastAccessTime = info.LastAccessTime;
-        LastWriteTime = info.LastWriteTime;
+        CreationTime = info.CreationTime.ToUnixTimeSeconds();
+        LastAccessTime = info.LastAccessTime.ToUnixTimeSeconds();
+        LastWriteTime = info.LastWriteTime.ToUnixTimeSeconds();
         Hidden = info.Attributes.HasFlag(FileAttributes.Hidden);
     }
 }

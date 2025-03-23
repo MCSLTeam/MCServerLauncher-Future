@@ -22,12 +22,7 @@ public class Application
     public Application()
     {
         IServiceCollection collection = new ServiceCollection();
-        collection.AddScoped<WsServiceContext>(provider =>
-        {
-            var obj = new WsServiceContext();
-            Log.Debug($"[Remote] WsServiceContext created: {obj.GetHashCode()}");
-            return obj;
-        });
+        collection.AddScoped<WsServiceContext>();
 
 
         _httpService = new HttpService();
@@ -39,7 +34,6 @@ public class Application
                 a.RegisterSingleton<IServiceCollection>(collection)
                     .RegisterSingleton<IHttpService>(_httpService)
                     .RegisterSingleton<IWebJsonConverter, WebJsonConverter>()
-                    .RegisterSingleton<ActionHandlers>()
                     .RegisterSingleton<IActionService, ActionProcessor>()
                     .RegisterSingleton<IEventService, EventService>()
                     .RegisterSingleton<ActionHandlerRegistry>()

@@ -28,7 +28,7 @@ namespace MCServerLauncher.Common.ProtoType.Action
         FileUploadChunk,
         FileUploadCancel,
         FileDownloadRequest,
-        FileDownloadChunk,
+        FileDownloadRange,
         FileDownloadClose,
 
         // Instance operation
@@ -38,7 +38,8 @@ namespace MCServerLauncher.Common.ProtoType.Action
         StopInstance,
         KillInstance,
         SendToInstance,
-        GetInstanceStatus
+        GetInstanceStatus,
+        GetAllStatus
     }
 }
 
@@ -50,9 +51,9 @@ namespace MCServerLauncher.Common.ProtoType.Action.Parameters
 
     public sealed record EmptyActionParameter : IActionParameter;
 
-    public sealed record SubscribeEventParameter(EventType Type, JObject? Meta) : IActionParameter;
+    public sealed record SubscribeEventParameter(EventType Type, JToken? Meta) : IActionParameter;
 
-    public sealed record UnsubscribeEventParameter(EventType Type, JObject? Meta) : IActionParameter;
+    public sealed record UnsubscribeEventParameter(EventType Type, JToken? Meta) : IActionParameter;
 
     public sealed record FileUploadRequestParameter(string? Path, string? Sha1, long? Timeout, long Size)
         : IActionParameter;

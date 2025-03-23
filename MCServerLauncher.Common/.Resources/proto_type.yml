@@ -15,14 +15,14 @@ actions:
   - subscribe_event:
       req:
         type: EventType
-        meta: JObject?
+        meta: JToken?
       
       resp:
 
   - unsubscribe_event:
       req:
         type: EventType 
-        meta: JObject?
+        meta: JToken?
       
       resp:
 
