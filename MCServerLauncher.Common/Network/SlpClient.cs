@@ -161,7 +161,6 @@ public class SlpClient
             Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             var json = ReadString(received, jsonLength, ref offset);
-            Console.WriteLine(json);
             return JsonConvert.DeserializeObject<PingPayload>(json);
         }
         catch (Exception e)
