@@ -11,8 +11,12 @@ public class InstanceManager : IInstanceManager
     private ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
     private ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
 
+    // TODO 改用异常抛出异常信息
     public async Task<bool> TryAddInstance(InstanceFactorySetting setting)
     {
+        if (Instances.ContainsKey(setting.Uuid))
+            Log.Error("[InstanceManager] Add new instance failed: Instance '{0}' already exists.", setting.Uuid);
+
         var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
         // validate dir name
         try
@@ -65,6 +69,7 @@ public class InstanceManager : IInstanceManager
         }
     }
 
+    // TODO 当用户尝试移除实例时，不应删除正在运行的实例
     public async Task<bool> TryRemoveInstance(Guid instanceId)
     {
         if (!Instances.TryRemove(instanceId, out var config)) return false;
@@ -143,16 +148,18 @@ public class InstanceManager : IInstanceManager
         return RunningInstances.TryGetValue(instanceId, out var instance) ? instance.KillProcess() : Task.CompletedTask;
     }
 
-    public InstanceStatus GetInstanceStatus(Guid instanceId)
+    public Task<InstanceStatus> GetInstanceStatus(Guid instanceId)
     {
         if (!Instances.TryGetValue(instanceId, out var instance))
             throw new ArgumentException("Instance not found.");
-        return instance.GetStatus();
+        return instance.GetStatusAsync();
     }
 
-    public IDictionary<Guid, InstanceStatus> GetAllStatus()
+    public async Task<IDictionary<Guid, InstanceStatus>> GetAllStatus()
     {
-        return Instances.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetStatus());
+        var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetStatusAsync());
+        await Task.WhenAll(tasks.Values);
+        return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
     }
 
     public static IInstanceManager Create()

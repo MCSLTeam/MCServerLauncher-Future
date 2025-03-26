@@ -5,7 +5,6 @@ using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using MCServerLauncher.Common;
 using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -31,23 +30,23 @@ public class ActionProcessor : IActionService
         var echo = data.GetValue("echo")?.ToObject<string>();
         var actionType = data.GetValue("action")?.ToObject<ActionType>(_serializer);
 
-        if (actionType is null) return ResponseUtils.Err("Invalid action", 1500, echo: echo);
+        if (actionType is null) return ResponseUtils.Err("Invalid action", 1500, echo);
 
         if (_handlers.TryGetValue(actionType.Value, out var handler))
             try
             {
                 var result = await handler.Invoke(data.GetValue("params")!, resolver, cancellationToken);
-                return ResponseUtils.Ok(result is null ? null : JObject.FromObject(result, _serializer), echo);
+                return ResponseUtils.Ok(result is null ? new JObject() : JObject.FromObject(result, _serializer), echo);
             }
             catch (ActionExecutionException aee)
             {
-                return ResponseUtils.Err(actionType.Value, aee, fullMessage: true, echo: echo);
+                return ResponseUtils.Err(actionType.Value, aee, false, echo);
             }
             catch (Exception e)
             {
-                return ResponseUtils.Err(actionType.Value, e, 1500, fullMessage: true, echo: echo);
+                return ResponseUtils.Err(actionType.Value, e, 1500, true, echo);
             }
 
-        return ResponseUtils.Err($"Action '{actionType.Value}' is not implemented", 1599, echo: echo);
+        return ResponseUtils.Err($"Action '{actionType.Value}' is not implemented", 1599, echo);
     }
 }

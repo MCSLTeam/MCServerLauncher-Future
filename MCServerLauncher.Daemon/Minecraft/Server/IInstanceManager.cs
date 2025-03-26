@@ -2,6 +2,7 @@ using MCServerLauncher.Common.ProtoType.Instance;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
+// TODO 异步方法添加 cancellationToken
 public interface IInstanceManager
 {
     /// <summary>
@@ -52,12 +53,12 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    InstanceStatus GetInstanceStatus(Guid instanceId);
+    Task<InstanceStatus> GetInstanceStatus(Guid instanceId);
 
 
     /// <summary>
     ///     获取所有服务器实例状态
     /// </summary>
     /// <returns></returns>
-    IDictionary<Guid, InstanceStatus> GetAllStatus();
+    Task<IDictionary<Guid, InstanceStatus>> GetAllStatus();
 }

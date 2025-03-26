@@ -434,14 +434,14 @@ internal static class FileManager
     /// <returns></returns>
     public static bool ValidatePath(string path, string root = Root)
     {
-        var normalizedPath = NormalizePath(path);
+        var normalizedPath = NormalizePath( path);
         var normalizedRoot = NormalizePath(root);
 
         return !normalizedPath.StartsWith(".") && normalizedPath.StartsWith(normalizedRoot);
     }
 
     /// <summary>
-    ///     从算法层面，将包含..和.的相对路径，转化为绝对路径
+    ///     从算法层面，去除相对路径中的..和.
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>

@@ -187,13 +187,14 @@ public class Instance
         OnStatusChanged?.Invoke(newStatus);
     }
 
-    public InstanceStatus GetStatus()
+    // TODO 使用SlpClient获取服务器信息(例如玩家列表)
+    public Task<InstanceStatus> GetStatusAsync()
     {
-        return new InstanceStatus(
+        return Task.FromResult(new InstanceStatus(
             Status,
             Config,
             ServerProperties,
             Players.ToList()
-        );
+        ));
     }
 }
