@@ -17,6 +17,6 @@ public static class EventServiceExtensions
 {
     public static void OnInstanceLog(this IEventService service, Guid instanceId, string log)
     {
-        service.OnEvent(EventType.InstanceLog, new InstanceLogEventMeta(instanceId), log);
+        service.OnEvent(EventType.InstanceLog, new InstanceLogEventMeta { InstanceId = instanceId }, log);
     }
 }

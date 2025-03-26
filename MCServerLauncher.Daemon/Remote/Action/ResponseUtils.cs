@@ -17,18 +17,18 @@ public static class ResponseUtils
         }, echo);
     }
 
-    public static JObject Err(ActionType action, Exception exception, int code, bool fullMessage, string? echo = null)
+    public static JObject Err(ActionType action, Exception exception, int code, bool verbose, string? echo = null)
     {
         Log.Error("[Remote] Error while handling Action {0}: \n{1}", action, exception.ToString());
-        var message = fullMessage ? exception.ToString() : exception.Message;
+        var message = verbose ? exception.ToString() : exception.Message;
         return Err(message, code, echo);
     }
 
-    public static JObject Err(ActionType action, ActionExecutionException exception, bool fullMessage,
+    public static JObject Err(ActionType action, ActionExecutionException exception, bool verbose,
         string? echo = null)
     {
         Log.Error("[Remote] Error while handling Action {0}: {1}", action, exception.Message);
-        return Err(action, exception, exception.Code, fullMessage, echo);
+        return Err(action, exception, exception.Code, verbose, echo);
     }
 
     public static JObject Ok(JObject? data = null, string? echo = null)
@@ -52,8 +52,6 @@ public static class ResponseUtils
 
 public class ActionExecutionException : Exception
 {
-    public int Code { get; }
-
     // 添加包含内部异常的构造函数
     public ActionExecutionException(int code, string message, Exception innerException)
         : base(message, innerException) // 将message和innerException传递给基类
@@ -69,8 +67,9 @@ public class ActionExecutionException : Exception
     }
 
     public ActionExecutionException(int code = 1400)
-        : base()
     {
         Code = code;
     }
+
+    public int Code { get; }
 }

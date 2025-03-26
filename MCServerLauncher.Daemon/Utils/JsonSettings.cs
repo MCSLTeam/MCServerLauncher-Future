@@ -16,7 +16,7 @@ public static class JsonSettings
         },
         Converters = new List<JsonConverter>
         {
-            new StringEnumConverter(new SnakeCaseNamingStrategy()),
+            new StringEnumConverter(new SnakeCaseNamingStrategy(), allowIntegerValues: false),
             new GuidJsonConverter(),
             new WebEncodingJsonConverter(),
             new Permission.PermissionJsonConverter()

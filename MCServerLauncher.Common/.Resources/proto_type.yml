@@ -6,9 +6,11 @@ const:
     - using MCServerLauncher.Common.ProtoType.Files;
     - using MCServerLauncher.Common.ProtoType.Instance;
     - using MCServerLauncher.Common.System;
+    - using Newtonsoft.Json;
     - using Newtonsoft.Json.Linq;
   event_base_namespace: MCServerLauncher.Common.ProtoType.Event
   event_imports:
+    - using Newtonsoft.Json;
 
 
 actions:

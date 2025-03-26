@@ -4,7 +4,7 @@
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Common.System;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.Common.ProtoType.Action
@@ -51,40 +51,100 @@ namespace MCServerLauncher.Common.ProtoType.Action.Parameters
 
     public sealed record EmptyActionParameter : IActionParameter;
 
-    public sealed record SubscribeEventParameter(EventType Type, JToken? Meta) : IActionParameter;
+    public sealed record SubscribeEventParameter : IActionParameter
+    {
+        [JsonRequired] public EventType Type { get; init; }
+        public JToken? Meta { get; init; }
+    }
 
-    public sealed record UnsubscribeEventParameter(EventType Type, JToken? Meta) : IActionParameter;
+    public sealed record UnsubscribeEventParameter : IActionParameter
+    {
+        [JsonRequired] public EventType Type { get; init; }
+        public JToken? Meta { get; init; }
+    }
 
-    public sealed record FileUploadRequestParameter(string? Path, string? Sha1, long? Timeout, long Size)
-        : IActionParameter;
+    public sealed record FileUploadRequestParameter : IActionParameter
+    {
+        public string? Path { get; init; }
+        public string? Sha1 { get; init; }
+        public long? Timeout { get; init; }
+        [JsonRequired] public long Size { get; init; }
+    }
 
-    public sealed record FileUploadChunkParameter(Guid FileId, long Offset, string Data) : IActionParameter;
+    public sealed record FileUploadChunkParameter : IActionParameter
+    {
+        [JsonRequired] public Guid FileId { get; init; }
+        [JsonRequired] public long Offset { get; init; }
+        [JsonRequired] public string Data { get; init; }
+    }
 
-    public sealed record FileUploadCancelParameter(Guid FileId) : IActionParameter;
+    public sealed record FileUploadCancelParameter : IActionParameter
+    {
+        [JsonRequired] public Guid FileId { get; init; }
+    }
 
-    public sealed record FileDownloadRequestParameter(string Path, long? Timeout) : IActionParameter;
+    public sealed record FileDownloadRequestParameter : IActionParameter
+    {
+        [JsonRequired] public string Path { get; init; }
+        public long? Timeout { get; init; }
+    }
 
-    public sealed record FileDownloadRangeParameter(Guid FileId, string Range) : IActionParameter;
+    public sealed record FileDownloadRangeParameter : IActionParameter
+    {
+        [JsonRequired] public Guid FileId { get; init; }
+        [JsonRequired] public string Range { get; init; }
+    }
 
-    public sealed record FileDownloadCloseParameter(Guid FileId) : IActionParameter;
+    public sealed record FileDownloadCloseParameter : IActionParameter
+    {
+        [JsonRequired] public Guid FileId { get; init; }
+    }
 
-    public sealed record GetFileInfoParameter(string Path) : IActionParameter;
+    public sealed record GetFileInfoParameter : IActionParameter
+    {
+        [JsonRequired] public string Path { get; init; }
+    }
 
-    public sealed record GetDirectoryInfoParameter(string Path) : IActionParameter;
+    public sealed record GetDirectoryInfoParameter : IActionParameter
+    {
+        [JsonRequired] public string Path { get; init; }
+    }
 
-    public sealed record AddInstanceParameter(InstanceFactorySetting Setting) : IActionParameter;
+    public sealed record AddInstanceParameter : IActionParameter
+    {
+        [JsonRequired] public InstanceFactorySetting Setting { get; init; }
+    }
 
-    public sealed record RemoveInstanceParameter(Guid Id) : IActionParameter;
+    public sealed record RemoveInstanceParameter : IActionParameter
+    {
+        [JsonRequired] public Guid Id { get; init; }
+    }
 
-    public sealed record StartInstanceParameter(Guid Id) : IActionParameter;
+    public sealed record StartInstanceParameter : IActionParameter
+    {
+        [JsonRequired] public Guid Id { get; init; }
+    }
 
-    public sealed record StopInstanceParameter(Guid Id) : IActionParameter;
+    public sealed record StopInstanceParameter : IActionParameter
+    {
+        [JsonRequired] public Guid Id { get; init; }
+    }
 
-    public sealed record SendToInstanceParameter(Guid Id, string Message) : IActionParameter;
+    public sealed record SendToInstanceParameter : IActionParameter
+    {
+        [JsonRequired] public Guid Id { get; init; }
+        [JsonRequired] public string Message { get; init; }
+    }
 
-    public sealed record KillInstanceParameter(Guid Id) : IActionParameter;
+    public sealed record KillInstanceParameter : IActionParameter
+    {
+        [JsonRequired] public Guid Id { get; init; }
+    }
 
-    public sealed record GetInstanceStatusParameter(Guid Id) : IActionParameter;
+    public sealed record GetInstanceStatusParameter : IActionParameter
+    {
+        [JsonRequired] public Guid Id { get; init; }
+    }
 }
 
 namespace MCServerLauncher.Common.ProtoType.Action.Results
@@ -95,38 +155,88 @@ namespace MCServerLauncher.Common.ProtoType.Action.Results
 
     public sealed record EmptyActionResult : IActionResult;
 
-    public sealed record GetPermissionsResult(string[] Permissions) : IActionResult;
+    public sealed record GetPermissionsResult : IActionResult
+    {
+        [JsonRequired] public string[] Permissions { get; init; }
+    }
 
-    public sealed record PingResult(long Time) : IActionResult;
+    public sealed record PingResult : IActionResult
+    {
+        [JsonRequired] public long Time { get; init; }
+    }
 
-    public sealed record GetJavaListResult(List<JavaInfo> JavaList) : IActionResult;
+    public sealed record GetJavaListResult : IActionResult
+    {
+        [JsonRequired] public List<JavaInfo> JavaList { get; init; }
+    }
 
-    public sealed record FileUploadRequestResult(Guid FileId) : IActionResult;
+    public sealed record FileUploadRequestResult : IActionResult
+    {
+        [JsonRequired] public Guid FileId { get; init; }
+    }
 
-    public sealed record FileUploadChunkResult(bool Done, long Received) : IActionResult;
+    public sealed record FileUploadChunkResult : IActionResult
+    {
+        [JsonRequired] public bool Done { get; init; }
+        [JsonRequired] public long Received { get; init; }
+    }
 
-    public sealed record FileDownloadRequestResult(Guid FileId, long Size, string Sha1) : IActionResult;
+    public sealed record FileDownloadRequestResult : IActionResult
+    {
+        [JsonRequired] public Guid FileId { get; init; }
+        [JsonRequired] public long Size { get; init; }
+        [JsonRequired] public string Sha1 { get; init; }
+    }
 
-    public sealed record FileDownloadRangeResult(string Content) : IActionResult;
+    public sealed record FileDownloadRangeResult : IActionResult
+    {
+        [JsonRequired] public string Content { get; init; }
+    }
 
-    public sealed record GetFileInfoResult(FileMetadata Meta) : IActionResult;
+    public sealed record GetFileInfoResult : IActionResult
+    {
+        [JsonRequired] public FileMetadata Meta { get; init; }
+    }
 
-    public sealed record GetDirectoryInfoResult(
-        string? Parent,
-        DirectoryEntry.FileInformation[] Files,
-        DirectoryEntry.DirectoryInformation[] Directories) : IActionResult;
+    public sealed record GetDirectoryInfoResult : IActionResult
+    {
+        public string? Parent { get; init; }
+        [JsonRequired] public DirectoryEntry.FileInformation[] Files { get; init; }
+        [JsonRequired] public DirectoryEntry.DirectoryInformation[] Directories { get; init; }
+    }
 
-    public sealed record AddInstanceResult(bool Done) : IActionResult;
+    public sealed record AddInstanceResult : IActionResult
+    {
+        [JsonRequired] public bool Done { get; init; }
+    }
 
-    public sealed record RemoveInstanceResult(bool Done) : IActionResult;
+    public sealed record RemoveInstanceResult : IActionResult
+    {
+        [JsonRequired] public bool Done { get; init; }
+    }
 
-    public sealed record StartInstanceResult(bool Done) : IActionResult;
+    public sealed record StartInstanceResult : IActionResult
+    {
+        [JsonRequired] public bool Done { get; init; }
+    }
 
-    public sealed record StopInstanceResult(bool Done) : IActionResult;
+    public sealed record StopInstanceResult : IActionResult
+    {
+        [JsonRequired] public bool Done { get; init; }
+    }
 
-    public sealed record GetInstanceStatusResult(InstanceStatus Status) : IActionResult;
+    public sealed record GetInstanceStatusResult : IActionResult
+    {
+        [JsonRequired] public InstanceStatus Status { get; init; }
+    }
 
-    public sealed record GetAllStatusResult(IDictionary<Guid, InstanceStatus> Status) : IActionResult;
+    public sealed record GetAllStatusResult : IActionResult
+    {
+        [JsonRequired] public IDictionary<Guid, InstanceStatus> Status { get; init; }
+    }
 
-    public sealed record GetSystemInfoResult(SystemInfo Info) : IActionResult;
+    public sealed record GetSystemInfoResult : IActionResult
+    {
+        [JsonRequired] public SystemInfo Info { get; init; }
+    }
 }

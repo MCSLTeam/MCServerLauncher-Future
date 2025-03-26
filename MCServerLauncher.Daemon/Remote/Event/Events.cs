@@ -7,6 +7,8 @@ namespace MCServerLauncher.Daemon.Remote.Event;
 
 public static class EventTypeExtensions
 {
+    private static readonly JValue NullToken = JValue.CreateNull();
+
     /// <summary>
     ///     获取事件元数据,元数据是事件的一个属性,有的具有(额外)元数据,有的没有(仅需事件类型就可以区分)
     /// </summary>
@@ -14,13 +16,25 @@ public static class EventTypeExtensions
     /// <param name="metaToken">元数据原始token</param>
     /// <param name="serializer">元数据序列化器</param>
     /// <exception cref="NullReferenceException">当Event要求EventMeta而metaToken为空,抛出空引用异常</exception>
+    /// <exception cref="ArgumentException"><see cref="metaToken" />的值为null</exception>
     /// <returns></returns>
     public static IEventMeta? GetEventMeta(this EventType type, JToken? metaToken, JsonSerializer? serializer = null)
     {
         return type switch
         {
-            EventType.InstanceLog => metaToken!.ToObject<InstanceLogEventMeta>(serializer ?? JsonSerializer.CreateDefault()),
+            EventType.InstanceLog => PrivateGetEventMeta<InstanceLogEventMeta>(metaToken,
+                serializer ?? JsonSerializer.Create()),
             _ => null
         };
+    }
+
+    private static TEventMeta? PrivateGetEventMeta<TEventMeta>(JToken? token, JsonSerializer serializer)
+        where TEventMeta : class, IEventMeta
+    {
+        if (token is null) return null;
+
+        if (token.Equals(NullToken)) throw new ArgumentException("event meta token is null");
+
+        return token.ToObject<TEventMeta>(serializer);
     }
 }

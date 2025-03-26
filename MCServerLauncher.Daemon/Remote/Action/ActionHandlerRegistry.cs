@@ -1,10 +1,10 @@
 ﻿using System.Text.RegularExpressions;
+using MCServerLauncher.Common;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Action.Parameters;
 using MCServerLauncher.Common.ProtoType.Action.Results;
-using MCServerLauncher.Common.System;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -32,6 +32,34 @@ public class ActionHandlerRegistry
     // private readonly Dictionary<ActionType, Func<JToken, IResolver, IActionResult>> _syncHandlers = new();
 
     public Dictionary<ActionType, IMatchable> HandlerPermissions { get; } = new();
+
+    private static TParam ParseParameter<TParam>(JToken? paramToken, JsonSerializer serializer)
+        where TParam : class, IActionParameter
+    {
+        if (paramToken is null)
+            throw new ActionExecutionException(1501, "Parameter is null");
+
+        try
+        {
+            return paramToken.ToObject<TParam>(serializer)!;
+        }
+        catch (JsonSerializationException e)
+        {
+            var @params = e.Path?.Split(new[] { '.' }).ToArray();
+            if (@params is null) throw new ActionExecutionException(1502, "Could not deserialize param", e);
+
+            throw new ActionExecutionException(1502,
+                $"Could not deserialize param '{@params[1]}', in json path: '{e.Path}'", e);
+        }
+        catch (NullReferenceException e)
+        {
+            throw new ActionExecutionException(1502, "Could not deserialize param", e);
+        }
+        catch (Exception e)
+        {
+            throw new ActionExecutionException(1500, "Error occurred during param deserialization: " + e.Message, e);
+        }
+    }
 
     # region Register async handlers
 
@@ -106,30 +134,6 @@ public class ActionHandlerRegistry
     }
 
     # endregion
-
-    private static TParam ParseParameter<TParam>(JToken? paramToken, JsonSerializer serializer)
-        where TParam : class, IActionParameter
-    {
-        if (paramToken is null)
-            throw new ActionExecutionException(1501, "Parameter is null");
-
-        try
-        {
-            return paramToken.ToObject<TParam>(serializer)!;
-        }
-        catch (JsonException e)
-        {
-            throw new ActionExecutionException(1502, "Could not deserialize param: " + e.Message, e);
-        }
-        catch (NullReferenceException e)
-        {
-            throw new ActionExecutionException(1502, "Could not deserialize param", e);
-        }
-        catch (Exception e)
-        {
-            throw new ActionExecutionException(1500, "Error occurred during param deserialization: " + e.Message, e);
-        }
-    }
 }
 
 public static class HandlerRegistration
@@ -145,11 +149,17 @@ public static class HandlerRegistration
                 ActionType.Ping,
                 IMatchable.Always(),
                 (resolver, ct) =>
-                    ValueTask.FromResult(new PingResult(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())))
+                    ValueTask.FromResult(new PingResult
+                    {
+                        Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    }))
             .Register(
                 ActionType.GetSystemInfo,
                 IMatchable.Always(),
-                async (resolver, ct) => new GetSystemInfoResult(await SystemInfo.Get()))
+                async (resolver, ct) => new GetSystemInfoResult
+                {
+                    Info = await SystemInfo.Get()
+                })
             .Register(
                 ActionType.GetPermissions,
                 IMatchable.Always(),
@@ -157,9 +167,10 @@ public static class HandlerRegistration
                 {
                     var ctx = resolver.GetRequiredService<WsServiceContext>();
                     return ValueTask.FromResult(
-                        new GetPermissionsResult(
-                            ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
-                        )
+                        new GetPermissionsResult
+                        {
+                            Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
+                        }
                     );
                 })
             .Register(
@@ -168,7 +179,10 @@ public static class HandlerRegistration
                 async (resolver, ct) =>
                 {
                     var ctx = resolver.GetRequiredService<IAsyncTimedCacheable<List<JavaInfo>>>();
-                    return new GetJavaListResult(await ctx.Value);
+                    return new GetJavaListResult
+                    {
+                        JavaList = await ctx.Value
+                    };
                 }
             )
 
@@ -234,7 +248,10 @@ public static class HandlerRegistration
                     if (fileId == Guid.Empty)
                         throw new ActionExecutionException(1401, "Failed to pre-allocate space");
 
-                    return ValueTask.FromResult(new FileUploadRequestResult(fileId));
+                    return ValueTask.FromResult(new FileUploadRequestResult
+                    {
+                        FileId = fileId
+                    });
                 }
             )
             .Register<FileUploadChunkParameter, FileUploadChunkResult>(
@@ -248,7 +265,11 @@ public static class HandlerRegistration
                     var (done, received) = await FileManager.FileUploadChunk(param.FileId,
                         param.Offset, param.Data);
 
-                    return new FileUploadChunkResult(done, received);
+                    return new FileUploadChunkResult
+                    {
+                        Done = done,
+                        Received = received
+                    };
                 })
             .Register<FileUploadCancelParameter>(
                 ActionType.FileUploadCancel,
@@ -273,7 +294,12 @@ public static class HandlerRegistration
                         param.Path,
                         param.Timeout.Map(t => TimeSpan.FromMilliseconds(t))
                     );
-                    return new FileDownloadRequestResult(fileId, size, sha1);
+                    return new FileDownloadRequestResult
+                    {
+                        FileId = fileId,
+                        Size = size,
+                        Sha1 = sha1
+                    };
                 }
             )
             .Register<FileDownloadRangeParameter, FileDownloadRangeResult>(
@@ -286,8 +312,10 @@ public static class HandlerRegistration
 
                     var (from, to) = (int.Parse(rangePattern.Match(param.Range).Groups[1].Value),
                         int.Parse(rangePattern.Match(param.Range).Groups[2].Value));
-                    return new FileDownloadRangeResult(
-                        await FileManager.FileDownloadRange(param.FileId, from, to));
+                    return new FileDownloadRangeResult
+                    {
+                        Content = await FileManager.FileDownloadRange(param.FileId, from, to)
+                    };
                 })
             .Register<FileDownloadCloseParameter>(
                 ActionType.FileDownloadClose,
@@ -309,7 +337,12 @@ public static class HandlerRegistration
                 {
                     var entry = FileManager.GetDirectoryInfo(param.Path);
                     return ValueTask.FromResult(
-                        new GetDirectoryInfoResult(entry.Parent, entry.Files, entry.Directories));
+                        new GetDirectoryInfoResult
+                        {
+                            Parent = entry.Parent,
+                            Directories = entry.Directories,
+                            Files = entry.Files
+                        });
                 }
             )
             .Register<GetFileInfoParameter, GetFileInfoResult>(
@@ -317,8 +350,10 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.file.info.file"),
                 (param, resolver, ct) =>
                     ValueTask.FromResult(
-                        new GetFileInfoResult(
-                            FileManager.GetFileInfo(param.Path)))
+                        new GetFileInfoResult
+                        {
+                            Meta = FileManager.GetFileInfo(param.Path)
+                        })
             )
 
             #endregion
@@ -347,7 +382,10 @@ public static class HandlerRegistration
                         instance.OnLog += handler;
                     }
 
-                    return ValueTask.FromResult(new StartInstanceResult(rv));
+                    return ValueTask.FromResult(new StartInstanceResult
+                    {
+                        Done = rv
+                    });
                 }
             )
             .Register<StopInstanceParameter, StopInstanceResult>(
@@ -357,8 +395,10 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return ValueTask.FromResult(
-                        new StopInstanceResult(
-                            instanceManager.TryStopInstance(param.Id)));
+                        new StopInstanceResult
+                        {
+                            Done = instanceManager.TryStopInstance(param.Id)
+                        });
                 })
             .Register<SendToInstanceParameter>(
                 ActionType.SendToInstance,
@@ -372,12 +412,53 @@ public static class HandlerRegistration
             ).Register(
                 ActionType.GetAllStatus,
                 IMatchable.Always(),
-                (resolver, ct) =>
+                async (resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return ValueTask.FromResult(
-                        new GetAllStatusResult(
-                            instanceManager.GetAllStatus()));
+                    return new GetAllStatusResult
+                    {
+                        Status = await instanceManager.GetAllStatus()
+                    };
+                })
+            .Register<AddInstanceParameter, AddInstanceResult>(
+                ActionType.AddInstance,
+                IMatchable.Always(), async (param, resolver, ct) =>
+                {
+                    var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+                    return new AddInstanceResult
+                    {
+                        Done = await instanceManager.TryAddInstance(param.Setting)
+                    };
+                })
+            .Register<RemoveInstanceParameter, RemoveInstanceResult>(
+                ActionType.RemoveInstance,
+                IMatchable.Always(),
+                async (param, resolver, ct) =>
+                {
+                    var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+                    return new RemoveInstanceResult
+                    {
+                        Done = await instanceManager.TryRemoveInstance(param.Id)
+                    };
+                })
+            .Register<KillInstanceParameter>(
+                ActionType.KillInstance,
+                IMatchable.Always(),
+                async (param, resolver, ct) =>
+                {
+                    var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+                    await instanceManager.KillInstance(param.Id);
+                })
+            .Register<GetInstanceStatusParameter, GetInstanceStatusResult>(
+                ActionType.GetInstanceStatus,
+                IMatchable.Always(),
+                async (param, resolver, ct) =>
+                {
+                    var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+                    return new GetInstanceStatusResult
+                    {
+                        Status = await instanceManager.GetInstanceStatus(param.Id)
+                    };
                 });
 
         #endregion
