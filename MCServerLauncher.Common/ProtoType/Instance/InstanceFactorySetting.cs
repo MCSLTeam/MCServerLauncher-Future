@@ -1,9 +1,9 @@
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
-public class InstanceFactorySetting : InstanceConfig
+public record InstanceFactorySetting : InstanceConfig
 {
-    public string McVersion { get; set; }
-    public string Source { get; set; }
+    public string McVersion { get; set; } = null!;
+    public string Source { get; set; } = null!;
     public SourceType SourceType { get; set; }
     public bool UsePostProcess { get; set; } = false;
 

@@ -25,7 +25,7 @@ public class WsServiceContext
     private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
 
     public Permissions Permissions { get; set; } = Permissions.Never;
-    public string ClientId { get; set; }
+    public string ClientId { get; set; } = null!;
 
     public void SubscribeEvent(EventType type, IEventMeta? meta)
     {
@@ -130,7 +130,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             }
             catch (JsonException)
             {
-                var err = ResponseUtils.Err("Could not parse json string", 1500, echo: null);
+                var err = ResponseUtils.Err("Could not parse json string", 1500, null);
                 await webSocket.SendAsync(_webJsonConverter.Serialize(err));
                 await e.InvokeNext();
                 return;
