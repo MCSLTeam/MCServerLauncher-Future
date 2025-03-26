@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
-using MCServerLauncher.Common.ProtoType.Event.Meta;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
@@ -122,15 +122,15 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         if (e.DataFrame.IsText)
         {
             var actionString = e.DataFrame.ToText();
-            JObject data;
+            ActionRequest request;
 
             try
             {
-                data = JObject.Parse(actionString);
+                request = _webJsonConverter.Deserialize<ActionRequest>(actionString)!;
             }
-            catch (JsonException)
+            catch (Exception exception) when (exception is JsonException or NullReferenceException)
             {
-                var err = ResponseUtils.Err("Could not parse json string", 1500, null);
+                var err = ResponseUtils.Err("Could not parse json string", ActionReturnCode.InternalError);
                 await webSocket.SendAsync(_webJsonConverter.Serialize(err));
                 await e.InvokeNext();
                 return;
@@ -142,7 +142,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             var resolver = webSocket.Client.Resolver;
             Task.Run(async () =>
             {
-                var result = await _actionService.ProcessAsync(data, resolver, CancellationToken.None);
+                var result = await _actionService.ProcessAsync(request, resolver, CancellationToken.None);
 
                 var text = _webJsonConverter.Serialize(result);
                 Log.Debug("[Remote] Sending message: \n{0}", text);

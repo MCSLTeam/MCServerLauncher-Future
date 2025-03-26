@@ -1,8 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Common.ProtoType.Action.Results;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TouchSocket.Core;
@@ -25,28 +25,33 @@ public class ActionProcessor : IActionService
         _serializer = webJsonConverter.GetSerializer();
     }
 
-    public async Task<JObject> ProcessAsync(JObject data, IResolver resolver, CancellationToken cancellationToken)
+    public async Task<ActionResponse> ProcessAsync(ActionRequest request, IResolver resolver,
+        CancellationToken cancellationToken)
     {
-        var echo = data.GetValue("echo")?.ToObject<string>();
-        var actionType = data.GetValue("action")?.ToObject<ActionType>(_serializer);
+        var userPermission = resolver.GetRequiredService<WsServiceContext>().Permissions;
+        if (_permissions.TryGetValue(request.ActionType, out var actionPermission) &&
+            !userPermission.Matches(actionPermission))
+            return ResponseUtils.Err(request, $"Permission denied for action '{request.ActionType}'",
+                ActionReturnCode.PermissionDenied);
 
-        if (actionType is null) return ResponseUtils.Err("Invalid action", 1500, echo);
+        if (!_handlers.TryGetValue(request.ActionType, out var handler))
+            return ResponseUtils.Err(request, $"Action '{request.ActionType}' is not implemented",
+                ActionReturnCode.ActionNotImplement);
 
-        if (_handlers.TryGetValue(actionType.Value, out var handler))
-            try
-            {
-                var result = await handler.Invoke(data.GetValue("params")!, resolver, cancellationToken);
-                return ResponseUtils.Ok(result is null ? new JObject() : JObject.FromObject(result, _serializer), echo);
-            }
-            catch (ActionExecutionException aee)
-            {
-                return ResponseUtils.Err(actionType.Value, aee, false, echo);
-            }
-            catch (Exception e)
-            {
-                return ResponseUtils.Err(actionType.Value, e, 1500, true, echo);
-            }
-
-        return ResponseUtils.Err($"Action '{actionType.Value}' is not implemented", 1599, echo);
+        // 执行
+        try
+        {
+            var result = await handler.Invoke(request.Parameter, resolver, cancellationToken);
+            return ResponseUtils.Ok(result is null ? new JObject() : JObject.FromObject(result, _serializer),
+                request.Echo);
+        }
+        catch (ActionException aee)
+        {
+            return ResponseUtils.Err(request, aee, false);
+        }
+        catch (Exception e)
+        {
+            return ResponseUtils.Err(request, e, ActionReturnCode.InternalError, true);
+        }
     }
 }

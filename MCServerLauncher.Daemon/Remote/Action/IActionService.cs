@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+using MCServerLauncher.Common.ProtoType.Action;
 using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -8,5 +8,6 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public interface IActionService
 {
-    public Task<JObject> ProcessAsync(JObject data, IResolver resolver, CancellationToken cancellationToken);
+    public Task<ActionResponse> ProcessAsync(ActionRequest request, IResolver resolver,
+        CancellationToken cancellationToken);
 }

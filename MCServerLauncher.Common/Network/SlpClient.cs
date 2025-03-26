@@ -186,7 +186,7 @@ public class SlpClient
             var offset = 0;
             var length = ReadVarInt(received, ref offset);
             var packetId = ReadVarInt(received, ref offset);
-            Log.Debug("[SlpClient]Received packetId 0x{0:X2} with a length of {1}", packetId, length);
+            Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             // validate pong packet
             var echo = ReadLong(received, ref offset);

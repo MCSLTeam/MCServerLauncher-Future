@@ -1,5 +1,4 @@
 using MCServerLauncher.Common.ProtoType.Event;
-using MCServerLauncher.Common.ProtoType.Event.Meta;
 
 namespace MCServerLauncher.Daemon.Remote.Event;
 

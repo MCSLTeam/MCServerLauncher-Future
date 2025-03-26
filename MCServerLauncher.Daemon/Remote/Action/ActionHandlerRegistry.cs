@@ -3,8 +3,6 @@ using MCServerLauncher.Common;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Common.ProtoType.Action.Parameters;
-using MCServerLauncher.Common.ProtoType.Action.Results;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -26,7 +24,10 @@ public class ActionHandlerRegistry
         _jsonSerializer = webJsonConverter.GetSerializer();
     }
 
-    public Dictionary<ActionType, Func<JToken?, IResolver, CancellationToken, ValueTask<IActionResult?>>>
+    public Dictionary<
+            ActionType,
+            Func<JToken?, IResolver, CancellationToken, ValueTask<IActionResult?>>
+        >
         Handlers { get; } = new();
 
     // private readonly Dictionary<ActionType, Func<JToken, IResolver, IActionResult>> _syncHandlers = new();
@@ -36,28 +37,31 @@ public class ActionHandlerRegistry
     private static TParam ParseParameter<TParam>(JToken? paramToken, JsonSerializer serializer)
         where TParam : class, IActionParameter
     {
-        if (paramToken is null)
-            throw new ActionExecutionException(1501, "Parameter is null");
+        ActionExceptionHelper.ThrowIf(paramToken is null, ActionReturnCode.ParameterIsNull, "Parameter is null");
 
         try
         {
-            return paramToken.ToObject<TParam>(serializer)!;
+            // paramToken一定不为null
+            return paramToken!.ToObject<TParam>(serializer)!;
         }
         catch (JsonSerializationException e)
         {
             var @params = e.Path?.Split(new[] { '.' }).ToArray();
-            if (@params is null) throw new ActionExecutionException(1502, "Could not deserialize param", e);
+            ActionExceptionHelper.ThrowIf(@params is null, ActionReturnCode.ParameterParseError,
+                "Could not deserialize param");
 
-            throw new ActionExecutionException(1502,
-                $"Could not deserialize param '{@params[1]}', in json path: '{e.Path}'", e);
+            throw e.Context(
+                ActionReturnCode.ParameterParseError,
+                $"Could not deserialize param '{@params![1]}', in json path: '{e.Path}'"
+            );
         }
         catch (NullReferenceException e)
         {
-            throw new ActionExecutionException(1502, "Could not deserialize param", e);
+            throw e.Context(ActionReturnCode.ParameterParseError, "Could not deserialize param");
         }
         catch (Exception e)
         {
-            throw new ActionExecutionException(1500, "Error occurred during param deserialization: " + e.Message, e);
+            throw e.Context("Error occurred during param deserialization: " + e.Message);
         }
     }
 
@@ -138,6 +142,7 @@ public class ActionHandlerRegistry
 
 public static class HandlerRegistration
 {
+    // TODO 权限完善
     public static ActionHandlerRegistry RegisterHandlers(this ActionHandlerRegistry registry)
     {
         Regex rangePattern = new(@"^(\d+)..(\d+)$");
@@ -166,12 +171,10 @@ public static class HandlerRegistration
                 (resolver, ct) =>
                 {
                     var ctx = resolver.GetRequiredService<WsServiceContext>();
-                    return ValueTask.FromResult(
-                        new GetPermissionsResult
-                        {
-                            Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
-                        }
-                    );
+                    return ValueTask.FromResult(new GetPermissionsResult
+                    {
+                        Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
+                    });
                 })
             .Register(
                 ActionType.GetJavaList,
@@ -203,8 +206,9 @@ public static class HandlerRegistration
                     }
                     catch (NullReferenceException e)
                     {
-                        throw new ActionExecutionException(1500,
-                            $"Event(Type={param.Type}) missing required event meta", e);
+                        throw e.Context(ActionReturnCode.ParameterIsNull,
+                            $"Event(Type={param.Type}) missing required event meta"
+                        );
                     }
 
                     return ValueTask.CompletedTask;
@@ -223,8 +227,9 @@ public static class HandlerRegistration
                     }
                     catch (NullReferenceException e)
                     {
-                        throw new ActionExecutionException(1500,
-                            $"Event(Type={param.Type}) missing required event meta", e);
+                        throw e.Context(ActionReturnCode.ParameterIsNull,
+                            $"Event(Type={param.Type}) missing required event meta"
+                        );
                     }
 
                     return ValueTask.CompletedTask;
@@ -239,14 +244,26 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.file.upload"),
                 (param, resolver, ct) =>
                 {
-                    var fileId = FileManager.FileUploadRequest(
-                        param.Path,
-                        param.Size,
-                        param.Timeout.Map(t => TimeSpan.FromMilliseconds(t)),
-                        param.Sha1
+                    Guid fileId;
+                    try
+                    {
+                        fileId = FileManager.FileUploadRequest(
+                            param.Path,
+                            param.Size,
+                            param.Timeout.Map(t => TimeSpan.FromMilliseconds(t)),
+                            param.Sha1
+                        );
+                    }
+                    catch (IOException e)
+                    {
+                        throw e.Context(ActionReturnCode.IOException);
+                    }
+
+                    ActionExceptionHelper.ThrowIf(
+                        fileId == Guid.Empty,
+                        ActionReturnCode.IOException,
+                        "Failed to pre-allocate space"
                     );
-                    if (fileId == Guid.Empty)
-                        throw new ActionExecutionException(1401, "Failed to pre-allocate space");
 
                     return ValueTask.FromResult(new FileUploadRequestResult
                     {
@@ -259,25 +276,38 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.file.upload"),
                 async (param, resolver, ct) =>
                 {
-                    if (param.FileId == Guid.Empty)
-                        throw new ActionExecutionException(1402, "Invalid file id");
+                    ActionExceptionHelper.ThrowIf(
+                        param.FileId == Guid.Empty,
+                        ActionReturnCode.FileNotFound,
+                        "Invalid file id"
+                    );
 
-                    var (done, received) = await FileManager.FileUploadChunk(param.FileId,
-                        param.Offset, param.Data);
-
-                    return new FileUploadChunkResult
+                    try
                     {
-                        Done = done,
-                        Received = received
-                    };
+                        var (done, received) = await FileManager.FileUploadChunk(param.FileId,
+                            param.Offset, param.Data);
+
+                        return new FileUploadChunkResult
+                        {
+                            Done = done,
+                            Received = received
+                        };
+                    }
+                    catch (IOException e)
+                    {
+                        throw e.Context(ActionReturnCode.IOException);
+                    }
                 })
             .Register<FileUploadCancelParameter>(
                 ActionType.FileUploadCancel,
                 Permission.Of("mcsl.daemon.file.upload"),
                 (param, resolver, ct) =>
                 {
-                    if (!FileManager.FileUploadCancel(param.FileId))
-                        throw new ActionExecutionException(1402, "Failed to cancel file upload");
+                    ActionExceptionHelper.ThrowIf(
+                        !FileManager.FileUploadCancel(param.FileId),
+                        ActionReturnCode.FileNotFound,
+                        "Failed to cancel file upload"
+                    );
                     return ValueTask.CompletedTask;
                 })
 
@@ -290,16 +320,29 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.file.download"),
                 async (param, resolver, ct) =>
                 {
-                    var (fileId, size, sha1) = await FileManager.FileDownloadRequest(
-                        param.Path,
-                        param.Timeout.Map(t => TimeSpan.FromMilliseconds(t))
-                    );
-                    return new FileDownloadRequestResult
+                    try
                     {
-                        FileId = fileId,
-                        Size = size,
-                        Sha1 = sha1
-                    };
+                        var rv = await FileManager.FileDownloadRequest(
+                            param.Path,
+                            param.Timeout.Map(t => TimeSpan.FromMilliseconds(t))
+                        );
+                        ActionExceptionHelper.ThrowIf(
+                            rv is null,
+                            ActionReturnCode.RequestLimitReached,
+                            $"Max download sessions of file '{param.Path}' reached"
+                        );
+                        var (fileId, size, sha1) = rv!.Value;
+                        return new FileDownloadRequestResult
+                        {
+                            FileId = fileId,
+                            Size = size,
+                            Sha1 = sha1
+                        };
+                    }
+                    catch (IOException e)
+                    {
+                        throw e.Context(ActionReturnCode.IOException);
+                    }
                 }
             )
             .Register<FileDownloadRangeParameter, FileDownloadRangeResult>(
@@ -307,8 +350,11 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.file.download"),
                 async (param, resolver, ct) =>
                 {
-                    if (!rangePattern.IsMatch(param.Range))
-                        throw new ActionExecutionException(1403, "Invalid range format");
+                    ActionExceptionHelper.ThrowIf(
+                        !rangePattern.IsMatch(param.Range),
+                        ActionReturnCode.ParameterError,
+                        "Invalid range format"
+                    );
 
                     var (from, to) = (int.Parse(rangePattern.Match(param.Range).Groups[1].Value),
                         int.Parse(rangePattern.Match(param.Range).Groups[2].Value));
@@ -335,25 +381,49 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.file.info.directory"),
                 (param, resolver, ct) =>
                 {
-                    var entry = FileManager.GetDirectoryInfo(param.Path);
-                    return ValueTask.FromResult(
-                        new GetDirectoryInfoResult
-                        {
-                            Parent = entry.Parent,
-                            Directories = entry.Directories,
-                            Files = entry.Files
-                        });
+                    try
+                    {
+                        var entry = FileManager.GetDirectoryInfo(param.Path);
+                        return ValueTask.FromResult(
+                            new GetDirectoryInfoResult
+                            {
+                                Parent = entry.Parent,
+                                Directories = entry.Directories,
+                                Files = entry.Files
+                            });
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                        throw e.Context(ActionReturnCode.FileNotFound);
+                    }
+                    catch (IOException e)
+                    {
+                        throw e.Context(ActionReturnCode.IOException);
+                    }
                 }
             )
             .Register<GetFileInfoParameter, GetFileInfoResult>(
                 ActionType.GetFileInfo,
                 Permission.Of("mcsl.daemon.file.info.file"),
                 (param, resolver, ct) =>
-                    ValueTask.FromResult(
-                        new GetFileInfoResult
-                        {
-                            Meta = FileManager.GetFileInfo(param.Path)
-                        })
+                {
+                    try
+                    {
+                        return ValueTask.FromResult(
+                            new GetFileInfoResult
+                            {
+                                Meta = FileManager.GetFileInfo(param.Path)
+                            });
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                        throw e.Context(ActionReturnCode.FileNotFound);
+                    }
+                    catch (IOException e)
+                    {
+                        throw e.Context(ActionReturnCode.IOException);
+                    }
+                }
             )
 
             #endregion
@@ -369,7 +439,12 @@ public static class HandlerRegistration
                     var eventService = resolver.GetRequiredService<IEventService>();
 
                     var rv = instanceManager.TryStartInstance(param.Id, out var instance);
-                    if (instance == null) throw new ActionExecutionException(1400, "Instance not found");
+
+                    ActionExceptionHelper.ThrowIf(
+                        instance is null,
+                        ActionReturnCode.InstanceNotFound,
+                        "Instance not found"
+                    );
 
                     if (rv)
                     {
@@ -378,8 +453,8 @@ public static class HandlerRegistration
                             if (msg != null)
                                 eventService.OnInstanceLog(param.Id, msg);
                         };
-                        instance.OnLog -= handler;
-                        instance.OnLog += handler;
+                        instance!.OnLog -= handler;
+                        instance!.OnLog += handler;
                     }
 
                     return ValueTask.FromResult(new StartInstanceResult

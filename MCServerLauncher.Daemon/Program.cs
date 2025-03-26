@@ -3,7 +3,6 @@ using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace MCServerLauncher.Daemon;
@@ -23,6 +22,7 @@ public class Program
         // await manager.TryRemoveInstance(Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
         // await CreateInstance(manager);
         // await RunMcServerAsync(manager, Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
+        
         await ServeAsync();
     }
 

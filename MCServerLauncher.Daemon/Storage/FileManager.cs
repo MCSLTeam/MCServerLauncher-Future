@@ -196,20 +196,20 @@ internal static class FileManager
     /// <param name="timeout"></param>
     /// <returns></returns>
     /// <exception cref="IOException"></exception>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="InvalidOperationException"></exception>
-    public static async Task<DownloadRequestInfo> FileDownloadRequest(string path, TimeSpan? timeout)
+    /// <exception cref="FileNotFoundException"></exception>
+    public static async Task<DownloadRequestInfo?> FileDownloadRequest(string path, TimeSpan? timeout)
     {
         timeout ??= SessionTimeout;
 
         // Validate path
         if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
-        if (!File.Exists(path)) throw new IOException("File not found");
+        if (!File.Exists(path)) throw new FileNotFoundException();
 
         // do not check if file in download session
         // balance the concurrency of file downloads (limited number of download sessions for a single file)
         if (DownloadSessions.Count(kv => kv.Value.Path == path) >= AppConfig.Get().FileDownloadSessions)
-            throw new InvalidOperationException($"Max download sessions of file '{path}' reached");
+            // Max download sessions of file reached
+            return null;
 
         // set file share to None, declined any access. For example: downloading & upload session.
         // this operation can raise various exceptions, attention.
@@ -218,11 +218,9 @@ internal static class FileManager
         var size = fs.Length;
         var sha1 = await FileSha1(fs);
         var id = Guid.NewGuid();
-        if (DownloadSessions.TryAdd(id, new FileDownloadInfo(size, sha1, fs, path, timeout.Value)))
-            return new DownloadRequestInfo(id, size, sha1);
 
-        fs.Close();
-        throw new ArgumentException("Failed to add download session");
+        DownloadSessions.TryAdd(id, new FileDownloadInfo(size, sha1, fs, path, timeout.Value));
+        return new DownloadRequestInfo(id, size, sha1);
     }
 
     /// <summary>
@@ -281,7 +279,7 @@ internal static class FileManager
         if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
 
         var fileInfo = new FileInfo(path);
-        if (!fileInfo.Exists) throw new IOException("File not found");
+        // if (!fileInfo.Exists) throw new IOException("File not found");
 
         return new FileMetadata(fileInfo);
     }
@@ -434,7 +432,7 @@ internal static class FileManager
     /// <returns></returns>
     public static bool ValidatePath(string path, string root = Root)
     {
-        var normalizedPath = NormalizePath( path);
+        var normalizedPath = NormalizePath(path);
         var normalizedRoot = NormalizePath(root);
 
         return !normalizedPath.StartsWith(".") && normalizedPath.StartsWith(normalizedRoot);
