@@ -2,17 +2,19 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace MCServerLauncher.Common.Network;
 
+// https://c4k3.github.io/wiki.vg/Server_List_Ping.html
 public class SlpClient
 {
     private List<byte> Buffer { get; } = new();
     private TcpClient Client { get; } = new();
 
     /// <summary>
-    ///  获取 SLP 的 status 和 ping 信息,用于1.7以上
+    ///     获取 SLP 的 status 和 ping 信息,用于1.7以上
     /// </summary>
     /// <param name="host"></param>
     /// <param name="port"></param>
@@ -32,7 +34,7 @@ public class SlpClient
     }
 
     /// <summary>
-    /// 获取 SLP 的 status,用于 1.7 以下
+    ///     获取 SLP 的 status,用于 1.7 以下
     /// </summary>
     /// <param name="host"></param>
     /// <param name="port"></param>
@@ -159,6 +161,7 @@ public class SlpClient
             Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             var json = ReadString(received, jsonLength, ref offset);
+            Console.WriteLine(json);
             return JsonConvert.DeserializeObject<PingPayload>(json);
         }
         catch (Exception e)
@@ -189,10 +192,8 @@ public class SlpClient
             // validate pong packet
             var echo = ReadLong(received, ref offset);
             if (echo != sendTime)
-            {
                 Log.Warning(
                     "[SlpClient] Received echo time is not equal to send time, are we connected to a official mc server?");
-            }
 
             return TimeSpan.FromMilliseconds(receivedTime - sendTime);
         }
@@ -261,7 +262,7 @@ public class SlpClient
 
 #region Motd Utils
 
-static class MotdUtils
+internal static class MotdUtils
 {
     public static IDictionary<char, string> MinecraftStyles { get; } = new Dictionary<char, string>
     {
@@ -307,70 +308,84 @@ static class MotdUtils
 
 #region Server ping
 
-public class SlpStatus
+public record SlpStatus(PingPayload Payload, TimeSpan Latency);
+
+public record SlpLegacyStatus
 {
-    public PingPayload Payload { get; set; }
-    public TimeSpan Latency { get; set; }
-
-    public SlpStatus(PingPayload payload, TimeSpan latency)
-    {
-        Payload = payload;
-        Latency = latency;
-    }
-}
-
-public class SlpLegacyStatus
-{
-    public int? PingVersion { get; set; }
-    public int? ProtocolVersion { get; set; }
-    public string? GameVersion { get; set; }
-
-    public string Motd { get; set; }
-    public int PlayersOnline { get; set; }
-    public int MaxPlayers { get; set; }
-
     public SlpLegacyStatus(string motd, int playersOnline, int maxPlayers)
     {
         Motd = motd;
         PlayersOnline = playersOnline;
         MaxPlayers = maxPlayers;
     }
+
+    public int PingVersion { get; set; }
+    public int ProtocolVersion { get; set; }
+    public string GameVersion { get; set; } = string.Empty;
+
+    public string Motd { get; set; }
+    public int PlayersOnline { get; set; }
+    public int MaxPlayers { get; set; }
 }
 
 /// <summary>
-/// C# represenation of the following JSON file
-/// https://gist.github.com/thinkofdeath/6927216
+///     C# represenation of the following JSON file
+///     https://gist.github.com/thinkofdeath/6927216
 /// </summary>
-public class PingPayload
+public record PingPayload
 {
     /// <summary>
-    /// Protocol that the server is using and the given name
+    ///     Protocol that the server is using and the given name
     /// </summary>
     [JsonProperty(PropertyName = "version")]
-    public VersionPayload? Version { get; set; }
+    public VersionPayload Version { get; set; } = null!;
 
     [JsonProperty(PropertyName = "players")]
-    public PlayersPayload? Players { get; set; }
+    public PlayersPayload Players { get; set; } = null!;
 
     [JsonProperty(PropertyName = "description")]
-    public string? Motd { get; set; }
+    [JsonConverter(typeof(DescriptionConverter))]
+    public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// Server icon, important to note that it's encoded in base 64
+    ///     Server icon, important to note that it's encoded in base64
     /// </summary>
     [JsonProperty(PropertyName = "favicon")]
-    public string? Icon { get; set; }
+    public string Icon { get; set; } = string.Empty;
 }
 
-public class VersionPayload
+public class DescriptionConverter : JsonConverter<string>
+{
+    public override void WriteJson(JsonWriter writer, string? value, JsonSerializer serializer)
+    {
+        // 序列化时保持字符串格式
+        writer.WriteValue(value);
+    }
+
+    public override string? ReadJson(JsonReader reader, Type objectType, string? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        // 获取当前JSON token
+        var token = JToken.Load(reader);
+
+        return token.Type switch
+        {
+            JTokenType.String => token.Value<string>(),
+            JTokenType.Object => token["text"]!.Value<string>(),
+            _ => null
+        };
+    }
+}
+
+public record VersionPayload
 {
     [JsonProperty(PropertyName = "protocol")]
     public int Protocol { get; set; }
 
-    [JsonProperty(PropertyName = "name")] public string? Name { get; set; }
+    [JsonProperty(PropertyName = "name")] public string Name { get; set; } = string.Empty;
 }
 
-public class PlayersPayload
+public record PlayersPayload
 {
     [JsonProperty(PropertyName = "max")] public int Max { get; set; }
 
@@ -378,14 +393,14 @@ public class PlayersPayload
     public int Online { get; set; }
 
     [JsonProperty(PropertyName = "sample")]
-    public List<Player>? Sample { get; set; }
+    public Player[] Sample { get; set; } = null!;
 }
 
-public class Player
+public record Player
 {
-    [JsonProperty(PropertyName = "name")] public string? Name { get; set; }
+    [JsonProperty(PropertyName = "name")] public string Name { get; set; } = string.Empty;
 
-    [JsonProperty(PropertyName = "id")] public string? Id { get; set; }
+    [JsonProperty(PropertyName = "id")] public Guid Id { get; set; }
 }
 
 #endregion
