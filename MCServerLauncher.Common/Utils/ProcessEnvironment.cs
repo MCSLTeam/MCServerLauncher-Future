@@ -1,10 +1,10 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MCServerLauncher.Common;
+namespace MCServerLauncher.Common.Utils;
 
-public class Utils
+public static class ProcessEnvironment
 {
     #region Get Process Environment Variables
 
