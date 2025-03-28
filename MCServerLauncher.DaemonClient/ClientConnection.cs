@@ -6,6 +6,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MCServerLauncher.Common.Helpers;
+using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.ProtoType.Action;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -28,7 +31,7 @@ internal class HeartBeatTimerState
 internal class ConnectionPendingRequest
 {
     private readonly SemaphoreSlim _full;
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<JObject>> _pendings = new();
+    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendings = new();
     public readonly int Size;
 
     public ConnectionPendingRequest(int size)
@@ -37,31 +40,34 @@ internal class ConnectionPendingRequest
         _full = new SemaphoreSlim(size);
     }
 
-    public async Task<bool> AddPendingAsync(string echo, TaskCompletionSource<JObject> tcs, int timeout,
+    /// <summary>
+    ///     添加一个pending请求
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="tcs"></param>
+    /// <param name="timeout"></param>
+    /// <param name="cancellationToken"></param>
+    /// <exception cref="OperationCanceledException"></exception>
+    /// <returns></returns>
+    public async Task<bool> AddPendingAsync(Guid id, TaskCompletionSource<ActionResponse> tcs, int timeout,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
-        }
-        catch (OperationCanceledException)
-        {
-            return false;
-        }
+        if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
 
-        return _pendings.TryAdd(echo, tcs); // 确保echo在size范围内不会重复
+
+        return _pendings.TryAdd(id, tcs); // 确保echo在size范围内不会重复
     }
 
-    public bool TryRemovePending(string echo, out TaskCompletionSource<JObject> tcs)
+    public bool TryRemovePending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
     {
-        var rv = _pendings.TryRemove(echo, out tcs);
+        var rv = _pendings.TryRemove(id, out tcs);
         _full.Release();
         return rv;
     }
 
-    public bool TryGetPending(string echo, out TaskCompletionSource<JObject> tcs)
+    public bool TryGetPending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
     {
-        return _pendings.TryGetValue(echo, out tcs);
+        return _pendings.TryGetValue(id, out tcs);
     }
 }
 
@@ -80,7 +86,7 @@ internal class ConnectionHeartBeatTimer
 
     public void Start()
     {
-        _timerLoopTask = TimerLoop(_state);
+        _timerLoopTask = TimerLoop(_state, _cancelTokenSource.Token);
     }
 
     public async Task Stop()
@@ -89,21 +95,21 @@ internal class ConnectionHeartBeatTimer
         if (_timerLoopTask != null) await _timerLoopTask;
     }
 
-    private async Task TimerLoop(HeartBeatTimerState state)
+    private async Task TimerLoop(HeartBeatTimerState state, CancellationToken ct)
     {
         var innerTasks = new HashSet<Task>();
-        while (!_cancelTokenSource.IsCancellationRequested)
+        while (!ct.IsCancellationRequested)
         {
             try
             {
-                await Task.Delay(_interval, _cancelTokenSource.Token);
+                await Task.Delay(_interval, ct);
             }
             catch (TaskCanceledException)
             {
                 break;
             }
 
-            var innerTask = OnTimer(state);
+            var innerTask = OnTimer(state, ct);
             innerTasks.Add(innerTask);
             innerTasks.RemoveWhere(t => t.IsCompleted);
         }
@@ -115,28 +121,27 @@ internal class ConnectionHeartBeatTimer
     ///     心跳定时器超时逻辑: 根据连接情况设定ClientConnection的PingLost，根据config判断是否关闭连接
     /// </summary>
     /// <param name="state">Timer状态</param>
-    private async Task OnTimer(HeartBeatTimerState state)
+    private async Task OnTimer(HeartBeatTimerState state, CancellationToken ct)
     {
         Log.Debug("[ClientConnection] Heartbeat timer triggered.");
 
-        if (_cancelTokenSource.IsCancellationRequested) return;
+        if (ct.IsCancellationRequested) return;
         try
         {
-            var result = await state.Connection.RequestAsync(
+            var result = await state.Connection.RequestAsync<PingResult>(
                 ActionType.Ping,
-                new Dictionary<string, object>(),
-                Guid.NewGuid().ToString(),
+                null,
                 state.Connection.Config.PingTimeout,
-                _cancelTokenSource.Token
+                ct
             );
 
             state.PingPacketLost = 0;
-            var timestamp = result["time"]!.ToObject<long>();
+            var timestamp = result.Time;
             Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
         }
         catch (TimeoutException)
         {
-            if (_cancelTokenSource.IsCancellationRequested) return;
+            if (ct.IsCancellationRequested) return;
 
             state.PingPacketLost++;
             Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
@@ -188,8 +193,14 @@ public class ClientConnection
     /// <exception cref="WebSocketException">WebSocket连接失败</exception>
     /// <exception cref="TimeoutException">连接超时</exception>
     /// <returns></returns>
-    public static async Task<ClientConnection> OpenAsync(string address, int port, string token,
-        bool isSecure, ClientConnectionConfig config, CancellationToken cancellationToken = default)
+    public static async Task<ClientConnection> OpenAsync(
+        string address,
+        int port,
+        string token,
+        bool isSecure,
+        ClientConnectionConfig config,
+        CancellationToken cancellationToken = default
+    )
     {
         // create instance
         ClientConnection connection = new(config);
@@ -206,57 +217,89 @@ public class ClientConnection
         return connection;
     }
 
-    /// <summary>
-    ///     包装action并发送,内部函数
-    /// </summary>
-    /// <param name="ws"></param>
-    /// <param name="actionType"></param>
-    /// <param name="args"></param>
-    /// <param name="echo"></param>
-    /// <param name="cancellationToken"></param>
-    private static Task SendAsync(ClientWebSocket ws, ActionType actionType, Dictionary<string, object> args,
-        string? echo, CancellationToken cancellationToken)
+    public Task SendAsync(ActionType actionType,
+        IActionParameter? param,
+        CancellationToken ct)
     {
-        Dictionary<string, object> data = new()
+        return PrivateSendAsync(new ActionRequest
         {
-            { "action", actionType.ToShakeCase() },
-            { "params", args }
-        };
+            ActionType = actionType,
+            Parameter = JToken.FromObject(param ?? new EmptyActionParameter(),
+                JsonSerializer.Create(JsonSettings.Settings)),
+            Id = Guid.NewGuid()
+        }, ct);
+    }
 
-        if (!string.IsNullOrEmpty(echo)) data.Add("echo", echo!);
+    public async Task<TResult> RequestAsync<TResult>(
+        ActionType actionType,
+        IActionParameter? param,
+        int timeout = -1,
+        CancellationToken ct = default
+    )
+        where TResult : class, IActionResult
+    {
+        var rv = await PrivateRequestAsync<TResult>(actionType, param, timeout, ct);
+        return rv!;
+    }
 
-        var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.Indented));
-        return ws.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
+    public async Task RequestAsync(
+        ActionType actionType,
+        IActionParameter? param,
+        int timeout = -1,
+        CancellationToken ct = default
+    )
+    {
+        await PrivateRequestAsync<EmptyActionResult>(actionType, param, timeout, ct);
     }
 
     /// <summary>
-    ///     发送一个action(不等待应答 / 丢弃应答)
+    ///     发送一个action
     /// </summary>
-    /// <param name="actionType"></param>
-    /// <param name="args"></param>
-    /// <param name="echo"></param>
+    /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
-    public Task SendAsync(ActionType actionType, Dictionary<string, object> args, string? echo = null,
-        CancellationToken cancellationToken = default)
+    private Task PrivateSendAsync(
+        ActionRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
-        return SendAsync(WebSocket, actionType, args, echo, cancellationToken);
+        var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
+            request,
+            Formatting.Indented,
+            JsonSettings.Settings
+        ));
+
+        // TODO 大数据的分段传输
+        return WebSocket.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
     }
 
     /// <summary>
     ///     一个RPC过程,包含了发送和等待回复。若echo为null，则会生成一个随机的echo作为rpc标识，并等待回复。
     /// </summary>
     /// <param name="actionType">action类型</param>
-    /// <param name="args">该action参数</param>
-    /// <param name="echo">echo</param>
+    /// <param name="param">该action参数</param>
     /// <param name="timeout">微秒</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="ct"></param>
     /// <returns></returns>
-    public Task<JObject> RequestAsync(ActionType actionType, Dictionary<string, object> args,
-        string? echo = null, int timeout = 5000, CancellationToken cancellationToken = default)
+    private async Task<TResult?> PrivateRequestAsync<TResult>(
+        ActionType actionType,
+        IActionParameter? param,
+        int timeout,
+        CancellationToken ct
+    )
+        where TResult : class, IActionResult
     {
-        echo ??= Guid.NewGuid().ToString();
-        SendAsync(actionType, args, echo, cancellationToken);
-        return ExpectAsync(echo, timeout, cancellationToken);
+        var id = Guid.NewGuid();
+
+        var jsonSerializer = JsonSerializer.Create(JsonSettings.Settings);
+        var request = new ActionRequest
+        {
+            ActionType = actionType,
+            Parameter = JToken.FromObject(param ?? new EmptyActionParameter(), jsonSerializer),
+            Id = id
+        };
+
+        var tcs = await PrivateBeginRequestAsync(request, timeout, ct);
+        return await PrivateEndRequestAsync<TResult>(tcs, id, timeout, ct);
     }
 
     /// <summary>
@@ -268,7 +311,7 @@ public class ClientConnection
 
         _cts.Cancel();
         if (_receiveLoopTask != null) await _receiveLoopTask; // 等待接收循环结束
-        
+
         // TODO use close instead of abort
         // await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
         WebSocket.Abort();
@@ -276,56 +319,70 @@ public class ClientConnection
     }
 
     /// <summary>
+    ///     开始一个RPC过程
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <exception cref="OperationCanceledException"></exception>
+    /// <exception cref="DaemonRequestLimitException"></exception>
+    /// <returns></returns>
+    private async Task<TaskCompletionSource<ActionResponse>> PrivateBeginRequestAsync(
+        ActionRequest request,
+        int timeout,
+        CancellationToken ct
+    )
+    {
+        var tcs = new TaskCompletionSource<ActionResponse>();
+
+        // add to pending
+        if (!await _pendingRequests.AddPendingAsync(request.Id, tcs, timeout, ct))
+        {
+            Log.Error("[ClientConnection] failed to add pending request: pending list is full");
+            throw new DaemonRequestLimitException();
+        }
+
+        await PrivateSendAsync(request, ct);
+        return tcs;
+    }
+
+    /// <summary>
     ///     期待一个回复
     /// </summary>
+    /// <param name="tcs"></param>
     /// <param name="timeout">回复超时</param>
-    /// <param name="echo">echo校验</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="id">id</param>
+    /// <param name="ct"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     /// <exception cref="TimeoutException">期待超时</exception>
-    private async Task<JObject> ExpectAsync(string echo, int timeout, CancellationToken cancellationToken = default)
+    /// <exception cref="OperationCanceledException">取消</exception>
+    private async Task<TResult?> PrivateEndRequestAsync<TResult>(
+        TaskCompletionSource<ActionResponse> tcs,
+        Guid id,
+        int timeout,
+        CancellationToken ct
+    )
+        where TResult : class, IActionResult
     {
-        var tcs = new TaskCompletionSource<JObject>();
-
-        // add to pending
-        if (!await _pendingRequests.AddPendingAsync(echo, tcs, timeout, cancellationToken))
+        try
         {
-            Log.Error("[ClientConnection] failed to add pending request: pending list is full");
-            throw new Exception("failed to add pending request: pending list is full");
-        }
+            var response = (await tcs.Task.TimeoutAfter(timeout, ct))!;
 
-        var task = await Task.WhenAny(tcs.Task, Task.Delay(timeout, cancellationToken));
-
-        // timeout or cancelled
-        if (task != tcs.Task)
-        {
-            // remove from pending
-            if (!_pendingRequests.TryRemovePending(echo, out _))
+            return response.RequestStatus switch
             {
-                Log.Error("[ClientConnection] failed to remove pending request, echo: {0}", echo);
-                throw new Exception($"failed to remove pending request, echo: {echo}");
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                Log.Debug("[ClientConnection] cancelled when waiting for echo: {0}", echo);
-            }
-            else throw new TimeoutException($"Timeout when waiting for echo: {echo}");
+                ActionRequestStatus.Ok => response.Data?.ToObject<TResult>(),
+                ActionRequestStatus.Error => throw new DaemonRequestException(response.ReturnCode, response.Message),
+                _ => throw new NotImplementedException()
+            };
         }
-
-        var received = tcs.Task.Result;
-
-        // error handling
-        var status = received["status"]!.ToString();
-        if (status == null) throw new Exception($"status is null: {received}");
-
-        return status switch
+        catch (Exception e)when (e is TimeoutException or OperationCanceledException)
         {
-            "ok" => (received["data"]! as JObject)!,
-            "error" => throw new Exception(received["data"]!["message"]?.ToString() ?? "unknown error"),
-            _ => throw new Exception($"unknown status: {status}")
-        };
+            _pendingRequests.TryRemovePending(id, out _);
+            if (e is TimeoutException)
+                Log.Debug("[ClientConnection] timeout when waiting for echo: {0}", id);
+            throw;
+        }
     }
 
     /// <summary>
@@ -376,22 +433,27 @@ public class ClientConnection
     /// <exception cref="ArgumentNullException">echo为空</exception>
     private void Dispatch(string json)
     {
-        var data = JObject.Parse(json);
-        data.TryGetValue("echo", out var rawEcho);
+        try
+        {
+            var response = JsonConvert.DeserializeObject<ActionResponse>(json, JsonSettings.Settings)!;
+            if (response.Id == Guid.Empty)
+            {
+                Log.Error("[ClientConnection] [ReceiveLoop] Received Id=Guid.Empty message: {0}.", response.Message);
+                throw new ArgumentNullException(nameof(response.Id));
+            }
 
-        if (rawEcho == null)
+            if (_pendingRequests.TryRemovePending(response.Id, out var pending))
+                pending.SetResult(response);
+            else
+                Log.Warning($"[ClientConnection] Received canceled action's result: {json},\nignore it.");
+        }
+        catch (JsonException)
         {
             Log.Error(
-                "[ClientConnection] [ReceiveLoop] Received unexpected message: echo is null. may be connected to a unofficial daemon?");
-            throw new ArgumentNullException(nameof(rawEcho));
+                "[ClientConnection] [ReceiveLoop] Received unexpected message: {0}\nmay be connected to a unofficial daemon?",
+                json);
+            throw;
         }
-
-        var echo = rawEcho.ToString();
-
-        if (_pendingRequests.TryRemovePending(echo, out var pending))
-            pending.SetResult(data);
-        else
-            Log.Warning($"[ClientConnection] Received redundant message: redundant message: {json}");
     }
 
     internal void MarkAsPingLost()

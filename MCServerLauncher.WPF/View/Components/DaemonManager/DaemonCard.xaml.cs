@@ -118,25 +118,25 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);
-                var systemInfo = (await ThisDaemon.GetSystemInfoAsync()).SelectToken("info");
-                if (systemInfo is not null)
+                
+                var systemInfo = await ThisDaemon.GetSystemInfoAsync();
+
+                var systemName = systemInfo.Os.Name;
+                var cpuVendor = systemInfo.Cpu.Vendor;
+                if (systemName.Contains("Windows NT")) SystemType = "Windows";
+                else if (systemName.Contains("Unix"))
                 {
-                    var SystemName = systemInfo.SelectToken("os.name")!.ToString();
-                    var CpuVendor = systemInfo.SelectToken("cpu.vendor")!.ToString();
-                    if (SystemName.Contains("Windows NT")) SystemType = "Windows";
-                    else if (SystemName.Contains("Unix"))
-                    {
-                        if (CpuVendor.Contains("Apple")) SystemType = "Darwin";
-                        else SystemType = "Linux";
-                    }
+                    if (cpuVendor.Contains("Apple")) SystemType = "Darwin";
+                    else SystemType = "Linux";
                 }
+                
                 Status = "ok";
                 await ThisDaemon.CloseAsync();
                 return true;
             }
             catch (Exception e)
             {
-                try { await ThisDaemon.CloseAsync(); } catch { }
+                // try { await ThisDaemon.CloseAsync(); } catch { }
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
                 return false;

@@ -13,16 +13,17 @@ public static class EventTypeExtensions
     /// </summary>
     /// <param name="type">事件类型</param>
     /// <param name="metaToken">元数据原始token</param>
-    /// <param name="serializer">元数据序列化器</param>
+    /// <param name="settings">元数据序列化器设置</param>
     /// <exception cref="NullReferenceException">当Event要求EventMeta而metaToken为空,抛出空引用异常</exception>
     /// <exception cref="ArgumentException"><see cref="metaToken" />的值为null</exception>
     /// <returns></returns>
-    public static IEventMeta? GetEventMeta(this EventType type, JToken? metaToken, JsonSerializer? serializer = null)
+    public static IEventMeta? GetEventMeta(this EventType type, JToken? metaToken,
+        JsonSerializerSettings? settings = null)
     {
         return type switch
         {
             EventType.InstanceLog => PrivateGetEventMeta<InstanceLogEventMeta>(metaToken,
-                serializer ?? JsonSerializer.Create()),
+                settings is null ? JsonSerializer.Create(settings) : JsonSerializer.CreateDefault()),
             _ => null
         };
     }

@@ -131,7 +131,7 @@ public static class ProcessEnvironment
             PlatformID.Win32NT => GetEnvironmentVariablesWin(pid),
             PlatformID.Unix => GetEnvironmentVariablesUnix(pid),
             PlatformID.MacOSX => GetEnvironmentVariablesUnix(pid),
-            _ => throw new NotSupportedException("Unsupported platform"),
+            _ => throw new NotSupportedException("Unsupported platform")
         };
     }
 

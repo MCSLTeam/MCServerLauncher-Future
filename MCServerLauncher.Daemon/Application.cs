@@ -9,7 +9,6 @@ using MCServerLauncher.Daemon.Utils.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Core;
-using TouchSocket.Core.AspNetCore;
 using TouchSocket.Http;
 using TouchSocket.Sockets;
 
@@ -33,7 +32,6 @@ public class Application
             {
                 a.RegisterSingleton<IServiceCollection>(collection)
                     .RegisterSingleton<IHttpService>(_httpService)
-                    .RegisterSingleton<IWebJsonConverter, WebJsonConverter>()
                     .RegisterSingleton<IActionService, ActionProcessor>()
                     .RegisterSingleton<IEventService, EventService>()
                     .RegisterSingleton<ActionHandlerRegistry>()
@@ -79,7 +77,7 @@ public class Application
                     a.UseDefaultHttpServicePlugin();
                 })
         );
-        
+
         PostApplicationContainerBuilt();
     }
 

@@ -5,7 +5,7 @@ using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
-using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -80,17 +80,17 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
     private readonly IEventService _eventService;
     private readonly IHttpService _httpService;
-    private readonly IWebJsonConverter _webJsonConverter;
+    private readonly JsonSerializer _jsonSerializer;
 
     public WebsocketPlugin(IActionService actionService, IEventService eventService,
-        IWebJsonConverter webJsonConverter, IHttpService httpService)
+        JsonSerializer jsonSerializer, IHttpService httpService)
     {
         _actionService = actionService;
         _eventService = eventService;
-        _webJsonConverter = webJsonConverter;
+        _jsonSerializer = jsonSerializer;
         _httpService = httpService;
 
-        _eventService.Signal += OnEventReceived;
+        _eventService.Signal += OnEventSignalReceived;
     }
 
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
@@ -126,12 +126,13 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
             try
             {
-                request = _webJsonConverter.Deserialize<ActionRequest>(actionString)!;
+                request = JsonConvert.DeserializeObject<ActionRequest>(actionString, DaemonJsonSettings.Settings)!;
+                Log.Debug("[Remote] Received message:{0}", request);
             }
             catch (Exception exception) when (exception is JsonException or NullReferenceException)
             {
-                var err = ResponseUtils.Err("Could not parse json string", ActionReturnCode.InternalError);
-                await webSocket.SendAsync(_webJsonConverter.Serialize(err));
+                var err = ResponseUtils.Err("Could not parse action json", ActionReturnCode.InternalError);
+                await webSocket.SendAsync(JsonConvert.SerializeObject(err, DaemonJsonSettings.Settings));
                 await e.InvokeNext();
                 return;
             }
@@ -144,7 +145,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             {
                 var result = await _actionService.ProcessAsync(request, resolver, CancellationToken.None);
 
-                var text = _webJsonConverter.Serialize(result);
+                var text = JsonConvert.SerializeObject(result, DaemonJsonSettings.Settings);
                 Log.Debug("[Remote] Sending message: \n{0}", text);
 
                 var ws = GetWebSocket(id);
@@ -181,15 +182,15 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         return ctx;
     }
 
-    private void OnEventReceived(EventType type, IEventMeta? meta, object? data)
+    private void OnEventSignalReceived(EventType type, IEventMeta? meta, IEventData? data)
     {
         Task.Run(async () =>
         {
-            foreach (var id in _httpService.GetIds()) await OnEventReceived(id, type, meta, data);
+            foreach (var id in _httpService.GetIds()) await OnEventSignalReceived(id, type, meta, data);
         }).ConfigureFalseAwait();
     }
 
-    private async Task OnEventReceived(string clientId, EventType type, IEventMeta? meta, object? data)
+    private async Task OnEventSignalReceived(string clientId, EventType type, IEventMeta? meta, IEventData? data)
     {
         var ws = GetWebSocket(clientId);
         if (ws == null)
@@ -218,16 +219,15 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         }
     }
 
-    private async ValueTask PrivateSendEvent(EventType type, IEventMeta? meta, object? data, IWebSocket ws)
+    private async ValueTask PrivateSendEvent(EventType type, IEventMeta? meta, IEventData? data, IWebSocket ws)
     {
-        var text = _webJsonConverter.Serialize(new Dictionary<string, object?>
+        var packet = new EventPacket
         {
-            ["event"] = type,
-            ["meta"] = meta,
-            ["data"] = data,
-            ["time"] = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()
-        });
-        await ws.SendAsync(text);
+            EventType = type,
+            EventMeta = meta,
+            EventData = data
+        };
+        await ws.SendAsync(JsonConvert.SerializeObject(packet, DaemonJsonSettings.Settings));
     }
 
     private static (string, string?, JObject?) ParseMessage(string message)
@@ -238,19 +238,5 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             data.TryGetValue("echo", out var echo) ? echo.ToString() : null,
             data["params"] as JObject
         );
-    }
-
-    private static bool TryParseMessage(string message, out (string, string?, JObject?) result)
-    {
-        try
-        {
-            result = ParseMessage(message);
-            return true;
-        }
-        catch (Exception)
-        {
-            result = default;
-            return false;
-        }
     }
 }

@@ -10,7 +10,7 @@ public static class ResponseUtils
     {
         return new ActionResponse
         {
-            Status = ActionStatus.Error,
+            RequestStatus = ActionRequestStatus.Error,
             ReturnCode = code,
             Data = null,
             Message = message ?? string.Empty
@@ -21,11 +21,11 @@ public static class ResponseUtils
     {
         return new ActionResponse
         {
-            Status = ActionStatus.Error,
+            RequestStatus = ActionRequestStatus.Error,
             ReturnCode = code,
             Data = null,
             Message = message ?? string.Empty,
-            Echo = request.Echo
+            Id = request.Id
         };
     }
 
@@ -41,14 +41,14 @@ public static class ResponseUtils
         return Err(request, exception, exception.Code, verbose);
     }
 
-    public static ActionResponse Ok(JObject? data = null, string? echo = null)
+    public static ActionResponse Ok(JObject? data, Guid id)
     {
         return new ActionResponse
         {
-            Status = ActionStatus.Ok,
+            RequestStatus = ActionRequestStatus.Ok,
             ReturnCode = ActionReturnCode.Ok,
             Data = data,
-            Echo = echo
+            Id = id
         };
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
-using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,13 +16,10 @@ public class ActionProcessor : IActionService
 
     private readonly IReadOnlyDictionary<ActionType, IMatchable> _permissions;
 
-    private readonly JsonSerializer _serializer;
-
-    public ActionProcessor(ActionHandlerRegistry handlerRegistry, IWebJsonConverter webJsonConverter)
+    public ActionProcessor(ActionHandlerRegistry handlerRegistry)
     {
         _handlers = handlerRegistry.Handlers;
         _permissions = new ReadOnlyDictionary<ActionType, IMatchable>(handlerRegistry.HandlerPermissions);
-        _serializer = webJsonConverter.GetSerializer();
     }
 
     public async Task<ActionResponse> ProcessAsync(ActionRequest request, IResolver resolver,
@@ -42,8 +39,11 @@ public class ActionProcessor : IActionService
         try
         {
             var result = await handler.Invoke(request.Parameter, resolver, cancellationToken);
-            return ResponseUtils.Ok(result is null ? new JObject() : JObject.FromObject(result, _serializer),
-                request.Echo);
+            return ResponseUtils.Ok(
+                result is null
+                    ? new JObject()
+                    : JObject.FromObject(result, JsonSerializer.Create(DaemonJsonSettings.Settings)),
+                request.Id);
         }
         catch (ActionException aee)
         {

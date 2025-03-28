@@ -9,7 +9,7 @@ public class ClientConnectionConfig
     /// <summary>
     ///     PingTimeout宜小于PingInterval
     /// </summary>
-    public int PingTimeout { get; set; } = 3000;
+    public int PingTimeout { get; set; } = -1;
 
     public int MaxPingPacketLost { get; set; } = 3;
     public int PendingRequestCapacity { get; set; } = 100;

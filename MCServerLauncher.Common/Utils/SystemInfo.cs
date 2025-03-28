@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using MCServerLauncher.Common.Helpers;
 
-namespace MCServerLauncher.Common;
+namespace MCServerLauncher.Common.Utils;
 
 public record struct OsInfo(string Name, string Arch);
 

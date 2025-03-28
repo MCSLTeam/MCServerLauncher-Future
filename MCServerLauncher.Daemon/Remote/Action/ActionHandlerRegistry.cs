@@ -1,12 +1,13 @@
 ﻿using System.Text.RegularExpressions;
-using MCServerLauncher.Common;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.Utils;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -17,13 +18,6 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 
 public class ActionHandlerRegistry
 {
-    private readonly JsonSerializer _jsonSerializer;
-
-    public ActionHandlerRegistry(IWebJsonConverter webJsonConverter)
-    {
-        _jsonSerializer = webJsonConverter.GetSerializer();
-    }
-
     public Dictionary<
             ActionType,
             Func<JToken?, IResolver, CancellationToken, ValueTask<IActionResult?>>
@@ -34,7 +28,7 @@ public class ActionHandlerRegistry
 
     public Dictionary<ActionType, IMatchable> HandlerPermissions { get; } = new();
 
-    private static TParam ParseParameter<TParam>(JToken? paramToken, JsonSerializer serializer)
+    private static TParam ParseParameter<TParam>(JToken? paramToken)
         where TParam : class, IActionParameter
     {
         ActionExceptionHelper.ThrowIf(paramToken is null, ActionReturnCode.ParameterIsNull, "Parameter is null");
@@ -42,7 +36,7 @@ public class ActionHandlerRegistry
         try
         {
             // paramToken一定不为null
-            return paramToken!.ToObject<TParam>(serializer)!;
+            return paramToken!.ToObject<TParam>(JsonSerializer.Create(DaemonJsonSettings.Settings))!;
         }
         catch (JsonSerializationException e)
         {
@@ -78,7 +72,7 @@ public class ActionHandlerRegistry
         SetActionPermission(actionType, actionPermission);
         Handlers[actionType] = async (paramToken, resolver, cancellationToken) =>
         {
-            var param = ParseParameter<TParam>(paramToken, _jsonSerializer);
+            var param = ParseParameter<TParam>(paramToken);
             return await handler(param, resolver, cancellationToken);
         };
         return this;
@@ -94,7 +88,7 @@ public class ActionHandlerRegistry
         SetActionPermission(actionType, actionPermission);
         Handlers[actionType] = async (paramToken, resolver, cancellationToken) =>
         {
-            var param = ParseParameter<TParam>(paramToken, _jsonSerializer);
+            var param = ParseParameter<TParam>(paramToken);
             await handler(param, resolver, cancellationToken);
             return null;
         };
@@ -161,9 +155,12 @@ public static class HandlerRegistration
             .Register(
                 ActionType.GetSystemInfo,
                 IMatchable.Always(),
-                async (resolver, ct) => new GetSystemInfoResult
+                async (resolver, ct) =>
                 {
-                    Info = await SystemInfo.Get()
+                    return new GetSystemInfoResult
+                    {
+                        Info = await SystemInfo.Get()
+                    };
                 })
             .Register(
                 ActionType.GetPermissions,
@@ -199,10 +196,10 @@ public static class HandlerRegistration
                 (param, resolver, ct) =>
                 {
                     var ctx = resolver.GetRequiredService<WsServiceContext>();
-                    var serializer = resolver.GetRequiredService<IWebJsonConverter>().GetSerializer();
                     try
                     {
-                        ctx.SubscribeEvent(param.Type, param.Type.GetEventMeta(param.Meta, serializer));
+                        ctx.SubscribeEvent(param.Type,
+                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings));
                     }
                     catch (NullReferenceException e)
                     {
@@ -222,8 +219,7 @@ public static class HandlerRegistration
                     try
                     {
                         ctx.UnsubscribeEvent(param.Type,
-                            param.Type.GetEventMeta(param.Meta,
-                                resolver.GetRequiredService<IWebJsonConverter>().GetSerializer()));
+                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings));
                     }
                     catch (NullReferenceException e)
                     {
