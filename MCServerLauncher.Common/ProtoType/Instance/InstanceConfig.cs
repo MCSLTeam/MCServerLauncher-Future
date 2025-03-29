@@ -18,6 +18,7 @@ public record InstanceConfig
     /// <summary>
     ///     控制台输入编码
     /// </summary>
+    [JsonConverter(typeof(WebEncodingJsonConverter))]
     public Encoding InputEncoding { get; set; } = Encoding.UTF8;
 
     /// <summary>
@@ -43,6 +44,7 @@ public record InstanceConfig
     /// <summary>
     ///     控制台输出编码
     /// </summary>
+    [JsonConverter(typeof(WebEncodingJsonConverter))]
     public Encoding OutputEncoding { get; set; } = Encoding.UTF8;
 
     /// <summary>

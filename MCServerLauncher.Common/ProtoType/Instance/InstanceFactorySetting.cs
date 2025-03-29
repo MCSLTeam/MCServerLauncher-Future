@@ -9,6 +9,18 @@ public record InstanceFactorySetting : InstanceConfig
 
     public InstanceConfig GetInstanceConfig()
     {
-        return this;
+        return new InstanceConfig
+        {
+            Uuid = Uuid,
+            InputEncoding = InputEncoding,
+            OutputEncoding = OutputEncoding,
+            InstanceType = InstanceType,
+            Name = Name,
+            WorkingDirectory = WorkingDirectory,
+            JavaArgs = JavaArgs,
+            JavaPath = JavaPath,
+            Target = Target,
+            TargetType = TargetType,
+        };
     }
 }

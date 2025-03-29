@@ -9,168 +9,31 @@ using System.Threading.Tasks;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Event;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
 
-namespace MCServerLauncher.DaemonClient;
-
-internal class HeartBeatTimerState
-{
-    public HeartBeatTimerState(ClientConnection conn, SynchronizationContext ctx)
-    {
-        Connection = conn;
-        ConnectionContext = ctx;
-    }
-
-    public ClientConnection Connection { get; set; }
-    public int PingPacketLost { get; set; }
-    public SynchronizationContext ConnectionContext { get; set; }
-}
-
-internal class ConnectionPendingRequest
-{
-    private readonly SemaphoreSlim _full;
-    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendings = new();
-    public readonly int Size;
-
-    public ConnectionPendingRequest(int size)
-    {
-        Size = size;
-        _full = new SemaphoreSlim(size);
-    }
-
-    /// <summary>
-    ///     添加一个pending请求
-    /// </summary>
-    /// <param name="id"></param>
-    /// <param name="tcs"></param>
-    /// <param name="timeout"></param>
-    /// <param name="cancellationToken"></param>
-    /// <exception cref="OperationCanceledException"></exception>
-    /// <returns></returns>
-    public async Task<bool> AddPendingAsync(Guid id, TaskCompletionSource<ActionResponse> tcs, int timeout,
-        CancellationToken cancellationToken = default)
-    {
-        if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
-
-
-        return _pendings.TryAdd(id, tcs); // 确保echo在size范围内不会重复
-    }
-
-    public bool TryRemovePending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
-    {
-        var rv = _pendings.TryRemove(id, out tcs);
-        _full.Release();
-        return rv;
-    }
-
-    public bool TryGetPending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
-    {
-        return _pendings.TryGetValue(id, out tcs);
-    }
-}
-
-internal class ConnectionHeartBeatTimer
-{
-    private readonly CancellationTokenSource _cancelTokenSource = new();
-    private readonly TimeSpan _interval;
-    private readonly HeartBeatTimerState _state;
-    private Task? _timerLoopTask;
-
-    public ConnectionHeartBeatTimer(ClientConnection conn, TimeSpan interval)
-    {
-        _state = new HeartBeatTimerState(conn, SynchronizationContext.Current!);
-        _interval = interval;
-    }
-
-    public void Start()
-    {
-        _timerLoopTask = TimerLoop(_state, _cancelTokenSource.Token);
-    }
-
-    public async Task Stop()
-    {
-        _cancelTokenSource.Cancel();
-        if (_timerLoopTask != null) await _timerLoopTask;
-    }
-
-    private async Task TimerLoop(HeartBeatTimerState state, CancellationToken ct)
-    {
-        var innerTasks = new HashSet<Task>();
-        while (!ct.IsCancellationRequested)
-        {
-            try
-            {
-                await Task.Delay(_interval, ct);
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
-
-            var innerTask = OnTimer(state, ct);
-            innerTasks.Add(innerTask);
-            innerTasks.RemoveWhere(t => t.IsCompleted);
-        }
-
-        await Task.WhenAll(innerTasks);
-    }
-
-    /// <summary>
-    ///     心跳定时器超时逻辑: 根据连接情况设定ClientConnection的PingLost，根据config判断是否关闭连接
-    /// </summary>
-    /// <param name="state">Timer状态</param>
-    private async Task OnTimer(HeartBeatTimerState state, CancellationToken ct)
-    {
-        Log.Debug("[ClientConnection] Heartbeat timer triggered.");
-
-        if (ct.IsCancellationRequested) return;
-        try
-        {
-            var result = await state.Connection.RequestAsync<PingResult>(
-                ActionType.Ping,
-                null,
-                state.Connection.Config.PingTimeout,
-                ct
-            );
-
-            state.PingPacketLost = 0;
-            var timestamp = result.Time;
-            Log.Debug($"[ClientConnection] Ping packet received, timestamp: {timestamp}");
-        }
-        catch (TimeoutException)
-        {
-            if (ct.IsCancellationRequested) return;
-
-            state.PingPacketLost++;
-            Log.Warning($"[ClientConnection] Ping packet lost, lost {state.PingPacketLost} times.");
-            // 切换到ClientConnection所在线程,防止数据竞争
-            state.ConnectionContext.Post(_ => state.Connection.MarkAsPingLost(), null);
-        }
-
-        if (state.PingPacketLost < state.Connection.Config.MaxPingPacketLost) return;
-        Log.Error("Ping packet lost too many times, close connection.");
-        // 关闭连接
-        await state.Connection.CloseAsync();
-    }
-}
+namespace MCServerLauncher.DaemonClient.Connection;
 
 public class ClientConnection
 {
-    private const int ProtocolVersion = 1;
-    private const int BufferSize = 1024;
+    public event Action<EventType, IEventMeta?, IEventData?>? OnEventReceived;
+
+    private const int CF_PROTOCOL_VERSION = 1;
+    private const int CF_BUFFER_SIZE = 1024;
 
     private readonly CancellationTokenSource _cts;
-    private readonly ConnectionHeartBeatTimer _heartbeatTimer;
-    private readonly ConnectionPendingRequest _pendingRequests;
+    private readonly ConnectionPendingRequests _pendingRequests;
+
+    private readonly ConnectionHeartBeatTimer? _heartbeatTimer;
     private Task? _receiveLoopTask;
 
     private ClientConnection(ClientConnectionConfig config)
     {
         _cts = new CancellationTokenSource();
-        _pendingRequests = new ConnectionPendingRequest(config.PendingRequestCapacity);
-        _heartbeatTimer = new ConnectionHeartBeatTimer(this, config.PingInterval);
+        _pendingRequests = new ConnectionPendingRequests(config.PendingRequestCapacity);
+        _heartbeatTimer = config.AutoPing ? new ConnectionHeartBeatTimer(this, config.PingInterval) : null;
         Config = config;
     }
 
@@ -206,11 +69,11 @@ public class ClientConnection
         ClientConnection connection = new(config);
 
         // connect ws
-        var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{ProtocolVersion}?token={token}");
+        var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{CF_PROTOCOL_VERSION}?token={token}");
 
         await connection.WebSocket.ConnectAsync(uri, cancellationToken);
 
-        connection._heartbeatTimer.Start();
+        connection._heartbeatTimer?.Start();
 
         // start receive loop
         connection._receiveLoopTask = Task.Factory.StartNew(connection.ReceiveLoop, TaskCreationOptions.LongRunning);
@@ -221,6 +84,7 @@ public class ClientConnection
         IActionParameter? param,
         CancellationToken ct)
     {
+        ThrowIfInvalidState();
         return PrivateSendAsync(new ActionRequest
         {
             ActionType = actionType,
@@ -238,6 +102,7 @@ public class ClientConnection
     )
         where TResult : class, IActionResult
     {
+        ThrowIfInvalidState();
         var rv = await PrivateRequestAsync<TResult>(actionType, param, timeout, ct);
         return rv!;
     }
@@ -249,7 +114,14 @@ public class ClientConnection
         CancellationToken ct = default
     )
     {
+        ThrowIfInvalidState();
         await PrivateRequestAsync<EmptyActionResult>(actionType, param, timeout, ct);
+    }
+
+    private void ThrowIfInvalidState()
+    {
+        if (WebSocket.State != WebSocketState.Open)
+            throw new InvalidOperationException($"Invalid websocket state: {WebSocket.State}");
     }
 
     /// <summary>
@@ -307,10 +179,11 @@ public class ClientConnection
     /// </summary>
     public async Task CloseAsync()
     {
-        await _heartbeatTimer.Stop();
+        if (_heartbeatTimer is not null)
+            await _heartbeatTimer.Stop();
 
         _cts.Cancel();
-        if (_receiveLoopTask != null) await _receiveLoopTask; // 等待接收循环结束
+        if (_receiveLoopTask is not null) await _receiveLoopTask; // 等待接收循环结束
 
         // TODO use close instead of abort
         // await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
@@ -368,10 +241,11 @@ public class ClientConnection
         try
         {
             var response = (await tcs.Task.TimeoutAfter(timeout, ct))!;
+            var serializer = JsonSerializer.Create(JsonSettings.Settings);
 
             return response.RequestStatus switch
             {
-                ActionRequestStatus.Ok => response.Data?.ToObject<TResult>(),
+                ActionRequestStatus.Ok => response.Data?.ToObject<TResult>(serializer),
                 ActionRequestStatus.Error => throw new DaemonRequestException(response.ReturnCode, response.Message),
                 _ => throw new NotImplementedException()
             };
@@ -390,8 +264,8 @@ public class ClientConnection
     /// </summary>
     private async Task ReceiveLoop()
     {
-        var ms = new MemoryStream();
-        var buffer = new byte[BufferSize];
+        using var ms = new MemoryStream();
+        var buffer = new byte[CF_BUFFER_SIZE];
 
         while (!_cts.Token.IsCancellationRequested)
         {
@@ -403,20 +277,15 @@ public class ClientConnection
                     if (result.EndOfMessage) break;
 
                     if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        ms.Dispose();
                         return;
-                    }
                 }
                 catch (WebSocketException e)
                 {
-                    Console.WriteLine(e.ToString());
-                    ms.Dispose();
-                    return;
+                    Log.Error("[ClientConnection] Websocket exception encountered while receiving message.");
+                    throw;
                 }
                 catch (OperationCanceledException)
                 {
-                    ms.Dispose();
                     return;
                 }
 
@@ -435,6 +304,12 @@ public class ClientConnection
     {
         try
         {
+            if (JObject.Parse(json).SelectToken("event") is not null)
+            {
+                DispatchEvent(json);
+                return;
+            }
+
             var response = JsonConvert.DeserializeObject<ActionResponse>(json, JsonSettings.Settings)!;
             if (response.Id == Guid.Empty)
             {
@@ -451,6 +326,29 @@ public class ClientConnection
         {
             Log.Error(
                 "[ClientConnection] [ReceiveLoop] Received unexpected message: {0}\nmay be connected to a unofficial daemon?",
+                json);
+            throw;
+        }
+    }
+
+    private void DispatchEvent(string json)
+    {
+        try
+        {
+            var packet = JsonConvert.DeserializeObject<EventPacket>(json, JsonSettings.Settings)!;
+            var eventType = packet.EventType;
+            
+            // TODO 改为异步? BeginInvoke?
+            OnEventReceived?.Invoke(
+                eventType,
+                eventType.GetEventMeta(packet.EventMeta, JsonSettings.Settings),
+                eventType.GetEventData(packet.EventData, JsonSettings.Settings)
+            );
+        }
+        catch (JsonException)
+        {
+            Log.Error(
+                "[ClientConnection] [ReceiveLoop] Received unexpected event packet: {0}\nmay be connected to a unofficial daemon?",
                 json);
             throw;
         }

@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using MCServerLauncher.DaemonClient;
+using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -99,7 +100,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);
-                await Task.Delay(10000);
+                await ThisDaemon.PingAsync();
                 Status = "ok";
                 await ThisDaemon.CloseAsync();
                 DaemonsListManager.AddDaemon(

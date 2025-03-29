@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
@@ -119,8 +120,16 @@ public class Application
         await StopAsync();
     }
 
-    public async Task StopAsync()
+    public async Task StopAsync(int timeout = 5000)
     {
+        var cts = new CancellationTokenSource();
+
+        var manager = _httpService.Resolver.GetRequiredService<IInstanceManager>();
+
+        cts.CancelAfter(timeout);
+        // TODO 修复不能软停止实例的问题
+        await manager.StopAllInstances(cts.Token);
+
         await _httpService.StopAsync();
     }
 }

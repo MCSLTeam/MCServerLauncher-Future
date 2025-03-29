@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.DaemonClient;
 
@@ -10,22 +12,24 @@ namespace MCServerLauncher.DaemonClient;
 /// </summary>
 public interface IDaemon
 {
-    bool IsClosed { get; }
+    WebSocketState State { get; }
     bool PingLost { get; }
     DateTime LastPing { get; }
     ClientConnection? Connection { get; }
 
+    event Action<Guid, string>? InstanceLogEvent;
+
     Task RequestAsync(
         ActionType actionType,
         IActionParameter? parameter,
-        int timeout = 0,
+        int timeout = -1,
         CancellationToken cancellationToken = default
     );
 
     Task<TResult> RequestAsync<TResult>(
         ActionType actionType,
         IActionParameter? parameter,
-        int timeout = 0,
+        int timeout = -1,
         CancellationToken cancellationToken = default
     ) where TResult : class, IActionResult;
 

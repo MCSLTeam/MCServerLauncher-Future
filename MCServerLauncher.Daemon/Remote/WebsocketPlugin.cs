@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Action;
@@ -224,8 +225,8 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         var packet = new EventPacket
         {
             EventType = type,
-            EventMeta = meta,
-            EventData = data
+            EventMeta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings)),
+            EventData = data is null ? null : JToken.FromObject(data, JsonSerializer.Create(JsonSettings.Settings)),
         };
         await ws.SendAsync(JsonConvert.SerializeObject(packet, DaemonJsonSettings.Settings));
     }

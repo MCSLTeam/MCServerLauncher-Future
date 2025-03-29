@@ -88,7 +88,7 @@ public sealed record GetInstanceStatusResult : IActionResult
 
 public sealed record GetAllStatusResult : IActionResult
 {
-    [JsonRequired] public IDictionary<Guid, InstanceStatus> Status { get; init; } = null!;
+    [JsonRequired] public Dictionary<Guid, InstanceStatus> Status { get; init; } = null!;
 }
 
 public sealed record GetSystemInfoResult : IActionResult

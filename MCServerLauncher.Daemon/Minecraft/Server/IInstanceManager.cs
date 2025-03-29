@@ -60,5 +60,7 @@ public interface IInstanceManager
     ///     获取所有服务器实例状态
     /// </summary>
     /// <returns></returns>
-    Task<IDictionary<Guid, InstanceStatus>> GetAllStatus();
+    Task<Dictionary<Guid, InstanceStatus>> GetAllStatus();
+
+    Task StopAllInstances(CancellationToken ct = default);
 }

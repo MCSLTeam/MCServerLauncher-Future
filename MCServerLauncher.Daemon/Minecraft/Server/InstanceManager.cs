@@ -38,7 +38,8 @@ public class InstanceManager : IInstanceManager
             Log.Information("[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
                 setting.InstanceType.ToString(), setting.Name);
             var config = await setting.ApplyInstanceFactory();
-            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
+            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName),
+                config);
 
             var instance = new Instance(config);
             // TODO 重写apply post processor逻辑，maybe继续用attribute?
@@ -95,7 +96,7 @@ public class InstanceManager : IInstanceManager
 
     public bool TryStartInstance(Guid instanceId, out Instance? instance)
     {
-        instance = default;
+        instance = null;
         if (RunningInstances.ContainsKey(instanceId)) return false;
 
         var target = Instances.GetValueOrDefault(instanceId);
@@ -155,11 +156,22 @@ public class InstanceManager : IInstanceManager
         return instance.GetStatusAsync();
     }
 
-    public async Task<IDictionary<Guid, InstanceStatus>> GetAllStatus()
+    public async Task<Dictionary<Guid, InstanceStatus>> GetAllStatus()
     {
         var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetStatusAsync());
         await Task.WhenAll(tasks.Values);
         return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
+    }
+
+    public Task StopAllInstances(CancellationToken ct = default)
+    {
+        foreach (var instance in RunningInstances.Values)
+        {
+            instance.WriteLine("stop");
+        }
+
+        var tasks = RunningInstances.Values.Select(instance => instance.WaitForExitAsync(ct));
+        return Task.WhenAll(tasks);
     }
 
     public static IInstanceManager Create()

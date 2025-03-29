@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Downloader;
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Files;
+using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Serilog;
 
@@ -487,7 +489,7 @@ internal static class FileManager
     /// <returns></returns>
     public static T? ReadJson<T>(string path)
     {
-        return JsonConvert.DeserializeObject<T>(ReadText(path));
+        return JsonConvert.DeserializeObject<T>(ReadText(path), DaemonJsonSettings.Settings);
     }
 
     /// <summary>
@@ -506,7 +508,7 @@ internal static class FileManager
         catch (FileNotFoundException)
         {
             var invoke = defaultFactory.Invoke();
-            File.WriteAllText(path, JsonConvert.SerializeObject(invoke));
+            File.WriteAllText(path, JsonConvert.SerializeObject(invoke, typeof(T), DaemonJsonSettings.Settings));
             return invoke;
         }
     }
@@ -533,11 +535,11 @@ internal static class FileManager
     /// <typeparam name="T"></typeparam>
     public static void WriteJsonAndBackup<T>(string path, T obj)
     {
-        BackupAndWriteText(path, JsonConvert.SerializeObject(obj), content =>
+        BackupAndWriteText(path, JsonConvert.SerializeObject(obj, typeof(T), DaemonJsonSettings.Settings), content =>
         {
             try
             {
-                JsonConvert.DeserializeObject<T>(content);
+                JsonConvert.DeserializeObject<T>(content, DaemonJsonSettings.Settings);
                 return true;
             }
             catch (Exception)

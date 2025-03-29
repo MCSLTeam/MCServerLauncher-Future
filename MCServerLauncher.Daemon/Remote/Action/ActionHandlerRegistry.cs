@@ -2,6 +2,7 @@
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.Utils;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;

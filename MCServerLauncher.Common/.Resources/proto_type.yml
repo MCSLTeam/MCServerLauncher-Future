@@ -162,7 +162,7 @@ actions:
       req:
       
       resp:
-        status: IDictionary<Guid, InstanceStatus>
+        status: Dictionary<Guid, InstanceStatus>
 
   - get_system_info:
       req:

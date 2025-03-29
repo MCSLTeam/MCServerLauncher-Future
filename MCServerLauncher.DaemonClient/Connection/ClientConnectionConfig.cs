@@ -1,9 +1,10 @@
 ﻿using System;
 
-namespace MCServerLauncher.DaemonClient;
+namespace MCServerLauncher.DaemonClient.Connection;
 
 public class ClientConnectionConfig
 {
+    public bool AutoPing { get; set; } = true;
     public TimeSpan PingInterval { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <summary>

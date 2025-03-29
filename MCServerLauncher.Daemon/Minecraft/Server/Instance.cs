@@ -166,9 +166,9 @@ public class Instance
         ChangeStatus(ServerStatus.Stopped);
     }
 
-    public Task WaitForExitAsync()
+    public Task WaitForExitAsync(CancellationToken ct = default)
     {
-        return ServerProcess?.WaitForExitAsync() ?? Task.CompletedTask;
+        return ServerProcess?.WaitForExitAsync(ct) ?? Task.CompletedTask;
     }
 
     public void WaitForExit()

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using MCServerLauncher.DaemonClient;
+using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
