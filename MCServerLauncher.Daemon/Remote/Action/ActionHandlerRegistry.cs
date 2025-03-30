@@ -137,6 +137,11 @@ public class ActionHandlerRegistry
 
 public static class HandlerRegistration
 {
+    private static void OnInstanceLogHandler(IEventService eventService, Guid guid, string? message)
+    {
+        if (message is not null) eventService.OnInstanceLog(guid, message);
+    }
+
     // TODO 权限完善
     public static ActionHandlerRegistry RegisterHandlers(this ActionHandlerRegistry registry)
     {
@@ -445,13 +450,8 @@ public static class HandlerRegistration
 
                     if (rv)
                     {
-                        Action<string?> handler = msg =>
-                        {
-                            if (msg != null)
-                                eventService.OnInstanceLog(param.Id, msg);
-                        };
-                        instance!.OnLog -= handler;
-                        instance!.OnLog += handler;
+                        instance!.OnLog -= eventService.OnInstanceLog;
+                        instance!.OnLog += eventService.OnInstanceLog;
                     }
 
                     return ValueTask.FromResult(new StartInstanceResult

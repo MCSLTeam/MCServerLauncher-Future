@@ -12,27 +12,7 @@ public class Instance
     {
         Config = config;
 
-        OnStatusChanged += status =>
-        {
-            if (status == ServerStatus.Running)
-            {
-                // refresh server.properties
-                SetServerProperties();
-
-                // do something with server.properties
-                if (ushort.TryParse(_properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
-                        out var parsed))
-                {
-                    Port = parsed;
-                    Log.Debug("[Instance({0})] Server Port: {1}", Config.Name, Port);
-                }
-                else
-                {
-                    Port = null;
-                    Log.Warning("[Instance({0})]Can't find or parse server port in server.properties", Config.Name);
-                }
-            }
-        };
+        OnStatusChanged += OnStatusChangedHandler;
     }
 
     public InstanceConfig Config { get; }
@@ -52,9 +32,9 @@ public class Instance
         }
     }
 
-    public event Action<ServerStatus>? OnStatusChanged;
+    public event Action<Guid, ServerStatus>? OnStatusChanged;
 
-    public event Action<string?>? OnLog;
+    public event Action<Guid, string>? OnLog;
 
     /// <summary>
     ///     获取mc服务器进程
@@ -147,7 +127,11 @@ public class Instance
 
                 Log.Information($"[Server({Config.Name})] {args.Data}");
             };
-            process.OutputDataReceived += (_, arg) => OnLog?.Invoke(arg.Data);
+            process.OutputDataReceived += (_, arg) =>
+            {
+                if (arg.Data is not null)
+                    OnLog?.Invoke(Config.Uuid, arg.Data);
+            };
             process.ErrorDataReceived += (_, arg) => Log.Error($"[Server({Config.Name})] [STDERR] {arg.Data}");
 
             process.Exited += (_, _) =>
@@ -184,7 +168,29 @@ public class Instance
     private void ChangeStatus(ServerStatus newStatus)
     {
         Status = newStatus;
-        OnStatusChanged?.Invoke(newStatus);
+        OnStatusChanged?.Invoke(Config.Uuid, newStatus);
+    }
+
+    private void OnStatusChangedHandler(Guid _, ServerStatus newStatus)
+    {
+        if (newStatus == ServerStatus.Running)
+        {
+            // refresh server.properties
+            SetServerProperties();
+
+            // do something with server.properties
+            if (ushort.TryParse(_properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
+                    out var parsed))
+            {
+                Port = parsed;
+                Log.Debug("[Instance({0})] Server Port: {1}", Config.Name, Port);
+            }
+            else
+            {
+                Port = null;
+                Log.Warning("[Instance({0})] Can't find or parse server port in server.properties", Config.Name);
+            }
+        }
     }
 
     // TODO 使用SlpClient获取服务器信息(例如玩家列表)

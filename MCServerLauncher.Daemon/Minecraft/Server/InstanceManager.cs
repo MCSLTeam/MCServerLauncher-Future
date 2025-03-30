@@ -107,14 +107,8 @@ public class InstanceManager : IInstanceManager
             if (RunningInstances.TryAdd(instanceId, target))
             {
                 instance = target;
-                Action<ServerStatus> handler = status =>
-                {
-                    Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
-                        status.ToString());
-                    if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceId, out _);
-                };
-                instance.OnStatusChanged -= handler;
-                instance.OnStatusChanged += handler;
+                instance.OnStatusChanged -= OnInstanceStatusChangedHandler;
+                instance.OnStatusChanged += OnInstanceStatusChangedHandler;
                 target.Start();
                 return true;
             }
@@ -172,6 +166,13 @@ public class InstanceManager : IInstanceManager
 
         var tasks = RunningInstances.Values.Select(instance => instance.WaitForExitAsync(ct));
         return Task.WhenAll(tasks);
+    }
+
+    private void OnInstanceStatusChangedHandler(Guid instanceId,ServerStatus status)
+    {
+        Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
+            status.ToString());
+        if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceId, out _);
     }
 
     public static IInstanceManager Create()
