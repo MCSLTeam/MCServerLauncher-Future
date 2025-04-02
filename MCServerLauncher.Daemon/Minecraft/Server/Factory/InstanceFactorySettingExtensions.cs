@@ -1,6 +1,8 @@
 using System.Reflection;
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
@@ -22,7 +24,7 @@ public static class InstanceFactorySettingExtensions
     /// <summary>
     ///     加载所有IInstanceFactory
     /// </summary>
-    public static void LoadFactories()
+    public static void RegisterFactories()
     {
         var assembly = Assembly.GetExecutingAssembly();
 
@@ -136,17 +138,7 @@ public static class InstanceFactorySettingExtensions
         // rename
         if (setting.Target != dst) File.Move(dst, Path.Combine(workingDirectory, setting.Target));
     }
-
-    public static IInstanceFactory GetInstanceFactory(this InstanceFactorySetting setting)
-    {
-        return setting.InstanceType switch
-        {
-            InstanceType.Vanilla => new UniversalFactory(),
-            InstanceType.Fabric => new FabricFactory(),
-            _ => throw new NotImplementedException()
-        };
-    }
-
+    
     public static Task<InstanceConfig> ApplyInstanceFactory(this InstanceFactorySetting setting)
     {
         if (InstanceFactoryMapping.TryGetValue(setting.InstanceType, out var sourceTypeMapping))
@@ -169,5 +161,31 @@ public static class InstanceFactorySettingExtensions
         }
 
         throw new Exception($"Unsupported instance type({setting.InstanceType})");
+    }
+
+    public static bool ValidateSetting(this InstanceFactorySetting setting)
+    {
+        if (
+            setting.SourceType == SourceType.None ||
+            setting.InstanceType == InstanceType.None ||
+            setting.TargetType == TargetType.None
+        )
+            return false;
+
+        try
+        {
+            McVersion.Of(setting.McVersion);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return false;
+        }
+
+        if (!File.Exists(setting.JavaPath)) return false;
+        if (!File.Exists(setting.Target)) return false;
+
+        if (setting.Uuid == Guid.Empty) return false;
+
+        return true;
     }
 }

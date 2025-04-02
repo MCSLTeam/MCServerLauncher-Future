@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
@@ -11,16 +13,17 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 [InstanceFactory(InstanceType.Forge, SourceType.Archive)]
 public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
-    public Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting)
+    public async Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting)
     {
-        throw new NotImplementedException();
+        var workingDirectory = setting.GetWorkingDirectory();
+        ZipFile.ExtractToDirectory(setting.Source, workingDirectory, Encoding.UTF8, true);
+        await setting.FixEula();
+
+        return setting.GetInstanceConfig();
     }
 
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
-        var workingDirectory = setting.GetWorkingDirectory();
-        Directory.CreateDirectory(workingDirectory);
-
         await setting.CopyAndRenameTarget();
         setting = setting with { TargetType = TargetType.Jar };
         await setting.FixEula();

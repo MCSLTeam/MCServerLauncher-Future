@@ -1,26 +1,33 @@
+using Newtonsoft.Json;
+
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
+/// <summary>
+///     实例工厂设置
+/// </summary>
 public record InstanceFactorySetting : InstanceConfig
 {
-    public string McVersion { get; set; } = null!;
-    public string Source { get; set; } = null!;
-    public SourceType SourceType { get; set; }
-    public bool UsePostProcess { get; set; } = false;
-
+    [JsonProperty(Required = Required.Always)]
+    public string Source { get; init; } = null!;
+    
+    [JsonProperty(Required = Required.Always)]
+    public SourceType SourceType { get; init; }
+    public bool UsePostProcess { get; init; } = false;
+    
     public InstanceConfig GetInstanceConfig()
     {
         return new InstanceConfig
         {
+            McVersion = McVersion,
             Uuid = Uuid,
             InputEncoding = InputEncoding,
             OutputEncoding = OutputEncoding,
             InstanceType = InstanceType,
             Name = Name,
-            WorkingDirectory = WorkingDirectory,
             JavaArgs = JavaArgs,
             JavaPath = JavaPath,
             Target = Target,
-            TargetType = TargetType,
+            TargetType = TargetType
         };
     }
 }

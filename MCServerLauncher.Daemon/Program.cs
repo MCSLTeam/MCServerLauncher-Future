@@ -63,7 +63,7 @@ public class Program
             McVersion = "1.21.1",
             UsePostProcess = false
         };
-        if (await manager.TryAddInstance(setting))
+        if (await manager.TryAddInstance(setting) is not null)
         {
             Log.Information("[InstanceManager] Created Server: {0}({1})", setting.Name, setting.Uuid);
             return setting.Uuid;

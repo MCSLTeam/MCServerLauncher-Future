@@ -38,7 +38,7 @@ public class BasicUtils
         InitLogger();
         InitDataDirectory();
         FileManager.StartFileSessionsWatcher();
-        InstanceFactorySettingExtensions.LoadFactories();
+        InstanceFactorySettingExtensions.RegisterFactories();
     }
 
     public static bool IsWindows()
