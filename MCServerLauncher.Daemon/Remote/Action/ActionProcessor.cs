@@ -43,7 +43,8 @@ public class ActionProcessor : IActionService
                 result is null
                     ? new JObject()
                     : JObject.FromObject(result, JsonSerializer.Create(DaemonJsonSettings.Settings)),
-                request.Id);
+                request.Id
+            );
         }
         catch (ActionException aee)
         {

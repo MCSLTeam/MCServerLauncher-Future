@@ -12,6 +12,9 @@ public class EventService : IEventService
     }
 }
 
+/// <summary>
+///     事件服务扩展, 各种事件的触发函数都在这里实现
+/// </summary>
 public static class EventServiceExtensions
 {
     public static void OnInstanceLog(this IEventService service, Guid instanceId, string log)

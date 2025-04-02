@@ -159,16 +159,13 @@ public class InstanceManager : IInstanceManager
 
     public Task StopAllInstances(CancellationToken ct = default)
     {
-        foreach (var instance in RunningInstances.Values)
-        {
-            instance.WriteLine("stop");
-        }
+        foreach (var instance in RunningInstances.Values) instance.WriteLine("stop");
 
         var tasks = RunningInstances.Values.Select(instance => instance.WaitForExitAsync(ct));
         return Task.WhenAll(tasks);
     }
 
-    private void OnInstanceStatusChangedHandler(Guid instanceId,ServerStatus status)
+    private void OnInstanceStatusChangedHandler(Guid instanceId, ServerStatus status)
     {
         Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
             status.ToString());

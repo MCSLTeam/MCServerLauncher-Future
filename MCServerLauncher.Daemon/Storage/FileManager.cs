@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Downloader;
-using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;

@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
@@ -17,63 +16,6 @@ using TouchSocket.Http.WebSockets;
 using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
-
-/// <summary>
-///     线程安全的ws服务上下文
-/// </summary>
-public class WsServiceContext
-{
-    private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
-
-    public Permissions Permissions { get; set; } = Permissions.Never;
-    public string ClientId { get; set; } = null!;
-
-    public void SubscribeEvent(EventType type, IEventMeta? meta)
-    {
-        if (!_subscribedEvents.TryGetValue(type, out var set))
-        {
-            set = new HashSet<IEventMeta>();
-            _subscribedEvents.TryAdd(type, set);
-        }
-
-        if (meta != null) set.Add(meta);
-    }
-
-    public void UnsubscribeEvent(EventType type, IEventMeta? meta)
-    {
-        if (meta != null)
-        {
-            if (_subscribedEvents.TryGetValue(type, out var set))
-            {
-                if (set.Count > 1) set.Remove(meta);
-                else _subscribedEvents.TryRemove(type, out _);
-            }
-
-            ;
-        }
-        else
-        {
-            _subscribedEvents.TryRemove(type, out _);
-        }
-    }
-
-    public bool IsSubscribedEvent(EventType type, IEventMeta? meta)
-    {
-        return _subscribedEvents.TryGetValue(type, out var set) && (meta == null || set.Contains(meta));
-    }
-
-    public IEnumerable<IEventMeta> GetEventMetas(EventType type)
-    {
-        return _subscribedEvents.TryGetValue(type, out var set)
-            ? new HashSet<IEventMeta>(set)
-            : Enumerable.Empty<IEventMeta>();
-    }
-
-    public void UnsubscribeAllEvents()
-    {
-        _subscribedEvents.Clear();
-    }
-}
 
 public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocketReceivedPlugin, IWebSocketClosedPlugin
 {
@@ -226,7 +168,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         {
             EventType = type,
             EventMeta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings)),
-            EventData = data is null ? null : JToken.FromObject(data, JsonSerializer.Create(JsonSettings.Settings)),
+            EventData = data is null ? null : JToken.FromObject(data, JsonSerializer.Create(JsonSettings.Settings))
         };
         await ws.SendAsync(JsonConvert.SerializeObject(packet, DaemonJsonSettings.Settings));
     }
