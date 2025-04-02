@@ -5,6 +5,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.Utils;
 using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
@@ -366,9 +367,22 @@ public static class HandlerRegistration
                 IMatchable.Always(), async (param, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+                    
+                    if (!param.Setting.ValidateSetting()) throw new ActionException(
+                        ActionReturnCode.InstanceAddFailed,
+                        "Invalid instance factory setting" //TODO 更多报错信息
+                    );
+                    
+                    var config = await instanceManager.TryAddInstance(param.Setting);
+                    if (config is null)
+                        throw new ActionException(
+                            ActionReturnCode.InstanceAddFailed,
+                            "Failed to add instance" //TODO 更多报错信息
+                        );
+                    
                     return new AddInstanceResult
                     {
-                        Done = await instanceManager.TryAddInstance(param.Setting)
+                        Config = config
                     };
                 })
             .Register<RemoveInstanceParameter, RemoveInstanceResult>(

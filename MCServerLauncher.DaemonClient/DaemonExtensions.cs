@@ -375,7 +375,7 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
-    public static async Task<bool> TryAddInstanceAsync(this IDaemon daemon, InstanceFactorySetting setting,
+    public static async Task<InstanceConfig> TryAddInstanceAsync(this IDaemon daemon, InstanceFactorySetting setting,
         int timeout = -1,
         CancellationToken ct = default)
     {
@@ -385,7 +385,7 @@ public static class DaemonExtensions
             {
                 Setting = setting
             }, timeout, ct);
-        return resp.Done;
+        return resp.Config;
     }
 
     public static async Task<bool> TryRemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,

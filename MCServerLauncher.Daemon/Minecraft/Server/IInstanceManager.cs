@@ -10,7 +10,7 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="setting"></param>
     /// <returns></returns>
-    Task<bool> TryAddInstance(InstanceFactorySetting setting);
+    Task<InstanceConfig?> TryAddInstance(InstanceFactorySetting setting);
 
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。

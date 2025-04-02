@@ -17,7 +17,8 @@ public enum ActionReturnCode
     RequestLimitReached = 1501,
     IOException = 1511,
     FileNotFound = 1512,
-    InstanceNotFound = 1521
+    InstanceNotFound = 1521,
+    InstanceAddFailed = 1522
 }
 
 internal class ActionReturnCodeJsonConverter : JsonConverter<ActionReturnCode>

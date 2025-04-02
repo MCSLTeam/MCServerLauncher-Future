@@ -63,7 +63,7 @@ public sealed record GetDirectoryInfoResult : IActionResult
 
 public sealed record AddInstanceResult : IActionResult
 {
-    [JsonRequired] public bool Done { get; init; }
+    [JsonRequired] public InstanceConfig Config { get; init; } = null!;
 }
 
 public sealed record RemoveInstanceResult : IActionResult

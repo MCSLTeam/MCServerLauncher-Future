@@ -12,12 +12,12 @@ public class InstanceManager : IInstanceManager
     private ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
 
     // TODO 改用异常抛出异常信息
-    public async Task<bool> TryAddInstance(InstanceFactorySetting setting)
+    public async Task<InstanceConfig?> TryAddInstance(InstanceFactorySetting setting)
     {
         if (Instances.ContainsKey(setting.Uuid))
             Log.Error("[InstanceManager] Add new instance failed: Instance '{0}' already exists.", setting.Uuid);
 
-        var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
+        var instanceRoot = setting.GetWorkingDirectory();
         // validate dir name
         try
         {
@@ -27,7 +27,7 @@ public class InstanceManager : IInstanceManager
         {
             Log.Error("[InstanceManager] Failed to create instance directory '{0}': {1}", instanceRoot, e);
             FileManager.TryRemove(instanceRoot); // rollback
-            return false;
+            return null;
         }
 
         // var instanceFactory = setting.GetInstanceFactory();
@@ -57,16 +57,16 @@ public class InstanceManager : IInstanceManager
             if (!Instances.TryAdd(config.Uuid, instance))
             {
                 Log.Error("[InstanceManager] Failed to add instance '{0}' to manager.", config.Name);
-                return false; // we need not to rollback here, because the new instance has been correctly installed
+                return null; // we need not to rollback here, because the new instance has been correctly installed
             }
 
-            return true;
+            return config;
         }
         catch (Exception e)
         {
             Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", setting.Name, e);
             FileManager.TryRemove(instanceRoot); // rollback
-            return false;
+            return null;
         }
     }
 

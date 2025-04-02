@@ -115,7 +115,7 @@ actions:
         setting: InstanceFactorySetting
       
       resp:
-        done: bool
+        config: InstanceConfig
 
   - remove_instance:
       req:

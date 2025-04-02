@@ -126,12 +126,19 @@ public class Daemon : IDaemon
             var daemon = await OpenAsync("127.0.0.1", 11451, "LEFELMeM1qIXxZTUUSzDC6t2GbCYMFhJ", false,
                 new ClientConnectionConfig
                 {
-                    AutoPing = true,
+                    AutoPing = false,
                     MaxPingPacketLost = 3,
                     PendingRequestCapacity = 100,
                     PingInterval = TimeSpan.FromSeconds(3),
                     PingTimeout = 5000,
                 });
+            // await Task.Delay(1000);
+            // await daemon.SubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
+            // {
+            //     InstanceId = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2")
+            // });
+            // await daemon.CloseAsync();
+            // return;
             Console.WriteLine("Connection OK");
             Console.WriteLine($"Daemon Latency: {await daemon.PingAsync()}ms");
 
@@ -179,10 +186,9 @@ public class Daemon : IDaemon
                 };
                 guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2");
                 Console.WriteLine($"Creating Instance: {setting.Name} ({setting.Uuid})");
-                if (await daemon.TryAddInstanceAsync(setting))
-                {
-                    Console.WriteLine("[InstanceManager] Created Server: " + setting.Name);
-                }
+                
+                var config = await daemon.TryAddInstanceAsync(setting);
+                Console.WriteLine("[InstanceManager] Created Server: " + config.Name);
             }
             
             Console.WriteLine("Wait 3000ms");
@@ -227,10 +233,10 @@ public class Daemon : IDaemon
             await Task.Delay(1000);
             await PrintServerStatus(daemon, guid);
 
-            await daemon.UnSubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
-            {
-                InstanceId = guid
-            });
+            // await daemon.UnSubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
+            // {
+            //     InstanceId = guid
+            // });
             await daemon.CloseAsync();
         }
         catch (WebSocketException e)
