@@ -3,7 +3,7 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
-        <ApplicationIcon>Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
+        <ApplicationIcon>.Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
         <Company>MCSLTeam</Company>
         <Authors>MCSLTeam</Authors>
         <FileVersion>1.0.0.0</FileVersion>
@@ -50,7 +50,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Resources\MCServerLauncherFutureDaemon.ico"/>
+        <Compile Remove=".Resources\Docs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include=".Resources\MCServerLauncherFutureDaemon.ico"/>
     </ItemGroup>
 
     <ItemGroup>
