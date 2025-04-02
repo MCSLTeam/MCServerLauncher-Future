@@ -1,5 +1,4 @@
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Storage;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
@@ -8,15 +7,22 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 /// </summary>
 [InstanceFactory(InstanceType.Vanilla)]
 [InstanceFactory(InstanceType.Spigot)]
-public class UniversalFactory : ICoreInstanceFactory
+[InstanceFactory(InstanceType.Fabric, SourceType.Archive)]
+[InstanceFactory(InstanceType.Forge, SourceType.Archive)]
+public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
+    public Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
-        setting.WorkingDirectory = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
-        Directory.CreateDirectory(setting.WorkingDirectory);
+        var workingDirectory = setting.GetWorkingDirectory();
+        Directory.CreateDirectory(workingDirectory);
 
         await setting.CopyAndRenameTarget();
-        setting.TargetType = TargetType.Jar;
+        setting = setting with { TargetType = TargetType.Jar };
         await setting.FixEula();
 
         return setting.GetInstanceConfig();

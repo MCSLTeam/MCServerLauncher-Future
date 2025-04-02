@@ -50,7 +50,7 @@ public class Instance
         var startInfo = new ProcessStartInfo(target, args)
         {
             UseShellExecute = false,
-            WorkingDirectory = config.WorkingDirectory,
+            WorkingDirectory = config.GetWorkingDirectory(),
             RedirectStandardError = true,
             RedirectStandardOutput = true,
             RedirectStandardInput = true
@@ -76,7 +76,7 @@ public class Instance
 
     private IEnumerable<string> GetServerProperties()
     {
-        var path = Path.Combine(Config.WorkingDirectory, "server.properties");
+        var path = Path.Combine(Config.GetWorkingDirectory(), "server.properties");
         return File.Exists(path) ? File.ReadAllLines(path).ToList() : Enumerable.Empty<string>();
     }
 

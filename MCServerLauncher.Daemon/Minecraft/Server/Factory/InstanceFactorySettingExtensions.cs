@@ -19,11 +19,6 @@ public static class InstanceFactorySettingExtensions
             >
         > InstanceFactoryMapping = new();
 
-    // static InstanceFactorySettingExtensions()
-    // {
-    //     LoadFactories();
-    // }
-
     /// <summary>
     ///     加载所有IInstanceFactory
     /// </summary>
@@ -38,62 +33,61 @@ public static class InstanceFactorySettingExtensions
             if (attributes.Length == 0) continue;
 
             var factoryInstance = Activator.CreateInstance(type)!;
-
             foreach (var attr in attributes)
             {
                 var sourceTypeMapping = InstanceFactoryMapping.GetValueOrDefault(attr.InstanceType) ??
                                         (InstanceFactoryMapping[attr.InstanceType] =
                                             new Dictionary<SourceType, Dictionary<(McVersion, McVersion),
                                                 Func<InstanceFactorySetting, Task<InstanceConfig>>>>());
-                if (factoryInstance is ICoreInstanceFactory coreInstanceFactory)
+
+                var allowedSourceType = attr.AllowedSourceType;
+                if ((allowedSourceType == SourceType.Core || attr.AllowedSourceType == SourceType.None) &&
+                    factoryInstance is ICoreInstanceFactory coreInstanceFactory
+                   )
                 {
-                    var coreFactories =
-                        sourceTypeMapping.GetValueOrDefault(SourceType.Core) ??
-                        (sourceTypeMapping[SourceType.Core] =
-                            new Dictionary<(McVersion, McVersion),
-                                Func<InstanceFactorySetting, Task<InstanceConfig>>>());
-
-                    var factoryMethodInfo = coreInstanceFactory.GetType().GetMethods()[0];
-
-                    coreFactories[(McVersion.Of(attr.MinVersion), McVersion.Of(attr.MaxVersion))] = setting =>
-                        (factoryMethodInfo.Invoke(factoryInstance, new object[] { setting }) as Task<InstanceConfig>)!;
+                    RegisterInstanceFactory(sourceTypeMapping, SourceType.Core,
+                        coreInstanceFactory.CreateInstanceFromCore, attr);
                     Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                        $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
 
-                if (factoryInstance is IArchiveInstanceFactory archiveInstanceFactory)
+                if ((allowedSourceType == SourceType.Archive || attr.AllowedSourceType == SourceType.None) &&
+                    factoryInstance is IArchiveInstanceFactory archiveInstanceFactory
+                   )
                 {
-                    var archiveFactories =
-                        sourceTypeMapping.GetValueOrDefault(SourceType.Archive) ??
-                        (sourceTypeMapping[SourceType.Archive] =
-                            new Dictionary<(McVersion, McVersion),
-                                Func<InstanceFactorySetting, Task<InstanceConfig>>>());
-
-                    var factoryMethodInfo = archiveInstanceFactory.GetType().GetMethods()[0];
-
-                    archiveFactories[(McVersion.Of(attr.MinVersion), McVersion.Of(attr.MaxVersion))] = setting =>
-                        (factoryMethodInfo.Invoke(factoryInstance, new object[] { setting }) as Task<InstanceConfig>)!;
+                    RegisterInstanceFactory(sourceTypeMapping, SourceType.Archive,
+                        archiveInstanceFactory.CreateInstanceFromArchive, attr);
                     Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                        $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Archive}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
 
-                if (factoryInstance is IScriptInstanceFactory scriptInstanceFactory)
+                if ((allowedSourceType == SourceType.Script || attr.AllowedSourceType == SourceType.None) &&
+                    factoryInstance is IScriptInstanceFactory scriptInstanceFactory)
                 {
-                    var scriptFactories =
-                        sourceTypeMapping.GetValueOrDefault(SourceType.Script) ??
-                        (sourceTypeMapping[SourceType.Script] =
-                            new Dictionary<(McVersion, McVersion),
-                                Func<InstanceFactorySetting, Task<InstanceConfig>>>());
-
-                    var factoryMethodInfo = scriptInstanceFactory.GetType().GetMethods()[0];
-
-                    scriptFactories[(McVersion.Of(attr.MinVersion), McVersion.Of(attr.MaxVersion))] = setting =>
-                        (factoryMethodInfo.Invoke(factoryInstance, new object[] { setting }) as Task<InstanceConfig>)!;
+                    RegisterInstanceFactory(sourceTypeMapping, SourceType.Script,
+                        scriptInstanceFactory.CreateInstanceFromScript, attr);
                     Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.Name}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                        $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Script}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
             }
         }
+    }
+
+    private static void RegisterInstanceFactory(
+        Dictionary<SourceType, Dictionary<(McVersion, McVersion), Func<InstanceFactorySetting, Task<InstanceConfig>>>>
+            sourceTypeMapping,
+        SourceType sourceType,
+        Func<InstanceFactorySetting, Task<InstanceConfig>> instanceFactory,
+        InstanceFactoryAttribute attribute
+    )
+    {
+        var factories =
+            sourceTypeMapping.GetValueOrDefault(sourceType) ??
+            (sourceTypeMapping[sourceType] =
+                new Dictionary<(McVersion, McVersion), Func<InstanceFactorySetting, Task<InstanceConfig>>>());
+
+
+        factories[(McVersion.Of(attribute.MinVersion), McVersion.Of(attribute.MaxVersion))] = instanceFactory;
     }
 
 
@@ -103,8 +97,10 @@ public static class InstanceFactorySettingExtensions
     /// <param name="setting"></param>
     public static async Task CopyAndRenameTarget(this InstanceFactorySetting setting)
     {
+        var workingDirectory = setting.GetWorkingDirectory();
+
         var dstName = Path.GetFileName(setting.Source);
-        var dst = Path.Combine(setting.WorkingDirectory, dstName);
+        var dst = Path.Combine(workingDirectory, dstName);
 
         if (Uri.TryCreate(setting.Source, UriKind.Absolute, out var uri))
         {
@@ -138,7 +134,7 @@ public static class InstanceFactorySettingExtensions
         }
 
         // rename
-        if (setting.Target != dst) File.Move(dst, Path.Combine(setting.WorkingDirectory, setting.Target));
+        if (setting.Target != dst) File.Move(dst, Path.Combine(workingDirectory, setting.Target));
     }
 
     public static IInstanceFactory GetInstanceFactory(this InstanceFactorySetting setting)
