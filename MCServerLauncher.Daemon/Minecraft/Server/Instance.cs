@@ -129,10 +129,13 @@ public class Instance
             };
             process.OutputDataReceived += (_, arg) =>
             {
-                if (arg.Data is not null)
-                    OnLog?.Invoke(Config.Uuid, arg.Data);
+                if (arg.Data is not null) OnLog?.Invoke(Config.Uuid, arg.Data);
             };
-            process.ErrorDataReceived += (_, arg) => Log.Error($"[Server({Config.Name})] [STDERR] {arg.Data}");
+            process.ErrorDataReceived += (_, arg) =>
+            {
+                Log.Error($"[Server({Config.Name})] [STDERR] {arg.Data}");
+                if (arg.Data is not null) OnLog?.Invoke(Config.Uuid, "[STDERR] " + arg.Data);
+            };
 
             process.Exited += (_, _) =>
             {
