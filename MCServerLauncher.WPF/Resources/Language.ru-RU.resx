@@ -734,10 +734,10 @@
     <value>Адрес WebSocket демона</value>
   </data>
   <data name="Password" xml:space="preserve">
-    <value>密码</value>
+    <value>код</value>
   </data>
   <data name="Connecting" xml:space="preserve">
-    <value>连接中</value>
+    <value>Связь.</value>
   </data>
   <data name="ConsoleBoard_Universal_RAM" xml:space="preserve">
     <value>通用：实例 RAM 占用</value>
