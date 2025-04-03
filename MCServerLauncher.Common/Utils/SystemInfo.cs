@@ -149,21 +149,29 @@ public class LinuxSystemInfo : ISystemInfo
 
     public async ValueTask<MemInfo> GetMemInfo()
     {
-        var totalMemTask = this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemTotal | awk '{print $2}'\"")
-            .MapResult(ulong.Parse);
-        var availableMemTask =
-            this.RunCommandAsync("sh", "-c \"cat /proc/meminfo | grep MemAvailable | awk '{print $2}'\"")
-                .MapResult(ulong.Parse);
+        // 单次获取所有内存信息
+        var memInfoRaw = await this.RunCommandAsync("sh",
+                "-c \"awk '/MemTotal|MemAvailable/ {print $2}' /proc/meminfo\"")
+            .ConfigureAwait(false);
 
-        await Task.WhenAll(totalMemTask, availableMemTask);
-        return new MemInfo(totalMemTask.Result, availableMemTask.Result);
+        var parts = memInfoRaw.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+        // 确保获取到两个值
+        if (parts.Length != 2 ||
+            !ulong.TryParse(parts[0], out var totalKb) ||
+            !ulong.TryParse(parts[1], out var availableKb))
+        {
+            throw new InvalidOperationException("Failed to parse memory info");
+        }
+
+        return new MemInfo(totalKb, availableKb);
     }
 
     private static Task<(ulong, ulong)> GetLinuxCpuTime()
     {
         return SystemInfoHelper.RunCommandAsync(
             "sh",
-            "-c \"cat /proc/stat | grep '^cpu ' | awk '{total=$2+$3+$4+$5; idle=$5; print total,idle}'\""
+            "-c \"cat /proc/stat | grep '^cpu ' | awk '{total=0; for(i=2;i<=NF;i++) total+=$i; idle=$5+$6; print total, idle}'\""
         ).MapResult(x =>
         {
             var rv = x.Split(' ').Select(ulong.Parse).ToArray();
@@ -201,18 +209,27 @@ public class MacOSSystemInfo : ISystemInfo
 
     public async ValueTask<MemInfo> GetMemInfo()
     {
-        var total = await this.RunCommandAsync("sysctl", "-n vm.pages").MapResult(ulong.Parse);
+        // 获取总内存（字节）并转换为 KB
+        var totalBytes = await this.RunCommandAsync("sysctl", "-n hw.memsize").MapResult(ulong.Parse);
+        var totalKb = totalBytes / 1024;
+
+        // 获取页面大小（字节）并转换为 KB
         var pageSize = await this.RunCommandAsync("getconf", "PAGESIZE").MapResult(ulong.Parse);
-        pageSize /= 1024; // in KB
+        var pageSizeKb = pageSize / 1024; // 例如 4096 / 1024 = 4
 
-        var vmStatActivePages = await this
-            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages active' | awk '{print $3}'\"")
+        // 获取空闲页面和非活跃页面数
+        var pagesFree = await this
+            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages free' | awk '{print $3}'\"")
             .MapResult(s => ulong.Parse(s.Trim('.')));
-        var vmStatWiredPages = await this
-            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages wired down' | awk '{print $4}'\"")
+        var pagesInactive = await this
+            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages inactive' | awk '{print $3}'\"")
             .MapResult(s => ulong.Parse(s.Trim('.')));
 
-        return new MemInfo(total * pageSize, (total - vmStatActivePages - vmStatWiredPages) * pageSize);
+        // 计算可用内存（KB）
+        var availablePages = pagesFree + pagesInactive;
+        var freeKb = availablePages * pageSizeKb;
+
+        return new MemInfo(totalKb, freeKb);
     }
 }
 
