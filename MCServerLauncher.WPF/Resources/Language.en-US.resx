@@ -734,7 +734,7 @@
     <value>Daemon WebSocket Address</value>
   </data>
   <data name="Password" xml:space="preserve">
-    <value>密码</value>
+    <value>Password</value>
   </data>
   <data name="Connecting" xml:space="preserve">
     <value>Connecting</value>
@@ -848,7 +848,7 @@
     <value>Feedback via GitHub</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>备注名</value>
+    <value>Daemon Note Name</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>Daemon</value>
@@ -866,6 +866,6 @@
     <value>Could not connect to daemon,please re-check your configurations</value>
   </data>
   <data name="Token" xml:space="preserve">
-    <value>访问密钥</value>
+    <value>Token</value>
   </data>
 </root>
