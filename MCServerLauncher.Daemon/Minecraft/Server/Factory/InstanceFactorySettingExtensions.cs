@@ -138,7 +138,7 @@ public static class InstanceFactorySettingExtensions
         // rename
         if (setting.Target != dst) File.Move(dst, Path.Combine(workingDirectory, setting.Target));
     }
-    
+
     public static Task<InstanceConfig> ApplyInstanceFactory(this InstanceFactorySetting setting)
     {
         if (InstanceFactoryMapping.TryGetValue(setting.InstanceType, out var sourceTypeMapping))
@@ -181,8 +181,12 @@ public static class InstanceFactorySettingExtensions
             return false;
         }
 
-        if (!File.Exists(setting.JavaPath)) return false;
-        if (!File.Exists(setting.Target)) return false;
+        if (setting.JavaPath.ToLower() != "java" && !File.Exists(setting.JavaPath)) return false;
+        if (Uri.TryCreate(setting.Source, UriKind.Absolute, out var uri))
+        {
+            if (uri.IsFile && !File.Exists(uri.LocalPath)) return false;
+        }
+        else if (!File.Exists(setting.Source)) return false;
 
         if (setting.Uuid == Guid.Empty) return false;
 
