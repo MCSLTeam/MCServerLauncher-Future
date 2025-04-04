@@ -1,0 +1,36 @@
+﻿using Newtonsoft.Json;
+
+namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
+
+public static class InstallExtensions
+{
+    public static Version LoadVersion(this Install profile)
+    {
+        return JsonConvert.DeserializeObject<Version>(profile.Json, InstallProfileJsonSettings.Settings)!;
+    }
+
+    public static async Task<Version.Download?> GetMcDownloadFromBmclApi(this Install profile,
+        CancellationToken ct = default)
+    {
+        var manifestUrl = $"https://bmclapi2.bangbang93.com/version/{profile.Minecraft}/json";
+        using var client = new HttpClient();
+        var version = await client.GetStringAsync(manifestUrl, ct);
+        var versionObj = JsonConvert.DeserializeObject<Version>(version, InstallProfileJsonSettings.Settings);
+        var download = versionObj?.GetDownload("server");
+
+        if (download is not null) download.Url = $"https://bmclapi2.bangbang93.com/version/{profile.Minecraft}/server";
+        return download;
+    }
+
+    public static async Task<Version.Download?> GetMcDownload(this Install profile, CancellationToken ct = default)
+    {
+        using var client = new HttpClient();
+        var manifest = await client.GetStringAsync("https://launchermeta.mojang.com/mc/game/version_manifest.json", ct);
+        var manifestObj = JsonConvert.DeserializeObject<Manifest>(manifest, InstallProfileJsonSettings.Settings);
+        if (manifestObj is null) return null;
+
+        var version = await client.GetStringAsync(manifestObj.GetUrl(profile.Version), ct);
+        var versionObj = JsonConvert.DeserializeObject<Version>(version, InstallProfileJsonSettings.Settings);
+        return versionObj?.GetDownload("server");
+    }
+}
