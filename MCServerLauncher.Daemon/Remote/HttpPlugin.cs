@@ -31,6 +31,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                         await response
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "application/json")
+                            .AddHeader("Access-Control-Allow-Origin", "*")
                             .SetContent(new JObject
                             {
                                 ["message"] = "MCServerLauncher Future Daemon CSharp",
@@ -46,6 +47,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                         await response
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "application/json")
+                            .AddHeader("Access-Control-Allow-Origin", "*")
                             .SetContent(new JObject
                             {
                                 ["name"] = "MCServerLauncher Future Daemon CSharp",
