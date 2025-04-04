@@ -302,30 +302,22 @@ internal static class FileManager
     ///     计算文件 SHA1, 计算完成后恢复文件指针
     /// </summary>
     /// <param name="fs"></param>
-    /// <param name="bufferSize"></param>
+    /// <param name="ct"></param>
     /// <returns></returns>
-    private static Task<string> FileSha1(FileStream fs, uint bufferSize = 16384)
+    private static async Task<string> FileSha1(FileStream fs, CancellationToken ct = default)
     {
-        return Task.Run(() =>
-        {
-            // using var
-            using var sha1 = SHA1.Create();
+        // using var
+        using var sha1 = SHA1.Create();
+        var ptr = fs.Position;
+        var hashBytes = await sha1.ComputeHashAsync(fs, ct);
+        fs.Seek(ptr, SeekOrigin.Begin);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+    }
 
-            var ptr = fs.Position;
-            fs.Seek(0, SeekOrigin.Begin);
-
-            var buffer = new byte[bufferSize];
-            int bytesRead;
-            while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
-                sha1.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-
-            sha1.TransformFinalBlock(buffer, 0, 0);
-
-            var hashBytes = sha1.Hash!;
-
-            fs.Seek(ptr, SeekOrigin.Begin);
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-        });
+    public static Task<string> FileSha1(string path, CancellationToken ct = default)
+    {
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return FileSha1(fs, ct);
     }
 
     #endregion
