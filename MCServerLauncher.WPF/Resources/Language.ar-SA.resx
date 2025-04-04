@@ -815,7 +815,7 @@
     <value>إعدادات المثيل</value>
   </data>
   <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
-    <value>Minecraft 服务器</value>
+    <value>خادم ماينكرافت</value>
   </data>
   <data name="CreateFrpcInstanceCategory" xml:space="preserve">
     <value>快速反向代理客户端 Frpc</value>
