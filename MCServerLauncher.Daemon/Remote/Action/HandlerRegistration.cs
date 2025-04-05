@@ -29,7 +29,7 @@ public static class HandlerRegistration
             .Register(
                 ActionType.Ping,
                 IMatchable.Always(),
-                (resolver, ct) =>
+                (ctx, resolver, ct) =>
                     ValueTask.FromResult(new PingResult
                     {
                         Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
@@ -37,14 +37,13 @@ public static class HandlerRegistration
             .Register(
                 ActionType.GetSystemInfo,
                 IMatchable.Always(),
-                async (resolver, ct) => new GetSystemInfoResult { Info = await SystemInfoHelper.GetSystemInfo() }
+                async (ctx, resolver, ct) => new GetSystemInfoResult { Info = await SystemInfoHelper.GetSystemInfo() }
             )
             .Register(
                 ActionType.GetPermissions,
                 IMatchable.Always(),
-                (resolver, ct) =>
+                (ctx, resolver, ct) =>
                 {
-                    var ctx = resolver.GetRequiredService<WsServiceContext>();
                     return ValueTask.FromResult(new GetPermissionsResult
                     {
                         Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
@@ -53,12 +52,12 @@ public static class HandlerRegistration
             .Register(
                 ActionType.GetJavaList,
                 Permission.Of("mcsl.daemon.java_list"),
-                async (resolver, ct) =>
+                async (ctx, resolver, ct) =>
                 {
-                    var ctx = resolver.GetRequiredService<IAsyncTimedCacheable<List<JavaInfo>>>();
+                    var cache = resolver.GetRequiredService<IAsyncTimedCacheable<List<JavaInfo>>>();
                     return new GetJavaListResult
                     {
-                        JavaList = await ctx.Value
+                        JavaList = await cache.Value
                     };
                 }
             )
@@ -70,9 +69,8 @@ public static class HandlerRegistration
             .Register<SubscribeEventParameter>(
                 ActionType.SubscribeEvent,
                 IMatchable.Always(),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
-                    var ctx = resolver.GetRequiredService<WsServiceContext>();
                     try
                     {
                         ctx.SubscribeEvent(param.Type,
@@ -90,9 +88,8 @@ public static class HandlerRegistration
             )
             .Register<UnsubscribeEventParameter>(
                 ActionType.UnsubscribeEvent,
-                IMatchable.Always(), (param, resolver, ct) =>
+                IMatchable.Always(), (param, ctx, resolver, ct) =>
                 {
-                    var ctx = resolver.GetRequiredService<WsServiceContext>();
                     try
                     {
                         ctx.UnsubscribeEvent(param.Type,
@@ -115,7 +112,7 @@ public static class HandlerRegistration
             .Register<FileUploadRequestParameter, FileUploadRequestResult>(
                 ActionType.FileUploadRequest,
                 Permission.Of("mcsl.daemon.file.upload"),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     Guid fileId;
                     try
@@ -147,7 +144,7 @@ public static class HandlerRegistration
             .Register<FileUploadChunkParameter, FileUploadChunkResult>(
                 ActionType.FileUploadChunk,
                 Permission.Of("mcsl.daemon.file.upload"),
-                async (param, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     ActionExceptionHelper.ThrowIf(
                         param.FileId == Guid.Empty,
@@ -174,7 +171,7 @@ public static class HandlerRegistration
             .Register<FileUploadCancelParameter>(
                 ActionType.FileUploadCancel,
                 Permission.Of("mcsl.daemon.file.upload"),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     ActionExceptionHelper.ThrowIf(
                         !FileManager.FileUploadCancel(param.FileId),
@@ -191,7 +188,7 @@ public static class HandlerRegistration
             .Register<FileDownloadRequestParameter, FileDownloadRequestResult>(
                 ActionType.FileDownloadRequest,
                 Permission.Of("mcsl.daemon.file.download"),
-                async (param, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     try
                     {
@@ -221,7 +218,7 @@ public static class HandlerRegistration
             .Register<FileDownloadRangeParameter, FileDownloadRangeResult>(
                 ActionType.FileDownloadRange,
                 Permission.Of("mcsl.daemon.file.download"),
-                async (param, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     ActionExceptionHelper.ThrowIf(
                         !rangePattern.IsMatch(param.Range),
@@ -239,7 +236,7 @@ public static class HandlerRegistration
             .Register<FileDownloadCloseParameter>(
                 ActionType.FileDownloadClose,
                 Permission.Of("mcsl.daemon.file.download"),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     FileManager.FileDownloadClose(param.FileId);
                     return ValueTask.CompletedTask;
@@ -252,7 +249,7 @@ public static class HandlerRegistration
             .Register<GetDirectoryInfoParameter, GetDirectoryInfoResult>(
                 ActionType.GetDirectoryInfo,
                 Permission.Of("mcsl.daemon.file.info.directory"),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     try
                     {
@@ -278,7 +275,7 @@ public static class HandlerRegistration
             .Register<GetFileInfoParameter, GetFileInfoResult>(
                 ActionType.GetFileInfo,
                 Permission.Of("mcsl.daemon.file.info.file"),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     try
                     {
@@ -306,7 +303,7 @@ public static class HandlerRegistration
             .Register<StartInstanceParameter, StartInstanceResult>(
                 ActionType.StartInstance,
                 IMatchable.Always(),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     var eventService = resolver.GetRequiredService<IEventService>();
@@ -334,7 +331,7 @@ public static class HandlerRegistration
             .Register<StopInstanceParameter, StopInstanceResult>(
                 ActionType.StopInstance,
                 IMatchable.Always(),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return ValueTask.FromResult(
@@ -346,7 +343,7 @@ public static class HandlerRegistration
             .Register<SendToInstanceParameter>(
                 ActionType.SendToInstance,
                 IMatchable.Always(),
-                (param, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     instanceManager.SendToInstance(param.Id, param.Message);
@@ -355,7 +352,7 @@ public static class HandlerRegistration
             ).Register(
                 ActionType.GetAllStatus,
                 IMatchable.Always(),
-                async (resolver, ct) =>
+                async (ctx,resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return new GetAllStatusResult
@@ -365,22 +362,23 @@ public static class HandlerRegistration
                 })
             .Register<AddInstanceParameter, AddInstanceResult>(
                 ActionType.AddInstance,
-                IMatchable.Always(), async (param, resolver, ct) =>
+                IMatchable.Always(), async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    
-                    if (!param.Setting.ValidateSetting()) throw new ActionException(
-                        ActionReturnCode.InstanceAddFailed,
-                        "Invalid instance factory setting" //TODO 更多报错信息
-                    );
-                    
+
+                    if (!param.Setting.ValidateSetting())
+                        throw new ActionException(
+                            ActionReturnCode.InstanceAddFailed,
+                            "Invalid instance factory setting" //TODO 更多报错信息
+                        );
+
                     var config = await instanceManager.TryAddInstance(param.Setting);
                     if (config is null)
                         throw new ActionException(
                             ActionReturnCode.InstanceAddFailed,
                             "Failed to add instance" //TODO 更多报错信息
                         );
-                    
+
                     return new AddInstanceResult
                     {
                         Config = config
@@ -389,7 +387,7 @@ public static class HandlerRegistration
             .Register<RemoveInstanceParameter, RemoveInstanceResult>(
                 ActionType.RemoveInstance,
                 IMatchable.Always(),
-                async (param, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return new RemoveInstanceResult
@@ -400,7 +398,7 @@ public static class HandlerRegistration
             .Register<KillInstanceParameter>(
                 ActionType.KillInstance,
                 IMatchable.Always(),
-                async (param, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     await instanceManager.KillInstance(param.Id);
@@ -408,7 +406,7 @@ public static class HandlerRegistration
             .Register<GetInstanceStatusParameter, GetInstanceStatusResult>(
                 ActionType.GetInstanceStatus,
                 IMatchable.Always(),
-                async (param, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return new GetInstanceStatusResult

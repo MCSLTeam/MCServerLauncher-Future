@@ -27,16 +27,16 @@ public class Application
     public Application()
     {
         IServiceCollection collection = new ServiceCollection();
-        collection.AddScoped<WsServiceContext>();
-
-
+        
         _httpService = new HttpService();
         _httpService.Setup(new TouchSocketConfig()
             .SetListenIPHosts(AppConfig.Get().Port)
             .UseAspNetCoreContainer(collection)
             .ConfigureContainer(a =>
             {
-                a.RegisterSingleton<IServiceCollection>(collection)
+                a
+                    .RegisterSingleton<IServiceCollection>(collection)
+                    .RegisterSingleton<Dictionary<string, WsServiceContext>>()
                     .RegisterSingleton<IHttpService>(_httpService)
                     .RegisterSingleton<IActionService, ActionProcessor>()
                     .RegisterSingleton<IEventService, EventService>()
@@ -145,7 +145,7 @@ public class Application
     public async Task StopAsync(int timeout = 5000)
     {
         _daemonReportTimer.Stop();
-        
+
         var cts = new CancellationTokenSource();
 
         var manager = _httpService.Resolver.GetRequiredService<IInstanceManager>();

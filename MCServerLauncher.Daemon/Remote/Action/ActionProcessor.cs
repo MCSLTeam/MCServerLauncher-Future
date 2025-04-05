@@ -11,7 +11,8 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 
 public class ActionProcessor : IActionService
 {
-    private readonly Dictionary<ActionType, Func<JToken?, IResolver, CancellationToken, ValueTask<IActionResult?>>>
+    private readonly Dictionary<ActionType,
+            Func<JToken?, WsServiceContext, IResolver, CancellationToken, ValueTask<IActionResult?>>>
         _handlers;
 
     private readonly IReadOnlyDictionary<ActionType, IMatchable> _permissions;
@@ -22,10 +23,10 @@ public class ActionProcessor : IActionService
         _permissions = new ReadOnlyDictionary<ActionType, IMatchable>(handlerRegistry.HandlerPermissions);
     }
 
-    public async Task<ActionResponse> ProcessAsync(ActionRequest request, IResolver resolver,
+    public async Task<ActionResponse> ProcessAsync(ActionRequest request, WsServiceContext context, IResolver resolver,
         CancellationToken cancellationToken)
     {
-        var userPermission = resolver.GetRequiredService<WsServiceContext>().Permissions;
+        var userPermission = context.Permissions;
         if (_permissions.TryGetValue(request.ActionType, out var actionPermission) &&
             !userPermission.Matches(actionPermission))
             return ResponseUtils.Err(request, $"Permission denied for action '{request.ActionType}'",
@@ -38,7 +39,7 @@ public class ActionProcessor : IActionService
         // 执行
         try
         {
-            var result = await handler.Invoke(request.Parameter, resolver, cancellationToken);
+            var result = await handler.Invoke(request.Parameter, context, resolver, cancellationToken);
             return ResponseUtils.Ok(
                 result is null
                     ? new JObject()

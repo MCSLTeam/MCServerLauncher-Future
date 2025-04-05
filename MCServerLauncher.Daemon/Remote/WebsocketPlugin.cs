@@ -86,7 +86,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             var resolver = webSocket.Client.Resolver;
             Task.Run(async () =>
             {
-                var result = await _actionService.ProcessAsync(request, resolver, CancellationToken.None);
+                var result = await _actionService.ProcessAsync(request,context ,resolver, CancellationToken.None);
 
                 var text = JsonConvert.SerializeObject(result, DaemonJsonSettings.Settings);
                 Log.Debug("[Remote] Sending message: \n{0}", text);
@@ -115,13 +115,17 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
     private static WsServiceContext GetWsServiceContext(IWebSocket webSocket)
     {
-        return webSocket.Client.Resolver.GetRequiredService<WsServiceContext>();
+        return webSocket.Client.Resolver.GetRequiredService<Dictionary<string, WsServiceContext>>()
+            .GetValue(GetClientId(webSocket));
     }
 
     private static WsServiceContext InitWsServiceContext(IWebSocket webSocket)
     {
-        var ctx = GetWsServiceContext(webSocket);
-        ctx.ClientId = GetClientId(webSocket);
+        var ctx = new WsServiceContext
+        {
+            ClientId = GetClientId(webSocket)
+        };
+        webSocket.Client.Resolver.GetRequiredService<Dictionary<string, WsServiceContext>>().Add(ctx.ClientId, ctx);
         return ctx;
     }
 
@@ -130,7 +134,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         Task.Run(async () =>
         {
             foreach (var id in _httpService.GetIds()) await OnEventSignalReceived(id, type, meta, data);
-        }).ConfigureFalseAwait();
+        });
     }
 
     private async Task OnEventSignalReceived(string clientId, EventType type, IEventMeta? meta, IEventData? data)

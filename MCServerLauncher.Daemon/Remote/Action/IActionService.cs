@@ -8,6 +8,6 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public interface IActionService
 {
-    public Task<ActionResponse> ProcessAsync(ActionRequest request, IResolver resolver,
+    public Task<ActionResponse> ProcessAsync(ActionRequest request,WsServiceContext context ,IResolver resolver,
         CancellationToken cancellationToken);
 }
