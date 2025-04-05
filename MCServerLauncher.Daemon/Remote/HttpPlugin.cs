@@ -38,7 +38,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                                 ["version"] =
                                     Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                                 ["status"] = "ok",
-                                ["apiVersion"] = "v1"
+                                ["api_version"] = "v1"
                             }.ToString())
                             .AnswerAsync();
                         break;
@@ -53,7 +53,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                                 ["name"] = "MCServerLauncher Future Daemon CSharp",
                                 ["version"] =
                                     Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                                ["apiVersion"] = "v1"
+                                ["api_version"] = "v1"
                             }.ToString())
                             .AnswerAsync();
                         break;
