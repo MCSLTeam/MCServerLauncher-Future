@@ -1,4 +1,6 @@
+using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
@@ -6,16 +8,19 @@ using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Cache;
+using MCServerLauncher.Daemon.Utils.Status;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Sockets;
+using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon;
 
 public class Application
 {
+    private static Timer _daemonReportTimer;
     private readonly HttpService _httpService;
     public static readonly DateTime StartTime = DateTime.Now;
 
@@ -80,6 +85,9 @@ public class Application
         );
 
         PostApplicationContainerBuilt();
+
+        _daemonReportTimer = new Timer(3000);
+        _daemonReportTimer.AutoReset = true;
     }
 
     private void PostApplicationContainerBuilt()
@@ -99,6 +107,20 @@ public class Application
         await _httpService.StartAsync();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
+
+        _daemonReportTimer.Elapsed += async (sender, args) =>
+        {
+            var eventService = _httpService.Resolver.GetRequiredService<IEventService>();
+            var (osInfo, cpuInfo, memInfo, driveInformation) = await SystemInfoHelper.GetSystemInfo();
+            eventService.OnDaemonReport(new DaemonReport(
+                osInfo,
+                cpuInfo,
+                memInfo,
+                driveInformation,
+                StartTime.ToUnixTimeMilliSeconds()
+            ));
+        };
+        _daemonReportTimer.Start();
 
         var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) =>
@@ -122,6 +144,8 @@ public class Application
 
     public async Task StopAsync(int timeout = 5000)
     {
+        _daemonReportTimer.Stop();
+        
         var cts = new CancellationTokenSource();
 
         var manager = _httpService.Resolver.GetRequiredService<IInstanceManager>();

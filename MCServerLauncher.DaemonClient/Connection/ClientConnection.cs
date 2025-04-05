@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -18,7 +16,7 @@ namespace MCServerLauncher.DaemonClient.Connection;
 
 public class ClientConnection
 {
-    public event Action<EventType, IEventMeta?, IEventData?>? OnEventReceived;
+    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
 
     private const int CF_PROTOCOL_VERSION = 1;
     private const int CF_BUFFER_SIZE = 1024;
@@ -342,6 +340,7 @@ public class ClientConnection
             // TODO 改为异步? BeginInvoke?
             OnEventReceived?.Invoke(
                 eventType,
+                packet.Timestamp,
                 eventType.GetEventMeta(packet.EventMeta, JsonSettings.Settings),
                 eventType.GetEventData(packet.EventData, JsonSettings.Settings)
             );

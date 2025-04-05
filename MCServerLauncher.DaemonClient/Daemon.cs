@@ -8,6 +8,7 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.DaemonClient.Connection;
 using Newtonsoft.Json;
 
@@ -25,6 +26,8 @@ public class Daemon : IDaemon
     public WebSocketState State => Connection.WebSocket.State;
     public ClientConnection Connection { get; }
     public event Action<Guid, string>? InstanceLogEvent;
+    public event Action<DaemonReport, long>? DaemonReportEvent;
+
 
     /// <summary>
     ///     心跳包是否超时
@@ -102,8 +105,9 @@ public class Daemon : IDaemon
         return new Daemon(connection);
     }
 
-    private void OnEvent(EventType type, IEventMeta? meta, IEventData? data)
+    private void OnEvent(EventType type, long timestamp, IEventMeta? meta, IEventData? data)
     {
+        // ms timestamp转datetime
         switch (type)
         {
             case EventType.InstanceLog:
@@ -111,6 +115,12 @@ public class Daemon : IDaemon
                 InstanceLogEvent?.Invoke(
                     (meta as InstanceLogEventMeta)!.InstanceId,
                     (data as InstanceLogEventData)!.Log
+                );
+                break;
+            case EventType.DaemonReport:
+                DaemonReportEvent?.Invoke(
+                    (data as DaemonReportEventData)!.Report,
+                    DateTime.UtcNow.ToUnixTimeMilliSeconds() - timestamp
                 );
                 break;
             default:
@@ -123,6 +133,7 @@ public class Daemon : IDaemon
     {
         try
         {
+            //var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
             var daemon = await OpenAsync("127.0.0.1", 11451, "LEFELMeM1qIXxZTUUSzDC6t2GbCYMFhJ", false,
                 new ClientConnectionConfig
                 {
@@ -132,29 +143,22 @@ public class Daemon : IDaemon
                     PingInterval = TimeSpan.FromSeconds(3),
                     PingTimeout = 5000,
                 });
-            // await Task.Delay(1000);
-            // await daemon.SubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
-            // {
-            //     InstanceId = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2")
-            // });
-            // await daemon.CloseAsync();
-            // return;
             Console.WriteLine("Connection OK");
             Console.WriteLine($"Daemon Latency: {await daemon.PingAsync()}ms");
 
             Console.WriteLine("\nDaemon system info:");
             var systemInfo = await daemon.GetSystemInfoAsync();
             Console.WriteLine(JsonConvert.SerializeObject(systemInfo, Formatting.Indented));
-            
+
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
-            
+
             Console.WriteLine("\nDaemon side java list:");
             foreach (var info in await daemon.GetJavaListAsync())
             {
                 Console.WriteLine($"    - {info.ToString()}");
             }
-            
+
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
             Console.WriteLine("\nDaemon instances:");
@@ -174,23 +178,26 @@ public class Daemon : IDaemon
                 {
                     Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"),
                     Name = "1-21-1",
-                    InstanceType = InstanceType.Vanilla,
-                    Target = "server.jar",
+                    InstanceType = InstanceType.Forge,
+                    Target = "installer.jar",
                     TargetType = TargetType.Jar,
                     JavaPath = "java",
                     JavaArgs = Array.Empty<string>(),
                     SourceType = SourceType.Core,
-                    Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
+                    // Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
+                    Source =
+                        "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",
+                    // Source = "daemon/downloads/forge-1.20.4-49.2.0-installer.jar",
                     McVersion = "1.21.1",
                     UsePostProcess = false
                 };
                 guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2");
                 Console.WriteLine($"Creating Instance: {setting.Name} ({setting.Uuid})");
-                
+
                 var config = await daemon.TryAddInstanceAsync(setting);
                 Console.WriteLine("[InstanceManager] Created Server: " + config.Name);
             }
-            
+
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
             Console.WriteLine($"\nStarting Instance: {guid}");

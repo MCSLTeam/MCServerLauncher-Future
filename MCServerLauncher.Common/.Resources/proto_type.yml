@@ -177,3 +177,9 @@ events:
       
       data:
         log: string
+
+  - daemon_report:
+      meta:
+
+      data:
+        report: DaemonReport

@@ -34,6 +34,8 @@ public static class EventTypeExtensions
         {
             EventType.InstanceLog => PrivateGetEventData<InstanceLogEventData>(metaData,
                 settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.Create(settings)),
+            EventType.DaemonReport => PrivateGetEventData<DaemonReportEventData>(metaData,
+                settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.Create(settings)),
             _ => null
         };
     }

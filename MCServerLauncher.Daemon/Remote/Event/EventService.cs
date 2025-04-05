@@ -1,4 +1,5 @@
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Status;
 
 namespace MCServerLauncher.Daemon.Remote.Event;
 
@@ -23,6 +24,15 @@ public static class EventServiceExtensions
             EventType.InstanceLog,
             new InstanceLogEventMeta { InstanceId = instanceId },
             new InstanceLogEventData { Log = log }
+        );
+    }
+
+    public static void OnDaemonReport(this IEventService service, DaemonReport report)
+    {
+        service.OnEvent(
+            EventType.DaemonReport,
+            null,
+            new DaemonReportEventData { Report = report }
         );
     }
 }

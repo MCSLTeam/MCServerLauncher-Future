@@ -2,5 +2,6 @@
 
 public enum EventType
 {
-    InstanceLog
+    InstanceLog,
+    DaemonReport
 }

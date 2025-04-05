@@ -3,6 +3,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.DaemonClient;
@@ -16,8 +17,16 @@ public interface IDaemon
     bool PingLost { get; }
     DateTime LastPing { get; }
     ClientConnection? Connection { get; }
-
+    
+    /// <summary>
+    ///     Instance Log Event(InstanceId, Text)
+    /// </summary>
     event Action<Guid, string>? InstanceLogEvent;
+    
+    /// <summary>
+    ///     Daemon Report Event(Report, Latency ms)
+    /// </summary>
+    event Action<DaemonReport, long>? DaemonReportEvent;
 
     Task RequestAsync(
         ActionType actionType,
