@@ -27,19 +27,19 @@ public class Application
     public Application()
     {
         IServiceCollection collection = new ServiceCollection();
-        
+
+
         _httpService = new HttpService();
         _httpService.Setup(new TouchSocketConfig()
             .SetListenIPHosts(AppConfig.Get().Port)
             .UseAspNetCoreContainer(collection)
             .ConfigureContainer(a =>
             {
-                a
-                    .RegisterSingleton<IServiceCollection>(collection)
-                    .RegisterSingleton<Dictionary<string, WsServiceContext>>()
+                a.RegisterSingleton<IServiceCollection>(collection)
                     .RegisterSingleton<IHttpService>(_httpService)
                     .RegisterSingleton<IActionService, ActionProcessor>()
                     .RegisterSingleton<IEventService, EventService>()
+                    .RegisterSingleton<Dictionary<string, WsServiceContext>>()
                     .RegisterSingleton<ActionHandlerRegistry>()
                     .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
                     .RegisterSingleton<IAsyncTimedCacheable<List<JavaInfo>>>(
@@ -58,7 +58,7 @@ public class Application
                         .SetVerifyConnection(async (_, context) =>
                         {
                             // if (!context.Request.IsUpgrade()) return false;
-
+                            if (!context.Request.URL.StartsWith("/api/v1")) return false;
                             try
                             {
                                 var token = context.Request.Query["token"];

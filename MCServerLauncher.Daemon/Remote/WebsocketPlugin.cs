@@ -39,6 +39,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
     {
         GetWsServiceContext(webSocket).UnsubscribeAllEvents();
+        _httpService.Resolver.GetRequiredService<Dictionary<string, WsServiceContext>>().Remove(GetClientId(webSocket));
         Log.Debug("[Remote] Websocket connection from {0} disconnected", webSocket.Client.GetIPPort());
 
         await e.InvokeNext();
@@ -86,7 +87,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             var resolver = webSocket.Client.Resolver;
             Task.Run(async () =>
             {
-                var result = await _actionService.ProcessAsync(request,context ,resolver, CancellationToken.None);
+                var result = await _actionService.ProcessAsync(request, context, resolver, CancellationToken.None);
 
                 var text = JsonConvert.SerializeObject(result, DaemonJsonSettings.Settings);
                 Log.Debug("[Remote] Sending message: \n{0}", text);
@@ -126,6 +127,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
             ClientId = GetClientId(webSocket)
         };
         webSocket.Client.Resolver.GetRequiredService<Dictionary<string, WsServiceContext>>().Add(ctx.ClientId, ctx);
+        Log.Debug("CREATE WS_CONTEXT: {0}", ctx.ClientId);
         return ctx;
     }
 
@@ -133,7 +135,8 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
     {
         Task.Run(async () =>
         {
-            foreach (var id in _httpService.GetIds()) await OnEventSignalReceived(id, type, meta, data);
+            var contexts = _httpService.Resolver.GetRequiredService<Dictionary<string, WsServiceContext>>().Keys;
+            foreach (var id in contexts) await OnEventSignalReceived(id, type, meta, data);
         });
     }
 
@@ -142,8 +145,8 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
         var ws = GetWebSocket(clientId);
         if (ws == null)
         {
-            Log.Warning("[Remote] Failed to send event={0}, because websocket connection closed or lost.",
-                type);
+            Log.Warning("[Remote] Failed to send event={0} to client={1}, because websocket connection closed or lost.",
+                type, clientId);
             return;
         }
 
