@@ -314,10 +314,10 @@ internal static class FileManager
         return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
     }
 
-    public static Task<string> FileSha1(string path, CancellationToken ct = default)
+    public static async Task<string> FileSha1(string path, CancellationToken ct = default)
     {
-        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return FileSha1(fs, ct);
+        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return await FileSha1(fs, ct);
     }
 
     #endregion
