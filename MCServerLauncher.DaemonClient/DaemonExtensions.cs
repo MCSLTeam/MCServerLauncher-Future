@@ -10,6 +10,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Common.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

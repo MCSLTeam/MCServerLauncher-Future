@@ -240,7 +240,8 @@ public class ClientConnection
     {
         try
         {
-            var response = (await tcs.Task.TimeoutAfter(timeout, ct))!;
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts.Token);
+            var response = (await tcs.Task.TimeoutAfter(timeout, cts.Token))!;
             var serializer = JsonSerializer.Create(JsonSettings.Settings);
 
             return response.RequestStatus switch
@@ -337,7 +338,7 @@ public class ClientConnection
         {
             var packet = JsonConvert.DeserializeObject<EventPacket>(json, JsonSettings.Settings)!;
             var eventType = packet.EventType;
-            
+
             // TODO 改为异步? BeginInvoke?
             OnEventReceived?.Invoke(
                 eventType,

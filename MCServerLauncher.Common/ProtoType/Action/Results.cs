@@ -1,6 +1,6 @@
 ﻿using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Common.Utils;
+using MCServerLauncher.Common.ProtoType.Status;
 using Newtonsoft.Json;
 
 namespace MCServerLauncher.Common.ProtoType.Action;

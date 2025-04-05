@@ -17,6 +17,7 @@ namespace MCServerLauncher.Daemon;
 public class Application
 {
     private readonly HttpService _httpService;
+    public static readonly DateTime StartTime = DateTime.Now;
 
     public Application()
     {

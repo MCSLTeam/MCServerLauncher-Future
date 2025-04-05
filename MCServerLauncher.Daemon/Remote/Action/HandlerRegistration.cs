@@ -12,6 +12,7 @@ using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
 using Microsoft.Extensions.DependencyInjection;
+using SystemInfoHelper = MCServerLauncher.Daemon.Utils.Status.SystemInfoHelper;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -36,7 +37,7 @@ public static class HandlerRegistration
             .Register(
                 ActionType.GetSystemInfo,
                 IMatchable.Always(),
-                async (resolver, ct) => new GetSystemInfoResult { Info = await SystemInfo.Get() }
+                async (resolver, ct) => new GetSystemInfoResult { Info = await SystemInfoHelper.GetSystemInfo() }
             )
             .Register(
                 ActionType.GetPermissions,
