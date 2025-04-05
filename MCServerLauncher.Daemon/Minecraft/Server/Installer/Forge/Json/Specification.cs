@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
+﻿namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 
 public class Specification
 {

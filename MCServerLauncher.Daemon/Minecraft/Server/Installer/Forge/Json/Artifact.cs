@@ -4,6 +4,12 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 
 public class Artifact
 {
+    private string? _descriptor;
+    private string? _filename;
+
+    // Cached values
+    private string? _path;
+
     // Descriptor parts: group:name:version[:classifier][@extension]
     public string Domain { get; private set; }
     public string Name { get; private set; }
@@ -11,10 +17,13 @@ public class Artifact
     public string? Classifier { get; private set; }
     public string Extension { get; private set; } = "jar";
 
-    // Cached values
-    private string? _path;
-    private string? _filename;
-    private string? _descriptor;
+    // Properties
+    public string Descriptor => _descriptor ??= $"{Domain}:{Name}:{Version}" +
+                                                (Classifier != null ? $":{Classifier}" : "") +
+                                                (Extension != "jar" ? $"@{Extension}" : "");
+
+    public string Path => _path!;
+    public string Filename => _filename!;
 
     public static Artifact FromDescriptor(string descriptor)
     {
@@ -41,10 +50,7 @@ public class Artifact
 
         artifact.Version = parts[2];
 
-        if (parts.Length > 3)
-        {
-            artifact.Classifier = parts[3];
-        }
+        if (parts.Length > 3) artifact.Classifier = parts[3];
 
         // Build filename
         artifact._filename = $"{artifact.Name}-{artifact.Version}";
@@ -63,17 +69,15 @@ public class Artifact
         return artifact;
     }
 
-    public string GetLocalPath(string basePath) => System.IO.Path.Combine(basePath, _path!);
+    public string GetLocalPath(string basePath)
+    {
+        return System.IO.Path.Combine(basePath, _path!);
+    }
 
-    // Properties
-    public string Descriptor => _descriptor ??= $"{Domain}:{Name}:{Version}" +
-                                                (Classifier != null ? $":{Classifier}" : "") +
-                                                (Extension != "jar" ? $"@{Extension}" : "");
-
-    public string Path => _path!;
-    public string Filename => _filename!;
-
-    public override string ToString() => Descriptor;
+    public override string ToString()
+    {
+        return Descriptor;
+    }
 
     public class ArtifactConverter : JsonConverter<Artifact>
     {
@@ -93,7 +97,7 @@ public class Artifact
             JsonSerializer serializer)
         {
             return reader.TokenType == JsonToken.String
-                ? Artifact.FromDescriptor(reader.Value!.ToString()!)
+                ? FromDescriptor(reader.Value!.ToString()!)
                 : null!;
         }
     }

@@ -1,10 +1,12 @@
-﻿using System.Net.Http.Json;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 
 public class Install : Specification
 {
+    [JsonIgnore] private Mirror? _mirror;
+
+    [JsonIgnore] private bool _triedMirrors;
     public string Profile { get; set; }
 
     public string Version { get; set; }
@@ -39,12 +41,15 @@ public class Install : Specification
 
     public Dictionary<string, DataFile> Data { get; set; } = new();
 
-    [JsonIgnore] private Mirror? _mirror;
+    public string GetUrlIcon()
+    {
+        return UrlIcon ?? "/url.png";
+    }
 
-    [JsonIgnore] private bool _triedMirrors;
-
-    public string GetUrlIcon() => UrlIcon ?? "/url.png";
-    public string GetWelcome() => Welcome ?? string.Empty;
+    public string GetWelcome()
+    {
+        return Welcome ?? string.Empty;
+    }
 
     public async Task<Mirror?> GetMirror()
     {
@@ -70,11 +75,15 @@ public class Install : Specification
         return _mirror;
     }
 
-    public List<Processor> GetProcessors(string side) =>
-        Processors.Where(p => p.IsSide(side)).ToList();
+    public List<Processor> GetProcessors(string side)
+    {
+        return Processors.Where(p => p.IsSide(side)).ToList();
+    }
 
-    public Dictionary<string, string> GetData(bool client) =>
-        Data.ToDictionary(e => e.Key, e => client ? e.Value.Client : e.Value.Server);
+    public Dictionary<string, string> GetData(bool client)
+    {
+        return Data.ToDictionary(e => e.Key, e => client ? e.Value.Client : e.Value.Server);
+    }
 
     public class Processor
     {
@@ -88,8 +97,10 @@ public class Install : Specification
 
         public Dictionary<string, string> Outputs { get; set; } = new();
 
-        public bool IsSide(string side) =>
-            Sides is null || Sides.Contains(side);
+        public bool IsSide(string side)
+        {
+            return Sides is null || Sides.Contains(side);
+        }
     }
 
     public class DataFile

@@ -1,7 +1,13 @@
+using System.Text.Json.Serialization;
+
 namespace MCServerLauncher.Daemon.Minecraft;
 
 public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch)
 {
+    [JsonIgnore] public static readonly McVersion Max = new(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue);
+
+    [JsonIgnore] public static readonly McVersion Min = new(0, 0, 0);
+
     public override string ToString()
     {
         return $"{Major}.{Minor}.{Patch}";
@@ -36,6 +42,13 @@ public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch
     public static McVersion Of(string version)
     {
         var parts = version.Split('.').Select(ushort.Parse).ToArray();
-        return new McVersion(parts[0], parts[1], parts[2]);
+
+        return parts.Length switch
+        {
+            1 => new McVersion(parts[0], 0, 0),
+            2 => new McVersion(parts[0], parts[1], 0),
+            3 => new McVersion(parts[0], parts[1], parts[2]),
+            _ => throw new ArgumentException("Invalid minecraft version format")
+        };
     }
 }

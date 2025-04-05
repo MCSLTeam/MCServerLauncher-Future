@@ -14,7 +14,7 @@ public class Version
     {
         return DownloadDictionary?.TryGetValue(key, out var download) == true ? download : null;
     }
-    
+
 
     public class Download
     {
@@ -26,7 +26,10 @@ public class Version
 
         public bool Provided { get; set; } = false;
 
-        public string GetUrl() => string.IsNullOrEmpty(Url) || Provided ? string.Empty : Url;
+        public string GetUrl()
+        {
+            return string.IsNullOrEmpty(Url) || Provided ? string.Empty : Url;
+        }
     }
 
     public class LibraryDownload : Download
@@ -47,7 +50,9 @@ public class Version
 
         public Dictionary<string, LibraryDownload>? Classifiers { get; set; }
 
-        public ISet<string> GetClassifiers() =>
-            Classifiers?.Keys.ToHashSet() ?? new HashSet<string>();
+        public ISet<string> GetClassifiers()
+        {
+            return Classifiers?.Keys.ToHashSet() ?? new HashSet<string>();
+        }
     }
 }

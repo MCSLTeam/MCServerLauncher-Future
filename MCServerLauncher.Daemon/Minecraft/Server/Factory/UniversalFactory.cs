@@ -24,7 +24,8 @@ public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
-        await setting.CopyAndRenameTarget();
+        if (!await setting.CopyAndRenameTarget())
+            throw new InstanceFactoryException(setting, "Failed to download target source");
         setting = setting with { TargetType = TargetType.Jar };
         await setting.FixEula();
 

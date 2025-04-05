@@ -1,12 +1,17 @@
-﻿using Newtonsoft.Json;
+﻿using System.IO.Compression;
+using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 
 public static class InstallExtensions
 {
-    public static Version LoadVersion(this Install profile)
+    public static Version LoadVersion(this Install profile, string installerPath)
     {
-        return JsonConvert.DeserializeObject<Version>(profile.Json, InstallProfileJsonSettings.Settings)!;
+        using var installer = new ZipArchive(File.OpenRead(installerPath));
+        using var s = installer.GetEntry(profile.Json.TrimStart('/'))!.Open();
+        using var sr = new StreamReader(s);
+
+        return JsonConvert.DeserializeObject<Version>(sr.ReadToEnd(), InstallProfileJsonSettings.Settings)!;
     }
 
     public static async Task<Version.Download?> GetMcDownloadFromBmclApi(this Install profile,
@@ -29,7 +34,7 @@ public static class InstallExtensions
         var manifestObj = JsonConvert.DeserializeObject<Manifest>(manifest, InstallProfileJsonSettings.Settings);
         if (manifestObj is null) return null;
 
-        var version = await client.GetStringAsync(manifestObj.GetUrl(profile.Version), ct);
+        var version = await client.GetStringAsync(manifestObj.GetUrl(profile.Minecraft), ct);
         var versionObj = JsonConvert.DeserializeObject<Version>(version, InstallProfileJsonSettings.Settings);
         return versionObj?.GetDownload("server");
     }

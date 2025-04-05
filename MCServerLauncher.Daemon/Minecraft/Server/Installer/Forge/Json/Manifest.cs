@@ -4,8 +4,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 
 public class Manifest
 {
-    [JsonProperty("versions")]
-    private List<Info>? _versions;
+    [JsonProperty("versions")] private List<Info>? _versions;
 
     public string GetUrl(string version)
     {

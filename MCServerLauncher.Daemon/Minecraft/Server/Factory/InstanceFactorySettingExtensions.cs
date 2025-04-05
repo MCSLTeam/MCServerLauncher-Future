@@ -1,8 +1,6 @@
 using System.Reflection;
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
@@ -97,7 +95,7 @@ public static class InstanceFactorySettingExtensions
     ///     复制目标文件并依据setting.Target重命名,如果Source是网络资源，则尝试下载他
     /// </summary>
     /// <param name="setting"></param>
-    public static async Task CopyAndRenameTarget(this InstanceFactorySetting setting)
+    public static async Task<bool> CopyAndRenameTarget(this InstanceFactorySetting setting)
     {
         var workingDirectory = setting.GetWorkingDirectory();
 
@@ -118,7 +116,7 @@ public static class InstanceFactorySettingExtensions
             else if (uri.Scheme == Uri.UriSchemeFtp || uri.Scheme == Uri.UriSchemeFtps ||
                      uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
             {
-                await DownloadBuilder
+                var dl = DownloadBuilder
                     .New()
                     .WithUrl(setting.Source)
                     .WithFileLocation(dst)
@@ -126,8 +124,13 @@ public static class InstanceFactorySettingExtensions
                     {
                         ChunkCount = 8,
                         ParallelDownload = true
-                    }).Build()
-                    .StartAsync();
+                    }).Build()!;
+                await dl.StartAsync();
+                if (dl.Status == DownloadStatus.Failed)
+                {
+                    File.Delete(dst);
+                    return false;
+                }
             }
         }
         else if (setting.Source != dst)
@@ -137,6 +140,7 @@ public static class InstanceFactorySettingExtensions
 
         // rename
         if (setting.Target != dst) File.Move(dst, Path.Combine(workingDirectory, setting.Target));
+        return true;
     }
 
     public static Task<InstanceConfig> ApplyInstanceFactory(this InstanceFactorySetting setting)
@@ -186,7 +190,10 @@ public static class InstanceFactorySettingExtensions
         {
             if (uri.IsFile && !File.Exists(uri.LocalPath)) return false;
         }
-        else if (!File.Exists(setting.Source)) return false;
+        else if (!File.Exists(setting.Source))
+        {
+            return false;
+        }
 
         if (setting.Uuid == Guid.Empty) return false;
 

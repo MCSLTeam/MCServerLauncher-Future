@@ -4,6 +4,7 @@ using System.IO.Compression;
 using Downloader;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 using MCServerLauncher.Daemon.Storage;
+using Newtonsoft.Json;
 using Serilog;
 using Version = MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json.Version;
 
@@ -11,21 +12,33 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge;
 
 public class ForgeInstaller
 {
-    protected readonly InstallV1 Profile;
-    protected readonly Version Version;
     protected readonly string InstallerPath;
     protected readonly string JavaPath;
+    protected readonly InstallV1 Profile;
+    protected readonly Version Version;
 
     protected ForgeInstaller(InstallV1 profile, string installerPath, string? javaPath = null)
     {
         Profile = profile;
         InstallerPath = installerPath;
-        Version = profile.LoadVersion();
+        Version = profile.LoadVersion(installerPath);
         JavaPath = javaPath ?? Environment.GetEnvironmentVariable("JAVA_HOME") ??
             Environment.GetEnvironmentVariable("JRE_HOME") ?? "java";
     }
 
-    public async Task<bool> run(string workingDirectory, CancellationToken ct = default)
+    public static ForgeInstaller? Create(string installerPath, string? javaPath = null)
+    {
+        var profile = GetInstallerProfile(installerPath);
+        if (profile is null)
+        {
+            Log.Error("[ForgeInstaller] Failed to get installer profile from {0}", installerPath);
+            return null;
+        }
+
+        return new ForgeInstaller(profile, installerPath, javaPath);
+    }
+
+    public async Task<bool> Run(string workingDirectory, CancellationToken ct = default)
     {
         var librariesDir = Path.Combine(workingDirectory, "libraries");
         Directory.CreateDirectory(librariesDir);
@@ -51,55 +64,114 @@ public class ForgeInstaller
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 下载原版服务器核心到指定地址
+        Log.Debug("[ForgeInstaller] Downloading vanilla server core");
         var serverJarPath = Profile.ServerJarPath
             .Replace("{ROOT}", Path.GetFullPath(workingDirectory))
             .Replace("{MINECRAFT_VERSION}", Profile.Minecraft)
             .Replace("{LIBRARY_DIR}", Path.GetFullPath(librariesDir));
         if (!await DownloadVanillaServer(await Profile.GetMcDownloadFromBmclApi(ct), serverJarPath, ct))
-        {
             if (!await DownloadVanillaServer(await Profile.GetMcDownload(ct), serverJarPath, ct))
             {
                 Log.Error("[ForgeInstaller] Failed to download vanilla server core");
                 return false;
             }
-        }
 
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 下载库文件
-        var libraries = Version.Libraries.Union(Profile.Libraries).ToList();
+        var libraries = Version.Libraries.Union(Profile.Libraries).DistinctBy(x => x.Name.Descriptor).ToList();
+        Log.Debug("[ForgeInstaller] Considering {0} libraries", libraries.Count);
+
         var librariesLeft = await ConsiderLibraries(libraries, librariesDir, ct);
+        Log.Debug("[ForgeInstaller] Downloading {0} libraries", librariesLeft.Count);
+
         librariesLeft = await DownloadLibraries(librariesLeft, librariesDir, ct);
+        if (librariesLeft.Count > 0)
+            foreach (var library in librariesLeft)
+                Log.Warning("[ForgeInstaller] Library {0} not downloaded", library.Name);
+
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 运行forge installer的offline模式来应用postprocessors
-        var processStartInfo = new ProcessStartInfo
+        Log.Debug("[ForgeInstaller] Running forge installer in offline mode");
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
         {
             FileName = JavaPath,
-            Arguments = $"-jar {InstallerPath} --offline --installServer",
+            Arguments = $"-jar {Path.GetFileName(InstallerPath)} --offline --installServer",
             WorkingDirectory = workingDirectory,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
-        using var process = Process.Start(processStartInfo)!;
-        process.OutputDataReceived += (sender, args) =>
+        process.OutputDataReceived += (_, args) =>
         {
+            if (args.Data is null) return;
+
             Log.Debug("[ForgeInstaller] Offline installer stdout: {0}", args.Data);
         };
-        process.ErrorDataReceived += (sender, args) =>
+        process.ErrorDataReceived += (_, args) =>
         {
+            if (args.Data is null) return;
+
             Log.Debug("[ForgeInstaller] Offline installer stderr: {0}", args.Data);
         };
+        if (!process.Start())
+        {
+            Log.Error("[ForgeInstaller] Failed to start offline installer");
+            return false;
+        }
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
         await process.WaitForExitAsync(ct);
         if (process.ExitCode != 0)
         {
             Log.Error("[ForgeInstaller] Offline installer exited with code {0}", process.ExitCode);
+            process.Close();
             return false;
         }
 
+        process.Close();
         return true;
     }
+
+    public static InstallV1? GetInstallerProfile(string installerPath)
+    {
+        using var archive = new ZipArchive(File.OpenRead(installerPath));
+        var profileJson = archive.GetEntry("install_profile.json");
+        if (profileJson is null)
+        {
+            Log.Error("[ForgeInstaller] Failed to find install_profile.json in the installer");
+            return null;
+        }
+
+        try
+        {
+            using var s = profileJson.Open();
+            using var sr = new StreamReader(s);
+
+            return JsonConvert.DeserializeObject<InstallV1>(sr.ReadToEnd(),
+                InstallProfileJsonSettings.Settings)!;
+        }
+        catch (SystemException e)when (e is NotSupportedException or InvalidDataException)
+        {
+            Log.Error("[ForgeInstaller] Failed to read install_profile.json in forge installer: {0}", e);
+            return null;
+        }
+        catch (Exception e) when (e is NullReferenceException or JsonException)
+        {
+            Log.Error("[ForgeInstaller] Failed to parse install_profile.json: {0}", e);
+            return null;
+        }
+        catch (IOException e)
+        {
+            Log.Error("[ForgeInstaller] Failed to open forge installer: {0}", e);
+            return null;
+        }
+    }
+
 
     private static async Task<bool> DownloadVanillaServer(Version.Download? dl, string targetPath,
         CancellationToken ct = default)
@@ -113,15 +185,12 @@ public class ForgeInstaller
     {
         var parallelOptions = new ParallelOptions
         {
-            MaxDegreeOfParallelism = 4
+            MaxDegreeOfParallelism = Environment.ProcessorCount
         };
         ConcurrentBag<Version.Library> result = new();
         await Parallel.ForEachAsync(libraries, parallelOptions, async (library, innerCt) =>
         {
-            if (!await ConsiderLibrary(library, root, innerCt))
-            {
-                result.Add(library);
-            }
+            if (!await ConsiderLibrary(library, root, innerCt)) result.Add(library);
         });
         return result.ToList();
     }
@@ -132,15 +201,12 @@ public class ForgeInstaller
     {
         var parallelOptions = new ParallelOptions
         {
-            MaxDegreeOfParallelism = 4
+            MaxDegreeOfParallelism = Environment.ProcessorCount
         };
         ConcurrentBag<Version.Library> result = new();
         await Parallel.ForEachAsync(libraries, parallelOptions, async (library, innerCt) =>
         {
-            if (!await DownloadLibrary(library, librariesDir, innerCt))
-            {
-                result.Add(library);
-            }
+            if (!await DownloadLibrary(library, librariesDir, innerCt)) result.Add(library);
         });
         return result.ToList();
     }
@@ -152,7 +218,7 @@ public class ForgeInstaller
         var download = library.Downloads?.Artifact ?? new Version.LibraryDownload { Path = arti.Path };
 
         // 检查本地是否已经存在正确的文件
-        if (download.Sha1 is not null)
+        if (download.Sha1 is not null && File.Exists(target))
         {
             var fileSha1 = await FileManager.FileSha1(target, ct);
             if (fileSha1 == download.Sha1) return true;
@@ -172,7 +238,10 @@ public class ForgeInstaller
                 File.Delete(target);
             }
         }
-        else File.Delete(target);
+        else
+        {
+            File.Delete(target);
+        }
 
         return false;
     }
@@ -207,7 +276,7 @@ public class ForgeInstaller
         CancellationToken ct = default)
     {
         // 下载
-        var dl = new DownloadBuilder()
+        using var dl = new DownloadBuilder()
             .WithUrl(url)
             .WithFileLocation(target)
             .WithConfiguration(new DownloadConfiguration
@@ -219,6 +288,7 @@ public class ForgeInstaller
         await dl.StartAsync(ct);
         if (dl.Status == DownloadStatus.Failed)
         {
+            dl.Dispose(); // 提前释放防止文件占用
             File.Delete(target);
             return false;
         }
@@ -241,7 +311,7 @@ public class ForgeInstaller
         CancellationToken ct = default)
     {
         using var jar = ZipFile.OpenRead(InstallerPath);
-        var entry = jar.GetEntry(Path.Combine("maven", artifact.Path));
+        var entry = jar.GetEntry(Path.Combine("maven", artifact.Path).Replace("\\", "/"));
         if (entry is null) return false;
 
         await using var stream = entry.Open();
