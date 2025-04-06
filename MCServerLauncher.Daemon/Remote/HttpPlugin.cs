@@ -86,7 +86,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             }
                         }
 
-                        if (Permissions.IsValid(permissions))
+                        if (!Permissions.IsValid(permissions))
                         {
                             await response.SetStatus(400, "Invalid permissions").SetContent("").AnswerAsync();
                             return;
