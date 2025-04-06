@@ -746,7 +746,7 @@
     <value>通用：实例 CPU 占用</value>
   </data>
   <data name="ConsoleBoard_Universal_WebSocketLatency" xml:space="preserve">
-    <value>通用：当前 WebSocket 延迟</value>
+    <value>عام: زمن انتقال WebSocket الحالي</value>
   </data>
   <data name="ConsoleCommand_FeedbackTip" xml:space="preserve">
     <value>反馈错误请带上详细错误日志，否则一切行为无异于闭眼开车。</value>
