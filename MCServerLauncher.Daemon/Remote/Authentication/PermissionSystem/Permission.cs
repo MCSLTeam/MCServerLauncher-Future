@@ -5,13 +5,13 @@ namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
 public class Permission : IMatchable
 {
-    private static readonly Regex Pattern = new(@"^(([a-zA-Z-_]+|\*{1,2})\.)*([a-zA-Z-_]+|\*{1,2})$");
+    private static readonly Regex Pattern = new(@"(?:(?:[a-zA-Z-_]+|\*{1,2})\.)*(?:[a-zA-Z-_]+|\*{1,2})");
 
     private readonly string _permission;
 
     private Permission(string permission)
     {
-        if (IsValid(permission))
+        if (!IsValid(permission))
             throw new ArgumentException("Invalid permission");
         _permission = permission;
     }
@@ -39,9 +39,9 @@ public class Permission : IMatchable
         return new Permission(permission);
     }
 
-    public static bool IsValid(string permissions)
+    public static bool IsValid(string permission)
     {
-        return Pattern.IsMatch(permissions);
+        return Pattern.IsMatch(permission);
     }
 
     public override string ToString()
