@@ -5,7 +5,7 @@ namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 
 public class Permission : IMatchable
 {
-    private static readonly Regex Pattern = new(@"/^(([a-zA-Z-_]+|\*{1,2})\.)*([a-zA-Z-_]+|\*{1,2})$/");
+    private static readonly Regex Pattern = new(@"^(([a-zA-Z-_]+|\*{1,2})\.)*([a-zA-Z-_]+|\*{1,2})$");
 
     private readonly string _permission;
 
