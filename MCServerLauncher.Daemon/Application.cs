@@ -21,8 +21,8 @@ namespace MCServerLauncher.Daemon;
 public class Application
 {
     private static Timer _daemonReportTimer;
-    private readonly HttpService _httpService;
     public static readonly DateTime StartTime = DateTime.Now;
+    private readonly HttpService _httpService;
 
     public Application()
     {
@@ -39,7 +39,7 @@ public class Application
                     .RegisterSingleton<IHttpService>(_httpService)
                     .RegisterSingleton<IActionService, ActionProcessor>()
                     .RegisterSingleton<IEventService, EventService>()
-                    .RegisterSingleton<Dictionary<string, WsServiceContext>>()
+                    .RegisterSingleton<WsContextContainer>()
                     .RegisterSingleton<ActionHandlerRegistry>()
                     .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
                     .RegisterSingleton<IAsyncTimedCacheable<List<JavaInfo>>>(
@@ -79,7 +79,10 @@ public class Application
                         })
                         .UseAutoPong();
 
-                    a.Add<WebsocketPlugin>();
+                    a.Add<WsBasePlugin>();
+                    a.Add<WsActionPlugin>();
+                    a.Add<WsEventPlugin>();
+                    a.Add<WsExpirationPlugin>(); // WsExpirePlugin注册必须在WsBasePlugin之后
                     a.UseDefaultHttpServicePlugin();
                 })
         );

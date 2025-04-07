@@ -11,7 +11,7 @@ public class ActionHandlerRegistry
 {
     public Dictionary<
             ActionType,
-            Func<JToken?, WsServiceContext, IResolver, CancellationToken, ValueTask<IActionResult?>>
+            Func<JToken?, WsContext, IResolver, CancellationToken, ValueTask<IActionResult?>>
         >
         Handlers { get; } = new();
 
@@ -55,7 +55,7 @@ public class ActionHandlerRegistry
     public ActionHandlerRegistry Register<TParam, TResult>(
         ActionType actionType,
         IMatchable actionPermission,
-        Func<TParam, WsServiceContext, IResolver, CancellationToken, ValueTask<TResult>> handler
+        Func<TParam, WsContext, IResolver, CancellationToken, ValueTask<TResult>> handler
     )
         where TParam : class, IActionParameter
         where TResult : class, IActionResult
@@ -72,7 +72,7 @@ public class ActionHandlerRegistry
     public ActionHandlerRegistry Register<TParam>(
         ActionType actionType,
         IMatchable actionPermission,
-        Func<TParam, WsServiceContext, IResolver, CancellationToken, ValueTask> handler
+        Func<TParam, WsContext, IResolver, CancellationToken, ValueTask> handler
     )
         where TParam : class, IActionParameter
     {
@@ -89,7 +89,7 @@ public class ActionHandlerRegistry
     public ActionHandlerRegistry Register<TResult>(
         ActionType actionType,
         IMatchable actionPermission,
-        Func<WsServiceContext, IResolver, CancellationToken, ValueTask<TResult>> handler
+        Func<WsContext, IResolver, CancellationToken, ValueTask<TResult>> handler
     )
         where TResult : class, IActionResult
     {
@@ -105,7 +105,7 @@ public class ActionHandlerRegistry
     public ActionHandlerRegistry Register(
         ActionType actionType,
         IMatchable actionPermission,
-        Func<WsServiceContext, IResolver, CancellationToken, ValueTask> handler
+        Func<WsContext, IResolver, CancellationToken, ValueTask> handler
     )
     {
         SetActionPermission(actionType, actionPermission);

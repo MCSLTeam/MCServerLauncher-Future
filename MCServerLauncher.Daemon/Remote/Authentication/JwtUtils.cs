@@ -12,6 +12,8 @@ namespace MCServerLauncher.Daemon.Remote.Authentication;
 /// </summary>
 public static class JwtUtils
 {
+    public const int DefaultExpires = 360;
+
     private static string Secret => AppConfig.Get().Secret;
 
     /// <summary>
@@ -49,10 +51,12 @@ public static class JwtUtils
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public static string? ExtractPermissions(string token)
+    public static (string?, DateTime) ReadToken(string token)
     {
-        return new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.FirstOrDefault(c => c.Type == "permissions")
-            ?.Value;
+        var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        var permissions = parsed.Claims.FirstOrDefault(c => c.Type == "permissions")?.Value;
+        var expires = parsed.ValidTo;
+        return (permissions, expires);
     }
 
     /// <summary>
@@ -75,12 +79,12 @@ public static class JwtUtils
                 ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
             };
             var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);
-            var permissions = ExtractPermissions(jwt);
+            var (permissions, _) = ReadToken(jwt);
             return permissions != null && Permissions.IsValid(permissions);
         }
         catch (Exception e)
         {
-            Log.Debug("[Jwt Utils] Error occurred when validating jwt: {0}", e);
+            Log.Debug("[Jwt Utils] Can't validate jwt: {0}", e.Message);
             return false;
         }
     }

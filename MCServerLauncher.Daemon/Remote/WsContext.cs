@@ -7,12 +7,20 @@ namespace MCServerLauncher.Daemon.Remote;
 /// <summary>
 ///     线程安全的ws服务上下文
 /// </summary>
-public class WsServiceContext
+public class WsContext
 {
     private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
 
-    public Permissions Permissions { get; set; } = Permissions.Never;
-    public string ClientId { get; set; } = null!;
+    public WsContext(string clientId, string? permissions, DateTime expiredTo)
+    {
+        ClientId = clientId;
+        Permissions = permissions is null ? Permissions.Never : new Permissions(permissions);
+        ExpiredTo = expiredTo;
+    }
+
+    public Permissions Permissions { get; }
+    public DateTime ExpiredTo { get; }
+    public string ClientId { get; }
 
     public void SubscribeEvent(EventType type, IEventMeta? meta)
     {

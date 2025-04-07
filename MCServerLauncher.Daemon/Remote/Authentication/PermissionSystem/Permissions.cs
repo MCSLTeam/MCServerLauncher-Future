@@ -21,9 +21,14 @@ public class Permissions
         PermissionList = permissions;
     }
 
+    private Permissions()
+    {
+        PermissionList = Array.Empty<Permission>();
+    }
+
     public Permission[] PermissionList { get; }
 
-    public static Permissions Never => new("");
+    public static Permissions Never => new();
 
     public static bool IsValid(string permissions)
     {

@@ -3,7 +3,6 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
-using MCServerLauncher.Common.Utils;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
@@ -352,7 +351,7 @@ public static class HandlerRegistration
             ).Register(
                 ActionType.GetAllStatus,
                 IMatchable.Always(),
-                async (ctx,resolver, ct) =>
+                async (ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return new GetAllStatusResult

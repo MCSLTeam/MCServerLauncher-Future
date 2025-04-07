@@ -2,7 +2,6 @@
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Utils;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TouchSocket.Core;
@@ -12,7 +11,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 public class ActionProcessor : IActionService
 {
     private readonly Dictionary<ActionType,
-            Func<JToken?, WsServiceContext, IResolver, CancellationToken, ValueTask<IActionResult?>>>
+            Func<JToken?, WsContext, IResolver, CancellationToken, ValueTask<IActionResult?>>>
         _handlers;
 
     private readonly IReadOnlyDictionary<ActionType, IMatchable> _permissions;
@@ -23,7 +22,7 @@ public class ActionProcessor : IActionService
         _permissions = new ReadOnlyDictionary<ActionType, IMatchable>(handlerRegistry.HandlerPermissions);
     }
 
-    public async Task<ActionResponse> ProcessAsync(ActionRequest request, WsServiceContext context, IResolver resolver,
+    public async Task<ActionResponse> ProcessAsync(ActionRequest request, WsContext context, IResolver resolver,
         CancellationToken cancellationToken)
     {
         var userPermission = context.Permissions;
