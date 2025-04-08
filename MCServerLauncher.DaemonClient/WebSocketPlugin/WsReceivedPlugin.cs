@@ -14,10 +14,9 @@ namespace MCServerLauncher.DaemonClient.WebSocketPlugin;
 
 public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 {
-    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
     private readonly ConnectionPendingRequests _pendingRequests;
-    
-    internal WsReceivedPlugin(ConnectionPendingRequests requests) 
+
+    internal WsReceivedPlugin(ConnectionPendingRequests requests)
     {
         _pendingRequests = requests;
     }
@@ -34,16 +33,13 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         var received = e.DataFrame.ToText();
         var json = JObject.Parse(received);
         if (json.SelectToken("event") is not null)
-        {
             DispatchEvent(json);
-        }
-        else if (json.SelectToken("status") is not null)
-        {
-            DispatchAction(json);
-        }
+        else if (json.SelectToken("status") is not null) DispatchAction(json);
 
         await e.InvokeNext();
     }
+
+    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
 
     private void DispatchEvent(JObject json)
     {

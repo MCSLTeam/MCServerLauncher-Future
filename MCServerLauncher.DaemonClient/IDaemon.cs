@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Status;
-using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.DaemonClient;
 
@@ -19,12 +15,12 @@ public interface IDaemon : IDisposable
     bool PingLost { get; }
     DateTime LastPing { get; }
     SubscribedEvents SubscribedEvents { get; }
-    
+
     /// <summary>
     ///     Instance Log Event(InstanceId, Text)
     /// </summary>
     event Action<Guid, string>? InstanceLogEvent;
-    
+
     /// <summary>
     ///     Daemon Report Event(Report, Latency ms)
     /// </summary>

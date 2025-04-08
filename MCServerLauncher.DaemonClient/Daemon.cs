@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -18,6 +17,8 @@ namespace MCServerLauncher.DaemonClient;
 
 public class Daemon : IDaemon
 {
+    private bool _disposed;
+
     private Daemon(ClientConnection connection)
     {
         Connection = connection;
@@ -25,8 +26,9 @@ public class Daemon : IDaemon
         Connection.OnEventReceived += OnEvent;
     }
 
-    public bool Online => Connection.Client.Online;
     internal ClientConnection Connection { get; }
+
+    public bool Online => Connection.Client.Online;
     public SubscribedEvents SubscribedEvents { get; } = new();
     public event Action<Guid, string>? InstanceLogEvent;
     public event Action<DaemonReport, long>? DaemonReportEvent;
@@ -85,6 +87,12 @@ public class Daemon : IDaemon
         await Connection.RequestAsync(actionType, parameter, timeout, cancellationToken);
     }
 
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
 
     /// <summary>
     ///     连接远程服务器
@@ -138,10 +146,7 @@ public class Daemon : IDaemon
         try
         {
             var client = new HttpClient();
-            for (int i = 0; i < 3; i++)
-            {
-                Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11451/info"));
-            }
+            for (var i = 0; i < 3; i++) Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11451/info"));
 
             // var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
             var daemon = await OpenAsync(
@@ -155,12 +160,9 @@ public class Daemon : IDaemon
                     MaxFailCount = 3,
                     PendingRequestCapacity = 100,
                     HeartBeatTick = TimeSpan.FromSeconds(3),
-                    PingTimeout = 5000,
+                    PingTimeout = 5000
                 });
-            daemon.DaemonReportEvent += (report, l) =>
-            {
-                Console.WriteLine($"Daemon report: {report.ToString()}\n ({l}ms)");
-            };
+            daemon.DaemonReportEvent += (report, l) => { Console.WriteLine($"Daemon report: {report}\n ({l}ms)"); };
 
             // await daemon.SubscribeEvent(EventType.DaemonReport, null);
             // await Task.Delay(6010);
@@ -177,19 +179,13 @@ public class Daemon : IDaemon
             await Task.Delay(3000);
 
             Console.WriteLine("\nDaemon side java list:");
-            foreach (var info in await daemon.GetJavaListAsync())
-            {
-                Console.WriteLine($"    - {info.ToString()}");
-            }
+            foreach (var info in await daemon.GetJavaListAsync()) Console.WriteLine($"    - {info.ToString()}");
 
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
             Console.WriteLine("\nDaemon instances:");
             var status = await daemon.GetAllStatusAsync();
-            foreach (var kv in status)
-            {
-                Console.WriteLine($"    - {kv.Key}: {kv.Value.Config.Name}");
-            }
+            foreach (var kv in status) Console.WriteLine($"    - {kv.Key}: {kv.Value.Config.Name}");
 
             var guid = status.FirstOrDefault().Key;
 
@@ -230,10 +226,7 @@ public class Daemon : IDaemon
             // 订阅实例日志
             daemon.InstanceLogEvent += (id, log) =>
             {
-                if (id == guid)
-                {
-                    Console.WriteLine($"[{instName}] {log}");
-                }
+                if (id == guid) Console.WriteLine($"[{instName}] {log}");
             };
             await daemon.SubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
             {
@@ -290,21 +283,10 @@ public class Daemon : IDaemon
         Console.WriteLine($"[ServerStatus] '{instStatus.Config.Name}' status is {instStatus.Status}");
     }
 
-    private bool _disposed = false;
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
     private void Dispose(bool disposed)
     {
         if (_disposed) return;
-        if (disposed)
-        {
-            Connection.Dispose();
-        }
+        if (disposed) Connection.Dispose();
 
         _disposed = true;
     }
