@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,8 +25,9 @@ public class Daemon : IDaemon
         Connection.OnEventReceived += OnEvent;
     }
 
-    public WebSocketState State => Connection.WebSocket.State;
-    public ClientConnection Connection { get; }
+    public bool Online => Connection.Client.Online;
+    internal ClientConnection Connection { get; }
+    public SubscribedEvents SubscribedEvents { get; } = new();
     public event Action<Guid, string>? InstanceLogEvent;
     public event Action<DaemonReport, long>? DaemonReportEvent;
 
@@ -102,6 +105,7 @@ public class Daemon : IDaemon
         var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config, cancellationToken)
             .TimeoutAfter(timeout);
 
+
         return new Daemon(connection);
     }
 
@@ -133,16 +137,35 @@ public class Daemon : IDaemon
     {
         try
         {
-            //var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
-            var daemon = await OpenAsync("127.0.0.1", 11451, "LEFELMeM1qIXxZTUUSzDC6t2GbCYMFhJ", false,
+            var client = new HttpClient();
+            for (int i = 0; i < 3; i++)
+            {
+                Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11451/info"));
+            }
+
+            // var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
+            var daemon = await OpenAsync(
+                "127.0.0.1",
+                11451,
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwZXJtaXNzaW9ucyI6IioiLCJleHAiOjE3NDQxNzMyNDgsImlzcyI6Ik1DU2VydmVyTGF1bmNoZXIuRGFlbW9uIiwiYXVkIjoiTUNTZXJ2ZXJMYXVuY2hlci5EYWVtb24ifQ.t9bGF8xvEnN-bieKIEn6Gbe7-dlYL3aEcVeDbmhmgdc"
+                , false,
                 new ClientConnectionConfig
                 {
-                    AutoPing = false,
-                    MaxPingPacketLost = 3,
+                    HeartBeat = true,
+                    MaxFailCount = 3,
                     PendingRequestCapacity = 100,
-                    PingInterval = TimeSpan.FromSeconds(3),
+                    HeartBeatTick = TimeSpan.FromSeconds(3),
                     PingTimeout = 5000,
                 });
+            daemon.DaemonReportEvent += (report, l) =>
+            {
+                Console.WriteLine($"Daemon report: {report.ToString()}\n ({l}ms)");
+            };
+
+            // await daemon.SubscribeEvent(EventType.DaemonReport, null);
+            // await Task.Delay(6010);
+            // await daemon.CloseAsync();
+            // return;
             Console.WriteLine("Connection OK");
             Console.WriteLine($"Daemon Latency: {await daemon.PingAsync()}ms");
 
@@ -265,5 +288,29 @@ public class Daemon : IDaemon
     {
         var instStatus = await daemon.GetInstanceStatusAsync(id);
         Console.WriteLine($"[ServerStatus] '{instStatus.Config.Name}' status is {instStatus.Status}");
+    }
+
+    private bool _disposed = false;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposed)
+    {
+        if (_disposed) return;
+        if (disposed)
+        {
+            Connection.Dispose();
+        }
+
+        _disposed = true;
+    }
+
+    ~Daemon()
+    {
+        Dispose(false);
     }
 }

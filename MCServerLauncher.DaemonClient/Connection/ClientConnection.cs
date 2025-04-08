@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -8,39 +7,44 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.DaemonClient.WebSocketPlugin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
+using TouchSocket.Core;
+using TouchSocket.Http.WebSockets;
+using TouchSocket.Sockets;
 
 namespace MCServerLauncher.DaemonClient.Connection;
 
-public class ClientConnection
+internal class ClientConnection : IDisposable
 {
-    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
-
     private const int CF_PROTOCOL_VERSION = 1;
-    private const int CF_BUFFER_SIZE = 1024;
 
     private readonly CancellationTokenSource _cts;
     private readonly ConnectionPendingRequests _pendingRequests;
-
-    private readonly ConnectionHeartBeatTimer? _heartbeatTimer;
-    private Task? _receiveLoopTask;
+    private bool _disposed;
 
     private ClientConnection(ClientConnectionConfig config)
     {
         _cts = new CancellationTokenSource();
         _pendingRequests = new ConnectionPendingRequests(config.PendingRequestCapacity);
-        _heartbeatTimer = config.AutoPing ? new ConnectionHeartBeatTimer(this, config.PingInterval) : null;
         Config = config;
     }
 
-
-    public bool Closed => WebSocket.State == WebSocketState.Closed;
+    public SubscribedEvents SubscribedEvents { get; } = new();
     public DateTime LastPong { get; private set; } = DateTime.Now;
     public bool PingLost { get; private set; }
-    public ClientWebSocket WebSocket { get; } = new();
+    public WebSocketClient Client { get; } = new();
     public ClientConnectionConfig Config { get; }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this); // 阻止终结器重复释放资源
+    }
+
+    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
 
     /// <summary>
     ///     建立连接
@@ -67,14 +71,28 @@ public class ClientConnection
         ClientConnection connection = new(config);
 
         // connect ws
-        var uri = new Uri($"{(isSecure ? "wss" : "ws")}://{address}:{port}/api/v{CF_PROTOCOL_VERSION}?token={token}");
+        await connection.Client.SetupAsync(new TouchSocketConfig()
+            .SetRemoteIPHost(new IPHost($"ws://{address}:{port}/api/v{CF_PROTOCOL_VERSION}?token={token}"))
+            .ConfigurePlugins(a =>
+            {
+                var receivedPlugin = new WsReceivedPlugin(connection._pendingRequests);
+                receivedPlugin.OnEventReceived += (t, l, m, d) => { connection.OnEventReceived?.Invoke(t, l, m, d); };
+                a.Add(receivedPlugin);
 
-        await connection.WebSocket.ConnectAsync(uri, cancellationToken);
+                if (config.HeartBeat)
+                {
+                    var heartbeatPlugin = a.UseWebSocketHeartbeat();
+                    heartbeatPlugin.MaxFailCount = config.MaxFailCount;
+                    heartbeatPlugin.Tick = config.HeartBeatTick;
+                }
 
-        connection._heartbeatTimer?.Start();
+                a.Add(new WsStateRecoveryPlugin(connection));
 
-        // start receive loop
-        connection._receiveLoopTask = Task.Factory.StartNew(connection.ReceiveLoop, TaskCreationOptions.LongRunning);
+                a.UseWebSocketReconnection();
+            })
+        );
+
+        await connection.Client.ConnectAsync();
         return connection;
     }
 
@@ -118,8 +136,7 @@ public class ClientConnection
 
     private void ThrowIfInvalidState()
     {
-        if (WebSocket.State != WebSocketState.Open)
-            throw new InvalidOperationException($"Invalid websocket state: {WebSocket.State}");
+        if (!Client.Online) throw new InvalidOperationException("websocket is offline");
     }
 
     /// <summary>
@@ -138,8 +155,9 @@ public class ClientConnection
             JsonSettings.Settings
         ));
 
+        cancellationToken.ThrowIfCancellationRequested();
         // TODO 大数据的分段传输
-        return WebSocket.SendAsync(new ArraySegment<byte>(json), WebSocketMessageType.Text, true, cancellationToken);
+        return Client.SendAsync(new ReadOnlyMemory<byte>(json), WSDataType.Text);
     }
 
     /// <summary>
@@ -177,15 +195,9 @@ public class ClientConnection
     /// </summary>
     public async Task CloseAsync()
     {
-        if (_heartbeatTimer is not null)
-            await _heartbeatTimer.Stop();
-
         _cts.Cancel();
-        if (_receiveLoopTask is not null) await _receiveLoopTask; // 等待接收循环结束
-
-        // TODO use close instead of abort
-        // await WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-        WebSocket.Abort();
+        await Client.CloseAsync();
+        SubscribedEvents.Events.Clear(); // 清空标记的已订阅事件
         Log.Debug("[ClientConnection] closed");
     }
 
@@ -258,104 +270,25 @@ public class ClientConnection
         }
     }
 
-    /// <summary>
-    ///     消息接收循环, 被设计运行在某一个线程中
-    /// </summary>
-    private async Task ReceiveLoop()
-    {
-        using var ms = new MemoryStream();
-        var buffer = new byte[CF_BUFFER_SIZE];
-
-        while (!_cts.Token.IsCancellationRequested)
-        {
-            while (!_cts.Token.IsCancellationRequested)
-                try
-                {
-                    var result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _cts.Token);
-                    ms.Write(buffer, 0, result.Count);
-                    if (result.EndOfMessage) break;
-
-                    if (result.MessageType == WebSocketMessageType.Close)
-                        return;
-                }
-                catch (WebSocketException e)
-                {
-                    Log.Error("[ClientConnection] Websocket exception encountered while receiving message.");
-                    throw;
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-
-            Dispatch(Encoding.UTF8.GetString(ms.ToArray()));
-
-            ms.SetLength(0); // reset
-        }
-    }
-
-    /// <summary>
-    ///     派发从服务器接收的应答并根据Action的规则解析包, 判断echo的一致性, 并为等待的任务设置相应的结果或异常
-    /// </summary>
-    /// <param name="json">从服务器接收的json</param>
-    /// <exception cref="ArgumentNullException">echo为空</exception>
-    private void Dispatch(string json)
-    {
-        try
-        {
-            if (JObject.Parse(json).SelectToken("event") is not null)
-            {
-                DispatchEvent(json);
-                return;
-            }
-
-            var response = JsonConvert.DeserializeObject<ActionResponse>(json, JsonSettings.Settings)!;
-            if (response.Id == Guid.Empty)
-            {
-                Log.Error("[ClientConnection] [ReceiveLoop] Received Id=Guid.Empty message: {0}.", response.Message);
-                throw new ArgumentNullException(nameof(response.Id));
-            }
-
-            if (_pendingRequests.TryRemovePending(response.Id, out var pending))
-                pending.SetResult(response);
-            else
-                Log.Warning($"[ClientConnection] Received canceled action's result: {json},\nignore it.");
-        }
-        catch (JsonException)
-        {
-            Log.Error(
-                "[ClientConnection] [ReceiveLoop] Received unexpected message: {0}\nmay be connected to a unofficial daemon?",
-                json);
-            throw;
-        }
-    }
-
-    private void DispatchEvent(string json)
-    {
-        try
-        {
-            var packet = JsonConvert.DeserializeObject<EventPacket>(json, JsonSettings.Settings)!;
-            var eventType = packet.EventType;
-
-            // TODO 改为异步? BeginInvoke?
-            OnEventReceived?.Invoke(
-                eventType,
-                packet.Timestamp,
-                eventType.GetEventMeta(packet.EventMeta, JsonSettings.Settings),
-                eventType.GetEventData(packet.EventData, JsonSettings.Settings)
-            );
-        }
-        catch (JsonException)
-        {
-            Log.Error(
-                "[ClientConnection] [ReceiveLoop] Received unexpected event packet: {0}\nmay be connected to a unofficial daemon?",
-                json);
-            throw;
-        }
-    }
-
     internal void MarkAsPingLost()
     {
         PingLost = true;
+    }
+
+    ~ClientConnection()
+    {
+        Dispose(false);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+        if (disposing)
+        {
+            _cts.Dispose();
+            Client.SafeDispose();
+        }
+
+        _disposed = true;
     }
 }

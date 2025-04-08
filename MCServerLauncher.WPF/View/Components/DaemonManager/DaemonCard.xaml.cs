@@ -113,9 +113,9 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             {
                 ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, Token, IsSecure, new ClientConnectionConfig
                 {
-                    MaxPingPacketLost = 3,
+                    MaxFailCount = 3,
                     PendingRequestCapacity = 100,
-                    PingInterval = TimeSpan.FromSeconds(5),
+                    HeartBeatTick = TimeSpan.FromSeconds(5),
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);

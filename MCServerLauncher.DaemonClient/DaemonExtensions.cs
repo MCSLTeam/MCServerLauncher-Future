@@ -77,9 +77,18 @@ public static class DaemonExtensions
 
     #region Event
 
-    public static async Task SubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
+    public static Task SubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
         CancellationToken ct = default)
     {
+        return InternalSubscribeEvent(daemon, type, meta, true, timeout, ct);
+    }
+
+    internal static async Task InternalSubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta,
+        bool persistent, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        if (persistent) daemon.SubscribedEvents.EventSet.Add((type, meta));
+
         await daemon.RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
         {
             Type = type,
@@ -90,6 +99,7 @@ public static class DaemonExtensions
     public static async Task UnSubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
         CancellationToken ct = default)
     {
+        daemon.SubscribedEvents.EventSet.Remove((type, meta));
         await daemon.RequestAsync(ActionType.UnsubscribeEvent, new UnsubscribeEventParameter
         {
             Type = type,
@@ -215,7 +225,7 @@ public static class DaemonExtensions
             new FileDownloadRequestParameter
             {
                 Path = path,
-                Timeout = null, // TODO 可配置的文件块下载间隔的超时时间
+                Timeout = null // TODO 可配置的文件块下载间隔的超时时间
             },
             timeout,
             ct

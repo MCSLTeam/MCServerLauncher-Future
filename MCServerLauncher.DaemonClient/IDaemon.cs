@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.DaemonClient.Connection;
 
@@ -11,12 +13,12 @@ namespace MCServerLauncher.DaemonClient;
 /// <summary>
 ///     Daemon Rpc Interface
 /// </summary>
-public interface IDaemon
+public interface IDaemon : IDisposable
 {
-    WebSocketState State { get; }
+    bool Online { get; }
     bool PingLost { get; }
     DateTime LastPing { get; }
-    ClientConnection? Connection { get; }
+    SubscribedEvents SubscribedEvents { get; }
     
     /// <summary>
     ///     Instance Log Event(InstanceId, Text)

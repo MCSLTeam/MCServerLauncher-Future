@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
@@ -15,7 +14,6 @@ public enum NetworkLoadContextState
 
 public abstract class NetworkLoadContext
 {
-    private NetworkLoadContextState _state;
     private readonly SemaphoreSlim _mutex = new(1);
 
     protected NetworkLoadContext(
@@ -30,7 +28,7 @@ public abstract class NetworkLoadContext
         UploadSpeed = uploadSpeed;
         Daemon = daemon;
 
-        _state = NetworkLoadContextState.Opening;
+        State = NetworkLoadContextState.Opening;
     }
 
     /// <summary>
@@ -68,17 +66,17 @@ public abstract class NetworkLoadContext
     /// <summary>
     ///     上传任务是否已经关闭
     /// </summary>
-    public NetworkLoadContextState State => _state;
+    public NetworkLoadContextState State { get; private set; }
 
     public void OnDone()
     {
-        _state = NetworkLoadContextState.Closed;
+        State = NetworkLoadContextState.Closed;
     }
 
     public async Task CancelAsync(int timeout = -1, CancellationToken ct = default)
     {
         await _mutex.WaitAsync(timeout, ct);
-        if (_state == NetworkLoadContextState.Closed)
+        if (State == NetworkLoadContextState.Closed)
         {
             _mutex.Release();
             return;
@@ -87,7 +85,7 @@ public abstract class NetworkLoadContext
         if (State != NetworkLoadContextState.Opening)
             throw new InvalidOperationException("Cannot cancel an already closed upload context");
 
-        _state = NetworkLoadContextState.Cancelling;
+        State = NetworkLoadContextState.Cancelling;
 
         CancellationTokenSource.Cancel(); // 发送取消信号
         if (NetworkLoadTask != null) await NetworkLoadTask; // 等待各分区上传任务完成
@@ -95,7 +93,7 @@ public abstract class NetworkLoadContext
         // 向服务端发出取消信号
         await SendCancelRequestAsync(ct);
 
-        _state = NetworkLoadContextState.Closed;
+        State = NetworkLoadContextState.Closed;
 
         _mutex.Release();
     }
@@ -125,6 +123,7 @@ public class UploadContext : NetworkLoadContext
 public class DownloadContext : NetworkLoadContext
 {
     private readonly SemaphoreSlim _mutex = new(1);
+
     public DownloadContext(Guid fileId, CancellationTokenSource cancellationTokenSource, NetworkLoadSpeed uploadSpeed,
         IDaemon daemon) : base(fileId, cancellationTokenSource, uploadSpeed, daemon)
     {
