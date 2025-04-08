@@ -68,15 +68,11 @@
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2"/>
         <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="3.0.18"/>
-        <PackageReference Include="TouchSocket.Http" Version="3.0.18"/>
+        <PackageReference Include="TouchSocket.Http" Version="3.0.24" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj"/>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Remote\Action\Utils\" />
     </ItemGroup>
 
 </Project>

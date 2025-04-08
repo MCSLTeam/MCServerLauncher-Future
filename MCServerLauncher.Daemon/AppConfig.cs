@@ -30,16 +30,20 @@ internal class AppConfig
     /// </summary>
     public readonly string Secret;
 
-    public AppConfig(ushort port, string secret, string mainToken, byte fileDownloadSessions = 3)
+    public readonly int FileDownloadSessions;
+
+    public readonly bool Verbose;
+
+    [JsonConstructor]
+    private AppConfig(ushort port, string secret, string mainToken, byte fileDownloadSessions = 3, bool verbose = false)
     {
         Port = port;
         Secret = secret;
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
+        Verbose = verbose;
         Log.Information("[AppConfig] Main token: {0}", mainToken);
     }
-
-    public int FileDownloadSessions { get; private set; }
 
     private static AppConfig GetDefault()
     {

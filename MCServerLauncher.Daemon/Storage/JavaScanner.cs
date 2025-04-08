@@ -139,7 +139,7 @@ public static class JavaScanner
                 if (File.Exists(absoluteFilePath))
                 {
                     if (!matcher(Path.GetFileName(pending))) continue;
-                    Log.Debug($"[JVM] Found possible Java \"{absoluteFilePath}\", planning to check");
+                    Log.Verbose($"[JVM] Found possible Java \"{absoluteFilePath}\", planning to check");
                     javaProcesses.Add(StartJava(absoluteFilePath));
                 }
                 else if (!ForceExcludedKeys.Any(lowered.Contains) &&
@@ -154,7 +154,7 @@ public static class JavaScanner
         }
         catch (Exception ex)
         {
-            Log.Warning($"[JVM] A error occured while searching dir \"{workingPath}\", Reason: {ex.Message}");
+            Log.Debug($"[JVM] A error occured while searching dir \"{workingPath}\", Reason: {ex.Message}");
         }
     }
 
@@ -172,7 +172,7 @@ public static class JavaScanner
     public static async Task<List<JavaInfo>> ScanJava(bool deep = false)
     {
         var startTime = DateTime.Now;
-        Log.Debug("[JVM] Start scanning available Java");
+        Log.Verbose("[JVM] Start scanning available Java");
 
         List<Process> pending = new();
         if (BasicUtils.IsWindows())
@@ -202,12 +202,12 @@ public static class JavaScanner
         var cnt = 0;
         foreach (var possibleJavaPath in javas)
         {
-            Log.Debug(
+            Log.Verbose(
                 $"[JVM] Found certain Java at: {possibleJavaPath.Path} (Version: {possibleJavaPath.Version})");
             cnt++;
         }
 
-        Log.Debug($"Total: {cnt}, time elapsed: {DateTime.Now - startTime}");
+        Log.Verbose($"Total: {cnt}, time elapsed: {DateTime.Now - startTime}");
         return javas;
     }
 

@@ -25,8 +25,11 @@ public class BasicUtils
 
     private static void InitLogger()
     {
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+        var logConfig = new LoggerConfiguration();
+        
+        logConfig = AppConfig.Get().Verbose ? logConfig.MinimumLevel.Verbose() : logConfig.MinimumLevel.Information();
+
+        Log.Logger = logConfig
             .WriteTo.Async(a => a.File($"{FileManager.LogRoot}/daemon-.txt", rollingInterval: RollingInterval.Day,
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")

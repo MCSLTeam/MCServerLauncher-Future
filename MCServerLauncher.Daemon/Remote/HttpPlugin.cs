@@ -21,7 +21,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
-        Log.Information($"Method: {method}, Path: {request.URL}");
+        Log.Verbose($"Method: {method}, Path: {request.URL}");
         try
         {
             if (method == HttpMethod.Get)
@@ -99,7 +99,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                         }
 
                         var jwt = JwtUtils.GenerateToken(permissions, expires);
-                        Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt,
+                        Log.Debug("[Authenticator] Sub-token {0} generated, expiring in {1} seconds", jwt,
                             expires);
                         await response
                             .SetStatus(200, "Success")

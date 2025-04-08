@@ -18,8 +18,9 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, I
 
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
     {
-        Container.RemoveContext(this.GetClientId(webSocket));
-        Log.Debug("[Remote] Websocket connection from {0} disconnected", webSocket.Client.GetIPPort());
+        var context = Container.RemoveContext(this.GetClientId(webSocket));
+        Log.Information("[Remote] Websocket connection from {0} with ClientId={1} disconnected",
+            webSocket.Client.GetIPPort(), context.ClientId);
 
         await e.InvokeNext();
     }
@@ -36,13 +37,13 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, I
         catch (Exception)
         {
             Log.Warning("[Remote] Can't get permissions from token, may be token is expired");
-            await webSocket.CloseAsync(WebSocketCloseStatus.Empty, "Invalid token");
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Invalid token");
             await e.InvokeNext();
             return;
         }
 
         // get peer ip
-        Log.Debug("[Remote] Accept token: \"{0}...\" from {1} with Id={2}", token[..5], webSocket.Client.GetIPPort(),
+        Log.Information("[Remote] Accept token: \"{0}...\" from {1} with Id={2}", token[..5], webSocket.Client.GetIPPort(),
             context.ClientId);
 
         await e.InvokeNext();

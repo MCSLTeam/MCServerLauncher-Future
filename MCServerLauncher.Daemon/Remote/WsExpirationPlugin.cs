@@ -54,7 +54,7 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlu
                 delaySeconds = expiredTo - DateTime.UtcNow.ToUnixTimeSeconds();
                 if (delaySeconds <= 0 && ids.Count > 0)
                 {
-                    Log.Information(
+                    Log.Debug(
                         "[WsExpirePlugin / CheckExpireLoop] Expire and start closing websocket connections: {Connections}",
                         ids
                     );

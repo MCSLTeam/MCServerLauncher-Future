@@ -6,6 +6,7 @@ using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Serilog;
+using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon.Storage;
 
@@ -27,25 +28,20 @@ internal static class FileManager
 
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
     private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
-
-    // File Session Watcher Loop
-    private static Task? _fileSessionWatcherLoopTask;
-
+    private static Timer? _sessionCleanerTimer;
     public static void StartFileSessionsWatcher()
     {
-        if (_fileSessionWatcherLoopTask != null) return;
-        _fileSessionWatcherLoopTask = Task.Run(FileSessionWatcherLoop);
-    }
-
-    private static async Task FileSessionWatcherLoop()
-    {
-        Log.Information("[FileManager] File session watcher started");
-        while (true)
+        if (_sessionCleanerTimer is not null) return;
+        
+        _sessionCleanerTimer = new();
+        _sessionCleanerTimer.Interval = 5000;
+        _sessionCleanerTimer.Elapsed += (sender, args) =>
         {
-            await Task.Delay(1000);
             WatchFileSessions(UploadSessions);
             WatchFileSessions(DownloadSessions);
-        }
+        };
+        _sessionCleanerTimer.AutoReset = true;
+        _sessionCleanerTimer.Start();
     }
 
     private static void WatchFileSessions<TSessionInfo>(ConcurrentDictionary<Guid, TSessionInfo> sessions)

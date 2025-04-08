@@ -23,6 +23,7 @@ public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
         Container = container;
     }
 
+    // TODO 中继包支持
     public async Task OnWebSocketReceived(IWebSocket webSocket, WSDataFrameEventArgs e)
     {
         if (e.DataFrame.IsText)
@@ -33,7 +34,7 @@ public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
             try
             {
                 request = JsonConvert.DeserializeObject<ActionRequest>(actionString, DaemonJsonSettings.Settings)!;
-                Log.Debug("[Remote] Received message:{0}", request);
+                Log.Verbose("[Remote] Received message:{0}", request);
             }
             catch (Exception exception) when (exception is JsonException or NullReferenceException)
             {
@@ -52,7 +53,7 @@ public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
                 var result = await _actionService.ProcessAsync(request, context, resolver, CancellationToken.None);
 
                 var text = JsonConvert.SerializeObject(result, DaemonJsonSettings.Settings);
-                Log.Debug("[Remote] Sending message: \n{0}", text);
+                Log.Verbose("[Remote] Sending message: \n{0}", text);
 
                 var ws = this.GetWebSocket(id);
                 if (ws != null) await ws.SendAsync(text);
