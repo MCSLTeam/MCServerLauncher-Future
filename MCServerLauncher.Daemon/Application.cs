@@ -110,6 +110,7 @@ public class Application
         await _httpService.StartAsync();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
+        using var _ = new InstancesWatchService(_httpService.Resolver.GetRequiredService<IInstanceManager>());
 
         _daemonReportTimer.Elapsed += async (sender, args) =>
         {

@@ -47,8 +47,8 @@ public static class InstanceFactorySettingExtensions
                 {
                     RegisterInstanceFactory(sourceTypeMapping, SourceType.Core,
                         coreInstanceFactory.CreateInstanceFromCore, attr);
-                    Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                    // Log.Debug(
+                    //     $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Core}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
 
                 if ((allowedSourceType == SourceType.Archive || attr.AllowedSourceType == SourceType.None) &&
@@ -57,8 +57,8 @@ public static class InstanceFactorySettingExtensions
                 {
                     RegisterInstanceFactory(sourceTypeMapping, SourceType.Archive,
                         archiveInstanceFactory.CreateInstanceFromArchive, attr);
-                    Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Archive}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                    // Log.Debug(
+                    //     $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Archive}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
 
                 if ((allowedSourceType == SourceType.Script || attr.AllowedSourceType == SourceType.None) &&
@@ -66,8 +66,8 @@ public static class InstanceFactorySettingExtensions
                 {
                     RegisterInstanceFactory(sourceTypeMapping, SourceType.Script,
                         scriptInstanceFactory.CreateInstanceFromScript, attr);
-                    Log.Debug(
-                        $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Script}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
+                    // Log.Debug(
+                    //     $"[InstanceFactorySetting] Loaded \"{type.FullName}\" as {attr.InstanceType}(SourceType={SourceType.Script}); Minecraft version range: \"{attr.MinVersion}\" ~ \"{attr.MaxVersion}\"");
                 }
             }
         }
