@@ -412,7 +412,7 @@ public static class HandlerRegistration
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return instanceManager.TryRemoveInstance(param.Id)
                         ? ValueTask.CompletedTask
-                        : ValueTask.FromException(instanceManager.Instances.ContainsKey(param.Id)
+                        : ValueTask.FromException(instanceManager.RunningInstances.ContainsKey(param.Id)
                             ? new ActionException(
                                 ActionReturnCode.InstanceIsRunning,
                                 $"Instance {param.Id} is running"
