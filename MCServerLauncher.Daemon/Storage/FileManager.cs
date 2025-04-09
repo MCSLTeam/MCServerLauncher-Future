@@ -21,6 +21,7 @@ internal static class FileManager
     public static readonly string DownloadRoot = Path.Combine(CacheRoot, "downloads");
     public static readonly string CoreRoot = Path.Combine(Root, "cores");
     public static readonly string LogRoot = Path.Combine(Root, "logs");
+    public static readonly string ContainedRoot = Path.Combine(Root, "contained");
 
     public static readonly TimeSpan SessionTimeout = TimeSpan.FromMilliseconds(120000);
 

@@ -266,5 +266,11 @@ public abstract class ForgeInstallerBase : IForgeInstaller
         return true;
     }
 
+    protected void DeleteInstaller()
+    {
+        File.Delete(InstallerPath);
+        File.Delete(InstallerPath + ".log");
+    }
+
     #endregion
 }

@@ -9,7 +9,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 /// </summary>
 [InstanceFactory(InstanceType.Vanilla)]
 [InstanceFactory(InstanceType.Spigot)]
-[InstanceFactory(InstanceType.Fabric, SourceType.Archive)]
+[InstanceFactory(InstanceType.Fabric)] // make sure that the core file(*.jar) is downloaded from: https://fabricmc.net/use/server/
 [InstanceFactory(InstanceType.Forge, SourceType.Archive)]
 public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {

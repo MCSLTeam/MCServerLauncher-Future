@@ -72,7 +72,9 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 运行forge installer的offline模式来应用postprocessors
-        return await RunInstallerOffline(workingDirectory, ct);
+        var rv = await RunInstallerOffline(workingDirectory, ct);
+        if (rv) DeleteInstaller();
+        return rv;
     }
 
 

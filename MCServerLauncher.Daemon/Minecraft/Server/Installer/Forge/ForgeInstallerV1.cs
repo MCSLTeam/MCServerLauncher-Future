@@ -57,7 +57,9 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 运行forge installer的offline模式来应用postprocessors
-        return await RunInstallerOffline(workingDirectory, ct);
+        var rv = await RunInstallerOffline(workingDirectory, ct);
+        if (rv) DeleteInstaller();
+        return rv;
     }
 
     private async Task<bool> ConsiderLibrary(LibraryInfo info, string libRoot, CancellationToken ct = default)
@@ -118,7 +120,6 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         if (!await Download(bmclApiUrl, target, info.Checksums, ct))
             if (!await Download(url, target, info.Checksums, ct))
                 return false;
-
         return true;
     }
 

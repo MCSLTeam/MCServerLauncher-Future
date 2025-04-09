@@ -16,7 +16,8 @@ public class BasicUtils
         {
             FileManager.Root,
             FileManager.InstancesRoot,
-            FileManager.LogRoot
+            FileManager.LogRoot,
+            FileManager.ContainedRoot
         };
 
         foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
@@ -40,6 +41,7 @@ public class BasicUtils
     {
         InitLogger();
         InitDataDirectory();
+        ContainedFiles.ExtractContained();
         FileManager.StartFileSessionsWatcher();
         InstanceFactorySettingExtensions.RegisterFactories();
     }

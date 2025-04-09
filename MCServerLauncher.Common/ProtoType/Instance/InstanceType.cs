@@ -6,5 +6,6 @@ public enum InstanceType
     Vanilla,
     Fabric,
     Forge,
+    NeoForge,
     Spigot
 }

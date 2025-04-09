@@ -1,10 +1,12 @@
 ﻿using System.Runtime.InteropServices;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge;
+using MCServerLauncher.Daemon.Storage;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
 [InstanceFactory(InstanceType.Forge, minVersion: "1.5.2")]
+// [InstanceFactory(InstanceType.NeoForge, minVersion: "1.20.2")]
 public class ForgeFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
@@ -37,11 +39,17 @@ public class ForgeFactory : ICoreInstanceFactory
         if (mcVersion.Between(McVersion.Of("1.17"), McVersion.Max))
         {
             // TODO 自动处理启动脚本,将其转换为核心 + jvm arg, 方便统一管理
+            var serverLauncher = await ContainedFiles.EnsureContained(ContainedFiles.NeoForgeServerLauncher);
+            File.Copy(
+                serverLauncher, 
+                Path.Combine(setting.GetWorkingDirectory(), ContainedFiles.NeoForgeServerLauncher), 
+                true
+                );
             var config = setting.GetInstanceConfig();
             return config with
             {
-                TargetType = TargetType.Script,
-                Target = "run" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".bat" : ".sh")
+                TargetType = TargetType.Jar,
+                Target = ContainedFiles.NeoForgeServerLauncher
             };
         }
 
@@ -52,6 +60,7 @@ public class ForgeFactory : ICoreInstanceFactory
             var config = setting.GetInstanceConfig();
             return config with
             {
+                TargetType = TargetType.Jar,
                 Target = forgeInstaller is ForgeInstallerV2 ? profile.Path!.Filename : profile.FilePath!
             };
         }
