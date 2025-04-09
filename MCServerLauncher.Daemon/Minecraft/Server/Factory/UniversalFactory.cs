@@ -38,9 +38,11 @@ public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
         {
             async instance =>
             {
-                instance.Start();
-                instance.WriteLine("stop");
-                await instance.WaitForExitAsync();
+                if (await instance.StartAsync())
+                {
+                    instance.WriteLine("stop");
+                    await instance.WaitForExitAsync();
+                }
             }
         }.ToArray();
     }

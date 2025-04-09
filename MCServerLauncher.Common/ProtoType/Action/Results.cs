@@ -66,21 +66,6 @@ public sealed record AddInstanceResult : IActionResult
     [JsonRequired] public InstanceConfig Config { get; init; } = null!;
 }
 
-public sealed record RemoveInstanceResult : IActionResult
-{
-    [JsonRequired] public bool Done { get; init; }
-}
-
-public sealed record StartInstanceResult : IActionResult
-{
-    [JsonRequired] public bool Done { get; init; }
-}
-
-public sealed record StopInstanceResult : IActionResult
-{
-    [JsonRequired] public bool Done { get; init; }
-}
-
 public sealed record GetInstanceStatusResult : IActionResult
 {
     [JsonRequired] public InstanceStatus Status { get; init; } = null!;
@@ -93,5 +78,5 @@ public sealed record GetAllStatusResult : IActionResult
 
 public sealed record GetSystemInfoResult : IActionResult
 {
-    [JsonRequired] public SystemInfo Info { get; init; }
+    [JsonRequired] public SystemInfo Info { get; init; } = null!;
 }

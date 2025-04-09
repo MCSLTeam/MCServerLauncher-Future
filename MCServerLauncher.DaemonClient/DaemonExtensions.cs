@@ -338,28 +338,26 @@ public static class DaemonExtensions
 
     #region Instances
 
-    public static async Task<bool> StartInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    public static async Task StartInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
-        var resp = await daemon.RequestAsync<StartInstanceResult>(
+        await daemon.RequestAsync(
             ActionType.StartInstance,
             new StartInstanceParameter
             {
                 Id = id
             }, timeout, ct);
-        return resp.Done;
     }
 
-    public static async Task<bool> StopInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    public static async Task StopInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
-        var resp = await daemon.RequestAsync<StopInstanceResult>(
+        await daemon.RequestAsync(
             ActionType.StopInstance,
             new StopInstanceParameter
             {
                 Id = id
             }, timeout, ct);
-        return resp.Done;
     }
 
     public static async Task SentToInstanceAsync(this IDaemon daemon, Guid id, string message, int timeout = -1,
@@ -398,16 +396,15 @@ public static class DaemonExtensions
         return resp.Config;
     }
 
-    public static async Task<bool> TryRemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    public static async Task TryRemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
-        var resp = await daemon.RequestAsync<RemoveInstanceResult>(
+        await daemon.RequestAsync(
             ActionType.RemoveInstance,
             new RemoveInstanceParameter
             {
                 Id = id
             }, timeout, ct);
-        return resp.Done;
     }
 
     public static async Task<InstanceStatus> GetInstanceStatusAsync(this IDaemon daemon, Guid id, int timeout = -1,

@@ -74,11 +74,12 @@ public class Program
 
     public static async Task RunMcServerAsync(IInstanceManager manager, Guid id)
     {
-        if (manager.TryStartInstance(id, out var instance))
+        var instance = await manager.TryStartInstance(id);
+        if (instance is not null)
             await Task.WhenAny(
                 Task.Run(() =>
                 {
-                    while (true) instance!.WriteLine(Console.ReadLine());
+                    while (true) instance.WriteLine(Console.ReadLine());
                 }),
                 Task.Run(instance!.WaitForExit)
             );

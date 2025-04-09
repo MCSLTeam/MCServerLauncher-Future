@@ -299,45 +299,52 @@ public static class HandlerRegistration
 
             #region Instance
 
-            .Register<StartInstanceParameter, StartInstanceResult>(
+            .Register<StartInstanceParameter>(
                 ActionType.StartInstance,
                 IMatchable.Always(),
-                (param, ctx, resolver, ct) =>
+                async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     var eventService = resolver.GetRequiredService<IEventService>();
 
-                    var rv = instanceManager.TryStartInstance(param.Id, out var instance);
+                    var instance = await instanceManager.TryStartInstance(param.Id);
 
                     ActionExceptionHelper.ThrowIf(
-                        instance is null,
+                        instance is null && !instanceManager.Instances.ContainsKey(param.Id),
                         ActionReturnCode.InstanceNotFound,
                         "Instance not found"
                     );
 
-                    if (rv)
-                    {
-                        instance!.OnLog -= eventService.OnInstanceLog;
-                        instance!.OnLog += eventService.OnInstanceLog;
-                    }
+                    ActionExceptionHelper.ThrowIf(
+                        instance is null && instanceManager.Instances.ContainsKey(param.Id),
+                        ActionReturnCode.InstanceProcessError,
+                        "Cannot start instance process"
+                    );
 
-                    return ValueTask.FromResult(new StartInstanceResult
-                    {
-                        Done = rv
-                    });
+
+                    instance!.OnLog -= eventService.OnInstanceLog;
+                    instance!.OnLog += eventService.OnInstanceLog;
                 }
             )
-            .Register<StopInstanceParameter, StopInstanceResult>(
+            .Register<StopInstanceParameter>(
                 ActionType.StopInstance,
                 IMatchable.Always(),
                 (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return ValueTask.FromResult(
-                        new StopInstanceResult
-                        {
-                            Done = instanceManager.TryStopInstance(param.Id)
-                        });
+                    return instanceManager.TryStopInstance(param.Id)
+                        ? ValueTask.CompletedTask
+                        : ValueTask.FromException(
+                            instanceManager.Instances.ContainsKey(param.Id)
+                                ? new ActionException(
+                                    ActionReturnCode.InstanceNotRunning,
+                                    $"Instance {param.Id} not running"
+                                )
+                                : new ActionException(
+                                    ActionReturnCode.InstanceNotFound,
+                                    $"Instance {param.Id} not found"
+                                )
+                        );
                 })
             .Register<SendToInstanceParameter>(
                 ActionType.SendToInstance,
@@ -345,7 +352,21 @@ public static class HandlerRegistration
                 (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    instanceManager.SendToInstance(param.Id, param.Message);
+                    if (!instanceManager.SendToInstance(param.Id, param.Message))
+                    {
+                        return ValueTask.FromException(
+                            instanceManager.Instances.ContainsKey(param.Id)
+                                ? new ActionException(
+                                    ActionReturnCode.InstanceNotRunning,
+                                    $"Instance {param.Id} not running"
+                                )
+                                : new ActionException(
+                                    ActionReturnCode.InstanceNotFound,
+                                    $"Instance {param.Id} not found"
+                                )
+                        );
+                    }
+
                     return ValueTask.CompletedTask;
                 }
             ).Register(
@@ -383,16 +404,23 @@ public static class HandlerRegistration
                         Config = config
                     };
                 })
-            .Register<RemoveInstanceParameter, RemoveInstanceResult>(
+            .Register<RemoveInstanceParameter>(
                 ActionType.RemoveInstance,
                 IMatchable.Always(),
-                async (param, ctx, resolver, ct) =>
+                (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return new RemoveInstanceResult
-                    {
-                        Done = await instanceManager.TryRemoveInstance(param.Id)
-                    };
+                    return instanceManager.TryRemoveInstance(param.Id)
+                        ? ValueTask.CompletedTask
+                        : ValueTask.FromException(instanceManager.Instances.ContainsKey(param.Id)
+                            ? new ActionException(
+                                ActionReturnCode.InstanceIsRunning,
+                                $"Instance {param.Id} is running"
+                            )
+                            : new ActionException(
+                                ActionReturnCode.InstanceNotFound,
+                                $"Instance {param.Id} not found"
+                            ));
                 })
             .Register<KillInstanceParameter>(
                 ActionType.KillInstance,

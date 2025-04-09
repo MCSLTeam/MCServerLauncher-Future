@@ -8,8 +8,8 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class InstanceManager : IInstanceManager
 {
-    private ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
-    private ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
+    public ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
+    public ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
 
     // TODO 改用异常抛出异常信息
     public async Task<InstanceConfig?> TryAddInstance(InstanceFactorySetting setting)
@@ -71,14 +71,11 @@ public class InstanceManager : IInstanceManager
     }
 
     // TODO 当用户尝试移除实例时，不应删除正在运行的实例
-    public async Task<bool> TryRemoveInstance(Guid instanceId)
+    public bool TryRemoveInstance(Guid instanceId)
     {
+        if (RunningInstances.ContainsKey(instanceId)) return false;
+        
         if (!Instances.TryRemove(instanceId, out var config)) return false;
-        if (RunningInstances.ContainsKey(instanceId))
-        {
-            if (!RunningInstances.TryRemove(instanceId, out var instance)) return false;
-            await instance.KillProcess();
-        }
 
         // remove server directory
         try
@@ -94,32 +91,38 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public bool TryStartInstance(Guid instanceId, out Instance? instance)
+    public async Task<Instance?> TryStartInstance(Guid instanceId)
     {
-        instance = null;
-        if (RunningInstances.ContainsKey(instanceId)) return false;
+        if (RunningInstances.ContainsKey(instanceId)) return null;
 
         var target = Instances.GetValueOrDefault(instanceId);
-        if (target == null) return false;
+        if (target is null) return null;
 
         try
         {
-            if (RunningInstances.TryAdd(instanceId, target))
+            target.OnStatusChanged -= OnInstanceStatusChangedHandler;
+            target.OnStatusChanged += OnInstanceStatusChangedHandler;
+            if (await target.StartAsync())
+
             {
-                instance = target;
-                instance.OnStatusChanged -= OnInstanceStatusChangedHandler;
-                instance.OnStatusChanged += OnInstanceStatusChangedHandler;
-                target.Start();
-                return true;
+                if (!RunningInstances.TryAdd(instanceId, target))
+                {
+                    Log.Warning("[InstanceManager] Cannot start a already running instance(Uuid={0})",
+                        target.Config.Uuid);
+                    return null;
+                }
+
+                return target;
             }
 
-            return false;
+            target.OnStatusChanged -= OnInstanceStatusChangedHandler;
+            return null;
         }
         catch (Exception e)
         {
-            target.KillProcess().ConfigureAwait(false).GetAwaiter().GetResult();
+            await target.KillProcess();
             Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
-            return false;
+            return null;
         }
     }
 
@@ -131,11 +134,11 @@ public class InstanceManager : IInstanceManager
         return true;
     }
 
-    public void SendToInstance(Guid instanceId, string message)
+    public bool SendToInstance(Guid instanceId, string message)
     {
-        if (!RunningInstances.TryGetValue(instanceId, out var instance))
-            throw new ArgumentException("Instance not found.");
+        if (!RunningInstances.TryGetValue(instanceId, out var instance)) return false;
         instance.WriteLine(message);
+        return true;
     }
 
     public Task KillInstance(Guid instanceId)

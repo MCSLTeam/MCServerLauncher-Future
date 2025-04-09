@@ -87,8 +87,15 @@ public class Instance
     }
 
     // TODO ,stderr的接收；Player List改为使用MC SLP协议
-    public void Start()
+    public async Task<bool> StartAsync(int delayToCheck = 500)
     {
+        if (ServerProcess is not null)
+        {
+            if (!ServerProcess.HasExited) return false;
+            ServerProcess.Close();
+            ServerProcess.Dispose();
+        }
+        
         ServerProcess = GetProcess(Config, process =>
         {
             process.OutputDataReceived += (sender, args) =>
@@ -110,22 +117,20 @@ public class Instance
                     ChangeStatus(ServerStatus.Crashed);
                 }
 
-                else if (msg.Contains("joined the game"))
-                {
-                    // [18:26:19] [Worker-Main-14/INFO] (MinecraftServer) Alex joined the game
-                    var substring = msg[..^16];
-                    var player = substring[(substring.LastIndexOf(' ') + 1) ..];
-                    Players.Add(player);
-                }
-                else if (msg.Contains("left the game"))
-                {
-                    // [18:27:03] [Server thread/INFO] (MinecraftServer) Ares_Connor left the game
-                    var substring = msg[..^14];
-                    var player = substring[(substring.LastIndexOf(' ') + 1) ..];
-                    Players.Remove(player);
-                }
-
-                Log.Information($"[Server({Config.Name})] {args.Data}");
+                // else if (msg.Contains("joined the game"))
+                // {
+                //     // [18:26:19] [Worker-Main-14/INFO] (MinecraftServer) Alex joined the game
+                //     var substring = msg[..^16];
+                //     var player = substring[(substring.LastIndexOf(' ') + 1) ..];
+                //     Players.Add(player);
+                // }
+                // else if (msg.Contains("left the game"))
+                // {
+                //     // [18:27:03] [Server thread/INFO] (MinecraftServer) Ares_Connor left the game
+                //     var substring = msg[..^14];
+                //     var player = substring[(substring.LastIndexOf(' ') + 1) ..];
+                //     Players.Remove(player);
+                // }
             };
             process.OutputDataReceived += (_, arg) =>
             {
@@ -144,6 +149,9 @@ public class Instance
         });
         ServerProcess.BeginOutputReadLine();
         ServerProcess.BeginErrorReadLine();
+        
+        await Task.Delay(delayToCheck);
+        return !ServerProcess.HasExited;
     }
 
     public async Task KillProcess()

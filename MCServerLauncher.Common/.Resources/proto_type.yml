@@ -122,21 +122,18 @@ actions:
         id: Guid
       
       resp:
-        done: bool
 
   - start_instance:
       req:
         id: Guid
       
       resp:
-        done: bool
 
   - stop_instance:
       req:
         id: Guid
       
       resp:
-        done: bool
 
   - send_to_instance:
       req:

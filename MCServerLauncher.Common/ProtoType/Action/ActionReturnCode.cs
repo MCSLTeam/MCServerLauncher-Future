@@ -18,7 +18,10 @@ public enum ActionReturnCode
     IOException = 1511,
     FileNotFound = 1512,
     InstanceNotFound = 1521,
-    InstanceAddFailed = 1522
+    InstanceAddFailed = 1522,
+    InstanceNotRunning = 1523,
+    InstanceIsRunning = 1524,
+    InstanceProcessError = 1525,
 }
 
 internal class ActionReturnCodeJsonConverter : JsonConverter<ActionReturnCode>
