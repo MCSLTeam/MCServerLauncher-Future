@@ -4,7 +4,7 @@ using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
-[InstanceFactory(InstanceType.Forge, minVersion: "1.12")]
+[InstanceFactory(InstanceType.Forge, minVersion: "1.5.2")]
 public class ForgeFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
@@ -14,9 +14,16 @@ public class ForgeFactory : ICoreInstanceFactory
 
         var installerPath = Path.Combine(setting.GetWorkingDirectory(), setting.Target);
 
+        var mcVersion = McVersion.Of(setting.McVersion); // 可以直接转换因为已经检查过了
 
         // TODO 更多报错
-        var forgeInstaller = ForgeInstaller.Create(installerPath, setting.JavaPath);
+        ForgeInstallerBase? forgeInstaller = null;
+
+        if (mcVersion.Between("1.5.2", "1.12.1"))
+            forgeInstaller = ForgeInstallerV1.Create(installerPath, setting.JavaPath);
+        else if (mcVersion.Between(McVersion.Of("1.12.2"), McVersion.Max))
+            forgeInstaller = ForgeInstallerV2.Create(installerPath, setting.JavaPath);
+
         if (forgeInstaller is null)
             throw new InstanceFactoryException(setting, "Failed to create forge installer");
 
@@ -27,8 +34,6 @@ public class ForgeFactory : ICoreInstanceFactory
         await setting.FixEula();
 
         // 处理启动参数
-        var mcVersion = McVersion.Of(setting.McVersion); // 可以直接转换因为已经检查过了
-
         if (mcVersion.Between(McVersion.Of("1.17"), McVersion.Max))
         {
             // TODO 自动处理启动脚本,将其转换为核心 + jvm arg, 方便统一管理
@@ -40,13 +45,14 @@ public class ForgeFactory : ICoreInstanceFactory
             };
         }
 
-        if (mcVersion.Between("1.12", "1.17")) // TODO 明确InstallV1支持的最低版本
+        // 确定最低支持版本(1.5.2)：再低就没Forge Installer了！
+        if (mcVersion.Between(McVersion.Of("1.5.2"), McVersion.Of("1.16.5")))
         {
-            var profile = ForgeInstaller.GetInstallerProfile(setting.Target)!; // 不为空,应为已经安装过了且无问题
+            var profile = forgeInstaller.Install; // 不为空,应为已经安装过了且无问题
             var config = setting.GetInstanceConfig();
             return config with
             {
-                Target = profile.Path!.Filename
+                Target = forgeInstaller is ForgeInstallerV2 ? profile.Path!.Filename : profile.FilePath!
             };
         }
 

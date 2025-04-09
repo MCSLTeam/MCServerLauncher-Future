@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.V2Json;
+using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 
@@ -7,6 +8,9 @@ public class Install : Specification
     [JsonIgnore] private Mirror? _mirror;
 
     [JsonIgnore] private bool _triedMirrors;
+
+    [JsonProperty("filePath")] public string? FilePath { get; set; }
+
     public string Profile { get; set; }
 
     public string Version { get; set; }

@@ -1,7 +1,9 @@
 ﻿using System.IO.Compression;
+using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 using Newtonsoft.Json;
+using Version = MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json.Version;
 
-namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
+namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.V2Json;
 
 public static class InstallExtensions
 {
