@@ -1,6 +1,7 @@
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
@@ -72,7 +73,7 @@ public class Application
                             }
                             catch (Exception e)
                             {
-                                Console.WriteLine(e);
+                                System.Console.WriteLine(e);
                                 await context.Response.SetStatus(500, e.Message).AnswerAsync();
                                 return false;
                             }
@@ -127,20 +128,17 @@ public class Application
         _daemonReportTimer.Start();
 
         var cts = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, e) =>
+        var consoleApplication = new ConsoleApplication(_httpService);
+        consoleApplication
+            .AddCommand<StopCommand>("stop")
+            .AddCommand<TokenCommand>("token")
+            .AddCommand<ConnectionsCommand>("connections");
+        System.Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
-        while (!cts.IsCancellationRequested)
-            try
-            {
-                await Task.Delay(TimeSpan.FromMinutes(1), cts.Token);
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
+        await consoleApplication.Serve(cts);
 
         Log.Information("[Remote] Stopping...");
         await StopAsync();

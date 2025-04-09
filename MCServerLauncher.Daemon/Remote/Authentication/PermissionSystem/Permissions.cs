@@ -39,4 +39,9 @@ public class Permissions
     {
         return PermissionList.Any(matchable.Matches);
     }
+
+    public override string ToString()
+    {
+        return $"[{string.Join(", ", PermissionList.Select(p => p.ToString()))}]";
+    }
 }

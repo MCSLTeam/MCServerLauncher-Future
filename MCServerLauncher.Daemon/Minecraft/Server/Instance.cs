@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
@@ -7,15 +8,17 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 public class Instance
 {
     private readonly List<string> _properties = new();
+    private readonly string _configPath;
 
     public Instance(InstanceConfig config)
     {
         Config = config;
+        _configPath = Path.Combine(config.GetWorkingDirectory(), InstanceConfig.FileName);
 
         OnStatusChanged += OnStatusChangedHandler;
     }
 
-    public InstanceConfig Config { get; }
+    public InstanceConfig Config { get; private set; }
     public ushort? Port { get; private set; }
     private Process? ServerProcess { get; set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
@@ -86,6 +89,22 @@ public class Instance
         _properties.AddRange(GetServerProperties());
     }
 
+    private bool TryRefreshConfig()
+    {
+        try
+        {
+            var newConfig = FileManager.ReadJson<InstanceConfig>(_configPath)!;
+            if (Config.Uuid != newConfig.Uuid) return false;
+            Config = newConfig;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Debug("[Instance] Failed to refresh config at '{0}', ignored: {1}", _configPath, e.Message);
+            return false;
+        }
+    }
+
     // TODO ,stderr的接收；Player List改为使用MC SLP协议
     public async Task<bool> StartAsync(int delayToCheck = 500)
     {
@@ -95,7 +114,10 @@ public class Instance
             ServerProcess.Close();
             ServerProcess.Dispose();
         }
-        
+
+        // 尝试从磁盘刷新配置
+        TryRefreshConfig();
+
         ServerProcess = GetProcess(Config, process =>
         {
             process.OutputDataReceived += (sender, args) =>
@@ -149,7 +171,7 @@ public class Instance
         });
         ServerProcess.BeginOutputReadLine();
         ServerProcess.BeginErrorReadLine();
-        
+
         await Task.Delay(delayToCheck);
         return !ServerProcess.HasExited;
     }

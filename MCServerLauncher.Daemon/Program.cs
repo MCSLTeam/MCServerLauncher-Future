@@ -11,7 +11,7 @@ public class Program
 {
     private static async Task Main(string[] args)
     {
-        Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
+        System.Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
         BasicUtils.InitApp();
         // var info = await SlpClient.GetStatusModern("balabala", 11451);
         // Log.Information("[SlpClient] Get Server List Ping data: {0}",
@@ -34,7 +34,7 @@ public class Program
 
     public static void WriteTestJavaInfo()
     {
-        Console.WriteLine(
+        System.Console.WriteLine(
             new JavaInfo
             {
                 Architecture = "x64",
@@ -79,7 +79,7 @@ public class Program
             await Task.WhenAny(
                 Task.Run(() =>
                 {
-                    while (true) instance.WriteLine(Console.ReadLine());
+                    while (true) instance.WriteLine(System.Console.ReadLine());
                 }),
                 Task.Run(instance!.WaitForExit)
             );
