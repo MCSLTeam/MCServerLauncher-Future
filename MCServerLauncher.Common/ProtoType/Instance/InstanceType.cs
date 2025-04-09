@@ -7,5 +7,6 @@ public enum InstanceType
     Fabric,
     Forge,
     NeoForge,
+    Cleanroom,
     Spigot
 }
