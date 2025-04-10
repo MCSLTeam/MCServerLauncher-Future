@@ -7,7 +7,7 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
 [InstanceFactory(InstanceType.Forge, minVersion: "1.5.2")]
 [InstanceFactory(InstanceType.NeoForge, minVersion: "1.20.2")] // TODO BMCLAPI加速
-[InstanceFactory(InstanceType.Cleanroom, minVersion: "1.12.2",maxVersion: "1.12.2")]
+[InstanceFactory(InstanceType.Cleanroom, minVersion: "1.12.2", maxVersion: "1.12.2")]
 public class ForgeFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
@@ -23,9 +23,9 @@ public class ForgeFactory : ICoreInstanceFactory
         ForgeInstallerBase? forgeInstaller = null;
 
         if (mcVersion.Between("1.5.2", "1.12.1"))
-            forgeInstaller = ForgeInstallerV1.Create(installerPath, setting.JavaPath);
+            forgeInstaller = ForgeInstallerV1.Create(installerPath, setting.JavaPath, setting.Mirror);
         else if (mcVersion.Between(McVersion.Of("1.12.2"), McVersion.Max))
-            forgeInstaller = ForgeInstallerV2.Create(installerPath, setting.JavaPath);
+            forgeInstaller = ForgeInstallerV2.Create(installerPath, setting.JavaPath, setting.Mirror);
 
         if (forgeInstaller is null)
             throw new InstanceFactoryException(setting, "Failed to create forge installer");
@@ -42,10 +42,10 @@ public class ForgeFactory : ICoreInstanceFactory
             // TODO 自动处理启动脚本,将其转换为核心 + jvm arg, 方便统一管理
             var serverLauncher = await ContainedFiles.EnsureContained(ContainedFiles.NeoForgeServerLauncher);
             File.Copy(
-                serverLauncher, 
-                Path.Combine(setting.GetWorkingDirectory(), ContainedFiles.NeoForgeServerLauncher), 
+                serverLauncher,
+                Path.Combine(setting.GetWorkingDirectory(), ContainedFiles.NeoForgeServerLauncher),
                 true
-                );
+            );
             var config = setting.GetInstanceConfig();
             return config with
             {

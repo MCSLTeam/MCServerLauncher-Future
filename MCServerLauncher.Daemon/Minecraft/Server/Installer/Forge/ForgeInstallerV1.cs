@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.V1Json;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.V2Json;
 using MCServerLauncher.Daemon.Storage;
@@ -11,8 +12,8 @@ public class ForgeInstallerV1 : ForgeInstallerBase
 {
     private const string CF_LIBRARIES_URL = "https://libraries.minecraft.net/";
 
-    private ForgeInstallerV1(ProfileFile profile, string installerPath, string? javaPath)
-        : base(installerPath, javaPath)
+    private ForgeInstallerV1(ProfileFile profile, string installerPath, string? javaPath, InstanceFactoryMirror mirror)
+        : base(installerPath, javaPath, mirror)
     {
         Install = profile.Install;
         VersionInfo = profile.VersionInfo;
@@ -94,8 +95,11 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         return false;
     }
 
-    private static async Task<bool> DownloadLibrary(LibraryInfo info, string root,
-        CancellationToken ct = default)
+    private async Task<bool> DownloadLibrary(
+        LibraryInfo info,
+        string root,
+        CancellationToken ct = default
+    )
     {
         var arti = info.Name;
         var target = arti.GetLocalPath(root);
@@ -120,10 +124,22 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         if (!await Download(bmclApiUrl, target, info.Checksums, ct))
             if (!await Download(url, target, info.Checksums, ct))
                 return false;
-        return true;
+        var success = MirrorType switch
+        {
+            InstanceFactoryMirror.BmclApi => await Download(bmclApiUrl, target, info.Checksums, ct),
+            InstanceFactoryMirror.None => false,
+            _ => throw new NotImplementedException()
+        };
+        if (success) return true;
+        return await Download(url, target, info.Checksums, ct);
     }
 
-    public static ForgeInstallerV1? Create(string installerPath, string? javaPath = null)
+    public static ForgeInstallerV1? Create(
+        string installerPath,
+        string? javaPath = null,
+        InstanceFactoryMirror mirror = InstanceFactoryMirror.None
+    )
+
     {
         var rv = ReadInstallerProfile(
             installerPath,
@@ -135,7 +151,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
             return null;
         }
 
-        return new ForgeInstallerV1(rv, installerPath, javaPath);
+        return new ForgeInstallerV1(rv, installerPath, javaPath, mirror);
     }
 
     public record ProfileFile(InstallV1 Install, VersionInfo VersionInfo);

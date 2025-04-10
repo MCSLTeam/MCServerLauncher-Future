@@ -9,11 +9,13 @@ public record InstanceFactorySetting : InstanceConfig
 {
     [JsonProperty(Required = Required.Always)]
     public string Source { get; init; } = null!;
-    
+
     [JsonProperty(Required = Required.Always)]
     public SourceType SourceType { get; init; }
+
+    public InstanceFactoryMirror Mirror { get; init; } = InstanceFactoryMirror.None;
     public bool UsePostProcess { get; init; } = false;
-    
+
     public InstanceConfig GetInstanceConfig()
     {
         return new InstanceConfig

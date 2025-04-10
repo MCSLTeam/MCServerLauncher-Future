@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using Downloader;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.V2Json;
 using MCServerLauncher.Daemon.Storage;
@@ -13,15 +14,18 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge;
 
 public abstract class ForgeInstallerBase : IForgeInstaller
 {
-    protected ForgeInstallerBase(string installerPath, string? javaPath)
+    protected ForgeInstallerBase(string installerPath, string? javaPath, InstanceFactoryMirror mirror)
     {
         InstallerPath = installerPath;
         JavaPath = javaPath ?? Environment.GetEnvironmentVariable("JAVA_HOME") ??
             Environment.GetEnvironmentVariable("JRE_HOME") ?? "java";
+        MirrorType = mirror;
     }
 
     protected string JavaPath { get; }
     protected string InstallerPath { get; }
+
+    protected InstanceFactoryMirror MirrorType { get; }
     public abstract InstallV1 Install { get; }
     public abstract Task<bool> Run(string workingDirectory, CancellationToken ct = default);
 
@@ -96,11 +100,16 @@ public abstract class ForgeInstallerBase : IForgeInstaller
     protected async Task<bool> DownloadMinecraft(string targetPath,
         CancellationToken ct = default)
     {
-        if (!await DownloadMinecraft(await Install.GetMcDownloadFromBmclApi(ct), targetPath, ct))
-            if (!await DownloadMinecraft(await Install.GetMcDownload(ct), targetPath, ct))
-                return false;
-
-        return true;
+        var success = MirrorType switch
+        {
+            InstanceFactoryMirror.BmclApi => await DownloadMinecraft(await Install.GetMcDownloadFromBmclApi(ct),
+                targetPath, ct),
+            InstanceFactoryMirror.None => false,
+            _ => throw new NotImplementedException()
+        };
+        
+        if (success) return true;
+        return await DownloadMinecraft(await Install.GetMcDownload(ct), targetPath, ct);
     }
 
     private static async Task<bool> DownloadMinecraft(Version.Download? dl, string targetPath,

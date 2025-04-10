@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json;
 using MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.V2Json;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json;
@@ -9,7 +10,8 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge;
 
 public sealed class ForgeInstallerV2 : ForgeInstallerBase
 {
-    private ForgeInstallerV2(InstallV1 profile, string installerPath, string? javaPath) : base(installerPath, javaPath)
+    private ForgeInstallerV2(InstallV1 profile, string installerPath, string? javaPath, InstanceFactoryMirror mirror)
+        : base(installerPath, javaPath, mirror)
     {
         Install = profile;
         Version = profile.LoadVersion(installerPath);
@@ -19,7 +21,11 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
 
     public override InstallV1 Install { get; }
 
-    public static ForgeInstallerV2? Create(string installerPath, string? javaPath = null)
+    public static ForgeInstallerV2? Create(
+        string installerPath,
+        string? javaPath = null,
+        InstanceFactoryMirror mirror = InstanceFactoryMirror.None
+    )
     {
         var profile = ReadInstallerProfile(
             installerPath,
@@ -31,7 +37,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
             return null;
         }
 
-        return new ForgeInstallerV2(profile, installerPath, javaPath);
+        return new ForgeInstallerV2(profile, installerPath, javaPath,mirror);
     }
 
     public override async Task<bool> Run(string workingDirectory, CancellationToken ct = default)
