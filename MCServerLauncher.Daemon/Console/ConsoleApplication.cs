@@ -1,5 +1,5 @@
-﻿using Serilog;
-using TouchSocket.Core;
+﻿using Brigadier.NET;
+using Brigadier.NET.Exceptions;
 using TouchSocket.Http;
 using Exception = System.Exception;
 
@@ -7,40 +7,50 @@ namespace MCServerLauncher.Daemon.Console;
 
 public class ConsoleApplication
 {
-    public IHttpService HttpService { get; }
-    public Dictionary<string, IConsoleCommand> CommandMap { get; } = new();
-
     public ConsoleApplication(IHttpService httpService)
     {
         HttpService = httpService;
-        AddCommand<HelpCommand>("help");
     }
+
+    public IHttpService HttpService { get; }
 
     public async Task Serve(CancellationTokenSource cts)
     {
-        var wait = Task.Delay(-1,cts.Token);
+        var wait = Task.Delay(-1, cts.Token);
         var loop = Task.Run(async () =>
         {
+            var commandSource = new ConsoleCommandSource(HttpService, cts);
+            var dispatcher = new CommandDispatcher<ConsoleCommandSource>().RegisterCommands();
+
             try
             {
                 while (!cts.Token.IsCancellationRequested)
                 {
-                    System.Console.Write(">> ");
                     var line = System.Console.ReadLine();
                     cts.Token.ThrowIfCancellationRequested();
-                    if (string.IsNullOrWhiteSpace(line))
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    try
                     {
-                        continue;
+                        var execute = dispatcher.Execute(line, commandSource);
                     }
-
-                    var commands = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-                    if (CommandMap.TryGetValue(commands[0], out var command))
-                        await command.Run(commands, this, cts);
-                    else
+                    catch (CommandSyntaxException e)
                     {
-                        Log.Information("[Console] Unknown command: {Command}", commands[0]);
-                        await CommandMap["help"].Run(Array.Empty<string>(), this, cts);
+                        var keyword = e.Input.Split(' ').FirstOrDefault("");
+                        if (dispatcher.GetRoot().GetChild(keyword) is null)
+                        {
+                            commandSource.SendError("Unknown command: '{Command}'.", line);
+                            dispatcher.Execute("help", commandSource);
+                        }
+                        else
+                        {
+                            commandSource.SendError(e.Message);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        commandSource.SendError(
+                            "An error occurred while executing the command: '{Command}', {Message}.", line, e.Message);
                     }
                 }
             }
@@ -49,11 +59,5 @@ public class ConsoleApplication
             }
         }, cts.Token);
         await Task.WhenAny(wait, loop);
-    }
-
-    public ConsoleApplication AddCommand<TConsoleCommand>(string keyword) where TConsoleCommand : IConsoleCommand
-    {
-        CommandMap.Add(keyword, Activator.CreateInstance<TConsoleCommand>());
-        return this;
     }
 }

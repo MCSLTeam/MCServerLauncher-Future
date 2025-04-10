@@ -129,10 +129,6 @@ public class Application
 
         var cts = new CancellationTokenSource();
         var consoleApplication = new ConsoleApplication(_httpService);
-        consoleApplication
-            .AddCommand<StopCommand>("stop")
-            .AddCommand<TokenCommand>("token")
-            .AddCommand<ConnectionsCommand>("connections");
         System.Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;

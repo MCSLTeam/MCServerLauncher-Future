@@ -59,6 +59,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Brigadier.NET" Version="1.2.13" />
         <PackageReference Include="Downloader" Version="3.1.2" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0-preview.6.24327.7" />
         <PackageReference Include="Microsoft.Management.Infrastructure" Version="3.0.0" />
