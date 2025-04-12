@@ -21,14 +21,15 @@ public static class HelpCommand
                     {
                         if (node is LiteralCommandNode<TSource> literal)
                         {
+                            var usage = string.Join("|", dispatcher.GetAllUsage(node, cmd.Source, false));
                             source.SendFeedback(
-                                "- Command: {0}, Description: {1}",
+                                "- Command: {0} {1}",
                                 literal.Literal,
-                                CommandManager.CommandDescriptionDictionary[literal.Literal]
+                                usage
                             );
 
-                            var usage = string.Join("|", dispatcher.GetAllUsage(node, cmd.Source, false));
-                            if (!string.IsNullOrWhiteSpace(usage)) source.SendFeedback("  - Usage: {0}", usage);
+                            
+                            source.SendFeedback("  - Description: {0}", CommandManager.CommandDescriptionDictionary[literal.Literal]);
                         }
                     });
                     source.SendFeedback("==========================================================");
