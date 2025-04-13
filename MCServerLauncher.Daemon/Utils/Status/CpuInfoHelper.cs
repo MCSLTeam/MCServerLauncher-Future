@@ -1,8 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Status;
-using MCServerLauncher.Common.Utils;
 using Microsoft.Management.Infrastructure;
 
 namespace MCServerLauncher.Daemon.Utils.Status;
@@ -28,7 +27,6 @@ public static class CpuInfoHelper
                     );
 
                     foreach (var instance in instances)
-                    {
                         // 只取第一个 CPU 的制造商和名称（通常多路系统型号相同）
                         if (manufacturer == "Unknown")
                         {
@@ -36,7 +34,6 @@ public static class CpuInfoHelper
                                            "Unknown";
                             name = instance.CimInstanceProperties["Name"]?.Value?.ToString()?.Trim() ?? "Unknown";
                         }
-                    }
 
                     return (manufacturer, name);
                 }
@@ -53,7 +50,7 @@ public static class CpuInfoHelper
                         "需要以管理员权限运行程序", ex);
                 }
             });
-            
+
             return new CpuInfo(vendor, name, Environment.ProcessorCount, await GetWinCpuUsage());
         }
 
@@ -125,13 +122,6 @@ public static class CpuInfoHelper
         out FILETIME lpKernelTime,
         out FILETIME lpUserTime);
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct FILETIME
-    {
-        public uint dwLowDateTime;
-        public uint dwHighDateTime;
-    }
-
     public static async Task<double> GetWinCpuUsage(int samplingInterval = 200)
     {
         // 第一次采样
@@ -144,8 +134,8 @@ public static class CpuInfoHelper
         var (idleTime2, totalTime2) = GetWinCpuTime();
 
         // 计算差值
-        ulong idleDelta = idleTime2 - idleTime1;
-        ulong totalDelta = totalTime2 - totalTime1;
+        var idleDelta = idleTime2 - idleTime1;
+        var totalDelta = totalTime2 - totalTime1;
 
         // 处理除零情况
         if (totalDelta == 0) return 0;
@@ -158,17 +148,24 @@ public static class CpuInfoHelper
     {
         if (!GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
         {
-            int error = Marshal.GetLastWin32Error();
-            throw new System.ComponentModel.Win32Exception(
+            var error = Marshal.GetLastWin32Error();
+            throw new Win32Exception(
                 error, "获取系统时间失败");
         }
 
         // 转换时间值为 UInt64
-        ulong idle = ((ulong)idleTime.dwHighDateTime << 32) | idleTime.dwLowDateTime;
-        ulong kernel = ((ulong)kernelTime.dwHighDateTime << 32) | kernelTime.dwLowDateTime;
-        ulong user = ((ulong)userTime.dwHighDateTime << 32) | userTime.dwLowDateTime;
+        var idle = ((ulong)idleTime.dwHighDateTime << 32) | idleTime.dwLowDateTime;
+        var kernel = ((ulong)kernelTime.dwHighDateTime << 32) | kernelTime.dwLowDateTime;
+        var user = ((ulong)userTime.dwHighDateTime << 32) | userTime.dwLowDateTime;
 
         // 关键修正：内核时间已包含空闲时间，总时间 = 内核时间 + 用户时间
         return (idle, kernel + user);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FILETIME
+    {
+        public uint dwLowDateTime;
+        public uint dwHighDateTime;
     }
 }

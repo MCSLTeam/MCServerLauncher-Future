@@ -74,7 +74,7 @@ public class InstanceManager : IInstanceManager
     public bool TryRemoveInstance(Guid instanceId)
     {
         if (RunningInstances.ContainsKey(instanceId)) return false;
-        
+
         if (!Instances.TryRemove(instanceId, out var config)) return false;
 
         // remove server directory

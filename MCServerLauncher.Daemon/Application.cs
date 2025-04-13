@@ -1,11 +1,12 @@
+using System.Reflection;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Cache;
@@ -21,14 +22,14 @@ namespace MCServerLauncher.Daemon;
 
 public class Application
 {
-    private static Timer _daemonReportTimer;
     public static readonly DateTime StartTime = DateTime.Now;
+
+    private readonly Timer _daemonReportTimer;
     private readonly HttpService _httpService;
 
     public Application()
     {
         IServiceCollection collection = new ServiceCollection();
-
 
         _httpService = new HttpService();
         _httpService.Setup(new TouchSocketConfig()
@@ -53,31 +54,12 @@ public class Application
             .ConfigurePlugins(
                 a =>
                 {
+                    a.Add<FileSystemWatcherPlugin>();
+
                     a.Add<HttpPlugin>();
                     a.UseWebSocket()
                         .SetWSUrl("/api/v1")
-                        .SetVerifyConnection(async (_, context) =>
-                        {
-                            // if (!context.Request.IsUpgrade()) return false;
-                            if (!context.Request.URL.StartsWith("/api/v1")) return false;
-                            try
-                            {
-                                var token = context.Request.Query["token"];
-
-                                if (token != null && (AppConfig.Get().MainToken.Equals(token) ||
-                                                      JwtUtils.ValidateToken(token)))
-                                    return true;
-
-                                await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
-                                return false;
-                            }
-                            catch (Exception e)
-                            {
-                                System.Console.WriteLine(e);
-                                await context.Response.SetStatus(500, e.Message).AnswerAsync();
-                                return false;
-                            }
-                        })
+                        .SetVerifyConnection(WsVerifyHandler.VerifyHandler)
                         .UseAutoPong();
 
                     a.Add<WsBasePlugin>();
@@ -87,32 +69,13 @@ public class Application
                     a.UseDefaultHttpServicePlugin();
                 })
         );
-
-        PostApplicationContainerBuilt();
+        PostApplicationContainerBuilt(resolver =>
+        {
+            resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
+        });
 
         _daemonReportTimer = new Timer(3000);
         _daemonReportTimer.AutoReset = true;
-    }
-
-    private void PostApplicationContainerBuilt()
-    {
-        var resolver = _httpService.Resolver;
-        resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
-    }
-
-    /// <summary>
-    ///     读取配置,添加/api/v1和/login路由的handler,并启动HttpServer。
-    ///     路由/api/v1: ws长连接，实现rpc。
-    ///     路由/login: http请求，实现登录，返回一个jwt。
-    /// </summary>
-    public async Task StartAsync()
-    {
-        var config = AppConfig.Get();
-        await _httpService.StartAsync();
-        Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
-        Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
-        using var _ = new InstancesWatchService(_httpService.Resolver.GetRequiredService<IInstanceManager>());
-
         _daemonReportTimer.Elapsed += async (sender, args) =>
         {
             var eventService = _httpService.Resolver.GetRequiredService<IEventService>();
@@ -125,22 +88,47 @@ public class Application
                 StartTime.ToUnixTimeMilliSeconds()
             ));
         };
-        _daemonReportTimer.Start();
+    }
 
+    public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version!;
+
+    /// <summary>
+    ///     读取配置,添加/api/v1和/login路由的handler,并启动HttpServer。
+    ///     路由/api/v1: ws长连接，实现rpc。
+    ///     路由/login: http请求，实现登录，返回一个jwt。
+    /// </summary>
+    public async Task ServeAsync()
+    {
+        var config = AppConfig.Get();
         var cts = new CancellationTokenSource();
         var consoleApplication = new ConsoleApplication(_httpService);
+
+        await _httpService.StartAsync();
+        Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
+        Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
+
+        var consoleTask = consoleApplication.Serve(cts);
+        _daemonReportTimer.Start();
         System.Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
             cts.Cancel();
         };
-        await consoleApplication.Serve(cts);
+
+        try
+        {
+            var delayTask = Task.Delay(-1, cts.Token);
+            await Task.WhenAny(delayTask, consoleTask);
+        }
+        catch (OperationCanceledException)
+        {
+        }
 
         Log.Information("[Remote] Stopping...");
         await StopAsync();
     }
 
-    public async Task StopAsync(int timeout = 5000)
+    private async Task StopAsync(int timeout = -1)
     {
         _daemonReportTimer.Stop();
 
@@ -152,6 +140,68 @@ public class Application
         // TODO 修复不能软停止实例的问题
         await manager.StopAllInstances(cts.Token);
 
+        foreach (var id in _httpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
+            await _httpService.GetClient(id).WebSocket.SafeCloseAsync("Daemon exit");
+
         await _httpService.StopAsync();
     }
+
+    #region Init
+
+    private static void InitDataDirectory()
+    {
+        var dataFolders = new List<string>
+        {
+            FileManager.Root,
+            FileManager.InstancesRoot,
+            FileManager.LogRoot,
+            FileManager.ContainedRoot
+        };
+
+        foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
+            Directory.CreateDirectory(dataFolder!);
+    }
+
+    private static void InitLogger()
+    {
+        var logConfig = new LoggerConfiguration();
+
+        logConfig = AppConfig.Get().Verbose ? logConfig.MinimumLevel.Verbose() : logConfig.MinimumLevel.Information();
+
+        Log.Logger = logConfig
+            .WriteTo.Async(a => a.File($"{FileManager.LogRoot}/daemon-.txt", rollingInterval: RollingInterval.Day,
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+    }
+
+    public static bool Init()
+    {
+        InitLogger();
+        Log.Information("MCServerLauncher.Daemon v{0}", AppVersion);
+
+        InitDataDirectory();
+        ContainedFiles.ExtractContained();
+        FileManager.StartFileSessionsWatcher();
+        InstanceFactorySettingExtensions.RegisterFactories();
+
+        var infoTask = SystemInfoHelper.GetSystemInfo();
+        try
+        {
+            infoTask.Wait();
+            return true;
+        }
+        catch (AggregateException e)
+        {
+            Log.Error("Could not Init Application: {0}", e.Message);
+            return false;
+        }
+    }
+
+    private void PostApplicationContainerBuilt(Action<IResolver> setup)
+    {
+        setup.Invoke(_httpService.Resolver);
+    }
+
+    #endregion
 }

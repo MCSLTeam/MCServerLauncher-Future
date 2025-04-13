@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
@@ -7,8 +8,8 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class Instance
 {
-    private readonly List<string> _properties = new();
     private readonly string _configPath;
+    private readonly List<string> _properties = new();
 
     public Instance(InstanceConfig config)
     {
@@ -60,7 +61,7 @@ public class Instance
         };
 
         var originPath = Environment.GetEnvironmentVariable("PATH");
-        startInfo.EnvironmentVariables["PATH"] = BasicUtils.IsWindows()
+        startInfo.EnvironmentVariables["PATH"] = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? $"{Path.GetDirectoryName(config.JavaPath)};{originPath}"
             : $"{Path.GetDirectoryName(config.JavaPath)}:{originPath}";
 
@@ -127,17 +128,10 @@ public class Instance
                 if (msg == null) return;
 
                 if (msg.Contains("Done"))
-                {
                     ChangeStatus(ServerStatus.Running);
-                }
                 else if (msg.Contains("Stopping the server"))
-                {
                     ChangeStatus(ServerStatus.Stopping);
-                }
-                else if (msg.Contains("Minecraft has crashed"))
-                {
-                    ChangeStatus(ServerStatus.Crashed);
-                }
+                else if (msg.Contains("Minecraft has crashed")) ChangeStatus(ServerStatus.Crashed);
 
                 // else if (msg.Contains("joined the game"))
                 // {

@@ -11,9 +11,9 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 [InstanceFactory(InstanceType.Spigot)]
 [InstanceFactory(InstanceType
     .Fabric)] // make sure that the core file(*.jar) is downloaded from: https://fabricmc.net/use/server/
-[InstanceFactory(InstanceType.Forge, SourceType.Archive, minVersion: "1.5.2")]
-[InstanceFactory(InstanceType.NeoForge, SourceType.Archive, minVersion: "1.20.2")]
-[InstanceFactory(InstanceType.Cleanroom, SourceType.Archive, minVersion: "1.12.2", maxVersion: "1.12.2")]
+[InstanceFactory(InstanceType.Forge, SourceType.Archive, "1.5.2")]
+[InstanceFactory(InstanceType.NeoForge, SourceType.Archive, "1.20.2")]
+[InstanceFactory(InstanceType.Cleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
 public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting)

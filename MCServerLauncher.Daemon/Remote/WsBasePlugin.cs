@@ -31,8 +31,8 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, I
         WsContext context;
         try
         {
-            var (permissions, validTo) = JwtUtils.ReadToken(token);
-            context = this.CreateWsContext(webSocket, permissions, validTo);
+            var (jti, permissions, validTo) = JwtUtils.ReadToken(token);
+            context = this.CreateWsContext(webSocket, jti!, permissions, validTo);
         }
         catch (Exception)
         {
@@ -43,7 +43,8 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, I
         }
 
         // get peer ip
-        Log.Information("[Remote] Accept token: \"{0}...\" from {1} with Id={2}", token[..5], webSocket.Client.GetIPPort(),
+        Log.Information("[Remote] Accept token: \"{0}...\" from {1} with Id={2}", token[..5],
+            webSocket.Client.GetIPPort(),
             context.ClientId);
 
         await e.InvokeNext();

@@ -58,11 +58,14 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlu
                         "[WsExpirePlugin / CheckExpireLoop] Expire and start closing websocket connections: {Connections}",
                         ids
                     );
+                    var tasks = new List<Task>();
                     foreach (var id in ids)
                     {
                         var ws = this.GetWebSocket(id);
-                        if (ws != null) Task.Run(() => ws.SafeCloseAsync("connection expired"));
+                        if (ws != null) tasks.Add(ws.SafeCloseAsync("connection expired"));
                     }
+
+                    await Task.WhenAll(tasks);
                 }
                 else
                 {

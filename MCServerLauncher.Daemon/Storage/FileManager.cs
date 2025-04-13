@@ -30,11 +30,12 @@ internal static class FileManager
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
     private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
     private static Timer? _sessionCleanerTimer;
+
     public static void StartFileSessionsWatcher()
     {
         if (_sessionCleanerTimer is not null) return;
-        
-        _sessionCleanerTimer = new();
+
+        _sessionCleanerTimer = new Timer();
         _sessionCleanerTimer.Interval = 5000;
         _sessionCleanerTimer.Elapsed += (sender, args) =>
         {
@@ -496,7 +497,12 @@ internal static class FileManager
         catch (FileNotFoundException)
         {
             var invoke = defaultFactory.Invoke();
-            File.WriteAllText(path, JsonConvert.SerializeObject(invoke, typeof(T), DaemonJsonSettings.Settings));
+            File.WriteAllText(path, JsonConvert.SerializeObject(
+                invoke,
+                typeof(T),
+                Formatting.Indented,
+                DaemonJsonSettings.Settings
+            ));
             return invoke;
         }
     }
@@ -523,18 +529,27 @@ internal static class FileManager
     /// <typeparam name="T"></typeparam>
     public static void WriteJsonAndBackup<T>(string path, T obj)
     {
-        BackupAndWriteText(path, JsonConvert.SerializeObject(obj, typeof(T), DaemonJsonSettings.Settings), content =>
-        {
-            try
+        BackupAndWriteText(
+            path,
+            JsonConvert.SerializeObject(
+                obj,
+                typeof(T),
+                Formatting.Indented,
+                DaemonJsonSettings.Settings
+            ),
+            content =>
             {
-                JsonConvert.DeserializeObject<T>(content, DaemonJsonSettings.Settings);
-                return true;
+                try
+                {
+                    JsonConvert.DeserializeObject<T>(content, DaemonJsonSettings.Settings);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
             }
-            catch (Exception)
-            {
-                return false;
-            }
-        });
+        );
     }
 
     public static bool TryRemove(string path, bool recursive = true)

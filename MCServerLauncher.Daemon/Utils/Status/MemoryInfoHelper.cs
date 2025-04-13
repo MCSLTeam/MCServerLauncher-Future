@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Status;
-using MCServerLauncher.Common.Utils;
 using Microsoft.Management.Infrastructure;
 using Serilog;
 
@@ -12,7 +11,6 @@ public static class MemoryInfoHelper
     public static async Task<MemInfo> GetMemInfo()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
             return await Task.Run(() =>
             {
                 try
@@ -45,7 +43,6 @@ public static class MemoryInfoHelper
                     return new MemInfo(0, 0);
                 }
             });
-        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -60,9 +57,7 @@ public static class MemoryInfoHelper
             if (parts.Length != 2 ||
                 !ulong.TryParse(parts[0], out var totalKb) ||
                 !ulong.TryParse(parts[1], out var availableKb))
-            {
                 throw new InvalidOperationException("Failed to parse memory info");
-            }
 
             return new MemInfo(totalKb, availableKb);
         }
@@ -91,7 +86,7 @@ public static class MemoryInfoHelper
 
             return new MemInfo(totalKb, freeKb);
         }
-        
+
         throw new PlatformNotSupportedException("Unsupported OS");
     }
 }

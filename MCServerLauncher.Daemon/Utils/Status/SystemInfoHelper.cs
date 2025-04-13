@@ -2,7 +2,6 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.ProtoType.Status;
-using MCServerLauncher.Common.Utils;
 
 namespace MCServerLauncher.Daemon.Utils.Status;
 
@@ -43,13 +42,9 @@ public static class SystemInfoHelper
         if (string.IsNullOrEmpty(rootPath) && Path.IsPathRooted(location))
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
                 rootPath = Path.DirectorySeparatorChar.ToString();
-            }
             else
-            {
                 throw new InvalidOperationException("无法确定根路径");
-            }
         }
 
         // 路径标准化处理
@@ -59,13 +54,11 @@ public static class SystemInfoHelper
         );
 
         // 确保根路径不为空（Linux根目录特例）
-        if (normalizedRoot.Length == 0 && (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)))
-        {
+        if (normalizedRoot.Length == 0 && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             normalizedRoot = Path.DirectorySeparatorChar.ToString();
-        }
 
         // 查找匹配的驱动器
-        var drive = System.IO.DriveInfo.GetDrives()
+        var drive = DriveInfo.GetDrives()
             .Select(d => new
             {
                 Info = d,
@@ -80,9 +73,9 @@ public static class SystemInfoHelper
             throw new IOException($"驱动器未就绪：{rootPath}");
 
         return new DriveInformation(
-            DriveFormat: drive.DriveFormat,
-            Total: (ulong)drive.TotalSize,
-            Free: (ulong)drive.AvailableFreeSpace
+            drive.DriveFormat,
+            (ulong)drive.TotalSize,
+            (ulong)drive.AvailableFreeSpace
         );
     }
 
@@ -95,9 +88,7 @@ public static class SystemInfoHelper
 
         // 处理Linux根目录特例
         if (normalized.Length == 0 && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
             return Path.DirectorySeparatorChar.ToString();
-        }
 
         return normalized;
     }

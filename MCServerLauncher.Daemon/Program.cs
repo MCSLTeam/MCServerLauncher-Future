@@ -11,24 +11,15 @@ public class Program
 {
     private static async Task Main(string[] args)
     {
-        System.Console.WriteLine($"MCServerLauncher.Daemon v{BasicUtils.AppVersion}");
-        BasicUtils.InitApp();
-        // var info = await SlpClient.GetStatusModern("balabala", 11451);
-        // Log.Information("[SlpClient] Get Server List Ping data: {0}",
-        //     JsonConvert.SerializeObject(info?.Payload, Formatting.Indented));
-        // Log.Information("[SlpClient] Latency: {0}ms", info?.Latency.Milliseconds);
+        if (!Application.Init()) Environment.Exit(1);
 
-        // var manager = InstanceManager.Create();
-        // await manager.TryRemoveInstance(Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
-        // await Task.Delay(1000);
-        // await CreateInstance(manager);
-        // await RunMcServerAsync(manager, Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
-        await ServeAsync();
+        var app = new Application();
+        await app.ServeAsync();
     }
 
     public static void TestJavaScanner()
     {
-        BasicUtils.InitApp();
+        Application.Init();
         JavaScanner.ScanJava(true).Wait();
     }
 
@@ -85,14 +76,5 @@ public class Program
             );
         else
             Log.Error("[InstanceManager] Failed to start server: {0}", $"{instance?.Config.Name}({id})");
-    }
-
-    /// <summary>
-    ///     app开始服务,包含配置DI和HttpServer启动
-    /// </summary>
-    private static async Task ServeAsync()
-    {
-        var app = new Application();
-        await app.StartAsync();
     }
 }

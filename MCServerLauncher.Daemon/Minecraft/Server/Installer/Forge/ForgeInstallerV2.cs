@@ -37,7 +37,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
             return null;
         }
 
-        return new ForgeInstallerV2(profile, installerPath, javaPath,mirror);
+        return new ForgeInstallerV2(profile, installerPath, javaPath, mirror);
     }
 
     public override async Task<bool> Run(string workingDirectory, CancellationToken ct = default)

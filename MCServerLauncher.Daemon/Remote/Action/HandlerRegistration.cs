@@ -353,7 +353,6 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     if (!instanceManager.SendToInstance(param.Id, param.Message))
-                    {
                         return ValueTask.FromException(
                             instanceManager.Instances.ContainsKey(param.Id)
                                 ? new ActionException(
@@ -365,7 +364,6 @@ public static class HandlerRegistration
                                     $"Instance {param.Id} not found"
                                 )
                         );
-                    }
 
                     return ValueTask.CompletedTask;
                 }

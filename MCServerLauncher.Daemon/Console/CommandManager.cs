@@ -16,7 +16,7 @@ public static class CommandManager
     {
         dispatcher.RegisterCommand(ExitCommand.Register, "退出");
         dispatcher.RegisterCommand(HelpCommand.Register, "打印帮助");
-        dispatcher.RegisterCommand(TokenCommand.Register, "打印daemon配置文件细节");
+        dispatcher.RegisterCommand(ConfigCommand.Register, "打印daemon配置文件细节");
         dispatcher.RegisterCommand(ConnectionsCommand.Register, "打印当前所有的Websocket客户端连接信息");
 
         return dispatcher;

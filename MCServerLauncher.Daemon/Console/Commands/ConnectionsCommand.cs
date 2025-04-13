@@ -14,29 +14,49 @@ public static class ConnectionsCommand
     {
         var node = dispatcher.Register(ctx =>
             ctx.Literal("conn")
-                .Then(
-                    ctx.Literal("all")
-                        .Executes(cmd =>
-                        {
-                            var source = cmd.Source;
-                            var container = source.GetRequiredService<WsContextContainer>();
-                            var service = source.GetRequiredService<IHttpService>();
+                .Then(ctx.Literal("list")
+                    .Executes(cmd =>
+                    {
+                        var source = cmd.Source;
+                        var container = source.GetRequiredService<WsContextContainer>();
+                        var service = source.GetRequiredService<IHttpService>();
 
-                            var clientIds = container.GetClientIds().ToArray();
-                            source.SendFeedback("当前Websocket客户端连接数: {Count}", clientIds.Length);
-                            foreach (var clientId in clientIds)
-                                if (service.TryGetClient(clientId, out var client))
-                                {
-                                    var context = container.GetContext(clientId);
-                                    source.SendFeedback("- {CID}", clientId);
-                                    source.SendFeedback("  - IP: {IP}", client.GetIPPort());
-                                    source.SendFeedback("  - 权限: {Permissions}", context?.Permissions.ToString());
-                                    source.SendFeedback("  - 到期时间: {Time}", context?.ExpiredTo);
-                                }
+                        var clientIds = container.GetClientIds().ToArray();
+                        source.SendFeedback("当前Websocket客户端连接数: {Count}", clientIds.Length);
+                        foreach (var clientId in clientIds)
+                            if (service.TryGetClient(clientId, out var client))
+                            {
+                                var context = container.GetContext(clientId);
+                                source.SendFeedback("- {CID}", clientId);
+                                source.SendFeedback("  - IP: {IP}", client.GetIPPort());
+                                source.SendFeedback("  - JTI: {Jti}", context?.JTI);
+                                source.SendFeedback("  - 权限: {Permissions}", context?.Permissions.ToString());
+                                source.SendFeedback("  - 到期时间: {Time}", context?.ExpiredTo);
+                            }
 
-                            return 0;
-                        })
-                ).Then(ctx.Argument("cid", Arguments.String()).Executes(cmd =>
+                        return 0;
+                    })
+                ).Then(ctx.Literal("expire_all")
+                    .Executes(cmd =>
+                    {
+                        var source = cmd.Source;
+
+                        WsVerifyHandler.RejectWithNoReason = true;
+                        AppConfig.Get().ResetSecret();
+                        WsVerifyHandler.RejectWithNoReason = false;
+
+                        var container = source.GetRequiredService<WsContextContainer>();
+                        var service = source.GetRequiredService<IHttpService>();
+                        var clientIds = container.GetClientIds().ToArray();
+
+                        foreach (var clientId in clientIds)
+                            if (service.TryGetClient(clientId, out var client))
+                                client.WebSocket.SafeClose("Daemon administrator manual expired this connection");
+
+                        source.SendFeedback("已过期并关闭所有Websocket客户端连接");
+                        return 0;
+                    }))
+                .Then(ctx.Argument("cid", Arguments.String()).Executes(cmd =>
                 {
                     var source = cmd.Source;
                     var container = source.GetRequiredService<WsContextContainer>();
@@ -50,8 +70,9 @@ public static class ConnectionsCommand
                         {
                             source.SendFeedback("- {CID}", clientId);
                             source.SendFeedback("  - IP: {IP}", client.GetIPPort());
-                            source.SendFeedback("  - 权限: {Permissions}", context.Permissions.ToString());
-                            source.SendFeedback("  - 到期时间: {Time}", context.ExpiredTo);
+                            source.SendFeedback("  - JTI: {Jti}", context.JTI);
+                            source.SendFeedback("  - 权限: {Permissions}", context?.Permissions.ToString());
+                            source.SendFeedback("  - 到期时间: {Time}", context?.ExpiredTo);
                             return 0;
                         }
                     }

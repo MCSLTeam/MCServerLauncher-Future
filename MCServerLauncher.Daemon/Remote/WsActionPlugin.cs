@@ -6,7 +6,6 @@ using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
-using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
@@ -61,8 +60,6 @@ public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
                     Log.Warning("[Remote] Failed to respond action, because websocket connection closed or lost.");
             }).ConfigureFalseAwait();
         }
-
-        if (e.DataFrame.IsClose) await webSocket.SafeCloseAsync();
 
         await e.InvokeNext();
     }

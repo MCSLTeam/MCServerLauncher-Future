@@ -1,5 +1,6 @@
 ﻿using Brigadier.NET;
 using Brigadier.NET.Exceptions;
+using Serilog;
 using TouchSocket.Http;
 using Exception = System.Exception;
 
@@ -12,15 +13,15 @@ public class ConsoleApplication
         HttpService = httpService;
     }
 
-    public IHttpService HttpService { get; }
+    private IHttpService HttpService { get; }
 
-    public async Task Serve(CancellationTokenSource cts)
+    public Task Serve(CancellationTokenSource cts)
     {
-        var wait = Task.Delay(-1, cts.Token);
-        var loop = Task.Run(async () =>
+        return Task.Factory.StartNew(() =>
         {
             var commandSource = new ConsoleCommandSource(HttpService, cts);
             var dispatcher = new CommandDispatcher<ConsoleCommandSource>().RegisterCommands();
+            Log.Information("[Console] Console Application is running, type 'help' for help.");
 
             try
             {
@@ -57,7 +58,6 @@ public class ConsoleApplication
             catch (Exception e) when (e is OperationCanceledException or IOException)
             {
             }
-        }, cts.Token);
-        await Task.WhenAny(wait, loop);
+        }, TaskCreationOptions.LongRunning);
     }
 }

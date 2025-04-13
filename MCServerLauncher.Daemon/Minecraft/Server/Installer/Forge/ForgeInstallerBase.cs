@@ -107,7 +107,7 @@ public abstract class ForgeInstallerBase : IForgeInstaller
             InstanceFactoryMirror.None => false,
             _ => throw new NotImplementedException()
         };
-        
+
         if (success) return true;
         return await DownloadMinecraft(await Install.GetMcDownload(ct), targetPath, ct);
     }

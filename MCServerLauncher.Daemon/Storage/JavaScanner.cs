@@ -8,6 +8,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using MCServerLauncher.Common.ProtoType;
 using Serilog;
@@ -19,7 +20,9 @@ public static class JavaScanner
     private const string JavaVersionPattern = @"(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[._](\d+))?(?:-(.+))?";
 
     private static readonly Func<string, bool> matcher =
-        BasicUtils.IsWindows() ? s => s.Equals("java.exe") : s => s.Equals("java");
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? s => s.Equals("java.exe")
+            : s => s.Equals("java");
 
     private static readonly List<string> MatchedKeys = new()
     {
@@ -69,7 +72,7 @@ public static class JavaScanner
     private static List<string> SplitEnvPath()
     {
         var path = Environment.GetEnvironmentVariable("PATH") ?? "";
-        return (BasicUtils.IsWindows() ? path.Split(';') : path.Split(':')).ToList();
+        return (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path.Split(';') : path.Split(':')).ToList();
     }
 
 
@@ -175,7 +178,7 @@ public static class JavaScanner
         Log.Verbose("[JVM] Start scanning available Java");
 
         List<Process> pending = new();
-        if (BasicUtils.IsWindows())
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             for (var i = 65; i <= 90; i++)
             {
                 var drive = $"{(char)i}:\\";
