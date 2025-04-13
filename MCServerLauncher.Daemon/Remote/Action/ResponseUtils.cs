@@ -31,7 +31,7 @@ public static class ResponseUtils
 
     public static ActionResponse Err(ActionRequest request, Exception exception, ActionReturnCode code, bool verbose)
     {
-        Log.Error("[Remote] Error while handling Action {0}: \n{1}", request.ActionType, exception.ToString());
+        Log.Error(exception, "[Remote] Error while handling Action {0}", request.ActionType);
         var message = verbose ? exception.ToString() : exception.Message;
         return Err(request, message, code);
     }
