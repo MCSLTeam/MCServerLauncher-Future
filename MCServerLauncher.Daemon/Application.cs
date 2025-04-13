@@ -185,10 +185,10 @@ public class Application
         FileManager.StartFileSessionsWatcher();
         InstanceFactorySettingExtensions.RegisterFactories();
 
-        var infoTask = SystemInfoHelper.GetSystemInfo();
         try
         {
-            infoTask.Wait();
+            // windows下预先检查CIM是否可用
+            SystemInfoHelper.GetSystemInfo().Wait();
             return true;
         }
         catch (AggregateException e)

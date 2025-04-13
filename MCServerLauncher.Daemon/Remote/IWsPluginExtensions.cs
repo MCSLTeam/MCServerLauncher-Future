@@ -23,7 +23,7 @@ public static class IWsPluginExtensions
     public static WsContext CreateWsContext(
         this IWsPlugin plugin,
         IWebSocket webSocket,
-        string jti,
+        Guid jti,
         string? permissions,
         DateTime expiredTo
     )

@@ -20,7 +20,10 @@ public static class WsVerifyHandler
         {
             var token = context.Request.Query["token"];
 
-            if (token != null && JwtUtils.ValidateToken(token)) return true;
+            if (
+                token != null
+                && JwtUtils.ValidateToken(token)
+            ) return true;
 
             await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
             return false;

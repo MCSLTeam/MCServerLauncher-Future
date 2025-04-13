@@ -32,7 +32,7 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, I
         try
         {
             var (jti, permissions, validTo) = JwtUtils.ReadToken(token);
-            context = this.CreateWsContext(webSocket, jti!, permissions, validTo);
+            context = this.CreateWsContext(webSocket, jti, permissions, validTo);
         }
         catch (Exception)
         {

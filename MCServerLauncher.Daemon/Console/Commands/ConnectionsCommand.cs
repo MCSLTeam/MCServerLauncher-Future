@@ -27,11 +27,8 @@ public static class ConnectionsCommand
                             if (service.TryGetClient(clientId, out var client))
                             {
                                 var context = container.GetContext(clientId);
-                                source.SendFeedback("- {CID}", clientId);
-                                source.SendFeedback("  - IP: {IP}", client.GetIPPort());
-                                source.SendFeedback("  - JTI: {Jti}", context?.JTI);
-                                source.SendFeedback("  - 权限: {Permissions}", context?.Permissions.ToString());
-                                source.SendFeedback("  - 到期时间: {Time}", context?.ExpiredTo);
+                                if (context is null) continue;
+                                ShowClientInformation(source, client!, context);
                             }
 
                         return 0;
@@ -68,11 +65,7 @@ public static class ConnectionsCommand
                         var context = container.GetContext(clientId);
                         if (context is not null)
                         {
-                            source.SendFeedback("- {CID}", clientId);
-                            source.SendFeedback("  - IP: {IP}", client.GetIPPort());
-                            source.SendFeedback("  - JTI: {Jti}", context.JTI);
-                            source.SendFeedback("  - 权限: {Permissions}", context?.Permissions.ToString());
-                            source.SendFeedback("  - 到期时间: {Time}", context?.ExpiredTo);
+                            ShowClientInformation(source, client!, context);
                             return 0;
                         }
                     }
@@ -82,5 +75,16 @@ public static class ConnectionsCommand
                 }))
         );
         return node;
+    }
+
+    private static void ShowClientInformation<TSource>(TSource source, IHttpSessionClient client, WsContext context)
+        where TSource : ConsoleCommandSource
+    {
+        source.SendFeedback("- {CID}", context.ClientId);
+        source.SendFeedback("  - IP: {IP}", client.GetIPPort());
+        source.SendFeedback("  - JTI: {Jti}",
+            context.JTI == Guid.Empty ? context.JTI + " (MainToken登录, JTI无意义)" : context.JTI);
+        source.SendFeedback("  - 权限: {Permissions}", context.Permissions.ToString());
+        source.SendFeedback("  - 到期时间: {Time}", context.ExpiredTo);
     }
 }

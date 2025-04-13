@@ -11,7 +11,7 @@ public class WsContextContainer
         return _contexts.GetValueOrDefault(clientId);
     }
 
-    public WsContext CreateContext(string clientId, string jti, string? permissions, DateTime expiredTo)
+    public WsContext CreateContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)
     {
         var context = new WsContext(clientId, jti, permissions, expiredTo);
         _contexts.TryAdd(clientId, context);

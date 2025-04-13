@@ -1,6 +1,8 @@
 ﻿using Brigadier.NET;
 using Brigadier.NET.Builder;
 using Brigadier.NET.Tree;
+using MCServerLauncher.Daemon.Utils;
+using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Console.Commands;
 
@@ -10,7 +12,17 @@ public static class ConfigCommand
         where TSource : ConsoleCommandSource
     {
         var node = dispatcher.Register(ctx =>
-            ctx.Literal("config")
+            ctx.Literal("cfg")
+                .Then(ctx.Literal("json")
+                    .Executes(cmd =>
+                    {
+                        var config = AppConfig.Get();
+                        cmd.Source.SendFeedback(
+                            "config.json: {0}",
+                            JsonConvert.SerializeObject(config, Formatting.Indented, DaemonJsonSettings.Settings)
+                        );
+                        return 0;
+                    }))
                 .Then(ctx.Literal("token")
                     .Executes(cmd =>
                     {

@@ -52,13 +52,16 @@ public static class JwtUtils
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public static (string? JTI, string? Permissions, DateTime ValidTo) ReadToken(string token)
+    public static (Guid JTI, string? Permissions, DateTime ValidTo) ReadToken(string token)
     {
+        if (token == AppConfig.Get().MainToken)
+            return (Guid.Empty, "*", DateTime.MaxValue);
+
         var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var permissions = parsed.Claims.FirstOrDefault(c => c.Type == "permissions")?.Value;
         var expires = parsed.ValidTo;
         var id = parsed.Id;
-        return (id, permissions, expires);
+        return (Guid.Parse(id), permissions, expires);
     }
 
     /// <summary>
@@ -68,6 +71,9 @@ public static class JwtUtils
     /// <returns></returns>
     public static bool ValidateToken(string jwt)
     {
+        // 如果是主令牌，则直接返回true
+        if (jwt == AppConfig.Get().MainToken) return true;
+
         try
         {
             var tokenValidationParameters = new TokenValidationParameters
