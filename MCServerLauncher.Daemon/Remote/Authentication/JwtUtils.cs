@@ -29,7 +29,8 @@ public static class JwtUtils
 
         var claims = new[]
         {
-            new Claim("permissions", permissions)
+            new Claim("permissions", permissions),
+            new Claim("jti", Guid.NewGuid().ToString())
         };
 
         var token = new JwtSecurityToken(
@@ -51,12 +52,13 @@ public static class JwtUtils
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public static (string?, DateTime) ReadToken(string token)
+    public static (string? JTI, string? Permissions, DateTime ValidTo) ReadToken(string token)
     {
         var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var permissions = parsed.Claims.FirstOrDefault(c => c.Type == "permissions")?.Value;
         var expires = parsed.ValidTo;
-        return (permissions, expires);
+        var id = parsed.Id;
+        return (id, permissions, expires);
     }
 
     /// <summary>
@@ -79,12 +81,12 @@ public static class JwtUtils
                 ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
             };
             var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);
-            var (permissions, _) = ReadToken(jwt);
+            var (_, permissions, _) = ReadToken(jwt);
             return permissions != null && Permissions.IsValid(permissions);
         }
         catch (Exception e)
         {
-            Log.Debug("[Jwt Utils] Can't validate jwt: {0}", e.Message);
+            Log.Verbose("[Jwt Utils] Can't validate jwt: {0}", e.Message);
             return false;
         }
     }

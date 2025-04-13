@@ -11,15 +11,17 @@ public class WsContext
 {
     private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
 
-    public WsContext(string clientId, string? permissions, DateTime expiredTo)
+    public WsContext(string clientId, string jti, string? permissions, DateTime expiredTo)
     {
         ClientId = clientId;
         Permissions = permissions is null ? Permissions.Never : new Permissions(permissions);
         ExpiredTo = expiredTo;
+        JTI = jti;
     }
 
     public Permissions Permissions { get; }
     public DateTime ExpiredTo { get; }
+    public string JTI { get; }
     public string ClientId { get; }
 
     public void SubscribeEvent(EventType type, IEventMeta? meta)
@@ -42,8 +44,6 @@ public class WsContext
                 if (set.Count > 1) set.Remove(meta);
                 else _subscribedEvents.TryRemove(type, out _);
             }
-
-            ;
         }
         else
         {

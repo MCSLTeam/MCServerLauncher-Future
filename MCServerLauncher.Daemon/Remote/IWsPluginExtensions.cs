@@ -20,9 +20,14 @@ public static class IWsPluginExtensions
         return plugin.Container.GetContext(plugin.GetClientId(webSocket))!;
     }
 
-    public static WsContext CreateWsContext(this IWsPlugin plugin, IWebSocket webSocket, string? permissions,
-        DateTime expiredTo)
+    public static WsContext CreateWsContext(
+        this IWsPlugin plugin,
+        IWebSocket webSocket,
+        string jti,
+        string? permissions,
+        DateTime expiredTo
+    )
     {
-        return plugin.Container.CreateContext(plugin.GetClientId(webSocket), permissions, expiredTo);
+        return plugin.Container.CreateContext(plugin.GetClientId(webSocket), jti, permissions, expiredTo);
     }
 }
