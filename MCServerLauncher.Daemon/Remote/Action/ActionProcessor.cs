@@ -28,12 +28,16 @@ public class ActionProcessor : IActionService
         var userPermission = context.Permissions;
         if (_permissions.TryGetValue(request.ActionType, out var actionPermission) &&
             !userPermission.Matches(actionPermission))
-            return ResponseUtils.Err(request, $"Permission denied for action '{request.ActionType}'",
-                ActionReturnCode.PermissionDenied);
+            return ResponseUtils.Err(
+                ActionRetcode.PermissionDenied.WithMessage($"Permission denied for action '{request.ActionType}'"),
+                request.Id
+            );
 
         if (!_handlers.TryGetValue(request.ActionType, out var handler))
-            return ResponseUtils.Err(request, $"Action '{request.ActionType}' is not implemented",
-                ActionReturnCode.ActionNotImplement);
+            return ResponseUtils.Err(
+                ActionRetcode.UnknownAction.WithMessage($"Action '{request.ActionType}' is not implemented"),
+                request.Id
+            );
 
         // 执行
         try
@@ -52,7 +56,7 @@ public class ActionProcessor : IActionService
         }
         catch (Exception e)
         {
-            return ResponseUtils.Err(request, e, ActionReturnCode.InternalError, true);
+            return ResponseUtils.Err(request, e, ActionRetcode.UnexpectedError, true);
         }
     }
 }

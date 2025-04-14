@@ -21,7 +21,7 @@ public record ActionResponse
     public ActionRequestStatus RequestStatus { get; init; }
 
     [JsonProperty(PropertyName = "retcode")]
-    public ActionReturnCode ReturnCode { get; init; }
+    public int Retcode { get; init; }
 
     [JsonProperty(Required = Required.Default)]
     public JToken? Data { get; init; }

@@ -22,7 +22,7 @@ public class ActionHandlerRegistry
     private static TParam ParseParameter<TParam>(JToken? paramToken)
         where TParam : class, IActionParameter
     {
-        ActionExceptionHelper.ThrowIf(paramToken is null, ActionReturnCode.ParameterIsNull, "Parameter is null");
+        ActionExceptionHelper.ThrowIf(paramToken is null, ActionRetcode.BadRequest.WithMessage("Missing parameters"));
 
         try
         {
@@ -32,21 +32,22 @@ public class ActionHandlerRegistry
         catch (JsonSerializationException e)
         {
             var @params = e.Path?.Split(new[] { '.' }).ToArray();
-            ActionExceptionHelper.ThrowIf(@params is null, ActionReturnCode.ParameterParseError,
-                "Could not deserialize param");
+            ActionExceptionHelper.ThrowIf(@params is null,
+                ActionRetcode.ParamError.WithMessage("Could not deserialize param"));
 
             throw e.Context(
-                ActionReturnCode.ParameterParseError,
-                $"Could not deserialize param '{@params![1]}', in json path: '{e.Path}'"
+                ActionRetcode.ParamError.WithMessage(
+                    $"Could not deserialize param '{@params![1]}' at '{e.Path}'")
             );
         }
         catch (NullReferenceException e)
         {
-            throw e.Context(ActionReturnCode.ParameterParseError, "Could not deserialize param");
+            throw e.Context(ActionRetcode.ParamError.WithMessage("Could not deserialize param"));
         }
         catch (Exception e)
         {
-            throw e.Context("Error occurred during param deserialization: " + e.Message);
+            throw e.Context(
+                ActionRetcode.ParamError.WithMessage("Could not deserialize param: " + e.Message));
         }
     }
 

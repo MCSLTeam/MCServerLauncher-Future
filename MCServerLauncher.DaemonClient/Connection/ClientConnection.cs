@@ -257,7 +257,7 @@ internal class ClientConnection : IDisposable
             return response.RequestStatus switch
             {
                 ActionRequestStatus.Ok => response.Data?.ToObject<TResult>(serializer),
-                ActionRequestStatus.Error => throw new DaemonRequestException(response.ReturnCode, response.Message),
+                ActionRequestStatus.Error => throw new DaemonRequestException(ActionRetcode.FromCode(response.Retcode), response.Message),
                 _ => throw new NotImplementedException()
             };
         }

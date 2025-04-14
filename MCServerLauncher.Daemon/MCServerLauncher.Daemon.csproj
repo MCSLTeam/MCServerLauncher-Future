@@ -12,7 +12,7 @@
         <Description>Daemon for MCServerLauncher Future.</Description>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
         <Nullable>enable</Nullable>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <LangVersion>10</LangVersion>
         <OutputType>Exe</OutputType>
     </PropertyGroup>
