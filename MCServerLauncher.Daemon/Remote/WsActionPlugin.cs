@@ -37,7 +37,7 @@ public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
             }
             catch (Exception exception) when (exception is JsonException or NullReferenceException)
             {
-                var err = ResponseUtils.Err("Could not parse action json", ActionReturnCode.InternalError);
+                var err = ResponseUtils.Err(ActionRetcode.BadRequest.WithMessage("Could not parse action json"), null);
                 await webSocket.SendAsync(JsonConvert.SerializeObject(err, DaemonJsonSettings.Settings));
                 await e.InvokeNext();
                 return;

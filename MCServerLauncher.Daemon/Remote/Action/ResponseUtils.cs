@@ -6,39 +6,27 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 
 public static class ResponseUtils
 {
-    public static ActionResponse Err(string? message, ActionReturnCode code)
+    public static ActionResponse Err(ActionRetcode code, Guid? id)
     {
         return new ActionResponse
         {
             RequestStatus = ActionRequestStatus.Error,
-            ReturnCode = code,
+            Retcode = code.Code,
+            Message = code.Message,
             Data = null,
-            Message = message ?? string.Empty
+            Id = id ?? Guid.Empty
         };
     }
 
-    public static ActionResponse Err(ActionRequest request, string? message, ActionReturnCode code)
+    public static ActionResponse Err(ActionRequest request, Exception exception, ActionRetcode code, bool verbose)
     {
-        return new ActionResponse
-        {
-            RequestStatus = ActionRequestStatus.Error,
-            ReturnCode = code,
-            Data = null,
-            Message = message ?? string.Empty,
-            Id = request.Id
-        };
-    }
-
-    public static ActionResponse Err(ActionRequest request, Exception exception, ActionReturnCode code, bool verbose)
-    {
-        Log.Error(exception, "[Remote] Error while handling Action {0}", request.ActionType);
-        var message = verbose ? exception.ToString() : exception.Message;
-        return Err(request, message, code);
+        Log.Error("[Remote] Error while handling Action {0}: \n{1}", request.ActionType, exception.ToString());
+        return Err(code.WithMessage(verbose ? exception.ToString() : exception.Message), request.Id);
     }
 
     public static ActionResponse Err(ActionRequest request, ActionException exception, bool verbose)
     {
-        return Err(request, exception, exception.Code, verbose);
+        return Err(request, exception, exception.Retcode, verbose);
     }
 
     public static ActionResponse Ok(JObject? data, Guid id)
@@ -46,7 +34,8 @@ public static class ResponseUtils
         return new ActionResponse
         {
             RequestStatus = ActionRequestStatus.Ok,
-            ReturnCode = ActionReturnCode.Ok,
+            Retcode = ActionRetcode.Ok.Code,
+            Message = ActionRetcode.Ok.Message,
             Data = data,
             Id = id
         };

@@ -77,8 +77,9 @@ public static class HandlerRegistration
                     }
                     catch (NullReferenceException e)
                     {
-                        throw e.Context(ActionReturnCode.ParameterIsNull,
-                            $"Event(Type={param.Type}) missing required event meta"
+                        throw e.Context(
+                            ActionRetcode.ParamError.WithMessage(
+                                $"Event {param.Type} missing meta")
                         );
                     }
 
@@ -96,8 +97,9 @@ public static class HandlerRegistration
                     }
                     catch (NullReferenceException e)
                     {
-                        throw e.Context(ActionReturnCode.ParameterIsNull,
-                            $"Event(Type={param.Type}) missing required event meta"
+                        throw e.Context(
+                            ActionRetcode.ParamError.WithMessage(
+                                $"Event {param.Type} missing meta")
                         );
                     }
 
@@ -125,13 +127,12 @@ public static class HandlerRegistration
                     }
                     catch (IOException e)
                     {
-                        throw e.Context(ActionReturnCode.IOException);
+                        throw e.Context(ActionRetcode.FileError);
                     }
 
                     ActionExceptionHelper.ThrowIf(
                         fileId == Guid.Empty,
-                        ActionReturnCode.IOException,
-                        "Failed to pre-allocate space"
+                        ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space")
                     );
 
                     return ValueTask.FromResult(new FileUploadRequestResult
@@ -147,8 +148,7 @@ public static class HandlerRegistration
                 {
                     ActionExceptionHelper.ThrowIf(
                         param.FileId == Guid.Empty,
-                        ActionReturnCode.FileNotFound,
-                        "Invalid file id"
+                        ActionRetcode.NotUploading.WithMessage(param.FileId)
                     );
 
                     try
@@ -164,7 +164,7 @@ public static class HandlerRegistration
                     }
                     catch (IOException e)
                     {
-                        throw e.Context(ActionReturnCode.IOException);
+                        throw e.Context(ActionRetcode.FileError);
                     }
                 })
             .Register<FileUploadCancelParameter>(
@@ -174,8 +174,7 @@ public static class HandlerRegistration
                 {
                     ActionExceptionHelper.ThrowIf(
                         !FileManager.FileUploadCancel(param.FileId),
-                        ActionReturnCode.FileNotFound,
-                        "Failed to cancel file upload"
+                        ActionRetcode.NotUploading.WithMessage(param.FileId)
                     );
                     return ValueTask.CompletedTask;
                 })
@@ -197,8 +196,8 @@ public static class HandlerRegistration
                         );
                         ActionExceptionHelper.ThrowIf(
                             rv is null,
-                            ActionReturnCode.RequestLimitReached,
-                            $"Max download sessions of file '{param.Path}' reached"
+                            ActionRetcode.RateLimitExceeded.WithMessage(
+                                $"Max download sessions of file '{param.Path}' reached")
                         );
                         var (fileId, size, sha1) = rv!.Value;
                         return new FileDownloadRequestResult
@@ -210,7 +209,7 @@ public static class HandlerRegistration
                     }
                     catch (IOException e)
                     {
-                        throw e.Context(ActionReturnCode.IOException);
+                        throw e.Context(ActionRetcode.FileError);
                     }
                 }
             )
@@ -221,8 +220,7 @@ public static class HandlerRegistration
                 {
                     ActionExceptionHelper.ThrowIf(
                         !rangePattern.IsMatch(param.Range),
-                        ActionReturnCode.ParameterError,
-                        "Invalid range format"
+                        ActionRetcode.ParamError.WithMessage("Invalid range format")
                     );
 
                     var (from, to) = (int.Parse(rangePattern.Match(param.Range).Groups[1].Value),
@@ -263,11 +261,11 @@ public static class HandlerRegistration
                     }
                     catch (FileNotFoundException e)
                     {
-                        throw e.Context(ActionReturnCode.FileNotFound);
+                        throw e.Context(ActionRetcode.FileNotFound);
                     }
                     catch (IOException e)
                     {
-                        throw e.Context(ActionReturnCode.IOException);
+                        throw e.Context(ActionRetcode.FileError);
                     }
                 }
             )
@@ -286,11 +284,11 @@ public static class HandlerRegistration
                     }
                     catch (FileNotFoundException e)
                     {
-                        throw e.Context(ActionReturnCode.FileNotFound);
+                        throw e.Context(ActionRetcode.FileNotFound);
                     }
                     catch (IOException e)
                     {
-                        throw e.Context(ActionReturnCode.IOException);
+                        throw e.Context(ActionRetcode.FileError);
                     }
                 }
             )
@@ -311,14 +309,12 @@ public static class HandlerRegistration
 
                     ActionExceptionHelper.ThrowIf(
                         instance is null && !instanceManager.Instances.ContainsKey(param.Id),
-                        ActionReturnCode.InstanceNotFound,
-                        "Instance not found"
+                        ActionRetcode.InstanceNotFound.WithMessage(param.Id)
                     );
 
                     ActionExceptionHelper.ThrowIf(
                         instance is null && instanceManager.Instances.ContainsKey(param.Id),
-                        ActionReturnCode.InstanceProcessError,
-                        "Cannot start instance process"
+                        ActionRetcode.ProcessError.WithMessage("Cannot start instance process")
                     );
 
 
@@ -337,12 +333,10 @@ public static class HandlerRegistration
                         : ValueTask.FromException(
                             instanceManager.Instances.ContainsKey(param.Id)
                                 ? new ActionException(
-                                    ActionReturnCode.InstanceNotRunning,
-                                    $"Instance {param.Id} not running"
+                                    ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
                                 )
                                 : new ActionException(
-                                    ActionReturnCode.InstanceNotFound,
-                                    $"Instance {param.Id} not found"
+                                    ActionRetcode.InstanceNotFound.WithMessage(param.Id)
                                 )
                         );
                 })
@@ -356,12 +350,10 @@ public static class HandlerRegistration
                         return ValueTask.FromException(
                             instanceManager.Instances.ContainsKey(param.Id)
                                 ? new ActionException(
-                                    ActionReturnCode.InstanceNotRunning,
-                                    $"Instance {param.Id} not running"
+                                    ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
                                 )
                                 : new ActionException(
-                                    ActionReturnCode.InstanceNotFound,
-                                    $"Instance {param.Id} not found"
+                                    ActionRetcode.InstanceNotFound.WithMessage(param.Id)
                                 )
                         );
 
@@ -386,15 +378,14 @@ public static class HandlerRegistration
 
                     if (!param.Setting.ValidateSetting())
                         throw new ActionException(
-                            ActionReturnCode.InstanceAddFailed,
-                            "Invalid instance factory setting" //TODO 更多报错信息
+                            ActionRetcode.InstallationError.WithMessage(
+                                "Invalid instance factory setting") // TODO 更多报错信息
                         );
 
                     var config = await instanceManager.TryAddInstance(param.Setting);
                     if (config is null)
                         throw new ActionException(
-                            ActionReturnCode.InstanceAddFailed,
-                            "Failed to add instance" //TODO 更多报错信息
+                            ActionRetcode.InstallationError.WithMessage("Failed to add instance") // TODO 更多报错信息
                         );
 
                     return new AddInstanceResult
@@ -412,12 +403,10 @@ public static class HandlerRegistration
                         ? ValueTask.CompletedTask
                         : ValueTask.FromException(instanceManager.RunningInstances.ContainsKey(param.Id)
                             ? new ActionException(
-                                ActionReturnCode.InstanceIsRunning,
-                                $"Instance {param.Id} is running"
+                                ActionRetcode.BadInstanceState.WithMessage($"{param.Id} is running")
                             )
                             : new ActionException(
-                                ActionReturnCode.InstanceNotFound,
-                                $"Instance {param.Id} not found"
+                                ActionRetcode.InstanceNotFound.WithMessage(param.Id)
                             ));
                 })
             .Register<KillInstanceParameter>(

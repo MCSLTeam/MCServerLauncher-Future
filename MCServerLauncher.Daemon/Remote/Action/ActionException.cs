@@ -5,53 +5,50 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 public class ActionException : Exception
 {
     // 添加包含内部异常的构造函数
-    public ActionException(ActionReturnCode code, string message, Exception innerException)
-        : base(message, innerException) // 将message和innerException传递给基类
+    public ActionException(ActionRetcode? code = null, Exception? innerException = null)
+        : base(code?.Message ?? ActionRetcode.UnexpectedError.Message, innerException) // 将message和innerException传递给基类
     {
-        Code = code;
+        Retcode = code ?? ActionRetcode.UnexpectedError;
     }
 
     // 可选：其他构造函数
-    public ActionException(ActionReturnCode code, string message)
-        : base(message)
+    public ActionException(ActionRetcode? code = null)
+        : this(code, null)
     {
-        Code = code;
     }
 
-    public ActionException(ActionReturnCode code = ActionReturnCode.InternalError)
+    public ActionException(Exception? innerException = null)
+        : this(null, innerException)
     {
-        Code = code;
     }
 
-    public ActionReturnCode Code { get; }
+    public ActionException()
+        : this(null, null)
+    {
+    }
+
+    public ActionRetcode Retcode { get; }
 }
 
 public static class ActionExceptionHelper
 {
-    public static void ThrowIf(bool condition, ActionReturnCode code, string message)
+    public static void ThrowIf(bool condition, ActionRetcode? code = null, Exception? innerException = null)
     {
-        if (condition) throw new ActionException(code, message);
+        if (condition) throw new ActionException(code?.WithException(innerException), innerException);
     }
 
-    public static void Throw(ActionReturnCode code, string message, Exception? innerException = null)
+    public static void Throw(ActionRetcode code, Exception? innerException = null)
     {
-        if (innerException is null) throw new ActionException(code, message);
-
-        throw new ActionException(code, message, innerException);
+        throw new ActionException(code.WithException(innerException), innerException);
     }
 
-    public static ActionException Context(this Exception e, ActionReturnCode code, string message)
+    public static ActionException Context(this Exception e)
     {
-        return new ActionException(code, message, e);
+        return new ActionException(ActionRetcode.UnexpectedError.WithException(e), e);
     }
 
-    public static ActionException Context(this Exception e, string message)
+    public static ActionException Context(this Exception e, ActionRetcode code)
     {
-        return new ActionException(ActionReturnCode.InternalError, message, e);
-    }
-
-    public static ActionException Context(this Exception e, ActionReturnCode code)
-    {
-        return new ActionException(code, e.Message, e);
+        return new ActionException(code.WithException(e), e);
     }
 }
