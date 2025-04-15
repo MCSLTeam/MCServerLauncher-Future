@@ -251,13 +251,14 @@ internal class ClientConnection : IDisposable
         try
         {
             var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts.Token);
-            var response = (await tcs.Task.TimeoutAfter(timeout, cts.Token))!;
+            var response = await tcs.Task.WaitAsync(timeout, cts.Token);
             var serializer = JsonSerializer.Create(JsonSettings.Settings);
 
             return response.RequestStatus switch
             {
                 ActionRequestStatus.Ok => response.Data?.ToObject<TResult>(serializer),
-                ActionRequestStatus.Error => throw new DaemonRequestException(ActionRetcode.FromCode(response.Retcode), response.Message),
+                ActionRequestStatus.Error => throw new DaemonRequestException(ActionRetcode.FromCode(response.Retcode),
+                    response.Message),
                 _ => throw new NotImplementedException()
             };
         }
@@ -268,11 +269,6 @@ internal class ClientConnection : IDisposable
                 Log.Debug("[ClientConnection] timeout when waiting for echo: {0}", id);
             throw;
         }
-    }
-
-    internal void MarkAsPingLost()
-    {
-        PingLost = true;
     }
 
     ~ClientConnection()

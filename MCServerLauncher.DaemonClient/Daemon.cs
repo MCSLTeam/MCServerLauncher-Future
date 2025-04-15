@@ -111,7 +111,7 @@ public class Daemon : IDaemon
         bool isSecure, ClientConnectionConfig config, int timeout = -1, CancellationToken cancellationToken = default)
     {
         var connection = await ClientConnection.OpenAsync(address, port, token, isSecure, config, cancellationToken)
-            .TimeoutAfter(timeout);
+            .WaitAsync(timeout);
 
 
         return new Daemon(connection);
@@ -152,7 +152,7 @@ public class Daemon : IDaemon
             var daemon = await OpenAsync(
                 "127.0.0.1",
                 11451,
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwZXJtaXNzaW9ucyI6IioiLCJleHAiOjE3NDQxNzMyNDgsImlzcyI6Ik1DU2VydmVyTGF1bmNoZXIuRGFlbW9uIiwiYXVkIjoiTUNTZXJ2ZXJMYXVuY2hlci5EYWVtb24ifQ.t9bGF8xvEnN-bieKIEn6Gbe7-dlYL3aEcVeDbmhmgdc"
+                "sbB3pu4onaECUFlX5SBwnu6MAsYqJM7z"
                 , false,
                 new ClientConnectionConfig
                 {

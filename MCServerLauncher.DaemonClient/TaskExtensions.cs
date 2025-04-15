@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
 
@@ -7,73 +8,117 @@ namespace MCServerLauncher.DaemonClient;
 
 public static class TaskExtensions
 {
-    public static Task<TResult?> Suppress<TResult>(this Task<TResult> task)
+    public static async Task<TResult?> Suppress<TResult>(this Task<TResult> task)
     {
-        return Task.Run(
-            async () =>
-            {
-                try
-                {
-                    return await task;
-                }
-                catch (Exception e)
-                {
-                    Log.Information(e, "Suppress Exception");
-                    return default;
-                }
-            });
+        try
+        {
+            return await task.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Suppressed Exception");
+            return default;
+        }
     }
 
-    public static Task Suppress(this Task task)
+    public static async Task Suppress(this Task task)
     {
-        return Task.Run(
-            async () =>
-            {
-                try
-                {
-                    await task;
-                }
-                catch (Exception e)
-                {
-                    Log.Information(e, "Suppress Exception");
-                }
-            });
+        try
+        {
+            await task.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Suppressed Exception");
+        }
     }
 
-    public static Task<TResult?> Suppress<TResult>(this Task<TResult> task, params Type[] exceptionsTypes)
+    public static async Task<TResult?> Suppress<TResult>(this Task<TResult> task, params Type[] exceptionsTypes)
     {
-        return Task.Run(
-            async () =>
-            {
-                try
-                {
-                    return await task;
-                }
-                catch (Exception e)
-                {
-                    if (!exceptionsTypes.Any(t => e.GetType().IsSubclassOf(t)))
-                        throw;
-                    Log.Information(e, "Suppress Exception");
-                    return default;
-                }
-            });
+        try
+        {
+            return await task.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            if (!exceptionsTypes.Any(t => e.GetType().IsSubclassOf(t)))
+                throw;
+            Log.Debug(e, "Suppressed Exception");
+            return default;
+        }
     }
 
-    public static Task Suppress(this Task task, params Type[] exceptionsTypes)
+    public static async Task Suppress(this Task task, params Type[] exceptionsTypes)
     {
-        return Task.Run(
-            async () =>
-            {
-                try
-                {
-                    await task;
-                }
-                catch (Exception e)
-                {
-                    if (!exceptionsTypes.Any(t => e.GetType().IsSubclassOf(t)))
-                        throw;
-                    Log.Information(e, "Suppress Exception");
-                }
-            });
+        try
+        {
+            await task.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            if (!exceptionsTypes.Any(t => e.GetType().IsSubclassOf(t)))
+                throw;
+            Log.Debug(e, "Suppressed Exception");
+        }
+    }
+    
+    public static async Task<TResult> WaitAsync<TResult>(
+        this Task<TResult> task,
+        TimeSpan timeout,
+        CancellationToken ct = default
+    )
+    {
+        using var timeoutCts = new CancellationTokenSource();
+
+        var token = timeoutCts.Token;
+
+        if (ct != CancellationToken.None)
+            token = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token).Token;
+
+        var timeoutTask = Task.Delay(timeout, token);
+
+        var selectTask = await Task.WhenAny(task, timeoutTask);
+        if (selectTask != task)
+        {
+            if (token.IsCancellationRequested) await timeoutTask; // 抛出OperationCanceledException
+            else throw new TimeoutException("Task has timed out.");
+        }
+
+        timeoutCts.Cancel();
+        return await task; // 传递异常
+    }
+
+    public static Task<TResult> WaitAsync<TResult>(
+        this Task<TResult> task,
+        int millisecondsTimeout,
+        CancellationToken ct = default
+    )
+    {
+        return task.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), ct);
+    }
+
+    public static async Task WaitAsync(this Task task, TimeSpan timeout, CancellationToken ct = default)
+    {
+        using var timeoutCts = new CancellationTokenSource();
+
+        var token = timeoutCts.Token;
+        if (ct != CancellationToken.None)
+            token = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token).Token;
+
+        var timeoutTask = Task.Delay(timeout, token);
+        var selectTask = await Task.WhenAny(task, timeoutTask);
+        if (selectTask != task)
+        {
+            if (token.IsCancellationRequested) await timeoutTask; // 抛出OperationCanceledException
+            else throw new TimeoutException("Task has timed out.");
+        }
+
+        timeoutCts.Cancel();
+        await task; // 传递异常
+    }
+
+    public static Task WaitAsync(this Task task, int millisecondsTimeout, CancellationToken ct = default)
+    {
+        return task.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), ct);
     }
 }
