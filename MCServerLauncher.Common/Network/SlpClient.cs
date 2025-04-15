@@ -392,10 +392,10 @@ public record PlayersPayload
     public int Online { get; set; }
 
     [JsonProperty(PropertyName = "sample")]
-    public Player[] Sample { get; set; } = null!;
+    public PlayerSample[] Sample { get; set; } = Array.Empty<PlayerSample>();
 }
 
-public record Player
+public record PlayerSample
 {
     [JsonProperty(PropertyName = "name")] public string Name { get; set; } = string.Empty;
 

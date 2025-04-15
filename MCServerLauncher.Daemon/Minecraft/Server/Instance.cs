@@ -1,5 +1,8 @@
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using MCServerLauncher.Common.Helpers;
+using MCServerLauncher.Common.Network;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
@@ -23,8 +26,6 @@ public class Instance
     public ushort? Port { get; private set; }
     private Process? ServerProcess { get; set; }
     public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
-
-    private HashSet<string> Players { get; } = new();
 
     public List<string> ServerProperties
     {
@@ -132,21 +133,6 @@ public class Instance
                 else if (msg.Contains("Stopping the server"))
                     ChangeStatus(ServerStatus.Stopping);
                 else if (msg.Contains("Minecraft has crashed")) ChangeStatus(ServerStatus.Crashed);
-
-                // else if (msg.Contains("joined the game"))
-                // {
-                //     // [18:26:19] [Worker-Main-14/INFO] (MinecraftServer) Alex joined the game
-                //     var substring = msg[..^16];
-                //     var player = substring[(substring.LastIndexOf(' ') + 1) ..];
-                //     Players.Add(player);
-                // }
-                // else if (msg.Contains("left the game"))
-                // {
-                //     // [18:27:03] [Server thread/INFO] (MinecraftServer) Ares_Connor left the game
-                //     var substring = msg[..^14];
-                //     var player = substring[(substring.LastIndexOf(' ') + 1) ..];
-                //     Players.Remove(player);
-                // }
             };
             process.OutputDataReceived += (_, arg) =>
             {
@@ -220,14 +206,35 @@ public class Instance
         }
     }
 
-    // TODO 使用SlpClient获取服务器信息(例如玩家列表)
-    public Task<InstanceStatus> GetStatusAsync()
+    public async Task<Player[]> GetServerPlayersAsync()
     {
-        return Task.FromResult(new InstanceStatus(
+        if (McVersion.Of(Config.McVersion) >= McVersion.Of("1.7") && Port.HasValue && Status == ServerStatus.Running)
+        {
+            try
+            {
+                var status = await SlpClient.GetStatusModern("127.0.0.1", Port.Value);
+                if (status != null)
+                {
+                    return status.Payload.Players.Sample.Select(player => new Player(player.Name, player.Id)).ToArray();
+                }
+            }
+            catch (SocketException)
+            {
+                return Array.Empty<Player>();
+            }
+        }
+
+        return Array.Empty<Player>();
+    }
+
+    // TODO 使用SlpClient获取服务器信息(例如玩家列表)
+    public async Task<InstanceStatus> GetStatusAsync()
+    {
+        return new InstanceStatus(
             Status,
             Config,
             ServerProperties,
-            Players.ToList()
-        ));
+            await GetServerPlayersAsync()
+        );
     }
 }

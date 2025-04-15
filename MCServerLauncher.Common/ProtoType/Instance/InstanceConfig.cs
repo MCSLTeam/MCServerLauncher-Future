@@ -29,13 +29,13 @@ public record InstanceConfig
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public string JavaPath { get; init; } = null!;
-    
+
     /// <summary>
     ///     服务器启动目标(jar文件名, 脚本文件名)
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public string Target { get; init; } = null!;
-    
+
     /// <summary>
     ///     服务器类型(vanilla, fabric, forge ...)
     /// </summary>
@@ -62,7 +62,7 @@ public record InstanceConfig
     /// </summary>
     [JsonConverter(typeof(WebEncodingJsonConverter))]
     public Encoding InputEncoding { get; init; } = Encoding.UTF8;
-    
+
     /// <summary>
     ///     控制台输出编码
     /// </summary>
