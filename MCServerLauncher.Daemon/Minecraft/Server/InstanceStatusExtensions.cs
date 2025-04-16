@@ -4,8 +4,8 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public static class InstanceStatusExtensions
 {
-    public static bool IsStoppedOrCrashed(this ServerStatus status)
+    public static bool IsStoppedOrCrashed(this InstanceStatus status)
     {
-        return status is ServerStatus.Stopped or ServerStatus.Crashed;
+        return status is InstanceStatus.Stopped or InstanceStatus.Crashed;
     }
 }

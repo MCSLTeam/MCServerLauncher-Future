@@ -66,14 +66,14 @@ public sealed record AddInstanceResult : IActionResult
     [JsonRequired] public InstanceConfig Config { get; init; } = null!;
 }
 
-public sealed record GetInstanceStatusResult : IActionResult
+public sealed record GetInstanceReportResult : IActionResult
 {
-    [JsonRequired] public InstanceStatus Status { get; init; } = null!;
+    [JsonRequired] public InstanceReport Report { get; init; } = null!;
 }
 
-public sealed record GetAllStatusResult : IActionResult
+public sealed record GetAllReportsResult : IActionResult
 {
-    [JsonRequired] public Dictionary<Guid, InstanceStatus> Status { get; init; } = null!;
+    [JsonRequired] public Dictionary<Guid, InstanceReport> Reports { get; init; } = null!;
 }
 
 public sealed record GetSystemInfoResult : IActionResult

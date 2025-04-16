@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.Network;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils.Status;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
@@ -25,7 +25,21 @@ public class Instance
     public InstanceConfig Config { get; private set; }
     public ushort? Port { get; private set; }
     private Process? ServerProcess { get; set; }
-    public ServerStatus Status { get; private set; } = ServerStatus.Stopped;
+    public InstanceStatus Status { get; private set; } = InstanceStatus.Stopped;
+
+    /// <summary>
+    ///     进程id, 如果为-1，则表示进程不存在
+    /// </summary>
+    public int ProcessId
+    {
+        get
+        {
+            if (ServerProcess is null) return -1;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return ServerProcess.Id;
+
+            return ProcessTreeHelper.FindSubProcessPid(ServerProcess.Id, "-jar");
+        }
+    }
 
     public List<string> ServerProperties
     {
@@ -37,7 +51,7 @@ public class Instance
         }
     }
 
-    public event Action<Guid, ServerStatus>? OnStatusChanged;
+    public event Action<Guid, InstanceStatus>? OnStatusChanged;
 
     public event Action<Guid, string>? OnLog;
 
@@ -73,7 +87,7 @@ public class Instance
         };
         beforeStart?.Invoke(process);
 
-        ChangeStatus(ServerStatus.Starting);
+        ChangeStatus(InstanceStatus.Starting);
         process.Start();
 
         return process;
@@ -129,10 +143,10 @@ public class Instance
                 if (msg == null) return;
 
                 if (msg.Contains("Done"))
-                    ChangeStatus(ServerStatus.Running);
+                    ChangeStatus(InstanceStatus.Running);
                 else if (msg.Contains("Stopping the server"))
-                    ChangeStatus(ServerStatus.Stopping);
-                else if (msg.Contains("Minecraft has crashed")) ChangeStatus(ServerStatus.Crashed);
+                    ChangeStatus(InstanceStatus.Stopping);
+                else if (msg.Contains("Minecraft has crashed")) ChangeStatus(InstanceStatus.Crashed);
             };
             process.OutputDataReceived += (_, arg) =>
             {
@@ -140,13 +154,13 @@ public class Instance
             };
             process.ErrorDataReceived += (_, arg) =>
             {
-                Log.Error($"[Server({Config.Name})] [STDERR] {arg.Data}");
+                Log.Verbose($"[Server({Config.Name})] [STDERR] {arg.Data}");
                 if (arg.Data is not null) OnLog?.Invoke(Config.Uuid, "[STDERR] " + arg.Data);
             };
 
             process.Exited += (_, _) =>
             {
-                if (Status != ServerStatus.Crashed) ChangeStatus(ServerStatus.Stopped);
+                if (Status != InstanceStatus.Crashed) ChangeStatus(InstanceStatus.Stopped);
             };
         });
         ServerProcess.BeginOutputReadLine();
@@ -160,7 +174,7 @@ public class Instance
     {
         ServerProcess?.Kill();
         await WaitForExitAsync();
-        ChangeStatus(ServerStatus.Stopped);
+        ChangeStatus(InstanceStatus.Stopped);
     }
 
     public Task WaitForExitAsync(CancellationToken ct = default)
@@ -178,15 +192,15 @@ public class Instance
         ServerProcess?.StandardInput.WriteLine(message);
     }
 
-    private void ChangeStatus(ServerStatus newStatus)
+    private void ChangeStatus(InstanceStatus newStatus)
     {
         Status = newStatus;
         OnStatusChanged?.Invoke(Config.Uuid, newStatus);
     }
 
-    private void OnStatusChangedHandler(Guid _, ServerStatus newStatus)
+    private void OnStatusChangedHandler(Guid _, InstanceStatus newStatus)
     {
-        if (newStatus == ServerStatus.Running)
+        if (newStatus == InstanceStatus.Running)
         {
             // refresh server.properties
             SetServerProperties();
@@ -208,29 +222,25 @@ public class Instance
 
     public async Task<Player[]> GetServerPlayersAsync()
     {
-        if (McVersion.Of(Config.McVersion) >= McVersion.Of("1.7") && Port.HasValue && Status == ServerStatus.Running)
-        {
+        if (McVersion.Of(Config.McVersion) >= McVersion.Of("1.7") && Port.HasValue && Status == InstanceStatus.Running)
             try
             {
                 var status = await SlpClient.GetStatusModern("127.0.0.1", Port.Value);
                 if (status != null)
-                {
                     return status.Payload.Players.Sample.Select(player => new Player(player.Name, player.Id)).ToArray();
-                }
             }
             catch (SocketException)
             {
                 return Array.Empty<Player>();
             }
-        }
 
         return Array.Empty<Player>();
     }
 
     // TODO 使用SlpClient获取服务器信息(例如玩家列表)
-    public async Task<InstanceStatus> GetStatusAsync()
+    public async Task<InstanceReport> GetReportAsync()
     {
-        return new InstanceStatus(
+        return new InstanceReport(
             Status,
             Config,
             ServerProperties,

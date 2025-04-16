@@ -360,14 +360,14 @@ public static class HandlerRegistration
                     return ValueTask.CompletedTask;
                 }
             ).Register(
-                ActionType.GetAllStatus,
+                ActionType.GetAllReports,
                 IMatchable.Always(),
                 async (ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return new GetAllStatusResult
+                    return new GetAllReportsResult
                     {
-                        Status = await instanceManager.GetAllStatus()
+                        Reports = await instanceManager.GetAllStatus()
                     };
                 })
             .Register<AddInstanceParameter, AddInstanceResult>(
@@ -417,15 +417,15 @@ public static class HandlerRegistration
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     await instanceManager.KillInstance(param.Id);
                 })
-            .Register<GetInstanceStatusParameter, GetInstanceStatusResult>(
-                ActionType.GetInstanceStatus,
+            .Register<GetInstanceReportParameter, GetInstanceReportResult>(
+                ActionType.GetInstanceReport,
                 IMatchable.Always(),
                 async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return new GetInstanceStatusResult
+                    return new GetInstanceReportResult
                     {
-                        Status = await instanceManager.GetInstanceStatus(param.Id)
+                        Report = await instanceManager.GetInstanceStatus(param.Id)
                     };
                 });
 

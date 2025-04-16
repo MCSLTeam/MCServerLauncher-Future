@@ -146,16 +146,16 @@ public class InstanceManager : IInstanceManager
         return RunningInstances.TryGetValue(instanceId, out var instance) ? instance.KillProcess() : Task.CompletedTask;
     }
 
-    public Task<InstanceStatus> GetInstanceStatus(Guid instanceId)
+    public Task<InstanceReport> GetInstanceStatus(Guid instanceId)
     {
         if (!Instances.TryGetValue(instanceId, out var instance))
             throw new ArgumentException("Instance not found.");
-        return instance.GetStatusAsync();
+        return instance.GetReportAsync();
     }
 
-    public async Task<Dictionary<Guid, InstanceStatus>> GetAllStatus()
+    public async Task<Dictionary<Guid, InstanceReport>> GetAllStatus()
     {
-        var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetStatusAsync());
+        var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetReportAsync());
         await Task.WhenAll(tasks.Values);
         return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
     }
@@ -168,7 +168,7 @@ public class InstanceManager : IInstanceManager
         return Task.WhenAll(tasks);
     }
 
-    private void OnInstanceStatusChangedHandler(Guid instanceId, ServerStatus status)
+    private void OnInstanceStatusChangedHandler(Guid instanceId, InstanceStatus status)
     {
         Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
             status.ToString());

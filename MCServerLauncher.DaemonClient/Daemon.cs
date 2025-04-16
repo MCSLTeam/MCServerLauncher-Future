@@ -145,14 +145,14 @@ public class Daemon : IDaemon
     {
         try
         {
-            var client = new HttpClient();
-            for (var i = 0; i < 3; i++) Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11451/info"));
+            // var client = new HttpClient();
+            // for (var i = 0; i < 3; i++) Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11451/info"));
 
             // var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
             var daemon = await OpenAsync(
-                "127.0.0.1",
+                "172.23.190.95",
                 11451,
-                "sbB3pu4onaECUFlX5SBwnu6MAsYqJM7z"
+                "zHXzxpZqOg7FHan5IpOOobTMGPLlY1Fm"
                 , false,
                 new ClientConnectionConfig
                 {
@@ -184,10 +184,11 @@ public class Daemon : IDaemon
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
             Console.WriteLine("\nDaemon instances:");
-            var status = await daemon.GetAllStatusAsync();
+            var status = await daemon.GetAllReportsAsync();
             foreach (var kv in status) Console.WriteLine($"    - {kv.Key}: {kv.Value.Config.Name}");
 
-            var guid = status.FirstOrDefault().Key;
+            // var guid = status.FirstOrDefault().Key;
+            var guid = Guid.Empty;
 
             if (guid == Guid.Empty)
             {
@@ -195,22 +196,21 @@ public class Daemon : IDaemon
                 Console.WriteLine("No Instance found in daemon, download core from internet and install it!");
                 var setting = new InstanceFactorySetting
                 {
-                    Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"),
-                    Name = "1-21-1",
-                    InstanceType = InstanceType.Forge,
-                    Target = "installer.jar",
+                    Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3"),
+                    Name = "1-21-1-vanilla",
+                    InstanceType = InstanceType.Vanilla,
+                    Target = "server.jar",
                     TargetType = TargetType.Jar,
                     JavaPath = "java",
                     JavaArgs = Array.Empty<string>(),
                     SourceType = SourceType.Core,
-                    // Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
-                    Source =
-                        "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",
+                    Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
+                    // Source = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",
                     // Source = "daemon/downloads/forge-1.20.4-49.2.0-installer.jar",
                     McVersion = "1.21.1",
                     UsePostProcess = false
                 };
-                guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2");
+                guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3");
                 Console.WriteLine($"Creating Instance: {setting.Name} ({setting.Uuid})");
 
                 var config = await daemon.TryAddInstanceAsync(setting);
@@ -220,7 +220,7 @@ public class Daemon : IDaemon
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
             Console.WriteLine($"\nStarting Instance: {guid}");
-            var instStatus = await daemon.GetInstanceStatusAsync(guid);
+            var instStatus = await daemon.GetInstanceReportAsync(guid);
             var instName = instStatus.Config.Name;
 
             // 订阅实例日志
@@ -279,7 +279,7 @@ public class Daemon : IDaemon
 
     private static async Task PrintServerStatus(IDaemon daemon, Guid id)
     {
-        var instStatus = await daemon.GetInstanceStatusAsync(id);
+        var instStatus = await daemon.GetInstanceReportAsync(id);
         Console.WriteLine($"[ServerStatus] '{instStatus.Config.Name}' status is {instStatus.Status}");
     }
 

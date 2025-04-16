@@ -101,7 +101,7 @@ public sealed record KillInstanceParameter : IActionParameter
     [JsonRequired] public Guid Id { get; init; }
 }
 
-public sealed record GetInstanceStatusParameter : IActionParameter
+public sealed record GetInstanceReportParameter : IActionParameter
 {
     [JsonRequired] public Guid Id { get; init; }
 }

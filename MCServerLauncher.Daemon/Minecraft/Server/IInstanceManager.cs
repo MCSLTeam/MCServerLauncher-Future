@@ -56,14 +56,14 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    Task<InstanceStatus> GetInstanceStatus(Guid instanceId);
+    Task<InstanceReport> GetInstanceStatus(Guid instanceId);
 
 
     /// <summary>
     ///     获取所有服务器实例状态
     /// </summary>
     /// <returns></returns>
-    Task<Dictionary<Guid, InstanceStatus>> GetAllStatus();
+    Task<Dictionary<Guid, InstanceReport>> GetAllStatus();
 
     Task StopAllInstances(CancellationToken ct = default);
 }

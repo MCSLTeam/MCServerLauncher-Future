@@ -29,6 +29,6 @@ public enum ActionType
     StopInstance,
     KillInstance,
     SendToInstance,
-    GetInstanceStatus,
-    GetAllStatus
+    GetInstanceReport,
+    GetAllReports
 }

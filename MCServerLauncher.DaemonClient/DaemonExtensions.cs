@@ -407,25 +407,25 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
-    public static async Task<InstanceStatus> GetInstanceStatusAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    public static async Task<InstanceReport> GetInstanceReportAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
-        var resp = await daemon.RequestAsync<GetInstanceStatusResult>(
-            ActionType.GetInstanceStatus,
-            new GetInstanceStatusParameter
+        var resp = await daemon.RequestAsync<GetInstanceReportResult>(
+            ActionType.GetInstanceReport,
+            new GetInstanceReportParameter
             {
                 Id = id
             }, timeout, ct);
-        return resp.Status;
+        return resp.Report;
     }
 
-    public static async Task<Dictionary<Guid, InstanceStatus>> GetAllStatusAsync(this IDaemon daemon, int timeout = -1,
+    public static async Task<Dictionary<Guid, InstanceReport>> GetAllReportsAsync(this IDaemon daemon, int timeout = -1,
         CancellationToken ct = default)
     {
-        var resp = await daemon.RequestAsync<GetAllStatusResult>(
-            ActionType.GetAllStatus,
+        var resp = await daemon.RequestAsync<GetAllReportsResult>(
+            ActionType.GetAllReports,
             new EmptyActionParameter(), timeout, ct);
-        return resp.Status;
+        return resp.Reports;
     }
 
     #endregion

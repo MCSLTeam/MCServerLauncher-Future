@@ -148,18 +148,18 @@ actions:
       
       resp:
 
-  - get_instance_status:
+  - get_instance_report:
       req:
         id: Guid
       
       resp:
-        status: InstanceStatus
+        report: InstanceReport
 
-  - get_all_status:
+  - get_all_reports:
       req:
       
       resp:
-        status: Dictionary<Guid, InstanceStatus>
+        reports: Dictionary<Guid, InstanceReport>
 
   - get_system_info:
       req:
