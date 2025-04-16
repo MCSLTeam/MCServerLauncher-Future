@@ -13,8 +13,9 @@ public static class ExitCommand
             ctx.Literal("exit")
                 .Executes(cmd =>
                 {
-                    cmd.Source.Cts.Cancel();
-                    return 0;
+                    var gs = cmd.Source.GetRequiredService<GracefulShutdown>();
+                    Task.Run(() => gs.Shutdown());
+                    return ConsoleApplication.Exit;
                 })
         );
         return node;

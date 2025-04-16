@@ -7,14 +7,12 @@ namespace MCServerLauncher.Daemon.Console;
 
 public class ConsoleCommandSource
 {
-    public ConsoleCommandSource(IHttpService httpService, CancellationTokenSource cts)
+    public ConsoleCommandSource(IHttpService httpService)
     {
         HttpService = httpService;
-        Cts = cts;
     }
 
     private IHttpService HttpService { get; }
-    public CancellationTokenSource Cts { get; }
 
     public TService GetRequiredService<TService>()
         where TService : notnull

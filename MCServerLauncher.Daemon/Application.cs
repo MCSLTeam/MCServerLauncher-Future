@@ -38,6 +38,8 @@ public class Application
             .ConfigureContainer(a =>
             {
                 a.RegisterSingleton<IServiceCollection>(collection)
+                    .RegisterSingleton<ConsoleApplication>()
+                    .RegisterSingleton<GracefulShutdown>()
                     .RegisterSingleton<IHttpService>(_httpService)
                     .RegisterSingleton<IActionService, ActionProcessor>()
                     .RegisterSingleton<IEventService, EventService>()
@@ -100,32 +102,21 @@ public class Application
     public async Task ServeAsync()
     {
         var config = AppConfig.Get();
-        var cts = new CancellationTokenSource();
-        var consoleApplication = new ConsoleApplication(_httpService);
+        var resolver = _httpService.Resolver;
+        var gs = resolver.GetRequiredService<GracefulShutdown>();
 
         await _httpService.StartAsync();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
 
-        var consoleTask = consoleApplication.Serve(cts);
+        resolver.GetRequiredService<ConsoleApplication>().Serve();
         _daemonReportTimer.Start();
-        System.Console.CancelKeyPress += (_, e) =>
-        {
-            e.Cancel = true;
-            cts.Cancel();
-        };
 
-        try
-        {
-            var delayTask = Task.Delay(-1, cts.Token);
-            await Task.WhenAny(delayTask, consoleTask);
-        }
-        catch (OperationCanceledException)
-        {
-        }
+        gs.OnShutdown += () => StopAsync().Wait();
+        await gs.WaitForShutdownAsync();
 
-        Log.Information("[Remote] Stopping...");
-        await StopAsync();
+        // 最后释放HttpService
+        await _httpService.StopAsync();
     }
 
     private async Task StopAsync(int timeout = -1)
@@ -142,8 +133,6 @@ public class Application
 
         foreach (var id in _httpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
             await _httpService.GetClient(id).WebSocket.SafeCloseAsync("Daemon exit");
-
-        await _httpService.StopAsync();
     }
 
     #region Init

@@ -1,5 +1,6 @@
 ﻿using Brigadier.NET;
 using Brigadier.NET.Exceptions;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Http;
 using Exception = System.Exception;
@@ -8,6 +9,8 @@ namespace MCServerLauncher.Daemon.Console;
 
 public class ConsoleApplication
 {
+    public const int Exit = -255;
+
     public ConsoleApplication(IHttpService httpService)
     {
         HttpService = httpService;
@@ -15,25 +18,28 @@ public class ConsoleApplication
 
     private IHttpService HttpService { get; }
 
-    public Task Serve(CancellationTokenSource cts)
+    public void Serve()
     {
-        return Task.Factory.StartNew(() =>
+        var consoleTask = Task.Factory.StartNew(() =>
         {
-            var commandSource = new ConsoleCommandSource(HttpService, cts);
+            var commandSource = new ConsoleCommandSource(HttpService);
             var dispatcher = new CommandDispatcher<ConsoleCommandSource>().RegisterCommands();
             Log.Information("[Console] Console Application is running, type 'help' for help.");
 
+            var gs = commandSource.GetRequiredService<GracefulShutdown>();
             try
             {
-                while (!cts.Token.IsCancellationRequested)
+                while (!gs.CancellationToken.IsCancellationRequested)
                 {
-                    var line = System.Console.ReadLine();
-                    cts.Token.ThrowIfCancellationRequested();
+                    var line = System.Console.In.ReadLine();
+                    gs.CancellationToken.ThrowIfCancellationRequested();
+                    if (line is null) return;
                     if (string.IsNullOrWhiteSpace(line)) continue;
 
                     try
                     {
                         var execute = dispatcher.Execute(line, commandSource);
+                        if (execute == Exit) return;
                     }
                     catch (CommandSyntaxException e)
                     {
@@ -59,5 +65,8 @@ public class ConsoleApplication
             {
             }
         }, TaskCreationOptions.LongRunning);
+
+        var gs = HttpService.Resolver.GetRequiredService<GracefulShutdown>();
+        gs.OnShutdown += () => consoleTask.Wait();
     }
 }

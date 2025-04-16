@@ -85,6 +85,6 @@ public static class ConnectionsCommand
         source.SendFeedback("  - JTI: {Jti}",
             context.JTI == Guid.Empty ? context.JTI + " (MainToken登录, JTI无意义)" : context.JTI);
         source.SendFeedback("  - 权限: {Permissions}", context.Permissions.ToString());
-        source.SendFeedback("  - 到期时间: {Time}", context.ExpiredTo);
+        source.SendFeedback("  - 到期时间: {Time}", context.ExpiredTo.ToLocalTime());
     }
 }
