@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.Common.Concurrent;
 using MCServerLauncher.Common.Helpers;
+using MCServerLauncher.Daemon.Remote.Extensions;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -58,14 +59,28 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlu
                         "[WsExpirePlugin / CheckExpireLoop] Expire and start closing websocket connections: {Connections}",
                         ids
                     );
-                    var tasks = new List<Task>();
+                    // var tasks = new List<Task>();
+                    // foreach (var id in ids)
+                    // {
+                    //     var ws = this.GetWebSocket(id);
+                    //     if (ws != null) tasks.Add(ws.SafeCloseAsync("connection expired"));
+                    // }
+                    //
+                    // await Task.WhenAll(tasks);
+
                     foreach (var id in ids)
                     {
                         var ws = this.GetWebSocket(id);
-                        if (ws != null) tasks.Add(ws.SafeCloseAsync("connection expired"));
+                        try
+                        {
+                            if (ws != null) await ws.CloseAsync(5001, "");
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Error(
+                                $"[WsExpirePlugin / CheckExpireLoop] Error occurred while closing websocket connection: {e}");
+                        }
                     }
-
-                    await Task.WhenAll(tasks);
                 }
                 else
                 {

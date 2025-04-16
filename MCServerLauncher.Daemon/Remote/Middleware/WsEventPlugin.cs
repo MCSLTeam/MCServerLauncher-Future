@@ -1,6 +1,7 @@
 ﻿using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Event;
+using MCServerLauncher.Daemon.Remote.Extensions;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

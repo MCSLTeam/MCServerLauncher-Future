@@ -1,5 +1,6 @@
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Action;
+using MCServerLauncher.Daemon.Remote.Extensions;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Serilog;
