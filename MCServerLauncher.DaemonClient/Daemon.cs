@@ -150,9 +150,9 @@ public class Daemon : IDaemon
 
             // var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
             var daemon = await OpenAsync(
-                "172.23.190.95",
+                "127.0.0.1",
                 11451,
-                "zHXzxpZqOg7FHan5IpOOobTMGPLlY1Fm"
+                "0GC3dszRrwmg7AQXTCIiVfy0N7EeBppT"
                 , false,
                 new ClientConnectionConfig
                 {
@@ -187,8 +187,7 @@ public class Daemon : IDaemon
             var status = await daemon.GetAllReportsAsync();
             foreach (var kv in status) Console.WriteLine($"    - {kv.Key}: {kv.Value.Config.Name}");
 
-            // var guid = status.FirstOrDefault().Key;
-            var guid = Guid.Empty;
+            var guid = status.FirstOrDefault().Key;
 
             if (guid == Guid.Empty)
             {
