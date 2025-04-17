@@ -49,21 +49,21 @@ public interface IInstanceManager
     ///     杀死服务器进程
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
-    Task KillInstance(Guid instanceId);
+    void KillInstance(Guid instanceId);
 
     /// <summary>
     ///     获取服务器实例状态
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    Task<InstanceReport> GetInstanceStatus(Guid instanceId);
+    Task<InstanceReport> GetInstanceReport(Guid instanceId);
 
 
     /// <summary>
     ///     获取所有服务器实例状态
     /// </summary>
     /// <returns></returns>
-    Task<Dictionary<Guid, InstanceReport>> GetAllStatus();
+    Task<Dictionary<Guid, InstanceReport>> GetAllReports();
 
     Task StopAllInstances(CancellationToken ct = default);
 }

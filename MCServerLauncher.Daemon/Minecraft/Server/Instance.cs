@@ -1,235 +1,93 @@
-using System.Diagnostics;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Network;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Server.Communicate;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils.Status;
+using MCServerLauncher.Daemon.Utils;
 using Serilog;
+using TouchSocket.Core;
+using DisposableObject = MCServerLauncher.Daemon.Utils.DisposableObject;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
-public class Instance
+public class Instance : DisposableObject
 {
-    private readonly string _configPath;
-    private readonly List<string> _properties = new();
+    private readonly PropertiesHandler _properties;
+    private InstanceConfig _config;
+    private InstanceProcess? _process;
 
     public Instance(InstanceConfig config)
     {
-        Config = config;
-        _configPath = Path.Combine(config.GetWorkingDirectory(), InstanceConfig.FileName);
+        _config = config;
+        _properties = new PropertiesHandler();
 
-        OnStatusChanged += OnStatusChangedHandler;
+        var workingDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(workingDirectory, InstanceConfig.FileName);
+        var propertiesPath = Path.Combine(workingDirectory, PropertiesHandler.FileName);
+        var configChange = new FileChange(configPath);
+        var propertiesChange = new FileChange(propertiesPath);
+
+        _properties.Load(propertiesPath);
+        OnReloadSettings += () =>
+        {
+            if (!configChange.HasChanged()) return;
+            try
+            {
+                var newConfig = FileManager.ReadJson<InstanceConfig>(configPath)!;
+                if (_config.Uuid != newConfig.Uuid)
+                {
+                    Log.Debug("[Instance] Uuid changed, ignored");
+                    return;
+                }
+
+                _config = newConfig;
+            }
+            catch (Exception e)
+            {
+                Log.Debug("[Instance] Failed to refresh config at '{0}', ignored: {1}", configPath, e.Message);
+            }
+        };
+        OnReloadSettings += () =>
+        {
+            if (!propertiesChange.HasChanged()) return;
+
+            _properties.Load(propertiesPath);
+            Port = ushort.TryParse(_properties.GetProperty("server-port"), out var port) ? port : -1;
+        };
     }
 
-    public InstanceConfig Config { get; private set; }
-    public ushort? Port { get; private set; }
-    private Process? ServerProcess { get; set; }
-    public InstanceStatus Status { get; private set; } = InstanceStatus.Stopped;
+    public InstanceConfig Config
+    {
+        get
+        {
+            OnReloadSettings?.Invoke();
+            return _config;
+        }
+    }
+
+    public int Port { get; private set; } = -1;
+    public InstanceStatus Status => _process?.Status ?? InstanceStatus.Stopped;
 
     /// <summary>
     ///     进程id, 如果为-1，则表示进程不存在
     /// </summary>
-    public int ProcessId
-    {
-        get
-        {
-            if (ServerProcess is null) return -1;
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return ServerProcess.Id;
+    public int ServerProcessId => _process?.ServerProcessId ?? -1;
 
-            return ProcessTreeHelper.FindSubProcessPid(ServerProcess.Id, "-jar");
-        }
-    }
-
-    public List<string> ServerProperties
-    {
-        // 如果缓存为空，则尝试刷新一次
-        get
-        {
-            if (_properties.Count == 0) SetServerProperties();
-            return _properties;
-        }
-    }
-
-    public event Action<Guid, InstanceStatus>? OnStatusChanged;
+    private event Action? OnReloadSettings;
 
     public event Action<Guid, string>? OnLog;
+    public event Action<Guid, InstanceStatus>? OnStatusChanged;
 
-    /// <summary>
-    ///     获取mc服务器进程
-    ///     在创建服务器进程时,使用互斥锁修改Daemon进程的环境变量是为了同时兼容jar启动和bat/sh脚本启动的情况
-    /// </summary>
-    /// <param name="config">带创建进程的配置文件</param>
-    /// <param name="beforeStart">在启动前执行的操作(连接stdout等)</param>
-    /// <returns></returns>
-    private Process GetProcess(InstanceConfig config, Action<Process> beforeStart)
+    private async Task<Player[]> GetServerPlayersAsync()
     {
-        var (target, args) = config.GetLaunchScript();
-
-        var startInfo = new ProcessStartInfo(target, args)
-        {
-            UseShellExecute = false,
-            WorkingDirectory = config.GetWorkingDirectory(),
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            RedirectStandardInput = true
-        };
-
-        var originPath = Environment.GetEnvironmentVariable("PATH");
-        startInfo.EnvironmentVariables["PATH"] = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? $"{Path.GetDirectoryName(config.JavaPath)};{originPath}"
-            : $"{Path.GetDirectoryName(config.JavaPath)}:{originPath}";
-
-        var process = new Process
-        {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true
-        };
-        beforeStart?.Invoke(process);
-
-        ChangeStatus(InstanceStatus.Starting);
-        process.Start();
-
-        return process;
-    }
-
-    private IEnumerable<string> GetServerProperties()
-    {
-        var path = Path.Combine(Config.GetWorkingDirectory(), "server.properties");
-        return File.Exists(path) ? File.ReadAllLines(path).ToList() : Enumerable.Empty<string>();
-    }
-
-    private void SetServerProperties()
-    {
-        _properties.Clear();
-        _properties.AddRange(GetServerProperties());
-    }
-
-    private bool TryRefreshConfig()
-    {
-        try
-        {
-            var newConfig = FileManager.ReadJson<InstanceConfig>(_configPath)!;
-            if (Config.Uuid != newConfig.Uuid) return false;
-            Config = newConfig;
-            return true;
-        }
-        catch (Exception e)
-        {
-            Log.Debug("[Instance] Failed to refresh config at '{0}', ignored: {1}", _configPath, e.Message);
-            return false;
-        }
-    }
-
-    // TODO ,stderr的接收；Player List改为使用MC SLP协议
-    public async Task<bool> StartAsync(int delayToCheck = 500)
-    {
-        if (ServerProcess is not null)
-        {
-            if (!ServerProcess.HasExited) return false;
-            ServerProcess.Close();
-            ServerProcess.Dispose();
-        }
-
-        // 尝试从磁盘刷新配置
-        TryRefreshConfig();
-
-        ServerProcess = GetProcess(Config, process =>
-        {
-            process.OutputDataReceived += (sender, args) =>
-            {
-                var msg = args.Data;
-
-                if (msg == null) return;
-
-                if (msg.Contains("Done"))
-                    ChangeStatus(InstanceStatus.Running);
-                else if (msg.Contains("Stopping the server"))
-                    ChangeStatus(InstanceStatus.Stopping);
-                else if (msg.Contains("Minecraft has crashed")) ChangeStatus(InstanceStatus.Crashed);
-            };
-            process.OutputDataReceived += (_, arg) =>
-            {
-                if (arg.Data is not null) OnLog?.Invoke(Config.Uuid, arg.Data);
-            };
-            process.ErrorDataReceived += (_, arg) =>
-            {
-                Log.Verbose($"[Server({Config.Name})] [STDERR] {arg.Data}");
-                if (arg.Data is not null) OnLog?.Invoke(Config.Uuid, "[STDERR] " + arg.Data);
-            };
-
-            process.Exited += (_, _) =>
-            {
-                if (Status != InstanceStatus.Crashed) ChangeStatus(InstanceStatus.Stopped);
-            };
-        });
-        ServerProcess.BeginOutputReadLine();
-        ServerProcess.BeginErrorReadLine();
-
-        await Task.Delay(delayToCheck);
-        return !ServerProcess.HasExited;
-    }
-
-    public async Task KillProcess()
-    {
-        ServerProcess?.Kill();
-        await WaitForExitAsync();
-        ChangeStatus(InstanceStatus.Stopped);
-    }
-
-    public Task WaitForExitAsync(CancellationToken ct = default)
-    {
-        return ServerProcess?.WaitForExitAsync(ct) ?? Task.CompletedTask;
-    }
-
-    public void WaitForExit()
-    {
-        ServerProcess?.WaitForExit();
-    }
-
-    public void WriteLine(string? message)
-    {
-        ServerProcess?.StandardInput.WriteLine(message);
-    }
-
-    private void ChangeStatus(InstanceStatus newStatus)
-    {
-        Status = newStatus;
-        OnStatusChanged?.Invoke(Config.Uuid, newStatus);
-    }
-
-    private void OnStatusChangedHandler(Guid _, InstanceStatus newStatus)
-    {
-        if (newStatus == InstanceStatus.Running)
-        {
-            // refresh server.properties
-            SetServerProperties();
-
-            // do something with server.properties
-            if (ushort.TryParse(_properties.FirstOrDefault(line => line.StartsWith("server-port="))?.Split('=')[1],
-                    out var parsed))
-            {
-                Port = parsed;
-                Log.Debug("[Instance({0})] Server Port: {1}", Config.Name, Port);
-            }
-            else
-            {
-                Port = null;
-                Log.Warning("[Instance({0})] Can't find or parse server port in server.properties", Config.Name);
-            }
-        }
-    }
-
-    public async Task<Player[]> GetServerPlayersAsync()
-    {
-        if (McVersion.Of(Config.McVersion) >= McVersion.Of("1.7") && Port.HasValue && Status == InstanceStatus.Running)
+        if (McVersion.Of(_config.McVersion) >= McVersion.Of("1.7") && Status == InstanceStatus.Running)
             try
             {
-                var status = await SlpClient.GetStatusModern("127.0.0.1", Port.Value);
+                var status = await SlpClient.GetStatusModern("127.0.0.1", Port);
                 if (status != null)
                     return status.Payload.Players.Sample.Select(player => new Player(player.Name, player.Id)).ToArray();
             }
-            catch (SocketException)
+            catch (Exception e)when (e is SocketException or ArgumentOutOfRangeException)
             {
                 return Array.Empty<Player>();
             }
@@ -240,11 +98,65 @@ public class Instance
     // TODO 使用SlpClient获取服务器信息(例如玩家列表)
     public async Task<InstanceReport> GetReportAsync()
     {
+        ReloadSettings();
+
         return new InstanceReport(
             Status,
-            Config,
-            ServerProperties,
+            _config,
+            _properties.ServerPropertiesList,
             await GetServerPlayersAsync()
         );
     }
+
+
+    protected override void ProtectedDispose()
+    {
+        _process?.SafeDispose();
+    }
+
+    private void ReloadSettings()
+    {
+        if (Status is InstanceStatus.Stopped or InstanceStatus.Crashed)
+            OnReloadSettings?.Invoke();
+    }
+
+    #region Process
+
+    // TODO ,stderr的接收；Player List改为使用MC SLP协议
+    public async Task<bool> StartAsync(int delayToCheck = 500)
+    {
+        if (_process is not null)
+        {
+            if (!_process.HasExit) return false;
+            _process.Close();
+            _process.Dispose();
+        }
+
+        _process = new InstanceProcess(_config.GetStartInfo());
+        _process.OnStatusChanged += st =>
+        {
+            OnStatusChanged?.Invoke(_config.Uuid, st);
+            if (st is InstanceStatus.Starting or InstanceStatus.Running) OnReloadSettings?.Invoke();
+        };
+        _process.OnLog += message => OnLog?.Invoke(_config.Uuid, message);
+
+        return await _process.StartAsync();
+    }
+
+    public void KillProcess()
+    {
+        _process?.KillProcess();
+    }
+
+    public Task WaitForExitAsync(CancellationToken ct = default)
+    {
+        return _process?.WaitForExitAsync(ct) ?? Task.CompletedTask;
+    }
+
+    public void WriteLine(string? message)
+    {
+        _process?.WriteLine(message);
+    }
+
+    #endregion
 }

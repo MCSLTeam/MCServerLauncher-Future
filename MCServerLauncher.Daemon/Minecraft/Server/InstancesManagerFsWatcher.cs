@@ -1,15 +1,15 @@
 ﻿using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server;
 
-public class InstanceFileSystemWatcher : IDisposable
+public class InstancesManagerFsWatcher : DisposableObject
 {
     private readonly IInstanceManager _instanceManager;
     private readonly FileSystemWatcher _watcher;
-    private bool _disposed;
 
-    public InstanceFileSystemWatcher(IInstanceManager instanceManager)
+    public InstancesManagerFsWatcher(IInstanceManager instanceManager)
     {
         _instanceManager = instanceManager;
         _watcher = new FileSystemWatcher
@@ -25,11 +25,6 @@ public class InstanceFileSystemWatcher : IDisposable
         Log.Debug("[InstancesWatchService] Start watching instances");
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
 
     private void OnInstanceDelete(object sender, FileSystemEventArgs e)
     {
@@ -44,16 +39,8 @@ public class InstanceFileSystemWatcher : IDisposable
         Log.Error("[InstancesWatchService] Error occurred: {0}", e.GetException().Message);
     }
 
-    ~InstanceFileSystemWatcher()
+    protected override void ProtectedDispose()
     {
-        Dispose(false);
-    }
-
-    private void Dispose(bool dispose)
-    {
-        if (_disposed) return;
-        if (dispose) _watcher.Dispose();
-
-        _disposed = true;
+        _watcher.Dispose();
     }
 }

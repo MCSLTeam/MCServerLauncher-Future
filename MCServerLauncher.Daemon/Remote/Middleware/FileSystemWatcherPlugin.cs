@@ -14,7 +14,7 @@ public class FileSystemWatcherPlugin : PluginBase
         var resolver = httpService.Resolver;
         _watchers = new List<IDisposable>
         {
-            new InstanceFileSystemWatcher(resolver.GetRequiredService<IInstanceManager>())
+            new InstancesManagerFsWatcher(resolver.GetRequiredService<IInstanceManager>())
         };
     }
 

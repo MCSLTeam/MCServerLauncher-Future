@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
@@ -11,7 +13,29 @@ public static class InstanceConfigExtensions
         return Path.Combine(FileManager.InstancesRoot, config.Uuid.ToString());
     }
 
-    public static (string, string) GetLaunchScript(this InstanceConfig config)
+
+    public static ProcessStartInfo GetStartInfo(this InstanceConfig config)
+    {
+        var (target, args) = config.GetLaunchScript();
+
+        var startInfo = new ProcessStartInfo(target, args)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = config.GetWorkingDirectory(),
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            RedirectStandardInput = true
+        };
+
+        var originPath = Environment.GetEnvironmentVariable("PATH");
+        startInfo.EnvironmentVariables["PATH"] = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? $"{Path.GetDirectoryName(config.JavaPath)};{originPath}"
+            : $"{Path.GetDirectoryName(config.JavaPath)}:{originPath}";
+
+        return startInfo;
+    }
+
+    private static (string, string) GetLaunchScript(this InstanceConfig config)
     {
         return config.TargetType switch
         {

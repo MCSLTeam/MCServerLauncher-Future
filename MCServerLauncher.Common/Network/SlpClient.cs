@@ -19,12 +19,15 @@ public class SlpClient
     /// <param name="host"></param>
     /// <param name="port"></param>
     /// <param name="cancellationToken"></param>
+    /// <exception cref="ArgumentOutOfRangeException">port</exception>
     /// <returns></returns>
-    public static async Task<SlpStatus?> GetStatusModern(string host, ushort port,
+    public static async Task<SlpStatus?> GetStatusModern(string host, int port,
         CancellationToken cancellationToken = default)
     {
+        if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port));
+
         var client = new SlpClient();
-        if (!await client.HandShakeAsync(host, port, cancellationToken)) return null;
+        if (!await client.HandShakeAsync(host, (ushort)port, cancellationToken)) return null;
 
         var payload = await client.GetSlpAsync(cancellationToken);
         var latency = await client.GetLatencyAsync(cancellationToken);
@@ -39,10 +42,13 @@ public class SlpClient
     /// <param name="host"></param>
     /// <param name="port"></param>
     /// <param name="cancellationToken"></param>
+    /// /// <exception cref="ArgumentOutOfRangeException">port</exception>
     /// <returns></returns>
-    public static async Task<SlpLegacyStatus?> GetStatusLegacy(string host, ushort port,
+    public static async Task<SlpLegacyStatus?> GetStatusLegacy(string host, int port,
         CancellationToken cancellationToken = default)
     {
+        if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port));
+        
         using var client = new TcpClient();
 
         // connect to server

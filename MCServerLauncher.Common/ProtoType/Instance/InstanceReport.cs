@@ -1,3 +1,3 @@
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
-public record InstanceReport(InstanceStatus Status, InstanceConfig Config, List<string> Properties, Player[] Players);
+public record InstanceReport(InstanceStatus Status, InstanceConfig Config, string[] Properties, Player[] Players);

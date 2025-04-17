@@ -75,7 +75,8 @@ public class InstanceManager : IInstanceManager
     {
         if (RunningInstances.ContainsKey(instanceId)) return false;
 
-        if (!Instances.TryRemove(instanceId, out var config)) return false;
+        if (!Instances.TryRemove(instanceId, out var instance)) return false;
+        instance.Dispose();
 
         // remove server directory
         try
@@ -120,7 +121,7 @@ public class InstanceManager : IInstanceManager
         }
         catch (Exception e)
         {
-            await target.KillProcess();
+            target.KillProcess();
             Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
             return null;
         }
@@ -141,19 +142,19 @@ public class InstanceManager : IInstanceManager
         return true;
     }
 
-    public Task KillInstance(Guid instanceId)
+    public void KillInstance(Guid instanceId)
     {
-        return RunningInstances.TryGetValue(instanceId, out var instance) ? instance.KillProcess() : Task.CompletedTask;
+        if (RunningInstances.TryGetValue(instanceId, out var instance)) instance.KillProcess();
     }
 
-    public Task<InstanceReport> GetInstanceStatus(Guid instanceId)
+    public Task<InstanceReport> GetInstanceReport(Guid instanceId)
     {
         if (!Instances.TryGetValue(instanceId, out var instance))
             throw new ArgumentException("Instance not found.");
         return instance.GetReportAsync();
     }
 
-    public async Task<Dictionary<Guid, InstanceReport>> GetAllStatus()
+    public async Task<Dictionary<Guid, InstanceReport>> GetAllReports()
     {
         var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetReportAsync());
         await Task.WhenAll(tasks.Values);
