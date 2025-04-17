@@ -13,7 +13,13 @@ public class GracefulShutdown : IDisposable
         System.Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
-            Task.Run(Shutdown);
+            try
+            {
+                Shutdown();
+            }
+            catch (InvalidOperationException)
+            {
+            }
         };
     }
 

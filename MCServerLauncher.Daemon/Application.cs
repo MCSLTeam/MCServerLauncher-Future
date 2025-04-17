@@ -116,6 +116,7 @@ public class Application
         await gs.WaitForShutdownAsync();
 
         // 最后释放HttpService
+        Log.Debug("[Application] shutting down Http service ...");
         await _httpService.StopAsync();
     }
 
@@ -128,9 +129,11 @@ public class Application
         var manager = _httpService.Resolver.GetRequiredService<IInstanceManager>();
 
         cts.CancelAfter(timeout);
-        // TODO 修复不能软停止实例的问题
+        
+        Log.Debug("[InstanceManager] stopping instances ...");
         await manager.StopAllInstances(cts.Token);
 
+        Log.Debug("[WsContextContainer] closing websocket connections ...");
         foreach (var id in _httpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
             await _httpService.GetClient(id).WebSocket.SafeCloseAsync("Daemon exit");
     }
