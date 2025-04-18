@@ -20,7 +20,7 @@ public static class InstanceCommand
                 var manager = source.GetRequiredService<IInstanceManager>();
 
 
-                var infos = new ConcurrentDictionary<Guid, (long, double)>();
+                var data = new ConcurrentDictionary<Guid, (long, double)>();
                 Parallel.ForEachAsync(
                     manager.Instances.Keys,
                     new ParallelOptions
@@ -30,12 +30,18 @@ public static class InstanceCommand
                     async (id, ct) =>
                     {
                         if (manager.Instances.TryGetValue(id, out var inst))
-                            if (inst.Status is InstanceStatus.Running or InstanceStatus.Starting)
-                                infos.TryAdd(id, await ProcessInfo.GetProcessUsageAsync(inst.ServerProcessId));
+                            try
+                            {
+                                data.TryAdd(id, await inst.GetMonitorData());
+                            }
+                            catch
+                            {
+                                data.TryAdd(id, (-1L, 0.0));
+                            }
                     }).Wait();
 
                 foreach (var (id, inst) in manager.Instances)
-                    if (infos.TryGetValue(id, out var rv))
+                    if (data.TryGetValue(id, out var rv))
                         ShowInstanceInformation(source, inst, true, rv.Item1, rv.Item2);
                     else ShowInstanceInformation(source, inst, false, 0, 0);
 

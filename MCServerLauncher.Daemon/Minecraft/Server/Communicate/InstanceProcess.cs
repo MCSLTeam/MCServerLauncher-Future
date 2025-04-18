@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.Daemon.Utils.Cache;
 using MCServerLauncher.Daemon.Utils.Status;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Communicate;
@@ -9,8 +10,9 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Communicate;
 public class InstanceProcess : DisposableObject
 {
     private readonly Process _process;
+    private readonly IAsyncCacheable<(long Memory, double Cpu)> _monitor;
 
-    public InstanceProcess(ProcessStartInfo info)
+    public InstanceProcess(ProcessStartInfo info, int monitorFrequency = 2000)
     {
         var process = new Process
         {
@@ -18,6 +20,15 @@ public class InstanceProcess : DisposableObject
             EnableRaisingEvents = true
         };
         _process = process;
+        _monitor = new AsyncTimedCache<(long Memory, double Cpu)>(() =>
+        {
+            if (Status is InstanceStatus.Running or InstanceStatus.Starting)
+            {
+                return ProcessInfo.GetProcessUsageAsync(ServerProcessId);
+            }
+
+            return Task.FromResult((-1L, 0.0));
+        }, TimeSpan.FromMilliseconds(monitorFrequency));
 
         process.OutputDataReceived += (_, args) =>
         {
@@ -97,6 +108,8 @@ public class InstanceProcess : DisposableObject
         _process.StandardInput.WriteLine(message);
     }
 
+    public async Task<(long Memory, double Cpu)> GetMonitorData() => await _monitor.Value;
+    
     protected override void ProtectedDispose()
     {
         _process.Dispose();

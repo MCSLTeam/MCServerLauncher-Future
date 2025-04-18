@@ -158,5 +158,8 @@ public class Instance : DisposableObject
         _process?.WriteLine(message);
     }
 
+    public Task<(long Memory, double Cpu)> GetMonitorData() =>
+        _process?.GetMonitorData() ?? Task.FromResult((-1L, 0.0));
+
     #endregion
 }
