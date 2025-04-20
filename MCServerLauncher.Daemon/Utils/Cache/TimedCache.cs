@@ -38,7 +38,7 @@ public class TimedCache<T> : ITimedCacheable<T>
 
 public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
 {
-    private readonly AsyncRwLock _lock = new();
+    private readonly RwLock _lock = new();
     private readonly SemaphoreSlim _updateLock = new(1, 1);
     private readonly Func<Task<T>> _valueFactory;
     private volatile Task? _currentUpdateTask;
@@ -55,7 +55,7 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
     {
         get
         {
-            using var readLock = _lock.AcquireReaderLockAsync().Result;
+            using var readLock = _lock.AcquireReaderLock();
             return _lastUpdated;
         }
     }
@@ -66,7 +66,7 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
 
     public bool IsExpired()
     {
-        using var readLock = _lock.AcquireReaderLockAsync().Result;
+        using var readLock = _lock.AcquireReaderLock();
         return DateTime.Now - _lastUpdated > CacheDuration;
     }
 

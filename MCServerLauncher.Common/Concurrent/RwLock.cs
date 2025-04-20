@@ -1,6 +1,6 @@
 namespace MCServerLauncher.Common.Concurrent;
 
-public class AsyncRwLock
+public class RwLock
 {
     private readonly SemaphoreSlim _readerLock = new(1, 1);
     private readonly SemaphoreSlim _turnstile = new(1, 1);
@@ -124,10 +124,10 @@ public class AsyncRwLock
 
     private class ReaderLockReleaser : IDisposable
     {
-        private readonly AsyncRwLock _lock;
+        private readonly RwLock _lock;
         private bool _disposed;
 
-        public ReaderLockReleaser(AsyncRwLock @lock)
+        public ReaderLockReleaser(RwLock @lock)
         {
             _lock = @lock;
         }
@@ -144,10 +144,10 @@ public class AsyncRwLock
 
     private class WriterLockReleaser : IDisposable
     {
-        private readonly AsyncRwLock _lock;
+        private readonly RwLock _lock;
         private bool _disposed;
 
-        public WriterLockReleaser(AsyncRwLock @lock)
+        public WriterLockReleaser(RwLock @lock)
         {
             _lock = @lock;
         }
