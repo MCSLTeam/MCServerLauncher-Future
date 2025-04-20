@@ -13,18 +13,21 @@ public static class WebSocketExtensions
 {
     private static Action<IWebSocket, WebSocketCloseStatus>? _cachedSetter;
 
-    public static async Task CloseAsync(this IWebSocket @this, ushort code, string? description = null)
+    public static async Task CloseAsync(this IWebSocket @this, ushort code, string? statusDescription = null)
     {
         if (!@this.Online) return;
 
-        SetCloseStatus(@this, WebSocketCloseStatus.Empty);
+        SetCloseStatus(@this, WebSocketCloseStatus.NormalClosure);
 
         using (var frame = new WSDataFrame { FIN = true, Opcode = WSDataType.Close })
         {
             using (var byteBlock = new ByteBlock())
             {
                 byteBlock.WriteUInt16(code, EndianType.Big);
-                if (string.IsNullOrWhiteSpace(description)) byteBlock.WriteNormalString(description, Encoding.UTF8);
+                if (statusDescription.HasValue())
+                {
+                    byteBlock.WriteNormalString(statusDescription, Encoding.UTF8);
+                }
 
                 frame.PayloadData = byteBlock;
                 await @this.SendAsync(frame).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
@@ -32,7 +35,7 @@ public static class WebSocketExtensions
         }
 
         await @this.Client.ShutdownAsync(SocketShutdown.Both);
-        await @this.Client.SafeCloseAsync(description).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
+        await @this.Client.SafeCloseAsync(statusDescription).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
     }
 
     private static void SetCloseStatus(IWebSocket websocket, WebSocketCloseStatus status)
