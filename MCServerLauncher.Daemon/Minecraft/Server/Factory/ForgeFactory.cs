@@ -31,21 +31,21 @@ public class ForgeFactory : ICoreInstanceFactory
 
         // TODO 更多报错
         // 安装
-        if (!await forgeInstaller.Run(setting.GetWorkingDirectory()))
+        if (!await forgeInstaller.Run(setting))
             throw new InstanceFactoryException(setting, "Failed to install forge");
         await setting.FixEula();
 
+        var config = setting.GetInstanceConfig();
         // 处理启动参数
         if (mcVersion.Between(McVersion.Of("1.17"), McVersion.Max))
         {
-            // TODO 自动处理启动脚本,将其转换为核心 + jvm arg, 方便统一管理
             var serverLauncher = await ContainedFiles.EnsureContained(ContainedFiles.NeoForgeServerLauncher);
             File.Copy(
                 serverLauncher,
                 Path.Combine(setting.GetWorkingDirectory(), ContainedFiles.NeoForgeServerLauncher),
                 true
             );
-            var config = setting.GetInstanceConfig();
+
             return config with
             {
                 TargetType = TargetType.Jar,
@@ -57,7 +57,6 @@ public class ForgeFactory : ICoreInstanceFactory
         if (mcVersion.Between(McVersion.Of("1.5.2"), McVersion.Of("1.16.5")))
         {
             var profile = forgeInstaller.Install; // 不为空,应为已经安装过了且无问题
-            var config = setting.GetInstanceConfig();
             return config with
             {
                 TargetType = TargetType.Jar,

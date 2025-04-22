@@ -40,8 +40,9 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         return new ForgeInstallerV2(profile, installerPath, javaPath, mirror);
     }
 
-    public override async Task<bool> Run(string workingDirectory, CancellationToken ct = default)
+    public override async Task<bool> Run(InstanceFactorySetting setting, CancellationToken ct = default)
     {
+        var workingDirectory = setting.GetWorkingDirectory();
         var libRoot = Path.Combine(workingDirectory, "libraries");
         Directory.CreateDirectory(libRoot);
         ct.ThrowIfCancellationRequested();

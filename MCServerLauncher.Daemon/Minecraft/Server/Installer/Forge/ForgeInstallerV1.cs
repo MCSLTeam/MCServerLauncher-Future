@@ -22,8 +22,9 @@ public class ForgeInstallerV1 : ForgeInstallerBase
     public VersionInfo VersionInfo { get; }
     public override InstallV1 Install { get; }
 
-    public override async Task<bool> Run(string workingDirectory, CancellationToken ct = default)
+    public override async Task<bool> Run(InstanceFactorySetting setting, CancellationToken ct = default)
     {
+        var workingDirectory = setting.GetWorkingDirectory();
         var librariesDir = Path.Combine(workingDirectory, "libraries");
         Directory.CreateDirectory(librariesDir);
         ct.ThrowIfCancellationRequested();

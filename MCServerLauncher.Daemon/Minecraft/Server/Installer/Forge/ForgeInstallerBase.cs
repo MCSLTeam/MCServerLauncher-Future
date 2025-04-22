@@ -12,7 +12,7 @@ using Version = MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge.Json.Ve
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Installer.Forge;
 
-public abstract class ForgeInstallerBase : IForgeInstaller
+public abstract class ForgeInstallerBase : IInstanceInstaller
 {
     protected ForgeInstallerBase(string installerPath, string? javaPath, InstanceFactoryMirror mirror)
     {
@@ -27,7 +27,7 @@ public abstract class ForgeInstallerBase : IForgeInstaller
 
     protected InstanceFactoryMirror MirrorType { get; }
     public abstract InstallV1 Install { get; }
-    public abstract Task<bool> Run(string workingDirectory, CancellationToken ct = default);
+    public abstract Task<bool> Run(InstanceFactorySetting setting, CancellationToken ct = default);
 
     protected static async Task<List<TLibrary>> ParallelProcessLibraries<TLibrary>(
         List<TLibrary> libraries,
@@ -162,7 +162,7 @@ public abstract class ForgeInstallerBase : IForgeInstaller
     )
     {
         // 下载
-        using var dl = new DownloadBuilder()
+        var dl = new DownloadBuilder()
             .WithUrl(url)
             .WithFileLocation(target)
             .WithConfiguration(new DownloadConfiguration
@@ -184,6 +184,8 @@ public abstract class ForgeInstallerBase : IForgeInstaller
             File.Delete(target);
             return false;
         }
+
+        dl.Dispose();
 
         // 检查sha1
         return await predicate.Invoke(target);
