@@ -2,14 +2,14 @@
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Utils;
-using MCServerLauncher.Daemon.Utils.Cache;
+using MCServerLauncher.Daemon.Utils.LazyCell;
 using MCServerLauncher.Daemon.Utils.Status;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Communicate;
 
 public class InstanceProcess : DisposableObject
 {
-    private readonly IAsyncCacheable<(long Memory, double Cpu)> _monitor;
+    private readonly IAsyncLazyCell<(long Memory, double Cpu)> _monitor;
     private readonly Process _process;
 
     public InstanceProcess(ProcessStartInfo info, int monitorFrequency = 2000)
@@ -20,7 +20,7 @@ public class InstanceProcess : DisposableObject
             EnableRaisingEvents = true
         };
         _process = process;
-        _monitor = new AsyncTimedCache<(long Memory, double Cpu)>(() =>
+        _monitor = new AsyncTimedLazyCell<(long Memory, double Cpu)>(() =>
         {
             if (Status is InstanceStatus.Running or InstanceStatus.Starting)
                 return ProcessInfo.GetProcessUsageAsync(ServerProcessId);

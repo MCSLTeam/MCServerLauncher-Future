@@ -1,8 +1,8 @@
 ﻿using MCServerLauncher.Common.Concurrent;
 
-namespace MCServerLauncher.Daemon.Utils.Cache;
+namespace MCServerLauncher.Daemon.Utils.LazyCell;
 
-public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
+public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
 {
     private readonly RwLock _lock = new();
     private readonly SemaphoreSlim _updateLock = new(1, 1);
@@ -11,7 +11,7 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
     private DateTime _lastUpdated;
     private T? _value;
 
-    public AsyncTimedCache(Func<Task<T>> valueFactory, TimeSpan cacheDuration)
+    public AsyncTimedLazyCell(Func<Task<T>> valueFactory, TimeSpan cacheDuration)
     {
         _valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
         CacheDuration = cacheDuration;

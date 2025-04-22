@@ -10,7 +10,7 @@ using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Event.Extensions;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils.Cache;
+using MCServerLauncher.Daemon.Utils.LazyCell;
 using MCServerLauncher.Daemon.Utils.Status;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -47,8 +47,8 @@ public class Application
                     .RegisterSingleton<WsContextContainer>()
                     .RegisterSingleton<ActionHandlerRegistry>()
                     .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
-                    .RegisterSingleton<IAsyncTimedCacheable<List<JavaInfo>>>(
-                        new AsyncTimedCache<List<JavaInfo>>(
+                    .RegisterSingleton<IAsyncTimedLazyCell<List<JavaInfo>>>(
+                        new AsyncTimedLazyCell<List<JavaInfo>>(
                             () => JavaScanner.ScanJava(),
                             TimeSpan.FromMilliseconds(60000)
                         )

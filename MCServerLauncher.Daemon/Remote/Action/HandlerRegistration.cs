@@ -10,7 +10,7 @@ using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Event.Extensions;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
-using MCServerLauncher.Daemon.Utils.Cache;
+using MCServerLauncher.Daemon.Utils.LazyCell;
 using Microsoft.Extensions.DependencyInjection;
 using SystemInfoHelper = MCServerLauncher.Daemon.Utils.Status.SystemInfoHelper;
 
@@ -57,7 +57,7 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.java_list"),
                 async (ctx, resolver, ct) =>
                 {
-                    var cache = resolver.GetRequiredService<IAsyncTimedCacheable<List<JavaInfo>>>();
+                    var cache = resolver.GetRequiredService<IAsyncTimedLazyCell<List<JavaInfo>>>();
                     return new GetJavaListResult
                     {
                         JavaList = await cache.Value

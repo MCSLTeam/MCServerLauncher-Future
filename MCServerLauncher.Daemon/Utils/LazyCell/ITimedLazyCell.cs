@@ -1,10 +1,10 @@
-namespace MCServerLauncher.Daemon.Utils.Cache;
+namespace MCServerLauncher.Daemon.Utils.LazyCell;
 
 /// <summary>
 ///     用于缓存的接口, 具有过期时间
 /// </summary>
 /// <typeparam name="T">T是协变的</typeparam>
-public interface ITimedCacheable<out T> : ICacheable<T>
+public interface ITimedLazyCell<out T> : ILazyCell<T>
 {
     DateTime LastUpdated { get; }
     TimeSpan CacheDuration { get; }
@@ -12,7 +12,7 @@ public interface ITimedCacheable<out T> : ICacheable<T>
     void Update();
 }
 
-public interface IAsyncTimedCacheable<T> : IAsyncCacheable<T>
+public interface IAsyncTimedLazyCell<T> : IAsyncLazyCell<T>
 {
     DateTime LastUpdated { get; }
     TimeSpan CacheDuration { get; }
