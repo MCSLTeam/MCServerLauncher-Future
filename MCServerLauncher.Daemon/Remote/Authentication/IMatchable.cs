@@ -1,8 +1,13 @@
-﻿namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+﻿namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 public interface IMatchable
 {
-    public bool Matches(IMatchable permission);
+    /// <summary>
+    ///     判断当前对象是否匹配给定的对象
+    /// </summary>
+    /// <param name="matchable"></param>
+    /// <returns></returns>
+    public bool Matches(IMatchable matchable);
 
     public static IMatchable Any(IEnumerable<IMatchable> matchables)
     {
@@ -26,19 +31,6 @@ public interface IMatchable
     }
 }
 
-public static class IMatchableExtension
-{
-    public static IMatchable Or(this IMatchable @this, IMatchable other)
-    {
-        return MatchableImpl.Create(m => @this.Matches(m) || other.Matches(m));
-    }
-
-    public static IMatchable And(this IMatchable @this, IMatchable other)
-    {
-        return MatchableImpl.Create(m => @this.Matches(m) && other.Matches(m));
-    }
-}
-
 internal class MatchableImpl : IMatchable
 {
     private readonly Func<IMatchable, bool> _matchFunc;
@@ -56,5 +48,18 @@ internal class MatchableImpl : IMatchable
     public static IMatchable Create(Func<IMatchable, bool> matchFunc)
     {
         return new MatchableImpl(matchFunc);
+    }
+}
+
+public static class IMatchableExtension
+{
+    public static IMatchable Or(this IMatchable @this, IMatchable other)
+    {
+        return MatchableImpl.Create(m => @this.Matches(m) || other.Matches(m));
+    }
+
+    public static IMatchable And(this IMatchable @this, IMatchable other)
+    {
+        return MatchableImpl.Create(m => @this.Matches(m) && other.Matches(m));
     }
 }

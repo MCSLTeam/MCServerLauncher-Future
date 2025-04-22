@@ -1,8 +1,11 @@
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
-namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+namespace MCServerLauncher.Daemon.Remote.Authentication;
 
+/// <summary>
+///     用户权限, 用于判断用户是否有权限执行某个操作
+/// </summary>
 public class Permission : IMatchable
 {
     private static readonly Regex Pattern = new(@"(?:(?:[a-zA-Z-_]+|\*{1,2})\.)*(?:[a-zA-Z-_]+|\*{1,2})");
@@ -16,9 +19,9 @@ public class Permission : IMatchable
         _permission = permission;
     }
 
-    public bool Matches(IMatchable p)
+    public bool Matches(IMatchable matchable)
     {
-        if (p is Permission permission)
+        if (matchable is Permission permission)
         {
             var pattern = permission._permission
                 .Replace(".", "\\s")
@@ -73,18 +76,5 @@ public class Permission : IMatchable
         {
             return objectType == typeof(Permission);
         }
-    }
-}
-
-public static class PermissionExtension
-{
-    public static IMatchable Or(this Permission @this, string other)
-    {
-        return @this.Or(Permission.Of(other));
-    }
-
-    public static IMatchable And(this Permission @this, string other)
-    {
-        return @this.And(Permission.Of(other));
     }
 }

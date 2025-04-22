@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Extensions;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 

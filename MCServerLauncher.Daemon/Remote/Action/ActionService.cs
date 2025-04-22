@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,7 +8,10 @@ using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
-public class ActionProcessor : IActionService
+/// <summary>
+///     Action服务实现
+/// </summary>
+public class ActionService : IActionService
 {
     private readonly Dictionary<ActionType,
             Func<JToken?, WsContext, IResolver, CancellationToken, ValueTask<IActionResult?>>>
@@ -16,7 +19,7 @@ public class ActionProcessor : IActionService
 
     private readonly IReadOnlyDictionary<ActionType, IMatchable> _permissions;
 
-    public ActionProcessor(ActionHandlerRegistry handlerRegistry)
+    public ActionService(ActionHandlerRegistry handlerRegistry)
     {
         _handlers = handlerRegistry.Handlers;
         _permissions = new ReadOnlyDictionary<ActionType, IMatchable>(handlerRegistry.HandlerPermissions);

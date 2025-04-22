@@ -1,5 +1,5 @@
 ﻿using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -7,6 +7,9 @@ using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
+/// <summary>
+///     Action处理函数注册表
+/// </summary>
 public class ActionHandlerRegistry
 {
     public Dictionary<
@@ -31,7 +34,7 @@ public class ActionHandlerRegistry
         }
         catch (JsonSerializationException e)
         {
-            var @params = e.Path?.Split(new[] { '.' }).ToArray();
+            var @params = e.Path?.Split(new[] { '.' });
             ActionExceptionHelper.ThrowIf(@params is null,
                 ActionRetcode.ParamError.WithMessage("Could not deserialize param"));
 

@@ -1,7 +1,10 @@
 using System.Text.RegularExpressions;
 
-namespace MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+namespace MCServerLauncher.Daemon.Remote.Authentication;
 
+/// <summary>
+///     用户权限组, 用于描述用户的权限集合
+/// </summary>
 public class Permissions
 {
     private static readonly Regex Pattern =

@@ -4,7 +4,7 @@ using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
 
-namespace MCServerLauncher.Daemon.Minecraft.Server;
+namespace MCServerLauncher.Daemon.Minecraft.Extensions;
 
 public static class InstanceConfigExtensions
 {

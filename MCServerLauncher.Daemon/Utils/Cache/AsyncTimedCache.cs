@@ -1,40 +1,6 @@
-using MCServerLauncher.Common.Concurrent;
+﻿using MCServerLauncher.Common.Concurrent;
 
 namespace MCServerLauncher.Daemon.Utils.Cache;
-
-public class TimedCache<T> : ITimedCacheable<T>
-{
-    private readonly Func<T> _valueFactory;
-
-    private T? _value;
-
-    public TimedCache(Func<T> valueFactory, TimeSpan cacheDuration)
-    {
-        _valueFactory = valueFactory;
-        CacheDuration = cacheDuration;
-    }
-
-    public DateTime LastUpdated { get; private set; }
-    public TimeSpan CacheDuration { get; }
-    public T Value => GetValue();
-
-    public bool IsExpired()
-    {
-        return DateTime.Now - LastUpdated > CacheDuration;
-    }
-
-    public void Update()
-    {
-        _value = _valueFactory();
-        LastUpdated = DateTime.Now;
-    }
-
-    private T GetValue()
-    {
-        if (IsExpired()) Update();
-        return _value;
-    }
-}
 
 public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
 {
@@ -139,50 +105,3 @@ public class AsyncTimedCache<T> : IAsyncTimedCacheable<T>
         _lastUpdated = DateTime.Now;
     }
 }
-
-// // LazyAsync 的通用实现，可以单独使用
-// public class LazyAsync<T>
-// {
-//     private readonly SemaphoreSlim _lock = new(1, 1);
-//     private readonly Func<Task<T>> _valueFactory;
-//     private Task<T> _value;
-//
-//     public LazyAsync(Func<Task<T>> valueFactory)
-//     {
-//         _valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
-//     }
-//
-//     public async Task<T> GetValue()
-//     {
-//         if (_value == null)
-//         {
-//             await _lock.WaitAsync();
-//             try
-//             {
-//                 if (_value == null)
-//                 {
-//                     _value = _valueFactory();
-//                 }
-//             }
-//             finally
-//             {
-//                 _lock.Release();
-//             }
-//         }
-//
-//         return await _value;
-//     }
-//
-//     public async Task Reset()
-//     {
-//         await _lock.WaitAsync();
-//         try
-//         {
-//             _value = null;
-//         }
-//         finally
-//         {
-//             _lock.Release();
-//         }
-//     }
-// }

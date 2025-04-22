@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Minecraft;
+﻿namespace MCServerLauncher.Daemon.Minecraft.Extensions;
 
 public static class McVersionExtensions
 {

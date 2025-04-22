@@ -3,10 +3,11 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Daemon.Minecraft.Extensions;
 using MCServerLauncher.Daemon.Minecraft.Server;
-using MCServerLauncher.Daemon.Minecraft.Server.Factory;
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
+using MCServerLauncher.Daemon.Remote.Event.Extensions;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.Cache;
@@ -15,6 +16,9 @@ using SystemInfoHelper = MCServerLauncher.Daemon.Utils.Status.SystemInfoHelper;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
+/// <summary>
+///     注册各种Action处理函数
+/// </summary>
 public static class HandlerRegistration
 {
     // TODO 权限完善

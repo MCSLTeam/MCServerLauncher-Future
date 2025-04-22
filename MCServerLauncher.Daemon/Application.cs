@@ -3,11 +3,12 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Console;
+using MCServerLauncher.Daemon.Minecraft.Extensions;
 using MCServerLauncher.Daemon.Minecraft.Server;
-using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
+using MCServerLauncher.Daemon.Remote.Event.Extensions;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Cache;
 using MCServerLauncher.Daemon.Utils.Status;
@@ -41,7 +42,7 @@ public class Application
                     .RegisterSingleton<ConsoleApplication>()
                     .RegisterSingleton<GracefulShutdown>()
                     .RegisterSingleton<IHttpService>(_httpService)
-                    .RegisterSingleton<IActionService, ActionProcessor>()
+                    .RegisterSingleton<IActionService, ActionService>()
                     .RegisterSingleton<IEventService, EventService>()
                     .RegisterSingleton<WsContextContainer>()
                     .RegisterSingleton<ActionHandlerRegistry>()
@@ -53,23 +54,22 @@ public class Application
                         )
                     );
             })
-            .ConfigurePlugins(
-                a =>
-                {
-                    a.Add<FileSystemWatcherPlugin>();
+            .ConfigurePlugins(a =>
+            {
+                a.Add<FileSystemWatcherPlugin>();
 
-                    a.Add<HttpPlugin>();
-                    a.UseWebSocket()
-                        .SetWSUrl("/api/v1")
-                        .SetVerifyConnection(WsVerifyHandler.VerifyHandler)
-                        .UseAutoPong();
+                a.Add<HttpPlugin>();
+                a.UseWebSocket()
+                    .SetWSUrl("/api/v1")
+                    .SetVerifyConnection(WsVerifyHandler.VerifyHandler)
+                    .UseAutoPong();
 
-                    a.Add<WsBasePlugin>();
-                    a.Add<WsActionPlugin>();
-                    a.Add<WsEventPlugin>();
-                    a.Add<WsExpirationPlugin>(); // WsExpirePlugin注册必须在WsBasePlugin之后
-                    a.UseDefaultHttpServicePlugin();
-                })
+                a.Add<WsBasePlugin>();
+                a.Add<WsActionPlugin>();
+                a.Add<WsEventPlugin>();
+                a.Add<WsExpirationPlugin>(); // WsExpirePlugin注册必须在WsBasePlugin之后
+                a.UseDefaultHttpServicePlugin();
+            })
         );
         PostApplicationContainerBuilt(resolver =>
         {
@@ -111,8 +111,8 @@ public class Application
 
         resolver.GetRequiredService<ConsoleApplication>().Serve();
         _daemonReportTimer.Start();
-
         gs.OnShutdown += () => StopAsync().Wait();
+
         await gs.WaitForShutdownAsync();
 
         // 最后释放HttpService
@@ -129,7 +129,7 @@ public class Application
         var manager = _httpService.Resolver.GetRequiredService<IInstanceManager>();
 
         cts.CancelAfter(timeout);
-        
+
         Log.Debug("[InstanceManager] stopping instances ...");
         await manager.StopAllInstances(cts.Token);
 

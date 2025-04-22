@@ -1,8 +1,9 @@
 using System.Reflection;
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
-namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
+namespace MCServerLauncher.Daemon.Minecraft.Extensions;
 
 public static class InstanceFactorySettingExtensions
 {

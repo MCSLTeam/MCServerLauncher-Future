@@ -9,8 +9,8 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Communicate;
 
 public class InstanceProcess : DisposableObject
 {
-    private readonly Process _process;
     private readonly IAsyncCacheable<(long Memory, double Cpu)> _monitor;
+    private readonly Process _process;
 
     public InstanceProcess(ProcessStartInfo info, int monitorFrequency = 2000)
     {
@@ -23,9 +23,7 @@ public class InstanceProcess : DisposableObject
         _monitor = new AsyncTimedCache<(long Memory, double Cpu)>(() =>
         {
             if (Status is InstanceStatus.Running or InstanceStatus.Starting)
-            {
                 return ProcessInfo.GetProcessUsageAsync(ServerProcessId);
-            }
 
             return Task.FromResult((-1L, 0.0));
         }, TimeSpan.FromMilliseconds(monitorFrequency));
@@ -108,8 +106,11 @@ public class InstanceProcess : DisposableObject
         _process.StandardInput.WriteLine(message);
     }
 
-    public async Task<(long Memory, double Cpu)> GetMonitorData() => await _monitor.Value;
-    
+    public async Task<(long Memory, double Cpu)> GetMonitorData()
+    {
+        return await _monitor.Value;
+    }
+
     protected override void ProtectedDispose()
     {
         _process.Dispose();

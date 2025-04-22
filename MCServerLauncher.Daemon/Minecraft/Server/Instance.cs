@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using MCServerLauncher.Common.Network;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Extensions;
 using MCServerLauncher.Daemon.Minecraft.Server.Communicate;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -158,8 +159,10 @@ public class Instance : DisposableObject
         _process?.WriteLine(message);
     }
 
-    public Task<(long Memory, double Cpu)> GetMonitorData() =>
-        _process?.GetMonitorData() ?? Task.FromResult((-1L, 0.0));
+    public Task<(long Memory, double Cpu)> GetMonitorData()
+    {
+        return _process?.GetMonitorData() ?? Task.FromResult((-1L, 0.0));
+    }
 
     #endregion
 }

@@ -24,10 +24,7 @@ public static class WebSocketExtensions
             using (var byteBlock = new ByteBlock())
             {
                 byteBlock.WriteUInt16(code, EndianType.Big);
-                if (statusDescription.HasValue())
-                {
-                    byteBlock.WriteNormalString(statusDescription, Encoding.UTF8);
-                }
+                if (statusDescription.HasValue()) byteBlock.WriteNormalString(statusDescription, Encoding.UTF8);
 
                 frame.PayloadData = byteBlock;
                 await @this.SendAsync(frame).ConfigureAwait(EasyTask.ContinueOnCapturedContext);

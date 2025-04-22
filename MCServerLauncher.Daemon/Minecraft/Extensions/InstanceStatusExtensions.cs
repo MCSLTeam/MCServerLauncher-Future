@@ -1,6 +1,6 @@
 using MCServerLauncher.Common.ProtoType.Instance;
 
-namespace MCServerLauncher.Daemon.Minecraft.Server;
+namespace MCServerLauncher.Daemon.Minecraft.Extensions;
 
 public static class InstanceStatusExtensions
 {

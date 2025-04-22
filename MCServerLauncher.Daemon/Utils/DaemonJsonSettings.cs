@@ -1,5 +1,5 @@
 ﻿using MCServerLauncher.Common.ProtoType;
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Utils;

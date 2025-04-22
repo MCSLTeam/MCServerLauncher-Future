@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Event;
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using MCServerLauncher.Daemon.Remote.Authentication;
 
 namespace MCServerLauncher.Daemon.Remote;
 
