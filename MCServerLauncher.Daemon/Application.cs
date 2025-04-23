@@ -3,8 +3,8 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Console;
-using MCServerLauncher.Daemon.Minecraft.Extensions;
 using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Minecraft.Server.Factory;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -74,6 +74,7 @@ public class Application
         PostApplicationContainerBuilt(resolver =>
         {
             resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
+            resolver.GetRequiredService<ConsoleApplication>().Serve();
         });
 
         _daemonReportTimer = new Timer(3000);
@@ -108,8 +109,6 @@ public class Application
         await _httpService.StartAsync();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
-
-        resolver.GetRequiredService<ConsoleApplication>().Serve();
         _daemonReportTimer.Start();
         gs.OnShutdown += () => StopAsync().Wait();
 
@@ -175,7 +174,7 @@ public class Application
         InitDataDirectory();
         ContainedFiles.ExtractContained();
         FileManager.StartFileSessionsWatcher();
-        InstanceFactorySettingExtensions.RegisterFactories();
+        InstanceFactoryRegistry.LoadFactories();
 
         try
         {
