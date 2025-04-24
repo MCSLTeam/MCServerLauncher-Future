@@ -6,7 +6,6 @@
    Copyright (c) 2022-2025 MCSLTeam. All rights reserved.
 --------------------------------------------------------------------------------------------- */
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -17,14 +16,15 @@ namespace MCServerLauncher.Daemon.Storage;
 
 public static class JavaScanner
 {
-    private const string JavaVersionPattern = @"(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[._](\d+))?(?:-(.+))?";
+    private static readonly Regex VersionRegex =
+        new(@"(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[._](\d+))?(?:-(.+))?", RegexOptions.Compiled);
 
-    private static readonly Func<string, bool> matcher =
+    private static readonly Func<string, bool> Matcher =
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? s => s.Equals("java.exe")
             : s => s.Equals("java");
 
-    private static readonly List<string> MatchedKeys = new()
+    private static readonly List<string> MatchedKeywords = new()
     {
         "intellij", "cache", "官启", "vape", "组件", "我的", "liteloader", "运行", "pcl", "bin", "appcode", "untitled folder",
         "content", "microsoft", "program", "lunar", "goland", "download", "corretto", "dragonwell", "客户", "client",
@@ -37,36 +37,12 @@ public static class JavaScanner
         Environment.UserName
     };
 
-    private static readonly List<string> ExcludedKeys = new() { "$", "{", "}", "__", "office" };
+    private static readonly List<string> ExcludedKeywords = new() { "$", "{", "}", "__", "office", "volumes" };
 
-    private static readonly List<string> ForceExcludedKeys = new() { "volumes" };
-
-    private static Process StartJava(string path)
+    private static bool IsMatchedKey(string directoryName)
     {
-        ProcessStartInfo info = new()
-        {
-            FileName = path,
-            Arguments = "-version",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        Process javaProcess = new() { StartInfo = info };
-        javaProcess.Start();
-        return javaProcess;
-    }
-
-    private static string RegexJavaVersion(string javaOutput)
-    {
-        var match = Regex.Match(javaOutput, JavaVersionPattern);
-        return match.Success ? match.Value : null;
-    }
-
-
-    private static bool IsMatchedKey(string path)
-    {
-        return !ExcludedKeys.Any(path.Contains) && MatchedKeys.Any(path.Contains);
+        directoryName = directoryName.ToLower();
+        return !ExcludedKeywords.Any(directoryName.Contains) && MatchedKeywords.Any(directoryName.Contains);
     }
 
     private static List<string> SplitEnvPath()
@@ -75,80 +51,50 @@ public static class JavaScanner
         return (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path.Split(';') : path.Split(':')).ToList();
     }
 
-
-    private static List<Process> StartScan(string path, bool deep, bool recursive = true)
+    private static async Task<JavaInfo?> GetJavaVersionAsync(string path)
     {
-        return SingleScanJob(path, recursive, deep);
-    }
-
-    private static List<JavaInfo> Mapper(List<Process> javaProcesses)
-    {
-        var javaInfos = new HashSet<JavaInfo>();
-        foreach (var process in javaProcesses)
+        using var process = new Process
         {
-            process.WaitForExit();
-            var content = process.StandardError.ReadToEnd();
-            var javaVersion = RegexJavaVersion(content);
-
-            if (javaVersion == null) continue;
-
-            javaInfos.Add(new JavaInfo
+            StartInfo = new ProcessStartInfo
             {
-                Path = process.StartInfo.FileName,
-                Version = javaVersion,
-                Architecture = content.Contains("64-Bit") ? "x64" : "x86"
-            });
-        }
+                FileName = path,
+                Arguments = "-version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        if (!process.Start()) return null;
+        await process.WaitForExitAsync();
+        var content = await process.StandardError.ReadToEndAsync();
+        var match = VersionRegex.Match(content);
+        if (!match.Success) return null;
 
-        return javaInfos.ToList();
+        return new JavaInfo(path, match.Value, content.Contains("64-Bit") ? "x64" : "x86");
     }
 
-    private static async Task<List<JavaInfo>> MapperAsync(List<Process> javaProcesses)
-    {
-        ConcurrentDictionary<JavaInfo, bool> javaInfos = new();
-        foreach (var process in javaProcesses)
-        {
-            await process.WaitForExitAsync();
-            var content = await process.StandardError.ReadToEndAsync();
-            var javaVersion = RegexJavaVersion(content);
-
-            if (javaVersion == null) continue;
-
-            javaInfos.TryAdd(new JavaInfo
-            {
-                Path = process.StartInfo.FileName,
-                Version = javaVersion,
-                Architecture = content.Contains("64-Bit") ? "x64" : "x86"
-            }, true);
-        }
-
-        return javaInfos.Keys.ToList();
-    }
-
-    private static void SingleScanJob(
+    private static void ScanRoot(
         string workingPath,
-        List<Process> javaProcesses,
-        bool recursive,
-        bool deep
+        List<Task<JavaInfo?>> tasks,
+        bool recursive
     )
     {
         if (File.Exists(workingPath)) return; // Skip if it is a file
         try
         {
-            foreach (var pending in Directory.GetFileSystemEntries(workingPath!))
+            foreach (var directoryEntry in Directory.GetFileSystemEntries(workingPath))
             {
-                var absoluteFilePath = Path.GetFullPath(pending);
-                var lowered = Path.GetFileName(pending).ToLower();
+                var absoluteFilePath = Path.GetFullPath(directoryEntry);
                 if (File.Exists(absoluteFilePath))
                 {
-                    if (!matcher(Path.GetFileName(pending))) continue;
-                    Log.Verbose($"[JVM] Found possible Java \"{absoluteFilePath}\", planning to check");
-                    javaProcesses.Add(StartJava(absoluteFilePath));
+                    if (!Matcher(Path.GetFileName(directoryEntry))) continue;
+                    Log.Verbose("[JVM] Found possible Java \"{0}\", planning to check", absoluteFilePath);
+                    tasks.Add(GetJavaVersionAsync(absoluteFilePath));
                 }
-                else if (!ForceExcludedKeys.Any(lowered.Contains) &&
-                         ((!deep && IsMatchedKey(lowered) && recursive) || (deep && !IsSymlink(absoluteFilePath))))
+                else if (recursive && IsMatchedKey(Path.GetFileName(directoryEntry).ToLower()))
                 {
-                    SingleScanJob(absoluteFilePath, javaProcesses, true, deep);
+                    ScanRoot(absoluteFilePath, tasks, recursive);
                 }
             }
         }
@@ -157,60 +103,70 @@ public static class JavaScanner
         }
         catch (Exception ex)
         {
-            Log.Debug($"[JVM] A error occured while searching dir \"{workingPath}\", Reason: {ex.Message}");
+            Log.Debug("[JVM] A error occured while searching dir \"{0}\", Reason: {1}", workingPath, ex.Message);
         }
-    }
-
-    private static List<Process> SingleScanJob(string workingPath, bool recursive, bool deep)
-    {
-        List<Process> processes = new();
-        SingleScanJob(workingPath, processes, recursive, deep);
-        return processes;
     }
 
     /// <summary>
     ///     扫描Java
     /// </summary>
     /// <returns></returns>
-    public static async Task<List<JavaInfo>> ScanJava(bool deep = false)
+    public static async Task<JavaInfo[]> ScanJavaAsync()
     {
         var startTime = DateTime.Now;
         Log.Verbose("[JVM] Start scanning available Java");
 
-        List<Process> pending = new();
+        List<Task<JavaInfo?>> tasks = new();
+        
+        // Disk
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             for (var i = 65; i <= 90; i++)
             {
                 var drive = $"{(char)i}:\\";
-                if (Directory.Exists(drive)) pending.AddRange(StartScan(drive, deep));
+                if (Directory.Exists(drive)) ScanRoot(drive, tasks, true);
             }
         else
-            pending.AddRange(StartScan("/", deep));
+            ScanRoot("/", tasks, true);
 
-        if (!deep)
+
+        // PATH
+        SplitEnvPath().ForEach(path =>
         {
-            // PATH
-            SplitEnvPath().ForEach(path =>
+            if (Directory.Exists(path))
             {
-                if (Directory.Exists(path)) pending.AddRange(StartScan(path, false, false));
-            });
+                // 判断之前是否扫描过
+                if (path.Split(
+                        Path.PathSeparator,
+                        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+                    ).All(IsMatchedKey)) return;
+                ScanRoot(path, tasks, false);
+            }
+        });
 
-            // JAVA_HOME
-            var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
-            if (Directory.Exists(javaHome)) pending.AddRange(StartScan(javaHome, false, false));
-        }
+        // JAVA_HOME
+        var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
+        if (Directory.Exists(javaHome)) ScanRoot(javaHome, tasks, false);
 
-        var javas = await MapperAsync(pending);
 
-        var cnt = 0;
+        var javas = await Task.WhenAll(tasks)
+            .ContinueWith(t =>
+                t.Result
+                    .Where(i => i is not null)
+                    .OfType<JavaInfo>()
+                    .DistinctBy(i => i.Path)
+                    .ToArray()
+            );
+
         foreach (var possibleJavaPath in javas)
         {
             Log.Verbose(
-                $"[JVM] Found certain Java at: {possibleJavaPath.Path} (Version: {possibleJavaPath.Version})");
-            cnt++;
+                "[JVM] Found certain Java at: {0} (Version: {1})",
+                possibleJavaPath.Path,
+                possibleJavaPath.Version
+            );
         }
 
-        Log.Verbose($"Total: {cnt}, time elapsed: {DateTime.Now - startTime}");
+        Log.Verbose("Total: {0}, time elapsed: {1}", javas.Length, DateTime.Now - startTime);
         return javas;
     }
 

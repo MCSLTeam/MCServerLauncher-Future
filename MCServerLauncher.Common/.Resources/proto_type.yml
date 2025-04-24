@@ -42,7 +42,7 @@ actions:
   - get_java_list:
       req:
       resp:
-        java_list: List<JavaInfo>
+        java_list: JavaInfo[]
 
   - file_upload_request:
       req:

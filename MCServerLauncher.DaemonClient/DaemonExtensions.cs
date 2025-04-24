@@ -66,7 +66,7 @@ public static class DaemonExtensions
     /// <param name="timeout">超时时间,单位毫秒,-1表示无限制</param>
     /// <param name="ct">cancellation token</param>
     /// <returns>Java列表</returns>
-    public static async Task<List<JavaInfo>> GetJavaListAsync(this IDaemon daemon, int timeout = -1,
+    public static async Task<JavaInfo[]> GetJavaListAsync(this IDaemon daemon, int timeout = -1,
         CancellationToken ct = default)
     {
         var result = await daemon.RequestAsync<GetJavaListResult>(ActionType.GetJavaList, null, timeout, ct);

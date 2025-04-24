@@ -57,7 +57,7 @@ public static class HandlerRegistration
                 Permission.Of("mcsl.daemon.java_list"),
                 async (ctx, resolver, ct) =>
                 {
-                    var cache = resolver.GetRequiredService<IAsyncTimedLazyCell<List<JavaInfo>>>();
+                    var cache = resolver.GetRequiredService<IAsyncTimedLazyCell<JavaInfo[]>>();
                     return new GetJavaListResult
                     {
                         JavaList = await cache.Value

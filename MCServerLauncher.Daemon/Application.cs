@@ -47,9 +47,9 @@ public class Application
                     .RegisterSingleton<WsContextContainer>()
                     .RegisterSingleton<ActionHandlerRegistry>()
                     .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
-                    .RegisterSingleton<IAsyncTimedLazyCell<List<JavaInfo>>>(
-                        new AsyncTimedLazyCell<List<JavaInfo>>(
-                            () => JavaScanner.ScanJava(),
+                    .RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(
+                        new AsyncTimedLazyCell<JavaInfo[]>(
+                            JavaScanner.ScanJavaAsync,
                             TimeSpan.FromMilliseconds(60000)
                         )
                     );

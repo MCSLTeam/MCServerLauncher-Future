@@ -23,7 +23,7 @@ public sealed record PingResult : IActionResult
 
 public sealed record GetJavaListResult : IActionResult
 {
-    [JsonRequired] public List<JavaInfo> JavaList { get; init; } = null!;
+    [JsonRequired] public JavaInfo[] JavaList { get; init; } = null!;
 }
 
 public sealed record FileUploadRequestResult : IActionResult
