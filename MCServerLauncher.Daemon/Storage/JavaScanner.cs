@@ -18,6 +18,9 @@ public static class JavaScanner
 {
     private const string JavaVersionPattern = @"(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[._](\d+))?(?:-(.+))?";
 
+    private static readonly Func<string, bool> matcher =
+        BasicUtils.IsWindows() ? s => s.Equals("java.exe") : s => s.Equals("java");
+
     private static readonly List<string> MatchedKeys = new()
     {
         "intellij", "cache", "官启", "vape", "组件", "我的", "liteloader", "运行", "pcl", "bin", "appcode", "untitled folder",
@@ -32,6 +35,8 @@ public static class JavaScanner
     };
 
     private static readonly List<string> ExcludedKeys = new() { "$", "{", "}", "__", "office" };
+
+    private static readonly List<string> ForceExcludedKeys = new() { "volumes" };
 
     private static Process StartJava(string path)
     {
@@ -68,15 +73,14 @@ public static class JavaScanner
     }
 
 
-    private static List<Process> StartScan(string path, bool recursive = true)
+    private static List<Process> StartScan(string path, bool deep, bool recursive = true)
     {
-        Func<string, bool> matcher = BasicUtils.IsWindows() ? s => s.EndsWith("java.exe") : s => s.EndsWith("java");
-        return SingleScanJob(path, matcher, recursive);
+        return SingleScanJob(path, recursive, deep);
     }
 
     private static List<JavaInfo> Mapper(List<Process> javaProcesses)
     {
-        HashSet<JavaInfo> javaInfos = new();
+        var javaInfos = new HashSet<JavaInfo>();
         foreach (var process in javaProcesses)
         {
             process.WaitForExit();
@@ -120,9 +124,10 @@ public static class JavaScanner
 
     private static void SingleScanJob(
         string workingPath,
-        Func<string, bool> matcher,
         List<Process> javaProcesses,
-        bool recursive)
+        bool recursive,
+        bool deep
+    )
     {
         if (File.Exists(workingPath)) return; // Skip if it is a file
         try
@@ -130,15 +135,17 @@ public static class JavaScanner
             foreach (var pending in Directory.GetFileSystemEntries(workingPath!))
             {
                 var absoluteFilePath = Path.GetFullPath(pending);
+                var lowered = Path.GetFileName(pending).ToLower();
                 if (File.Exists(absoluteFilePath))
                 {
                     if (!matcher(Path.GetFileName(pending))) continue;
-                    Log.Debug($"[JVM] Found possible Java \"{absoluteFilePath}\", plan to check it");
+                    Log.Debug($"[JVM] Found possible Java \"{absoluteFilePath}\", planning to check");
                     javaProcesses.Add(StartJava(absoluteFilePath));
                 }
-                else if (IsMatchedKey(Path.GetFileName(pending).ToLower()) && recursive) // Deliver a deeper search
+                else if (!ForceExcludedKeys.Any(lowered.Contains) &&
+                         ((!deep && IsMatchedKey(lowered) && recursive) || (deep && !IsSymlink(absoluteFilePath))))
                 {
-                    SingleScanJob(absoluteFilePath, matcher, javaProcesses, true);
+                    SingleScanJob(absoluteFilePath, javaProcesses, true, deep);
                 }
             }
         }
@@ -151,19 +158,20 @@ public static class JavaScanner
         }
     }
 
-    private static List<Process> SingleScanJob(string workingPath, Func<string, bool> matcher, bool recursive)
+    private static List<Process> SingleScanJob(string workingPath, bool recursive, bool deep)
     {
         List<Process> processes = new();
-        SingleScanJob(workingPath, matcher, processes, recursive);
+        SingleScanJob(workingPath, processes, recursive, deep);
         return processes;
     }
 
     /// <summary>
-    ///     扫描Java,Async版
+    ///     扫描Java
     /// </summary>
     /// <returns></returns>
-    public static async Task<List<JavaInfo>> ScanJavaAsync()
+    public static async Task<List<JavaInfo>> ScanJava(bool deep = false)
     {
+        var startTime = DateTime.Now;
         Log.Debug("[JVM] Start scanning available Java");
 
         List<Process> pending = new();
@@ -171,16 +179,24 @@ public static class JavaScanner
             for (var i = 65; i <= 90; i++)
             {
                 var drive = $"{(char)i}:\\";
-                if (Directory.Exists(drive)) pending.AddRange(StartScan(drive));
+                if (Directory.Exists(drive)) pending.AddRange(StartScan(drive, deep));
             }
         else
-            pending.AddRange(StartScan("/"));
+            pending.AddRange(StartScan("/", deep));
 
-        // PATH
-        SplitEnvPath().ForEach(path =>
+        if (!deep)
         {
-            if (Directory.Exists(path)) pending.AddRange(StartScan(path, false));
-        });
+            // PATH
+            SplitEnvPath().ForEach(path =>
+            {
+                if (Directory.Exists(path)) pending.AddRange(StartScan(path, false, false));
+            });
+
+            // JAVA_HOME
+            var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
+            if (Directory.Exists(javaHome)) pending.AddRange(StartScan(javaHome, false, false));
+        }
+
         var javas = await MapperAsync(pending);
 
         var cnt = 0;
@@ -191,51 +207,13 @@ public static class JavaScanner
             cnt++;
         }
 
-        Console.WriteLine($"Total: {cnt}");
+        Log.Debug($"Total: {cnt}, time elapsed: {DateTime.Now - startTime}");
         return javas;
     }
 
-    /// <summary>
-    ///     扫描Java
-    /// </summary>
-    /// <returns></returns>
-    public static List<JavaInfo> ScanJava()
+    private static bool IsSymlink(string path)
     {
-        Log.Information("[JVM] Start scanning available Java");
-
-        List<Process> pending = new();
-
-        // disk
-        if (BasicUtils.IsWindows())
-            for (var i = 65; i <= 90; i++)
-            {
-                var drive = $"{(char)i}:\\";
-                if (Directory.Exists(drive)) pending.AddRange(StartScan(drive));
-            }
-        else
-            pending.AddRange(StartScan("/"));
-
-
-        Log.Debug("[JVM] Scanning disk finished, start scanning PATH");
-
-        // PATH
-        SplitEnvPath().ForEach(path =>
-        {
-            if (Directory.Exists(path)) pending.AddRange(StartScan(path, false));
-        });
-
-        var javas = Mapper(pending);
-
-        var cnt = 0;
-        foreach (var possibleJavaPath in javas)
-        {
-            Log.Information(
-                $"[JVM] Found certain Java at: {possibleJavaPath.Path} (Version: {possibleJavaPath.Version})");
-            cnt++;
-        }
-
-        Console.WriteLine($"Total: {cnt}");
-        return javas;
+        return new FileInfo(path).Attributes.HasFlag(FileAttributes.ReparsePoint);
     }
 
     /// <summary>

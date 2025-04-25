@@ -15,6 +15,11 @@ internal class AppConfig
     [JsonIgnore] private static AppConfig? _appConfig;
 
     /// <summary>
+    ///     主令牌
+    /// </summary>
+    public readonly string MainToken;
+
+    /// <summary>
     ///     端口
     /// </summary>
     public readonly ushort Port;
@@ -25,10 +30,11 @@ internal class AppConfig
     /// </summary>
     public readonly string Secret;
 
-    public AppConfig(ushort port, string secret, byte fileDownloadSessions = 3)
+    public AppConfig(ushort port, string secret, string mainToken, byte fileDownloadSessions = 3)
     {
         Port = port;
         Secret = secret;
+        MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
     }
 
@@ -36,12 +42,15 @@ internal class AppConfig
 
     private static AppConfig GetDefault()
     {
-        return new AppConfig(11451, GetRandomSecret());
+        return new AppConfig(11451, GenerateRandomString(), GenerateRandomString());
     }
 
-    private static string GetRandomSecret()
+    private static string GenerateRandomString(int length = 32)
     {
-        return Guid.NewGuid().ToString();
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var random = new Random();
+        return new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
 

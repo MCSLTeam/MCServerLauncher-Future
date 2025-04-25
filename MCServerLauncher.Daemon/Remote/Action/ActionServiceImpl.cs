@@ -1,4 +1,5 @@
 using System.Reflection;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 using Exception = System.Exception;
@@ -11,12 +12,12 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 internal class ActionServiceImpl : IActionService
 {
-    private readonly ActionHandler _actionHandler;
+    private readonly ActionHandlers _actionHandlers;
     private readonly IDictionary<string, ActionMethod> _actionMethods;
 
-    public ActionServiceImpl(ActionHandler handler)
+    public ActionServiceImpl(ActionHandlers handlers)
     {
-        _actionHandler = handler;
+        _actionHandlers = handlers;
         _actionMethods = new Dictionary<string, ActionMethod>();
         InitActionMethods();
     }
@@ -26,16 +27,21 @@ internal class ActionServiceImpl : IActionService
     /// </summary>
     /// <param name="action">Action类型</param>
     /// <param name="data">Action数据</param>
+    /// <param name="permissions">令牌权限</param>
     /// <returns>Action响应</returns>
     public async Task<JObject> Execute(
         string action,
-        JObject? data
+        JObject? data,
+        Permissions permissions
     )
     {
         if (_actionMethods.TryGetValue(action, out var actionMethod))
             try
             {
-                var result = await actionMethod.InvokeAsync(data);
+                // if (!permissions.Matches(
+                //         ActionHandlers.RequiredPermissions.GetValueOrDefault(action, new AlwaysMatchable(true))))
+                //     throw new Exception("Permission denied");
+                var result = await actionMethod.InvokeAsync(data, permissions);
                 return ResponseUtils.Ok(result);
             }
             catch (ActionExecutionException aee)
@@ -51,9 +57,13 @@ internal class ActionServiceImpl : IActionService
     }
 
     // TODO :ActionHandler中添加JObject?返回值
+    /// <summary>
+    ///     使用反射初始化Action方法并缓存; 通过Attribute设置Action权限
+    /// </summary>
+    /// <exception cref="ArgumentException"></exception>
     private void InitActionMethods()
     {
-        var methods = _actionHandler.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+        var methods = _actionHandlers.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
             .Where(m => m.Name.EndsWith("Handler"));
         foreach (var method in methods)
         {
@@ -61,7 +71,18 @@ internal class ActionServiceImpl : IActionService
             if (!IsValidActionMethodReturnType(method.ReturnType))
                 throw new ArgumentException(
                     $"Action method('{method.Name}') return type({method.ReturnType}) must be JObject(?) or Task<JObject(?)> or ValueTask<JObject(?)>");
-            _actionMethods[method.Name[..^7].PascalCaseToSnakeCase()!] = new ActionMethod(_actionHandler, method);
+
+            var methodPermissions = method.GetCustomAttributes(false)
+                .Where(attr => attr is IPermissionAttribute)
+                .OfType<IPermissionAttribute>()
+                .Select(attr => attr.GetPermission()).ToArray();
+
+            _actionMethods[method.Name[..^7].PascalCaseToSnakeCase()!] =
+                new ActionMethod(
+                    _actionHandlers,
+                    method,
+                    methodPermissions.Length != 0 ? IMatchable.Any(methodPermissions) : IMatchable.Never()
+                );
         }
     }
 
@@ -80,17 +101,30 @@ internal class ActionServiceImpl : IActionService
     }
 }
 
-internal class ActionMethod
+internal class ActionMethod : IMatchable
 {
     private readonly Func<object?[]?, ValueTask<JObject?>> _method;
     private readonly IDictionary<string, ParameterInfo> _parameters;
+    private readonly IMatchable _permission;
 
-    public ActionMethod(object obj, MethodInfo methodInfo)
+    /// <summary>
+    ///     ActionMethod构造函数
+    /// </summary>
+    /// <param name="obj">method所绑定的obj,即<see cref="ActionHandlers" />实例</param>
+    /// <param name="methodInfo">反射获取的Action Handler信息</param>
+    /// <param name="permission">Action Handler的调用权限</param>
+    public ActionMethod(object obj, MethodInfo methodInfo, IMatchable permission)
     {
         _parameters = new Dictionary<string, ParameterInfo>();
+        _permission = permission;
         foreach (var parameter in methodInfo.GetParameters())
             _parameters[parameter.Name.PascalCaseToSnakeCase()!] = parameter;
         _method = WarpActionMethod(obj, methodInfo);
+    }
+
+    public bool Matches(IMatchable permission)
+    {
+        return _permission.Matches(permission);
     }
 
     private static Func<object?[]?, ValueTask<JObject?>> WarpActionMethod(object obj, MethodInfo info)
@@ -101,17 +135,20 @@ internal class ActionMethod
         var isAsync = isValueTask || (retType.IsGenericType && retType.GetGenericTypeDefinition() == typeof(Task<>));
 
         return isValueTask
-            ? (Func<object?[]?, ValueTask<JObject?>>)(async parameters =>
-                await (ValueTask<JObject?>)info.Invoke(obj, parameters)!)
+            ? async parameters =>
+                await (ValueTask<JObject?>)info.Invoke(obj, parameters)!
             : isAsync
-                ? (Func<object?[]?, ValueTask<JObject?>>)(async parameters =>
-                    await (Task<JObject?>)info.Invoke(obj, parameters)!)
+                ? async parameters =>
+                    await (Task<JObject?>)info.Invoke(obj, parameters)!
                 : (Func<object?[]?, ValueTask<JObject?>>)(parameters =>
                     new ValueTask<JObject?>(info.Invoke(obj, parameters) as JObject));
     }
 
-    public async ValueTask<JObject?> InvokeAsync(JObject? data)
+    public async ValueTask<JObject?> InvokeAsync(JObject? data, Permissions permissions)
     {
+        if (!permissions.Matches(_permission)) throw new Exception("Permission denied");
+
+
         var parameters = _parameters.Count > 0 ? new object?[_parameters.Count] : null;
         foreach (var entry in _parameters)
         {

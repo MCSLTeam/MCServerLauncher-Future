@@ -1,55 +1,76 @@
+using System.Reflection;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
+using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
+using HttpMethod = TouchSocket.Http.HttpMethod;
 
 namespace MCServerLauncher.Daemon.Remote;
 
 public class HttpPlugin : PluginBase, IHttpPlugin
 {
-    private readonly IUserService _userService;
-
-    public HttpPlugin(IUserService userService)
-    {
-        _userService = userService;
-    }
-
     public async Task OnHttpRequest(IHttpSessionClient client, HttpContextEventArgs e)
     {
-        var request = e.Context.Request;
-        var response = e.Context.Response;
-
-
-        if (request.IsPost()) await HandlePostRequest(client, e);
-        if (request.IsMethod("head")) await response.AddHeader("x-application", "mcsl_daemon_csharp").AnswerAsync();
-
+        await HandleRequest(client, e.Context.Request.Method, e);
         await e.InvokeNext();
     }
 
-    private async Task HandlePostRequest(IHttpSessionClient client, HttpContextEventArgs e)
+    private static async Task HandleRequest(IHttpSessionClient client, HttpMethod method, HttpContextEventArgs e)
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
 
         try
         {
-            if (request.UrlEquals("/login"))
+            if (method == HttpMethod.Get && request.UrlEquals("/info"))
             {
-                var usr = request.Forms["usr"] ?? "";
-                var pwd = request.Forms["pwd"] ?? "";
-                var expired = int.Parse(request.Forms["expired"] ?? "30");
+                await response
+                    .SetStatus(200, "Success")
+                    .AddHeader("Content-type", "application/json")
+                    .SetContent(new JObject
+                    {
+                        ["name"] = "MCServerLauncher Future Daemon CSharp",
+                        ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                        ["apiVersion"] = "v1"
+                    }.ToString())
+                    .AnswerAsync();
+            }
+            else if (method == HttpMethod.Post && request.UrlEquals("/subtoken"))
+            {
+                var token = request.Forms["token"] ?? "";
+                var permissions = request.Forms["permissions"] ?? "*";
+                
+                int expires;
+                try
+                {
+                    expires = int.Parse(request.Forms["expires"] ?? "30");
+                }
+                catch (Exception)
+                {
+                    await response.SetStatus(400, "Invalid expire time").SetContent("").AnswerAsync();
+                    return;
+                }
 
-                if (!await _userService.AuthenticateAsync(usr, pwd))
+                if (Permissions.IsValid(permissions))
+                {
+                    await response.SetStatus(400, "Invalid permissions").SetContent("").AnswerAsync();
+                    return;
+                }
+
+                if (!token.Equals(AppConfig.Get().MainToken))
                 {
                     await response.SetStatus(401, "Unauthorized").SetContent("").AnswerAsync();
                     return;
                 }
 
-                var token = await _userService.GenerateTokenAsync(usr, expired);
-                Log.Information("[Authenticator] Login Success: {0}, token will expire in {1}s", usr, expired);
+                var jwt = JwtUtils.GenerateToken(permissions, expires);
+                Log.Information("[Authenticator] Subtoken {0} generated, expiring in {1} seconds", jwt, expires);
                 await response
-                    .SetStatus(200, "success")
-                    .SetContent(token)
+                    .SetStatus(200, "Success")
+                    .AddHeader("Content-type", "text/plain")
+                    .SetContent(jwt)
                     .AnswerAsync();
             }
         }

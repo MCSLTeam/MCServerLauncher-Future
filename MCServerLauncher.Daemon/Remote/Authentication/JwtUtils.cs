@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -16,18 +17,17 @@ public static class JwtUtils
     /// <summary>
     ///     生成Token(验证pwd 防止出现pwd已更改但token依然有效的情况)，使用HmacSha256生成摘要
     /// </summary>
-    /// <param name="usr"></param>
-    /// <param name="secret"></param>
+    ///<param name="permissions">权限组表达式字符串<see cref="Permissions"/></param>
     /// <param name="expired">过期的秒数</param>
     /// <returns></returns>
-    public static string GenerateToken(string usr, string secret, int expired)
+    public static string GenerateToken(string permissions, int expired)
     {
-        var secretBytes = Encoding.UTF8.GetBytes(secret);
+        var secretBytes = Encoding.UTF8.GetBytes(Secret);
 
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.Name, usr)
+            new Claim("permissions", permissions)
         };
 
         var token = new JwtSecurityToken(
@@ -45,23 +45,22 @@ public static class JwtUtils
     }
 
     /// <summary>
-    ///     从Token中提取用户名
+    ///     从Token中提取权限
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public static string? ExtractUsername(string token)
+    public static string? ExtractPermissions(string token)
     {
-        return new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)
+        return new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.FirstOrDefault(c => c.Type == "permissions")
             ?.Value;
     }
 
     /// <summary>
-    ///     解析Token,返回用户名。解析失败会抛出异常，返回可为空
+    ///     解析Token，返回是否成功
     /// </summary>
-    /// <param name="secret"></param>
-    /// <param name="token"></param>
+    /// <param name="jwt"></param>
     /// <returns></returns>
-    public static bool ValidateToken(string secret, string token)
+    public static bool ValidateToken(string jwt)
     {
         try
         {
@@ -70,17 +69,18 @@ public static class JwtUtils
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secret)),
                 ValidIssuer = "MCServerLauncher.Daemon",
                 ValidAudience = "MCServerLauncher.Daemon",
                 ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
             };
-            var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(token, tokenValidationParameters, out _);
-            return claimsPrincipal.HasClaim(c => c.Type == ClaimTypes.Name);
+            var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);
+            var permissions = ExtractPermissions(jwt);
+            return permissions != null && Permissions.IsValid(permissions);
         }
         catch (Exception e)
         {
-            Log.Debug("[Jwt Utils] Error occurred when validating jwt:{0}", e);
+            Log.Debug("[Jwt Utils] Error occurred when validating jwt: {0}", e);
             return false;
         }
     }

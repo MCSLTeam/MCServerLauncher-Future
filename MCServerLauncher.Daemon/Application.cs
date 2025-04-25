@@ -26,9 +26,7 @@ public class Application
                 {
                     // a.AddConsoleLogger();
                     a.RegisterSingleton<IWebJsonConverter, WebJsonConverter>();
-                    a.RegisterSingleton<IUserService, UserService>();
-                    a.RegisterSingleton<UserDatabase>();
-                    a.RegisterSingleton<ActionHandler>();
+                    a.RegisterSingleton<ActionHandlers>();
                     a.RegisterSingleton<IActionService, ActionServiceImpl>();
                     a.RegisterSingleton<IEventService, EventService>();
 
@@ -36,7 +34,7 @@ public class Application
 
                     a.RegisterSingleton<IAsyncTimedCacheable<List<JavaScanner.JavaInfo>>>(
                         new AsyncTimedCache<List<JavaScanner.JavaInfo>>(
-                            JavaScanner.ScanJavaAsync,
+                            () => JavaScanner.ScanJava(),
                             TimeSpan.FromMilliseconds(60000)
                         )
                     );
@@ -53,14 +51,11 @@ public class Application
 
                             try
                             {
-                                var userService = a.Resolver.Resolve<IUserService>();
+                                var token = context.Request.Query["token"];
 
-                                var user = await userService.AuthenticateAsync(context.Request.Query["token"] ?? "");
-                                if (user != null)
-                                {
-                                    context.Request.Headers["user"] = user.Name;
+                                if (token != null && (AppConfig.Get().MainToken.Equals(token) ||
+                                                      JwtUtils.ValidateToken(token)))
                                     return true;
-                                }
 
                                 await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
                                 return false;

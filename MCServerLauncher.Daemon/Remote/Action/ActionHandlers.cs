@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using MCServerLauncher.Common;
 using MCServerLauncher.Common.System;
 using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -14,7 +15,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// <summary>
 ///     Action handler，返回值只能是JObject, JObject?或<![CDATA[ValueTask<JObject>]]>
 /// </summary>
-public class ActionHandler
+public class ActionHandlers
 {
     private static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
     private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings.Settings);
@@ -22,7 +23,7 @@ public class ActionHandler
     private readonly IInstanceManager _instanceManager;
     private readonly IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> _javaScannerCache;
 
-    public ActionHandler(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
+    public ActionHandlers(IAsyncTimedCacheable<List<JavaScanner.JavaInfo>> javaScannerCache,
         IInstanceManager instanceManager, IEventService eventService)
     {
         _javaScannerCache = javaScannerCache;
@@ -30,6 +31,40 @@ public class ActionHandler
         _eventService = eventService;
     }
 
+    #region MISC
+
+    [Permission("always")]
+    private JObject PingHandler()
+    {
+        return new JObject
+        {
+            ["time"] = JToken.FromObject(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds(), Serializer)
+        };
+    }
+
+    [Permission("always")]
+    private async ValueTask<JObject> GetSystemInfoHandler()
+    {
+        return new JObject
+        {
+            ["info"] = JToken.FromObject(await SystemInfo.Get(), Serializer)
+        };
+    }
+
+    [SimplePermission("mcsl.daemon.java_list")]
+    private async ValueTask<JObject> GetJavaListHandler()
+    {
+        return new JObject
+        {
+            ["java_list"] = JToken.FromObject(await _javaScannerCache.Value, Serializer)
+        };
+    }
+
+    #endregion
+
+    #region File Upload
+
+    [SimplePermission("mcsl.daemon.file.upload")]
     private async ValueTask<JObject> FileUploadChunkHandler(Guid fileId, long offset, string data)
     {
         if (fileId == Guid.Empty)
@@ -44,14 +79,7 @@ public class ActionHandler
         };
     }
 
-    private async ValueTask<JObject> GetJavaListHandler()
-    {
-        return new JObject
-        {
-            ["java_list"] = JToken.FromObject(await _javaScannerCache.Value, Serializer)
-        };
-    }
-
+    [SimplePermission("mcsl.daemon.file.upload")]
     private JObject FileUploadRequestHandler(string path, long size, long? timeout, string sha1)
     {
         var fileId = FileManager.FileUploadRequest(
@@ -69,14 +97,8 @@ public class ActionHandler
             };
     }
 
-    private JObject PingHandler()
-    {
-        return new JObject
-        {
-            ["time"] = JToken.FromObject(new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds(), Serializer)
-        };
-    }
 
+    [SimplePermission("mcsl.daemon.file.upload")]
     private JObject? FileUploadCancelHandler(Guid fileId)
     {
         return FileManager.FileUploadCancel(fileId)
@@ -84,13 +106,32 @@ public class ActionHandler
             : throw new ActionExecutionException(1402, "Failed to cancel file upload");
     }
 
+    #endregion
+
+    #region File Download
+
+    [SimplePermission("mcsl.daemon.file.download")]
+    private async ValueTask<JObject> FileDownloadRequestHandler(string path, long? timeout)
+    {
+        var info = await FileManager.FileDownloadRequest(path,
+            timeout.Map(t => TimeSpan.FromMilliseconds(t)));
+        return new JObject
+        {
+            ["file_id"] = JToken.FromObject(info.Id, Serializer),
+            ["size"] = JToken.FromObject(info.Size, Serializer),
+            ["sha1"] = JToken.FromObject(info.Sha1, Serializer)
+        };
+    }
+
+    [SimplePermission("mcsl.daemon.file.download")]
     private JObject? FileDownloadCloseHandler(Guid fileId)
     {
         FileManager.FileDownloadClose(fileId);
         return default;
     }
 
-    private async ValueTask<JObject> FileDownloadRangeHandler(Guid fileId, string range)
+    [SimplePermission("mcsl.daemon.file.download")]
+    private async ValueTask<JObject> FileDownloadChunkHandler(Guid fileId, string range)
     {
         var match = RangePattern.Match(range);
         if (!match.Success) throw new ActionExecutionException(1400, "Invalid range format");
@@ -104,6 +145,11 @@ public class ActionHandler
         };
     }
 
+    #endregion
+
+    #region File Info
+
+    [SimplePermission("mcsl.daemon.file.info.directory")]
     private JObject GetDirectoryInfoHandler(string path)
     {
         var dirEntry = FileManager.GetDirectoryInfo(path);
@@ -115,6 +161,7 @@ public class ActionHandler
         };
     }
 
+    [SimplePermission("mcsl.daemon.file.info.file")]
     private JObject GetFileInfoHandler(string path)
     {
         return new JObject
@@ -123,18 +170,11 @@ public class ActionHandler
         };
     }
 
-    private async ValueTask<JObject> FileDownloadRequestHandler(string path, long? timeout)
-    {
-        var info = await FileManager.FileDownloadRequest(path,
-            timeout.Map(t => TimeSpan.FromMilliseconds(t)));
-        return new JObject
-        {
-            ["file_id"] = JToken.FromObject(info.Id, Serializer),
-            ["size"] = JToken.FromObject(info.Size, Serializer),
-            ["sha1"] = JToken.FromObject(info.Sha1, Serializer)
-        };
-    }
+    #endregion
 
+    #region Minecraft Instance
+
+    [Permission("always")]
     private JObject TryStartInstanceHandler(Guid id)
     {
         var rv = _instanceManager.TryStartInstance(id, out var instance);
@@ -165,6 +205,7 @@ public class ActionHandler
         };
     }
 
+    [Permission("always")]
     private JObject TryStopInstanceHandler(Guid id)
     {
         return new JObject
@@ -173,12 +214,14 @@ public class ActionHandler
         };
     }
 
+    [Permission("always")]
     private JObject? SendToInstanceHandler(Guid id, string message)
     {
         _instanceManager.SendToInstance(id, message);
         return default;
     }
 
+    [Permission("always")]
     private JObject GetAllStatusHandler()
     {
         return new JObject
@@ -187,12 +230,5 @@ public class ActionHandler
         };
     }
 
-
-    private async ValueTask<JObject> GetSystemInfoHandler()
-    {
-        return new JObject
-        {
-            ["info"] = JToken.FromObject(await SystemInfo.Get(), Serializer)
-        };
-    }
+    #endregion
 }

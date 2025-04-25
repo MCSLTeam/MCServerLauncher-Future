@@ -733,7 +733,7 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守护进程 WebSocket 地址</value>
   </data>
-  <data name="DaemonPassword" xml:space="preserve">
+  <data name="Password" xml:space="preserve">
     <value>密码</value>
   </data>
   <data name="Connecting" xml:space="preserve">
@@ -848,7 +848,7 @@
     <value>在 GitHub 进行反馈</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>友好昵称</value>
+    <value>备注名</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>守护进程</value>
@@ -864,5 +864,8 @@
   </data>
   <data name="ConnectDaemonFailedTip" xml:space="preserve">
     <value>无法连接守护进程，请检查配置。</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>访问密钥</value>
   </data>
 </root>

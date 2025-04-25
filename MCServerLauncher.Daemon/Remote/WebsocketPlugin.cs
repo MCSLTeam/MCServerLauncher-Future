@@ -1,5 +1,6 @@
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Newtonsoft.Json.Linq;
@@ -15,17 +16,15 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 {
     private readonly IActionService _actionService;
     private readonly IEventService _eventService;
-    private readonly IUserService _userService;
     private readonly IWebJsonConverter _webJsonConverter;
 
-    private User? _user;
+    private Permissions? _permissions;
 
-    private WeakReference? websocketRef;
+    private WeakReference? _websocketRef;
 
-    public WebsocketPlugin(IUserService userService, IActionService actionService, IEventService eventService,
+    public WebsocketPlugin(IActionService actionService, IEventService eventService,
         IWebJsonConverter webJsonConverter)
     {
-        _userService = userService;
         _actionService = actionService;
         _eventService = eventService;
         _webJsonConverter = webJsonConverter;
@@ -54,13 +53,14 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
     public async Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
     {
-        var name = e.Context.Request.Headers.Get("user");
+        var token = e.Context.Request.Query["token"]!;
+        _permissions = new Permissions(JwtUtils.ExtractPermissions(token)!);
 
         // get peer ip
-        Log.Debug("[Remote] Accept user: {0} from {1}", name, webSocket.Client.GetIPPort());
+        Log.Debug("[Remote] Accept token: \"{0}...\" from {1}", token[..5], webSocket.Client.GetIPPort());
 
         // set websocket's weak reference
-        websocketRef = new WeakReference(webSocket);
+        _websocketRef = new WeakReference(webSocket);
 
         await e.InvokeNext();
     }
@@ -84,7 +84,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
             Task.Run(async () =>
             {
-                var data = await _actionService.Execute(action, parameters);
+                var data = await _actionService.Execute(action, parameters, _permissions!);
 
                 if (echo != null) data["echo"] = echo;
 
@@ -103,7 +103,7 @@ public class WebsocketPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocke
 
     private IWebSocket? GetWebSocket()
     {
-        return websocketRef?.Target as IWebSocket;
+        return _websocketRef?.Target as IWebSocket;
     }
 
     private static (string, string?, JObject?) ParseMessage(string message)

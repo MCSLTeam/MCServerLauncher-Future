@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -733,8 +733,8 @@
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>Daemon WebSocket Address</value>
   </data>
-  <data name="DaemonPassword" xml:space="preserve">
-    <value>Daemon Password</value>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
   </data>
   <data name="Connecting" xml:space="preserve">
     <value>Connecting</value>
@@ -848,7 +848,7 @@
     <value>Feedback via GitHub</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>Name</value>
+    <value>Daemon Note Name</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>Daemon</value>
@@ -863,6 +863,9 @@
     <value>Username</value>
   </data>
   <data name="ConnectDaemonFailedTip" xml:space="preserve">
-    <value>Could not connect to daemon, please check your configurations again.</value>
+    <value>Could not connect to daemon,please re-check your configurations</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>Token</value>
   </data>
 </root>

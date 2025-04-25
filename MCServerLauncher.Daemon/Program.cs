@@ -21,13 +21,14 @@ public class Program
         // await manager.TryRemoveInstance("1-21-1");
         // await CreateInstance(manager);
         // await RunMcServerAsync(manager, Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b2"));
+        InstanceFactorySettingExtensions.LoadFactories();
         await ServeAsync();
     }
 
     public static void TestJavaScanner()
     {
         BasicUtils.InitApp();
-        JavaScanner.ScanJava();
+        JavaScanner.ScanJava(true).Wait();
     }
 
     public static void WriteTestJavaInfo()
