@@ -1,7 +1,6 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
 using System.Threading.Tasks;
