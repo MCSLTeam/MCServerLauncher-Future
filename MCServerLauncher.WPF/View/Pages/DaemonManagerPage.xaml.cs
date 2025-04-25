@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             InitializeComponent();
             // Refresh trigger when page is visible
-            IsVisibleChanged += (s, e) =>
+            IsVisibleChanged += async (s, e) =>
             {
                 if (IsVisible)
                 {
@@ -35,7 +35,7 @@ namespace MCServerLauncher.WPF.View.Pages
                                 FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
                             };
                             DaemonCardContainer.Items.Add(daemonCard);
-                            daemonCard.ConnectDaemon();
+                            await daemonCard.ConnectDaemon();
                         }
                     }
                 }
