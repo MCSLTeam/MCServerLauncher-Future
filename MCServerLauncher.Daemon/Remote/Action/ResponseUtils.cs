@@ -1,55 +1,43 @@
+using MCServerLauncher.Common.ProtoType.Action;
 using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
-public class ResponseUtils
+public static class ResponseUtils
 {
-    public static JObject Err(string? message, int retcode = 1400)
+    public static ActionResponse Err(ActionRetcode code, Guid? id)
     {
-        return new JObject
+        return new ActionResponse
         {
-            ["status"] = "error",
-            ["retcode"] = retcode,
-            ["data"] = new JObject(),
-            ["message"] = message
+            RequestStatus = ActionRequestStatus.Error,
+            Retcode = code.Code,
+            Message = code.Message,
+            Data = null,
+            Id = id ?? Guid.Empty
         };
     }
 
-    public static JObject Err(string action, string message, int retcode = 1400, bool log = true)
+    public static ActionResponse Err(ActionRequest request, Exception exception, ActionRetcode code, bool verbose)
     {
-        if (log)
-            Log.Error("Error while handling Action {0}: {1}", action, message);
-        return Err(message, retcode);
+        Log.Error("[Remote] Error while handling Action {0}: \n{1}", request.ActionType, exception.ToString());
+        return Err(code.WithMessage(verbose ? exception.ToString() : exception.Message), request.Id);
     }
 
-    public static JObject Err(string action, ActionExecutionException exception, bool log = true)
+    public static ActionResponse Err(ActionRequest request, ActionException exception, bool verbose)
     {
-        if (log)
-            Log.Error("Error while handling Action {0}: {1}", action, exception.ErrorMessage);
-        return Err(exception.ErrorMessage, exception.Retcode);
+        return Err(request, exception, exception.Retcode, verbose);
     }
 
-    public static JObject Ok(JObject? data = null)
+    public static ActionResponse Ok(JObject? data, Guid id)
     {
-        return new JObject
+        return new ActionResponse
         {
-            ["status"] = "ok",
-            ["retcode"] = 0,
-            ["data"] = data ?? new JObject(),
-            ["message"] = ""
+            RequestStatus = ActionRequestStatus.Ok,
+            Retcode = ActionRetcode.Ok.Code,
+            Message = ActionRetcode.Ok.Message,
+            Data = data,
+            Id = id
         };
-    }
-}
-
-public class ActionExecutionException : Exception
-{
-    public readonly string? ErrorMessage;
-    public readonly int Retcode;
-
-    public ActionExecutionException(int retcode = 1400, string? errorMessage = null)
-    {
-        Retcode = retcode;
-        ErrorMessage = errorMessage;
     }
 }

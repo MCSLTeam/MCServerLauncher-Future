@@ -1,0 +1,182 @@
+const:
+  use_empty_record: true
+  action_base_namespace: MCServerLauncher.Common.ProtoType.Action
+  action_imports:
+    - using MCServerLauncher.Common.ProtoType.Event;
+    - using MCServerLauncher.Common.ProtoType.Files;
+    - using MCServerLauncher.Common.ProtoType.Instance;
+    - using MCServerLauncher.Common.System;
+    - using Newtonsoft.Json;
+    - using Newtonsoft.Json.Linq;
+  event_base_namespace: MCServerLauncher.Common.ProtoType.Event
+  event_imports:
+    - using Newtonsoft.Json;
+
+
+actions:
+  - subscribe_event:
+      req:
+        type: EventType
+        meta: JToken?
+      
+      resp:
+
+  - unsubscribe_event:
+      req:
+        type: EventType 
+        meta: JToken?
+      
+      resp:
+
+  - get_permissions:
+      req:
+      
+      resp:
+        permissions: string[]
+
+  - ping:
+      req:
+      resp:
+        time: long
+
+  - get_java_list:
+      req:
+      resp:
+        java_list: JavaInfo[]
+
+  - file_upload_request:
+      req:
+        path: string?
+        sha1: string?
+        timeout: long?
+        size: long
+      
+      resp:
+        file_id: Guid
+
+  - file_upload_chunk:
+      req:
+        file_id: Guid
+        offset: long
+        data: string
+      
+      resp:
+        done: bool
+        received: long
+
+  - file_upload_cancel:
+      req:
+        file_id: Guid
+      
+      resp:
+
+  - file_download_request:
+      req:
+        path: string
+        timeout: long?
+      
+      resp:
+        file_id: Guid
+        size: long
+        sha1: string
+
+  - file_download_range:
+      req:
+        file_id: Guid
+        range: string
+      
+      resp:
+        content: string
+
+  - file_download_close:
+      req:
+        file_id: Guid
+      
+      resp:
+
+  - get_file_info:
+      req:
+        path: string
+      
+      resp:
+        meta: FileMetadata
+
+  - get_directory_info:
+      req:
+        path: string
+      
+      resp:
+        parent: string?
+        files: DirectoryEntry.FileInformation[]
+        directories: DirectoryEntry.DirectoryInformation[]
+
+  - add_instance:
+      req:
+        setting: InstanceFactorySetting
+      
+      resp:
+        config: InstanceConfig
+
+  - remove_instance:
+      req:
+        id: Guid
+      
+      resp:
+
+  - start_instance:
+      req:
+        id: Guid
+      
+      resp:
+
+  - stop_instance:
+      req:
+        id: Guid
+      
+      resp:
+
+  - send_to_instance:
+      req:
+        id: Guid
+        message: string
+      
+      resp:
+
+  - kill_instance:
+      req:
+        id: Guid
+      
+      resp:
+
+  - get_instance_report:
+      req:
+        id: Guid
+      
+      resp:
+        report: InstanceReport
+
+  - get_all_reports:
+      req:
+      
+      resp:
+        reports: Dictionary<Guid, InstanceReport>
+
+  - get_system_info:
+      req:
+      
+      resp:
+        info: SystemInfo
+
+events:
+  - instance_log:
+      meta:
+        instance_id: Guid
+      
+      data:
+        log: string
+
+  - daemon_report:
+      meta:
+
+      data:
+        report: DaemonReport

@@ -11,12 +11,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public NewDaemonConnectionInput()
         {
             InitializeComponent();
-            WebSocketScheme.Text = SecureWebSocketCheckBox.IsChecked == true ? "wss://" : "ws://";
-        }
-
-        private void ToggleWebSocketScheme(object sender, RoutedEventArgs e)
-        {
-            WebSocketScheme.Text = SecureWebSocketCheckBox.IsChecked == true ? "wss://" : "ws://";
         }
     }
 }

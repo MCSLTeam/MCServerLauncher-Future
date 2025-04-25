@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using MCServerLauncher.Daemon.Remote.Authentication.PermissionSystem;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -12,12 +11,14 @@ namespace MCServerLauncher.Daemon.Remote.Authentication;
 /// </summary>
 public static class JwtUtils
 {
+    public const int DefaultExpires = 360;
+
     private static string Secret => AppConfig.Get().Secret;
 
     /// <summary>
     ///     生成Token(验证pwd 防止出现pwd已更改但token依然有效的情况)，使用HmacSha256生成摘要
     /// </summary>
-    ///<param name="permissions">权限组表达式字符串<see cref="Permissions"/></param>
+    /// <param name="permissions">权限组表达式字符串<see cref="Permissions" /></param>
     /// <param name="expired">过期的秒数</param>
     /// <returns></returns>
     public static string GenerateToken(string permissions, int expired)
@@ -27,7 +28,8 @@ public static class JwtUtils
 
         var claims = new[]
         {
-            new Claim("permissions", permissions)
+            new Claim("permissions", permissions),
+            new Claim("jti", Guid.NewGuid().ToString())
         };
 
         var token = new JwtSecurityToken(
@@ -49,10 +51,16 @@ public static class JwtUtils
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public static string? ExtractPermissions(string token)
+    public static (Guid JTI, string? Permissions, DateTime ValidTo) ReadToken(string token)
     {
-        return new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.FirstOrDefault(c => c.Type == "permissions")
-            ?.Value;
+        if (token == AppConfig.Get().MainToken)
+            return (Guid.Empty, "*", DateTime.MaxValue);
+
+        var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        var permissions = parsed.Claims.FirstOrDefault(c => c.Type == "permissions")?.Value;
+        var expires = parsed.ValidTo;
+        var id = parsed.Id;
+        return (Guid.Parse(id), permissions, expires);
     }
 
     /// <summary>
@@ -62,6 +70,9 @@ public static class JwtUtils
     /// <returns></returns>
     public static bool ValidateToken(string jwt)
     {
+        // 如果是主令牌，则直接返回true
+        if (jwt == AppConfig.Get().MainToken) return true;
+
         try
         {
             var tokenValidationParameters = new TokenValidationParameters
@@ -75,12 +86,12 @@ public static class JwtUtils
                 ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
             };
             var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);
-            var permissions = ExtractPermissions(jwt);
+            var (_, permissions, _) = ReadToken(jwt);
             return permissions != null && Permissions.IsValid(permissions);
         }
         catch (Exception e)
         {
-            Log.Debug("[Jwt Utils] Error occurred when validating jwt: {0}", e);
+            Log.Verbose("[Jwt Utils] Can't validate jwt: {0}", e.Message);
             return false;
         }
     }

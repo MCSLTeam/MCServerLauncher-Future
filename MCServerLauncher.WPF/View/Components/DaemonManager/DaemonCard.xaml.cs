@@ -1,13 +1,13 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.Remote;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using MCServerLauncher.DaemonClient;
+using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -19,22 +19,17 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public DaemonCard()
         {
             InitializeComponent();
-            token = string.Empty;
+            Token = string.Empty;
             ThisDaemon = null!;
             EndPoint = string.Empty;
-            Username = string.Empty;
-            Password = string.Empty;
         }
-
-        private string token;
         private IDaemon ThisDaemon { get; set; }
 
         private string SystemTypeString = string.Empty;
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
         public int Port { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string Token { get; set; }
         public string SystemType
         {
             get => SystemTypeString;
@@ -115,46 +110,33 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Status = "ing";
             try
             {
-                token = await Daemon.LoginAsync(
-                    address: EndPoint,
-                    port: Port,
-                    usr: Username,
-                    pwd: Password,
-                    isSecure: IsSecure,
-                    86400
-                ) ?? "token not found";
-                if (token == "token not found")
+                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, Token, IsSecure, new ClientConnectionConfig
                 {
-                    Status = "err";
-                    return false;
-                }
-                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
-                {
-                    MaxPingPacketLost = 3,
+                    MaxFailCount = 3,
                     PendingRequestCapacity = 100,
-                    PingInterval = TimeSpan.FromSeconds(5),
+                    HeartBeatTick = TimeSpan.FromSeconds(5),
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);
-                JToken systemInfo = (await ThisDaemon.GetSystemInfoAsync()).SelectToken("info");
-                if (systemInfo is not null)
+                
+                var systemInfo = await ThisDaemon.GetSystemInfoAsync();
+
+                var systemName = systemInfo.Os.Name;
+                var cpuVendor = systemInfo.Cpu.Vendor;
+                if (systemName.Contains("Windows NT")) SystemType = "Windows";
+                else if (systemName.Contains("Unix"))
                 {
-                    var SystemName = systemInfo.SelectToken("os.name")!.ToString();
-                    var CpuVendor = systemInfo.SelectToken("cpu.vendor")!.ToString();
-                    if (SystemName.Contains("Windows NT")) SystemType = "Windows";
-                    else if (SystemName.Contains("Unix"))
-                    {
-                        if (CpuVendor.Contains("Apple")) SystemType = "Darwin";
-                        else SystemType = "Linux";
-                    }
+                    if (cpuVendor.Contains("Apple")) SystemType = "Darwin";
+                    else SystemType = "Linux";
                 }
+                
                 Status = "ok";
                 await ThisDaemon.CloseAsync();
                 return true;
             }
             catch (Exception e)
             {
-                try { await ThisDaemon.CloseAsync(); } catch { }
+                // try { await ThisDaemon.CloseAsync(); } catch { }
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
                 return false;

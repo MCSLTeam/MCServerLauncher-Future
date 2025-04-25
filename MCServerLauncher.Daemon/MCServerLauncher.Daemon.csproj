@@ -2,9 +2,8 @@
 
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
-        <OutputType>Exe</OutputType>
         <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
-        <ApplicationIcon>Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
+        <ApplicationIcon>.Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
         <Company>MCSLTeam</Company>
         <Authors>MCSLTeam</Authors>
         <FileVersion>1.0.0.0</FileVersion>
@@ -14,7 +13,8 @@
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
         <Nullable>enable</Nullable>
         <TargetFramework>net6.0</TargetFramework>
-        <LangVersion>10</LangVersion>
+        <LangVersion>11</LangVersion>
+        <OutputType>Exe</OutputType>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -50,25 +50,32 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Resources\MCServerLauncherFutureDaemon.ico"/>
+        <Compile Remove=".Resources\Docs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Downloader" Version="3.1.2"/>
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0-rc.1.24451.1"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0-preview.6.24327.7"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="Serilog" Version="4.1.0"/>
-        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0"/>
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
-        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
-        <PackageReference Include="SQLite" Version="3.13.0"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2"/>
-        <PackageReference Include="TouchSocket.Http" Version="2.1.5"/>
+        <Content Include=".Resources\MCServerLauncherFutureDaemon.ico" />
+        <EmbeddedResource Include="Contained\server.jar" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj"/>
+        <PackageReference Include="Brigadier.NET" Version="1.2.13" />
+        <PackageReference Include="Downloader" Version="3.1.2" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Management.Infrastructure" Version="3.0.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="Serilog" Version="4.2.0" />
+        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
+        <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="3.0.26" />
+        <PackageReference Include="TouchSocket.Http" Version="3.0.26" />
     </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
+    </ItemGroup>
+
 
 </Project>

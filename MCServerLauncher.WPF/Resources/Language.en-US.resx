@@ -848,7 +848,7 @@
     <value>Feedback via GitHub</value>
   </data>
   <data name="DaemonFriendlyName" xml:space="preserve">
-    <value>Daemon Note Name</value>
+    <value>Nickname</value>
   </data>
   <data name="Main_DaemonManagerNavMenu" xml:space="preserve">
     <value>Daemon</value>

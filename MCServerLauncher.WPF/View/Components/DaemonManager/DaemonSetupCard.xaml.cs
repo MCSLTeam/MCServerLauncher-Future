@@ -1,11 +1,12 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.Remote;
 using Serilog;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using MCServerLauncher.DaemonClient;
+using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -19,8 +20,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             InitializeComponent();
             ThisDaemon = null!;
             EndPoint = string.Empty;
-            Username = string.Empty;
-            Password = string.Empty;
+            Token = string.Empty;
             FriendlyName = string.Empty;
             IsSecure = false;
             Address = string.Empty;
@@ -30,8 +30,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
         public int Port { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string Token { get; set; }
         public string FriendlyName { get; set; }
         public string Address
         {
@@ -93,28 +92,15 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Status = "ing";
             try
             {
-                var token = await Daemon.LoginAsync(
-                    address: EndPoint,
-                    port: Port,
-                    usr: Username,
-                    pwd: Password,
-                    isSecure: IsSecure,
-                    86400
-                ) ?? "token not found";
-                if (token == "token not found")
+                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, Token, IsSecure, new ClientConnectionConfig
                 {
-                    Status = "err";
-                    return false;
-                }
-                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, token, IsSecure, new ClientConnectionConfig
-                {
-                    MaxPingPacketLost = 3,
+                    MaxFailCount = 3,
                     PendingRequestCapacity = 100,
-                    PingInterval = TimeSpan.FromSeconds(5),
+                    HeartBeatTick = TimeSpan.FromSeconds(5),
                     PingTimeout = 5000
                 });
                 Log.Information("[Daemon] Connected: {0}", Address);
-                await Task.Delay(10000);
+                await ThisDaemon.PingAsync();
                 Status = "ok";
                 await ThisDaemon.CloseAsync();
                 DaemonsListManager.AddDaemon(
@@ -123,8 +109,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                         FriendlyName = FriendlyName,
                         EndPoint = EndPoint,
                         Port = Port,
-                        Username = Username,
-                        Password = Password,
+                        Token = Token,
                         IsSecure = IsSecure
                     }
                 );

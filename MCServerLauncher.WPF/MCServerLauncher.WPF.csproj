@@ -62,7 +62,7 @@
       <Version>3.1.2</Version>
     </PackageReference>
     <PackageReference Include="Fody">
-      <Version>6.9.1</Version>
+      <Version>6.9.2</Version>
       <IncludeAssets>runtime; compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -96,7 +96,7 @@
     <PackageReference Include="Serilog.Sinks.File">
       <Version>6.0.0</Version>
     </PackageReference>
-    <PackageReference Include="System.ComponentModel.Composition" Version="9.0.1" />
+    <PackageReference Include="System.ComponentModel.Composition" Version="9.0.4" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Runtime.Handles">
@@ -106,5 +106,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
+    <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
-using MCServerLauncher.Daemon.Minecraft.Server.Factory;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Minecraft.Extensions;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
@@ -7,12 +8,16 @@ namespace MCServerLauncher.Daemon.Minecraft.Server;
 
 public class InstanceManager : IInstanceManager
 {
-    private ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
-    private ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
+    public ConcurrentDictionary<Guid, Instance> Instances { get; } = new();
+    public ConcurrentDictionary<Guid, Instance> RunningInstances { get; } = new();
 
-    public async Task<bool> TryAddInstance(InstanceFactorySetting setting)
+    // TODO 改用异常抛出异常信息
+    public async Task<InstanceConfig?> TryAddInstance(InstanceFactorySetting setting)
     {
-        var instanceRoot = Path.Combine(FileManager.InstancesRoot, setting.Uuid.ToString());
+        if (Instances.ContainsKey(setting.Uuid))
+            Log.Error("[InstanceManager] Add new instance failed: Instance '{0}' already exists.", setting.Uuid);
+
+        var instanceRoot = setting.GetWorkingDirectory();
         // validate dir name
         try
         {
@@ -22,7 +27,7 @@ public class InstanceManager : IInstanceManager
         {
             Log.Error("[InstanceManager] Failed to create instance directory '{0}': {1}", instanceRoot, e);
             FileManager.TryRemove(instanceRoot); // rollback
-            return false;
+            return null;
         }
 
         // var instanceFactory = setting.GetInstanceFactory();
@@ -33,7 +38,8 @@ public class InstanceManager : IInstanceManager
             Log.Information("[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
                 setting.InstanceType.ToString(), setting.Name);
             var config = await setting.ApplyInstanceFactory();
-            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName), config);
+            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName),
+                config);
 
             var instance = new Instance(config);
             // TODO 重写apply post processor逻辑，maybe继续用attribute?
@@ -51,27 +57,26 @@ public class InstanceManager : IInstanceManager
             if (!Instances.TryAdd(config.Uuid, instance))
             {
                 Log.Error("[InstanceManager] Failed to add instance '{0}' to manager.", config.Name);
-                return false; // we need not to rollback here, because the new instance has been correctly installed
+                return null; // we need not to rollback here, because the new instance has been correctly installed
             }
 
-            return true;
+            return config;
         }
         catch (Exception e)
         {
             Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", setting.Name, e);
             FileManager.TryRemove(instanceRoot); // rollback
-            return false;
+            return null;
         }
     }
 
-    public async Task<bool> TryRemoveInstance(Guid instanceId)
+    // TODO 当用户尝试移除实例时，不应删除正在运行的实例
+    public bool TryRemoveInstance(Guid instanceId)
     {
-        if (!Instances.TryRemove(instanceId, out var config)) return false;
-        if (RunningInstances.ContainsKey(instanceId))
-        {
-            if (!RunningInstances.TryRemove(instanceId, out var instance)) return false;
-            await instance.KillProcess();
-        }
+        if (RunningInstances.ContainsKey(instanceId)) return false;
+
+        if (!Instances.TryRemove(instanceId, out var instance)) return false;
+        instance.Dispose();
 
         // remove server directory
         try
@@ -87,38 +92,38 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public bool TryStartInstance(Guid instanceId, out Instance? instance)
+    public async Task<Instance?> TryStartInstance(Guid instanceId)
     {
-        instance = default;
-        if (RunningInstances.ContainsKey(instanceId)) return false;
+        if (RunningInstances.ContainsKey(instanceId)) return null;
 
         var target = Instances.GetValueOrDefault(instanceId);
-        if (target == null) return false;
+        if (target is null) return null;
 
         try
         {
-            if (RunningInstances.TryAdd(instanceId, target))
+            target.OnStatusChanged -= OnInstanceStatusChangedHandler;
+            target.OnStatusChanged += OnInstanceStatusChangedHandler;
+            if (await target.StartAsync())
+
             {
-                instance = target;
-                Action<ServerStatus> handler = status =>
+                if (!RunningInstances.TryAdd(instanceId, target))
                 {
-                    Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
-                        status.ToString());
-                    if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceId, out _);
-                };
-                instance.OnStatusChanged -= handler;
-                instance.OnStatusChanged += handler;
-                target.Start();
-                return true;
+                    Log.Warning("[InstanceManager] Cannot start a already running instance(Uuid={0})",
+                        target.Config.Uuid);
+                    return null;
+                }
+
+                return target;
             }
 
-            return false;
+            target.OnStatusChanged -= OnInstanceStatusChangedHandler;
+            return null;
         }
         catch (Exception e)
         {
-            target.KillProcess().ConfigureAwait(false).GetAwaiter().GetResult();
+            target.KillProcess();
             Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
-            return false;
+            return null;
         }
     }
 
@@ -130,28 +135,45 @@ public class InstanceManager : IInstanceManager
         return true;
     }
 
-    public void SendToInstance(Guid instanceId, string message)
+    public bool SendToInstance(Guid instanceId, string message)
     {
-        if (!RunningInstances.TryGetValue(instanceId, out var instance))
-            throw new ArgumentException("Instance not found.");
+        if (!RunningInstances.TryGetValue(instanceId, out var instance)) return false;
         instance.WriteLine(message);
+        return true;
     }
 
-    public Task KillInstance(Guid instanceId)
+    public void KillInstance(Guid instanceId)
     {
-        return RunningInstances.TryGetValue(instanceId, out var instance) ? instance.KillProcess() : Task.CompletedTask;
+        if (RunningInstances.TryGetValue(instanceId, out var instance)) instance.KillProcess();
     }
 
-    public InstanceStatus GetInstanceStatus(Guid instanceId)
+    public Task<InstanceReport> GetInstanceReport(Guid instanceId)
     {
         if (!Instances.TryGetValue(instanceId, out var instance))
             throw new ArgumentException("Instance not found.");
-        return instance.GetStatus();
+        return instance.GetReportAsync();
     }
 
-    public IDictionary<Guid, InstanceStatus> GetAllStatus()
+    public async Task<Dictionary<Guid, InstanceReport>> GetAllReports()
     {
-        return Instances.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetStatus());
+        var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetReportAsync());
+        await Task.WhenAll(tasks.Values);
+        return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
+    }
+
+    public Task StopAllInstances(CancellationToken ct = default)
+    {
+        foreach (var instance in RunningInstances.Values) instance.WriteLine("stop");
+
+        var tasks = RunningInstances.Values.Select(instance => instance.WaitForExitAsync(ct));
+        return Task.WhenAll(tasks);
+    }
+
+    private void OnInstanceStatusChangedHandler(Guid instanceId, InstanceStatus status)
+    {
+        Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
+            status.ToString());
+        if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceId, out _);
     }
 
     public static IInstanceManager Create()
