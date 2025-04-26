@@ -857,10 +857,10 @@
     <value>安全護航，只在指掌。</value>
   </data>
   <data name="Port" xml:space="preserve">
-    <value>端口</value>
+    <value>連接埠</value>
   </data>
   <data name="Username" xml:space="preserve">
-    <value>用戶名</value>
+    <value>使用者名稱</value>
   </data>
   <data name="ConnectDaemonFailedTip" xml:space="preserve">
     <value>無法連接守護進程，請檢查配置。</value>
