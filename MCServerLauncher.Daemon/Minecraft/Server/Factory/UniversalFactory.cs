@@ -8,13 +8,13 @@ namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 /// <summary>
 ///     原版服务器实例的安装工厂
 /// </summary>
-[InstanceFactory(InstanceType.Vanilla)]
+[InstanceFactory(InstanceType.MC_Universal)]
 [InstanceFactory(InstanceType.Spigot)]
 [InstanceFactory(InstanceType
-    .Fabric)] // make sure that the core file(*.jar) is downloaded from: https://fabricmc.net/use/server/
-[InstanceFactory(InstanceType.Forge, SourceType.Archive, "1.5.2")]
-[InstanceFactory(InstanceType.NeoForge, SourceType.Archive, "1.20.2")]
-[InstanceFactory(InstanceType.Cleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
+    .MC_Fabric)] // make sure that the core file(*.jar) is downloaded from: https://fabricmc.net/use/server/
+[InstanceFactory(InstanceType.MC_Forge, SourceType.Archive, "1.5.2")]
+[InstanceFactory(InstanceType.MC_NeoForge, SourceType.Archive, "1.20.2")]
+[InstanceFactory(InstanceType.MC_Cleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
 public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting)

@@ -25,7 +25,7 @@
                        Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectArchive_Description], Source={x:Static i18n:LanguageManager.Localize}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
-            <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" IsEnabled="False" Grid.Row="2"
+            <TextBox x:Name="ArchiveTextBox" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsEnabled="False" Grid.Row="2"
                      Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [Archive], Source={x:Static i18n:LanguageManager.Localize}}" />
             <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"
                     HorizontalAlignment="Right" Content="{Binding [Browse], Source={x:Static i18n:LanguageManager.Localize}}" />

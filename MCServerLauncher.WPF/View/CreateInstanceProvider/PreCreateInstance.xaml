@@ -22,7 +22,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreCreateInstanceTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
-                   HorizontalAlignment="Left" Margin="0,80,0,0" />
+                   HorizontalAlignment="Left" />
         <ui:ScrollViewerEx Grid.Row="1" Margin="0,15,0,15">
             <ikw:SimpleStackPanel Spacing="10">
                 <Expander IsExpanded="True">

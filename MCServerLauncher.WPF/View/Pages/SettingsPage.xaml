@@ -116,7 +116,7 @@
                                      Content="{Binding [Settings_FastMirrorName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="FastMirrorSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
                                      Content="{Binding [Settings_PolarsMirrorName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="PolarsMirrorSrc" />
-                        <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
+                        <RadioButton IsEnabled="False" Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
                                      Content="{Binding [Settings_ZCloudFileName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="ZCloudFileSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
                                      Content="{Binding [Settings_MSLAPIName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="MSLAPISrc" />

@@ -7,7 +7,7 @@
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="800">
-    <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Width="505">
+    <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Width="400">
         <Grid Margin="15,15,15,13">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

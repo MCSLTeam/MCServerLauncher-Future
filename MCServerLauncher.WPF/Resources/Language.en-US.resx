@@ -248,10 +248,10 @@
     <value>JVM Arguments</value>
   </data>
   <data name="MaximumMemory" xml:space="preserve">
-    <value>Maximum memory</value>
+    <value>Maximum</value>
   </data>
   <data name="MinimumMemory" xml:space="preserve">
-    <value>Minimum Memory</value>
+    <value>Minimum</value>
   </data>
   <data name="CreateInstance_SetMinecraftJvmRam_Description" xml:space="preserve">
     <value>This determines how much memory your Minecraft Java Edition server will be able to use.</value>
@@ -674,10 +674,10 @@
     <value>Edit</value>
   </data>
   <data name="Daemon_RemoteUri" xml:space="preserve">
-    <value>Remote Address:</value>
+    <value>Addr:</value>
   </data>
   <data name="Daemon_ConnectionStatus" xml:space="preserve">
-    <value>Connection Status:</value>
+    <value>Status:</value>
   </data>
   <data name="Status_OK" xml:space="preserve">
     <value>OK</value>

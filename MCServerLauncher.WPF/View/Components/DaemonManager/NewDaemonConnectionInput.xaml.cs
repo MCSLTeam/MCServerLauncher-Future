@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
@@ -11,6 +12,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public NewDaemonConnectionInput()
         {
             InitializeComponent();
+            Console.WriteLine(wsEdit.Padding);
         }
     }
 }

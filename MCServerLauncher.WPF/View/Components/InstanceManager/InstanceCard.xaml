@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DesignHeight="160" d:DesignWidth="300">
     <Border x:Name="InstanceItem" Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="160"
-            Width="330">
+            Width="400">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.View.Pages;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.WPF.View.Pages;
 using System.Windows;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
@@ -9,6 +10,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateOtherExecutableInstanceProvider
     {
+        public InstanceType InstanceType { get; } = InstanceType.Exe;
         public CreateOtherExecutableInstanceProvider()
         {
             InitializeComponent();

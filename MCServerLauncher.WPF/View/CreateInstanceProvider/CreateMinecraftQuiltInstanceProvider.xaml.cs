@@ -1,4 +1,4 @@
-﻿
+﻿using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
@@ -15,6 +15,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftQuiltInstanceProvider
     {
+        public InstanceType InstanceType { get; } = InstanceType.MC_Quilt;
         public CreateMinecraftQuiltInstanceProvider()
         {
             InitializeComponent();
