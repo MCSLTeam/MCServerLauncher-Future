@@ -3,6 +3,7 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Minecraft.Extensions;
 using MCServerLauncher.Daemon.Minecraft.Server;
 using MCServerLauncher.Daemon.Remote.Authentication;
@@ -40,7 +41,7 @@ public static class HandlerRegistration
             .Register(
                 ActionType.GetSystemInfo,
                 IMatchable.Always(),
-                async (ctx, resolver, ct) => new GetSystemInfoResult { Info = await SystemInfoHelper.GetSystemInfo() }
+                async (ctx, resolver, ct) => new GetSystemInfoResult { Info = await resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>().Value }
             )
             .Register(
                 ActionType.GetPermissions,

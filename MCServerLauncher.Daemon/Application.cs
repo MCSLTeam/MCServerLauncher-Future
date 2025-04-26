@@ -47,6 +47,12 @@ public class Application
                     .RegisterSingleton<WsContextContainer>()
                     .RegisterSingleton<ActionHandlerRegistry>()
                     .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
+                    .RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(
+                        new AsyncTimedLazyCell<SystemInfo>(
+                            SystemInfoHelper.GetSystemInfo,
+                            TimeSpan.FromSeconds(2)
+                        )
+                    )
                     .RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(
                         new AsyncTimedLazyCell<JavaInfo[]>(
                             JavaScanner.ScanJavaAsync,
@@ -82,7 +88,8 @@ public class Application
         _daemonReportTimer.Elapsed += async (sender, args) =>
         {
             var eventService = _httpService.Resolver.GetRequiredService<IEventService>();
-            var (osInfo, cpuInfo, memInfo, driveInformation) = await SystemInfoHelper.GetSystemInfo();
+            var cell = _httpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
+            var (osInfo, cpuInfo, memInfo, driveInformation) = await cell.Value;
             eventService.OnDaemonReport(new DaemonReport(
                 osInfo,
                 cpuInfo,
