@@ -6,10 +6,6 @@ public class ActionRetcode
 {
     private static readonly Dictionary<int, ActionRetcode> RetcodeMap = new();
 
-    static ActionRetcode()
-    {
-    }
-
     private ActionRetcode(int code, string message)
     {
         Code = code;
