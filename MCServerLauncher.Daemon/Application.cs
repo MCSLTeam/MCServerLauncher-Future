@@ -141,7 +141,7 @@ public class Application
 
         Log.Debug("[WsContextContainer] closing websocket connections ...");
         foreach (var id in _httpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
-            await _httpService.GetClient(id).WebSocket.SafeCloseAsync("Daemon exit");
+            await _httpService.GetClient(id).WebSocket.CloseAsync("Daemon exit", cts.Token);
     }
 
     #region Init

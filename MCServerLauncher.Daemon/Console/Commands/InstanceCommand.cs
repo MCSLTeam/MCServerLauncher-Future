@@ -13,41 +13,41 @@ public static class InstanceCommand
     public static LiteralCommandNode<TSource> Register<TSource>(this CommandDispatcher<TSource> dispatcher)
         where TSource : ConsoleCommandSource
     {
-        return dispatcher.Register(ctx => ctx.Literal("inst")
-            .Then(ctx.Literal("list").Executes(cmd =>
-            {
-                var source = cmd.Source;
-                var manager = source.GetRequiredService<IInstanceManager>();
+        return dispatcher.Register(
+            ctx => ctx.Literal("inst")
+                .Then(ctx.Literal("list").Executes(cmd =>
+                {
+                    var source = cmd.Source;
+                    var manager = source.GetRequiredService<IInstanceManager>();
 
+                    source.SendFeedback("正在加载 ...");
+                    var infos = new ConcurrentDictionary<Guid, (long, double)>();
+                    Parallel.ForEachAsync(
+                        manager.Instances.Keys,
+                        new ParallelOptions
+                        {
+                            MaxDegreeOfParallelism = 4
+                        },
+                        async (id, ct) =>
+                        {
+                            if (manager.Instances.TryGetValue(id, out var inst))
+                                if (inst.Status is InstanceStatus.Running or InstanceStatus.Starting)
+                                    infos.TryAdd(id, await ProcessInfo.GetProcessUsageAsync(inst.ServerProcessId));
+                        }).Wait();
 
-                var data = new ConcurrentDictionary<Guid, (long, double)>();
-                Parallel.ForEachAsync(
-                    manager.Instances.Keys,
-                    new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = 4
-                    },
-                    async (id, ct) =>
-                    {
-                        if (manager.Instances.TryGetValue(id, out var inst))
-                            try
-                            {
-                                data.TryAdd(id, await inst.GetMonitorData());
-                            }
-                            catch
-                            {
-                                data.TryAdd(id, (-1L, 0.0));
-                            }
-                    }).Wait();
+                    foreach (var (id, inst) in manager.Instances)
+                        if (infos.TryGetValue(id, out var rv))
+                            ShowInstanceInformation(source, inst, true, rv.Item1, rv.Item2);
+                        else ShowInstanceInformation(source, inst, false, 0, 0);
 
-                foreach (var (id, inst) in manager.Instances)
-                    if (data.TryGetValue(id, out var rv))
-                        ShowInstanceInformation(source, inst, true, rv.Item1, rv.Item2);
-                    else ShowInstanceInformation(source, inst, false, 0, 0);
-
-                source.SendFeedback("共 {0} 个实例", manager.Instances.Count);
-                return 0;
-            })));
+                    source.SendFeedback(
+                        "共 {0} 个实例, 内存占用 {1}, CPU利用率 {2} %",
+                        manager.Instances.Count,
+                        GetMemoryString(infos.Sum(x => x.Value.Item1)),
+                        infos.Sum(x => x.Value.Item2)
+                    );
+                    return 0;
+                })));
     }
 
     public static async Task ShowInstanceInformation<TSource>(
@@ -56,6 +56,7 @@ public static class InstanceCommand
     )
         where TSource : ConsoleCommandSource
     {
+        source.SendFeedback("");
         source.SendFeedback(" - {0} ({1})", instance.Config.Name, instance.Config.Uuid);
         source.SendFeedback("   - 状态: {0}", instance.Status.ToString());
 
@@ -67,8 +68,6 @@ public static class InstanceCommand
             source.SendFeedback("   - 内存: {0}", GetMemoryString(mem));
             source.SendFeedback("   - CPU: {0} %", cpu);
         }
-
-        source.SendFeedback("");
     }
 
     public static void ShowInstanceInformation<TSource>(
@@ -80,6 +79,8 @@ public static class InstanceCommand
     )
         where TSource : ConsoleCommandSource
     {
+
+        source.SendFeedback("");
         source.SendFeedback(" - {0} ({1})", instance.Config.Name, instance.Config.Uuid);
         source.SendFeedback("   - 状态: {0}", instance.Status.ToString());
 
@@ -90,8 +91,6 @@ public static class InstanceCommand
             source.SendFeedback("   - 内存: {0}", GetMemoryString(mem));
             source.SendFeedback("   - CPU: {0} %", cpu);
         }
-
-        source.SendFeedback("");
     }
 
     private static string GetMemoryString(double bytes)
