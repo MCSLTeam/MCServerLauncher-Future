@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,37 +16,38 @@ namespace MCServerLauncher.DaemonClient;
 
 public class Daemon : IDaemon
 {
+    private readonly ClientConnection _connection;
     private bool _disposed;
 
     private Daemon(ClientConnection connection)
     {
-        Connection = connection;
+        _connection = connection;
 
-        Connection.OnEventReceived += OnEvent;
+        _connection.OnEventReceived += OnEvent;
+        _connection.Reconnected += () => Reconnected?.Invoke();
+        _connection.ConnectionLost += () => ConnectionLost?.Invoke();
+        _connection.ConnectionClosed += () => ConnectionClosed?.Invoke();
     }
 
-    internal ClientConnection Connection { get; }
 
-    public bool Online => Connection.Client.Online;
+    public bool Online => _connection.Client.Online;
     public SubscribedEvents SubscribedEvents { get; } = new();
-    public event Action<Guid, string>? InstanceLogEvent;
-    public event Action<DaemonReport, long>? DaemonReportEvent;
 
 
     /// <summary>
     ///     心跳包是否超时
     /// </summary>
-    public bool PingLost => Connection.PingLost;
+    public bool IsConnectionLost => _connection.IsConnectionLost;
 
     /// <summary>
     ///     上次ping时间
     /// </summary>
-    public DateTime LastPing => Connection.LastPong;
+    public DateTime LastPong => _connection.LastPong;
 
 
     public async Task CloseAsync()
     {
-        await Connection.CloseAsync();
+        await _connection.CloseAsync();
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public class Daemon : IDaemon
     )
         where TResult : class, IActionResult
     {
-        return await Connection.RequestAsync<TResult>(actionType, parameter, timeout, cancellationToken);
+        return await _connection.RequestAsync<TResult>(actionType, parameter, timeout, cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class Daemon : IDaemon
         CancellationToken cancellationToken = default
     )
     {
-        await Connection.RequestAsync(actionType, parameter, timeout, cancellationToken);
+        await _connection.RequestAsync(actionType, parameter, timeout, cancellationToken);
     }
 
     public void Dispose()
@@ -179,7 +179,7 @@ public class Daemon : IDaemon
             await Task.Delay(3000);
 
             Console.WriteLine("\nDaemon side java list:");
-            foreach (var info in await daemon.GetJavaListAsync()) Console.WriteLine($"    - {info.ToString()}");
+            foreach (var info in await daemon.GetJavaListAsync()) Console.WriteLine($"    - {info}");
 
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
@@ -285,7 +285,7 @@ public class Daemon : IDaemon
     private void Dispose(bool disposed)
     {
         if (_disposed) return;
-        if (disposed) Connection.Dispose();
+        if (disposed) _connection.Dispose();
 
         _disposed = true;
     }
@@ -294,4 +294,19 @@ public class Daemon : IDaemon
     {
         Dispose(false);
     }
+
+    #region Daemon Event
+
+    public event Action<Guid, string>? InstanceLogEvent;
+    public event Action<DaemonReport, long>? DaemonReportEvent;
+
+    #endregion
+
+    #region Daemon Client State Event
+
+    public event Action? Reconnected;
+    public event Action? ConnectionLost;
+    public event Action? ConnectionClosed;
+
+    #endregion
 }
