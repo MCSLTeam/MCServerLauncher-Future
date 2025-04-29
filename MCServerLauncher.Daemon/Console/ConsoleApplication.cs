@@ -59,9 +59,9 @@ public class ConsoleApplication
                         commandSource.SendError(
                             "An error occurred while executing the command: '{Command}', {Message}.", line, e.Message);
                     }
-                    var parsed = dispatcher.Parse(line,commandSource);
-                    var suggestions = dispatcher.GetCompletionSuggestions(parsed).Result;
-                    Log.Debug("Suggestions: Range={0}, List={1}",suggestions.Range,suggestions.List.Select(x=>x.ToString()));
+                    // var parsed = dispatcher.Parse(line,commandSource);
+                    // var suggestions = dispatcher.GetCompletionSuggestions(parsed).Result;
+                    // Log.Debug("Suggestions: Range={0}, List={1}",suggestions.Range,suggestions.List.Select(x=>x.ToString()));
                 }
             }
             catch (Exception e) when (e is OperationCanceledException or IOException)
