@@ -10,7 +10,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateOtherExecutableInstanceProvider
     {
-        public InstanceType InstanceType { get; } = InstanceType.Exe;
+        public InstanceType InstanceType { get; } = InstanceType.None;
+        public TargetType TargetType { get; } = TargetType.Executable;
         public CreateOtherExecutableInstanceProvider()
         {
             InitializeComponent();

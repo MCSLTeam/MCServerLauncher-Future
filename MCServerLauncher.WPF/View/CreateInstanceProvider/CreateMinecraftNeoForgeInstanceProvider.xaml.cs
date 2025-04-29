@@ -18,7 +18,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftNeoForgeInstanceProvider
     {
-        public InstanceType InstanceType { get; } = InstanceType.MC_NeoForge;
+        public InstanceType InstanceType { get; } = InstanceType.NeoForge;
+        public TargetType TargetType { get; } = TargetType.Jar;
         public CreateMinecraftNeoForgeInstanceProvider()
         {
             InitializeComponent();

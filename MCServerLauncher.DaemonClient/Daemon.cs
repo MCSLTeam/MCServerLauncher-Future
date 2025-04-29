@@ -197,11 +197,11 @@ public class Daemon : IDaemon
                 {
                     Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3"),
                     Name = "1-21-1-vanilla",
-                    InstanceType = InstanceType.MC_Universal,
+                    InstanceType = InstanceType.Universal,
                     Target = "server.jar",
                     TargetType = TargetType.Jar,
                     JavaPath = "java",
-                    JavaArgs = Array.Empty<string>(),
+                    Arguments = Array.Empty<string>(),
                     SourceType = SourceType.Core,
                     Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
                     // Source = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",

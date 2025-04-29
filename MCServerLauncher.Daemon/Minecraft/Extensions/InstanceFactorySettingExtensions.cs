@@ -72,23 +72,9 @@ public static class InstanceFactorySettingExtensions
 
     public static bool ValidateSetting(this InstanceFactorySetting setting)
     {
-        if (
-            setting.SourceType == SourceType.None ||
-            setting.InstanceType == InstanceType.None ||
-            setting.TargetType == TargetType.None
-        )
+        if (setting.SourceType is SourceType.None)
             return false;
-
-        try
-        {
-            McVersion.Of(setting.McVersion);
-        }
-        catch (IndexOutOfRangeException)
-        {
-            return false;
-        }
-
-        if (setting.JavaPath.ToLower() != "java" && !File.Exists(setting.JavaPath)) return false;
+        
         if (Uri.TryCreate(setting.Source, UriKind.Absolute, out var uri))
         {
             if (uri.IsFile && !File.Exists(uri.LocalPath)) return false;
@@ -97,9 +83,7 @@ public static class InstanceFactorySettingExtensions
         {
             return false;
         }
-
-        if (setting.Uuid == Guid.Empty) return false;
-
-        return true;
+        
+        return setting.ValidateConfig();
     }
 }

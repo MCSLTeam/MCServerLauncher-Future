@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Minecraft.Extensions;
 
@@ -11,6 +12,29 @@ public static class InstanceConfigExtensions
     public static string GetWorkingDirectory(this InstanceConfig config)
     {
         return Path.Combine(FileManager.InstancesRoot, config.Uuid.ToString());
+    }
+
+    public static bool ValidateConfig(this InstanceConfig config)
+    {
+        if (config.InstanceType is not InstanceType.None)
+            try
+            {
+                McVersion.Of(config.McVersion);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return false;
+            }
+
+        if (
+            config.TargetType is TargetType.Jar
+            && config.JavaPath.ToLower() != "java"
+            && !File.Exists(config.JavaPath)
+        ) return false;
+
+        if (config.Uuid == Guid.Empty) return false;
+
+        return true;
     }
 
 
@@ -32,17 +56,27 @@ public static class InstanceConfigExtensions
             ? $"{Path.GetDirectoryName(config.JavaPath)};{originPath}"
             : $"{Path.GetDirectoryName(config.JavaPath)}:{originPath}";
 
+        foreach (var (key, pattern) in config.Env)
+        {
+            if (pattern.TryApply(startInfo.EnvironmentVariables, (k, m) => m[k], out var applied))
+            {
+                startInfo.EnvironmentVariables[key] = applied;
+            }
+
+            Log.Warning("[InstanceConfig] Could apply env pattern={0}, skip.", pattern.ToString());
+        }
+
         return startInfo;
     }
 
-    private static (string, string) GetLaunchScript(this InstanceConfig config)
+    private static (string File, string ArgumentString) GetLaunchScript(this InstanceConfig config)
     {
+        var fullPath = Path.GetFullPath(Path.Combine(config.GetWorkingDirectory(), config.Target));
         return config.TargetType switch
         {
-            TargetType.Jar => (config.JavaPath, $"{string.Join(" ", config.JavaArgs)} -jar {config.Target} nogui"),
-            TargetType.Script => (
-                Path.Combine(Directory.GetCurrentDirectory(), config.GetWorkingDirectory(), config.Target),
-                "")
+            TargetType.Jar => (config.JavaPath, $"{string.Join(" ", config.Arguments)} -jar {config.Target} nogui"),
+            TargetType.Script => (fullPath, ""),
+            TargetType.Executable => (fullPath, string.Join(" ", config.Arguments))
         };
     }
 

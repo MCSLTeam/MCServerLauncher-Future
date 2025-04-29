@@ -15,7 +15,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftFabricInstanceProvider
     {
-        public InstanceType InstanceType { get; } = InstanceType.MC_Fabric;
+        public InstanceType InstanceType { get; } = InstanceType.Fabric;
+        public TargetType TargetType { get; } = TargetType.Jar;
         public CreateMinecraftFabricInstanceProvider()
         {
             InitializeComponent();

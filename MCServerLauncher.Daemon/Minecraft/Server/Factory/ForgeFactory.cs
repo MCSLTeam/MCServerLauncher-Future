@@ -5,9 +5,9 @@ using MCServerLauncher.Daemon.Storage;
 
 namespace MCServerLauncher.Daemon.Minecraft.Server.Factory;
 
-[InstanceFactory(InstanceType.MC_Forge, minVersion: "1.5.2")]
-[InstanceFactory(InstanceType.MC_NeoForge, minVersion: "1.20.2")] // TODO BMCLAPI加速
-[InstanceFactory(InstanceType.MC_Cleanroom, minVersion: "1.12.2", maxVersion: "1.12.2")]
+[InstanceFactory(InstanceType.Forge, minVersion: "1.5.2")]
+[InstanceFactory(InstanceType.NeoForge, minVersion: "1.20.2")] // TODO BMCLAPI加速
+[InstanceFactory(InstanceType.Cleanroom, minVersion: "1.12.2", maxVersion: "1.12.2")]
 public class ForgeFactory : ICoreInstanceFactory
 {
     public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)

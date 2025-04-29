@@ -65,6 +65,7 @@ public class InstanceProcess : DisposableObject
 
     public async Task<bool> StartAsync(int delayToCheck = 500)
     {
+        var fileName = _process.StartInfo.FileName;
         _process.Start();
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
@@ -73,7 +74,7 @@ public class InstanceProcess : DisposableObject
         if (!_process.HasExited)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                ServerProcessId = await Task.Run(() => ProcessTreeHelper.FindSubProcessPid(_process.Id, "-jar"));
+                ServerProcessId = await Task.Run(() => ProcessTreeHelper.FindSubProcessPid(_process.Id, fileName));
             else
                 ServerProcessId = _process.Id;
         }
