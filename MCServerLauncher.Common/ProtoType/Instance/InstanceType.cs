@@ -12,9 +12,4 @@ public enum InstanceType
     NeoForge,
     Cleanroom,
     Quilt,
-
-    [Obsolete] MC_Bedrock,
-    [Obsolete] Exe,
-    [Obsolete] Terraria,
-    Frp
 }
