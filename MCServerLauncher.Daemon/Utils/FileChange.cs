@@ -7,8 +7,7 @@ public class FileChange
     public FileChange(string path)
     {
         Path = path;
-        Exists = File.Exists(path);
-        _lastFileInfo = Exists ? new FileInfo(path) : null;
+        _lastFileInfo = File.Exists(path) ? new FileInfo(path) : null;
     }
 
     public bool Exists { get; private set; }

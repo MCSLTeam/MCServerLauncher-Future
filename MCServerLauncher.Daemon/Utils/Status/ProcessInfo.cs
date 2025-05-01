@@ -19,7 +19,7 @@ public static class ProcessInfo
         catch (Exception ex)
         {
             System.Console.WriteLine($"Error retrieving process info: {ex.Message}");
-            return (-1, -1);
+            return (0, 0);
         }
     }
 
@@ -50,7 +50,7 @@ public static class ProcessInfo
                     catch (CimException ex)
                     {
                         Log.Warning("Can't get memory info of process(pid={0}): {1}", pid, ex.Message);
-                        return -1;
+                        return 0;
                     }
                 });
             }
@@ -97,7 +97,7 @@ public static class ProcessInfo
             Log.Warning("Can't get memory info of process(pid={0}): {1}", process.Id, e.Message);
         }
 
-        return -1;
+        return 0;
     }
 
     private static async Task<double> GetCpuUsageAsync(Process process)

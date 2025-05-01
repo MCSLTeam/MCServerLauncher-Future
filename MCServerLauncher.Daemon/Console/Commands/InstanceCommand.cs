@@ -3,7 +3,9 @@ using Brigadier.NET;
 using Brigadier.NET.Builder;
 using Brigadier.NET.Tree;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Management.Extensions;
+using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils.Status;
 
 namespace MCServerLauncher.Daemon.Console.Commands;
@@ -50,29 +52,9 @@ public static class InstanceCommand
                 })));
     }
 
-    public static async Task ShowInstanceInformation<TSource>(
+    private static void ShowInstanceInformation<TSource>(
         TSource source,
-        Instance instance
-    )
-        where TSource : ConsoleCommandSource
-    {
-        source.SendFeedback("");
-        source.SendFeedback(" - {0} ({1})", instance.Config.Name, instance.Config.Uuid);
-        source.SendFeedback("   - 状态: {0}", instance.Status.ToString());
-
-        if (instance.Status is InstanceStatus.Running or InstanceStatus.Starting)
-        {
-            var (mem, cpu) = await ProcessInfo.GetProcessUsageAsync(instance.ServerProcessId);
-            source.SendFeedback("   - PID: {0}", instance.ServerProcessId);
-            source.SendFeedback("   - 端口: {0}", instance.Port);
-            source.SendFeedback("   - 内存: {0}", GetMemoryString(mem));
-            source.SendFeedback("   - CPU: {0} %", cpu);
-        }
-    }
-
-    public static void ShowInstanceInformation<TSource>(
-        TSource source,
-        Instance instance,
+        IInstance instance,
         bool showInfo,
         long mem,
         double cpu
@@ -87,7 +69,8 @@ public static class InstanceCommand
         if (showInfo && instance.Status is InstanceStatus.Running or InstanceStatus.Starting)
         {
             source.SendFeedback("   - PID: {0}", instance.ServerProcessId);
-            source.SendFeedback("   - 端口: {0}", instance.Port);
+            if (instance.TryCastTo<MinecraftInstance>(out var mcInstance))
+                source.SendFeedback("   - 端口: {0}", mcInstance!.Port);
             source.SendFeedback("   - 内存: {0}", GetMemoryString(mem));
             source.SendFeedback("   - CPU: {0} %", cpu);
         }
