@@ -17,13 +17,12 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.DaemonClient.Connection;
 
-internal class ClientConnection : IDisposable
+internal class ClientConnection : DisposableObject
 {
     private const int CF_PROTOCOL_VERSION = 1;
 
     private readonly CancellationTokenSource _cts;
     private readonly ConnectionPendingRequests _pendingRequests;
-    private bool _disposed;
 
     private ClientConnection(ClientConnectionConfig config)
     {
@@ -32,6 +31,7 @@ internal class ClientConnection : IDisposable
         Config = config;
 
         Reconnected += async () => await OnReconnectedEventHandler();
+        ConnectionClosed += () => _pendingRequests.Close();
     }
 
     public SubscribedEvents SubscribedEvents { get; } = new();
@@ -39,12 +39,6 @@ internal class ClientConnection : IDisposable
     public bool IsConnectionLost { get; private set; }
     public WebSocketClient Client { get; } = new();
     public ClientConnectionConfig Config { get; }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this); // 阻止终结器重复释放资源
-    }
 
     public event Action? ConnectionLost;
     public event Action? Reconnected;
@@ -92,7 +86,7 @@ internal class ClientConnection : IDisposable
                     heartbeatPlugin.Tick = config.HeartBeatTick;
                     a.Add(heartbeatPlugin);
                 }
-                
+
                 a.Add(new WsConnectionEventPlugin(connection));
                 a.UseWebSocketReconnection();
             })
@@ -257,8 +251,7 @@ internal class ClientConnection : IDisposable
     {
         try
         {
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts.Token);
-            var response = await tcs.Task.WaitAsync(timeout, cts.Token);
+            var response = await tcs.Task.WaitAsync(timeout, ct);
             var serializer = JsonSerializer.Create(JsonSettings.Settings);
 
             return response.RequestStatus switch
@@ -308,21 +301,10 @@ internal class ClientConnection : IDisposable
             }
     }
 
-    ~ClientConnection()
+    protected override void ProtectedDispose()
     {
-        Dispose(false);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (_disposed) return;
-        if (disposing)
-        {
-            _cts.Dispose();
-            Client.SafeDispose();
-        }
-
-        _disposed = true;
+        _cts.Dispose();
+        Client.SafeDispose();
     }
 
     private class WsConnectionEventPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocketClosedPlugin

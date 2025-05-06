@@ -463,7 +463,7 @@ public static class DaemonExtensions
     /// <param name="timeout"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static async Task<InstanceConfig> TryAddInstanceAsync(this IDaemon daemon, InstanceFactorySetting setting,
+    public static async Task<InstanceConfig> AddInstanceAsync(this IDaemon daemon, InstanceFactorySetting setting,
         int timeout = -1,
         CancellationToken ct = default)
     {
@@ -483,7 +483,7 @@ public static class DaemonExtensions
     /// <param name="id"></param>
     /// <param name="timeout"></param>
     /// <param name="ct"></param>
-    public static async Task TryRemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    public static async Task RemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
         await daemon.RequestAsync(

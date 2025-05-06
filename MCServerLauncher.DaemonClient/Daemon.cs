@@ -163,7 +163,6 @@ public class Daemon : IDaemon
                     PingTimeout = 5000
                 });
             daemon.DaemonReportEvent += (report, l) => { Console.WriteLine($"Daemon report: {report}\n ({l}ms)"); };
-
             // await daemon.SubscribeEvent(EventType.DaemonReport, null);
             // await Task.Delay(6010);
             // await daemon.CloseAsync();
@@ -212,7 +211,7 @@ public class Daemon : IDaemon
                 guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3");
                 Console.WriteLine($"Creating Instance: {setting.Name} ({setting.Uuid})");
 
-                var config = await daemon.TryAddInstanceAsync(setting);
+                var config = await daemon.AddInstanceAsync(setting);
                 Console.WriteLine("[InstanceManager] Created Server: " + config.Name);
             }
 
