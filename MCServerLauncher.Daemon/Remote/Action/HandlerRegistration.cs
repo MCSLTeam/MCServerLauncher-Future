@@ -156,7 +156,7 @@ public static class HandlerRegistration
                 async (param, ctx, resolver, ct) =>
                 {
                     if (param.FileId == Guid.Empty)
-                        return Err<FileUploadChunkResult>(ActionRetcode.NotUploading.WithMessage(param.FileId)
+                        return Err<FileUploadChunkResult>(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId)
                             .ToError());
 
                     return await ResultExt.TryAsync(async chunkParameter =>
@@ -182,7 +182,7 @@ public static class HandlerRegistration
                 (param, ctx, resolver, ct) =>
                     FileManager.FileUploadCancel(param.FileId)
                         ? ValueTaskOk()
-                        : ValueTaskErr(ActionRetcode.NotUploading.WithMessage(param.FileId))
+                        : ValueTaskErr(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId))
             )
 
             #endregion
