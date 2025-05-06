@@ -6,7 +6,7 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// <summary>
 ///     ActionError is a wrapper of ActionRetcode.
 /// </summary>
-public class ActionError : Error
+public sealed class ActionError : Error
 {
     public ActionError(ActionRetcode? retcode = null)
     {
@@ -20,19 +20,5 @@ public class ActionError : Error
     public static implicit operator ActionError(ActionRetcode retcode)
     {
         return new ActionError(retcode);
-    }
-
-    public override string ToString()
-    {
-        var writer = new StringWriter();
-        writer.WriteLine(Cause);
-
-        if (InnerError is not null)
-        {
-            writer.WriteLine("=> Error backtrace:");
-            writer.Write(InnerError.ToString());
-        }
-
-        return writer.ToString();
     }
 }

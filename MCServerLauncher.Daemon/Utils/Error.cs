@@ -35,18 +35,34 @@ public class Error
     }
 
 
+    public string SimpleBackTrace()
+    {
+        var writer = new StringWriter();
+
+
+        writer.Write("=> Error occurred: ");
+        writer.WriteLine(Cause);
+
+        if (CausedException is not null)
+        {
+            writer.Write("   Caused by     : ");
+            writer.Write(string.Join("\n                  ", CausedException.ToString().Split("\n")));
+        }
+
+        if (InnerError is not null)
+        {
+            writer.WriteLine(InnerError.SimpleBackTrace());
+        }
+
+        return writer.ToString();
+    }
+
     public override string ToString()
     {
         var writer = new StringWriter();
-        if (InnerError is not null) writer.WriteLine(InnerError.ToString());
-
-        writer.Write("=> Error occurred: ");
-        writer.Write(Cause);
-        if (CausedException is not null)
-        {
-            writer.WriteLine("; Caused by:");
-            writer.Write(CausedException.ToString());
-        }
+        writer.WriteLine(Cause);
+        writer.WriteLine("****************** Backtrace ******************");
+        writer.Write(SimpleBackTrace());
 
         return writer.ToString();
     }
