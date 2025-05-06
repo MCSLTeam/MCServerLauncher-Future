@@ -61,8 +61,11 @@ public class Error
     {
         var writer = new StringWriter();
         writer.WriteLine(Cause);
-        writer.WriteLine("****************** Backtrace ******************");
-        writer.Write(SimpleBackTrace());
+        if (InnerError is not null)
+        {
+            writer.WriteLine("****************** Backtrace ******************");
+            writer.Write(SimpleBackTrace());
+        }
 
         return writer.ToString();
     }
