@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 
 namespace MCServerLauncher.Common.ProtoType.Event;
+
 public interface IEventData
 {
 }

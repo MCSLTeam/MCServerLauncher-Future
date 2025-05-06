@@ -3,6 +3,9 @@ using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Management.Minecraft;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
+using RustyOptions.Async;
 
 namespace MCServerLauncher.Daemon.Management.Factory;
 
@@ -17,28 +20,33 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.Cleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
 public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
-    public async Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting)
+    public async Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting)
     {
         var workingDirectory = setting.GetWorkingDirectory();
-        ZipFile.ExtractToDirectory(setting.Source, workingDirectory, Encoding.UTF8, true);
-        await setting.FixEula();
 
-        return setting.GetInstanceConfig();
+        var result = await ResultExt
+            .Try(() => ZipFile.ExtractToDirectory(setting.Source, workingDirectory, Encoding.UTF8, true)
+            ).MapAsync(_ => setting.FixEula());
+
+        if (result.MapErr(Error.FromException).IsErr(out var error))
+            return ResultExt.Err<InstanceConfig>("Universal factory could not create instance from archive", error);
+
+        return ResultExt.Ok(setting.GetInstanceConfig());
     }
 
-    public async Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting)
+    public async Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
-        if (!await setting.CopyAndRenameTarget())
-            throw new InstanceFactoryException(setting, "Failed to download target source");
         setting = setting with { TargetType = TargetType.Jar };
-        await setting.FixEula();
 
-        return setting.GetInstanceConfig();
+        var copyAndRenameTarget = await setting.CopyAndRenameTarget();
+        var fixEula = await copyAndRenameTarget.MapAsync(_ => setting.FixEula());
+
+        return fixEula.Map(_ => setting.GetInstanceConfig());
     }
 
-    public Func<MinecraftInstance, Task>[] GetPostProcessors()
+    public Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()
     {
-        return new List<Func<MinecraftInstance, Task>>
+        return new List<Func<MinecraftInstance, Task<Result<Unit, Error>>>>
         {
             async instance =>
             {
@@ -47,6 +55,8 @@ public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
                     instance.Process!.WriteLine("stop");
                     await instance.Process!.WaitForExitAsync();
                 }
+
+                return ResultExt.Ok();
             }
         }.ToArray();
     }

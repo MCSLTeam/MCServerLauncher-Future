@@ -1,21 +1,16 @@
-﻿using System.Collections;
+﻿using System.Buffers;
+using System.Collections;
 
 namespace MCServerLauncher.Common.Concurrent;
 
-using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 /// <summary>
-/// 一个 D-ary 堆实现
-/// 特性：
-/// 1. 支持异步等待出队 (DequeueAsync)
-/// 2. 支持同步立即出队 (Dequeue)
-/// 3. 内存池优化
-/// 4. 读写锁粒度控制
-/// 5. 优先级快速查询
+///     一个 D-ary 堆实现
+///     特性：
+///     1. 支持异步等待出队 (DequeueAsync)
+///     2. 支持同步立即出队 (Dequeue)
+///     3. 内存池优化
+///     4. 读写锁粒度控制
+///     5. 优先级快速查询
 /// </summary>
 public sealed class DaryHeap<TElement, TPriority> : IDisposable
     where TPriority : IComparable<TPriority>
@@ -24,12 +19,12 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
     private const int CF_INITIAL_CAPACITY = 64;
 
     private readonly int _arity;
+    private readonly Dictionary<TPriority, int> _indexMap = new();
     private readonly ReaderWriterLockSlim _rwLock = new();
     private readonly SemaphoreSlim _semaphore = new(0);
-    private readonly Dictionary<TPriority, int> _indexMap = new();
-    private (TElement Element, TPriority Priority)[] _heap;
     private int _count;
     private bool _disposed;
+    private (TElement Element, TPriority Priority)[] _heap;
 
     public DaryHeap(int arity = CF_DEFAULT_ARITY)
     {
@@ -53,6 +48,17 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
         }
     }
 
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _rwLock.Dispose();
+        _semaphore.Dispose();
+        ArrayPool<(TElement, TPriority)>.Shared.Return(_heap);
+        _heap = null!;
+    }
+
     public void Enqueue(TElement element, TPriority priority)
     {
         _rwLock.EnterWriteLock();
@@ -61,7 +67,7 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
             EnsureCapacity();
 
             // 添加到堆尾
-            int index = _count++;
+            var index = _count++;
             _heap[index] = (element, priority);
             _indexMap[priority] = index;
             BubbleUp(index);
@@ -90,7 +96,8 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
         }
     }
 
-    public async Task<(TElement Element, TPriority Priority)> DequeueAsync(CancellationToken cancellationToken = default)
+    public async Task<(TElement Element, TPriority Priority)> DequeueAsync(
+        CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -104,33 +111,27 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
             _rwLock.ExitWriteLock();
         }
     }
-    
+
     public bool TryRemove(TPriority priority, out TElement? element)
     {
         element = default;
-        bool removed = false;
+        var removed = false;
 
         _rwLock.EnterWriteLock();
         try
         {
             // 检查优先级是否存在
-            if (!_indexMap.TryGetValue(priority, out int index))
-            {
-                return false;
-            }
+            if (!_indexMap.TryGetValue(priority, out var index)) return false;
 
             // 获取要移除的元素
             element = _heap[index].Element;
             removed = true;
 
             // 判断是否是最后一个元素
-            bool isLast = (index == _count - 1);
+            var isLast = index == _count - 1;
 
             // 将要删除的元素与最后一个元素交换
-            if (!isLast)
-            {
-                Swap(index, _count - 1);
-            }
+            if (!isLast) Swap(index, _count - 1);
 
             // 移除最后一个元素（即目标元素）
             _count--;
@@ -140,20 +141,15 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
             if (!isLast)
             {
                 // 需要同时检查向上和向下调整
-                int parentIndex = (index - 1) / _arity;
+                var parentIndex = (index - 1) / _arity;
                 if (index > 0 && _heap[index].Priority.CompareTo(_heap[parentIndex].Priority) < 0)
-                {
                     BubbleUp(index);
-                }
                 else
-                {
                     BubbleDown(index);
-                }
             }
 
             // 调整信号量计数
             if (_semaphore.CurrentCount > 0)
-            {
                 try
                 {
                     // 非阻塞减少信号量
@@ -163,7 +159,6 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
                 {
                     // 忽略已释放的异常
                 }
-            }
         }
         finally
         {
@@ -220,25 +215,14 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
             var buffer = ArrayPool<(TElement, TPriority)>.Shared.Rent(_count);
             _heap.AsSpan(0, _count).CopyTo(buffer);
             return new UnorderedItemCollection<TElement, TPriority>(
-                buffer, 
-                _count, 
+                buffer,
+                _count,
                 ArrayPool<(TElement, TPriority)>.Shared);
         }
         finally
         {
             _rwLock.ExitReadLock();
         }
-    }
-    
-    public void Dispose()
-    {
-        if (_disposed) return;
-        _disposed = true;
-
-        _rwLock.Dispose();
-        _semaphore.Dispose();
-        ArrayPool<(TElement, TPriority)>.Shared.Return(_heap);
-        _heap = null!;
     }
 
     private (TElement Element, TPriority Priority) DequeueCore()
@@ -260,7 +244,7 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
     {
         while (index > 0)
         {
-            int parentIndex = (index - 1) / _arity;
+            var parentIndex = (index - 1) / _arity;
             if (_heap[index].Priority.CompareTo(_heap[parentIndex].Priority) >= 0)
                 break;
 
@@ -273,17 +257,15 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
     {
         while (true)
         {
-            int firstChild = index * _arity + 1;
+            var firstChild = index * _arity + 1;
             if (firstChild >= _count) break;
 
-            int minChild = firstChild;
-            int lastChild = Math.Min(firstChild + _arity, _count);
+            var minChild = firstChild;
+            var lastChild = Math.Min(firstChild + _arity, _count);
 
-            for (int i = firstChild + 1; i < lastChild; i++)
-            {
+            for (var i = firstChild + 1; i < lastChild; i++)
                 if (_heap[i].Priority.CompareTo(_heap[minChild].Priority) < 0)
                     minChild = i;
-            }
 
             if (_heap[minChild].Priority.CompareTo(_heap[index].Priority) < 0)
             {
@@ -313,8 +295,8 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
         ArrayPool<(TElement, TPriority)>.Shared.Return(_heap);
         _heap = newHeap;
     }
-    
-    public sealed class UnorderedItemCollection<THeapElement, THeapPriority> 
+
+    public sealed class UnorderedItemCollection<THeapElement, THeapPriority>
         : IReadOnlyList<(THeapElement Element, THeapPriority Priority)>, IDisposable
     {
         private readonly (THeapElement, THeapPriority)[] _buffer;
@@ -323,8 +305,8 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
         private bool _disposed;
 
         internal UnorderedItemCollection(
-            (THeapElement, THeapPriority)[] buffer, 
-            int count, 
+            (THeapElement, THeapPriority)[] buffer,
+            int count,
             ArrayPool<(THeapElement, THeapPriority)> pool)
         {
             _buffer = buffer;
@@ -332,8 +314,17 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
             _pool = pool;
         }
 
-        public int Count => _disposed 
-            ? throw new ObjectDisposedException(nameof(UnorderedItemCollection<THeapElement, THeapPriority>)) 
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _pool.Return(_buffer);
+                _disposed = true;
+            }
+        }
+
+        public int Count => _disposed
+            ? throw new ObjectDisposedException(nameof(UnorderedItemCollection<THeapElement, THeapPriority>))
             : _count;
 
         public (THeapElement Element, THeapPriority Priority) this[int index]
@@ -344,7 +335,7 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
                     throw new ObjectDisposedException(nameof(UnorderedItemCollection<THeapElement, THeapPriority>));
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
-            
+
                 return _buffer[index];
             }
         }
@@ -353,22 +344,13 @@ public sealed class DaryHeap<TElement, TPriority> : IDisposable
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(UnorderedItemCollection<THeapElement, THeapPriority>));
-        
-            for (int i = 0; i < _count; i++)
-            {
-                yield return _buffer[i];
-            }
+
+            for (var i = 0; i < _count; i++) yield return _buffer[i];
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public void Dispose()
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            if (!_disposed)
-            {
-                _pool.Return(_buffer);
-                _disposed = true;
-            }
+            return GetEnumerator();
         }
     }
 }

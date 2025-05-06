@@ -3,7 +3,9 @@ using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
+using RustyOptions;
 using Serilog;
 using Version = MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json.Version;
 
@@ -41,7 +43,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         return new ForgeInstallerV2(profile, installerPath, javaPath, mirror);
     }
 
-    public override async Task<bool> Run(InstanceFactorySetting setting, CancellationToken ct = default)
+    public override async Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default)
     {
         var workingDirectory = setting.GetWorkingDirectory();
         var libRoot = Path.Combine(workingDirectory, "libraries");
@@ -62,7 +64,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         if (!await DownloadMinecraft(serverJarPath, ct))
         {
             Log.Error("[ForgeInstaller] Failed to download vanilla server core");
-            return false;
+            return ResultExt.Err("Failed to download vanilla server core");
         }
 
         ct.ThrowIfCancellationRequested();
@@ -80,9 +82,10 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 运行forge installer的offline模式来应用postprocessors
-        var rv = await RunInstallerOffline(workingDirectory, ct);
-        if (rv) DeleteInstaller();
-        return rv;
+        if (await RunInstallerOffline(workingDirectory, ct)) return ResultExt.Ok();
+
+        DeleteInstaller();
+        return ResultExt.Err("Failed to apply forge post-processors");
     }
 
 

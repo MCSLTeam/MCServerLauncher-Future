@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Management;
 
@@ -14,7 +16,7 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="setting"></param>
     /// <returns></returns>
-    Task<InstanceConfig?> TryAddInstance(InstanceFactorySetting setting);
+    Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting);
 
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。

@@ -41,17 +41,17 @@ public class RwLockCell<T>
 
     public class ReadGuard : IDisposable
     {
-        private bool _disposed;
         private readonly RwLockCell<T> _cell;
         private readonly IDisposable _releaser;
-
-        public T? Value => _cell._value;
+        private bool _disposed;
 
         internal ReadGuard(RwLockCell<T> cell, IDisposable releaser)
         {
             _cell = cell;
             _releaser = releaser;
         }
+
+        public T? Value => _cell._value;
 
         public void Dispose()
         {
@@ -65,20 +65,20 @@ public class RwLockCell<T>
 
     public class WriteGuard : IDisposable
     {
-        private bool _disposed;
         private readonly RwLockCell<T> _cell;
         private readonly IDisposable _releaser;
-
-        public T? Value
-        {
-            get => _cell._value;
-            set => _cell._value = value;
-        }
+        private bool _disposed;
 
         internal WriteGuard(RwLockCell<T> cell, IDisposable releaser)
         {
             _cell = cell;
             _releaser = releaser;
+        }
+
+        public T? Value
+        {
+            get => _cell._value;
+            set => _cell._value = value;
         }
 
         public void Dispose()

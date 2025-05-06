@@ -1,6 +1,9 @@
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Factory;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Extensions;
 
@@ -10,7 +13,7 @@ public static class InstanceFactorySettingExtensions
     ///     复制目标文件并依据setting.Target重命名,如果Source是网络资源，则尝试下载他
     /// </summary>
     /// <param name="setting"></param>
-    public static async Task<bool> CopyAndRenameTarget(this InstanceFactorySetting setting)
+    public static async Task<Result<Unit, Error>> CopyAndRenameTarget(this InstanceFactorySetting setting)
     {
         var workingDirectory = setting.GetWorkingDirectory();
 
@@ -44,18 +47,25 @@ public static class InstanceFactorySettingExtensions
                 if (dl.Status == DownloadStatus.Failed)
                 {
                     File.Delete(dst);
-                    return false;
+                    return Result.Err<Unit, Error>("Failed to download source");
                 }
             }
         }
         else if (setting.Source != dst)
         {
-            File.Copy(setting.Source, dst);
+            var copy = ResultExt.Try(() => File.Copy(setting.Source, dst));
+            if (copy.IsErr(out var err))
+            {
+                File.Delete(dst);
+                return Result.Err<Unit, Error>($"failed to copy source: {err}");
+            }
         }
 
         // rename
-        if (setting.Target != dst) File.Move(dst, Path.Combine(workingDirectory, setting.Target));
-        return true;
+        return setting.Target != dst
+            ? ResultExt.Try(() => File.Move(dst, Path.Combine(workingDirectory, setting.Target)))
+                .MapErr(ex => new Error().CauseBy(ex))
+            : ResultExt.Ok(Unit.Default);
     }
 
     /// <summary>
@@ -65,23 +75,26 @@ public static class InstanceFactorySettingExtensions
     /// <exception cref="NotImplementedException"></exception>
     /// <exception cref="InstanceFactoryException"></exception>
     /// <returns></returns>
-    public static Task<InstanceConfig> ApplyInstanceFactory(this InstanceFactorySetting setting)
+    public static Task<Result<InstanceConfig, Error>> ApplyInstanceFactory(this InstanceFactorySetting setting)
     {
-        return InstanceFactoryRegistry.GetInstanceFactory(setting).Invoke(setting);
+        var instanceFactory = InstanceFactoryRegistry.GetInstanceFactory(setting);
+        Log.Information("[InstanceManager] Running InstanceFactory for instance '{0}'", setting.Name);
+        return instanceFactory.Invoke(setting);
     }
 
-    public static bool ValidateSetting(this InstanceFactorySetting setting)
+    public static Result<Unit, Error> ValidateSetting(this InstanceFactorySetting setting)
     {
         if (setting.SourceType is SourceType.None)
-            return false;
+            return ResultExt.Err<Unit>("source_type could not be none");
 
         if (Uri.TryCreate(setting.Source, UriKind.Absolute, out var uri))
         {
-            if (uri.IsFile && !File.Exists(uri.LocalPath)) return false;
+            if (uri.IsFile && !File.Exists(uri.LocalPath))
+                return ResultExt.Err<Unit>($"source not found at {uri.LocalPath}");
         }
         else if (!File.Exists(setting.Source))
         {
-            return false;
+            return ResultExt.Err<Unit>($"source not found at {setting.Source}");
         }
 
         return setting.ValidateConfig();

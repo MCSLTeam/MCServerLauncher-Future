@@ -6,7 +6,9 @@ using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
+using RustyOptions;
 using Serilog;
 using Version = MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json.Version;
 
@@ -27,7 +29,7 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
 
     protected InstanceFactoryMirror MirrorType { get; }
     public abstract InstallV1 Install { get; }
-    public abstract Task<bool> Run(InstanceFactorySetting setting, CancellationToken ct = default);
+    public abstract Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default);
 
     protected static async Task<List<TLibrary>> ParallelProcessLibraries<TLibrary>(
         List<TLibrary> libraries,

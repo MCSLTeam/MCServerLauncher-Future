@@ -2,6 +2,8 @@
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Management.Minecraft;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Factory;
@@ -18,7 +20,7 @@ public static class InstanceFactoryRegistry
                 SourceType,
                 Dictionary<
                     (McVersion, McVersion),
-                    Func<InstanceFactorySetting, Task<InstanceConfig>>
+                    Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>
                 >
             >
         > InstanceFactoryMapping = new();
@@ -45,7 +47,7 @@ public static class InstanceFactoryRegistry
                     = InstanceFactoryMapping.GetValueOrDefault(attr.InstanceType) ??
                       (InstanceFactoryMapping[attr.InstanceType] =
                           new Dictionary<SourceType, Dictionary<(McVersion, McVersion),
-                              Func<InstanceFactorySetting, Task<InstanceConfig>>>>());
+                              Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>>());
 
                 var allowedSourceType = attr.AllowedSourceType;
 
@@ -100,17 +102,19 @@ public static class InstanceFactoryRegistry
     }
 
     private static void RegisterInstanceFactory(
-        Dictionary<SourceType, Dictionary<(McVersion, McVersion), Func<InstanceFactorySetting, Task<InstanceConfig>>>>
+        Dictionary<SourceType, Dictionary<(McVersion, McVersion),
+                Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>>
             sourceTypeMapping,
         SourceType sourceType,
-        Func<InstanceFactorySetting, Task<InstanceConfig>> instanceFactory,
+        Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> instanceFactory,
         InstanceFactoryAttribute attribute
     )
     {
         var factories =
             sourceTypeMapping.GetValueOrDefault(sourceType) ??
             (sourceTypeMapping[sourceType] =
-                new Dictionary<(McVersion, McVersion), Func<InstanceFactorySetting, Task<InstanceConfig>>>());
+                new Dictionary<(McVersion, McVersion),
+                    Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>());
 
 
         factories[(McVersion.Of(attribute.MinVersion), McVersion.Of(attribute.MaxVersion))] = instanceFactory;
@@ -122,7 +126,8 @@ public static class InstanceFactoryRegistry
     /// <param name="setting"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public static Func<InstanceFactorySetting, Task<InstanceConfig>> GetInstanceFactory(InstanceFactorySetting setting)
+    public static Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> GetInstanceFactory(
+        InstanceFactorySetting setting)
     {
         if (InstanceFactoryMapping.TryGetValue(setting.InstanceType, out var sourceTypeMapping))
         {

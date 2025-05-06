@@ -23,10 +23,10 @@ public static class CpuInfoHelper
     private static (string, string) GetCpuNameAndVendor()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        { 
+        {
             var manufacturer = "Unknown";
             var name = "Unknown";
-                    
+
             var instances = Session.QueryInstances(
                 @"root\cimv2",
                 "WQL",
@@ -41,12 +41,9 @@ public static class CpuInfoHelper
                                    "Unknown";
                     name = instance.CimInstanceProperties["Name"]?.Value?.ToString()?.Trim() ?? "Unknown";
                 }
-                    
-            foreach (var instance in instances)
-            {
-                instance.Dispose();
-            }
-            
+
+            foreach (var instance in instances) instance.Dispose();
+
             return (name, manufacturer);
         }
 
@@ -55,26 +52,25 @@ public static class CpuInfoHelper
             var cpuInfo = File.ReadAllLines("/proc/cpuinfo");
             var name = cpuInfo[4].Split(':')[1].Trim();
             var vendor = cpuInfo[1].Split(':')[1].Trim();
-            return (name,vendor);
+            return (name, vendor);
         }
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
             var task = SystemInfoHelper.RunCommandAsync("sysctl", "-n machdep.cpu.brand_string");
             task.Wait();
-            var name  = task.Result.Trim();
+            var name = task.Result.Trim();
             var vendor = name.Split(' ')[0];
-            return( name,vendor);
+            return (name, vendor);
         }
-        
+
         throw new NotSupportedException("Unsupported OS");
     }
-    
+
     public static async Task<CpuInfo> GetCpuInfo()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
             return new CpuInfo(Vendor, Name, ProcessorCount, await GetWinCpuUsage());
-        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
@@ -102,7 +98,7 @@ public static class CpuInfoHelper
                     .MapTask(double.Parse);
             return new CpuInfo(Vendor, Name, ProcessorCount, cpuUsage);
         }
-        
+
         throw new NotSupportedException("Unsupported OS");
     }
 

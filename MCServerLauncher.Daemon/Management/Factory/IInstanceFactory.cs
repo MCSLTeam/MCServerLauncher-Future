@@ -1,5 +1,7 @@
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Minecraft;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Management.Factory;
 
@@ -8,9 +10,9 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 /// </summary>
 public interface IInstanceFactory
 {
-    Func<MinecraftInstance, Task>[] GetPostProcessors()
+    Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()
     {
-        return Array.Empty<Func<MinecraftInstance, Task>>();
+        return Array.Empty<Func<MinecraftInstance, Task<Result<Unit, Error>>>>();
     }
 }
 
@@ -19,7 +21,7 @@ public interface IInstanceFactory
 /// </summary>
 public interface IArchiveInstanceFactory : IInstanceFactory
 {
-    Task<InstanceConfig> CreateInstanceFromArchive(InstanceFactorySetting setting);
+    Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting);
 }
 
 /// <summary>
@@ -27,7 +29,7 @@ public interface IArchiveInstanceFactory : IInstanceFactory
 /// </summary>
 public interface ICoreInstanceFactory : IInstanceFactory
 {
-    Task<InstanceConfig> CreateInstanceFromCore(InstanceFactorySetting setting);
+    Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting);
 }
 
 /// <summary>
@@ -35,35 +37,5 @@ public interface ICoreInstanceFactory : IInstanceFactory
 /// </summary>
 public interface IScriptInstanceFactory : IInstanceFactory
 {
-    Task<InstanceConfig> CreateInstanceFromScript(InstanceFactorySetting setting);
-}
-
-public static class InstanceFactoryExtensions
-{
-    /// <summary>
-    ///     服务器实例创建的dispatcher
-    /// </summary>
-    /// <param name="factory"></param>
-    /// <param name="setting"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public static Task<InstanceConfig> CreateInstance(this IInstanceFactory factory, InstanceFactorySetting setting)
-    {
-        switch (setting.SourceType)
-        {
-            case SourceType.Archive:
-                if (factory is IArchiveInstanceFactory archiveFactory)
-                    return archiveFactory.CreateInstanceFromArchive(setting);
-                break;
-            case SourceType.Core:
-                if (factory is ICoreInstanceFactory coreFactory) return coreFactory.CreateInstanceFromCore(setting);
-                break;
-            case SourceType.Script:
-                if (factory is IScriptInstanceFactory scriptFactory)
-                    return scriptFactory.CreateInstanceFromScript(setting);
-                break;
-        }
-
-        throw new NotImplementedException($"No suitable factory found for SourceType.{setting.SourceType}");
-    }
+    Task<Result<InstanceConfig, Error>> CreateInstanceFromScript(InstanceFactorySetting setting);
 }

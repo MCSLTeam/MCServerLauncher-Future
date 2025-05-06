@@ -117,7 +117,7 @@ public static class JavaScanner
         Log.Verbose("[JVM] Start scanning available Java");
 
         List<Task<JavaInfo?>> tasks = new();
-        
+
         // Disk
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             for (var i = 65; i <= 90; i++)
@@ -158,13 +158,11 @@ public static class JavaScanner
             );
 
         foreach (var possibleJavaPath in javas)
-        {
             Log.Verbose(
                 "[JVM] Found certain Java at: {0} (Version: {1})",
                 possibleJavaPath.Path,
                 possibleJavaPath.Version
             );
-        }
 
         Log.Verbose("Total: {0}, time elapsed: {1}", javas.Length, DateTime.Now - startTime);
         return javas;

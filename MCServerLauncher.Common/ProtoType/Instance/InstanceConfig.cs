@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
 /// <summary>
-///  实例配置文件, 用于支持Daemon启动MC服务器, 普通Jar文件, 脚本文件, 可执行文件
+///     实例配置文件, 用于支持Daemon启动MC服务器, 普通Jar文件, 脚本文件, 可执行文件
 /// </summary>
 public record InstanceConfig
 {
@@ -29,7 +29,7 @@ public record InstanceConfig
 
     /// <summary>
     ///     默认为MC服务器,实例服务器类型(none, universal, fabric, forge ...).
-    ///     如果不为MC服务器, 则因置为<see cref="InstanceType.None"/>
+    ///     如果不为MC服务器, 则因置为<see cref="InstanceType.None" />
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public InstanceType InstanceType { get; init; }
@@ -67,7 +67,7 @@ public record InstanceConfig
     public Encoding OutputEncoding { get; init; } = Encoding.UTF8;
 
     /// <summary>
-    ///     java虚拟机路径, 非MC服务器或<see cref="InstanceConfig.TargetType"/>不为<see cref="TargetType.Jar"/>可以缺省
+    ///     java虚拟机路径, 非MC服务器或<see cref="InstanceConfig.TargetType" />不为<see cref="TargetType.Jar" />可以缺省
     /// </summary>
     public string JavaPath { get; init; } = string.Empty;
 

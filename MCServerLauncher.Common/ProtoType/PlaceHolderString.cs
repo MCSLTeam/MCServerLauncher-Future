@@ -1,19 +1,16 @@
-﻿using System.Collections.Specialized;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Serilog;
 
 namespace MCServerLauncher.Common.ProtoType;
 
 /// <summary>
-///   一个代表可替换环境变量的占位符得string(实际上就是string, 不过绑定了类型信息和占位符替换)
+///     一个代表可替换环境变量的占位符得string(实际上就是string, 不过绑定了类型信息和占位符替换)
 /// </summary>
 public class PlaceHolderString
 {
-    public string Pattern { get; }
-    private readonly HashSet<string> _keys = new();
-
     private static readonly Regex KeyRegex = new(@"\{(\w+)\}", RegexOptions.Compiled);
+    private readonly HashSet<string> _keys = new();
 
     public PlaceHolderString(string pattern)
     {
@@ -22,18 +19,16 @@ public class PlaceHolderString
         if (KeyRegex.IsMatch(pattern))
         {
             var matches = KeyRegex.Matches(pattern);
-            foreach (Match match in matches)
-            {
-                _keys.Add(match.Groups[1].Value);
-            }
+            foreach (Match match in matches) _keys.Add(match.Groups[1].Value);
         }
     }
+
+    public string Pattern { get; }
 
     public bool TryApply<TMapping>(TMapping mapping, Func<string, TMapping, string?> supplier, out string? applied)
     {
         applied = Pattern;
         foreach (var key in _keys)
-        {
             try
             {
                 var value = supplier.Invoke(key, mapping);
@@ -51,7 +46,6 @@ public class PlaceHolderString
                 applied = null;
                 return false;
             }
-        }
 
         return true;
     }

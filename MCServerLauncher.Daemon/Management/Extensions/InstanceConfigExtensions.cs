@@ -1,13 +1,17 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Extensions;
 
+// TODO 文件操作全部转换为Result
 public static class InstanceConfigExtensions
 {
     /// <summary>
@@ -25,7 +29,7 @@ public static class InstanceConfigExtensions
     /// </summary>
     /// <param name="config"></param>
     /// <returns></returns>
-    public static bool ValidateConfig(this InstanceConfig config)
+    public static Result<Unit, Error> ValidateConfig(this InstanceConfig config)
     {
         if (config.InstanceType is not InstanceType.None)
             try
@@ -34,18 +38,30 @@ public static class InstanceConfigExtensions
             }
             catch (IndexOutOfRangeException)
             {
-                return false;
+                return ResultExt.Err<Unit>("Could not parse mc_version");
             }
 
         if (
             config.TargetType is TargetType.Jar
             && config.JavaPath.ToLower() != "java"
             && !File.Exists(config.JavaPath)
-        ) return false;
+        ) return ResultExt.Err<Unit>("Could not found java in java_path");
 
-        if (config.Uuid == Guid.Empty) return false;
+        if (config.Uuid == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
 
-        return true;
+        return ResultExt.Ok(Unit.Default);
+    }
+
+    public static InstanceConfig AllocateNewUuid(this InstanceConfig config, Func<IEnumerable<Guid>> uuidSetFunc)
+    {
+        while (true)
+        {
+            var set = new HashSet<Guid>(uuidSetFunc.Invoke());
+
+            if (!set.Contains(config.Uuid)) return config;
+
+            config.Uuid = Guid.NewGuid();
+        }
     }
 
     /// <summary>
@@ -134,13 +150,17 @@ public static class InstanceConfigExtensions
     ///     为实例生成 EULA 文件
     /// </summary>
     /// <param name="config"></param>
-    public static async Task FixEula(this InstanceConfig config)
+    public static async Task<Result<Unit, Error>> FixEula(this InstanceConfig config)
     {
         var eulaPath = Path.Combine(config.GetWorkingDirectory(), "eula.txt");
-        var text = File.Exists(eulaPath)
-            ? (await File.ReadAllLinesAsync(eulaPath)).Select(x => eulaPath.Trim().StartsWith("eula") ? "eula=true" : x)
-            .ToArray()
-            : GenerateEula();
-        await File.WriteAllLinesAsync(eulaPath, text, Encoding.UTF8);
+        return await ResultExt.TryAsync(async Task () =>
+        {
+            var text = File.Exists(eulaPath)
+                ? (await File.ReadAllLinesAsync(eulaPath))
+                .Select(x => eulaPath.Trim().StartsWith("eula") ? "eula=true" : x)
+                .ToArray()
+                : GenerateEula();
+            await File.WriteAllLinesAsync(eulaPath, text, Encoding.UTF8);
+        }).MapTask(result => result.MapErr(ex => new Error().CauseBy(ex)));
     }
 }

@@ -1,7 +1,7 @@
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
 /// <summary>
-/// 实例类型
+///     实例类型
 /// </summary>
 public enum InstanceType
 {
@@ -11,5 +11,5 @@ public enum InstanceType
     Forge,
     NeoForge,
     Cleanroom,
-    Quilt,
+    Quilt
 }

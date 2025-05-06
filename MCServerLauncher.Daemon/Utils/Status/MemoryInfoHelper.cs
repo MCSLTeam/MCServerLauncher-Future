@@ -19,7 +19,6 @@ public static class MemoryInfoHelper
     private static ulong GetTotalPhysicalMemory()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
             try
             {
                 var instances = Session.QueryInstances(
@@ -31,10 +30,7 @@ public static class MemoryInfoHelper
                     .CimInstanceProperties["TotalPhysicalMemory"]?
                     .Value as ulong? ?? 0UL;
 
-                foreach (var queryInstance in instances)
-                {
-                    queryInstance.Dispose();
-                }
+                foreach (var queryInstance in instances) queryInstance.Dispose();
 
                 return total / 1024;
             }
@@ -44,7 +40,6 @@ public static class MemoryInfoHelper
                 ex.Dispose();
                 return 0UL;
             }
-        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -85,10 +80,7 @@ public static class MemoryInfoHelper
                         .CimInstanceProperties["FreePhysicalMemory"]?
                         .Value as ulong? ?? 0UL;
 
-                    foreach (var queryInstance in instances)
-                    {
-                        queryInstance.Dispose();
-                    }
+                    foreach (var queryInstance in instances) queryInstance.Dispose();
 
                     return freeKb;
                 }

@@ -1,77 +1,68 @@
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Extensions;
-using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
+using RustyOptions.Async;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Management;
 
 public class InstanceManager : IInstanceManager
 {
+    private Func<IEnumerable<Guid>> InstanceKeysSupplier => () => Instances.Keys;
     public ConcurrentDictionary<Guid, IInstance> Instances { get; } = new();
     public ConcurrentDictionary<Guid, IInstance> RunningInstances { get; } = new();
 
-    // TODO 改用异常抛出异常信息
-    public async Task<InstanceConfig?> TryAddInstance(InstanceFactorySetting setting)
+    public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting)
     {
         if (Instances.ContainsKey(setting.Uuid))
-            Log.Error("[InstanceManager] Add new instance failed: Instance '{0}' already exists.", setting.Uuid);
+            Log.Warning(
+                "[InstanceManager] Add new instance failed: Instance '{0}' already exists, we will allocate a new uuid for it",
+                setting.Uuid);
 
         var instanceRoot = setting.GetWorkingDirectory();
-        // validate dir name
-        try
-        {
-            Directory.CreateDirectory(instanceRoot);
-        }
-        catch (Exception e)
-        {
-            Log.Error("[InstanceManager] Failed to create instance directory '{0}': {1}", instanceRoot, e);
-            FileManager.TryRemove(instanceRoot); // rollback
-            return null;
-        }
 
-        // var instanceFactory = setting.GetInstanceFactory();
+        var createDirResult = ResultExt.Try(Directory.CreateDirectory, instanceRoot).MapErr(ex =>
+            new Error("Instance manager failed to create instance directory").CauseBy(ex));
 
-        // async run
-        try
-        {
-            Log.Information("[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
-                setting.InstanceType.ToString(), setting.Name);
-            var config = await setting.ApplyInstanceFactory();
-            FileManager.WriteJsonAndBackup(Path.Combine(instanceRoot, InstanceConfig.FileName),
-                config);
+        Log.Information(
+            "[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
+            setting.InstanceType.ToString(),
+            setting.Name
+        );
 
-            var instance = new MinecraftInstance(config);
-            // TODO 重写apply post processor逻辑，maybe继续用attribute?
-            // if (setting.UsePostProcess)
-            // {
-            //     var processors = instanceFactory.GetPostProcessors();
-            //     for (var i = 0; i < processors.Length; i++)
-            //     {
-            //         Log.Information("[InstanceManager] Running PostProcessor({0}/{1}) for instance '{2}'", i,
-            //             processors.Length, setting.Name);
-            //         await processors[i].Invoke(instance);
-            //     }
-            // }
+        var appliedFactoryResult = (await createDirResult.MapAsync(_ => setting.ApplyInstanceFactory()))
+            .Flatten()
+            .MapErr(err => new Error("Instance manager failed to run instance factory").WithInner(err));
 
-            if (!Instances.TryAdd(config.Uuid, instance))
+        var saveInstanceResult = appliedFactoryResult.Map((state, config) =>
             {
-                Log.Error("[InstanceManager] Failed to add instance '{0}' to manager.", config.Name);
-                return null; // we need not to rollback here, because the new instance has been correctly installed
-            }
+                var (root, keysSupplier) = state;
+                config.AllocateNewUuid(keysSupplier);
 
-            return config;
-        }
-        catch (Exception e)
+                return ResultExt.Try(innerState =>
+                {
+                    var (innerRoot, innerConfig) = innerState;
+                    FileManager.WriteJsonAndBackup(
+                        Path.Combine(innerRoot, InstanceConfig.FileName),
+                        innerConfig
+                    );
+                    return innerConfig;
+                }, (root, config)).MapErr(Error.FromException);
+            }
+            , (instanceRoot, KeysSupplier: InstanceKeysSupplier)).Flatten();
+
+        if (saveInstanceResult.IsErr(out var error))
         {
-            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", setting.Name, e);
+            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", setting.Name, error);
             FileManager.TryRemove(instanceRoot); // rollback
-            return null;
         }
+
+        return saveInstanceResult;
     }
 
-    // TODO 当用户尝试移除实例时，不应删除正在运行的实例
     public bool TryRemoveInstance(Guid instanceId)
     {
         if (RunningInstances.ContainsKey(instanceId)) return false;
