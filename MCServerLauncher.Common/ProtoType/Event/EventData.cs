@@ -13,5 +13,5 @@ public sealed record InstanceLogEventData : IEventData
 
 public sealed record DaemonReportEventData : IEventData
 {
-    [JsonRequired] public DaemonReport Report { get; init; } = null!;
+    [JsonRequired] public DaemonReport Report { get; init; }
 }
