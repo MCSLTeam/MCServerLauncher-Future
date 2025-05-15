@@ -144,7 +144,7 @@ public class ActionRetcode
 
         UnexpectedError = Register(20001, "Unexpected Error");
 
-        FileError = Register(20000, "File Error");
+        FileError = Register(21000, "File Error");
         FileNotFound = Register(21001, "File Not Found");
         FileAlreadyExists = Register(21002, "File Already Exists");
         FileInUse = Register(21003, "File In Use");
