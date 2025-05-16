@@ -1,4 +1,7 @@
-﻿namespace MCServerLauncher.WPF.View.Components.CreateInstance
+﻿using System;
+using static MCServerLauncher.WPF.Modules.Constants;
+
+namespace MCServerLauncher.WPF.View.Components.CreateInstance
 {
     /// <summary>
     ///    SelectMinecraftBedrockArchive.xaml 的交互逻辑
@@ -8,6 +11,13 @@
         public SelectMinecraftBedrockArchive()
         {
             InitializeComponent();
+        }
+
+        public CreateInstanceData ActualData {
+            get => new() { 
+                Type = CreateInstanceDataType.Path,
+                Data = ArchiveTextBox.Text,
+            };
         }
     }
 }

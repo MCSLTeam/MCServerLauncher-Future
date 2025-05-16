@@ -1,5 +1,8 @@
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Daemon.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RustyOptions;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -24,11 +27,6 @@ public static class ResponseUtils
         return Err(code.WithMessage(verbose ? exception.ToString() : exception.Message), request.Id);
     }
 
-    public static ActionResponse Err(ActionRequest request, ActionException exception, bool verbose)
-    {
-        return Err(request, exception, exception.Retcode, verbose);
-    }
-
     public static ActionResponse Ok(JObject? data, Guid id)
     {
         return new ActionResponse
@@ -39,5 +37,29 @@ public static class ResponseUtils
             Data = data,
             Id = id
         };
+    }
+
+    public static ActionResponse FromResult(Result<Option<IActionResult>, ActionError> result, Guid id)
+    {
+        return result.Match(
+            option => new ActionResponse
+            {
+                RequestStatus = ActionRequestStatus.Ok,
+                Retcode = ActionRetcode.Ok.Code,
+                Message = ActionRetcode.Ok.Message,
+                Data = option.MapOr(
+                    data => JObject.FromObject(data, JsonSerializer.Create(DaemonJsonSettings.Settings)),
+                    new JObject()),
+                Id = id
+            },
+            err => new ActionResponse
+            {
+                RequestStatus = ActionRequestStatus.Error,
+                Retcode = err.Retcode.Code,
+                Message = err.ToString(),
+                Data = null,
+                Id = id
+            }
+        );
     }
 }

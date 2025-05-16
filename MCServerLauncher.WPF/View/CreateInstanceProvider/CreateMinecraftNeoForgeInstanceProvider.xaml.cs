@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -17,6 +18,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftNeoForgeInstanceProvider
     {
+        public InstanceType InstanceType { get; } = InstanceType.NeoForge;
+        public TargetType TargetType { get; } = TargetType.Jar;
         public CreateMinecraftNeoForgeInstanceProvider()
         {
             InitializeComponent();

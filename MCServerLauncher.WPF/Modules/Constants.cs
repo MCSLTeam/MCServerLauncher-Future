@@ -40,5 +40,22 @@ namespace MCServerLauncher.WPF.Modules
             //BottomLeft,
             None
         }
+
+        public enum CreateInstanceDataType
+        {
+            Filename,
+            CommandLine,
+            Number,
+            String,
+            Path,
+            List,
+            Array,
+        }
+
+        public class CreateInstanceData
+        {
+            public CreateInstanceDataType Type { get; set; }
+            public dynamic? Data { get; set; }
+        }
     }
 }

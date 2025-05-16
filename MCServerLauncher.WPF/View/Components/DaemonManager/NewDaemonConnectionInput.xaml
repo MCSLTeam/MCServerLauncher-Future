@@ -7,8 +7,8 @@
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              mc:Ignorable="d" 
-             d:DesignHeight="200" d:DesignWidth="450">
-    <Grid Width="500">
+             d:DesignHeight="200" d:DesignWidth="500">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Margin="0,0,0,5"  VerticalAlignment="Center" Style="{StaticResource CaptionTextBlock}" Text="URL" />
-        <Grid Grid.Row="1" Margin="0,0,0,5">
+        <Grid Grid.Row="1" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="4*"/>
@@ -35,7 +35,7 @@
                 <ComboBoxItem Content="wss://"/>
             </ComboBox>
             <TextBox Grid.Column="1" ui:ControlHelper.PlaceholderText="{Binding [DaemonWsAddress], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="wsEdit" MaxLines="1" />
-            <TextBlock Grid.Column="2" Text=":" Margin="5,0,5,0" VerticalAlignment="Center" Style="{StaticResource MinititleTextBlock}" />
+            <TextBlock Grid.Column="2" Text=":" Margin="2,0,5,0" VerticalAlignment="Center" Style="{StaticResource MinititleTextBlock}" />
             <TextBox Grid.Column="3" ui:ControlHelper.PlaceholderText="{Binding [Port], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="portEdit" MaxLines="1" />
         </Grid>
         <TextBlock Grid.Row="2" Margin="0,5,5,5" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Token], Source={x:Static i18n:LanguageManager.Localize}}" />

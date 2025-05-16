@@ -105,7 +105,6 @@
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
     <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
   </ItemGroup>
 </Project>

@@ -866,6 +866,6 @@
     <value>无法连接守护进程，请检查配置。</value>
   </data>
   <data name="Token" xml:space="preserve">
-    <value></value>
+    <value>访问密钥无法连接守护进程，请检查配置。</value>
   </data>
 </root>

@@ -24,7 +24,7 @@
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
                        Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description], Source={x:Static i18n:LanguageManager.Localize}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
-            <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="JavaSetting" Grid.Row="2"
+            <TextBox x:Name="RunCommandTextBox" ScrollViewer.VerticalScrollBarVisibility="Disabled" Grid.Row="2"
                      Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,20,20"
                      ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title], Source={x:Static i18n:LanguageManager.Localize}}" />
             <ui:DropDownButton Grid.Row="0" Grid.Column="1" ShowChevronArrow="False"

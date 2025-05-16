@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.View.Pages;
+﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.WPF.View.Pages;
 using System.Windows;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
@@ -9,6 +10,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftBedrockInstanceProvider
     {
+        public InstanceType InstanceType { get; } = InstanceType.None;
+        // 通常是可执行文件
+        public TargetType TargetType { get; } = TargetType.Executable;
+
         public CreateMinecraftBedrockInstanceProvider()
         {
             InitializeComponent();

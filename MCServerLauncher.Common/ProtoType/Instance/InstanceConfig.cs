@@ -3,6 +3,9 @@ using Newtonsoft.Json;
 
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
+/// <summary>
+///     实例配置文件, 用于支持Daemon启动MC服务器, 普通Jar文件, 脚本文件, 可执行文件
+/// </summary>
 public record InstanceConfig
 {
     /// <summary>
@@ -13,37 +16,26 @@ public record InstanceConfig
     #region Required
 
     /// <summary>
-    ///     Minecraft版本
-    /// </summary>
-    [JsonProperty(Required = Required.Always)]
-    public string McVersion { get; init; } = null!;
-
-    /// <summary>
     ///     服务器名称
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public string Name { get; init; } = null!;
 
     /// <summary>
-    ///     java虚拟机路径
-    /// </summary>
-    [JsonProperty(Required = Required.Always)]
-    public string JavaPath { get; init; } = null!;
-
-    /// <summary>
-    ///     服务器启动目标(jar文件名, 脚本文件名)
+    ///     服务器启动目标(jar文件名, 脚本文件名, 可执行文件名)
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public string Target { get; init; } = null!;
 
     /// <summary>
-    ///     服务器类型(vanilla, fabric, forge ...)
+    ///     默认为MC服务器,实例服务器类型(none, universal, fabric, forge ...).
+    ///     如果不为MC服务器, 则因置为<see cref="InstanceType.None" />
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public InstanceType InstanceType { get; init; }
 
     /// <summary>
-    ///     服务器启动目标类型(jar, script[bat, sh])
+    ///     服务器启动目标类型(jar, script[bat, sh], executable)
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public TargetType TargetType { get; init; }
@@ -58,6 +50,11 @@ public record InstanceConfig
     public Guid Uuid = Guid.NewGuid();
 
     /// <summary>
+    ///     Minecraft版本, 非mc服务器可以为空或者null
+    /// </summary>
+    public string McVersion { get; init; } = string.Empty;
+
+    /// <summary>
     ///     控制台输入编码
     /// </summary>
     [JsonConverter(typeof(WebEncodingJsonConverter))]
@@ -70,9 +67,19 @@ public record InstanceConfig
     public Encoding OutputEncoding { get; init; } = Encoding.UTF8;
 
     /// <summary>
-    ///     java虚拟机参数列表
+    ///     java虚拟机路径, 非MC服务器或<see cref="InstanceConfig.TargetType" />不为<see cref="TargetType.Jar" />可以缺省
     /// </summary>
-    public string[] JavaArgs { get; init; } = Array.Empty<string>();
+    public string JavaPath { get; init; } = string.Empty;
+
+    /// <summary>
+    ///     target启动参数, 若TargetType为Jar, 则为java args。
+    /// </summary>
+    public string[] Arguments { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    ///     环境变量
+    /// </summary>
+    public Dictionary<string, PlaceHolderString> Env { get; init; } = new();
 
     #endregion
 }

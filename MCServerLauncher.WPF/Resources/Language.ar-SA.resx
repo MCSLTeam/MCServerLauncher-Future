@@ -65,20 +65,20 @@
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -746,7 +746,7 @@
     <value>通用：实例 CPU 占用</value>
   </data>
   <data name="ConsoleBoard_Universal_WebSocketLatency" xml:space="preserve">
-    <value>通用：当前 WebSocket 延迟</value>
+    <value>عام: زمن انتقال WebSocket الحالي</value>
   </data>
   <data name="ConsoleCommand_FeedbackTip" xml:space="preserve">
     <value>反馈错误请带上详细错误日志，否则一切行为无异于闭眼开车。</value>
@@ -815,7 +815,7 @@
     <value>إعدادات المثيل</value>
   </data>
   <data name="CreateMinecraftInstanceCategory" xml:space="preserve">
-    <value>Minecraft 服务器</value>
+    <value>خادم ماينكرافت</value>
   </data>
   <data name="CreateFrpcInstanceCategory" xml:space="preserve">
     <value>快速反向代理客户端 Frpc</value>
@@ -864,5 +864,8 @@
   </data>
   <data name="ConnectDaemonFailedTip" xml:space="preserve">
     <value>无法连接守护进程，请检查配置。</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>访问密钥</value>
   </data>
 </root>

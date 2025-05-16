@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using static MCServerLauncher.WPF.Modules.Constants;
 
 namespace MCServerLauncher.WPF.View.Components.CreateInstance
 {
@@ -14,7 +15,31 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
         private void AddJvmArgument(object sender, RoutedEventArgs e)
         {
-            JVMArgumentListView.Items.Add(new JvmArgumentItem());
+            ArgsListView.Items.Add(new JvmArgumentItem());
+        }
+
+        public void ShowCommandHelper(object sender, RoutedEventArgs e)
+        {
+        }
+
+
+        private string[] GetAllArgs()
+        {
+            var args = new string[ArgsListView.Items.Count];
+            for (var i = 0; i < ArgsListView.Items.Count; i++)
+            {
+                var item = (JvmArgumentItem)ArgsListView.Items[i];
+                args[i] = item.Argument;
+            }
+            return args;
+        }
+        public CreateInstanceData ActualData
+        {
+            get => new()
+            {
+                Type = CreateInstanceDataType.List,
+                Data = GetAllArgs(),
+            };
         }
     }
 }

@@ -42,13 +42,14 @@ public class SlpClient
     /// <param name="host"></param>
     /// <param name="port"></param>
     /// <param name="cancellationToken"></param>
-    /// /// <exception cref="ArgumentOutOfRangeException">port</exception>
+    /// ///
+    /// <exception cref="ArgumentOutOfRangeException">port</exception>
     /// <returns></returns>
     public static async Task<SlpLegacyStatus?> GetStatusLegacy(string host, int port,
         CancellationToken cancellationToken = default)
     {
         if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port));
-        
+
         using var client = new TcpClient();
 
         // connect to server
