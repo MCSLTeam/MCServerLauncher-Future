@@ -124,9 +124,13 @@ public static class InstanceConfigExtensions
     private static (string File, string ArgumentString) GetLaunchScript(this InstanceConfig config)
     {
         var fullPath = Path.GetFullPath(Path.Combine(config.GetWorkingDirectory(), config.Target));
+        var isMcServer = config.CanCastTo<MinecraftInstance>();
         return config.TargetType switch
         {
-            TargetType.Jar => (config.JavaPath, $"{string.Join(" ", config.Arguments)} -jar {config.Target} nogui"),
+            TargetType.Jar => (
+                config.JavaPath,
+                $"{string.Join(" ", config.Arguments)} -jar {config.Target}" + (isMcServer ? " nogui" : "")
+            ),
             TargetType.Script => (fullPath, ""),
             TargetType.Executable => (fullPath, string.Join(" ", config.Arguments))
         };
