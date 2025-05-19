@@ -8,7 +8,9 @@ namespace MCServerLauncher.Daemon.Utils.Status;
 
 public static class CpuInfoHelper
 {
-    private static readonly CimSession Session = CimSession.Create("localhost");
+    private static readonly CimSession? Session =
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? CimSession.Create("localhost") : null;
+
     public static readonly string Vendor;
     public static readonly string Name;
     public static readonly int ProcessorCount = Environment.ProcessorCount;
@@ -27,7 +29,7 @@ public static class CpuInfoHelper
             var manufacturer = "Unknown";
             var name = "Unknown";
 
-            var instances = Session.QueryInstances(
+            var instances = Session!.QueryInstances(
                 @"root\cimv2",
                 "WQL",
                 "SELECT Manufacturer, Name, SocketDesignation FROM Win32_Processor"
