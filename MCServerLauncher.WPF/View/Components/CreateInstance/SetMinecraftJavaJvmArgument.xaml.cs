@@ -1,4 +1,7 @@
-﻿using System.Windows;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.View.Components.DaemonManager;
+using System;
+using System.Windows;
 using static MCServerLauncher.WPF.Modules.Constants;
 
 namespace MCServerLauncher.WPF.View.Components.CreateInstance
@@ -16,10 +19,6 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         private void AddJvmArgument(object sender, RoutedEventArgs e)
         {
             ArgsListView.Items.Add(new JvmArgumentItem());
-        }
-
-        public void ShowCommandHelper(object sender, RoutedEventArgs e)
-        {
         }
 
 
@@ -40,6 +39,19 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                 Type = CreateInstanceDataType.List,
                 Data = GetAllArgs(),
             };
+        }
+        private async void ShowArgHelper(object sender, RoutedEventArgs e)
+        {
+            (ContentDialog dialog, JvmArgHelper argHelper) = await Utils.ConstructJvmArgHelperDialog();
+            //dialog.PrimaryButtonClick += (o, args) => null;
+            try
+            {
+                await dialog.ShowAsync();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
     }
 }
