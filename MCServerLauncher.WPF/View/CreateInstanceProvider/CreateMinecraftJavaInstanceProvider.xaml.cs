@@ -10,7 +10,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftJavaInstanceProvider
     {
-        public InstanceType InstanceType { get; } = InstanceType.MC_Universal;
+        public InstanceType InstanceType { get; } = InstanceType.Universal;
+        public TargetType TargetType { get; } = TargetType.Jar;
         public CreateMinecraftJavaInstanceProvider()
         {
             InitializeComponent();

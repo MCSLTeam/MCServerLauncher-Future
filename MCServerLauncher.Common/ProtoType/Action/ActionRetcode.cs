@@ -17,12 +17,10 @@ public class ActionRetcode
 
     public static ActionRetcode FromCode(int code)
     {
-        var type = typeof(ActionRetcode);
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Static);
-        foreach (var property in properties)
-            if (property.GetValue(null) is ActionRetcode actionRetcode)
-                if (actionRetcode.Code == code)
-                    return actionRetcode;
+        if (RetcodeMap.TryGetValue(code, out var value))
+        {
+            return value;
+        }
 
         throw new ArgumentException($"Failed to get retcode: {code}");
     }
@@ -41,95 +39,140 @@ public class ActionRetcode
         return WithMessage(msg);
     }
 
+    public override string ToString()
+    {
+        return $"ActionRetcode: {{ Code = {Code}, Message = {Message} }}";
+    }
+
     #region ActionRetcodes
 
-    public static readonly ActionRetcode Ok = new(0, "OK");
+    public static readonly ActionRetcode Ok;
 
     #region Request Error
 
-    public static readonly ActionRetcode RequestError = new(10000, "Request Error");
+    public static readonly ActionRetcode RequestError;
 
-    public static readonly ActionRetcode BadRequest = new(10001, "Bad Request");
+    public static readonly ActionRetcode BadRequest;
 
-    public static readonly ActionRetcode UnknownAction = new(10002, "Unknown Action");
+    public static readonly ActionRetcode UnknownAction;
 
-    public static readonly ActionRetcode PermissionDenied = new(10003, "Permission Denied");
+    public static readonly ActionRetcode PermissionDenied;
 
-    public static readonly ActionRetcode ActionUnavailable = new(10004, "Action Unavailable");
+    public static readonly ActionRetcode ActionUnavailable;
 
-    public static readonly ActionRetcode RateLimitExceeded = new(10005, "Rate Limit Exceeded");
+    public static readonly ActionRetcode RateLimitExceeded;
 
-    public static readonly ActionRetcode ParamError = new(10006, "Param Error");
+    public static readonly ActionRetcode ParamError;
 
     #endregion
 
     #region ServerError
 
-    public static readonly ActionRetcode UnexpectedError = new(20001, "Unexpected Error");
+    public static readonly ActionRetcode UnexpectedError;
 
     #endregion
 
     #region FileError
 
-    public static readonly ActionRetcode FileError = new(20000, "File Error");
+    public static readonly ActionRetcode FileError;
 
-    public static readonly ActionRetcode FileNotFound = new(21001, "File Not Found");
+    public static readonly ActionRetcode FileNotFound;
 
-    public static readonly ActionRetcode FileAlreadyExists = new(21002, "File Already Exists");
+    public static readonly ActionRetcode FileAlreadyExists;
 
-    public static readonly ActionRetcode FileInUse = new(21003, "File In Use");
+    public static readonly ActionRetcode FileInUse;
 
-    public static readonly ActionRetcode ItsADirectory = new(21004, "It's A Directory");
+    public static readonly ActionRetcode ItsADirectory;
 
-    public static readonly ActionRetcode ItsAFile = new(21005, "It's A File");
+    public static readonly ActionRetcode ItsAFile;
 
-    public static readonly ActionRetcode FileAccessDenied = new(21006, "File Access Denied");
+    public static readonly ActionRetcode FileAccessDenied;
 
-    public static readonly ActionRetcode DiskFull = new(21007, "Disk Full");
+    public static readonly ActionRetcode DiskFull;
 
     #endregion
 
     #region Upload / Download Error
 
-    public static readonly ActionRetcode UploadError = new(21100, "Upload Error");
+    public static readonly ActionRetcode UploadDownloadError;
 
-    public static readonly ActionRetcode DownloadError = new(21100, "Download Error");
+    public static readonly ActionRetcode AlreadyUploadingDownloading;
 
-    public static readonly ActionRetcode AlreadyUploading = new(21101, "Already Uploading");
+    public static readonly ActionRetcode NotUploadingDownloading;
 
-    public static readonly ActionRetcode AlreadyDownloading = new(21101, "Already Downloading");
-
-    public static readonly ActionRetcode NotUploading = new(21102, "Not Uploading");
-
-    public static readonly ActionRetcode NotDownloading = new(21102, "Not Downloading");
-
-    public static readonly ActionRetcode FileTooBig = new(21103, "File Too Big");
+    public static readonly ActionRetcode FileTooBig;
 
     #endregion
 
     #region Instance Error
 
-    public static readonly ActionRetcode InstanceError = new(30000, "Instance Error");
+    public static readonly ActionRetcode InstanceError;
 
-    public static readonly ActionRetcode InstanceNotFound = new(30001, "Instance Not Found");
+    public static readonly ActionRetcode InstanceNotFound;
 
-    public static readonly ActionRetcode InstanceAlreadyExists = new(30002, "Instance Already Exists");
+    public static readonly ActionRetcode InstanceAlreadyExists;
 
-    public static readonly ActionRetcode BadInstanceState = new(30003, "Bad Instance State");
+    public static readonly ActionRetcode BadInstanceState;
 
-    public static readonly ActionRetcode BadInstanceType = new(30004, "Bad Instance Type");
+    public static readonly ActionRetcode BadInstanceType;
 
     #region Instance Action Error
 
-    public static readonly ActionRetcode InstanceActionError = new(31001, "Instance Action Error");
+    public static readonly ActionRetcode InstanceActionError;
 
-    public static readonly ActionRetcode InstallationError = new(31002, "Installation Error");
+    public static readonly ActionRetcode InstallationError;
 
-    public static readonly ActionRetcode ProcessError = new(31003, "Process Error");
-
-    #endregion
+    public static readonly ActionRetcode ProcessError;
 
     #endregion
 
     #endregion
+
+    #endregion
+
+    static ActionRetcode()
+    {
+        Ok = Register(0, "OK");
+
+        RequestError = Register(10000, "Request Error");
+        BadRequest = Register(10001, "Bad Request");
+        UnknownAction = Register(10002, "Unknown Action");
+        PermissionDenied = Register(10003, "Permission Denied");
+        ActionUnavailable = Register(10004, "Action Unavailable");
+        RateLimitExceeded = Register(10005, "Rate Limit Exceeded");
+        ParamError = Register(10006, "Param Error");
+
+        UnexpectedError = Register(20001, "Unexpected Error");
+
+        FileError = Register(21000, "File Error");
+        FileNotFound = Register(21001, "File Not Found");
+        FileAlreadyExists = Register(21002, "File Already Exists");
+        FileInUse = Register(21003, "File In Use");
+        ItsADirectory = Register(21004, "It's A Directory");
+        ItsAFile = Register(21005, "It's A File");
+        FileAccessDenied = Register(21006, "File Access Denied");
+        DiskFull = Register(21007, "Disk Full");
+
+        UploadDownloadError = Register(21100, "Upload/Download Error");
+        AlreadyUploadingDownloading = Register(21101, "Already Uploading/Downloading");
+        NotUploadingDownloading = Register(21102, "Not Uploading/Downloading");
+        FileTooBig = Register(21103, "File Too Big");
+
+        InstanceError = Register(30000, "Instance Error");
+        InstanceNotFound = Register(30001, "Instance Not Found");
+        InstanceAlreadyExists = Register(30002, "Instance Already Exists");
+        BadInstanceState = Register(30003, "Bad Instance State");
+        BadInstanceType = Register(30004, "Bad Instance Type");
+
+        InstanceActionError = Register(31001, "Instance Action Error");
+        InstallationError = Register(31002, "Installation Error");
+        ProcessError = Register(31003, "Process Error");
+    }
+
+    private static ActionRetcode Register(int code, string message)
+    {
+        var actionRetcode = new ActionRetcode(code, message);
+        RetcodeMap[code] = actionRetcode;
+        return actionRetcode;
+    }
 }

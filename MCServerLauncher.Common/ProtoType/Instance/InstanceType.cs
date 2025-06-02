@@ -1,17 +1,15 @@
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
+/// <summary>
+///     实例类型
+/// </summary>
 public enum InstanceType
 {
-    None,
-    MC_Universal,
-    MC_Fabric,
-    MC_Forge,
-    MC_NeoForge,
-    MC_Cleanroom,
-    Spigot,
-    MC_Quilt,
-    MC_Bedrock,
-    Exe,
-    Terraria,
-    Frp
+    None, // 非MC服务器实例类型, (默认值)
+    Universal,
+    Fabric,
+    Forge,
+    NeoForge,
+    Cleanroom,
+    Quilt
 }

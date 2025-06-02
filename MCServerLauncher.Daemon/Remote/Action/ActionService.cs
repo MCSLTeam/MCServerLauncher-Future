@@ -1,9 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
-using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RustyOptions;
 using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -14,7 +13,8 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 public class ActionService : IActionService
 {
     private readonly Dictionary<ActionType,
-            Func<JToken?, WsContext, IResolver, CancellationToken, ValueTask<IActionResult?>>>
+            Func<JToken?, WsContext, IResolver, CancellationToken,
+                ValueTask<Result<Option<IActionResult>, ActionError>>>>
         _handlers;
 
     private readonly IReadOnlyDictionary<ActionType, IMatchable> _permissions;
@@ -45,17 +45,10 @@ public class ActionService : IActionService
         // 执行
         try
         {
-            var result = await handler.Invoke(request.Parameter, context, resolver, cancellationToken);
-            return ResponseUtils.Ok(
-                result is null
-                    ? new JObject()
-                    : JObject.FromObject(result, JsonSerializer.Create(DaemonJsonSettings.Settings)),
+            return ResponseUtils.FromResult(
+                await handler.Invoke(request.Parameter, context, resolver, cancellationToken),
                 request.Id
             );
-        }
-        catch (ActionException aee)
-        {
-            return ResponseUtils.Err(request, aee, false);
         }
         catch (Exception e)
         {

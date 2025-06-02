@@ -3,8 +3,8 @@ using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Console;
-using MCServerLauncher.Daemon.Minecraft.Server;
-using MCServerLauncher.Daemon.Minecraft.Server.Factory;
+using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -141,7 +141,7 @@ public class Application
 
         Log.Debug("[WsContextContainer] closing websocket connections ...");
         foreach (var id in _httpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
-            await _httpService.GetClient(id).WebSocket.SafeCloseAsync("Daemon exit");
+            await _httpService.GetClient(id).WebSocket.CloseAsync("Daemon exit", cts.Token);
     }
 
     #region Init

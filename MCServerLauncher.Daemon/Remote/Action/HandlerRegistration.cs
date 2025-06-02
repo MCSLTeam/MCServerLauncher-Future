@@ -4,8 +4,8 @@ using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Status;
-using MCServerLauncher.Daemon.Minecraft.Extensions;
-using MCServerLauncher.Daemon.Minecraft.Server;
+using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Event.Extensions;
@@ -13,7 +13,7 @@ using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using Microsoft.Extensions.DependencyInjection;
-using SystemInfoHelper = MCServerLauncher.Daemon.Utils.Status.SystemInfoHelper;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -22,6 +22,44 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// </summary>
 public static class HandlerRegistration
 {
+    private static ValueTask<Result<TActionResult, ActionError>> ValueTaskOk<TActionResult>(TActionResult result)
+        where TActionResult : IActionResult
+    {
+        return ValueTask.FromResult(new Result<TActionResult, ActionError>(result));
+    }
+
+    private static ValueTask<Result<Unit, ActionError>> ValueTaskOk()
+    {
+        return ValueTask.FromResult(new Result<Unit, ActionError>(Unit.Default));
+    }
+
+    private static ValueTask<Result<Unit, ActionError>> ValueTaskErr(ActionError error)
+    {
+        return ValueTask.FromResult(new Result<Unit, ActionError>(error));
+    }
+
+    private static Result<TActionResult, ActionError> Ok<TActionResult>(TActionResult result)
+        where TActionResult : IActionResult
+    {
+        return new Result<TActionResult, ActionError>(result);
+    }
+
+    private static Result<Unit, ActionError> Ok()
+    {
+        return new Result<Unit, ActionError>(Unit.Default);
+    }
+
+    private static Result<TActionResult, ActionError> Err<TActionResult>(ActionError error)
+        where TActionResult : IActionResult
+    {
+        return Result.Err<TActionResult, ActionError>(error);
+    }
+
+    private static Result<Unit, ActionError> Err(ActionError error)
+    {
+        return Result.Err<Unit, ActionError>(error);
+    }
+
     // TODO 权限完善
     public static ActionHandlerRegistry RegisterHandlers(this ActionHandlerRegistry registry)
     {
@@ -33,37 +71,30 @@ public static class HandlerRegistration
             .Register(
                 ActionType.Ping,
                 IMatchable.Always(),
-                (ctx, resolver, ct) =>
-                    ValueTask.FromResult(new PingResult
-                    {
-                        Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                    }))
+                (ctx, resolver, ct) => ValueTaskOk(new PingResult
+                {
+                    Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                }))
             .Register(
                 ActionType.GetSystemInfo,
                 IMatchable.Always(),
-                async (ctx, resolver, ct) => new GetSystemInfoResult { Info = await resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>().Value }
+                async (ctx, resolver, ct) => Ok(new GetSystemInfoResult
+                    { Info = await resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>().Value })
             )
             .Register(
                 ActionType.GetPermissions,
                 IMatchable.Always(),
-                (ctx, resolver, ct) =>
+                (ctx, resolver, ct) => ValueTaskOk(new GetPermissionsResult
                 {
-                    return ValueTask.FromResult(new GetPermissionsResult
-                    {
-                        Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
-                    });
-                })
+                    Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
+                }))
             .Register(
                 ActionType.GetJavaList,
                 Permission.Of("mcsl.daemon.java_list"),
-                async (ctx, resolver, ct) =>
+                async (ctx, resolver, ct) => Ok(new GetJavaListResult
                 {
-                    var cache = resolver.GetRequiredService<IAsyncTimedLazyCell<JavaInfo[]>>();
-                    return new GetJavaListResult
-                    {
-                        JavaList = await cache.Value
-                    };
-                }
+                    JavaList = await resolver.GetRequiredService<IAsyncTimedLazyCell<JavaInfo[]>>().Value
+                })
             )
 
             #endregion
@@ -74,42 +105,24 @@ public static class HandlerRegistration
                 ActionType.SubscribeEvent,
                 IMatchable.Always(),
                 (param, ctx, resolver, ct) =>
-                {
-                    try
-                    {
-                        ctx.SubscribeEvent(param.Type,
-                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings));
-                    }
-                    catch (NullReferenceException e)
-                    {
-                        throw e.Context(
-                            ActionRetcode.ParamError.WithMessage(
-                                $"Event {param.Type} missing meta")
-                        );
-                    }
-
-                    return ValueTask.CompletedTask;
-                }
+                    ValueTask.FromResult(ResultExt.Try(wsCtx =>
+                        wsCtx.SubscribeEvent(param.Type,
+                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
+                        ), ctx).MapErr(ex =>
+                        ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
+                    ))
             )
             .Register<UnsubscribeEventParameter>(
                 ActionType.UnsubscribeEvent,
-                IMatchable.Always(), (param, ctx, resolver, ct) =>
-                {
-                    try
-                    {
-                        ctx.UnsubscribeEvent(param.Type,
-                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings));
-                    }
-                    catch (NullReferenceException e)
-                    {
-                        throw e.Context(
-                            ActionRetcode.ParamError.WithMessage(
-                                $"Event {param.Type} missing meta")
-                        );
-                    }
-
-                    return ValueTask.CompletedTask;
-                })
+                IMatchable.Always(),
+                (param, ctx, resolver, ct) =>
+                    ValueTask.FromResult(ResultExt.Try(wsCtx =>
+                        wsCtx.UnsubscribeEvent(param.Type,
+                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
+                        ), ctx).MapErr(ex =>
+                        ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
+                    ))
+            )
 
             #endregion
 
@@ -119,70 +132,58 @@ public static class HandlerRegistration
                 ActionType.FileUploadRequest,
                 Permission.Of("mcsl.daemon.file.upload"),
                 (param, ctx, resolver, ct) =>
-                {
-                    Guid fileId;
-                    try
-                    {
-                        fileId = FileManager.FileUploadRequest(
+                    ValueTask.FromResult(Result
+                        .Try(() => FileManager.FileUploadRequest(
                             param.Path,
                             param.Size,
                             param.Timeout.Map(t => TimeSpan.FromMilliseconds(t)),
                             param.Sha1
-                        );
-                    }
-                    catch (IOException e)
-                    {
-                        throw e.Context(ActionRetcode.FileError);
-                    }
-
-                    ActionExceptionHelper.ThrowIf(
-                        fileId == Guid.Empty,
-                        ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space")
-                    );
-
-                    return ValueTask.FromResult(new FileUploadRequestResult
-                    {
-                        FileId = fileId
-                    });
-                }
+                        ))
+                        .MapErr(ex => new ActionError(ActionRetcode.FileError).CauseBy(ex))
+                        .AndThen(fileId => fileId != Guid.Empty
+                            ? Ok(new FileUploadRequestResult
+                            {
+                                FileId = fileId
+                            })
+                            : Err<FileUploadRequestResult>(
+                                ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space").ToError()
+                            ))
+                    )
             )
             .Register<FileUploadChunkParameter, FileUploadChunkResult>(
                 ActionType.FileUploadChunk,
                 Permission.Of("mcsl.daemon.file.upload"),
                 async (param, ctx, resolver, ct) =>
                 {
-                    ActionExceptionHelper.ThrowIf(
-                        param.FileId == Guid.Empty,
-                        ActionRetcode.NotUploading.WithMessage(param.FileId)
-                    );
+                    if (param.FileId == Guid.Empty)
+                        return Err<FileUploadChunkResult>(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId)
+                            .ToError());
 
-                    try
+                    return await ResultExt.TryAsync(async chunkParameter =>
                     {
-                        var (done, received) = await FileManager.FileUploadChunk(param.FileId,
-                            param.Offset, param.Data);
+                        var (done, received) = await FileManager.FileUploadChunk(
+                            chunkParameter.FileId,
+                            chunkParameter.Offset,
+                            chunkParameter.Data
+                        );
 
                         return new FileUploadChunkResult
                         {
                             Done = done,
                             Received = received
                         };
-                    }
-                    catch (IOException e)
-                    {
-                        throw e.Context(ActionRetcode.FileError);
-                    }
+                    }, param).MapTask(result =>
+                        result.OrElse(ex => Err<FileUploadChunkResult>(ActionRetcode.FileError.ToError().CauseBy(ex)))
+                    );
                 })
             .Register<FileUploadCancelParameter>(
                 ActionType.FileUploadCancel,
                 Permission.Of("mcsl.daemon.file.upload"),
                 (param, ctx, resolver, ct) =>
-                {
-                    ActionExceptionHelper.ThrowIf(
-                        !FileManager.FileUploadCancel(param.FileId),
-                        ActionRetcode.NotUploading.WithMessage(param.FileId)
-                    );
-                    return ValueTask.CompletedTask;
-                })
+                    FileManager.FileUploadCancel(param.FileId)
+                        ? ValueTaskOk()
+                        : ValueTaskErr(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId))
+            )
 
             #endregion
 
@@ -192,48 +193,42 @@ public static class HandlerRegistration
                 ActionType.FileDownloadRequest,
                 Permission.Of("mcsl.daemon.file.download"),
                 async (param, ctx, resolver, ct) =>
-                {
-                    try
-                    {
-                        var rv = await FileManager.FileDownloadRequest(
-                            param.Path,
-                            param.Timeout.Map(t => TimeSpan.FromMilliseconds(t))
-                        );
-                        ActionExceptionHelper.ThrowIf(
-                            rv is null,
-                            ActionRetcode.RateLimitExceeded.WithMessage(
-                                $"Max download sessions of file '{param.Path}' reached")
-                        );
-                        var (fileId, size, sha1) = rv!.Value;
-                        return new FileDownloadRequestResult
+                    await ResultExt.TryAsync(async requestParameter =>
                         {
-                            FileId = fileId,
-                            Size = size,
-                            Sha1 = sha1
-                        };
-                    }
-                    catch (IOException e)
-                    {
-                        throw e.Context(ActionRetcode.FileError);
-                    }
-                }
+                            return Option.Create(await FileManager.FileDownloadRequest(
+                                    requestParameter.Path,
+                                    requestParameter.Timeout.Map(t => TimeSpan.FromMilliseconds(t))
+                                ))
+                                .OkOr(ActionRetcode.RateLimitExceeded.WithMessage(
+                                    $"Max download sessions of file '{requestParameter.Path}' reached").ToError())
+                                .AndThen(rv =>
+                                    Ok(new FileDownloadRequestResult
+                                    {
+                                        FileId = rv.Id,
+                                        Size = rv.Size,
+                                        Sha1 = rv.Sha1
+                                    }));
+                        }, param)
+                        .MapTask(result => result.UnwrapOrElse(ex =>
+                            Err<FileDownloadRequestResult>(ActionRetcode.FileError.ToError().CauseBy(ex)))
+                        )
             )
             .Register<FileDownloadRangeParameter, FileDownloadRangeResult>(
                 ActionType.FileDownloadRange,
                 Permission.Of("mcsl.daemon.file.download"),
                 async (param, ctx, resolver, ct) =>
                 {
-                    ActionExceptionHelper.ThrowIf(
-                        !rangePattern.IsMatch(param.Range),
-                        ActionRetcode.ParamError.WithMessage("Invalid range format")
-                    );
+                    if (!rangePattern.IsMatch(param.Range))
+                        return Err<FileDownloadRangeResult>(ActionRetcode.ParamError.WithMessage("Invalid range format")
+                            .ToError());
 
                     var (from, to) = (int.Parse(rangePattern.Match(param.Range).Groups[1].Value),
                         int.Parse(rangePattern.Match(param.Range).Groups[2].Value));
-                    return new FileDownloadRangeResult
+
+                    return Ok(new FileDownloadRangeResult
                     {
                         Content = await FileManager.FileDownloadRange(param.FileId, from, to)
-                    };
+                    });
                 })
             .Register<FileDownloadCloseParameter>(
                 ActionType.FileDownloadClose,
@@ -241,7 +236,7 @@ public static class HandlerRegistration
                 (param, ctx, resolver, ct) =>
                 {
                     FileManager.FileDownloadClose(param.FileId);
-                    return ValueTask.CompletedTask;
+                    return ValueTaskOk();
                 })
 
             #endregion
@@ -252,50 +247,42 @@ public static class HandlerRegistration
                 ActionType.GetDirectoryInfo,
                 Permission.Of("mcsl.daemon.file.info.directory"),
                 (param, ctx, resolver, ct) =>
-                {
-                    try
-                    {
-                        var entry = FileManager.GetDirectoryInfo(param.Path);
-                        return ValueTask.FromResult(
-                            new GetDirectoryInfoResult
+                    ValueTask.FromResult(ResultExt.Try(directoryInfoParameter =>
+                        {
+                            var entry = FileManager.GetDirectoryInfo(directoryInfoParameter.Path);
+                            return new GetDirectoryInfoResult
                             {
                                 Parent = entry.Parent,
                                 Directories = entry.Directories,
                                 Files = entry.Files
-                            });
-                    }
-                    catch (FileNotFoundException e)
-                    {
-                        throw e.Context(ActionRetcode.FileNotFound);
-                    }
-                    catch (IOException e)
-                    {
-                        throw e.Context(ActionRetcode.FileError);
-                    }
-                }
+                            };
+                        }, param)
+                        .OrElse(ex => ex switch
+                        {
+                            FileNotFoundException fileNotFoundException => Err<GetDirectoryInfoResult>(
+                                ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
+                            IOException ioException => Err<GetDirectoryInfoResult>(
+                                ActionRetcode.FileError.ToError().CauseBy(ioException)),
+                            _ => Err<GetDirectoryInfoResult>(ActionRetcode.FileError.ToError().CauseBy(ex))
+                        }))
             )
             .Register<GetFileInfoParameter, GetFileInfoResult>(
                 ActionType.GetFileInfo,
                 Permission.Of("mcsl.daemon.file.info.file"),
                 (param, ctx, resolver, ct) =>
-                {
-                    try
-                    {
-                        return ValueTask.FromResult(
+                    ValueTask.FromResult(ResultExt.Try(path =>
                             new GetFileInfoResult
                             {
-                                Meta = FileManager.GetFileInfo(param.Path)
-                            });
-                    }
-                    catch (FileNotFoundException e)
-                    {
-                        throw e.Context(ActionRetcode.FileNotFound);
-                    }
-                    catch (IOException e)
-                    {
-                        throw e.Context(ActionRetcode.FileError);
-                    }
-                }
+                                Meta = FileManager.GetFileInfo(path)
+                            }, param.Path)
+                        .OrElse(ex => ex switch
+                        {
+                            FileNotFoundException fileNotFoundException => Err<GetFileInfoResult>(
+                                ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
+                            IOException ioException => Err<GetFileInfoResult>(
+                                ActionRetcode.FileError.ToError().CauseBy(ioException)),
+                            _ => Err<GetFileInfoResult>(ActionRetcode.FileError.ToError().CauseBy(ex))
+                        }))
             )
 
             #endregion
@@ -309,22 +296,18 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     var eventService = resolver.GetRequiredService<IEventService>();
-
                     var instance = await instanceManager.TryStartInstance(param.Id);
 
-                    ActionExceptionHelper.ThrowIf(
-                        instance is null && !instanceManager.Instances.ContainsKey(param.Id),
-                        ActionRetcode.InstanceNotFound.WithMessage(param.Id)
-                    );
-
-                    ActionExceptionHelper.ThrowIf(
-                        instance is null && instanceManager.Instances.ContainsKey(param.Id),
-                        ActionRetcode.ProcessError.WithMessage("Cannot start instance process")
-                    );
+                    if (instance is null)
+                        return Err(instanceManager.Instances.ContainsKey(param.Id)
+                            ? ActionRetcode.ProcessError.WithMessage("Cannot start instance process")
+                            : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
 
 
-                    instance!.OnLog -= eventService.OnInstanceLog;
-                    instance!.OnLog += eventService.OnInstanceLog;
+                    instance.OnLog -= eventService.OnInstanceLog;
+                    instance.OnLog += eventService.OnInstanceLog;
+
+                    return Ok();
                 }
             )
             .Register<StopInstanceParameter>(
@@ -334,16 +317,10 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return instanceManager.TryStopInstance(param.Id)
-                        ? ValueTask.CompletedTask
-                        : ValueTask.FromException(
-                            instanceManager.Instances.ContainsKey(param.Id)
-                                ? new ActionException(
-                                    ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
-                                )
-                                : new ActionException(
-                                    ActionRetcode.InstanceNotFound.WithMessage(param.Id)
-                                )
-                        );
+                        ? ValueTaskOk()
+                        : ValueTaskErr(instanceManager.Instances.ContainsKey(param.Id)
+                            ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
+                            : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
                 })
             .Register<SendToInstanceParameter>(
                 ActionType.SendToInstance,
@@ -351,18 +328,11 @@ public static class HandlerRegistration
                 (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    if (!instanceManager.SendToInstance(param.Id, param.Message))
-                        return ValueTask.FromException(
-                            instanceManager.Instances.ContainsKey(param.Id)
-                                ? new ActionException(
-                                    ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
-                                )
-                                : new ActionException(
-                                    ActionRetcode.InstanceNotFound.WithMessage(param.Id)
-                                )
-                        );
-
-                    return ValueTask.CompletedTask;
+                    return instanceManager.SendToInstance(param.Id, param.Message)
+                        ? ValueTaskOk()
+                        : ValueTaskErr(instanceManager.Instances.ContainsKey(param.Id)
+                            ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
+                            : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
                 }
             ).Register(
                 ActionType.GetAllReports,
@@ -370,10 +340,10 @@ public static class HandlerRegistration
                 async (ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return new GetAllReportsResult
+                    return Ok(new GetAllReportsResult
                     {
                         Reports = await instanceManager.GetAllReports()
-                    };
+                    });
                 })
             .Register<AddInstanceParameter, AddInstanceResult>(
                 ActionType.AddInstance,
@@ -381,22 +351,22 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
 
-                    if (!param.Setting.ValidateSetting())
-                        throw new ActionException(
-                            ActionRetcode.InstallationError.WithMessage(
-                                "Invalid instance factory setting") // TODO 更多报错信息
-                        );
+                    var validateSettingResult = param.Setting.ValidateSetting().MapErr(innerErr =>
+                        new ActionError(ActionRetcode.InstallationError.WithMessage("Invalid instance factory setting"))
+                            .WithInner(innerErr));
 
-                    var config = await instanceManager.TryAddInstance(param.Setting);
-                    if (config is null)
-                        throw new ActionException(
-                            ActionRetcode.InstallationError.WithMessage("Failed to add instance") // TODO 更多报错信息
-                        );
+                    var addInstanceResult =
+                        (await validateSettingResult.MapAsTaskAsync(async _ =>
+                        {
+                            var tryAddInstance = await instanceManager.TryAddInstance(param.Setting);
+                            return tryAddInstance.MapErr(err =>
+                                new ActionError(ActionRetcode.InstallationError).WithInner(err));
+                        })).Flatten();
 
-                    return new AddInstanceResult
+                    return addInstanceResult.Map(config => new AddInstanceResult
                     {
                         Config = config
-                    };
+                    });
                 })
             .Register<RemoveInstanceParameter>(
                 ActionType.RemoveInstance,
@@ -405,14 +375,10 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     return instanceManager.TryRemoveInstance(param.Id)
-                        ? ValueTask.CompletedTask
-                        : ValueTask.FromException(instanceManager.RunningInstances.ContainsKey(param.Id)
-                            ? new ActionException(
-                                ActionRetcode.BadInstanceState.WithMessage($"{param.Id} is running")
-                            )
-                            : new ActionException(
-                                ActionRetcode.InstanceNotFound.WithMessage(param.Id)
-                            ));
+                        ? ValueTaskOk()
+                        : ValueTaskErr(instanceManager.RunningInstances.ContainsKey(param.Id)
+                            ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} is running")
+                            : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
                 })
             .Register<KillInstanceParameter>(
                 ActionType.KillInstance,
@@ -421,7 +387,7 @@ public static class HandlerRegistration
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
                     instanceManager.KillInstance(param.Id);
-                    return ValueTask.CompletedTask;
+                    return ValueTaskOk();
                 })
             .Register<GetInstanceReportParameter, GetInstanceReportResult>(
                 ActionType.GetInstanceReport,
@@ -429,10 +395,10 @@ public static class HandlerRegistration
                 async (param, ctx, resolver, ct) =>
                 {
                     var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-                    return new GetInstanceReportResult
+                    return Ok(new GetInstanceReportResult
                     {
                         Report = await instanceManager.GetInstanceReport(param.Id)
-                    };
+                    });
                 });
 
         #endregion

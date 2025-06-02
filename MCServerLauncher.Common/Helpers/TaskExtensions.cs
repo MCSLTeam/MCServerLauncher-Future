@@ -57,8 +57,8 @@ public static class TaskExtensions
             Log.Debug(e, "Suppressed Exception");
         }
     }
-    
-    public static Task<TResult> MapResult<T, TResult>(this Task<T> task, Func<T, TResult> map)
+
+    public static Task<TResult> MapTask<T, TResult>(this Task<T> task, Func<T, TResult> map)
     {
         return task.ContinueWith(t => map(t.Result));
     }

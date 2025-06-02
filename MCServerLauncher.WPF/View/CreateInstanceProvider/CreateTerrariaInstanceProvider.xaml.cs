@@ -10,7 +10,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateTerrariaInstanceProvider
     {
-        public InstanceType InstanceType { get; } = InstanceType.Terraria;
+        public InstanceType InstanceType { get; } = InstanceType.None;
+        // start-server.bat
+        public TargetType TargetType { get; } = TargetType.Script;
         public CreateTerrariaInstanceProvider()
         {
             InitializeComponent();

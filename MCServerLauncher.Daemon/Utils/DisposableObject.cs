@@ -2,7 +2,7 @@
 
 public abstract class DisposableObject : IDisposable
 {
-    private bool _disposed;
+    public bool IsDisposed { get; private set; }
 
     public void Dispose()
     {
@@ -13,12 +13,11 @@ public abstract class DisposableObject : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (!IsDisposed)
             if (disposing)
                 ProtectedDispose();
 
-        // TODO: free unmanaged resources ()
-        _disposed = true;
+        IsDisposed = true;
         GC.SuppressFinalize(this);
     }
 

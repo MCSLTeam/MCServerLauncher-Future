@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,37 +16,38 @@ namespace MCServerLauncher.DaemonClient;
 
 public class Daemon : IDaemon
 {
+    private readonly ClientConnection _connection;
     private bool _disposed;
 
     private Daemon(ClientConnection connection)
     {
-        Connection = connection;
+        _connection = connection;
 
-        Connection.OnEventReceived += OnEvent;
+        _connection.OnEventReceived += OnEvent;
+        _connection.Reconnected += () => Reconnected?.Invoke();
+        _connection.ConnectionLost += () => ConnectionLost?.Invoke();
+        _connection.ConnectionClosed += () => ConnectionClosed?.Invoke();
     }
 
-    internal ClientConnection Connection { get; }
 
-    public bool Online => Connection.Client.Online;
+    public bool Online => _connection.Client.Online;
     public SubscribedEvents SubscribedEvents { get; } = new();
-    public event Action<Guid, string>? InstanceLogEvent;
-    public event Action<DaemonReport, long>? DaemonReportEvent;
 
 
     /// <summary>
     ///     心跳包是否超时
     /// </summary>
-    public bool PingLost => Connection.PingLost;
+    public bool IsConnectionLost => _connection.IsConnectionLost;
 
     /// <summary>
     ///     上次ping时间
     /// </summary>
-    public DateTime LastPing => Connection.LastPong;
+    public DateTime LastPong => _connection.LastPong;
 
 
     public async Task CloseAsync()
     {
-        await Connection.CloseAsync();
+        await _connection.CloseAsync();
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public class Daemon : IDaemon
     )
         where TResult : class, IActionResult
     {
-        return await Connection.RequestAsync<TResult>(actionType, parameter, timeout, cancellationToken);
+        return await _connection.RequestAsync<TResult>(actionType, parameter, timeout, cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class Daemon : IDaemon
         CancellationToken cancellationToken = default
     )
     {
-        await Connection.RequestAsync(actionType, parameter, timeout, cancellationToken);
+        await _connection.RequestAsync(actionType, parameter, timeout, cancellationToken);
     }
 
     public void Dispose()
@@ -163,7 +163,6 @@ public class Daemon : IDaemon
                     PingTimeout = 5000
                 });
             daemon.DaemonReportEvent += (report, l) => { Console.WriteLine($"Daemon report: {report}\n ({l}ms)"); };
-
             // await daemon.SubscribeEvent(EventType.DaemonReport, null);
             // await Task.Delay(6010);
             // await daemon.CloseAsync();
@@ -179,7 +178,7 @@ public class Daemon : IDaemon
             await Task.Delay(3000);
 
             Console.WriteLine("\nDaemon side java list:");
-            foreach (var info in await daemon.GetJavaListAsync()) Console.WriteLine($"    - {info.ToString()}");
+            foreach (var info in await daemon.GetJavaListAsync()) Console.WriteLine($"    - {info}");
 
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);
@@ -197,11 +196,11 @@ public class Daemon : IDaemon
                 {
                     Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3"),
                     Name = "1-21-1-vanilla",
-                    InstanceType = InstanceType.MC_Universal,
+                    InstanceType = InstanceType.Universal,
                     Target = "server.jar",
                     TargetType = TargetType.Jar,
                     JavaPath = "java",
-                    JavaArgs = Array.Empty<string>(),
+                    Arguments = Array.Empty<string>(),
                     SourceType = SourceType.Core,
                     Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
                     // Source = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",
@@ -212,7 +211,7 @@ public class Daemon : IDaemon
                 guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3");
                 Console.WriteLine($"Creating Instance: {setting.Name} ({setting.Uuid})");
 
-                var config = await daemon.TryAddInstanceAsync(setting);
+                var config = await daemon.AddInstanceAsync(setting);
                 Console.WriteLine("[InstanceManager] Created Server: " + config.Name);
             }
 
@@ -285,7 +284,7 @@ public class Daemon : IDaemon
     private void Dispose(bool disposed)
     {
         if (_disposed) return;
-        if (disposed) Connection.Dispose();
+        if (disposed) _connection.Dispose();
 
         _disposed = true;
     }
@@ -294,4 +293,19 @@ public class Daemon : IDaemon
     {
         Dispose(false);
     }
+
+    #region Daemon Event
+
+    public event Action<Guid, string>? InstanceLogEvent;
+    public event Action<DaemonReport, long>? DaemonReportEvent;
+
+    #endregion
+
+    #region Daemon Client State Event
+
+    public event Action? Reconnected;
+    public event Action? ConnectionLost;
+    public event Action? ConnectionClosed;
+
+    #endregion
 }
