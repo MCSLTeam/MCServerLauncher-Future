@@ -470,7 +470,7 @@
     <value>اكتسح الصورة الكبيرة لرؤية العالم.</value>
   </data>
   <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
-    <value>下载历史</value>
+    <value>سجل التنزيل</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>سمها ما شئت ، لقد وصلت إلى هنا. (قيد الاستخدام حاليا.)</value>
@@ -665,7 +665,7 @@
     <value>لا داعي للقلق بشأن هذه المشكلة.لا داعي للقلق بشأن هذا الأمر.</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
-    <value>新建连接</value>
+    <value>إنشاء اتصال جديد</value>
   </data>
   <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
     <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
