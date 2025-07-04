@@ -8,7 +8,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// <summary>
     ///    CreateOtherExecutableInstanceProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class CreateOtherExecutableInstanceProvider
+    public partial class CreateOtherExecutableInstanceProvider : ICreateInstanceProvider
     {
         public InstanceType InstanceType { get; } = InstanceType.None;
         public TargetType TargetType { get; } = TargetType.Executable;

@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// <summary>
     ///    CreateMinecraftFabricInstanceProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class CreateMinecraftFabricInstanceProvider
+    public partial class CreateMinecraftFabricInstanceProvider : ICreateInstanceProvider
     {
         public InstanceType InstanceType { get; } = InstanceType.Fabric;
         public TargetType TargetType { get; } = TargetType.Jar;

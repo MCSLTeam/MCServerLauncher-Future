@@ -37,11 +37,11 @@
             <ui:InfoBar Height="50" Margin="20,15,20,0" IsClosable="False" IsOpen="True"
                         Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Severity="Warning"
                         Title="{Binding [Warning], Source={x:Static i18n:LanguageManager.Localize}}"
-                        Content="{Binding [NoJarFileJvmArgument], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        Message="{Binding [NoJarFileJvmArgument], Source={x:Static i18n:LanguageManager.Localize}}" />
             <ui:ListView x:Name="ArgsListView" ScrollViewer.VerticalScrollBarVisibility="Disabled"
                          IsSelectionEnabled="False" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
                          Margin="20,15,20,20">
-                <vc:JvmArgumentItem Argument="-Dfile.encoding=UTF-8" />
+                <vc:JvmArgumentItem Argument="-Dfile.encoding=utf-8" />
                 <vc:JvmArgumentItem />
             </ui:ListView>
             <Button Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"

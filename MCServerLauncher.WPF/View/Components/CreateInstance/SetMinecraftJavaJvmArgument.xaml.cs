@@ -9,11 +9,25 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
     /// <summary>
     ///    SetMinecraftJavaJvmArgument.xaml 的交互逻辑
     /// </summary>
-    public partial class SetMinecraftJavaJvmArgument
+    public partial class SetMinecraftJavaJvmArgument : ICreateInstanceStep
     {
         public SetMinecraftJavaJvmArgument()
         {
             InitializeComponent();
+            SetValue(IsFinishedProperty, true);
+        }
+
+        public static readonly DependencyProperty IsFinishedProperty = DependencyProperty.Register(
+            nameof(IsFinished),
+            typeof(bool),
+            typeof(SetMinecraftJavaJvmArgument),
+            new PropertyMetadata(false));
+
+
+        public bool IsFinished
+        {
+            get => (bool)GetValue(IsFinishedProperty);
+            private set => SetValue(IsFinishedProperty, value);
         }
 
         private void AddJvmArgument(object sender, RoutedEventArgs e)
@@ -21,14 +35,13 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             ArgsListView.Items.Add(new JvmArgumentItem());
         }
 
-
         private string[] GetAllArgs()
         {
             var args = new string[ArgsListView.Items.Count];
             for (var i = 0; i < ArgsListView.Items.Count; i++)
             {
                 var item = (JvmArgumentItem)ArgsListView.Items[i];
-                args[i] = item.Argument;
+                if (!string.IsNullOrWhiteSpace(item.Argument)) args[i] = item.Argument;
             }
             return args;
         }

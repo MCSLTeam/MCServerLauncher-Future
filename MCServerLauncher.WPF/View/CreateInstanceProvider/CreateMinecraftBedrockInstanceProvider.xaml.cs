@@ -8,7 +8,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// <summary>
     ///    CreateMinecraftBedrockInstanceProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class CreateMinecraftBedrockInstanceProvider
+    public partial class CreateMinecraftBedrockInstanceProvider : ICreateInstanceProvider
     {
         public InstanceType InstanceType { get; } = InstanceType.None;
         // 通常是可执行文件

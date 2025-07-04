@@ -8,10 +8,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// <summary>
     ///    CreateTerrariaInstanceProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class CreateTerrariaInstanceProvider
+    public partial class CreateTerrariaInstanceProvider : ICreateInstanceProvider
     {
         public InstanceType InstanceType { get; } = InstanceType.None;
         // start-server.bat
+        // need to change according to system
         public TargetType TargetType { get; } = TargetType.Script;
         public CreateTerrariaInstanceProvider()
         {

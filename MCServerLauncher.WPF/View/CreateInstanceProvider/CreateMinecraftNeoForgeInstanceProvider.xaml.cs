@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// <summary>
     ///    CreateMinecraftNeoForgeInstanceProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class CreateMinecraftNeoForgeInstanceProvider
+    public partial class CreateMinecraftNeoForgeInstanceProvider : ICreateInstanceProvider
     {
         public InstanceType InstanceType { get; } = InstanceType.NeoForge;
         public TargetType TargetType { get; } = TargetType.Jar;
