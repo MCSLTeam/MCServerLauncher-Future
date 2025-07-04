@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Daemon.Minecraft.Server;
+﻿using MCServerLauncher.Daemon.Management;
 using Microsoft.Extensions.DependencyInjection;
 using TouchSocket.Core;
 using TouchSocket.Http;

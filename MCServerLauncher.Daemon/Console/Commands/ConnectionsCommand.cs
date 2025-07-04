@@ -48,7 +48,7 @@ public static class ConnectionsCommand
 
                         foreach (var clientId in clientIds)
                             if (service.TryGetClient(clientId, out var client))
-                                client.WebSocket.SafeClose("Daemon administrator manual expired this connection");
+                                client.WebSocket.Close("Daemon administrator manual expired this connection");
 
                         source.SendFeedback("已过期并关闭所有Websocket客户端连接");
                         return 0;

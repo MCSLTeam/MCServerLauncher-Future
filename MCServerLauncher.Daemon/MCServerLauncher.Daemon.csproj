@@ -15,6 +15,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <LangVersion>11</LangVersion>
         <OutputType>Exe</OutputType>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -54,6 +55,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Content Include="..\.dockerignore">
+          <Link>.dockerignore</Link>
+        </Content>
         <Content Include=".Resources\MCServerLauncherFutureDaemon.ico" />
         <EmbeddedResource Include="Contained\server.jar" />
     </ItemGroup>
@@ -64,13 +68,14 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
         <PackageReference Include="Microsoft.Management.Infrastructure" Version="3.0.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="RustyOptions" Version="0.10.1" />
         <PackageReference Include="Serilog" Version="4.2.0" />
         <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
-        <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="3.0.26" />
-        <PackageReference Include="TouchSocket.Http" Version="3.0.26" />
+        <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="3.1.1" />
+        <PackageReference Include="TouchSocket.Http" Version="3.1.1" />
     </ItemGroup>
 
     <ItemGroup>

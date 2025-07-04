@@ -22,28 +22,27 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" Grid.Row="0" Click="GoPreCreateInstance" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Margin="0,80,0,0">
+                    VerticalAlignment="Top">
                 <Button.Content>
                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageLeft}" Content="{Binding [Back], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
             <TextBlock Grid.Column="1" Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreFinishCreateInstanceTip], Source={x:Static i18n:LanguageManager.Localize}}"
-                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,85,0,0" />
-            <Button Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
-                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,80,0,0">
+                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,5,0,0" />
+            <Button x:Name="FinishButton" Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Grid.Column="2" Grid.Row="0"
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
                 <Button.Content>
-                    <ui:IconAndText IsTabStop="False" x:Name="FinishSetupInstance" Icon="{x:Static ui:SegoeFluentIcons.PageRight}"
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}"
                                     Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
                 </Button.Content>
             </Button>
         </Grid>
         <ui:ScrollViewerEx x:Name="GeneralSettingsScroll" Grid.Row="1">
             <ikw:SimpleStackPanel>
-                <ci:SelectMinecraftJavaCore />
-                <ci:SelectMinecraftJavaJvm />
-                <ci:SetMinecraftJavaJvmRam />
-                <ci:SetMinecraftJavaJvmArgument />
-                <ci:SetInstanceName />
+                <ci:SelectMinecraftJavaCore x:Name="Core" />
+                <ci:SelectMinecraftJavaJvm x:Name="Jvm" />
+                <ci:SetMinecraftJavaJvmArgument x:Name="JvmArgument" />
+                <ci:SetInstanceName x:Name="Name" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

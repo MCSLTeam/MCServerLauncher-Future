@@ -78,5 +78,5 @@ public sealed record GetAllReportsResult : IActionResult
 
 public sealed record GetSystemInfoResult : IActionResult
 {
-    [JsonRequired] public SystemInfo Info { get; init; } = null!;
+    [JsonRequired] public SystemInfo Info { get; init; }
 }

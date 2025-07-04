@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Text;
 using TouchSocket.Core;
 using TouchSocket.Http.WebSockets;
-using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote.Extensions;
 
@@ -21,7 +20,7 @@ public static class WebSocketExtensions
 
         using (var frame = new WSDataFrame { FIN = true, Opcode = WSDataType.Close })
         {
-            using (var byteBlock = new ByteBlock())
+            using (var byteBlock = new ByteBlock(1024))
             {
                 byteBlock.WriteUInt16(code, EndianType.Big);
                 if (statusDescription.HasValue()) byteBlock.WriteNormalString(statusDescription, Encoding.UTF8);
@@ -32,7 +31,7 @@ public static class WebSocketExtensions
         }
 
         await @this.Client.ShutdownAsync(SocketShutdown.Both);
-        await @this.Client.SafeCloseAsync(statusDescription).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
+        await @this.Client.CloseAsync(statusDescription).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
     }
 
     private static void SetCloseStatus(IWebSocket websocket, WebSocketCloseStatus status)

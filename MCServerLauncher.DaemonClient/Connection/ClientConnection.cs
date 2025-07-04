@@ -3,7 +3,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
@@ -12,37 +11,38 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
+using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
 using TouchSocket.Sockets;
 
 namespace MCServerLauncher.DaemonClient.Connection;
 
-internal class ClientConnection : IDisposable
+internal class ClientConnection : DisposableObject
 {
     private const int CF_PROTOCOL_VERSION = 1;
 
     private readonly CancellationTokenSource _cts;
     private readonly ConnectionPendingRequests _pendingRequests;
-    private bool _disposed;
 
     private ClientConnection(ClientConnectionConfig config)
     {
         _cts = new CancellationTokenSource();
         _pendingRequests = new ConnectionPendingRequests(config.PendingRequestCapacity);
         Config = config;
+
+        Reconnected += async () => await OnReconnectedEventHandler();
+        ConnectionClosed += () => _pendingRequests.Close();
     }
 
     public SubscribedEvents SubscribedEvents { get; } = new();
     public DateTime LastPong { get; private set; } = DateTime.Now;
-    public bool PingLost { get; private set; }
+    public bool IsConnectionLost { get; private set; }
     public WebSocketClient Client { get; } = new();
     public ClientConnectionConfig Config { get; }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this); // 阻止终结器重复释放资源
-    }
+    public event Action? ConnectionLost;
+    public event Action? Reconnected;
+    public event Action? ConnectionClosed;
 
     public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
 
@@ -81,13 +81,13 @@ internal class ClientConnection : IDisposable
 
                 if (config.HeartBeat)
                 {
-                    var heartbeatPlugin = a.UseWebSocketHeartbeat();
+                    var heartbeatPlugin = new WsHeartbeatPlugin(connection);
                     heartbeatPlugin.MaxFailCount = config.MaxFailCount;
                     heartbeatPlugin.Tick = config.HeartBeatTick;
+                    a.Add(heartbeatPlugin);
                 }
 
-                a.Add(new WsStateRecoveryPlugin(connection));
-
+                a.Add(new WsConnectionEventPlugin(connection));
                 a.UseWebSocketReconnection();
             })
         );
@@ -132,6 +132,17 @@ internal class ClientConnection : IDisposable
     {
         ThrowIfInvalidState();
         await PrivateRequestAsync<EmptyActionResult>(actionType, param, timeout, ct);
+    }
+
+    /// <summary>
+    ///     关闭连接
+    /// </summary>
+    public async Task CloseAsync()
+    {
+        _cts.Cancel();
+        await Client.CloseAsync();
+        SubscribedEvents.Events.Clear(); // 清空标记的已订阅事件
+        Log.Debug("[ClientConnection] closed");
     }
 
     private void ThrowIfInvalidState()
@@ -190,16 +201,6 @@ internal class ClientConnection : IDisposable
         return await PrivateEndRequestAsync<TResult>(tcs, id, timeout, ct);
     }
 
-    /// <summary>
-    ///     关闭连接
-    /// </summary>
-    public async Task CloseAsync()
-    {
-        _cts.Cancel();
-        await Client.CloseAsync();
-        SubscribedEvents.Events.Clear(); // 清空标记的已订阅事件
-        Log.Debug("[ClientConnection] closed");
-    }
 
     /// <summary>
     ///     开始一个RPC过程
@@ -250,8 +251,7 @@ internal class ClientConnection : IDisposable
     {
         try
         {
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts.Token);
-            var response = await tcs.Task.WaitAsync(timeout, cts.Token);
+            var response = await tcs.Task.WaitAsync(timeout, ct);
             var serializer = JsonSerializer.Create(JsonSettings.Settings);
 
             return response.RequestStatus switch
@@ -271,20 +271,118 @@ internal class ClientConnection : IDisposable
         }
     }
 
-    ~ClientConnection()
+    private async Task OnReconnectedEventHandler()
     {
-        Dispose(false);
+        var cts = new CancellationTokenSource();
+        cts.CancelAfter(5000);
+        var events = SubscribedEvents.EventSet;
+        Log.Debug("[ClientConnection] Try recovery {Count} subscribed events", events.Count);
+
+        foreach (var @event in SubscribedEvents.Events)
+            try
+            {
+                await RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
+                {
+                    Type = @event.Type,
+                    Meta = @event.Meta is null
+                        ? null
+                        : JToken.FromObject(@event.Meta, JsonSerializer.Create(JsonSettings.Settings))
+                }, ct: cts.Token);
+            }
+            catch (OperationCanceledException e)
+            {
+                Log.Debug("[ClientConnection] Cannot recover subscribed event = {0}: timeout", @event);
+                events.Remove(@event);
+            }
+            catch (Exception e)
+            {
+                Log.Debug(e, "[ClientConnection] Cannot recover subscribed event = {0}", @event);
+                events.Remove(@event);
+            }
     }
 
-    private void Dispose(bool disposing)
+    protected override void ProtectedDispose()
     {
-        if (_disposed) return;
-        if (disposing)
+        _cts.Dispose();
+        Client.SafeDispose();
+    }
+
+    private class WsConnectionEventPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocketClosedPlugin
+    {
+        private readonly ClientConnection _connection;
+        private bool _firstHandshaked = true;
+
+        public WsConnectionEventPlugin(ClientConnection connection)
         {
-            _cts.Dispose();
-            Client.SafeDispose();
+            _connection = connection;
         }
 
-        _disposed = true;
+        public Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
+        {
+            if (!_connection.IsConnectionLost) _connection.ConnectionClosed?.Invoke();
+
+            return e.InvokeNext();
+        }
+
+        public Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
+        {
+            _firstHandshaked = _firstHandshaked && false;
+
+            _connection.IsConnectionLost = false;
+            _connection.LastPong = DateTime.Now;
+
+            if (!_firstHandshaked) _connection.Reconnected?.Invoke();
+
+            return e.InvokeNext();
+        }
+    }
+
+    private class WsHeartbeatPlugin : HeartbeatPlugin, IWebSocketHandshakedPlugin
+    {
+        private readonly ClientConnection _connection;
+
+        public WsHeartbeatPlugin(ClientConnection connection)
+        {
+            _connection = connection;
+        }
+
+        public async Task OnWebSocketHandshaked(IWebSocket client, HttpContextEventArgs e)
+        {
+            _ = EasyTask.SafeRun(async () =>
+            {
+                var failedCount = 0;
+                while (true)
+                {
+                    await Task.Delay(Tick).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
+                    if (!client.Online) return;
+
+                    try
+                    {
+                        await client.PingAsync().ConfigureAwait(EasyTask.ContinueOnCapturedContext);
+                        _connection.LastPong = DateTime.Now;
+                        failedCount = 0;
+                    }
+                    catch
+                    {
+                        failedCount++;
+                    }
+
+                    if (failedCount > MaxFailCount)
+                    {
+                        OnConnectionLostHandler();
+                        await client.CloseAsync("自动心跳失败次数达到最大，已断开连接。")
+                            .ConfigureAwait(EasyTask.ContinueOnCapturedContext);
+                    }
+                }
+            });
+
+            await e.InvokeNext().ConfigureAwait(EasyTask.ContinueOnCapturedContext);
+        }
+
+        private void OnConnectionLostHandler()
+        {
+            _connection.IsConnectionLost = true;
+            _connection.ConnectionLost?.Invoke();
+        }
     }
 }

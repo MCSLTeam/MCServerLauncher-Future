@@ -26,7 +26,7 @@ public record InstanceFactorySetting : InstanceConfig
             OutputEncoding = OutputEncoding,
             InstanceType = InstanceType,
             Name = Name,
-            JavaArgs = JavaArgs,
+            Arguments = Arguments,
             JavaPath = JavaPath,
             Target = Target,
             TargetType = TargetType

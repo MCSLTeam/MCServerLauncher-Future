@@ -77,6 +77,15 @@ public static class DaemonExtensions
 
     #region Event
 
+    /// <summary>
+    ///     Action: 订阅事件
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="type"></param>
+    /// <param name="meta"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public static Task SubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -96,6 +105,14 @@ public static class DaemonExtensions
         }, timeout, ct);
     }
 
+    /// <summary>
+    ///     Action: 取消订阅事件
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="type"></param>
+    /// <param name="meta"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
     public static async Task UnSubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -112,7 +129,7 @@ public static class DaemonExtensions
     #region File Upload / Download
 
     /// <summary>
-    ///     rpc: 上传文件
+    ///     action: 上传文件
     /// </summary>
     /// <param name="daemon">daemon</param>
     /// <param name="path">目标上传文件的本地路径</param>
@@ -216,6 +233,16 @@ public static class DaemonExtensions
         return context;
     }
 
+    /// <summary>
+    ///     action: 下载文件
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="path">本地路径</param>
+    /// <param name="dst">daemon上的目标路径</param>
+    /// <param name="chunkSize">分块上传大小</param>
+    /// <param name="timeout">文件块下载间隔超时时间</param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public static async Task<DownloadContext> DownloadFileAsync(this IDaemon daemon, string path, string dst,
         int chunkSize,
         int timeout = -1, CancellationToken ct = default)
@@ -297,6 +324,14 @@ public static class DaemonExtensions
 
     #region File Info
 
+    /// <summary>
+    ///     Action: 获取目录信息
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="path"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public static async Task<(
             DirectoryEntry.DirectoryInformation[],
             DirectoryEntry.FileInformation[],
@@ -318,6 +353,14 @@ public static class DaemonExtensions
         return (resp.Directories, resp.Files, resp.Parent);
     }
 
+    /// <summary>
+    ///     Action: 获取文件信息
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="path"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public static async Task<FileMetadata> GetFileInfoAsync(this IDaemon daemon, string path, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -338,6 +381,13 @@ public static class DaemonExtensions
 
     #region Instances
 
+    /// <summary>
+    ///     Action: 启动实例
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
     public static async Task StartInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -349,6 +399,13 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
+    /// <summary>
+    ///     Action: 停止实例
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
     public static async Task StopInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -360,6 +417,14 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
+    /// <summary>
+    ///     Action: 向实例发送消息
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="message"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
     public static async Task SentToInstanceAsync(this IDaemon daemon, Guid id, string message, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -372,6 +437,13 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
+    /// <summary>
+    ///     Action: 杀死实例
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
     public static async Task KillInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -383,7 +455,15 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
-    public static async Task<InstanceConfig> TryAddInstanceAsync(this IDaemon daemon, InstanceFactorySetting setting,
+    /// <summary>
+    ///     Action: 添加实例
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="setting"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<InstanceConfig> AddInstanceAsync(this IDaemon daemon, InstanceFactorySetting setting,
         int timeout = -1,
         CancellationToken ct = default)
     {
@@ -396,7 +476,14 @@ public static class DaemonExtensions
         return resp.Config;
     }
 
-    public static async Task TryRemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    /// <summary>
+    ///     Action: 删除实例
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    public static async Task RemoveInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
         await daemon.RequestAsync(
@@ -407,6 +494,14 @@ public static class DaemonExtensions
             }, timeout, ct);
     }
 
+    /// <summary>
+    ///     Action: 获取实例报告
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public static async Task<InstanceReport> GetInstanceReportAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
@@ -419,6 +514,13 @@ public static class DaemonExtensions
         return resp.Report;
     }
 
+    /// <summary>
+    ///     Action: 获取所有实例报告
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public static async Task<Dictionary<Guid, InstanceReport>> GetAllReportsAsync(this IDaemon daemon, int timeout = -1,
         CancellationToken ct = default)
     {

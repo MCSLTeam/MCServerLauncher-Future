@@ -11,10 +11,40 @@ namespace MCServerLauncher.DaemonClient;
 /// </summary>
 public interface IDaemon : IDisposable
 {
+    /// <summary>
+    ///     是否在线(websocket是否在线)
+    /// </summary>
     bool Online { get; }
-    bool PingLost { get; }
-    DateTime LastPing { get; }
+
+    /// <summary>
+    ///     连接是否丢失
+    /// </summary>
+    bool IsConnectionLost { get; }
+
+    /// <summary>
+    ///     最近一次心跳检查的时间
+    /// </summary>
+    DateTime LastPong { get; }
+
+    /// <summary>
+    ///     已订阅的Daemon事件的集合
+    /// </summary>
     SubscribedEvents SubscribedEvents { get; }
+
+    /// <summary>
+    ///     事件: 断线重连成功
+    /// </summary>
+    event Action? Reconnected;
+
+    /// <summary>
+    ///     事件: 连接丢失(心跳检查超过固定次数未响应时触发)
+    /// </summary>
+    event Action? ConnectionLost;
+
+    /// <summary>
+    ///     事件: 连接关闭
+    /// </summary>
+    event Action? ConnectionClosed;
 
     /// <summary>
     ///     Instance Log Event(InstanceId, Text)

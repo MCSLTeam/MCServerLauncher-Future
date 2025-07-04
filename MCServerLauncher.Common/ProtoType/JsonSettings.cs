@@ -17,7 +17,8 @@ public static class JsonSettings
         {
             new StringEnumConverter(new SnakeCaseNamingStrategy(), false),
             new GuidJsonConverter(),
-            new WebEncodingJsonConverter()
+            new WebEncodingJsonConverter(),
+            new PlaceHolderString.JsonConverter()
         }
     };
 }

@@ -11,6 +11,7 @@ internal class ConnectionPendingRequests
     private readonly SemaphoreSlim _full;
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendings = new();
     public readonly int Size;
+    private bool _closed;
 
     public ConnectionPendingRequests(int size)
     {
@@ -26,12 +27,14 @@ internal class ConnectionPendingRequests
     /// <param name="timeout"></param>
     /// <param name="cancellationToken"></param>
     /// <exception cref="OperationCanceledException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
     /// <returns></returns>
     public async Task<bool> AddPendingAsync(Guid id, TaskCompletionSource<ActionResponse> tcs, int timeout,
         CancellationToken cancellationToken = default)
     {
-        if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
+        if (_closed) throw new InvalidOperationException("ConnectionPendingRequest already closed");
 
+        if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
 
         return _pendings.TryAdd(id, tcs); // 确保echo在size范围内不会重复
     }
@@ -46,5 +49,11 @@ internal class ConnectionPendingRequests
     public bool TryGetPending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
     {
         return _pendings.TryGetValue(id, out tcs);
+    }
+
+    public void Close()
+    {
+        _closed = true;
+        foreach (var tcs in _pendings.Values) tcs.TrySetCanceled();
     }
 }

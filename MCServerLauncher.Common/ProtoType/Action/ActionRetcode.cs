@@ -1,29 +1,25 @@
 ﻿using System.Reflection;
-using Newtonsoft.Json;
 
 namespace MCServerLauncher.Common.ProtoType.Action;
 
 public class ActionRetcode
 {
-    public int Code { get; }
-    public string Message { get; private set; }
+    private static readonly Dictionary<int, ActionRetcode> RetcodeMap = new();
 
-    internal ActionRetcode(int code, string message)
+    private ActionRetcode(int code, string message)
     {
         Code = code;
         Message = message;
     }
 
+    public int Code { get; }
+    public string Message { get; }
+
     public static ActionRetcode FromCode(int code)
     {
-        var type = typeof(ActionRetcode);
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Static);
-        foreach (var property in properties)
+        if (RetcodeMap.TryGetValue(code, out var value))
         {
-            if (property.GetValue(null) is ActionRetcode actionRetcode)
-            {
-                if (actionRetcode.Code == code) return actionRetcode;
-            }
+            return value;
         }
 
         throw new ArgumentException($"Failed to get retcode: {code}");
@@ -33,8 +29,7 @@ public class ActionRetcode
     {
         if (message == null) return this;
         var msg = message.ToString();
-        Message = msg == Message ? msg : Message + ": " + msg;
-        return this;
+        return new ActionRetcode(Code, msg == Message ? msg : Message + ": " + msg);
     }
 
     public ActionRetcode WithException(Exception? e = null)
@@ -44,95 +39,140 @@ public class ActionRetcode
         return WithMessage(msg);
     }
 
+    public override string ToString()
+    {
+        return $"ActionRetcode: {{ Code = {Code}, Message = {Message} }}";
+    }
+
     #region ActionRetcodes
 
-    public static ActionRetcode Ok = new(0, "OK");
+    public static readonly ActionRetcode Ok;
 
     #region Request Error
 
-    public static ActionRetcode RequestError = new(10000, "Request Error");
+    public static readonly ActionRetcode RequestError;
 
-    public static ActionRetcode BadRequest = new(10001, "Bad Request");
+    public static readonly ActionRetcode BadRequest;
 
-    public static ActionRetcode UnknownAction = new(10002, "Unknown Action");
+    public static readonly ActionRetcode UnknownAction;
 
-    public static ActionRetcode PermissionDenied = new(10003, "Permission Denied");
+    public static readonly ActionRetcode PermissionDenied;
 
-    public static ActionRetcode ActionUnavailable = new(10004, "Action Unavailable");
+    public static readonly ActionRetcode ActionUnavailable;
 
-    public static ActionRetcode RateLimitExceeded = new(10005, "Rate Limit Exceeded");
+    public static readonly ActionRetcode RateLimitExceeded;
 
-    public static ActionRetcode ParamError = new(10006, "Param Error");
+    public static readonly ActionRetcode ParamError;
 
     #endregion
 
     #region ServerError
 
-    public static ActionRetcode UnexpectedError = new(20001, "Unexpected Error");
+    public static readonly ActionRetcode UnexpectedError;
 
     #endregion
 
     #region FileError
 
-    public static ActionRetcode FileError = new(20000, "File Error");
+    public static readonly ActionRetcode FileError;
 
-    public static ActionRetcode FileNotFound = new(21001, "File Not Found");
+    public static readonly ActionRetcode FileNotFound;
 
-    public static ActionRetcode FileAlreadyExists = new(21002, "File Already Exists");
+    public static readonly ActionRetcode FileAlreadyExists;
 
-    public static ActionRetcode FileInUse = new(21003, "File In Use");
+    public static readonly ActionRetcode FileInUse;
 
-    public static ActionRetcode ItsADirectory = new(21004, "It's A Directory");
+    public static readonly ActionRetcode ItsADirectory;
 
-    public static ActionRetcode ItsAFile = new(21005, "It's A File");
+    public static readonly ActionRetcode ItsAFile;
 
-    public static ActionRetcode FileAccessDenied = new(21006, "File Access Denied");
+    public static readonly ActionRetcode FileAccessDenied;
 
-    public static ActionRetcode DiskFull = new(21007, "Disk Full");
+    public static readonly ActionRetcode DiskFull;
 
     #endregion
 
     #region Upload / Download Error
 
-    public static ActionRetcode UploadError = new(21100, "Upload Error");
+    public static readonly ActionRetcode UploadDownloadError;
 
-    public static ActionRetcode DownloadError = new(21100, "Download Error");
+    public static readonly ActionRetcode AlreadyUploadingDownloading;
 
-    public static ActionRetcode AlreadyUploading = new(21101, "Already Uploading");
+    public static readonly ActionRetcode NotUploadingDownloading;
 
-    public static ActionRetcode AlreadyDownloading = new(21101, "Already Downloading");
-
-    public static ActionRetcode NotUploading = new(21102, "Not Uploading");
-
-    public static ActionRetcode NotDownloading = new(21102, "Not Downloading");
-
-    public static ActionRetcode FileTooBig = new(21103, "File Too Big");
+    public static readonly ActionRetcode FileTooBig;
 
     #endregion
 
     #region Instance Error
 
-    public static ActionRetcode InstanceError = new(30000, "Instance Error");
+    public static readonly ActionRetcode InstanceError;
 
-    public static ActionRetcode InstanceNotFound = new(30001, "Instance Not Found");
+    public static readonly ActionRetcode InstanceNotFound;
 
-    public static ActionRetcode InstanceAlreadyExists = new(30002, "Instance Already Exists");
+    public static readonly ActionRetcode InstanceAlreadyExists;
 
-    public static ActionRetcode BadInstanceState = new(30003, "Bad Instance State");
+    public static readonly ActionRetcode BadInstanceState;
 
-    public static ActionRetcode BadInstanceType = new(30004, "Bad Instance Type");
+    public static readonly ActionRetcode BadInstanceType;
 
     #region Instance Action Error
 
-    public static ActionRetcode InstanceActionError = new(31001, "Instance Action Error");
+    public static readonly ActionRetcode InstanceActionError;
 
-    public static ActionRetcode InstallationError = new(31002, "Installation Error");
+    public static readonly ActionRetcode InstallationError;
 
-    public static ActionRetcode ProcessError = new(31003, "Process Error");
-
-    #endregion
+    public static readonly ActionRetcode ProcessError;
 
     #endregion
 
     #endregion
+
+    #endregion
+
+    static ActionRetcode()
+    {
+        Ok = Register(0, "OK");
+
+        RequestError = Register(10000, "Request Error");
+        BadRequest = Register(10001, "Bad Request");
+        UnknownAction = Register(10002, "Unknown Action");
+        PermissionDenied = Register(10003, "Permission Denied");
+        ActionUnavailable = Register(10004, "Action Unavailable");
+        RateLimitExceeded = Register(10005, "Rate Limit Exceeded");
+        ParamError = Register(10006, "Param Error");
+
+        UnexpectedError = Register(20001, "Unexpected Error");
+
+        FileError = Register(21000, "File Error");
+        FileNotFound = Register(21001, "File Not Found");
+        FileAlreadyExists = Register(21002, "File Already Exists");
+        FileInUse = Register(21003, "File In Use");
+        ItsADirectory = Register(21004, "It's A Directory");
+        ItsAFile = Register(21005, "It's A File");
+        FileAccessDenied = Register(21006, "File Access Denied");
+        DiskFull = Register(21007, "Disk Full");
+
+        UploadDownloadError = Register(21100, "Upload/Download Error");
+        AlreadyUploadingDownloading = Register(21101, "Already Uploading/Downloading");
+        NotUploadingDownloading = Register(21102, "Not Uploading/Downloading");
+        FileTooBig = Register(21103, "File Too Big");
+
+        InstanceError = Register(30000, "Instance Error");
+        InstanceNotFound = Register(30001, "Instance Not Found");
+        InstanceAlreadyExists = Register(30002, "Instance Already Exists");
+        BadInstanceState = Register(30003, "Bad Instance State");
+        BadInstanceType = Register(30004, "Bad Instance Type");
+
+        InstanceActionError = Register(31001, "Instance Action Error");
+        InstallationError = Register(31002, "Installation Error");
+        ProcessError = Register(31003, "Process Error");
+    }
+
+    private static ActionRetcode Register(int code, string message)
+    {
+        var actionRetcode = new ActionRetcode(code, message);
+        RetcodeMap[code] = actionRetcode;
+        return actionRetcode;
+    }
 }
