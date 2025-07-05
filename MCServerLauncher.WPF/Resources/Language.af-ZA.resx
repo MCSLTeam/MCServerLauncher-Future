@@ -898,35 +898,8 @@
   <data name="JvmOptimizationArgsTip" xml:space="preserve">
     <value>以下是为 Minecraft 服务端进行优化的预置参数，您可选择其一应用。</value>
   </data>
-  <data name="JvmArgHelper" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Insert" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="NoJarFileJvmArgument" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Warning" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Encoding" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Decoding" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="PreventGarbageTextTip" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="EnDeCoding" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Optimization" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="JvmOptimizationArgsTip" xml:space="preserve">
-    <value></value>
+  <data name="DeadProcessTip" xml:space="preserve">
+    <value>我们遇到了意料之外的异常，但已将关键的错误信息复制到剪贴板。程序已无法继续运行，即将关闭。</value>
   </data>
   <data name="DeadProcessTip" xml:space="preserve">
     <value></value>
