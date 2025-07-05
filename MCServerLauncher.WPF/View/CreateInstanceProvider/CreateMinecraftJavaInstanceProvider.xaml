@@ -42,7 +42,7 @@
                 <ci:SelectMinecraftJavaCore x:Name="Core" />
                 <ci:SelectMinecraftJavaJvm x:Name="Jvm" />
                 <ci:SetMinecraftJavaJvmArgument x:Name="JvmArgument" />
-                <ci:SetInstanceName x:Name="Name" />
+                <ci:SetInstanceName x:Name="InstanceName" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

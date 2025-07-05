@@ -22,7 +22,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         public CreateMinecraftJavaInstanceProvider()
         {
             InitializeComponent();
-            StepList = new() { Core, Jvm, JvmArgument, Name };
+            StepList = new() { Core, Jvm, JvmArgument, InstanceName };
             
             foreach (var step in StepList)
             {

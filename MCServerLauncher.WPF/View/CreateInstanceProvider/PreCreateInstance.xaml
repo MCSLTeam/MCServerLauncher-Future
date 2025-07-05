@@ -76,15 +76,15 @@
                         <Button IsEnabled="False" x:Name="FastReverseProxyClient" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                         Content="{Binding [CreateUniversalFastReverseProxyClientInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
-                        <Button IsEnabled="False" x:Name="OpenFrp" Padding="20,13,0,13"
-                        Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="OpenFrp" ToolTip="没做完呢，别急" />
-                        <Button IsEnabled="False" x:Name="LoCyanFrp" Padding="20,13,0,13"
-                        Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="LoCyanFrp" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MEFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                         Content="ME Frp" ToolTip="没做完呢，别急" />
+                        <Button IsEnabled="False" x:Name="LoCyanFrp" Padding="20,13,0,13"
+                        Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Content="LoCyanFrp" ToolTip="没做完呢，别急" />
+                        <Button IsEnabled="False" x:Name="OpenFrp" Padding="20,13,0,13"
+                        Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Content="OpenFrp" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MossFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                         Content="MossFrp" ToolTip="没做完呢，别急" />

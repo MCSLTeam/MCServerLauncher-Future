@@ -115,9 +115,9 @@
                         </ui:DropDownButton>
                     </Grid>
                 </Border>
-                <ci:SelectMinecraftJavaJvm />
-                <ci:SetMinecraftJavaJvmArgument />
-                <ci:SetInstanceName />
+                <ci:SelectMinecraftJavaJvm x:Name="Jvm" />
+                <ci:SetMinecraftJavaJvmArgument x:Name="JvmArgument" />
+                <ci:SetInstanceName x:Name="InstanceName" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

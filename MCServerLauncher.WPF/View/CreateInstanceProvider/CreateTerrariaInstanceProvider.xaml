@@ -37,8 +37,8 @@
         </Grid>
         <ui:ScrollViewerEx x:Name="GeneralSettingsScroll" Grid.Row="1">
             <ikw:SimpleStackPanel>
-                <ci:SelectTerrariaArchive />
-                <ci:SetInstanceName />
+                <ci:SelectTerrariaArchive x:Name="Archive" />
+                <ci:SetInstanceName x:Name="InstanceName" />
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>
