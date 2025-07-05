@@ -857,15 +857,45 @@
     <value>安全護航，只在指掌。</value>
   </data>
   <data name="Port" xml:space="preserve">
-    <value>端口</value>
+    <value>連接埠</value>
   </data>
   <data name="Username" xml:space="preserve">
-    <value>用戶名</value>
+    <value>使用者名稱</value>
   </data>
   <data name="ConnectDaemonFailedTip" xml:space="preserve">
     <value>無法連接守護進程，請檢查配置。</value>
   </data>
   <data name="Token" xml:space="preserve">
     <value>令牌</value>
+  </data>
+  <data name="JvmArgHelper" xml:space="preserve">
+    <value>JVM 參數助手</value>
+  </data>
+  <data name="Insert" xml:space="preserve">
+    <value>插入</value>
+  </data>
+  <data name="NoJarFileJvmArgument" xml:space="preserve">
+    <value>核心啓動參數（-jar xxx.jar）將由程序生成，請勿在此處寫入。</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="Encoding" xml:space="preserve">
+    <value>編碼</value>
+  </data>
+  <data name="Decoding" xml:space="preserve">
+    <value>解碼</value>
+  </data>
+  <data name="PreventGarbageTextTip" xml:space="preserve">
+    <value>本選項可防止產生亂碼，請視具體情況指定。</value>
+  </data>
+  <data name="EnDeCoding" xml:space="preserve">
+    <value>編解碼</value>
+  </data>
+  <data name="Optimization" xml:space="preserve">
+    <value>優化</value>
+  </data>
+  <data name="JvmOptimizationArgsTip" xml:space="preserve">
+    <value>以下是爲 Minecraft 服務端進行優化的預置參數，您可選擇其一應用。</value>
   </data>
 </root>

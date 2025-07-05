@@ -470,7 +470,7 @@
     <value>اكتسح الصورة الكبيرة لرؤية العالم.</value>
   </data>
   <data name="Main_DownloadHistoryNavMenu" xml:space="preserve">
-    <value>下载历史</value>
+    <value>سجل التنزيل</value>
   </data>
   <data name="ResDownloadTipPrefix" xml:space="preserve">
     <value>سمها ما شئت ، لقد وصلت إلى هنا. (قيد الاستخدام حاليا.)</value>
@@ -665,49 +665,49 @@
     <value>لا داعي للقلق بشأن هذه المشكلة.لا داعي للقلق بشأن هذا الأمر.</value>
   </data>
   <data name="ConnectDaemon" xml:space="preserve">
-    <value>新建连接</value>
+    <value>إنشاء اتصال جديد</value>
   </data>
   <data name="FirstSetup_ConnectDaemonTip" xml:space="preserve">
     <value>MCServerLauncher 的所有实例均移交给守护进程管理。请在此处链接已部署好的守护进程。</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>编辑</value>
+    <value>حَرَّرَ</value>
   </data>
   <data name="Daemon_RemoteUri" xml:space="preserve">
-    <value>远端地址:</value>
+    <value>العنوان البعيد:</value>
   </data>
   <data name="Daemon_ConnectionStatus" xml:space="preserve">
-    <value>链接状态:</value>
+    <value>حالة الرابط:</value>
   </data>
   <data name="Status_OK" xml:space="preserve">
-    <value>正常</value>
+    <value>عاديّ</value>
   </data>
   <data name="Status_Error" xml:space="preserve">
-    <value>异常</value>
+    <value>اسْتِثْنائيّ</value>
   </data>
   <data name="Disconnect" xml:space="preserve">
-    <value>断连</value>
+    <value>اقطع الاتصال</value>
   </data>
   <data name="Connect" xml:space="preserve">
-    <value>连接</value>
+    <value>انْضَمَّ</value>
   </data>
   <data name="Retry" xml:space="preserve">
-    <value>重试</value>
+    <value>حاول مرة أخرى</value>
   </data>
   <data name="Settings_Components_Title" xml:space="preserve">
-    <value>开源项目引用列表</value>
+    <value>قائمة مرجعية للمشروع مفتوح المصدر</value>
   </data>
   <data name="Settings_Components_Description" xml:space="preserve">
     <value>由衷感谢他们的付出，为 MCSL Future 的前进提供了持续的动力。</value>
   </data>
   <data name="Settings_Acknowledgments_Title" xml:space="preserve">
-    <value>鸣谢列表</value>
+    <value>قائمة الإقرارات</value>
   </data>
   <data name="Settings_Acknowledgments_Description" xml:space="preserve">
     <value>为 MCSL 做出了巨大贡献！</value>
   </data>
   <data name="Donate" xml:space="preserve">
-    <value>赞助一下</value>
+    <value>احصل على رعاية</value>
   </data>
   <data name="Settings_Acknowledgments_BMCLAPI_Description" xml:space="preserve">
     <value>提供了性能强大的 BMCLAPI 镜像！</value>
@@ -716,34 +716,34 @@
     <value>提供了 Minecraft 加载器的获取思路！</value>
   </data>
   <data name="Settings_Acknowledgments_BakaXL_Description" xml:space="preserve">
-    <value>提供了 Quilt 加载器的部署思路！</value>
+    <value>إنه يوفر فكرة نشر محمل اللحاف!</value>
   </data>
   <data name="Settings_Acknowledgments_iNKORE_Description" xml:space="preserve">
-    <value>在开发过程中给予了大量技术支持！</value>
+    <value>تم تقديم الكثير من الدعم الفني في عملية التطوير!</value>
   </data>
   <data name="Settings_Acknowledgments_MCSLQQ_Title" xml:space="preserve">
     <value>MCSL QQ 交流群的各位群友</value>
   </data>
   <data name="Settings_Acknowledgments_MCSLQQ_Description" xml:space="preserve">
-    <value>一直陪伴着我们，还给予了很多建议！</value>
+    <value>لقد كنت معنا طوال الوقت وقدمت الكثير من النصائح!</value>
   </data>
   <data name="JoinGroup" xml:space="preserve">
-    <value>加入群聊</value>
+    <value>انضم إلى الدردشة الجماعية</value>
   </data>
   <data name="DaemonWsAddress" xml:space="preserve">
     <value>守护进程 WebSocket 地址</value>
   </data>
   <data name="Password" xml:space="preserve">
-    <value>密码</value>
+    <value>الرمز السري</value>
   </data>
   <data name="Connecting" xml:space="preserve">
-    <value>连接中</value>
+    <value>رَبْطٍ</value>
   </data>
   <data name="ConsoleBoard_Universal_RAM" xml:space="preserve">
-    <value>通用：实例 RAM 占用</value>
+    <value>عام: شغل ذاكرة الوصول العشوائي على سبيل المثال</value>
   </data>
   <data name="ConsoleBoard_Universal_CPU" xml:space="preserve">
-    <value>通用：实例 CPU 占用</value>
+    <value>عام: استخدام وحدة المعالجة المركزية على سبيل المثال</value>
   </data>
   <data name="ConsoleBoard_Universal_WebSocketLatency" xml:space="preserve">
     <value>عام: زمن انتقال WebSocket الحالي</value>
@@ -867,5 +867,35 @@
   </data>
   <data name="Token" xml:space="preserve">
     <value>访问密钥</value>
+  </data>
+  <data name="JvmArgHelper" xml:space="preserve">
+    <value>JVM 参数助手</value>
+  </data>
+  <data name="Insert" xml:space="preserve">
+    <value>插入</value>
+  </data>
+  <data name="NoJarFileJvmArgument" xml:space="preserve">
+    <value>核心启动参数（-jar xxx.jar）将由程序生成，请勿在此处写入。</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="Encoding" xml:space="preserve">
+    <value>编码</value>
+  </data>
+  <data name="Decoding" xml:space="preserve">
+    <value>解码</value>
+  </data>
+  <data name="PreventGarbageTextTip" xml:space="preserve">
+    <value>本选项可防止产生乱码，请视具体情况指定。</value>
+  </data>
+  <data name="EnDeCoding" xml:space="preserve">
+    <value>编解码</value>
+  </data>
+  <data name="Optimization" xml:space="preserve">
+    <value>优化</value>
+  </data>
+  <data name="JvmOptimizationArgsTip" xml:space="preserve">
+    <value>以下是为 Minecraft 服务端进行优化的预置参数，您可选择其一应用。</value>
   </data>
 </root>
