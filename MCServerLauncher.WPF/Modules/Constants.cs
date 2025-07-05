@@ -50,6 +50,13 @@ namespace MCServerLauncher.WPF.Modules
             Path,
             List,
             Array,
+            Struct
+        }
+
+        public struct MinecraftLoaderVersion
+        {
+            public string MCVersion;
+            public string LoaderVersion;
         }
 
         public class CreateInstanceData
