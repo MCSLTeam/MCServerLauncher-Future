@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -14,6 +15,12 @@ namespace MCServerLauncher.WPF.Modules
             }
 
             return null;
+        }
+        public static void InitStepState(ComboBox comboBox)
+        {
+            comboBox.Items.Add("1test");
+            comboBox.SelectedIndex = 0;
+            comboBox.Items.Remove("1test");
         }
     }
 }

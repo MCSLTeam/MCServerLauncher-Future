@@ -41,37 +41,8 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             ForgeVersionComboBox.SelectionChanged += initialHandler2;
 
             // As you can see, we have to trigger it manually
-            MinecraftVersionComboBox.Items.Add("1");
-            MinecraftVersionComboBox.SelectedIndex = 0;
-            MinecraftVersionComboBox.ClearSelectedItems();
-            MinecraftVersionComboBox.Items.Clear();
-
-            MinecraftVersionComboBox.SelectionChanged -= initialHandler2;
-
-            MinecraftVersionComboBox.SelectionChanged += async (sender, args) =>
-            {
-                await Task.Delay(80);
-                if (!IsDisposed1)
-                {
-                    SetValue(IsFinished1Property, !(MinecraftVersionComboBox.SelectedIndex == -1));
-                }
-            };
-
-            ForgeVersionComboBox.Items.Add("1");
-            ForgeVersionComboBox.SelectedIndex = 0;
-            ForgeVersionComboBox.ClearSelectedItems();
-            ForgeVersionComboBox.Items.Clear();
-
-            ForgeVersionComboBox.SelectionChanged -= initialHandler2;
-
-            ForgeVersionComboBox.SelectionChanged += async (sender, args) =>
-            {
-                await Task.Delay(80);
-                if (!IsDisposed2)
-                {
-                    SetValue(IsFinished2Property, !(ForgeVersionComboBox.SelectedIndex == -1));
-                }
-            };
+            VisualTreeHelper.InitStepState(MinecraftVersionComboBox);
+            VisualTreeHelper.InitStepState(ForgeVersionComboBox);
 
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
 
