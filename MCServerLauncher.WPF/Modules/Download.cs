@@ -15,6 +15,7 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static readonly Func<string, (int, int, int, int)> VersionToTuple = version =>
         {
+            // special versions
             if (!version.Contains(".") && !version.Contains("-"))
                 return version switch
                 {
@@ -29,8 +30,20 @@ namespace MCServerLauncher.WPF.Modules
                     "release" => (0, 0, 0, 0),
                     _ => (0, 0, 0, 0)
                 };
+
+            // snapshot versions
+            var snapshotMatch = Regex.Match(version, @"^(\d+)w(\d+)([a-z])$");
+            if (snapshotMatch.Success)
+            {
+                int year = int.Parse(snapshotMatch.Groups[1].Value);
+                int week = int.Parse(snapshotMatch.Groups[2].Value);
+                int revision = snapshotMatch.Groups[3].Value[0] - 'a' + 1;
+                return (year, week, revision, 0);
+            }
+
+            // other versions
             version = Regex.Replace(version.ToLower(), @"[-_]", ".")
-                .Replace("rc", "").Replace("pre", "").Replace("snapshot", "0");
+                .Replace("rc", "").Replace(" Pre-Release ", ".pre").Replace("pre", "").Replace("snapshot", "0").Replace(".beta", "beta").Replace("beta", "0");
             var parts = version.Split('.');
             if (parts.Length == 2)
                 return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
