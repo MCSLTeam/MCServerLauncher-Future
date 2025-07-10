@@ -898,4 +898,7 @@
   <data name="JvmOptimizationArgsTip" xml:space="preserve">
     <value>以下是爲 Minecraft 服務端進行優化的預置參數，您可選擇其一應用。</value>
   </data>
+  <data name="DeadProcessTip" xml:space="preserve">
+    <value>我们遇到了意料之外的异常，但已将关键的错误信息复制到剪贴板。程序已无法继续运行，即将关闭。</value>
+  </data>
 </root>
