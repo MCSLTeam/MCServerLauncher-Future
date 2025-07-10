@@ -1,0 +1,3 @@
+[submodule "MCServerLauncher.WPF/Resources/Language"]
+	path = MCServerLauncher.WPF/Resources/Language
+	url = https://github.com/MCSLTeam/MCServerLauncher.International.git
