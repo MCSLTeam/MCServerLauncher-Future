@@ -491,10 +491,10 @@
     <value>Retry 3 Times</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeName" xml:space="preserve">
-    <value>Instance Name Input Validation</value>
+    <value>Instance Name Input</value>
   </data>
   <data name="Settings_ActionWhenDeleteConfirm_TypeKey" xml:space="preserve">
-    <value>Daemon Key Validation</value>
+    <value>Daemon Secret</value>
   </data>
   <data name="Settings_AppTheme_Auto" xml:space="preserve">
     <value>System</value>
