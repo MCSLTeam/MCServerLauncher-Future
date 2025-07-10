@@ -43,7 +43,12 @@ namespace MCServerLauncher.WPF.Modules
 
             // other versions
             version = Regex.Replace(version.ToLower(), @"[-_]", ".")
-                .Replace("rc", "").Replace(" Pre-Release ", ".pre").Replace("pre", "").Replace("snapshot", "0").Replace(".beta", "beta").Replace("beta", "0");
+                .Replace("rc", "")
+                .Replace(" Pre-Release ", ".pre")
+                .Replace("pre", "")
+                .Replace("snapshot", "0")
+                .Replace(".beta", "beta")
+                .Replace("beta", "0");
             var parts = version.Split('.');
             if (parts.Length == 2)
                 return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
