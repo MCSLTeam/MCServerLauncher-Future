@@ -57,7 +57,7 @@ namespace MCServerLauncher.WPF.Modules
                     App = new AppSettingsModel
                     {
                         Theme = "auto",
-                        Language = "zh-Hans",
+                        Language = "zh-CN",
                         FollowStartup = false,
                         AutoCheckUpdate = true,
                         IsCertImported = false,

@@ -107,4 +107,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="sysglobl" />
+  </ItemGroup>
 </Project>
