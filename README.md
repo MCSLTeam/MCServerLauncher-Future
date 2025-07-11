@@ -6,7 +6,6 @@ frontend, just click [here](https://github.com/MCSLTeam/MCServerLauncher-Future-
 
 [![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
 ![Platform Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
-[![Crowdin](https://badges.crowdin.net/mcserverlauncher-wpf/localized.svg)](https://wpf.i18n.mcsl.com.cn)
 
 ## Feature
 
@@ -42,7 +41,7 @@ WPF Desktop Launcher: Requires [.NET Framework 4.6.2+](http://go.microsoft.com/f
 
 ## Contribute
 
-We are actively working on internationalization through Crowdin. If you have expertise in this area, please visit <https://wpf.i18n.mcsl.com.cn> to contribute your efforts.  
+We are actively working on internationalization through Crowdin. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/projects/mcsl-future> to contribute your efforts.  
 
 To report issues or suggest improvements,
 please [open an issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose)
