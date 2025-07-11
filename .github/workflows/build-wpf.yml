@@ -19,10 +19,13 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration Debug --no-restore
+        run: dotnet build -c Debug --no-restore
+        
+      - name: Publish Debug
+        run: dotnet publish -c Debug -o ./debug_publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: MCSL-Future-WPF
-          path: ./publish
+          path: ./debug_publish
