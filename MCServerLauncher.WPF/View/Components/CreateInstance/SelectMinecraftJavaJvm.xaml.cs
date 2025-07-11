@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using MCServerLauncher.WPF.Modules;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
@@ -25,19 +26,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             JavaRuntimeTextBox.TextChanged += initialHandler;
 
             // As you can see, we have to trigger it manually
-            JavaRuntimeTextBox.Text = "1";
-            JavaRuntimeTextBox.Text = string.Empty;
-
-            JavaRuntimeTextBox.TextChanged -= initialHandler;
-
-            JavaRuntimeTextBox.TextChanged += async (sender, args) =>
-            {
-                await Task.Delay(80);
-                if (!IsDisposed)
-                {
-                    SetValue(IsFinishedProperty, !string.IsNullOrWhiteSpace(JavaRuntimeTextBox.Text));
-                }
-            };
+            VisualTreeHelper.InitStepState(JavaRuntimeTextBox);
         }
 
         private bool IsDisposed { get; set; } = false;

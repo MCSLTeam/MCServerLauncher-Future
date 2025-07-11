@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using MCServerLauncher.WPF.Modules;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
@@ -25,19 +26,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             ServerNameSetting.TextChanged += initialHandler;
 
             // As you can see, we have to trigger it manually
-            ServerNameSetting.Text = "1";
-            ServerNameSetting.Text = string.Empty;
-
-            ServerNameSetting.TextChanged -= initialHandler;
-
-            ServerNameSetting.TextChanged += async (sender, args) =>
-            {
-                await Task.Delay(80);
-                if (!IsDisposed)
-                {
-                    SetValue(IsFinishedProperty, !string.IsNullOrWhiteSpace(ServerNameSetting.Text));
-                }
-            };
+            VisualTreeHelper.InitStepState(ServerNameSetting);
         }
 
         private bool IsDisposed { get; set; } = false;

@@ -124,6 +124,12 @@ namespace MCServerLauncher.WPF
             }
         }
 
+        public void ToggleNavBarVisibility()
+        {
+            NavView.IsPaneVisible = !NavView.IsPaneVisible;
+            NavView.IsPaneOpen = false;
+        }
+
         private void ShowDownloadHistory(object sender, RoutedEventArgs e)
         {
             DownloadHistoryFlyout.ShowAt(DownloadHistoryButton);

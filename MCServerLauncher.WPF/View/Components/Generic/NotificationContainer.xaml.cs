@@ -187,6 +187,9 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             panel.Children.Add(notification);
             EntranceHelper.ApplyEntranceAnimation(notification, position);
 
+            if (durationMs < 0)
+                return; // 如果持续时间为负数，则不自动移除
+
             var timer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(durationMs)
@@ -201,7 +204,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             timer.Start();
         }
 
-        private void RemoveNotification(InfoBar notification)
+        public void RemoveNotification(InfoBar notification)
         {
             // 获取通知的位置
             var position = (Constants.InfoBarPosition)notification.Tag;

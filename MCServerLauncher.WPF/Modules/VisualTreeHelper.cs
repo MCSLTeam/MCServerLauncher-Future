@@ -22,5 +22,10 @@ namespace MCServerLauncher.WPF.Modules
             comboBox.SelectedIndex = 0;
             comboBox.Items.Remove("1test");
         }
+        public static void InitStepState(TextBox textBox)
+        {
+            textBox.Text = "1";
+            textBox.Text = string.Empty;
+        }
     }
 }

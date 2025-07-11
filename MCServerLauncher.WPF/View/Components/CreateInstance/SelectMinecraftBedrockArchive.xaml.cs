@@ -2,6 +2,7 @@
 using static MCServerLauncher.WPF.Modules.Constants;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.Components.CreateInstance
 {
@@ -25,19 +26,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             ArchiveTextBox.TextChanged += initialHandler;
 
             // As you can see, we have to trigger it manually
-            ArchiveTextBox.Text = "1";
-            ArchiveTextBox.Text = string.Empty;
-
-            ArchiveTextBox.TextChanged -= initialHandler;
-
-            ArchiveTextBox.TextChanged += async (sender, args) =>
-            {
-                await Task.Delay(80);
-                if (!IsDisposed)
-                {
-                    SetValue(IsFinishedProperty, !string.IsNullOrWhiteSpace(ArchiveTextBox.Text));
-                }
-            };
+            VisualTreeHelper.InitStepState(ArchiveTextBox);
         }
 
         private bool IsDisposed { get; set; } = false;

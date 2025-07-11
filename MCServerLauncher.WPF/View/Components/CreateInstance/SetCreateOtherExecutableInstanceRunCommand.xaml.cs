@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using MCServerLauncher.WPF.Modules;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
@@ -25,19 +26,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             RunCommandTextBox.TextChanged += initialHandler;
 
             // As you can see, we have to trigger it manually
-            RunCommandTextBox.Text = "1";
-            RunCommandTextBox.Text = string.Empty;
-
-            RunCommandTextBox.TextChanged -= initialHandler;
-
-            RunCommandTextBox.TextChanged += async (sender, args) =>
-            {
-                await Task.Delay(80);
-                if (!IsDisposed)
-                {
-                    SetValue(IsFinishedProperty, !string.IsNullOrWhiteSpace(RunCommandTextBox.Text));
-                }
-            };
+            VisualTreeHelper.InitStepState(RunCommandTextBox);
         }
 
         private bool IsDisposed { get; set; } = false;
