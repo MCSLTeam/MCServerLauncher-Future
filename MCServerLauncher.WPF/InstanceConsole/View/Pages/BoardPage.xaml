@@ -24,7 +24,7 @@
                             <RowDefinition />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="{Binding [ConsoleBoard_Universal_RAM], Source={x:Static i18n:LanguageManager.Localize}}"
+                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="{Binding [ConsoleBoard_Universal_RAM], Source={x:Static i18n:Lang.Tr}}"
                                    VerticalAlignment="Top" />
                         <TextBlock Margin="15,15,15,12" Grid.Column="1" Grid.Row="0" x:Name="MemoryStatusTextBlock"
                                    Text="114.51 MB / 1145.14 MB" TextAlignment="Right" />
@@ -43,7 +43,7 @@
                             <RowDefinition />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="{Binding [ConsoleBoard_Universal_CPU], Source={x:Static i18n:LanguageManager.Localize}}"
+                        <TextBlock Margin="15,15,15,12" Grid.Column="0" Grid.Row="0" Text="{Binding [ConsoleBoard_Universal_CPU], Source={x:Static i18n:Lang.Tr}}"
                                    VerticalAlignment="Top" />
                         <TextBlock Margin="15,15,15,12" Grid.Column="1" Grid.Row="0" x:Name="CPUStatusTextBlock"
                                    Text="11.45 %" TextAlignment="Right" />
@@ -57,7 +57,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Margin="15,15,15,10" Grid.Column="0" Text="{Binding [ConsoleBoard_Universal_WebSocketLatency], Source={x:Static i18n:LanguageManager.Localize}}"
+                        <TextBlock Margin="15,15,15,10" Grid.Column="0" Text="{Binding [ConsoleBoard_Universal_WebSocketLatency], Source={x:Static i18n:Lang.Tr}}"
                                    VerticalAlignment="Top" />
                         <TextBlock Margin="15,15,15,15" Grid.Column="1" x:Name="WebSocketPingStatusTextBlock"
                                    Text="11 ms" TextAlignment="Right" />

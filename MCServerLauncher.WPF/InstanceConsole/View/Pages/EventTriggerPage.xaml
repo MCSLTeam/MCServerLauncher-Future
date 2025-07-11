@@ -22,20 +22,20 @@
             <ui:DropDownButton Grid.Column="0" Background="Transparent" BorderThickness="0" Height="35"
                                Margin="0,0,10,0">
                 <ui:DropDownButton.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Add}" Content="{Binding [Add], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Add}" Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}}" />
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [ConsoleCommand_EventTrigger_Trigger], Source={x:Static i18n:LanguageManager.Localize}}"
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [ConsoleCommand_EventTrigger_Trigger], Source={x:Static i18n:Lang.Tr}}"
                                         HorizontalAlignment="Left" />
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.BulletedList}" Content="{Binding [ConsoleCommand_EventTrigger_Event], Source={x:Static i18n:LanguageManager.Localize}}"
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.BulletedList}" Content="{Binding [ConsoleCommand_EventTrigger_Event], Source={x:Static i18n:Lang.Tr}}"
                                         HorizontalAlignment="Left" />
                     </ui:MenuFlyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>
             <Button Grid.Column="2" Background="Transparent" BorderThickness="0" Height="35" Margin="0,0,10,0">
                 <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
                 </Button.Content>
             </Button>
         </Grid>

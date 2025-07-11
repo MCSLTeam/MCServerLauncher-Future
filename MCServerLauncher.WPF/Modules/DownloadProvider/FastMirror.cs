@@ -19,11 +19,11 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
         {
             return originalTag switch
             {
-                "proxy" => LanguageManager.Localize["DownloadModule_FastMirrorProxyType"],
-                "vanilla" => LanguageManager.Localize["DownloadModule_FastMirrorVanillaType"],
-                "pure" => LanguageManager.Localize["DownloadModule_FastMirrorPureType"],
-                "mod" => LanguageManager.Localize["DownloadModule_FastMirrorModType"],
-                "bedrock" => LanguageManager.Localize["DownloadModule_FastMirrorBedrockType"],
+                "proxy" => Lang.Tr["DownloadModule_FastMirrorProxyType"],
+                "vanilla" => Lang.Tr["DownloadModule_FastMirrorVanillaType"],
+                "pure" => Lang.Tr["DownloadModule_FastMirrorPureType"],
+                "mod" => Lang.Tr["DownloadModule_FastMirrorModType"],
+                "bedrock" => Lang.Tr["DownloadModule_FastMirrorBedrockType"],
                 _ => originalTag
             };
         }

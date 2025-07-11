@@ -1,11 +1,13 @@
-﻿using MCServerLauncher.Common.ProtoType.Instance;
+﻿using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.CreateInstance;
 using MCServerLauncher.WPF.View.Pages;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
-using System.Windows.Documents;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
@@ -58,14 +60,46 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         }
 
         /// <summary>
+        /// Check if any step is finished.
+        /// </summary>
+        private bool CheckIfAnyStepFinished()
+        {
+            if (StepList == null || !StepList.Any())
+            {
+                return false;
+            }
+            return StepList.Any(step => step.IsFinished);
+        }
+
+        /// <summary>
         ///    Go back.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void GoPreCreateInstance(object sender, RoutedEventArgs e)
+        private async void GoPreCreateInstance(object sender, RoutedEventArgs e)
         {
-            var parent = this.TryFindParent<CreateInstancePage>();
-            parent?.CurrentCreateInstance.GoBack();
+            if (!CheckIfAnyStepFinished())
+            {
+                var parent = this.TryFindParent<CreateInstancePage>();
+                parent?.CurrentCreateInstance.GoBack();
+            } else {
+
+                ContentDialog dialog = new()
+                {
+                    Title = Lang.Tr["AreYouSure"],
+                    PrimaryButtonText = Lang.Tr["Back"],
+                    SecondaryButtonText = Lang.Tr["Cancel"],
+                    DefaultButton = ContentDialogButton.Primary,
+                    FullSizeDesired = false,
+                    Content = Lang.Tr["GoBackLostTip"]
+                };
+                dialog.PrimaryButtonClick += (s, args) =>
+                {
+                    var parent = this.TryFindParent<CreateInstancePage>();
+                    parent?.CurrentCreateInstance.GoBack();
+                };
+                await dialog.ShowAsync();
+            }
         }
 
         //private void FinishSetup(object sender, RoutedEventArgs e)

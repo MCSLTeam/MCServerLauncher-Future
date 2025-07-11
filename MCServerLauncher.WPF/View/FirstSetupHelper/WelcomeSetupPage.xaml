@@ -26,7 +26,7 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" VerticalAlignment="Center" Style="{StaticResource LargeTitleTextBlock}"
-                           Text="{Binding [FirstSetup_SetupFinishedWelcome], Source={x:Static i18n:LanguageManager.Localize}}" />
+                           Text="{Binding [FirstSetup_SetupFinishedWelcome], Source={x:Static i18n:Lang.Tr}}" />
                 <TextBlock Grid.Row="1" VerticalAlignment="Center" FontSize="46"
                            FontFamily="{StaticResource Montserrat}" Style="{StaticResource LargeTitleTextBlock}"
                            Text="MCServerLauncher" />
@@ -51,7 +51,7 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="Next">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
             </Grid>

@@ -14,13 +14,13 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="{Binding [ConsoleBoard_Minecraft_ServerIP_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Center"
+            <TextBlock Grid.Column="0" Text="{Binding [ConsoleBoard_Minecraft_ServerIP_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center"
                        HorizontalAlignment="Left" Margin="15,15,0,15" />
             <TextBox Visibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" Padding="10,5,10,5"
                      Grid.Column="1" VerticalAlignment="Center" x:Name="AddressTextBox" IsReadOnly="True"
                      Margin="15,0,15,0" />
             <Button Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" Click="ToggleIP" x:Name="ToggleIPButton"
-                    Grid.Column="2" Content="{Binding [ClickToView], Source={x:Static i18n:LanguageManager.Localize}}" Height="32" />
+                    Grid.Column="2" Content="{Binding [ClickToView], Source={x:Static i18n:Lang.Tr}}" Height="32" />
         </Grid>
     </Border>
 </UserControl>

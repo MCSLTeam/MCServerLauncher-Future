@@ -22,22 +22,22 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_MinecraftJavaJvmArgument_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_MinecraftJavaJvmArgument_Description], Source={x:Static i18n:Lang.Tr}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <Button Click="AddJvmArgument" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left"
                     VerticalAlignment="Top" Margin="20,15,0,0">
                 <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [CreateInstance_SetMinecraftJavaJvmArgument_AddArgument], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [CreateInstance_MinecraftJavaJvmArgument_AddArgument], Source={x:Static i18n:Lang.Tr}}" />
                 </Button.Content>
             </Button>
             <ui:InfoBar Height="50" Margin="20,15,20,0" IsClosable="False" IsOpen="True"
                         Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Severity="Warning"
-                        Title="{Binding [Warning], Source={x:Static i18n:LanguageManager.Localize}}"
-                        Message="{Binding [NoJarFileJvmArgument], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        Title="{Binding [Warning], Source={x:Static i18n:Lang.Tr}}"
+                        Message="{Binding [NoJarFileJvmArgument], Source={x:Static i18n:Lang.Tr}}" />
             <ui:ListView x:Name="ArgsListView" ScrollViewer.VerticalScrollBarVisibility="Disabled"
                          IsSelectionEnabled="False" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
                          Margin="20,15,20,20">
@@ -45,7 +45,7 @@
                 <vc:JvmArgumentItem />
             </ui:ListView>
             <Button Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Margin="0,15,20,0" ToolTip="{Binding [JvmArgHelper], Source={x:Static i18n:LanguageManager.Localize}}"
+                    Margin="0,15,20,0" ToolTip="{Binding [JvmArgHelper], Source={x:Static i18n:Lang.Tr}}"
                     Click="ShowArgHelper">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />

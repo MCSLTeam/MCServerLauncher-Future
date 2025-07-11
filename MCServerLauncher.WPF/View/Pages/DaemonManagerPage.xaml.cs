@@ -37,7 +37,7 @@ namespace MCServerLauncher.WPF.View.Pages
                                 EndPoint = daemon.EndPoint,
                                 Port = daemon.Port,
                                 Token = daemon.Token,
-                                FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
+                                FriendlyName = daemon.FriendlyName ?? Lang.Tr["Main_DaemonManagerNavMenu"],
                                 Status = "ing",
                             };
 #pragma warning restore CS8601 // 引用类型赋值可能为 null。

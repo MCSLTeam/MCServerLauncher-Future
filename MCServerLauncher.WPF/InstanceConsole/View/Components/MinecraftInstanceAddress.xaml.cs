@@ -25,7 +25,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
         private void ToggleIP(object sender, RoutedEventArgs e)
         {
             AddressTextBox.Visibility = AddressTextBox.Visibility == Visibility.Hidden ? Visibility.Visible : Visibility.Hidden;
-            ToggleIPButton.Content = AddressTextBox.Visibility == Visibility.Hidden ? LanguageManager.Localize["ClickToView"] : LanguageManager.Localize["ClickToHide"];
+            ToggleIPButton.Content = AddressTextBox.Visibility == Visibility.Hidden ? Lang.Tr["ClickToView"] : Lang.Tr["ClickToHide"];
         }
     }
 }

@@ -26,24 +26,24 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [MinecraftVersion], Source={x:Static i18n:LanguageManager.Localize}}"
+                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [MinecraftVersion], Source={x:Static i18n:Lang.Tr}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                 <ui:FontIcon Grid.Row="0" Grid.Column="1" Margin="5,20,0,0" x:Name="StatusShow1"
                          Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16"
                          VerticalAlignment="Top" HorizontalAlignment="Left" />
                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,0,0" Grid.ColumnSpan="3"
-                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftVersionTip], Source={x:Static i18n:LanguageManager.Localize}}"
+                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_MinecraftVersionTip], Source={x:Static i18n:Lang.Tr}}"
                    TextWrapping="Wrap"
                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                 <CheckBox x:Name="ToggleStableMinecraftVersionCheckBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
-                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static i18n:LanguageManager.Localize}}" IsChecked="True" Margin="20,0,10,0" />
+                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static i18n:Lang.Tr}}" IsChecked="True" Margin="20,0,10,0" />
                 <ComboBox x:Name="MinecraftVersionComboBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,5,10,20"
                   Width="Auto" HorizontalAlignment="Stretch" MaxDropDownHeight="300" />
                 <Button Height="32" Margin="0,5,20,0" Grid.Row="3" Grid.Column="2" VerticalAlignment="Top"
                 HorizontalAlignment="Right" Click="FetchMinecraftVersions"
                 x:Name="FetchMinecraftVersionsButton">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
 
@@ -54,7 +54,7 @@
                     </ui:DropDownButton.Content>
                     <ui:DropDownButton.Flyout>
                         <ui:Flyout Placement="TopEdgeAlignedRight">
-                            <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static i18n:Lang.Tr}}" />
                         </ui:Flyout>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>
@@ -74,23 +74,23 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [FabricVersion], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                   Style="{StaticResource SubtitleTextBlock}" Text="{Binding [FabricVersion], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" />
                 <ui:FontIcon Grid.Row="0" Grid.Column="1" Margin="5,20,0,0" x:Name="StatusShow2"
                          Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16"
                          VerticalAlignment="Top" HorizontalAlignment="Left" />
                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,20,0" Grid.ColumnSpan="3"
-                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectFabricVersion_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                   Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_FabricVersion_Description], Source={x:Static i18n:Lang.Tr}}"
                    TextWrapping="Wrap"
                    VerticalAlignment="Top" HorizontalAlignment="Left" />
                 <CheckBox x:Name="ToggleStableFabricVersionCheckBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
-                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static i18n:LanguageManager.Localize}}" IsChecked="True" Margin="20,0,10,0" />
+                  Content="{Binding [OnlyShowReleaseVersion], Source={x:Static i18n:Lang.Tr}}" IsChecked="True" Margin="20,0,10,0" />
                 <ComboBox x:Name="FabricVersionComboBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,10,20"
                   Width="Auto" HorizontalAlignment="Stretch" MaxDropDownHeight="300" />
                 <Button Height="32" Margin="0,15,20,0" Grid.Row="3" Grid.Column="2" VerticalAlignment="Top"
                 HorizontalAlignment="Right" x:Name="FetchFabricVersionButton" Click="FetchFabricVersions">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Refresh}" Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
 
@@ -101,7 +101,7 @@
                     </ui:DropDownButton.Content>
                     <ui:DropDownButton.Flyout>
                         <ui:Flyout Placement="TopEdgeAlignedRight">
-                            <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            <TextBlock TextWrapping="Wrap" Text="{Binding [CreateInstance_BmclapiMayBeFailedTip], Source={x:Static i18n:Lang.Tr}}" />
                         </ui:Flyout>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>

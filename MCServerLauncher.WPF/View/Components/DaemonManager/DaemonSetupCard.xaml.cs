@@ -66,18 +66,18 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             if (e.NewValue is not string status) return;
             IconAndText NewStatusLine = status switch
             {
-                "err" => new() { Content = LanguageManager.Localize["Status_Error"], Icon = SegoeFluentIcons.Error, IsTabStop = false, VerticalAlignment = VerticalAlignment.Top },
-                "ok" => new() { Content = LanguageManager.Localize["Status_OK"], Icon = SegoeFluentIcons.Accept, IsTabStop = false, VerticalAlignment = VerticalAlignment.Top },
-                "ing" => new() { Content = LanguageManager.Localize["Connecting"], Icon = SegoeFluentIcons.HangUp, IsTabStop = false, VerticalAlignment = VerticalAlignment.Top },
+                "err" => new() { Content = Lang.Tr["Status_Error"], Icon = SegoeFluentIcons.Error, IsTabStop = false, VerticalAlignment = VerticalAlignment.Top },
+                "ok" => new() { Content = Lang.Tr["Status_OK"], Icon = SegoeFluentIcons.Accept, IsTabStop = false, VerticalAlignment = VerticalAlignment.Top },
+                "ing" => new() { Content = Lang.Tr["Connecting"], Icon = SegoeFluentIcons.HangUp, IsTabStop = false, VerticalAlignment = VerticalAlignment.Top },
                 _ => throw new NotImplementedException(),
             };
             control.StatusLine.Children.Clear();
             control.StatusLine.Children.Add(NewStatusLine);
             IconAndText NewConnectionControlLine = status switch
             {
-                "err" => new() { Content = LanguageManager.Localize["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
-                "ok" => new() { Content = LanguageManager.Localize["Disconnect"], Icon = SegoeFluentIcons.DisconnectDrive, IsTabStop = false },
-                "ing" => new() { Content = LanguageManager.Localize["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
+                "err" => new() { Content = Lang.Tr["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
+                "ok" => new() { Content = Lang.Tr["Disconnect"], Icon = SegoeFluentIcons.DisconnectDrive, IsTabStop = false },
+                "ing" => new() { Content = Lang.Tr["Retry"], Icon = SegoeFluentIcons.Refresh, IsTabStop = false },
                 _ => throw new NotImplementedException(),
             };
             control.ConnectionControlButton.Content = NewConnectionControlLine;

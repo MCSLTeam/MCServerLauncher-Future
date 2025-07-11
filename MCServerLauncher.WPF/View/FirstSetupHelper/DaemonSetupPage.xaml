@@ -19,14 +19,14 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [FirstSetup_ConnectDaemonMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+        <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [FirstSetup_ConnectDaemonMenu], Source={x:Static i18n:Lang.Tr}}"
                    HorizontalAlignment="Left" />
         <TextBlock Margin="40,10,40,0" Grid.Row="1" Style="{StaticResource MinititleTextBlock}"
-                   Text="{Binding [FirstSetup_ConnectDaemonTip], Source={x:Static i18n:LanguageManager.Localize}}" TextTrimming="CharacterEllipsis"
+                   Text="{Binding [FirstSetup_ConnectDaemonTip], Source={x:Static i18n:Lang.Tr}}" TextTrimming="CharacterEllipsis"
                    TextWrapping="WrapWithOverflow" HorizontalAlignment="Left" />
         <Button Grid.Row="2" Margin="40,10,40,0" Click="AddDaemonConnection">
             <Button.Content>
-                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:LanguageManager.Localize}}"/>
+                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
             </Button.Content>
         </Button>
         <ui:ScrollViewerEx Grid.Row="3" Margin="35,10,35,10">
@@ -38,12 +38,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <ui:HyperlinkButton Content="{Binding [TempSkip], Source={x:Static i18n:LanguageManager.Localize}}" Height="32" Hyperlink.Click="Skip" Grid.Column="0"
+                <ui:HyperlinkButton Content="{Binding [TempSkip], Source={x:Static i18n:Lang.Tr}}" Height="32" Hyperlink.Click="Skip" Grid.Column="0"
                                     HorizontalAlignment="Right" Margin="0,0,20,0" />
                 <Button IsEnabled="False" Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="Next"
                         Style="{StaticResource AccentButtonStyle}" x:Name="NextButton" >
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.PageRight}" Content="{Binding [Continue], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
             </Grid>

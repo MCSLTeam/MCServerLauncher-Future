@@ -52,15 +52,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var parent = this.TryFindParent<FirstSetup>();
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Localize["AreYouSure"],
-                PrimaryButtonText = LanguageManager.Localize["TempSkip"],
-                SecondaryButtonText = LanguageManager.Localize["Back"],
+                Title = Lang.Tr["AreYouSure"],
+                PrimaryButtonText = Lang.Tr["TempSkip"],
+                SecondaryButtonText = Lang.Tr["Back"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Localize["FirstSetup_SkipConnectDaemonTip"]
+                    Text = Lang.Tr["FirstSetup_SkipConnectDaemonTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent?.GoWelcomeSetup();

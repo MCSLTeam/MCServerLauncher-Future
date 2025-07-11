@@ -19,7 +19,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition />
                 </Grid.RowDefinitions>
-                <TextBlock Margin="15,15,15,0" Grid.Row="0" Text="{Binding [ResDownload_InstanceCore], Source={x:Static i18n:LanguageManager.Localize}}" Style="{StaticResource MinititleTextBlock}"
+                <TextBlock Margin="15,15,15,0" Grid.Row="0" Text="{Binding [ResDownload_InstanceCore], Source={x:Static i18n:Lang.Tr}}" Style="{StaticResource MinititleTextBlock}"
                            HorizontalAlignment="Center" />
                 <ui:ScrollViewerEx Margin="10,10,10,15" VerticalAlignment="Stretch" Width="180" Height="Auto"
                                    Grid.Row="1">

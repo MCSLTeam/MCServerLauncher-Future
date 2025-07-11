@@ -115,7 +115,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                     > 1024 => $"{BytesPerSecondSpeed / 1024:F2} KB/s",
                     _ => $"{BytesPerSecondSpeed:F2} B/s"
                 };
-                //ChunkCountLabel.Text = $"{ActiveChunks} {LanguageManager.Localize["Thread"]}";
+                //ChunkCountLabel.Text = $"{ActiveChunks} {Lang.Tr["Thread"]}";
                 ChunkCountLabel.Text = "";
                 if (TotalBytesToReceive > 0)
                 {
@@ -152,42 +152,42 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             catch { Console.WriteLine("Stop UITimer Failed"); }
             if (e.Cancelled)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.Invoke((Delegate)(() =>
                 {
                     DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
                     Notification.Push(
-                        title: LanguageManager.Localize["DownloadCancelled"],
-                        message: $"{FileName} {LanguageManager.Localize["DownloadCancelled"]}",
+                        title: Lang.Tr["DownloadCancelled"],
+                        message: $"{FileName} {Lang.Tr["DownloadCancelled"]}",
                         isClosable: true,
                         severity: InfoBarSeverity.Warning
                     );
-                });
+                }));
                 return;
             }
             if (e.Error is not null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.Invoke((Delegate)(() =>
                 {
                     DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
                     Notification.Push(
-                        title: LanguageManager.Localize["DownloadFailed"],
-                        message: $"{FileName} {LanguageManager.Localize["DownloadFailed"]}\n{e.Error}",
+                        title: Lang.Tr["DownloadFailed"],
+                        message: $"{FileName} {Lang.Tr["DownloadFailed"]}\n{e.Error}",
                         isClosable: true,
                         severity: InfoBarSeverity.Error
                     );
-                });
+                }));
                 return;
             }
-            Dispatcher.Invoke(() =>
+            Dispatcher.Invoke((Delegate)(() =>
             {
                 DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
                 Notification.Push(
-                    title: LanguageManager.Localize["DownloadFinished"],
-                    message: $"{FileName} {LanguageManager.Localize["DownloadFinished"]}",
+                    title: Lang.Tr["DownloadFinished"],
+                    message: $"{FileName} {Lang.Tr["DownloadFinished"]}",
                     isClosable: true,
                     severity: InfoBarSeverity.Success
                 );
-            });
+            }));
         }
 
         /// <summary>

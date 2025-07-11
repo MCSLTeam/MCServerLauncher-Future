@@ -38,15 +38,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         {
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Localize["AreYouSure"],
-                PrimaryButtonText = LanguageManager.Localize["NotNow"],
-                SecondaryButtonText = LanguageManager.Localize["Disagree"],
+                Title = Lang.Tr["AreYouSure"],
+                PrimaryButtonText = Lang.Tr["NotNow"],
+                SecondaryButtonText = Lang.Tr["Disagree"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Localize["FirstSetup_EulaDisagreeTip"]
+                    Text = Lang.Tr["FirstSetup_EulaDisagreeTip"]
                 }
             };
             dialog.SecondaryButtonClick += (o, args) => Application.Current.Shutdown();
@@ -73,14 +73,14 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 ContentDialog fakeFinishedDialog = new()
                 {
-                    Title = LanguageManager.Localize["AreYouSure"],
-                    PrimaryButtonText = LanguageManager.Localize["OK"],
+                    Title = Lang.Tr["AreYouSure"],
+                    PrimaryButtonText = Lang.Tr["OK"],
                     DefaultButton = ContentDialogButton.Primary,
                     FullSizeDesired = false,
                     Content = new TextBlock
                     {
                         TextWrapping = TextWrapping.WrapWithOverflow,
-                        Text = LanguageManager.Localize["FirstSetup_FakeEulaAgreeTip"]
+                        Text = Lang.Tr["FirstSetup_FakeEulaAgreeTip"]
                     }
                 };
                 try
@@ -97,15 +97,15 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Localize["AreYouSure"],
-                PrimaryButtonText = LanguageManager.Localize["Agree"],
-                SecondaryButtonText = LanguageManager.Localize["NotNow"],
+                Title = Lang.Tr["AreYouSure"],
+                PrimaryButtonText = Lang.Tr["Agree"],
+                SecondaryButtonText = Lang.Tr["NotNow"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = new TextBlock
                 {
                     TextWrapping = TextWrapping.WrapWithOverflow,
-                    Text = LanguageManager.Localize["FirstSetup_EulaAgreeTip"]
+                    Text = Lang.Tr["FirstSetup_EulaAgreeTip"]
                 }
             };
             dialog.PrimaryButtonClick += (o, args) => parent?.GoDaemonSetup();

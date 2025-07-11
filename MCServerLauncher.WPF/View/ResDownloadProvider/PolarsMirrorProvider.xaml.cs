@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class PolarsMirrorProvider : IResDownloadProvider
     {
-        public string ResProviderName => LanguageManager.Localize["ResDownloadPage_ProviderName_PolarsMirror"];
+        public string ResProviderName => Lang.Tr["ResDownloadPage_ProviderName_PolarsMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

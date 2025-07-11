@@ -64,7 +64,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MCSLSync" => MCSLSync,
                 _ => null
             };
-            Subtitle.Text = $"{LanguageManager.Localize["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {LanguageManager.Localize["ResDownloadTipSuffix"]}";
+            Subtitle.Text = $"{Lang.Tr["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {Lang.Tr["ResDownloadTipSuffix"]}";
             CurrentResDownloadProvider.Content = currentResDownloadProvider;
             return currentResDownloadProvider;
         }

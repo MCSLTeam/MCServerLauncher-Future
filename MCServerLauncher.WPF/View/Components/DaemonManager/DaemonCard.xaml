@@ -32,14 +32,14 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_RemoteUri], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,5,5,5" />
-                <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_ConnectionStatus], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,5" />
+                <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_RemoteUri], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,5,5,5" />
+                <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_ConnectionStatus], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,5" />
                 <TextBlock Style="{StaticResource BodyTextBlock}" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,5,5,5" x:Name="AddressLine" />
                 <Grid Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,5" x:Name="StatusLine" />
             </Grid>
             <Button Grid.Row="2" Margin="20,0,0,0" HorizontalAlignment="Right">
                 <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                 </Button.Content>
             </Button>
         </Grid>

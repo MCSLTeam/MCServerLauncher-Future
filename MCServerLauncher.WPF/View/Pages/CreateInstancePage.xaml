@@ -14,7 +14,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" 
-                   Text="{Binding [Main_CreateInstanceNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" 
+                   Text="{Binding [Main_CreateInstanceNavMenu], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left" />
         <ui:Frame Grid.Row="1" x:Name="CurrentCreateInstance" Margin="0,15,0,35" />
     </Grid>

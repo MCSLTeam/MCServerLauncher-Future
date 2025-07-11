@@ -13,25 +13,25 @@
                        IsBackButtonVisible="Collapsed"
                        PaneDisplayMode="Top">
         <ui:NavigationView.MenuItems>
-            <ui:NavigationViewItem Content="{Binding [FirstSetup_TimeLanguageMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+            <ui:NavigationViewItem Content="{Binding [FirstSetup_TimeLanguageMenu], Source={x:Static i18n:Lang.Tr}}"
                                    Tag="MCServerLauncher.WPF.View.FirstSetupHelper.LanguageSetupPage" IsSelected="True">
                 <ui:NavigationViewItem.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" FontSize="16" />
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Content="{Binding [FirstSetup_EulaMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+            <ui:NavigationViewItem Content="{Binding [FirstSetup_EulaMenu], Source={x:Static i18n:Lang.Tr}}"
                                    Tag="MCServerLauncher.WPF.View.FirstSetupHelper.EulaSetupPage" IsEnabled="False">
                 <ui:NavigationViewItem.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Read}" FontSize="16" />
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Content="{Binding [FirstSetup_ConnectDaemonMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+            <ui:NavigationViewItem Content="{Binding [FirstSetup_ConnectDaemonMenu], Source={x:Static i18n:Lang.Tr}}"
                                    Tag="MCServerLauncher.WPF.View.FirstSetupHelper.DaemonSetupPage" IsEnabled="False">
                 <ui:NavigationViewItem.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.FileExplorer}" FontSize="16" />
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Content="{Binding [FirstSetup_WelcomeMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+            <ui:NavigationViewItem Content="{Binding [FirstSetup_WelcomeMenu], Source={x:Static i18n:Lang.Tr}}"
                                    Tag="MCServerLauncher.WPF.View.FirstSetupHelper.WelcomeSetupPage" IsEnabled="False">
                 <ui:NavigationViewItem.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16" />

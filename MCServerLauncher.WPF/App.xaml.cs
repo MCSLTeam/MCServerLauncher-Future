@@ -34,7 +34,7 @@ namespace MCServerLauncher.WPF
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
-                MessageBox.Show(LanguageManager.Localize["NotAllowedOverOpening"], LanguageManager.Localize["Tip"],
+                MessageBox.Show(Lang.Tr["NotAllowedOverOpening"], Lang.Tr["Tip"],
                     MessageBoxButton.OK, MessageBoxImage.Asterisk);
 
                 Environment.Exit(0);
@@ -73,14 +73,14 @@ namespace MCServerLauncher.WPF
             {
                 try
                 {
-                    Dispatcher.Invoke(() => 
+                    Dispatcher.Invoke((Delegate)(() => 
                     {
                         MessageBox.Show(
-                            LanguageManager.Localize["DeadProcessTip"],
-                            "!!!", 
-                            MessageBoxButton.OK, 
+                            Lang.Tr["DeadProcessTip"],
+                            "!!!",
+                            MessageBoxButton.OK,
                             MessageBoxImage.Error);
-                    });
+                    }));
                 }
                 catch
                 {

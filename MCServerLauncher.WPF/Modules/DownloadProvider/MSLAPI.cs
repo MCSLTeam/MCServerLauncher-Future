@@ -33,7 +33,7 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     ?.SelectToken("data")!.SelectToken("description")!.ToString();
-            return LanguageManager.Localize["DownloadModule_MSLAPIGetCoreDescriptionFailed"];
+            return Lang.Tr["DownloadModule_MSLAPIGetCoreDescriptionFailed"];
         }
 
         /// <summary>

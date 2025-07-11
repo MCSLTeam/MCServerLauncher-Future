@@ -20,17 +20,17 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_OtherExecutableInstanceRunCommand_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <ui:FontIcon Grid.Row="0" Grid.Column="1" Margin="5,20,0,0" x:Name="StatusShow"
                          Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16"
                          VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,20,0" Grid.ColumnSpan="3"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Description], Source={x:Static i18n:LanguageManager.Localize}}" TextWrapping="Wrap"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_OtherExecutableInstanceRunCommand_Description], Source={x:Static i18n:Lang.Tr}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox x:Name="RunCommandTextBox" ScrollViewer.VerticalScrollBarVisibility="Disabled" Grid.Row="2"
                      Grid.Column="0" Margin="20,15,20,20" Grid.ColumnSpan="3"
-                     ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_SetCreateOtherExecutableInstanceRunCommand_Title], Source={x:Static i18n:LanguageManager.Localize}}" />
+                     ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_OtherExecutableInstanceRunCommand_Title], Source={x:Static i18n:Lang.Tr}}" />
             <ui:DropDownButton Grid.Row="0" Grid.Column="2" ShowChevronArrow="False"
                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,20,0">
                 <ui:DropDownButton.Content>
@@ -38,7 +38,7 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:Flyout Placement="TopEdgeAlignedRight">
-                        <TextBlock TextWrapping="Wrap" Text="{Binding [RunCommandArgumentTip], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <TextBlock TextWrapping="Wrap" Text="{Binding [RunCommandArgumentTip], Source={x:Static i18n:Lang.Tr}}" />
                     </ui:Flyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>

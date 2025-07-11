@@ -20,17 +20,17 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftJavaJvm_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_MinecraftJavaJvm_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             <ui:FontIcon Grid.Row="0" Grid.Column="1" Margin="5,20,0,0" x:Name="StatusShow"
                          Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16"
                          VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,20,0" Grid.ColumnSpan="3"
                        Style="{StaticResource BodyTextBlock}"
-                       Text="{Binding [CreateInstance_SelectMinecraftJavaJvm_Description], Source={x:Static i18n:LanguageManager.Localize}}" TextWrapping="Wrap"
+                       Text="{Binding [CreateInstance_MinecraftJavaJvm_Description], Source={x:Static i18n:Lang.Tr}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox x:Name="JavaRuntimeTextBox" ScrollViewer.VerticalScrollBarVisibility="Disabled" Grid.Row="2" Grid.ColumnSpan="2"
-                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_SelectMinecraftJavaJvm_Title], Source={x:Static i18n:LanguageManager.Localize}}" />
+                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_MinecraftJavaJvm_Title], Source={x:Static i18n:Lang.Tr}}" />
             <ui:DropDownButton ShowChevronArrow="False" Height="32" Margin="0,15,20,0" Grid.Row="2"
                                Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
                 <ui:DropDownButton.Content>
@@ -38,18 +38,18 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <MenuItem Header="{Binding [SelectManually], Source={x:Static i18n:LanguageManager.Localize}}">
+                        <MenuItem Header="{Binding [SelectManually], Source={x:Static i18n:Lang.Tr}}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [ScanJavaAtDaemon], Source={x:Static i18n:LanguageManager.Localize}}">
+                        <MenuItem Header="{Binding [ScanJavaAtDaemon], Source={x:Static i18n:Lang.Tr}}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SearchAndApps}"
                                              FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [SelectFromResult], Source={x:Static i18n:LanguageManager.Localize}}">
+                        <MenuItem Header="{Binding [SelectFromResult], Source={x:Static i18n:Lang.Tr}}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SelectAll}" FontSize="16" />
                             </MenuItem.Icon>
@@ -65,7 +65,7 @@
                 <ui:DropDownButton.Flyout>
                     <ui:Flyout Placement="TopEdgeAlignedRight">
                         <TextBlock TextWrapping="Wrap"
-                                   Text="{Binding [MinecraftJavaRequirementTip], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                   Text="{Binding [MinecraftJavaRequirementTip], Source={x:Static i18n:Lang.Tr}}" />
                     </ui:Flyout>
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>

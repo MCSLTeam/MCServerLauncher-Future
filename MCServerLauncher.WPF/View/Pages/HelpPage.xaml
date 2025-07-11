@@ -15,10 +15,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" 
-                   Text="{Binding [Main_HelpCenterNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" 
+                   Text="{Binding [Main_HelpCenterNavMenu], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" 
-                   Text="{Binding [HelpCenterTip], Source={x:Static i18n:LanguageManager.Localize}}" 
+                   Text="{Binding [HelpCenterTip], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
     </Grid>
 </ui:Page>

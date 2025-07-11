@@ -17,10 +17,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" 
-                   Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" 
+                   Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" 
-                   Text="{Binding [InstanceManagerTip], Source={x:Static i18n:LanguageManager.Localize}}" 
+                   Text="{Binding [InstanceManagerTip], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
         <ui:ScrollViewerEx Grid.Row="2" Margin="0,15,0,0">
             <ui:GridView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15" >

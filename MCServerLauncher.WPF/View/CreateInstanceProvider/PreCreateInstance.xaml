@@ -21,61 +21,61 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreCreateInstanceTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+        <TextBlock Grid.Row="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [PreCreateInstanceTip], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" />
         <ui:ScrollViewerEx Grid.Row="1" Margin="0,15,0,15">
             <ikw:SimpleStackPanel Spacing="10">
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
-                            <TextBlock Text="{Binding [CreateMinecraftInstanceCategory], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
+                            <TextBlock Text="{Binding [CreateMinecraftInstanceCategory], Source={x:Static i18n:Lang.Tr}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
                                        Margin="0,0,0,2" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <ikw:SimpleStackPanel Spacing="10">
                         <Button x:Name="MinecraftJavaServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateUniversalMinecraftJavaInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                Content="{Binding [CreateUniversalMinecraftJavaInstance], Source={x:Static i18n:Lang.Tr}}" />
                         <Button x:Name="MinecraftForgeServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftForgeInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftForgeInstance], Source={x:Static i18n:Lang.Tr}}" />
                         <Button x:Name="MinecraftNeoForgeServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftNeoForgeInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                Content="{Binding [CreateMinecraftNeoForgeInstance], Source={x:Static i18n:Lang.Tr}}" />
                         <Button x:Name="MinecraftFabricServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftFabricInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftFabricInstance], Source={x:Static i18n:Lang.Tr}}" />
                         <Button x:Name="MinecraftQuiltServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftQuiltInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftQuiltInstance], Source={x:Static i18n:Lang.Tr}}" />
                         <Button x:Name="MinecraftBedrockServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftBedrockInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftBedrockInstance], Source={x:Static i18n:Lang.Tr}}" />
                         <Button IsEnabled="False" x:Name="MinecraftGeyserStandalone" Padding="20,13,0,13"
                                 Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftGeyserStandaloneInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftGeyserStandaloneInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MinecraftBungeeCord" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftBungeeCordInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftBungeeCordInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MinecraftWaterfall" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftWaterfallInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftWaterfallInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MinecraftVelocity" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftVelocityInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftVelocityInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MinecraftTravertine" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftTravertineInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftTravertineInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
                     </ikw:SimpleStackPanel>
                 </Expander>
 
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
-                            <TextBlock Text="{Binding [CreateFrpcInstanceCategory], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
+                            <TextBlock Text="{Binding [CreateFrpcInstanceCategory], Source={x:Static i18n:Lang.Tr}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
                                        Margin="0,0,0,2" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <ikw:SimpleStackPanel Spacing="10">
                         <Button IsEnabled="False" x:Name="FastReverseProxyClient" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="{Binding [CreateUniversalFastReverseProxyClientInstance], Source={x:Static i18n:LanguageManager.Localize}}" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateUniversalFastReverseProxyClientInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
                         <Button IsEnabled="False" x:Name="MEFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                         Content="ME Frp" ToolTip="没做完呢，别急" />
@@ -91,11 +91,11 @@
                     </ikw:SimpleStackPanel>
                 </Expander>
                 <Button x:Name="TerrariaGameServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateTerrariaServerInstance], Source={x:Static i18n:LanguageManager.Localize}}"/>
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateTerrariaServerInstance], Source={x:Static i18n:Lang.Tr}}"/>
                 <Button x:Name="OtherExecutable" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateOtherExecutableInstance], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateOtherExecutableInstance], Source={x:Static i18n:Lang.Tr}}" />
                 <Button IsEnabled="False" x:Name="ImportInstance" Padding="20,13,0,13" Click="GoCreateNewInstance"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [ImportExistsInstance], Source={x:Static i18n:LanguageManager.Localize}}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [ImportExistsInstance], Source={x:Static i18n:Lang.Tr}}"
                         ToolTip="没做完呢，别急" />
 
             </ikw:SimpleStackPanel>

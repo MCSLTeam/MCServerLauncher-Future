@@ -20,19 +20,19 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Margin="20,15,0,0"
-                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_SelectMinecraftBedrockArchive_Title], Source={x:Static i18n:LanguageManager.Localize}}"
+                       Style="{StaticResource SubtitleTextBlock}" Text="{Binding [CreateInstance_MinecraftBedrockArchive_Title], Source={x:Static i18n:Lang.Tr}}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <ui:FontIcon Grid.Row="0" Grid.Column="1" Margin="5,20,0,0" x:Name="StatusShow"
                          Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16"
                          VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="20,0,20,0" Grid.ColumnSpan="3"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SelectArchive_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_Archive_Description], Source={x:Static i18n:Lang.Tr}}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
             <TextBox x:Name="ArchiveTextBox" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsEnabled="False" Grid.Row="2"
-                     Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [Archive], Source={x:Static i18n:LanguageManager.Localize}}" />
+                     Grid.Column="0" Grid.ColumnSpan="2" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [Archive], Source={x:Static i18n:Lang.Tr}}" />
             <Button Height="32" Margin="0,15,20,0" Grid.Row="2" Grid.Column="2" VerticalAlignment="Top"
-                    HorizontalAlignment="Right" Content="{Binding [Browse], Source={x:Static i18n:LanguageManager.Localize}}" />
+                    HorizontalAlignment="Right" Content="{Binding [Browse], Source={x:Static i18n:Lang.Tr}}" />
 
             <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top"
                     Margin="0,15,20,0">

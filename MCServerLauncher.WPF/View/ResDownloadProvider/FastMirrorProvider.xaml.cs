@@ -18,7 +18,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class FastMirrorProvider : IResDownloadProvider
     {
-        public string ResProviderName => LanguageManager.Localize["ResDownloadPage_ProviderName_FastMirror"];
+        public string ResProviderName => Lang.Tr["ResDownloadPage_ProviderName_FastMirror"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

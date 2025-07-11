@@ -35,7 +35,7 @@ namespace MCServerLauncher.WPF.View.Pages
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex =
                 _actionWhenDeleteConfirmList.IndexOf(SettingsManager.Get.Instance.ActionWhenDeleteConfirm);
             More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(SettingsManager.Get.App.Theme);
-            More_LauncherLanguage.SettingComboBox.SelectedIndex = LanguageManager.LanguageList.IndexOf(SettingsManager.Get.App.Language);
+            More_LauncherLanguage.SettingComboBox.SelectedIndex = Lang.LanguageList.IndexOf(SettingsManager.Get.App.Language);
 
             #endregion
 
@@ -299,9 +299,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ActionWhenDownloadError { get; set; } = new List<string>
         {
-            LanguageManager.Localize["Settings_ActionWhenDownloadError_Stop"],
-            LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry1"],
-            LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry3"]
+            Lang.Tr["Settings_ActionWhenDownloadError_Stop"],
+            Lang.Tr["Settings_ActionWhenDownloadError_Retry1"],
+            Lang.Tr["Settings_ActionWhenDownloadError_Retry3"]
         };
 
         public int ActionWhenDownloadErrorIndex
@@ -338,8 +338,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ActionWhenDeleteConfirm { get; set; } = new List<string>
         {
-            LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeName"],
-            LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeKey"]
+            Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeName"],
+            Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeKey"]
         };
 
         private static readonly List<string?> _actionWhenDeleteConfirmList = new() { "name", "key" };
@@ -378,9 +378,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public static IEnumerable<string> ThemeForApp { get; set; } = new List<string>
         {
-            LanguageManager.Localize["Settings_AppTheme_Auto"],
-            LanguageManager.Localize["Settings_AppTheme_Light"],
-            LanguageManager.Localize["Settings_AppTheme_Dark"]
+            Lang.Tr["Settings_AppTheme_Auto"],
+            Lang.Tr["Settings_AppTheme_Light"],
+            Lang.Tr["Settings_AppTheme_Dark"]
         };
 
         private static readonly List<string?> _themeList = new() { "auto", "light", "dark" };
@@ -430,9 +430,9 @@ namespace MCServerLauncher.WPF.View.Pages
         private void OnLauncherLanguageIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!SettingsManager.Get.App.IsFirstSetupFinished) return;
-            LanguageManager.Localize.ChangeLanguage(new CultureInfo(LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
+            Lang.Tr.ChangeLanguage(new CultureInfo(Lang.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
             OnLanguageChanged();
-            SettingsManager.SaveSetting("App.Language", LanguageManager.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
+            SettingsManager.SaveSetting("App.Language", Lang.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
         }
         /// <summary>
         /// Update language for ComboBox due to failure of TwoWay binding mode.
@@ -444,9 +444,9 @@ namespace MCServerLauncher.WPF.View.Pages
             var actionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
             ActionWhenDownloadError = new List<string>
             {
-                LanguageManager.Localize["Settings_ActionWhenDownloadError_Stop"],
-                LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry1"],
-                LanguageManager.Localize["Settings_ActionWhenDownloadError_Retry3"]
+                Lang.Tr["Settings_ActionWhenDownloadError_Stop"],
+                Lang.Tr["Settings_ActionWhenDownloadError_Retry1"],
+                Lang.Tr["Settings_ActionWhenDownloadError_Retry3"]
             };
             ResDownload_ActionWhenDownloadError.SettingComboBox.ItemsSource = ActionWhenDownloadError;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = actionWhenDownloadErrorIndex;
@@ -458,8 +458,8 @@ namespace MCServerLauncher.WPF.View.Pages
             var actionWhenDeleteConfirmIndex = Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex;
             ActionWhenDeleteConfirm = new List<string>
             {
-                LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeName"],
-                LanguageManager.Localize["Settings_ActionWhenDeleteConfirm_TypeKey"]
+                Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeName"],
+                Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeKey"]
             };
             Instance_ActionWhenDeleteConfirm.SettingComboBox.ItemsSource = ActionWhenDeleteConfirm;
             Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = actionWhenDeleteConfirmIndex;
@@ -470,9 +470,9 @@ namespace MCServerLauncher.WPF.View.Pages
             var themeForAppIndex = More_LauncherTheme.SettingComboBox.SelectedIndex;
             ThemeForApp = new List<string>
             {
-                LanguageManager.Localize["Settings_AppTheme_Auto"],
-                LanguageManager.Localize["Settings_AppTheme_Light"],
-                LanguageManager.Localize["Settings_AppTheme_Dark"]
+                Lang.Tr["Settings_AppTheme_Auto"],
+                Lang.Tr["Settings_AppTheme_Light"],
+                Lang.Tr["Settings_AppTheme_Dark"]
             };
             More_LauncherTheme.SettingComboBox.ItemsSource = ThemeForApp;
             More_LauncherTheme.SettingComboBox.SelectedIndex = themeForAppIndex;

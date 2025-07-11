@@ -13,7 +13,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="{Binding [ConsoleBoard_Minecraft_ServerPlayersList_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+            <TextBlock Grid.Row="0" Text="{Binding [ConsoleBoard_Minecraft_ServerPlayersList_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" Margin="15,15,0,0" />
             <ui:ListView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Grid.Row="1" x:Name="PlayerListView"
                          Margin="15,10,15,15" />

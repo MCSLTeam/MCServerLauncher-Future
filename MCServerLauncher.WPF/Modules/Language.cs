@@ -7,11 +7,11 @@ using System.Threading;
 
 namespace MCServerLauncher.WPF.Modules
 {
-    public class LanguageManager : INotifyPropertyChanged
+    public class Lang : INotifyPropertyChanged
     {
-        private readonly ResourceManager _resourceManager = new("MCServerLauncher.WPF.Translations.Lang", typeof(LanguageManager).Assembly);
-        private static readonly Lazy<LanguageManager> Lazy = new(() => new LanguageManager());
-        public static LanguageManager Localize => Lazy.Value;
+        private readonly ResourceManager _resourceManager = new("MCServerLauncher.WPF.Translations.Lang", typeof(Lang).Assembly);
+        private static readonly Lazy<Lang> Lazy = new(() => new Lang());
+        public static Lang Tr => Lazy.Value;
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public string this[string name]

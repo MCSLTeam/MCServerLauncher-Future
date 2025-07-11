@@ -22,10 +22,10 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Margin="0,0,0,0" TextWrapping="Wrap"
-                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Title], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateInstance_MinecraftJvmRam_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
                 <TextBlock Grid.Row="1" Margin="0,10,0,0" 
-                           Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_SetMinecraftJvmRam_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                           Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_MinecraftJvmRam_Description], Source={x:Static i18n:Lang.Tr}}"
                            TextWrapping="Wrap"
                            VerticalAlignment="Top" HorizontalAlignment="Left" />
                 <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,15,0,20">
@@ -38,12 +38,12 @@
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
                               InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
                               Width="150" Margin="0,0,10,0" SpinButtonPlacementMode="Compact" Value="1024"
-                              PlaceholderText="{Binding [MinimumMemory], Source={x:Static i18n:LanguageManager.Localize}}" />
+                              PlaceholderText="{Binding [MinimumMemory], Source={x:Static i18n:Lang.Tr}}" />
                 <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~" />
                 <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
                               InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
                               Width="150" Margin="10,0,10,0" SpinButtonPlacementMode="Compact" Value="1024"
-                              PlaceholderText="{Binding [MaximumMemory], Source={x:Static i18n:LanguageManager.Localize}}" />
+                              PlaceholderText="{Binding [MaximumMemory], Source={x:Static i18n:Lang.Tr}}" />
                 <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
                     <ComboBoxItem Content="M" IsSelected="True" />
                     <ComboBoxItem Content="G" />
@@ -59,10 +59,10 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Margin="0,15,0,0" TextWrapping="Wrap"
-                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [EnDeCoding], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [EnDeCoding], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
                 <TextBlock Grid.Row="1" Margin="0,10,0,0" TextWrapping="Wrap"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [PreventGarbageTextTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [PreventGarbageTextTip], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
                 <TextBox Grid.Row="2" Margin="0,15,0,0"
                  ui:ControlHelper.PlaceholderText="utf-8, gbk, ..."
@@ -76,10 +76,10 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Margin="0,15,0,0" TextWrapping="Wrap"
-                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [Optimization], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [Optimization], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
                 <TextBlock Grid.Row="1" Margin="0,10,0,20" TextWrapping="Wrap"
-                       Style="{StaticResource BodyTextBlock}" Text="{Binding [JvmOptimizationArgsTip], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+                       Style="{StaticResource BodyTextBlock}" Text="{Binding [JvmOptimizationArgsTip], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
             </Grid>
         </Border>

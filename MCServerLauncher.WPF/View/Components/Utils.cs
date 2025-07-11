@@ -23,9 +23,9 @@ namespace MCServerLauncher.WPF.View.Components
             newDaemonConnectionInput.friendlyNameEdit.Text = name;
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Localize[isRetrying ? "ConnectDaemonFailedTip" : "ConnectDaemon"],
-                PrimaryButtonText = LanguageManager.Localize["Connect"],
-                SecondaryButtonText = LanguageManager.Localize["Cancel"],
+                Title = Lang.Tr[isRetrying ? "ConnectDaemonFailedTip" : "ConnectDaemon"],
+                PrimaryButtonText = Lang.Tr["Connect"],
+                SecondaryButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = newDaemonConnectionInput
@@ -38,9 +38,9 @@ namespace MCServerLauncher.WPF.View.Components
             JvmArgHelper argHelper = new();
             ContentDialog dialog = new()
             {
-                Title = LanguageManager.Localize["JvmArgHelper"],
-                PrimaryButtonText = LanguageManager.Localize["Insert"],
-                SecondaryButtonText = LanguageManager.Localize["Cancel"],
+                Title = Lang.Tr["JvmArgHelper"],
+                PrimaryButtonText = Lang.Tr["Insert"],
+                SecondaryButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
                 Content = argHelper

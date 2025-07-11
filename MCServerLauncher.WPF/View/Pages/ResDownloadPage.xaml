@@ -20,7 +20,7 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid Grid.Row="0">
-            <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+            <TextBlock Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" Margin="0,35,0,0" />
             <TextBlock x:Name="Subtitle" Style="{StaticResource MinititleTextBlock}"
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,10,0"
@@ -30,7 +30,7 @@
         <ui:Frame Grid.Row="1" Grid.ColumnSpan="2" Margin="0,20,35,35" x:Name="CurrentResDownloadProvider" />
         <Button x:Name="RefreshButton" Grid.Row="0" Grid.Column="1" Margin="0,0,35,0" Click="Refresh">
             <Button.Content>
-                <ui:IconAndText Content="{Binding [Refresh], Source={x:Static i18n:LanguageManager.Localize}}" Icon="{x:Static ui:SegoeFluentIcons.Sync}" />
+                <ui:IconAndText Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" Icon="{x:Static ui:SegoeFluentIcons.Sync}" />
             </Button.Content>
         </Button>
     </Grid>

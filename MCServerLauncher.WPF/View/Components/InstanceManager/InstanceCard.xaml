@@ -27,9 +27,9 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [InstanceType], StringFormat={}：, Source={x:Static i18n:LanguageManager.Localize}}"
+                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [InstanceType], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
                            TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateTime], StringFormat={}：, Source={x:Static i18n:LanguageManager.Localize}}"
+                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateTime], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
                            TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,15" />
                 <TextBlock Grid.Row="0" Grid.Column="1" x:Name="InstanceTypeTextBlock" TextWrapping="Wrap"
                            FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5" />
@@ -43,12 +43,12 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" Style="{StaticResource AccentButtonStyle}" Margin="20,0,0,20">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [Start], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
                 <Button Grid.Column="1" Margin="10,0,20,20">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
             </Grid>

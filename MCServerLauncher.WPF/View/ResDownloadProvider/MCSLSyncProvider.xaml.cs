@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class MCSLSyncProvider : IResDownloadProvider
     {
-        public string ResProviderName => LanguageManager.Localize["ResDownloadPage_ProviderName_MCSLSync"];
+        public string ResProviderName => Lang.Tr["ResDownloadPage_ProviderName_MCSLSync"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 

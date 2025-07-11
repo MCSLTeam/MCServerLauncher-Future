@@ -29,7 +29,7 @@
             </Grid.ColumnDefinitions>
             <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality"
                    Source="../Resources/MCServerLauncherFutureConsole.ico" Width="20" Height="20" />
-            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="{Binding [ConsoleTitle], Source={x:Static i18n:LanguageManager.Localize}}" HorizontalAlignment="Left" />
+            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="{Binding [ConsoleTitle], Source={x:Static i18n:Lang.Tr}}" HorizontalAlignment="Left" />
         </Grid>
         <ui:NavigationView x:Name="NavView"
                            IsPaneOpen="False"
@@ -38,44 +38,44 @@
                            PaneDisplayMode="Top"
                            Grid.Row="1">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="{Binding [Console_BoardNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_BoardNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.BoardPage"
                                        IsSelected="True">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AllApps}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Console_CommandNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_CommandNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.CommandPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CommandPrompt}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Console_FileManagerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_FileManagerNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.FileManagerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.FileExplorer}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Console_EventTriggerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_EventTriggerNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.EventTriggerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Event12}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Console_ComponentManagerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_ComponentManagerNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.ComponentManagerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Puzzle}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Console_OthersNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_OthersNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.OthersPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Console_InstanceSettingsNavMenu], Source={x:Static i18n:LanguageManager.Localize}}"
+                <ui:NavigationViewItem Content="{Binding [Console_InstanceSettingsNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.InstanceSettingsPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Settings}" FontSize="16" />

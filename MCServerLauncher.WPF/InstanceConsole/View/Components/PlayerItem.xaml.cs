@@ -33,7 +33,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
         private void ToggleIP(object sender, RoutedEventArgs e)
         {
             IPTextBox.Visibility = IPTextBox.Visibility == Visibility.Hidden ? Visibility.Visible : Visibility.Hidden;
-            ToggleIPButton.Content = IPTextBox.Visibility == Visibility.Hidden ? LanguageManager.Localize["ViewIPAddress"] : LanguageManager.Localize["ClickToHide"];
+            ToggleIPButton.Content = IPTextBox.Visibility == Visibility.Hidden ? Lang.Tr["ViewIPAddress"] : Lang.Tr["ClickToHide"];
         }
     }
 }

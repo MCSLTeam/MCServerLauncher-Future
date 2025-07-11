@@ -150,7 +150,7 @@ namespace MCServerLauncher.WPF.Modules
                 Process.Start(Assembly.GetExecutingAssembly().Location);
                 Environment.Exit(0);
             }
-            LanguageManager.Localize.ChangeLanguage(new CultureInfo(SettingsManager.Get?.App?.Language ?? throw new InvalidOperationException()));
+            Lang.Tr.ChangeLanguage(new CultureInfo(SettingsManager.Get?.App?.Language ?? throw new InvalidOperationException()));
         }
     }
 }

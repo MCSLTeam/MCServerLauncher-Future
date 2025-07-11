@@ -43,53 +43,53 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_SettingsNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Top"
+        <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [Main_SettingsNavMenu], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                    HorizontalAlignment="Left" MouseLeftButtonDown="CheckDebugMode" />
-        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="{Binding [SettingsTip], Source={x:Static i18n:LanguageManager.Localize}}"
+        <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" Text="{Binding [SettingsTip], Source={x:Static i18n:Lang.Tr}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0" />
 
         <ui:ScrollViewerEx Grid.Column="0" Grid.Row="2" Margin="0,15,0,35">
             <ikw:SimpleStackPanel Spacing="10" VerticalAlignment="Top" HorizontalAlignment="Stretch">
 
-                <TextBlock Text="{Binding [Main_CreateInstanceNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" FontSize="18" />
+                <TextBlock Text="{Binding [Main_CreateInstanceNavMenu], Source={x:Static i18n:Lang.Tr}}" FontSize="18" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoAgreeEula"
-                                      Title="{Binding [Settings_AutoAcceptMinecraftJavaEula_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_AutoAcceptMinecraftJavaEula_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_AutoAcceptMinecraftJavaEula_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_AutoAcceptMinecraftJavaEula_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Icon="{x:Static ui:SegoeFluentIcons.Handwriting}"
                                       Status="{Binding Path=MinecraftJavaAutoAcceptEula}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftJavaAutoDisableOnlineMode"
-                                      Title="{Binding [Settings_AutoDisableMinecraftJavaOnlineMode_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_AutoDisableMinecraftJavaOnlineMode_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_AutoDisableMinecraftJavaOnlineMode_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_AutoDisableMinecraftJavaOnlineMode_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
                                       Status="{Binding Path=MinecraftJavaAutoSwitchOnlineMode}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_MinecraftBedrockAutoDisableOnlineMode"
-                                      Title="{Binding [Settings_AutoDisableMinecraftBedrockOnlineMode_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_AutoDisableMinecraftBedrockOnlineMode_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_AutoDisableMinecraftBedrockOnlineMode_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_AutoDisableMinecraftBedrockOnlineMode_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Icon="{x:Static ui:SegoeFluentIcons.VPN}"
                                       Status="{Binding Path=MinecraftBedrockAutoSwitchOnlineMode}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftForgeInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="{Binding [Settings_UseMirrorForMinecraftForgeInstall_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftForgeInstall_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Status="{Binding Path=UseMirrorForMinecraftForgeInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftNeoForgeInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="{Binding [Settings_UseMirrorForMinecraftNeoForgeInstall_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftNeoForgeInstall_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Status="{Binding Path=UseMirrorForMinecraftNeoForgeInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftFabricInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="{Binding [Settings_UseMirrorForMinecraftFabricInstall_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftFabricInstall_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Status="{Binding Path=UseMirrorForMinecraftFabricInstall}" />
                 <sc:SwitchSettingCard x:Name="InstanceCreation_UseMirrorForMinecraftQuiltInstall"
                                       Icon="{x:Static ui:SegoeFluentIcons.CloudDownload}"
-                                      Title="{Binding [Settings_UseMirrorForMinecraftQuiltInstall_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_UseMirrorForMinecraftQuiltInstall_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_UseMirrorForMinecraftLoadersInstall_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Status="{Binding Path=UseMirrorForMinecraftQuiltInstall}" />
 
 
-                <TextBlock Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" FontSize="18" Margin="0,10,0,0" />
+                <TextBlock Text="{Binding [Main_ResDownloadNavMenu], Source={x:Static i18n:Lang.Tr}}" FontSize="18" Margin="0,10,0,0" />
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
@@ -103,70 +103,70 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ProvisioningPackage}" Grid.RowSpan="2"
                                          Grid.Column="0" Margin="5,15,20,15" />
-                            <TextBlock Text="{Binding [Settings_ResDownloadProvider_Title], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
+                            <TextBlock Text="{Binding [Settings_ResDownloadProvider_Title], Source={x:Static i18n:Lang.Tr}}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom"
                                        Margin="0,0,0,2" TextTrimming="CharacterEllipsis"
                                        TextWrapping="WrapWithOverflow" />
-                            <TextBlock Text="{Binding [Settings_ResDownloadProvider_Description], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Row="1" Grid.Column="1"
+                            <TextBlock Text="{Binding [Settings_ResDownloadProvider_Description], Source={x:Static i18n:Lang.Tr}}" Grid.Row="1" Grid.Column="1"
                                        VerticalAlignment="Center" Margin="0,2,20,5" Opacity="0.615" FontSize="12"
                                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <ui:RadioButtons Margin="5,0,5,0">
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="{Binding [Settings_FastMirrorName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="FastMirrorSrc" />
+                                     Content="{Binding [Settings_FastMirrorName], Source={x:Static i18n:Lang.Tr}}" x:Name="FastMirrorSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="{Binding [Settings_PolarsMirrorName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="PolarsMirrorSrc" />
+                                     Content="{Binding [Settings_PolarsMirrorName], Source={x:Static i18n:Lang.Tr}}" x:Name="PolarsMirrorSrc" />
                         <RadioButton IsEnabled="False" Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="{Binding [Settings_ZCloudFileName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="ZCloudFileSrc" />
+                                     Content="{Binding [Settings_ZCloudFileName], Source={x:Static i18n:Lang.Tr}}" x:Name="ZCloudFileSrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="{Binding [Settings_MSLAPIName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="MSLAPISrc" />
+                                     Content="{Binding [Settings_MSLAPIName], Source={x:Static i18n:Lang.Tr}}" x:Name="MSLAPISrc" />
                         <RadioButton Checked="OnResDownloadSourceSelectionChanged" Margin="0,0,0,10"
-                                     Content="{Binding [Settings_MCSLSyncName], Source={x:Static i18n:LanguageManager.Localize}}" x:Name="MCSLSyncSrc" />
+                                     Content="{Binding [Settings_MCSLSyncName], Source={x:Static i18n:Lang.Tr}}" x:Name="MCSLSyncSrc" />
                     </ui:RadioButtons>
                 </Expander>
-                <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="{Binding [Settings_DownloadThreadCnt_Title], Source={x:Static i18n:LanguageManager.Localize}}"
+                <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="{Binding [Settings_DownloadThreadCnt_Title], Source={x:Static i18n:Lang.Tr}}"
                                      x:Name="ResDownload_DownloadThreadCnt"
-                                     Description="{Binding [Settings_DownloadThreadCnt_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                     Description="{Binding [Settings_DownloadThreadCnt_Description], Source={x:Static i18n:Lang.Tr}}"
                                      MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}" />
                 <sc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
-                                     Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="{Binding [Settings_ActionWhenDownloadError_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                     Description="{Binding [Settings_ActionWhenDownloadError_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                     Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="{Binding [Settings_ActionWhenDownloadError_Title], Source={x:Static i18n:Lang.Tr}}"
+                                     Description="{Binding [Settings_ActionWhenDownloadError_Description], Source={x:Static i18n:Lang.Tr}}"
                                      ComboBoxItems="{Binding Path=ActionWhenDownloadError}" />
-                <TextBlock Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:LanguageManager.Localize}}" FontSize="18" Margin="0,10,0,0" />
+                <TextBlock Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:Lang.Tr}}" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="Instance_ActionWhenDeleteConfirm"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="{Binding [Settings_ActionWhenDeleteConfirm_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                     Description="{Binding [Settings_ActionWhenDeleteConfirm_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                     Icon="{x:Static ui:SegoeFluentIcons.Delete}" Title="{Binding [Settings_ActionWhenDeleteConfirm_Title], Source={x:Static i18n:Lang.Tr}}"
+                                     Description="{Binding [Settings_ActionWhenDeleteConfirm_Description], Source={x:Static i18n:Lang.Tr}}"
                                      ComboBoxItems="{Binding Path=ActionWhenDeleteConfirm}" />
-                <TextBlock Text="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" FontSize="18" Margin="0,10,0,0" />
+                <TextBlock Text="{Binding [More], Source={x:Static i18n:Lang.Tr}}" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="More_LauncherTheme"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="{Binding [Settings_AppTheme_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                     Description="{Binding [Settings_AppTheme_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                     Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="{Binding [Settings_AppTheme_Title], Source={x:Static i18n:Lang.Tr}}"
+                                     Description="{Binding [Settings_AppTheme_Description], Source={x:Static i18n:Lang.Tr}}"
                                      ComboBoxItems="{Binding Path=ThemeForApp}" />
                 <sc:ComboSettingCard x:Name="More_LauncherLanguage"
-                                     Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" Title="{Binding [FirstSetup_TimeLanguageMenu], Source={x:Static i18n:LanguageManager.Localize}}"
-                                     Description="{Binding [Settings_AppLanguage_Description], Source={x:Static i18n:LanguageManager.Localize}}"
-                                     ComboBoxItems="{Binding .,Source={x:Static i18n:LanguageManager.LanguageNameList}}" />
+                                     Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" Title="{Binding [FirstSetup_TimeLanguageMenu], Source={x:Static i18n:Lang.Tr}}"
+                                     Description="{Binding [Settings_AppLanguage_Description], Source={x:Static i18n:Lang.Tr}}"
+                                     ComboBoxItems="{Binding .,Source={x:Static i18n:Lang.LanguageNameList}}" />
                 <sc:SwitchSettingCard x:Name="More_FollowStartupForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
-                                      Title="{Binding [Settings_FollowStartupForLauncher_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_FollowStartupForLauncher_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_FollowStartupForLauncher_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_FollowStartupForLauncher_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Status="{Binding Path=AutoCheckUpdateForLauncher}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForLauncher"
-                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="{Binding [Settings_CheckUpdateForLauncher_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_CheckUpdateForLauncher_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="{Binding [Settings_CheckUpdateForLauncher_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_CheckUpdateForLauncher_Description], Source={x:Static i18n:Lang.Tr}}"
                                       IsAccentButtonStyle="True"
-                                      ButtonContent="{Binding [CheckUpdate], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                      ButtonContent="{Binding [CheckUpdate], Source={x:Static i18n:Lang.Tr}}" />
                 <sc:SwitchSettingCard x:Name="More_AutoCheckUpdateForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
-                                      Title="{Binding [Settings_AutoCheckUpdateForLauncher_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_AutoCheckUpdateForLauncher_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_AutoCheckUpdateForLauncher_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_AutoCheckUpdateForLauncher_Description], Source={x:Static i18n:Lang.Tr}}"
                                       Status="{Binding Path=AutoCheckUpdateForLauncher}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForDaemon" IsEnabled="False"
                                       Icon="{x:Static ui:SegoeFluentIcons.Processing}"
-                                      Title="{Binding [Settings_CheckUpdateForDaemon_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                      Description="{Binding [Settings_CheckUpdateForDaemon_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                      Title="{Binding [Settings_CheckUpdateForDaemon_Title], Source={x:Static i18n:Lang.Tr}}"
+                                      Description="{Binding [Settings_CheckUpdateForDaemon_Description], Source={x:Static i18n:Lang.Tr}}"
                                       IsAccentButtonStyle="True"
-                                      ButtonContent="{Binding [CheckUpdate], Source={x:Static i18n:LanguageManager.Localize}}" />
+                                      ButtonContent="{Binding [CheckUpdate], Source={x:Static i18n:Lang.Tr}}" />
                 <Expander IsExpanded="True">
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
@@ -180,7 +180,7 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" Grid.Column="0" Grid.RowSpan="2"
                                          Margin="5,15,20,15" />
-                            <TextBlock Text="{Binding [Settings_About_Title], Source={x:Static i18n:LanguageManager.Localize}}" TextTrimming="CharacterEllipsis"
+                            <TextBlock Text="{Binding [Settings_About_Title], Source={x:Static i18n:Lang.Tr}}" TextTrimming="CharacterEllipsis"
                                        TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1"
                                        VerticalAlignment="Bottom" Margin="0,0,0,2" />
                             <TextBlock x:Name="AboutVersionReplacer" Grid.Column="1" VerticalAlignment="Top"
@@ -200,7 +200,7 @@
                                    Text="MCServerLauncher Future Project" VerticalAlignment="Center"
                                    HorizontalAlignment="Left" Margin="0,0,0,10" />
                         <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                   Text="{Binding [Settings_About_LegalProtected], Source={x:Static i18n:LanguageManager.Localize}}"
+                                   Text="{Binding [Settings_About_LegalProtected], Source={x:Static i18n:Lang.Tr}}"
                                    VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,10" />
                         <Grid Grid.Row="2" VerticalAlignment="Center" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -209,18 +209,18 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                       Text="{Binding [Settings_About_OpenSourceLicenseProtected], Source={x:Static i18n:LanguageManager.Localize}}"
+                                       Text="{Binding [Settings_About_OpenSourceLicenseProtected], Source={x:Static i18n:Lang.Tr}}"
                                        VerticalAlignment="Center" HorizontalAlignment="Left" />
                             <ui:HyperlinkButton Grid.Column="1" Padding="0"
                                                 NavigateUri="https://github.com/MCSLTeam/MCServerLauncher-Future">
                                  GitHub 
                             </ui:HyperlinkButton>
                             <TextBlock Grid.Column="2" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                       Text="{Binding [PeriodSymbol], Source={x:Static i18n:LanguageManager.Localize}}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                       Text="{Binding [PeriodSymbol], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" HorizontalAlignment="Left" />
                         </Grid>
 
                         <TextBlock Grid.Row="3" Style="{StaticResource MinititleTextBlock}" TextWrapping="Wrap"
-                                   Text="{Binding [Settings_About_CertProtected], Source={x:Static i18n:LanguageManager.Localize}}"
+                                   Text="{Binding [Settings_About_CertProtected], Source={x:Static i18n:Lang.Tr}}"
                                    VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,20,10" />
                         <Grid Grid.Row="4" VerticalAlignment="Center" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -252,40 +252,40 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Heart}" Grid.Column="0" Grid.RowSpan="2"
                          Margin="5,15,20,15" />
-                            <TextBlock Text="{Binding [Settings_Acknowledgments_Title], Source={x:Static i18n:LanguageManager.Localize}}" TextTrimming="CharacterEllipsis"
+                            <TextBlock Text="{Binding [Settings_Acknowledgments_Title], Source={x:Static i18n:Lang.Tr}}" TextTrimming="CharacterEllipsis"
                        TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1"
                        VerticalAlignment="Bottom" Margin="0,0,0,2" />
-                            <TextBlock Text="{Binding [Settings_Acknowledgments_Description], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Column="1" VerticalAlignment="Top"
+                            <TextBlock Text="{Binding [Settings_Acknowledgments_Description], Source={x:Static i18n:Lang.Tr}}" Grid.Column="1" VerticalAlignment="Top"
                        Grid.Row="1" Margin="0,2,20,5" Opacity="0.615" FontSize="12"
                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
                     </Expander.Header>
                     <ikw:SimpleStackPanel Margin="5,0,5,0">
                         <g:AcknowledgmentItem Title="bangbang93"
-                                              Description="{Binding [Settings_Acknowledgments_BMCLAPI_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                              Description="{Binding [Settings_Acknowledgments_BMCLAPI_Description], Source={x:Static i18n:Lang.Tr}}"
                                               ImagePath="../../../Resources/bangbang93.jpg"
                                               ButtonUrl="https://afdian.com/a/bangbang93/"
-                                              ButtonText="{Binding [Donate], Source={x:Static i18n:LanguageManager.Localize}}"/>
+                                              ButtonText="{Binding [Donate], Source={x:Static i18n:Lang.Tr}}"/>
                         <g:AcknowledgmentItem Title="Plain Craft Launcher 2"
-                                              Description="{Binding [Settings_Acknowledgments_PCL2_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                              Description="{Binding [Settings_Acknowledgments_PCL2_Description], Source={x:Static i18n:Lang.Tr}}"
                                               ImagePath="../../../Resources/PCL2.png"
                                               ButtonUrl="https://afdian.com/a/LTCat/"
-                                              ButtonText="{Binding [Donate], Source={x:Static i18n:LanguageManager.Localize}}"/>
+                                              ButtonText="{Binding [Donate], Source={x:Static i18n:Lang.Tr}}"/>
                         <g:AcknowledgmentItem Title="BakaXL"
-                                              Description="{Binding [Settings_Acknowledgments_BakaXL_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                              Description="{Binding [Settings_Acknowledgments_BakaXL_Description], Source={x:Static i18n:Lang.Tr}}"
                                               ImagePath="../../../Resources/BakaXL.png"
                                               ButtonUrl="https://afdian.com/a/TT702/"
-                                              ButtonText="{Binding [Donate], Source={x:Static i18n:LanguageManager.Localize}}"/>
+                                              ButtonText="{Binding [Donate], Source={x:Static i18n:Lang.Tr}}"/>
                         <g:AcknowledgmentItem Title="iNKORE Studios"
-                                              Description="{Binding [Settings_Acknowledgments_iNKORE_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                              Description="{Binding [Settings_Acknowledgments_iNKORE_Description], Source={x:Static i18n:Lang.Tr}}"
                                               ImagePath="../../../Resources/iNKORE.png"
                                               ButtonUrl="https://inkore.net/zh-cn/about/members/notyoojun/"
-                                              ButtonText="{Binding [Donate], Source={x:Static i18n:LanguageManager.Localize}}"/>
-                        <g:AcknowledgmentItem Title="{Binding [Settings_Acknowledgments_MCSLQQ_Title], Source={x:Static i18n:LanguageManager.Localize}}"
-                                              Description="{Binding [Settings_Acknowledgments_MCSLQQ_Description], Source={x:Static i18n:LanguageManager.Localize}}"
+                                              ButtonText="{Binding [Donate], Source={x:Static i18n:Lang.Tr}}"/>
+                        <g:AcknowledgmentItem Title="{Binding [Settings_Acknowledgments_MCSLQQ_Title], Source={x:Static i18n:Lang.Tr}}"
+                                              Description="{Binding [Settings_Acknowledgments_MCSLQQ_Description], Source={x:Static i18n:Lang.Tr}}"
                                               ImagePath="../../../Resources/MCServerLauncherFuture.png"
                                               ButtonUrl="https://qm.qq.com/q/JSEU56DdmK"
-                                              ButtonText="{Binding [JoinGroup], Source={x:Static i18n:LanguageManager.Localize}}"/>
+                                              ButtonText="{Binding [JoinGroup], Source={x:Static i18n:Lang.Tr}}"/>
                     </ikw:SimpleStackPanel>
 
                 </Expander>
@@ -302,10 +302,10 @@
                             </Grid.ColumnDefinitions>
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Component}" Grid.Column="0" Grid.RowSpan="2"
                          Margin="5,15,20,15" />
-                            <TextBlock Text="{Binding [Settings_Components_Title], Source={x:Static i18n:LanguageManager.Localize}}" TextTrimming="CharacterEllipsis"
+                            <TextBlock Text="{Binding [Settings_Components_Title], Source={x:Static i18n:Lang.Tr}}" TextTrimming="CharacterEllipsis"
                        TextWrapping="WrapWithOverflow" Grid.Row="0" Grid.Column="1"
                        VerticalAlignment="Bottom" Margin="0,0,0,2" />
-                            <TextBlock Text="{Binding [Settings_Components_Description], Source={x:Static i18n:LanguageManager.Localize}}" Grid.Column="1" VerticalAlignment="Top"
+                            <TextBlock Text="{Binding [Settings_Components_Description], Source={x:Static i18n:Lang.Tr}}" Grid.Column="1" VerticalAlignment="Top"
                        Grid.Row="1" Margin="0,2,20,5" Opacity="0.615" FontSize="12"
                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
                         </Grid>
@@ -315,42 +315,42 @@
                             Title="Newtonsoft.Json"
                             Description="Popular high-performance JSON framework for .NET."
                             ButtonUrl="https://www.newtonsoft.com/json"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="iNKORE.UI.WPF.Modern"
                             Description="Modern (Fluent 2) styles and controls for your WPF applications."
                             ButtonUrl="https://github.com/iNKORE-NET/UI.WPF.Modern"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="Serilog"
                             Description="Simple .NET logging with fully-structured events."
                             ButtonUrl="https://serilog.net/"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="Downloader"
                             Description="Fast, cross-platform and reliable multipart downloader."
                             ButtonUrl="https://github.com/bezzad/Downloader"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="WebSocket-Sharp"
                             Description="A C# implementation of the WebSocket protocol client and server."
                             ButtonUrl="https://sta.github.io/websocket-sharp/"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="Resource.Embedder"
                             Description="Embeds translations (satellite assemblies) automatically into the exe/dll itself."
                             ButtonUrl="https://www.nuget.org/packages/Resource.Embedder"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="Fody"
                             Description="Extensible tool for weaving .net assemblies."
                             ButtonUrl="https://github.com/Fody/Fody"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         <g:OpenSourceAcknowledgmentItem
                             Title="Costura.Fody"
                             Description="Embeds dependencies as resources."
                             ButtonUrl="https://github.com/Fody/Costura"
-                            ButtonText="{Binding [More], Source={x:Static i18n:LanguageManager.Localize}}" />
+                            ButtonText="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                     </ikw:SimpleStackPanel>
 
                 </Expander>
