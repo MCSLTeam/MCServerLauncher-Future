@@ -41,7 +41,7 @@ WPF Desktop Launcher: Requires [.NET Framework 4.6.2+](http://go.microsoft.com/f
 
 ## Contribute
 
-We are actively working on internationalization through Crowdin. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/projects/mcsl-future> to contribute your efforts.  
+We are actively working on internationalization through Crowdin. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/engage/mcsl-future/> to contribute your efforts.  
 
 To report issues or suggest improvements,
 please [open an issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose)
