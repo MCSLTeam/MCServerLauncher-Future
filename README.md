@@ -1,4 +1,4 @@
-![Header Image](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=Future%20version%20of%20MCSL.%20Redefined%2C%20Versatile%2C%20Easy%20to%20use.&font=Jost&forks=1&language=1&logo=https%3A%2F%2Fimages.mcsl.com.cn%2Fnew%2FMCServerLauncherFuture.png&name=1&pattern=Circuit%20Board&stargazers=1&theme=Auto)  
+![Header Image](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=Future%20version%20of%20MCSL.%20Redefined%2C%20Versatile%2C%20Easy%20to%20use.&font=Jost&logo=https%3A%2F%2Fimages.mcsl.com.cn%2Fnew%2FMCServerLauncherFuture.png&name=1&pattern=Circuit%20Board&theme=Auto)  
 English | [中文](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/README_ZH.md)  
 </br>
 This repository only includes sources of the Daemon and the WPF Desktop Launcher. If you want to know more about the web
@@ -13,7 +13,7 @@ frontend, just click [here](https://github.com/MCSLTeam/MCServerLauncher-Future-
 
 **Console Program Compatibility**: Supports a wide range of console applications.  
 
-**Multi-language Support**: Officially supports 29 languages, making internationalization effortless.  
+**Multi-language Support**: Officially supports 6 languages, making internationalization effortless.  
 
 **Multi-instance Management**: Control multiple servers simultaneously from a single interface.
 
@@ -25,13 +25,19 @@ of [MCServerLauncher 2](https://github.com/MCSLTeam/MCSL2), offering enhanced co
 
 ## Components
 
-[Daemon](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon): The core service
+[.NET Daemon](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon): The core service
 built with .NET 6.0 C#, delivering robust performance and flexibility.
 
-[WPF Desktop Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF): A
+[Rust Daemon](https://github.com/MCSLTeam/mcsl-daemon-rs/): The core service
+built with Rust, experimental!
+
+[WPF Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF): A
 Windows-specific interface for connecting to daemons.
 
-[Web Panel](https://github.com/MCSLTeam/MCServerLauncher-Future-Web): A browser-accessible dashboard, ideal for
+[Tauri Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future-Web/tree/main/apps/app): A
+cross-platform interface for connecting to daemons.
+
+[Web Panel](https://github.com/MCSLTeam/MCServerLauncher-Future-Web/tree/main/apps/web): A browser-accessible dashboard, ideal for
 non-Windows users.
 
 ## System Requirements
@@ -41,7 +47,7 @@ WPF Desktop Launcher: Requires [.NET Framework 4.6.2+](http://go.microsoft.com/f
 
 ## Contribute
 
-We are actively working on internationalization through Crowdin. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/engage/mcsl-future/> to contribute your efforts.  
+We are actively working on internationalization through Weblate. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/engage/mcsl-future/> to contribute your efforts.  
 
 To report issues or suggest improvements,
 please [open an issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose)
