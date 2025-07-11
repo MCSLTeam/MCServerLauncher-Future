@@ -3,6 +3,7 @@ using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components;
 using MCServerLauncher.WPF.View.Components.DaemonManager;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -24,6 +25,7 @@ namespace MCServerLauncher.WPF.View.Pages
                     DaemonCardContainer.Items.Clear();
                     if (DaemonsListManager.Get.Count > 0)
                     {
+                        var connectionTasks = new List<Task>();
                         foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.Get)
                         {
                             DaemonCard daemonCard = new DaemonCard
@@ -34,10 +36,12 @@ namespace MCServerLauncher.WPF.View.Pages
                                 Port = daemon.Port,
                                 Token = daemon.Token,
                                 FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
+                                Status = "ing",
                             };
                             DaemonCardContainer.Items.Add(daemonCard);
-                            await daemonCard.ConnectDaemon();
+                            connectionTasks.Add(daemonCard.ConnectDaemon());
                         }
+                        await Task.WhenAll(connectionTasks);
                     }
                 }
             };
