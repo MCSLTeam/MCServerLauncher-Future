@@ -23,12 +23,14 @@ namespace MCServerLauncher.WPF.View.Pages
                 if (IsVisible)
                 {
                     DaemonCardContainer.Items.Clear();
+#pragma warning disable CS8602 // 解引用可能出现空引用。
                     if (DaemonsListManager.Get.Count > 0)
                     {
                         var connectionTasks = new List<Task>();
                         foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.Get)
                         {
-                            DaemonCard daemonCard = new DaemonCard
+#pragma warning disable CS8601 // 引用类型赋值可能为 null。
+                            DaemonCard daemonCard = new()
                             {
                                 Address = $"{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}",
                                 IsSecure = daemon.IsSecure,
@@ -38,11 +40,13 @@ namespace MCServerLauncher.WPF.View.Pages
                                 FriendlyName = daemon.FriendlyName ?? LanguageManager.Localize["Main_DaemonManagerNavMenu"],
                                 Status = "ing",
                             };
+#pragma warning restore CS8601 // 引用类型赋值可能为 null。
                             DaemonCardContainer.Items.Add(daemonCard);
                             connectionTasks.Add(daemonCard.ConnectDaemon());
                         }
                         await Task.WhenAll(connectionTasks);
                     }
+#pragma warning restore CS8602 // 解引用可能出现空引用。
                 }
             };
         }

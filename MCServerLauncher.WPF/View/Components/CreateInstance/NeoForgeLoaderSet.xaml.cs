@@ -188,6 +188,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         /// <param name="e"></param>
         private async void FetchNeoForgeData(object sender, RoutedEventArgs e)
         {
+            VisualTreeHelper.InitStepState(MinecraftVersionComboBox);
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.SelectionChanged -= MinecraftVersionChanged;
@@ -200,7 +201,6 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             FetchMinecraftVersionsButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
             MinecraftVersionComboBox.SelectionChanged += MinecraftVersionChanged;
-            VisualTreeHelper.InitStepState(MinecraftVersionComboBox);
         }
 
         /// <summary>
