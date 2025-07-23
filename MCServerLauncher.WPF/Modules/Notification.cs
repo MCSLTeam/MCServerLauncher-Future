@@ -29,9 +29,11 @@ namespace MCServerLauncher.WPF.Modules
             bool systemNotify = true,
             Control? content = null,
             Button? button = null,
+            // Constants.InfoBarElementPosition? elementPosition = null,
             bool isButtonRegisterClose = false
         )
         {
+            #region InfoBarBase
             if (string.IsNullOrEmpty(title)) title = Lang.Tr["Tip"];
             InfoBar infoBar = new()
             {
@@ -55,6 +57,8 @@ namespace MCServerLauncher.WPF.Modules
             {
                 if (severity == InfoBarSeverity.Informational) infoBar.Background = new SolidColorBrush((Color)Application.Current.Resources["SystemFillColorSolidNeutralBackground"]);
             };
+            #endregion
+            #region InfoBarContent or InfoBarButton
             if (content != null)
             {
                 content.Margin = new Thickness(0, 0, 0, 15);
@@ -88,6 +92,7 @@ namespace MCServerLauncher.WPF.Modules
                     };
                 }
             }
+            #endregion
 
             NotificationContainer.Instance.AddNotification(infoBar, position, durationMs);
             if (systemNotify)

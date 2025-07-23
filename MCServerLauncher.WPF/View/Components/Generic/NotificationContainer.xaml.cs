@@ -66,10 +66,10 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                     panel.HorizontalAlignment = HorizontalAlignment.Right;
                     panel.VerticalAlignment = VerticalAlignment.Top;
                     break;
-                //case Constants.InfoBarPosition.TopLeft:
-                //    panel.HorizontalAlignment = HorizontalAlignment.Left;
-                //    panel.VerticalAlignment = VerticalAlignment.Top;
-                //    break;
+                case Constants.InfoBarPosition.TopLeft:
+                    panel.HorizontalAlignment = HorizontalAlignment.Left;
+                    panel.VerticalAlignment = VerticalAlignment.Top;
+                    break;
                 case Constants.InfoBarPosition.Bottom:
                     panel.HorizontalAlignment = HorizontalAlignment.Center;
                     panel.VerticalAlignment = VerticalAlignment.Bottom;
@@ -78,15 +78,15 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                     panel.HorizontalAlignment = HorizontalAlignment.Right;
                     panel.VerticalAlignment = VerticalAlignment.Bottom;
                     break;
-                //case Constants.InfoBarPosition.BottomLeft:
-                //    panel.HorizontalAlignment = HorizontalAlignment.Left;
-                //    panel.VerticalAlignment = VerticalAlignment.Bottom;
-                //    break;
+                case Constants.InfoBarPosition.BottomLeft:
+                    panel.HorizontalAlignment = HorizontalAlignment.Left;
+                    panel.VerticalAlignment = VerticalAlignment.Bottom;
+                    break;
             }
             
             // 设置面板的方向
             if (position == Constants.InfoBarPosition.Bottom || 
-                //position == Constants.InfoBarPosition.BottomLeft || 
+                position == Constants.InfoBarPosition.BottomLeft || 
                 position == Constants.InfoBarPosition.BottomRight)
             {
                 panel.VerticalAlignment = VerticalAlignment.Bottom;
@@ -115,12 +115,12 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                 switch (position)
                 {
                     case Constants.InfoBarPosition.Top:
-                    //case Constants.InfoBarPosition.TopLeft:
+                    case Constants.InfoBarPosition.TopLeft:
                     case Constants.InfoBarPosition.TopRight:
                         fromY = -20;
                         break;
                     case Constants.InfoBarPosition.Bottom:
-                    //case Constants.InfoBarPosition.BottomLeft:
+                    case Constants.InfoBarPosition.BottomLeft:
                     case Constants.InfoBarPosition.BottomRight:
                         fromY = 20;
                         break;
@@ -169,12 +169,12 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             switch (position)
             {
                 case Constants.InfoBarPosition.Top:
-                //case Constants.InfoBarPosition.TopLeft:
+                case Constants.InfoBarPosition.TopLeft:
                 case Constants.InfoBarPosition.TopRight:
                     notification.Margin = new Thickness(0, 0, 0, notificationMargin);
                     break;
                 case Constants.InfoBarPosition.Bottom:
-                //case Constants.InfoBarPosition.BottomLeft:
+                case Constants.InfoBarPosition.BottomLeft:
                 case Constants.InfoBarPosition.BottomRight:
                     notification.Margin = new Thickness(0, notificationMargin, 0, 0);
                     break;
@@ -228,7 +228,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             
             // 根据位置设置不同的退出动画
             double toY = position == Constants.InfoBarPosition.Bottom || 
-                         //position == Constants.InfoBarPosition.BottomLeft || 
+                         position == Constants.InfoBarPosition.BottomLeft || 
                          position == Constants.InfoBarPosition.BottomRight ? 20 : -20;
             
             var translateOut = new DoubleAnimation
@@ -259,7 +259,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             
             // 根据位置确定需要移动的元素
             if (position == Constants.InfoBarPosition.Bottom || 
-                //position == Constants.InfoBarPosition.BottomLeft || 
+                position == Constants.InfoBarPosition.BottomLeft || 
                 position == Constants.InfoBarPosition.BottomRight)
             {
                 // 底部位置时，移动前面的元素
@@ -295,7 +295,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                 
                 // 根据位置确定移动方向
                 double targetY = position == Constants.InfoBarPosition.Bottom || 
-                                 //position == Constants.InfoBarPosition.BottomLeft || 
+                                 position == Constants.InfoBarPosition.BottomLeft || 
                                  position == Constants.InfoBarPosition.BottomRight 
                                  ? currentY + heightToRemove : currentY - heightToRemove;
                 

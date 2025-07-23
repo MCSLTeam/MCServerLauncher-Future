@@ -34,12 +34,20 @@ namespace MCServerLauncher.WPF.Modules
         {
             Top,
             TopRight,
-            //TopLeft,
+            TopLeft,
             Bottom,
             BottomRight,
-            //BottomLeft,
+            BottomLeft,
             None
         }
+
+        // public enum InfoBarElementPosition
+        // {
+        //     BottomLeft,
+        //     Bottom,
+        //     BottomRight,
+        //     Right
+        // }
 
         public enum CreateInstanceDataType
         {

@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using ListView = iNKORE.UI.WPF.Modern.Controls.ListView;
 
-namespace MCServerLauncher.WPF.View.Components
+namespace MCServerLauncher.WPF.View.Components.CreateInstance
 {
     /// <summary>
     ///    JvmArgumentItem.xaml 的交互逻辑

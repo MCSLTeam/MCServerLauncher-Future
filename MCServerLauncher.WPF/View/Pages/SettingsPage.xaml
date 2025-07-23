@@ -14,7 +14,6 @@
       Title="SettingsPage">
     <FrameworkElement.Resources>
         <ResourceDictionary>
-
             <Style TargetType="Expander" BasedOn="{StaticResource {x:Static ui:ThemeKeys.ExpanderCardStyleKey}}">
                 <Setter Property="HorizontalAlignment" Value="Stretch" />
             </Style>

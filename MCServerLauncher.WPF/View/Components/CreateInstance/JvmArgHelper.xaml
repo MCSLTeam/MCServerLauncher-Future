@@ -6,52 +6,49 @@
              xmlns:local="clr-namespace:MCServerLauncher.WPF.View.Components.CreateInstance"
              xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="450">
-    <Grid Margin="0,0,0,0" MinWidth="300" Height="410">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <Border Grid.Row="0" Style="{StaticResource StyledBorder}" Margin="0,0,0,0" Height="130">
-            <Grid Margin="15,15,15,10">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Margin="0,0,0,0" TextWrapping="Wrap"
-                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateInstance_MinecraftJvmRam_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
-                       HorizontalAlignment="Left" />
-                <TextBlock Grid.Row="1" Margin="0,10,0,0" 
-                           Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_MinecraftJvmRam_Description], Source={x:Static i18n:Lang.Tr}}"
-                           TextWrapping="Wrap"
-                           VerticalAlignment="Top" HorizontalAlignment="Left" />
-                <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,15,0,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
-                              InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
-                              Width="150" Margin="0,0,10,0" SpinButtonPlacementMode="Compact" Value="1024"
-                              PlaceholderText="{Binding [MinimumMemory], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~" />
-                <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
-                              InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
-                              Width="150" Margin="10,0,10,0" SpinButtonPlacementMode="Compact" Value="1024"
-                              PlaceholderText="{Binding [MaximumMemory], Source={x:Static i18n:Lang.Tr}}" />
-                <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
-                    <ComboBoxItem Content="M" IsSelected="True" />
-                    <ComboBoxItem Content="G" />
-                </ComboBox>
-            </Grid>
-        </Grid>
-        </Border>
-        <Border Grid.Row="1" Style="{StaticResource StyledBorder}" Margin="0,15,0,0" Height="130">
+             d:DesignHeight="580" d:DesignWidth="450">
+    <ui:ScrollViewerEx Height="350">
+        <ikw:SimpleStackPanel Spacing="10" VerticalAlignment="Top" MinWidth="300" HorizontalAlignment="Stretch">
+            <Border Style="{StaticResource StyledBorder}" Margin="0,0,0,0" Height="130">
+                <Grid Margin="15,15,15,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Margin="0,0,0,0" TextWrapping="Wrap"
+                           Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateInstance_MinecraftJvmRam_Title], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
+                           HorizontalAlignment="Left" />
+                    <TextBlock Grid.Row="1" Margin="0,10,0,0" 
+                               Style="{StaticResource BodyTextBlock}" Text="{Binding [CreateInstance_MinecraftJvmRam_Description], Source={x:Static i18n:Lang.Tr}}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Top" HorizontalAlignment="Left" />
+                    <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,15,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
+                                  InputMethod.InputScope="Digits" x:Name="MinMemorySetting" Grid.Column="0"
+                                  Width="150" Margin="0,0,10,0" SpinButtonPlacementMode="Compact" Value="1024"
+                                  PlaceholderText="{Binding [MinimumMemory], Source={x:Static i18n:Lang.Tr}}" />
+                        <TextBlock Grid.Column="1" Margin="0,7,0,0" Text="~" />
+                        <ui:NumberBox ScrollViewer.VerticalScrollBarVisibility="Disabled" Minimum="0"
+                                  InputMethod.InputScope="Digits" x:Name="MaxMemorySetting" Grid.Column="2"
+                                  Width="150" Margin="10,0,10,0" SpinButtonPlacementMode="Compact" Value="1024"
+                                  PlaceholderText="{Binding [MaximumMemory], Source={x:Static i18n:Lang.Tr}}" />
+                        <ComboBox Name="MemoryUnitSetting" Grid.Column="3">
+                            <ComboBoxItem Content="M" IsSelected="True" />
+                            <ComboBoxItem Content="G" />
+                        </ComboBox>
+                    </Grid>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource StyledBorder}" Height="130">
             <Grid Margin="15,0,15,10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -59,29 +56,40 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Margin="0,15,0,0" TextWrapping="Wrap"
-                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [EnDeCoding], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
+                       Style="{StaticResource MinititleTextBlock}" Text="{Binding [Codecs], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
                 <TextBlock Grid.Row="1" Margin="0,10,0,0" TextWrapping="Wrap"
                        Style="{StaticResource BodyTextBlock}" Text="{Binding [PreventGarbageTextTip], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
-                <TextBox Grid.Row="2" Margin="0,15,0,0"
-                 ui:ControlHelper.PlaceholderText="utf-8, gbk, ..."
+                <TextBox Grid.Row="2" Margin="0,15,0,0" x:Name="CodecsTextBox"
+                 ui:ControlHelper.PlaceholderText="utf-8, gbk, ..." ScrollViewer.VerticalScrollBarVisibility="Disabled" 
                  VerticalAlignment="Center" HorizontalAlignment="Left" Width="441" />
             </Grid>
         </Border>
-        <Border Grid.Row="2" Style="{StaticResource StyledBorder}" Margin="0,15,0,0" Height="120">
+        <Border Style="{StaticResource StyledBorder}" Height="300">
             <Grid Margin="15,0,15,10">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Margin="0,15,0,0" TextWrapping="Wrap"
                        Style="{StaticResource MinititleTextBlock}" Text="{Binding [Optimization], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
-                <TextBlock Grid.Row="1" Margin="0,10,0,20" TextWrapping="Wrap"
+                <TextBlock Grid.Row="1" Margin="0,10,0,10" TextWrapping="Wrap"
                        Style="{StaticResource BodyTextBlock}" Text="{Binding [JvmOptimizationArgsTip], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Top"
                        HorizontalAlignment="Left" />
+                <ui:InfoBar Grid.Row="2" IsClosable="False" IsOpen="True" Severity="Warning"
+                    Title="{Binding [Warning], Source={x:Static i18n:Lang.Tr}}"
+                    Message="{Binding [JvmArgTemplateSameMemTip], Source={x:Static i18n:Lang.Tr}}" />
+                    <ui:RadioButtons Margin="0,5,0,0" Grid.Row="3">
+                        <RadioButton x:Name="BasicTemplate" Content="{Binding [JvmArgBasicTemplate], Source={x:Static i18n:Lang.Tr}}" Checked="TemplateChanged" />
+                        <RadioButton x:Name="AdvancedTemplate" Content="{Binding [JvmArgAdvancedTemplate], Source={x:Static i18n:Lang.Tr}}" Checked="TemplateChanged" />
+                        <RadioButton x:Name="NoTemplate" Content="{Binding [Unused], Source={x:Static i18n:Lang.Tr}}" IsChecked="True" Checked="TemplateChanged" />
+                    </ui:RadioButtons>
             </Grid>
-        </Border>
-    </Grid>
+            </Border>
+        </ikw:SimpleStackPanel>
+    </ui:ScrollViewerEx>
 </UserControl>
