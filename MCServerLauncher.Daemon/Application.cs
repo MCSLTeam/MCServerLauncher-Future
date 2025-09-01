@@ -191,7 +191,8 @@ public class Application
         }
         catch (AggregateException e)
         {
-            Log.Error("Could not Init Application: {0}", e.Message);
+            Log.Error("Could not Init Application: {0}",
+                string.Join("\n", e.InnerExceptions.Select(x => x.ToString())));
             return false;
         }
     }
