@@ -2,6 +2,12 @@ using MCServerLauncher.Common.Helpers;
 
 namespace MCServerLauncher.Common.ProtoType.Files;
 
+public enum FileType
+{
+    Directory,
+    File
+}
+
 public record FileSystemMetadata
 {
     public long CreationTime;
@@ -40,10 +46,27 @@ public record DirectoryMetadata : FileSystemMetadata
     }
 }
 
+public record FileData
+{
+    public string Name;
+    public FileType Type;
+    public FileSystemMetadata Meta;
+
+    public static FileData Of(FileSystemInfo info)
+    {
+        return new FileData
+        {
+            Name = info.Name,
+            Type = info is DirectoryInfo ? FileType.Directory : FileType.File,
+            Meta = info is FileInfo f ? new FileMetadata(f) : (FileSystemMetadata)new DirectoryMetadata((DirectoryInfo)info)
+        };
+    }
+}
+
 public record DirectoryEntry
 {
-    public DirectoryInformation[] Directories;
-    public FileInformation[] Files;
+    public FileData[] Files;
+    public string Name;
     public string? Parent;
 
     public DirectoryEntry(string path, string root) : this(new DirectoryInfo(path), root)
@@ -52,32 +75,17 @@ public record DirectoryEntry
 
     private DirectoryEntry(DirectoryInfo info, string root)
     {
-        Files = info.GetFiles().Select(x => new FileInformation(x)).ToArray();
-        Directories = info.GetDirectories().Select(x => new DirectoryInformation(x)).ToArray();
+        // Files = info.GetFiles().Select(x => new FileInformation(x)).ToArray();
+        // Directories = info.GetDirectories().Select(x => new DirectoryInformation(x)).ToArray();
+        Name = info.Name;
+        Files = info.GetDirectories()
+            .Select(FileData.Of)
+            .Concat(
+                info.GetFiles().Select(FileData.Of)
+            )
+            .ToArray();
         Parent = PathHelper.GetRelativePath(root, info.FullName);
     }
-
-    public record FileInformation
-    {
-        public FileMetadata Meta;
-        public string Name;
-
-        public FileInformation(FileInfo info)
-        {
-            Name = info.Name;
-            Meta = new FileMetadata(info);
-        }
-    }
-
-    public record DirectoryInformation
-    {
-        public DirectoryMetadata Meta;
-        public string Name;
-
-        public DirectoryInformation(DirectoryInfo info)
-        {
-            Name = info.Name;
-            Meta = new DirectoryMetadata(info);
-        }
-    }
+    
 }
+

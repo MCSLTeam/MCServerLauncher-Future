@@ -332,11 +332,7 @@ public static class DaemonExtensions
     /// <param name="timeout"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static async Task<(
-            DirectoryEntry.DirectoryInformation[],
-            DirectoryEntry.FileInformation[],
-            string?
-            )>
+    public static async Task<(string? Parent, string Name, FileData[] Files)>
         GetDirectoryInfoAsync(this IDaemon daemon, string path, int timeout = -1,
             CancellationToken ct = default)
     {
@@ -350,7 +346,7 @@ public static class DaemonExtensions
             ct
         );
 
-        return (resp.Directories, resp.Files, resp.Parent);
+        return (resp.Parent, resp.Name, resp.Files);
     }
 
     /// <summary>

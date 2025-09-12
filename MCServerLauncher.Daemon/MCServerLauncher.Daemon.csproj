@@ -59,6 +59,7 @@
           <Link>.dockerignore</Link>
         </Content>
         <Content Include=".Resources\MCServerLauncherFutureDaemon.ico" />
+        <Content Include=".Resources\todo.md" />
         <EmbeddedResource Include="Contained\server.jar" />
     </ItemGroup>
 

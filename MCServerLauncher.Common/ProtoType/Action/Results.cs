@@ -57,8 +57,8 @@ public sealed record GetFileInfoResult : IActionResult
 public sealed record GetDirectoryInfoResult : IActionResult
 {
     public string? Parent { get; init; }
-    [JsonRequired] public DirectoryEntry.FileInformation[] Files { get; init; } = null!;
-    [JsonRequired] public DirectoryEntry.DirectoryInformation[] Directories { get; init; } = null!;
+    [JsonRequired] public string Name { get; init; } = null!;
+    [JsonRequired] public FileData[] Files { get; init; } = null!;
 }
 
 public sealed record AddInstanceResult : IActionResult

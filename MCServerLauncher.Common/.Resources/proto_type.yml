@@ -107,8 +107,8 @@ actions:
       
       resp:
         parent: string?
-        files: DirectoryEntry.FileInformation[]
-        directories: DirectoryEntry.DirectoryInformation[]
+        name: string
+        directories: FileData[]
 
   - add_instance:
       req:
