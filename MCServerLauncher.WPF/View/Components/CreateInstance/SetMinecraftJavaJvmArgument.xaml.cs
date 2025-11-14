@@ -130,7 +130,14 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         private void AddJvmArguments(string[] arg)
         {
             if (arg == null) return;
-
+            foreach (var item in ArgsListView.Items.OfType<JvmArgumentItem>())
+            {
+                if (string.IsNullOrEmpty(item.Argument))
+                {
+                    DetachTextChangedEvent(item);
+                    ArgsListView.Items.Remove(item);
+                }
+            }
             foreach (string argument in arg)
             {
                 if (!string.IsNullOrWhiteSpace(argument))
