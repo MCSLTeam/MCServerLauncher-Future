@@ -7,9 +7,9 @@ namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 /// <summary>
 ///     注册各种Action处理函数
 /// </summary>
-internal class HandleBase
+internal static class HandleBase
 {
-    protected Regex RangePattern = new(@"^(\d+)..(\d+)$");
+    public static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
 
     internal static ValueTask<Result<TActionResult, ActionError>> ValueTaskOk<TActionResult>(TActionResult result)
         where TActionResult : IActionResult
