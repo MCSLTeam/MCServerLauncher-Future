@@ -9,7 +9,7 @@ using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Serilog;
 
-namespace MCServerLauncher.Daemon.Management.Extensions;
+namespace MCServerLauncher.Daemon.Management;
 
 // TODO 文件操作全部转换为Result
 public static class InstanceConfigExtensions

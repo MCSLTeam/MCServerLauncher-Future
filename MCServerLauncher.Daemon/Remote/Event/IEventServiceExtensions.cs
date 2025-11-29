@@ -1,7 +1,7 @@
 ﻿using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Status;
 
-namespace MCServerLauncher.Daemon.Remote.Event.Extensions;
+namespace MCServerLauncher.Daemon.Remote.Event;
 
 /// <summary>
 ///     事件服务扩展, 各种事件的触发函数都在这里实现

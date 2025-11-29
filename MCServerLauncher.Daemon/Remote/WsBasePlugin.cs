@@ -1,6 +1,5 @@
 ﻿using System.Net.WebSockets;
 using MCServerLauncher.Daemon.Remote.Authentication;
-using MCServerLauncher.Daemon.Remote.Extensions;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -9,7 +8,7 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, IWebSocketClosedPlugin
+public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosedPlugin
 {
     public WsBasePlugin(IHttpService httpService, WsContextContainer container)
     {
@@ -26,9 +25,9 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, I
         await e.InvokeNext();
     }
 
-    public async Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
+    public async Task OnWebSocketConnected(IWebSocket webSocket, HttpContextEventArgs e)
     {
-        var token = e.Context.Request.Query["token"]!;
+        var token = e.Context.Request.Query["token"].First!;
         WsContext context;
         try
         {

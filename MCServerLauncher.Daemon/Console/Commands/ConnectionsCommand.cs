@@ -45,11 +45,14 @@ public static class ConnectionsCommand
                         var container = source.GetRequiredService<WsContextContainer>();
                         var service = source.GetRequiredService<IHttpService>();
                         var clientIds = container.GetClientIds().ToArray();
-
+                        
+                        List<Task> tasks = new();
                         foreach (var clientId in clientIds)
                             if (service.TryGetClient(clientId, out var client))
-                                client.WebSocket.Close("Daemon administrator manual expired this connection");
-
+                                tasks.Add(client.WebSocket.CloseAsync("Daemon administrator manual expired this connection"));
+                        
+                        // TODO 潜在的卡死问题：通过设置超时时间解决
+                        Task.WhenAll(tasks.ToArray()).GetAwaiter().GetResult();
                         source.SendFeedback("已过期并关闭所有Websocket客户端连接");
                         return 0;
                     }))

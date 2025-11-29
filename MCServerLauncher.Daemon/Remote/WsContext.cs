@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using TouchSocket.Http.WebSockets;
+using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
@@ -23,6 +25,13 @@ public class WsContext
     public DateTime ExpiredTo { get; }
     public Guid JTI { get; }
     public string ClientId { get; }
+
+    public IWebSocket? GetWebsocket()
+    {
+        return Application.HttpService.TryGetClient(ClientId, out var client) && client.Protocol == Protocol.WebSocket
+            ? client.WebSocket
+            : null;
+    }
 
     public void SubscribeEvent(EventType type, IEventMeta? meta)
     {

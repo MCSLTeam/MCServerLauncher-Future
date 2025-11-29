@@ -1,9 +1,7 @@
 ﻿using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Management;
-using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
-using MCServerLauncher.Daemon.Remote.Event.Extensions;
 using MCServerLauncher.Daemon.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using RustyOptions;

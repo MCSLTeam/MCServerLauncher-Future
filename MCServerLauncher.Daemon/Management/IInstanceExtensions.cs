@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Management.Extensions;
+﻿namespace MCServerLauncher.Daemon.Management;
 
 public static class IInstanceExtensions
 {

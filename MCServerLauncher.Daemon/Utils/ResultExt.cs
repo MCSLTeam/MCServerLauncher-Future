@@ -23,7 +23,7 @@ public static class ResultExt
         where T1 : notnull
         where T2 : notnull
     {
-        ArgumentNullException.ThrowIfNull(mapper, nameof(mapper));
+        ArgumentNullException.ThrowIfNull(mapper);
         return self.IsOk(out var obj)
             ? new Result<T2, TErr>(await mapper(obj).ConfigureAwait(false))
             : Result.Err<T2, TErr>(self.UnwrapErr());
@@ -89,7 +89,7 @@ public static class ResultExt
     }
 
     /// <summary>
-    ///  ResultExt.Try避免捕获外部变量以提高性能(不需要捕获变量的版本)
+    ///     ResultExt.Try避免捕获外部变量以提高性能(不需要捕获变量的版本)
     /// </summary>
     /// <param name="func">可能抛出异常的lambda函数</param>
     /// <returns></returns>

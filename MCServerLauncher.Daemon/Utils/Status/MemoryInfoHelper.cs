@@ -10,6 +10,7 @@ public static class MemoryInfoHelper
 {
     private static readonly CimSession? Session =
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? CimSession.Create("localhost") : null;
+
     public static readonly ulong TotalPhysicalMemory;
 
     static MemoryInfoHelper()

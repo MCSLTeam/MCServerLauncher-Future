@@ -7,7 +7,7 @@ using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
-internal class HandleFileDownload: HandleBase
+internal class HandleFileDownload : HandleBase
 {
     public static ActionHandlerRegistry Register(ActionHandlerRegistry registry)
     {
