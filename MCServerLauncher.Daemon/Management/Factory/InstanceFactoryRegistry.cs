@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -25,78 +24,70 @@ public static class InstanceFactoryRegistry
             >
         > InstanceFactoryMapping = new();
 
-    /// <summary>
-    ///     加载所有IInstanceFactory
-    /// </summary>
-    public static void LoadFactories()
+    public static void LoadFactoryFromType(Type type)
     {
-        var assembly = Assembly.GetExecutingAssembly();
+        var attributes = type.GetCustomAttributes<InstanceFactoryAttribute>().ToArray();
 
-        foreach (var type in assembly.GetTypes())
+        if (attributes.Length == 0) return;
+
+        var factoryInstance = Activator.CreateInstance(type)!;
+
+        foreach (var attr in attributes)
         {
-            var attributes = type.GetCustomAttributes<InstanceFactoryAttribute>().ToArray();
+            // 获取当前实例的SourceTypeMapping, 没有就初始化
+            var sourceTypeMapping
+                = InstanceFactoryMapping.GetValueOrDefault(attr.InstanceType) ??
+                  (InstanceFactoryMapping[attr.InstanceType] =
+                      new Dictionary<SourceType, Dictionary<(McVersion, McVersion),
+                          Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>>());
 
-            if (attributes.Length == 0) continue;
+            var allowedSourceType = attr.AllowedSourceType;
 
-            var factoryInstance = Activator.CreateInstance(type)!;
-
-            foreach (var attr in attributes)
+            // 如果allowedSourceType为Core，或者没有限制，且工厂实例实现了ICoreInstanceFactory, 则注册CoreFactory
+            if (
+                allowedSourceType is SourceType.Core or SourceType.None &&
+                factoryInstance is ICoreInstanceFactory coreInstanceFactory
+            )
             {
-                // 获取当前实例的SourceTypeMapping, 没有就初始化
-                var sourceTypeMapping
-                    = InstanceFactoryMapping.GetValueOrDefault(attr.InstanceType) ??
-                      (InstanceFactoryMapping[attr.InstanceType] =
-                          new Dictionary<SourceType, Dictionary<(McVersion, McVersion),
-                              Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>>());
+                RegisterInstanceFactory(
+                    sourceTypeMapping,
+                    SourceType.Core,
+                    coreInstanceFactory.CreateInstanceFromCore,
+                    attr
+                );
+                Log.Verbose(CF_TEMPLATE, type.FullName, attr.InstanceType, SourceType.Core, attr.MinVersion,
+                    attr.MaxVersion);
+            }
 
-                var allowedSourceType = attr.AllowedSourceType;
+            // 如果allowedSourceType为Archive，或者没有限制，且工厂实例实现了IArchiveInstanceFactory, 则注册ArchiveFactory
+            if (
+                allowedSourceType is SourceType.Archive or SourceType.None &&
+                factoryInstance is IArchiveInstanceFactory archiveInstanceFactory
+            )
+            {
+                RegisterInstanceFactory(
+                    sourceTypeMapping,
+                    SourceType.Archive,
+                    archiveInstanceFactory.CreateInstanceFromArchive,
+                    attr
+                );
+                Log.Verbose(CF_TEMPLATE, type.FullName, attr.InstanceType, SourceType.Archive, attr.MinVersion,
+                    attr.MaxVersion);
+            }
 
-                // 如果allowedSourceType为Core，或者没有限制，且工厂实例实现了ICoreInstanceFactory, 则注册CoreFactory
-                if (
-                    allowedSourceType is SourceType.Core or SourceType.None &&
-                    factoryInstance is ICoreInstanceFactory coreInstanceFactory
-                )
-                {
-                    RegisterInstanceFactory(
-                        sourceTypeMapping,
-                        SourceType.Core,
-                        coreInstanceFactory.CreateInstanceFromCore,
-                        attr
-                    );
-                    Log.Verbose(CF_TEMPLATE, type.FullName, attr.InstanceType, SourceType.Core, attr.MinVersion,
-                        attr.MaxVersion);
-                }
-
-                // 如果allowedSourceType为Archive，或者没有限制，且工厂实例实现了IArchiveInstanceFactory, 则注册ArchiveFactory
-                if (
-                    allowedSourceType is SourceType.Archive or SourceType.None &&
-                    factoryInstance is IArchiveInstanceFactory archiveInstanceFactory
-                )
-                {
-                    RegisterInstanceFactory(
-                        sourceTypeMapping,
-                        SourceType.Archive,
-                        archiveInstanceFactory.CreateInstanceFromArchive,
-                        attr
-                    );
-                    Log.Verbose(CF_TEMPLATE, type.FullName, attr.InstanceType, SourceType.Archive, attr.MinVersion,
-                        attr.MaxVersion);
-                }
-
-                // 如果allowedSourceType为Script，或者没有限制，且工厂实例实现了IScriptInstanceFactory, 则注册ScriptFactory
-                if (
-                    allowedSourceType is SourceType.Script or SourceType.None &&
-                    factoryInstance is IScriptInstanceFactory scriptInstanceFactory)
-                {
-                    RegisterInstanceFactory(
-                        sourceTypeMapping,
-                        SourceType.Script,
-                        scriptInstanceFactory.CreateInstanceFromScript,
-                        attr
-                    );
-                    Log.Verbose(CF_TEMPLATE, type.FullName, attr.InstanceType, SourceType.Script, attr.MinVersion,
-                        attr.MaxVersion);
-                }
+            // 如果allowedSourceType为Script，或者没有限制，且工厂实例实现了IScriptInstanceFactory, 则注册ScriptFactory
+            if (
+                allowedSourceType is SourceType.Script or SourceType.None &&
+                factoryInstance is IScriptInstanceFactory scriptInstanceFactory)
+            {
+                RegisterInstanceFactory(
+                    sourceTypeMapping,
+                    SourceType.Script,
+                    scriptInstanceFactory.CreateInstanceFromScript,
+                    attr
+                );
+                Log.Verbose(CF_TEMPLATE, type.FullName, attr.InstanceType, SourceType.Script, attr.MinVersion,
+                    attr.MaxVersion);
             }
         }
     }

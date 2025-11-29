@@ -1,6 +1,6 @@
-﻿using MCServerLauncher.Common.Concurrent;
+﻿using System.Net.WebSockets;
+using MCServerLauncher.Common.Concurrent;
 using MCServerLauncher.Common.Helpers;
-using MCServerLauncher.Daemon.Remote.Extensions;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -9,7 +9,7 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlugin, IWebSocketClosingPlugin
+public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosingPlugin
 {
     private const int CF_MAX_DELAY_SECOND = int.MaxValue / 1000;
 
@@ -31,7 +31,7 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlu
         await e.InvokeNext();
     }
 
-    public async Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
+    public async Task OnWebSocketConnected(IWebSocket webSocket, HttpContextEventArgs e)
     {
         AddWatchingWebsocket(webSocket);
         await e.InvokeNext();
@@ -59,21 +59,13 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketHandshakedPlu
                         "[WsExpirePlugin / CheckExpireLoop] Expire and start closing websocket connections: {Connections}",
                         ids
                     );
-                    // var tasks = new List<Task>();
-                    // foreach (var id in ids)
-                    // {
-                    //     var ws = this.GetWebSocket(id);
-                    //     if (ws != null) tasks.Add(ws.SafeCloseAsync("connection expired"));
-                    // }
-                    //
-                    // await Task.WhenAll(tasks);
 
                     foreach (var id in ids)
                     {
                         var ws = this.GetWebSocket(id);
                         try
                         {
-                            if (ws != null) await ws.CloseAsync(5001, "");
+                            if (ws != null) await ws.CloseAsync((WebSocketCloseStatus)5001, "");
                         }
                         catch (Exception e)
                         {

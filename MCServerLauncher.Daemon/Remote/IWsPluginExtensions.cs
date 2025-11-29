@@ -2,7 +2,7 @@
 using TouchSocket.Http.WebSockets;
 using TouchSocket.Sockets;
 
-namespace MCServerLauncher.Daemon.Remote.Extensions;
+namespace MCServerLauncher.Daemon.Remote;
 
 public static class IWsPluginExtensions
 {

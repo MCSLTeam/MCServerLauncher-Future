@@ -5,7 +5,7 @@ using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Serilog;
 
-namespace MCServerLauncher.Daemon.Management.Extensions;
+namespace MCServerLauncher.Daemon.Management;
 
 public static class InstanceFactorySettingExtensions
 {

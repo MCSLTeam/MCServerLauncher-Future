@@ -1,6 +1,6 @@
 ﻿using MCServerLauncher.Daemon.Management.Minecraft;
 
-namespace MCServerLauncher.Daemon.Management.Extensions;
+namespace MCServerLauncher.Daemon.Management;
 
 public static class McVersionExtensions
 {

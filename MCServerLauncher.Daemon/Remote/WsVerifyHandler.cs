@@ -1,4 +1,5 @@
 ﻿using MCServerLauncher.Daemon.Remote.Authentication;
+using TouchSocket.Core;
 using TouchSocket.Http;
 
 namespace MCServerLauncher.Daemon.Remote;
@@ -18,12 +19,10 @@ public static class WsVerifyHandler
 
         try
         {
-            var token = context.Request.Query["token"];
-
-            if (
-                token != null
-                && JwtUtils.ValidateToken(token)
-            ) return true;
+            if (context.Request.Query.TryGetValue("token", out var token) && JwtUtils.ValidateToken(token))
+            {
+                return true;
+            }
 
             await context.Response.SetStatus(401, "Unauthorized").AnswerAsync();
             return false;

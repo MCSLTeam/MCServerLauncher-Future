@@ -51,35 +51,36 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove=".Resources\Docs" />
+        <Compile Remove=".Resources\Docs"/>
     </ItemGroup>
 
     <ItemGroup>
         <Content Include="..\.dockerignore">
-          <Link>.dockerignore</Link>
+            <Link>.dockerignore</Link>
         </Content>
-        <Content Include=".Resources\MCServerLauncherFutureDaemon.ico" />
-        <EmbeddedResource Include="Contained\server.jar" />
+        <Content Include=".Resources\MCServerLauncherFutureDaemon.ico"/>
+        <EmbeddedResource Include="Contained\server.jar"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Brigadier.NET" Version="1.2.13" />
-        <PackageReference Include="Downloader" Version="3.1.2" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
-        <PackageReference Include="Microsoft.Management.Infrastructure" Version="3.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="RustyOptions" Version="0.10.1" />
-        <PackageReference Include="Serilog" Version="4.2.0" />
-        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
-        <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="3.1.1" />
-        <PackageReference Include="TouchSocket.Http" Version="3.1.1" />
+        <PackageReference Include="Brigadier.NET" Version="1.2.13"/>
+        <PackageReference Include="Downloader" Version="3.1.2"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4"/>
+        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Management.Infrastructure" Version="3.0.0"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="RustyOptions" Version="0.10.1"/>
+        <PackageReference Include="Serilog" Version="4.2.0"/>
+        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0"/>
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0"/>
+        <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="4.0.0" />
+        <PackageReference Include="TouchSocket.Http" Version="4.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
+        <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj"/>
     </ItemGroup>
 
 

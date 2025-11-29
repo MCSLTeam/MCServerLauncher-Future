@@ -1,5 +1,4 @@
 ﻿using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
@@ -7,9 +6,10 @@ using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using RustyOptions;
 using Serilog;
-using Version = MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json.Version;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge;
+
+using Json_Version = Json.Version;
 
 public sealed class ForgeInstallerV2 : ForgeInstallerBase
 {
@@ -20,7 +20,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         Version = profile.LoadVersion(installerPath);
     }
 
-    public Version Version { get; }
+    public Json_Version Version { get; }
 
     public override InstallV1 Install { get; }
 
@@ -89,11 +89,12 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
     }
 
 
-    private async Task<bool> ConsiderLibrary(Version.Library library, string libRoot, CancellationToken ct = default)
+    private async Task<bool> ConsiderLibrary(Json_Version.Library library, string libRoot,
+        CancellationToken ct = default)
     {
         var arti = library.Name;
         var target = arti.GetLocalPath(libRoot);
-        var download = library.Downloads?.Artifact ?? new Version.LibraryDownload { Path = arti.Path };
+        var download = library.Downloads?.Artifact ?? new Json_Version.LibraryDownload { Path = arti.Path };
 
         // 检查本地是否已经存在正确的文件
         if (string.IsNullOrEmpty(download.Sha1) && File.Exists(target))
@@ -124,12 +125,12 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         return false;
     }
 
-    private static async Task<bool> DownloadLibrary(Version.Library library, string root,
+    private static async Task<bool> DownloadLibrary(Json_Version.Library library, string root,
         CancellationToken ct = default)
     {
         var arti = library.Name;
         var target = arti.GetLocalPath(root);
-        var download = library.Downloads?.Artifact ?? new Version.LibraryDownload { Path = arti.Path };
+        var download = library.Downloads?.Artifact ?? new Json_Version.LibraryDownload { Path = arti.Path };
 
         // TODO library本地缓存库,首先从本地缓存库查找,找不到或者sha1对不上再从镜像下载
 

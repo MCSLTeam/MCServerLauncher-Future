@@ -1,5 +1,4 @@
 ﻿using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management.Extensions;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Storage;

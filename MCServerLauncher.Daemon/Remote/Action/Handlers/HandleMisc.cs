@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
-internal class HandleMisc: HandleBase
+internal class HandleMisc : HandleBase
 {
     public static ActionHandlerRegistry Register(ActionHandlerRegistry registry)
     {

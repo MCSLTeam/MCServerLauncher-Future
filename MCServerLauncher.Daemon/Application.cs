@@ -9,7 +9,6 @@ using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Action.Handlers;
 using MCServerLauncher.Daemon.Remote.Event;
-using MCServerLauncher.Daemon.Remote.Event.Extensions;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using MCServerLauncher.Daemon.Utils.Status;
@@ -22,54 +21,56 @@ using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon;
 
-public class Application
+public static class Application
 {
     public static readonly DateTime StartTime = DateTime.Now;
+    private static Timer _daemonReportTimer;
+    public static HttpService HttpService { get; private set; }
+    public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version!;
 
-    private readonly Timer _daemonReportTimer;
-    private readonly HttpService _httpService;
-
-    public Application()
+    public static async Task SetupAsync()
     {
         IServiceCollection collection = new ServiceCollection();
 
-        _httpService = new HttpService();
-        _httpService.Setup(new TouchSocketConfig()
+        HttpService = new HttpService();
+        await HttpService.SetupAsync(new TouchSocketConfig()
             .SetListenIPHosts(AppConfig.Get().Port)
             .UseAspNetCoreContainer(collection)
             .ConfigureContainer(a =>
             {
-                a.RegisterSingleton<IServiceCollection>(collection)
-                    .RegisterSingleton<ConsoleApplication>()
-                    .RegisterSingleton<GracefulShutdown>()
-                    .RegisterSingleton<IHttpService>(_httpService)
-                    .RegisterSingleton<IActionService, ActionService>()
-                    .RegisterSingleton<IEventService, EventService>()
-                    .RegisterSingleton<WsContextContainer>()
-                    .RegisterSingleton<ActionHandlerRegistry>()
-                    .RegisterSingleton<IInstanceManager>(InstanceManager.Create())
-                    .RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(
-                        new AsyncTimedLazyCell<SystemInfo>(
-                            SystemInfoHelper.GetSystemInfo,
-                            TimeSpan.FromSeconds(2)
-                        )
+                a.RegisterSingleton<IServiceCollection>(collection);
+                a.RegisterSingleton<ConsoleApplication>();
+                a.RegisterSingleton<GracefulShutdown>();
+                a.RegisterSingleton<IHttpService>(HttpService);
+                a.RegisterSingleton<IActionService, ActionService>();
+                a.RegisterSingleton<IEventService, EventService>();
+                a.RegisterSingleton<WsContextContainer>();
+                a.RegisterSingleton<ActionHandlerRegistry>();
+                a.RegisterSingleton<IInstanceManager>(InstanceManager.Create());
+                a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(
+                    new AsyncTimedLazyCell<SystemInfo>(
+                        SystemInfoHelper.GetSystemInfo,
+                        TimeSpan.FromSeconds(2)
                     )
-                    .RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(
-                        new AsyncTimedLazyCell<JavaInfo[]>(
-                            JavaScanner.ScanJavaAsync,
-                            TimeSpan.FromMilliseconds(60000)
-                        )
-                    );
+                );
+                a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(
+                    new AsyncTimedLazyCell<JavaInfo[]>(
+                        JavaScanner.ScanJavaAsync,
+                        TimeSpan.FromMilliseconds(60000)
+                    )
+                );
             })
             .ConfigurePlugins(a =>
             {
                 a.Add<FileSystemWatcherPlugin>();
 
                 a.Add<HttpPlugin>();
-                a.UseWebSocket()
-                    .SetWSUrl("/api/v1")
-                    .SetVerifyConnection(WsVerifyHandler.VerifyHandler)
-                    .UseAutoPong();
+                a.UseWebSocket(options =>
+                {
+                    options.SetUrl("/api/v1");
+                    options.SetVerifyConnection(WsVerifyHandler.VerifyHandler);
+                    options.SetAutoPong(true);
+                });
 
                 a.Add<WsBasePlugin>();
                 a.Add<WsActionPlugin>();
@@ -78,18 +79,16 @@ public class Application
                 a.UseDefaultHttpServicePlugin();
             })
         );
-        PostApplicationContainerBuilt(resolver =>
-        {
-            resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
-            resolver.GetRequiredService<ConsoleApplication>().Serve();
-        });
+
+        HttpService.Resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
+        HttpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
 
         _daemonReportTimer = new Timer(3000);
         _daemonReportTimer.AutoReset = true;
         _daemonReportTimer.Elapsed += async (sender, args) =>
         {
-            var eventService = _httpService.Resolver.GetRequiredService<IEventService>();
-            var cell = _httpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
+            var eventService = HttpService.Resolver.GetRequiredService<IEventService>();
+            var cell = HttpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
             var (osInfo, cpuInfo, memInfo, driveInformation) = await cell.Value;
             eventService.OnDaemonReport(new DaemonReport(
                 osInfo,
@@ -101,20 +100,19 @@ public class Application
         };
     }
 
-    public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version!;
 
     /// <summary>
     ///     读取配置,添加/api/v1和/login路由的handler,并启动HttpServer。
     ///     路由/api/v1: ws长连接，实现rpc。
     ///     路由/login: http请求，实现登录，返回一个jwt。
     /// </summary>
-    public async Task ServeAsync()
+    public static async Task ServeAsync()
     {
         var config = AppConfig.Get();
-        var resolver = _httpService.Resolver;
+        var resolver = HttpService.Resolver;
         var gs = resolver.GetRequiredService<GracefulShutdown>();
 
-        await _httpService.StartAsync();
+        await HttpService.StartAsync();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
         _daemonReportTimer.Start();
@@ -124,16 +122,16 @@ public class Application
 
         // 最后释放HttpService
         Log.Debug("[Application] shutting down Http service ...");
-        await _httpService.StopAsync();
+        await HttpService.StopAsync();
     }
 
-    private async Task StopAsync(int timeout = -1)
+    private static async Task StopAsync(int timeout = -1)
     {
         _daemonReportTimer.Stop();
 
         var cts = new CancellationTokenSource();
 
-        var manager = _httpService.Resolver.GetRequiredService<IInstanceManager>();
+        var manager = HttpService.Resolver.GetRequiredService<IInstanceManager>();
 
         cts.CancelAfter(timeout);
 
@@ -141,8 +139,8 @@ public class Application
         await manager.StopAllInstances(cts.Token);
 
         Log.Debug("[WsContextContainer] closing websocket connections ...");
-        foreach (var id in _httpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
-            await _httpService.GetClient(id).WebSocket.CloseAsync("Daemon exit", cts.Token);
+        foreach (var id in HttpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
+            await HttpService.GetClient(id).WebSocket.CloseAsync("Daemon exit", cts.Token);
     }
 
     #region Init
@@ -174,7 +172,7 @@ public class Application
             .CreateLogger();
     }
 
-    public static bool Init()
+    public static async Task<bool> InitAsync()
     {
         InitLogger();
         Log.Information("MCServerLauncher.Daemon v{0}", AppVersion);
@@ -182,13 +180,11 @@ public class Application
         InitDataDirectory();
         ContainedFiles.ExtractContained();
         FileManager.StartFileSessionsWatcher();
-        InstanceFactoryRegistry.LoadFactories();
 
         try
         {
             // windows下预先检查CIM是否可用
-            SystemInfoHelper.GetSystemInfo().Wait();
-            return true;
+            await SystemInfoHelper.GetSystemInfo();
         }
         catch (AggregateException e)
         {
@@ -196,11 +192,14 @@ public class Application
                 string.Join("\n", e.InnerExceptions.Select(x => x.ToString())));
             return false;
         }
-    }
 
-    private void PostApplicationContainerBuilt(Action<IResolver> setup)
-    {
-        setup.Invoke(_httpService.Resolver);
+        foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+        {
+            InstanceFactoryRegistry.LoadFactoryFromType(type);
+            AnotherActionHandlerRegistry.LoadHandlerFromType(type);
+        }
+
+        return true;
     }
 
     #endregion

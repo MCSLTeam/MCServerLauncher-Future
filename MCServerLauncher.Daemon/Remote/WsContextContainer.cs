@@ -6,9 +6,9 @@ public class WsContextContainer
 {
     private readonly ConcurrentDictionary<string, WsContext> _contexts = new();
 
-    public WsContext? GetContext(string clientId)
+    public WsContext GetContext(string clientId)
     {
-        return _contexts.GetValueOrDefault(clientId);
+        return _contexts[clientId];
     }
 
     public WsContext CreateContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)

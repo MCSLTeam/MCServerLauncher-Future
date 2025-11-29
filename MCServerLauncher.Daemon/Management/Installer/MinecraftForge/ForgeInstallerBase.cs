@@ -14,6 +14,8 @@ using Version = MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge;
 
+using Version = Version;
+
 public abstract class ForgeInstallerBase : IInstanceInstaller
 {
     protected ForgeInstallerBase(string installerPath, string? javaPath, InstanceFactoryMirror mirror)

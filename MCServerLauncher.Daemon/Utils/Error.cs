@@ -49,10 +49,7 @@ public class Error
             writer.Write(string.Join("\n                  ", CausedException.ToString().Split("\n")));
         }
 
-        if (InnerError is not null)
-        {
-            writer.WriteLine(InnerError.SimpleBackTrace());
-        }
+        if (InnerError is not null) writer.WriteLine(InnerError.SimpleBackTrace());
 
         return writer.ToString();
     }

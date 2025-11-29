@@ -10,7 +10,7 @@ namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 internal class HandleBase
 {
     protected Regex RangePattern = new(@"^(\d+)..(\d+)$");
-    
+
     internal static ValueTask<Result<TActionResult, ActionError>> ValueTaskOk<TActionResult>(TActionResult result)
         where TActionResult : IActionResult
     {
