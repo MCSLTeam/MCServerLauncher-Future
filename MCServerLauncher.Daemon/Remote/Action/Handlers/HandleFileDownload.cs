@@ -41,12 +41,12 @@ class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, 
 {
     public async Task<Result<FileDownloadRangeResult, ActionError>> HandleAsync(FileDownloadRangeParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        if (!HandleBase.RangePattern.IsMatch(param.Range))
+        var match = HandleBase.RangePattern.Match(param.Range);
+        if (!match.Success)
             return HandleBase.Err<FileDownloadRangeResult>(ActionRetcode.ParamError.WithMessage("Invalid range format")
                 .ToError());
 
-        var (from, to) = (int.Parse(HandleBase.RangePattern.Match(param.Range).Groups[1].Value),
-            int.Parse(HandleBase.RangePattern.Match(param.Range).Groups[2].Value));
+        var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
 
         return HandleBase.Ok(new FileDownloadRangeResult
         {
