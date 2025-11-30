@@ -331,6 +331,7 @@ static class AnotherActionHandlerRegistry
                 var handlerDelegate = buildHandlerMethod.Invoke(null, new[] { handlerInstance })!;
                 Handlers[attr.ActionType] =
                     (Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>)handlerDelegate;
+                HandlerMeta[attr.ActionType] = new ActionHandlerMeta(attr.Permission, EActionHandlerType.Sync);
                 Log.Verbose(template, type.Name, attr.ActionType, "Sync", attr.Permission.ToString());
             }
 
@@ -359,6 +360,7 @@ static class AnotherActionHandlerRegistry
                 var handlerDelegate = buildAsyncHandlerMethod.Invoke(null, new[] { handlerInstance })!;
                 AsyncHandlers[attr.ActionType] =
                     (Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>)handlerDelegate;
+                HandlerMeta[attr.ActionType] = new ActionHandlerMeta(attr.Permission, EActionHandlerType.Async);
                 Log.Verbose(template, type.Name, attr.ActionType, "Async", attr.Permission.ToString());
             }
         }
