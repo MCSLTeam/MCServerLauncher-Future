@@ -14,7 +14,7 @@ class HandlePing : IActionHandler<EmptyActionParameter, PingResult>
 {
     public Result<PingResult, ActionError> Handle(EmptyActionParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return HandleBase.Ok(new PingResult
+        return this.Ok(new PingResult
         {
             Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         });
@@ -26,7 +26,7 @@ class HandleGetSystemInfo : IAsyncActionHandler<EmptyActionParameter, GetSystemI
 {
     public async Task<Result<GetSystemInfoResult, ActionError>> HandleAsync(EmptyActionParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return HandleBase.Ok(new GetSystemInfoResult
+        return this.Ok(new GetSystemInfoResult
         { 
             Info = await resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>().Value 
         });
@@ -38,7 +38,7 @@ class HandleGetPermissions : IActionHandler<EmptyActionParameter, GetPermissions
 {
     public Result<GetPermissionsResult, ActionError> Handle(EmptyActionParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return HandleBase.Ok(new GetPermissionsResult
+        return this.Ok(new GetPermissionsResult
         {
             Permissions = ctx.Permissions.PermissionList.Select(p => p.ToString()).ToArray()
         });
@@ -50,7 +50,7 @@ class HandleGetJavaList : IAsyncActionHandler<EmptyActionParameter, GetJavaListR
 {
     public async Task<Result<GetJavaListResult, ActionError>> HandleAsync(EmptyActionParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return HandleBase.Ok(new GetJavaListResult
+        return this.Ok(new GetJavaListResult
         {
             JavaList = await resolver.GetRequiredService<IAsyncTimedLazyCell<JavaInfo[]>>().Value
         });

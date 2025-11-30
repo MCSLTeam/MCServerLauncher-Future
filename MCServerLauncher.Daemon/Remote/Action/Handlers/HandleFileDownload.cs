@@ -12,7 +12,8 @@ namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 [ActionHandler(ActionType.FileDownloadRequest, "mcsl.daemon.file.download")]
 class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParameter, FileDownloadRequestResult>
 {
-    public async Task<Result<FileDownloadRequestResult, ActionError>> HandleAsync(FileDownloadRequestParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<FileDownloadRequestResult, ActionError>> HandleAsync(FileDownloadRequestParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         return await ResultExt.TryAsync(async requestParameter =>
             {
@@ -23,7 +24,7 @@ class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParamet
                     .OkOr(ActionRetcode.RateLimitExceeded.WithMessage(
                         $"Max download sessions of file '{requestParameter.Path}' reached").ToError())
                     .AndThen(rv =>
-                        HandleBase.Ok(new FileDownloadRequestResult
+                        this.Ok(new FileDownloadRequestResult
                         {
                             FileId = rv.Id,
                             Size = rv.Size,
@@ -31,7 +32,7 @@ class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParamet
                         }));
             }, param)
             .MapTask(result => result.UnwrapOrElse(ex =>
-                HandleBase.Err<FileDownloadRequestResult>(ActionRetcode.FileError.ToError().CauseBy(ex)))
+                this.Err(ActionRetcode.FileError.ToError().CauseBy(ex)))
             );
     }
 }
@@ -39,16 +40,19 @@ class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParamet
 [ActionHandler(ActionType.FileDownloadRange, "mcsl.daemon.file.download")]
 class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, FileDownloadRangeResult>
 {
-    public async Task<Result<FileDownloadRangeResult, ActionError>> HandleAsync(FileDownloadRangeParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
+
+    public async Task<Result<FileDownloadRangeResult, ActionError>> HandleAsync(FileDownloadRangeParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        var match = HandleBase.RangePattern.Match(param.Range);
+        var match = RangePattern.Match(param.Range);
         if (!match.Success)
-            return HandleBase.Err<FileDownloadRangeResult>(ActionRetcode.ParamError.WithMessage("Invalid range format")
+            return this.Err(ActionRetcode.ParamError.WithMessage("Invalid range format")
                 .ToError());
 
         var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
 
-        return HandleBase.Ok(new FileDownloadRangeResult
+        return this.Ok(new FileDownloadRangeResult
         {
             Content = await FileManager.FileDownloadRange(param.FileId, from, to)
         });
@@ -58,9 +62,10 @@ class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, 
 [ActionHandler(ActionType.FileDownloadClose, "mcsl.daemon.file.download")]
 class HandleFileDownloadClose : IActionHandler<FileDownloadCloseParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(FileDownloadCloseParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(FileDownloadCloseParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         FileManager.FileDownloadClose(param.FileId);
-        return HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult);
+        return this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }

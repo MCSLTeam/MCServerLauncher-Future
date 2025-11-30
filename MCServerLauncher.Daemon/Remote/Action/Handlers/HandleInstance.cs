@@ -19,14 +19,14 @@ class HandleStartInstance : IAsyncActionHandler<StartInstanceParameter, EmptyAct
         var instance = await instanceManager.TryStartInstance(param.Id);
 
         if (instance is null)
-            return HandleBase.Err<EmptyActionResult>(instanceManager.Instances.ContainsKey(param.Id)
+            return this.Err(instanceManager.Instances.ContainsKey(param.Id)
                 ? ActionRetcode.ProcessError.WithMessage("Cannot start instance process")
                 : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
 
         instance.OnLog -= eventService.OnInstanceLog;
         instance.OnLog += eventService.OnInstanceLog;
 
-        return HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult);
+        return this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
@@ -37,8 +37,8 @@ class HandleStopInstance : IActionHandler<StopInstanceParameter, EmptyActionResu
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return instanceManager.TryStopInstance(param.Id)
-            ? HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : HandleBase.Err<EmptyActionResult>(instanceManager.Instances.ContainsKey(param.Id)
+            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
+            : this.Err(instanceManager.Instances.ContainsKey(param.Id)
                 ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
                 : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
     }
@@ -51,8 +51,8 @@ class HandleSendToInstance : IActionHandler<SendToInstanceParameter, EmptyAction
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return instanceManager.SendToInstance(param.Id, param.Message)
-            ? HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : HandleBase.Err<EmptyActionResult>(instanceManager.Instances.ContainsKey(param.Id)
+            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
+            : this.Err(instanceManager.Instances.ContainsKey(param.Id)
                 ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
                 : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
     }
@@ -64,7 +64,7 @@ class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, GetAllRepo
     public async Task<Result<GetAllReportsResult, ActionError>> HandleAsync(EmptyActionParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return HandleBase.Ok(new GetAllReportsResult
+        return this.Ok(new GetAllReportsResult
         {
             Reports = await instanceManager.GetAllReports()
         });
@@ -104,8 +104,8 @@ class HandleRemoveInstance : IActionHandler<RemoveInstanceParameter, EmptyAction
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return instanceManager.TryRemoveInstance(param.Id)
-            ? HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : HandleBase.Err<EmptyActionResult>(instanceManager.RunningInstances.ContainsKey(param.Id)
+            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
+            : this.Err(instanceManager.RunningInstances.ContainsKey(param.Id)
                 ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} is running")
                 : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
     }
@@ -118,7 +118,7 @@ class HandleKillInstance : IActionHandler<KillInstanceParameter, EmptyActionResu
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         instanceManager.KillInstance(param.Id);
-        return HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult);
+        return this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
@@ -128,7 +128,7 @@ class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportParameter, 
     public async Task<Result<GetInstanceReportResult, ActionError>> HandleAsync(GetInstanceReportParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return HandleBase.Ok(new GetInstanceReportResult
+        return this.Ok(new GetInstanceReportResult
         {
             Report = await instanceManager.GetInstanceReport(param.Id)
         });

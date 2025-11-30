@@ -24,11 +24,11 @@ class HandleGetDirectoryInfo : IActionHandler<GetDirectoryInfoParameter, GetDire
             }, param)
             .OrElse(ex => ex switch
             {
-                FileNotFoundException fileNotFoundException => HandleBase.Err<GetDirectoryInfoResult>(
+                FileNotFoundException fileNotFoundException => this.Err(
                     ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
-                IOException ioException => HandleBase.Err<GetDirectoryInfoResult>(
+                IOException ioException => this.Err(
                     ActionRetcode.FileError.ToError().CauseBy(ioException)),
-                _ => HandleBase.Err<GetDirectoryInfoResult>(ActionRetcode.FileError.ToError().CauseBy(ex))
+                _ => this.Err(ActionRetcode.FileError.ToError().CauseBy(ex))
             });
     }
 }
@@ -45,11 +45,11 @@ class HandleGetFileInfo : IActionHandler<GetFileInfoParameter, GetFileInfoResult
                 }, param.Path)
             .OrElse(ex => ex switch
             {
-                FileNotFoundException fileNotFoundException => HandleBase.Err<GetFileInfoResult>(
+                FileNotFoundException fileNotFoundException => this.Err(
                     ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
-                IOException ioException => HandleBase.Err<GetFileInfoResult>(
+                IOException ioException => this.Err(
                     ActionRetcode.FileError.ToError().CauseBy(ioException)),
-                _ => HandleBase.Err<GetFileInfoResult>(ActionRetcode.FileError.ToError().CauseBy(ex))
+                _ => this.Err(ActionRetcode.FileError.ToError().CauseBy(ex))
             });
     }
 }

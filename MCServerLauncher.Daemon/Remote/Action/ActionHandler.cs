@@ -127,7 +127,7 @@ static class ActionHandlerExtensions
 
     #region ResultHelper
 
-    public static Result<TResult, ActionError> Ok<TParam, TResult>(this IAsyncActionHandler<TParam, TResult> self,
+    public static Result<TResult, ActionError> Ok<TParam, TResult>(this IActionHandlerBase<TParam, TResult> self,
         TResult result)
         where TParam : class, IActionParameter
         where TResult : class, IActionResult
@@ -135,23 +135,7 @@ static class ActionHandlerExtensions
         return Result.Ok<TResult, ActionError>(result);
     }
 
-    public static Result<TResult, ActionError> Err<TParam, TResult>(this IAsyncActionHandler<TParam, TResult> self,
-        ActionError error)
-        where TParam : class, IActionParameter
-        where TResult : class, IActionResult
-    {
-        return Result.Err<TResult, ActionError>(error);
-    }
-
-    public static Result<TResult, ActionError> Ok<TParam, TResult>(this IActionHandler<TParam, TResult> self,
-        TResult result)
-        where TParam : class, IActionParameter
-        where TResult : class, IActionResult
-    {
-        return Result.Ok<TResult, ActionError>(result);
-    }
-
-    public static Result<TResult, ActionError> Err<TParam, TResult>(this IActionHandler<TParam, TResult> self,
+    public static Result<TResult, ActionError> Err<TParam, TResult>(this IActionHandlerBase<TParam, TResult> self,
         ActionError error)
         where TParam : class, IActionParameter
         where TResult : class, IActionResult

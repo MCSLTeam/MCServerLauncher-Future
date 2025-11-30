@@ -23,11 +23,11 @@ class HandleFileUploadRequest : IActionHandler<FileUploadRequestParameter, FileU
             ))
             .MapErr(ex => new ActionError(ActionRetcode.FileError).CauseBy(ex))
             .AndThen(fileId => fileId != Guid.Empty
-                ? HandleBase.Ok(new FileUploadRequestResult
+                ? this.Ok(new FileUploadRequestResult
                 {
                     FileId = fileId
                 })
-                : HandleBase.Err<FileUploadRequestResult>(
+                : this.Err(
                     ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space").ToError()
                 ));
     }
@@ -39,7 +39,7 @@ class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParameter, File
     public async Task<Result<FileUploadChunkResult, ActionError>> HandleAsync(FileUploadChunkParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         if (param.FileId == Guid.Empty)
-            return HandleBase.Err<FileUploadChunkResult>(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId)
+            return this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId)
                 .ToError());
 
         return await ResultExt.TryAsync(async chunkParameter =>
@@ -56,7 +56,7 @@ class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParameter, File
                 Received = received
             };
         }, param).MapTask(result =>
-            result.OrElse(ex => HandleBase.Err<FileUploadChunkResult>(ActionRetcode.FileError.ToError().CauseBy(ex)))
+            result.OrElse(ex => this.Err(ActionRetcode.FileError.ToError().CauseBy(ex)))
         );
     }
 }
@@ -67,7 +67,7 @@ class HandleFileUploadCancel : IActionHandler<FileUploadCancelParameter, EmptyAc
     public Result<EmptyActionResult, ActionError> Handle(FileUploadCancelParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         return FileManager.FileUploadCancel(param.FileId)
-            ? HandleBase.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : HandleBase.Err<EmptyActionResult>(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId).ToError());
+            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
+            : this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId).ToError());
     }
 }

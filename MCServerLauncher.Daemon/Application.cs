@@ -79,8 +79,7 @@ public static class Application
                 a.UseDefaultHttpServicePlugin();
             })
         );
-
-        HttpService.Resolver.GetRequiredService<ActionHandlerRegistry>().RegisterHandlers();
+        
         HttpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
 
         _daemonReportTimer = new Timer(3000);
