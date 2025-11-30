@@ -3,54 +3,53 @@ using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
-internal class HandleFileInfo : HandleBase
+[ActionHandler(ActionType.GetDirectoryInfo, "mcsl.daemon.file.info.directory")]
+class HandleGetDirectoryInfo : IActionHandler<GetDirectoryInfoParameter, GetDirectoryInfoResult>
 {
-    public static ActionHandlerRegistry Register(ActionHandlerRegistry registry)
+    public Result<GetDirectoryInfoResult, ActionError> Handle(GetDirectoryInfoParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return registry
-            .Register<GetDirectoryInfoParameter, GetDirectoryInfoResult>(
-                ActionType.GetDirectoryInfo,
-                Permission.Of("mcsl.daemon.file.info.directory"),
-                (param, ctx, resolver, ct) =>
-                    ValueTask.FromResult(ResultExt.Try(directoryInfoParameter =>
-                        {
-                            var entry = FileManager.GetDirectoryInfo(directoryInfoParameter.Path);
-                            return new GetDirectoryInfoResult
-                            {
-                                Parent = entry.Parent,
-                                Directories = entry.Directories,
-                                Files = entry.Files
-                            };
-                        }, param)
-                        .OrElse(ex => ex switch
-                        {
-                            FileNotFoundException fileNotFoundException => Err<GetDirectoryInfoResult>(
-                                ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
-                            IOException ioException => Err<GetDirectoryInfoResult>(
-                                ActionRetcode.FileError.ToError().CauseBy(ioException)),
-                            _ => Err<GetDirectoryInfoResult>(ActionRetcode.FileError.ToError().CauseBy(ex))
-                        }))
-            )
-            .Register<GetFileInfoParameter, GetFileInfoResult>(
-                ActionType.GetFileInfo,
-                Permission.Of("mcsl.daemon.file.info.file"),
-                (param, ctx, resolver, ct) =>
-                    ValueTask.FromResult(ResultExt.Try(path =>
-                            new GetFileInfoResult
-                            {
-                                Meta = FileManager.GetFileInfo(path)
-                            }, param.Path)
-                        .OrElse(ex => ex switch
-                        {
-                            FileNotFoundException fileNotFoundException => Err<GetFileInfoResult>(
-                                ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
-                            IOException ioException => Err<GetFileInfoResult>(
-                                ActionRetcode.FileError.ToError().CauseBy(ioException)),
-                            _ => Err<GetFileInfoResult>(ActionRetcode.FileError.ToError().CauseBy(ex))
-                        }))
-            );
+        return ResultExt.Try(directoryInfoParameter =>
+            {
+                var entry = FileManager.GetDirectoryInfo(directoryInfoParameter.Path);
+                return new GetDirectoryInfoResult
+                {
+                    Parent = entry.Parent,
+                    Directories = entry.Directories,
+                    Files = entry.Files
+                };
+            }, param)
+            .OrElse(ex => ex switch
+            {
+                FileNotFoundException fileNotFoundException => this.Err(
+                    ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
+                IOException ioException => this.Err(
+                    ActionRetcode.FileError.ToError().CauseBy(ioException)),
+                _ => this.Err(ActionRetcode.FileError.ToError().CauseBy(ex))
+            });
+    }
+}
+
+[ActionHandler(ActionType.GetFileInfo, "mcsl.daemon.file.info.file")]
+class HandleGetFileInfo : IActionHandler<GetFileInfoParameter, GetFileInfoResult>
+{
+    public Result<GetFileInfoResult, ActionError> Handle(GetFileInfoParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    {
+        return ResultExt.Try(path =>
+                new GetFileInfoResult
+                {
+                    Meta = FileManager.GetFileInfo(path)
+                }, param.Path)
+            .OrElse(ex => ex switch
+            {
+                FileNotFoundException fileNotFoundException => this.Err(
+                    ActionRetcode.FileNotFound.ToError().CauseBy(fileNotFoundException)),
+                IOException ioException => this.Err(
+                    ActionRetcode.FileError.ToError().CauseBy(ioException)),
+                _ => this.Err(ActionRetcode.FileError.ToError().CauseBy(ex))
+            });
     }
 }

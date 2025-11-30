@@ -3,35 +3,36 @@ using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
-internal class HandleEvent : HandleBase
+[ActionHandler(ActionType.SubscribeEvent, "*")]
+class HandleSubscribeEvent : IActionHandler<SubscribeEventParameter, EmptyActionResult>
 {
-    public static ActionHandlerRegistry Register(ActionHandlerRegistry registry)
+    public Result<EmptyActionResult, ActionError> Handle(SubscribeEventParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return registry
-            .Register<SubscribeEventParameter>(
-                ActionType.SubscribeEvent,
-                IMatchable.Always(),
-                (param, ctx, resolver, ct) =>
-                    ValueTask.FromResult(ResultExt.Try(wsCtx =>
-                        wsCtx.SubscribeEvent(param.Type,
-                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
-                        ), ctx).MapErr(ex =>
-                        ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
-                    ))
-            )
-            .Register<UnsubscribeEventParameter>(
-                ActionType.UnsubscribeEvent,
-                IMatchable.Always(),
-                (param, ctx, resolver, ct) =>
-                    ValueTask.FromResult(ResultExt.Try(wsCtx =>
-                        wsCtx.UnsubscribeEvent(param.Type,
-                            param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
-                        ), ctx).MapErr(ex =>
-                        ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
-                    ))
+        return ResultExt.Try(wsCtx =>
+                wsCtx.SubscribeEvent(param.Type,
+                    param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
+                ), ctx).Map(unit => ActionHandlerExtensions.EmptyActionResult)
+            .MapErr(ex =>
+                ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
+            );
+    }
+}
+
+[ActionHandler(ActionType.UnsubscribeEvent, "*")]
+class HandleUnsubscribeEvent : IActionHandler<UnsubscribeEventParameter, EmptyActionResult>
+{
+    public Result<EmptyActionResult, ActionError> Handle(UnsubscribeEventParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    {
+        return ResultExt.Try(wsCtx =>
+                wsCtx.UnsubscribeEvent(param.Type,
+                    param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
+                ), ctx).Map(unit => ActionHandlerExtensions.EmptyActionResult)
+            .MapErr(ex =>
+                ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
             );
     }
 }
