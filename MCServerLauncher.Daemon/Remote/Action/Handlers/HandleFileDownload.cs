@@ -1,73 +1,71 @@
-﻿using MCServerLauncher.Common.Helpers;
-using MCServerLauncher.Common.ProtoType.Action;
+﻿using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using System.Text.RegularExpressions;
+using MCServerLauncher.Common.Helpers;
+using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
-internal class HandleFileDownload : HandleBase
+[ActionHandler(ActionType.FileDownloadRequest, "mcsl.daemon.file.download")]
+class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParameter, FileDownloadRequestResult>
 {
-    public static ActionHandlerRegistry Register(ActionHandlerRegistry registry)
+    public async Task<Result<FileDownloadRequestResult, ActionError>> HandleAsync(FileDownloadRequestParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
     {
-        return registry
-            .Register<FileUploadRequestParameter, FileUploadRequestResult>(
-                ActionType.FileUploadRequest,
-                Permission.Of("mcsl.daemon.file.upload"),
-                (param, ctx, resolver, ct) =>
-                    ValueTask.FromResult(Result
-                        .Try(() => FileManager.FileUploadRequest(
-                            param.Path,
-                            param.Size,
-                            param.Timeout.Map(t => TimeSpan.FromMilliseconds(t)),
-                            param.Sha1
-                        ))
-                        .MapErr(ex => new ActionError(ActionRetcode.FileError).CauseBy(ex))
-                        .AndThen(fileId => fileId != Guid.Empty
-                            ? Ok(new FileUploadRequestResult
-                            {
-                                FileId = fileId
-                            })
-                            : Err<FileUploadRequestResult>(
-                                ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space").ToError()
-                            ))
-                    )
-            )
-            .Register<FileUploadChunkParameter, FileUploadChunkResult>(
-                ActionType.FileUploadChunk,
-                Permission.Of("mcsl.daemon.file.upload"),
-                async (param, ctx, resolver, ct) =>
-                {
-                    if (param.FileId == Guid.Empty)
-                        return Err<FileUploadChunkResult>(ActionRetcode.NotUploadingDownloading
-                            .WithMessage(param.FileId)
-                            .ToError());
-
-                    return await ResultExt.TryAsync(async chunkParameter =>
-                    {
-                        var (done, received) = await FileManager.FileUploadChunk(
-                            chunkParameter.FileId,
-                            chunkParameter.Offset,
-                            chunkParameter.Data
-                        );
-
-                        return new FileUploadChunkResult
+        return await ResultExt.TryAsync(async requestParameter =>
+            {
+                return Option.Create(await FileManager.FileDownloadRequest(
+                        requestParameter.Path,
+                        requestParameter.Timeout.Map(t => TimeSpan.FromMilliseconds(t))
+                    ))
+                    .OkOr(ActionRetcode.RateLimitExceeded.WithMessage(
+                        $"Max download sessions of file '{requestParameter.Path}' reached").ToError())
+                    .AndThen(rv =>
+                        this.Ok(new FileDownloadRequestResult
                         {
-                            Done = done,
-                            Received = received
-                        };
-                    }, param).MapTask(result =>
-                        result.OrElse(ex => Err<FileUploadChunkResult>(ActionRetcode.FileError.ToError().CauseBy(ex)))
-                    );
-                })
-            .Register<FileUploadCancelParameter>(
-                ActionType.FileUploadCancel,
-                Permission.Of("mcsl.daemon.file.upload"),
-                (param, ctx, resolver, ct) =>
-                    FileManager.FileUploadCancel(param.FileId)
-                        ? ValueTaskOk()
-                        : ValueTaskErr(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId))
+                            FileId = rv.Id,
+                            Size = rv.Size,
+                            Sha1 = rv.Sha1
+                        }));
+            }, param)
+            .MapTask(result => result.UnwrapOrElse(ex =>
+                this.Err(ActionRetcode.FileError.ToError().CauseBy(ex)))
             );
+    }
+}
+
+[ActionHandler(ActionType.FileDownloadRange, "mcsl.daemon.file.download")]
+class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, FileDownloadRangeResult>
+{
+    public static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
+
+    public async Task<Result<FileDownloadRangeResult, ActionError>> HandleAsync(FileDownloadRangeParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
+    {
+        var match = RangePattern.Match(param.Range);
+        if (!match.Success)
+            return this.Err(ActionRetcode.ParamError.WithMessage("Invalid range format")
+                .ToError());
+
+        var (from, to) = (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
+
+        return this.Ok(new FileDownloadRangeResult
+        {
+            Content = await FileManager.FileDownloadRange(param.FileId, from, to)
+        });
+    }
+}
+
+[ActionHandler(ActionType.FileDownloadClose, "mcsl.daemon.file.download")]
+class HandleFileDownloadClose : IActionHandler<FileDownloadCloseParameter, EmptyActionResult>
+{
+    public Result<EmptyActionResult, ActionError> Handle(FileDownloadCloseParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
+    {
+        FileManager.FileDownloadClose(param.FileId);
+        return this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
