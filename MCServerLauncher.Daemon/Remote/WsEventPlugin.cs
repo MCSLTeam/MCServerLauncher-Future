@@ -4,7 +4,6 @@ using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
@@ -22,7 +21,8 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         Container = container;
         HttpService = httpService;
 
-        _eventService.Signal += OnEventSignalReceived;
+        // TODO 建议使用批量收割方式，而不是1次事件就触发一次
+        _eventService.Signal += async (e, m, d) => await OnEventSignalReceived(e, m, d);
     }
 
     public async Task OnWebSocketClosing(IWebSocket webSocket, ClosingEventArgs e)
@@ -34,41 +34,27 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
     public IHttpService HttpService { get; init; }
     public WsContextContainer Container { get; init; }
 
-    private void OnEventSignalReceived(EventType type, IEventMeta? meta, IEventData? data)
+    private async Task OnEventSignalReceived(EventType type, IEventMeta? meta, IEventData? data)
     {
-        Task.Run(async () =>
+        foreach (var (_, context) in Container)
         {
-            var contexts = Container.GetClientIds();
-            foreach (var id in contexts) await OnEventSignalReceived(id, type, meta, data);
-        });
-    }
+            if (!context.IsSubscribedEvent(type, meta)) return;
 
-    private async Task OnEventSignalReceived(string clientId, EventType type, IEventMeta? meta, IEventData? data)
-    {
-        var ws = this.GetWebSocket(clientId);
-        if (ws == null)
-        {
-            Log.Warning("[Remote] Failed to send event={0} to client={1}, because websocket connection closed or lost.",
-                type, clientId);
-            return;
-        }
+            if (meta != null)
+            {
+                await PrivateSendEvent(type, meta, data, context.GetWebsocket()); // 单一发送(只有带meta的事件类型才会触发)
+            }
+            else
+            {
+                var eventMetas = context.GetEventMetas(type).ToArray();
 
-        var context = this.GetWsContext(ws);
-        if (!context.IsSubscribedEvent(type, meta)) return;
-
-        if (meta != null)
-        {
-            await PrivateSendEvent(type, meta, data, ws); // 单一发送(只有带meta的事件类型才会触发)
-        }
-        else
-        {
-            var eventMetas = context.GetEventMetas(type).ToArray();
-
-            if (eventMetas.Length == 0) await PrivateSendEvent(type, meta, data, ws); // 单一事件(不带meta的事件类型)
-            else // 批量发送(只有带meta的事件类型才会触发)
-                // TODO 合并发送
-                foreach (var eventMeta in eventMetas)
-                    await PrivateSendEvent(type, eventMeta, data, ws);
+                if (eventMetas.Length == 0)
+                    await PrivateSendEvent(type, meta, data, context.GetWebsocket()); // 单一事件(不带meta的事件类型)
+                else // 批量发送(只有带meta的事件类型才会触发)
+                    // TODO 合并发送
+                    foreach (var eventMeta in eventMetas)
+                        await PrivateSendEvent(type, eventMeta, data, context.GetWebsocket());
+            }
         }
     }
 

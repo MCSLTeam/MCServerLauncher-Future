@@ -10,12 +10,12 @@ public class GracefulShutdown : IDisposable
 
     public GracefulShutdown()
     {
-        System.Console.CancelKeyPress += (_, e) =>
+        System.Console.CancelKeyPress += async (_, e) =>
         {
             e.Cancel = true;
             try
             {
-                Shutdown();
+                await Shutdown();
             }
             catch (InvalidOperationException)
             {
@@ -24,7 +24,6 @@ public class GracefulShutdown : IDisposable
     }
 
     public CancellationToken CancellationToken => _source.Token;
-    public bool ShutdownRequested => _source.IsCancellationRequested;
 
     public void Dispose()
     {
@@ -32,16 +31,16 @@ public class GracefulShutdown : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public event Action? OnShutdown;
+    public event Func<Task>? OnShutdown;
 
-    public void Shutdown()
+    public async Task Shutdown()
     {
         if (_source.IsCancellationRequested)
             throw new InvalidOperationException("Already shutdown");
 
         _source.Cancel();
         Log.Information("[GracefulShutdown] shutting down...");
-        OnShutdown?.Invoke();
+        if (OnShutdown is not null) await OnShutdown.Invoke();
         _semaphore.Release();
     }
 

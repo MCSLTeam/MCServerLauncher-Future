@@ -1,5 +1,4 @@
 ﻿using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -8,9 +7,10 @@ using TouchSocket.Core;
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.GetDirectoryInfo, "mcsl.daemon.file.info.directory")]
-class HandleGetDirectoryInfo : IActionHandler<GetDirectoryInfoParameter, GetDirectoryInfoResult>
+internal class HandleGetDirectoryInfo : IActionHandler<GetDirectoryInfoParameter, GetDirectoryInfoResult>
 {
-    public Result<GetDirectoryInfoResult, ActionError> Handle(GetDirectoryInfoParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<GetDirectoryInfoResult, ActionError> Handle(GetDirectoryInfoParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         return ResultExt.Try(directoryInfoParameter =>
             {
@@ -34,9 +34,10 @@ class HandleGetDirectoryInfo : IActionHandler<GetDirectoryInfoParameter, GetDire
 }
 
 [ActionHandler(ActionType.GetFileInfo, "mcsl.daemon.file.info.file")]
-class HandleGetFileInfo : IActionHandler<GetFileInfoParameter, GetFileInfoResult>
+internal class HandleGetFileInfo : IActionHandler<GetFileInfoParameter, GetFileInfoResult>
 {
-    public Result<GetFileInfoResult, ActionError> Handle(GetFileInfoParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<GetFileInfoResult, ActionError> Handle(GetFileInfoParameter param, WsContext ctx, IResolver resolver,
+        CancellationToken ct)
     {
         return ResultExt.Try(path =>
                 new GetFileInfoResult

@@ -1,6 +1,5 @@
 ﻿using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Management;
-using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,9 +9,10 @@ using TouchSocket.Core;
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.StartInstance, "*")]
-class HandleStartInstance : IAsyncActionHandler<StartInstanceParameter, EmptyActionResult>
+internal class HandleStartInstance : IAsyncActionHandler<StartInstanceParameter, EmptyActionResult>
 {
-    public async Task<Result<EmptyActionResult, ActionError>> HandleAsync(StartInstanceParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<EmptyActionResult, ActionError>> HandleAsync(StartInstanceParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         var eventService = resolver.GetRequiredService<IEventService>();
@@ -31,9 +31,10 @@ class HandleStartInstance : IAsyncActionHandler<StartInstanceParameter, EmptyAct
 }
 
 [ActionHandler(ActionType.StopInstance, "*")]
-class HandleStopInstance : IActionHandler<StopInstanceParameter, EmptyActionResult>
+internal class HandleStopInstance : IActionHandler<StopInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(StopInstanceParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(StopInstanceParameter param, WsContext ctx, IResolver resolver,
+        CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return instanceManager.TryStopInstance(param.Id)
@@ -45,9 +46,10 @@ class HandleStopInstance : IActionHandler<StopInstanceParameter, EmptyActionResu
 }
 
 [ActionHandler(ActionType.SendToInstance, "*")]
-class HandleSendToInstance : IActionHandler<SendToInstanceParameter, EmptyActionResult>
+internal class HandleSendToInstance : IActionHandler<SendToInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(SendToInstanceParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(SendToInstanceParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return instanceManager.SendToInstance(param.Id, param.Message)
@@ -59,9 +61,10 @@ class HandleSendToInstance : IActionHandler<SendToInstanceParameter, EmptyAction
 }
 
 [ActionHandler(ActionType.GetAllReports, "*")]
-class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, GetAllReportsResult>
+internal class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, GetAllReportsResult>
 {
-    public async Task<Result<GetAllReportsResult, ActionError>> HandleAsync(EmptyActionParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<GetAllReportsResult, ActionError>> HandleAsync(EmptyActionParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return this.Ok(new GetAllReportsResult
@@ -72,9 +75,10 @@ class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, GetAllRepo
 }
 
 [ActionHandler(ActionType.AddInstance, "*")]
-class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, AddInstanceResult>
+internal class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, AddInstanceResult>
 {
-    public async Task<Result<AddInstanceResult, ActionError>> HandleAsync(AddInstanceParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<AddInstanceResult, ActionError>> HandleAsync(AddInstanceParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
 
@@ -98,9 +102,10 @@ class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, AddInstanceR
 }
 
 [ActionHandler(ActionType.RemoveInstance, "*")]
-class HandleRemoveInstance : IActionHandler<RemoveInstanceParameter, EmptyActionResult>
+internal class HandleRemoveInstance : IActionHandler<RemoveInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(RemoveInstanceParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(RemoveInstanceParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return instanceManager.TryRemoveInstance(param.Id)
@@ -112,9 +117,10 @@ class HandleRemoveInstance : IActionHandler<RemoveInstanceParameter, EmptyAction
 }
 
 [ActionHandler(ActionType.KillInstance, "*")]
-class HandleKillInstance : IActionHandler<KillInstanceParameter, EmptyActionResult>
+internal class HandleKillInstance : IActionHandler<KillInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(KillInstanceParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(KillInstanceParameter param, WsContext ctx, IResolver resolver,
+        CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         instanceManager.KillInstance(param.Id);
@@ -123,9 +129,10 @@ class HandleKillInstance : IActionHandler<KillInstanceParameter, EmptyActionResu
 }
 
 [ActionHandler(ActionType.GetInstanceReport, "*")]
-class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportParameter, GetInstanceReportResult>
+internal class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportParameter, GetInstanceReportResult>
 {
-    public async Task<Result<GetInstanceReportResult, ActionError>> HandleAsync(GetInstanceReportParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<GetInstanceReportResult, ActionError>> HandleAsync(GetInstanceReportParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return this.Ok(new GetInstanceReportResult

@@ -1,10 +1,21 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Collections;
+using System.Collections.Concurrent;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsContextContainer
+public class WsContextContainer : IEnumerable<KeyValuePair<string, WsContext>>
 {
     private readonly ConcurrentDictionary<string, WsContext> _contexts = new();
+
+    public IEnumerator<KeyValuePair<string, WsContext>> GetEnumerator()
+    {
+        return _contexts.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _contexts.GetEnumerator();
+    }
 
     public WsContext GetContext(string clientId)
     {

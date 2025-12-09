@@ -7,7 +7,6 @@ using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Action.Handlers;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
@@ -16,7 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
-using TouchSocket.Sockets;
 using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon;
@@ -27,6 +25,8 @@ public static class Application
     private static Timer _daemonReportTimer;
     public static HttpService HttpService { get; private set; }
     public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version!;
+    public static event Func<Task>? OnStarted;
+    public static event Func<Task>? OnStopping;
 
     public static async Task SetupAsync()
     {
@@ -42,11 +42,10 @@ public static class Application
                 a.RegisterSingleton<ConsoleApplication>();
                 a.RegisterSingleton<GracefulShutdown>();
                 a.RegisterSingleton<IHttpService>(HttpService);
-                a.RegisterSingleton<IActionService, ActionService>();
+                a.RegisterSingleton<IActionExecutor, AnotherActionExecutor>();
                 a.RegisterSingleton<IEventService, EventService>();
                 a.RegisterSingleton<WsContextContainer>();
-                a.RegisterSingleton<ActionHandlerRegistry>();
-                a.RegisterSingleton<IInstanceManager>(InstanceManager.Create());
+                a.RegisterSingleton(InstanceManager.Create());
                 a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(
                     new AsyncTimedLazyCell<SystemInfo>(
                         SystemInfoHelper.GetSystemInfo,
@@ -56,7 +55,7 @@ public static class Application
                 a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(
                     new AsyncTimedLazyCell<JavaInfo[]>(
                         JavaScanner.ScanJavaAsync,
-                        TimeSpan.FromMilliseconds(60000)
+                        TimeSpan.FromSeconds(2)
                     )
                 );
             })
@@ -79,8 +78,7 @@ public static class Application
                 a.UseDefaultHttpServicePlugin();
             })
         );
-        
-        HttpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
+
 
         _daemonReportTimer = new Timer(3000);
         _daemonReportTimer.AutoReset = true;
@@ -97,6 +95,17 @@ public static class Application
                 StartTime.ToUnixTimeMilliSeconds()
             ));
         };
+        OnStarted += () =>
+        {
+            _daemonReportTimer.Start();
+            HttpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
+            return Task.CompletedTask;
+        };
+        OnStopping += () =>
+        {
+            _daemonReportTimer.Stop();
+            return Task.CompletedTask;
+        };
     }
 
 
@@ -107,15 +116,17 @@ public static class Application
     /// </summary>
     public static async Task ServeAsync()
     {
-        var config = AppConfig.Get();
-        var resolver = HttpService.Resolver;
-        var gs = resolver.GetRequiredService<GracefulShutdown>();
+        var gs = HttpService.Resolver.GetRequiredService<GracefulShutdown>();
+
+        OnStopping += () => StopAsync();
+        gs.OnShutdown += () => OnStopping.Invoke();
 
         await HttpService.StartAsync();
+        var config = AppConfig.Get();
         Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
         Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
-        _daemonReportTimer.Start();
-        gs.OnShutdown += () => StopAsync().Wait();
+
+        await (OnStarted?.Invoke() ?? Task.CompletedTask);
 
         await gs.WaitForShutdownAsync();
 
@@ -126,20 +137,16 @@ public static class Application
 
     private static async Task StopAsync(int timeout = -1)
     {
-        _daemonReportTimer.Stop();
-
-        var cts = new CancellationTokenSource();
+        var cts = new CancellationTokenSource(timeout);
 
         var manager = HttpService.Resolver.GetRequiredService<IInstanceManager>();
-
-        cts.CancelAfter(timeout);
 
         Log.Debug("[InstanceManager] stopping instances ...");
         await manager.StopAllInstances(cts.Token);
 
         Log.Debug("[WsContextContainer] closing websocket connections ...");
-        foreach (var id in HttpService.Resolver.GetRequiredService<WsContextContainer>().GetClientIds())
-            await HttpService.GetClient(id).WebSocket.CloseAsync("Daemon exit", cts.Token);
+        await Task.WhenAll(HttpService.Resolver.GetRequiredService<WsContextContainer>()
+            .Select(kv => kv.Value.GetWebsocket().CloseAsync("Daemon exit", cts.Token)));
     }
 
     #region Init
@@ -174,9 +181,9 @@ public static class Application
     public static async Task<bool> InitAsync()
     {
         InitLogger();
+        InitDataDirectory();
         Log.Information("MCServerLauncher.Daemon v{0}", AppVersion);
 
-        InitDataDirectory();
         ContainedFiles.ExtractContained();
         FileManager.StartFileSessionsWatcher();
 
