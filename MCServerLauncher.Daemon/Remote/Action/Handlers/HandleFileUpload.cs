@@ -1,6 +1,5 @@
 ﻿using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -10,9 +9,10 @@ using Result = RustyOptions.Result;
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.FileUploadRequest, "mcsl.daemon.file.upload")]
-class HandleFileUploadRequest : IActionHandler<FileUploadRequestParameter, FileUploadRequestResult>
+internal class HandleFileUploadRequest : IActionHandler<FileUploadRequestParameter, FileUploadRequestResult>
 {
-    public Result<FileUploadRequestResult, ActionError> Handle(FileUploadRequestParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<FileUploadRequestResult, ActionError> Handle(FileUploadRequestParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         return Result
             .Try(() => FileManager.FileUploadRequest(
@@ -34,9 +34,10 @@ class HandleFileUploadRequest : IActionHandler<FileUploadRequestParameter, FileU
 }
 
 [ActionHandler(ActionType.FileUploadChunk, "mcsl.daemon.file.upload")]
-class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParameter, FileUploadChunkResult>
+internal class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParameter, FileUploadChunkResult>
 {
-    public async Task<Result<FileUploadChunkResult, ActionError>> HandleAsync(FileUploadChunkParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<FileUploadChunkResult, ActionError>> HandleAsync(FileUploadChunkParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         if (param.FileId == Guid.Empty)
             return this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId)
@@ -62,9 +63,10 @@ class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParameter, File
 }
 
 [ActionHandler(ActionType.FileUploadCancel, "mcsl.daemon.file.upload")]
-class HandleFileUploadCancel : IActionHandler<FileUploadCancelParameter, EmptyActionResult>
+internal class HandleFileUploadCancel : IActionHandler<FileUploadCancelParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(FileUploadCancelParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(FileUploadCancelParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         return FileManager.FileUploadCancel(param.FileId)
             ? this.Ok(ActionHandlerExtensions.EmptyActionResult)

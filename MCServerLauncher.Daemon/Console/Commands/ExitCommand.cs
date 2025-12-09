@@ -15,7 +15,7 @@ public static class ExitCommand
                 {
                     var gs = cmd.Source.GetRequiredService<GracefulShutdown>();
                     Task.Run(() => gs.Shutdown());
-                    return ConsoleApplication.Exit;
+                    return ConsoleApplication.EXIT;
                 })
         );
         return node;

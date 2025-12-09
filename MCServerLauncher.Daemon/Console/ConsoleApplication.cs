@@ -9,7 +9,7 @@ namespace MCServerLauncher.Daemon.Console;
 
 public class ConsoleApplication
 {
-    public const int Exit = -255;
+    public const int EXIT = -255;
 
     public ConsoleApplication(IHttpService httpService)
     {
@@ -39,7 +39,7 @@ public class ConsoleApplication
                     try
                     {
                         var execute = dispatcher.Execute(line, commandSource);
-                        if (execute == Exit) return;
+                        if (execute == EXIT) return;
                     }
                     catch (CommandSyntaxException e)
                     {
@@ -70,6 +70,6 @@ public class ConsoleApplication
         }, TaskCreationOptions.LongRunning);
 
         var gs = HttpService.Resolver.GetRequiredService<GracefulShutdown>();
-        gs.OnShutdown += () => consoleTask.Wait();
+        gs.OnShutdown += () => consoleTask;
     }
 }

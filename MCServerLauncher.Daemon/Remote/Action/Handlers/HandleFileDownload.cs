@@ -1,16 +1,15 @@
-﻿using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Remote.Authentication;
+﻿using System.Text.RegularExpressions;
+using MCServerLauncher.Common.Helpers;
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
-using System.Text.RegularExpressions;
-using MCServerLauncher.Common.Helpers;
 using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.FileDownloadRequest, "mcsl.daemon.file.download")]
-class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParameter, FileDownloadRequestResult>
+internal class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParameter, FileDownloadRequestResult>
 {
     public async Task<Result<FileDownloadRequestResult, ActionError>> HandleAsync(FileDownloadRequestParameter param,
         WsContext ctx, IResolver resolver, CancellationToken ct)
@@ -38,7 +37,7 @@ class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadRequestParamet
 }
 
 [ActionHandler(ActionType.FileDownloadRange, "mcsl.daemon.file.download")]
-class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, FileDownloadRangeResult>
+internal class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, FileDownloadRangeResult>
 {
     public static readonly Regex RangePattern = new(@"^(\d+)..(\d+)$");
 
@@ -60,7 +59,7 @@ class HandleFileDownloadRange : IAsyncActionHandler<FileDownloadRangeParameter, 
 }
 
 [ActionHandler(ActionType.FileDownloadClose, "mcsl.daemon.file.download")]
-class HandleFileDownloadClose : IActionHandler<FileDownloadCloseParameter, EmptyActionResult>
+internal class HandleFileDownloadClose : IActionHandler<FileDownloadCloseParameter, EmptyActionResult>
 {
     public Result<EmptyActionResult, ActionError> Handle(FileDownloadCloseParameter param, WsContext ctx,
         IResolver resolver, CancellationToken ct)

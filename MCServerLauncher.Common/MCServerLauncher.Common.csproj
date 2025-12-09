@@ -14,4 +14,8 @@
       <PackageReference Include="System.Text.Json" Version="10.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Utils\MinecraftForge\" />
+    </ItemGroup>
+
 </Project>

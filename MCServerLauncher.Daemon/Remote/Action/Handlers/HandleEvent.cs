@@ -1,6 +1,5 @@
 ﻿using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
-using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using TouchSocket.Core;
@@ -8,9 +7,10 @@ using TouchSocket.Core;
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.SubscribeEvent, "*")]
-class HandleSubscribeEvent : IActionHandler<SubscribeEventParameter, EmptyActionResult>
+internal class HandleSubscribeEvent : IActionHandler<SubscribeEventParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(SubscribeEventParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(SubscribeEventParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         return ResultExt.Try(wsCtx =>
                 wsCtx.SubscribeEvent(param.Type,
@@ -23,9 +23,10 @@ class HandleSubscribeEvent : IActionHandler<SubscribeEventParameter, EmptyAction
 }
 
 [ActionHandler(ActionType.UnsubscribeEvent, "*")]
-class HandleUnsubscribeEvent : IActionHandler<UnsubscribeEventParameter, EmptyActionResult>
+internal class HandleUnsubscribeEvent : IActionHandler<UnsubscribeEventParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(UnsubscribeEventParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(UnsubscribeEventParameter param, WsContext ctx,
+        IResolver resolver, CancellationToken ct)
     {
         return ResultExt.Try(wsCtx =>
                 wsCtx.UnsubscribeEvent(param.Type,

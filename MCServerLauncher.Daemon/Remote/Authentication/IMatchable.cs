@@ -2,12 +2,18 @@
 
 public interface IMatchable
 {
+    public static IMatchable Always => MatchableImpl.Create(_ => true);
+
+
+    public static IMatchable Never => MatchableImpl.Create(_ => false);
+
     /// <summary>
     ///     判断当前对象是否匹配给定的对象
     /// </summary>
     /// <param name="matchable"></param>
     /// <returns></returns>
     public bool Matches(IMatchable matchable);
+
 
     public static IMatchable Any(IEnumerable<IMatchable> matchables)
     {
@@ -17,17 +23,6 @@ public interface IMatchable
     public static IMatchable All(IEnumerable<IMatchable> matchables)
     {
         return MatchableImpl.Create(m => matchables.All(matchable => matchable.Matches(m)));
-    }
-
-    public static IMatchable Always()
-    {
-        return MatchableImpl.Create(_ => true);
-    }
-
-
-    public static IMatchable Never()
-    {
-        return MatchableImpl.Create(_ => false);
     }
 }
 
