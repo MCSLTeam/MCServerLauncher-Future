@@ -11,6 +11,11 @@ public interface IActionResult
 
 public sealed record EmptyActionResult : IActionResult;
 
+public sealed record SubscribeEventResult : IActionResult
+{
+    [JsonRequired] public Guid Subscriber { get; init; }
+}
+
 public sealed record GetPermissionsResult : IActionResult
 {
     [JsonRequired] public string[] Permissions { get; init; } = null!;

@@ -39,7 +39,7 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         await e.InvokeNext();
     }
 
-    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
+    public event Action<EventType, long, Guid, IEventData?>? OnEventReceived;
 
     private void DispatchEvent(JObject json)
     {
@@ -52,7 +52,7 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             OnEventReceived?.Invoke(
                 eventType,
                 packet.Timestamp,
-                eventType.GetEventMeta(packet.EventMeta, JsonSettings.Settings),
+                packet.Subscriber,
                 eventType.GetEventData(packet.EventData, JsonSettings.Settings)
             );
         }

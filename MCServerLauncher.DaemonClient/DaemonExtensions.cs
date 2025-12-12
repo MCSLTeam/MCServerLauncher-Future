@@ -86,41 +86,40 @@ public static class DaemonExtensions
     /// <param name="timeout"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static Task SubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
+    public static Task SubscribeEvent(this IDaemon daemon, EventType type, IEventFilter? meta, int timeout = -1,
         CancellationToken ct = default)
     {
         return InternalSubscribeEvent(daemon, type, meta, true, timeout, ct);
     }
 
-    internal static async Task InternalSubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta,
+    internal static async Task InternalSubscribeEvent(this IDaemon daemon, EventType type, IEventFilter? filter,
         bool persistent, int timeout = -1,
         CancellationToken ct = default)
     {
-        if (persistent) daemon.SubscribedEvents.EventSet.Add((type, meta));
+        var result = await daemon.RequestAsync<SubscribeEventResult>(ActionType.SubscribeEvent,
+            new SubscribeEventParameter
+            {
+                Type = type,
+                Filter = filter is null ? null : JToken.FromObject(filter, JsonSerializer.Create(JsonSettings.Settings))
+            }, timeout, ct);
 
-        await daemon.RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
-        {
-            Type = type,
-            Meta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings))
-        }, timeout, ct);
+        if (persistent) daemon.SubscribedEvents.EventMap.Add(result.Subscriber, (type, filter));
     }
 
     /// <summary>
     ///     Action: 取消订阅事件
     /// </summary>
     /// <param name="daemon"></param>
-    /// <param name="type"></param>
-    /// <param name="meta"></param>
+    /// <param name="subscriber"></param>
     /// <param name="timeout"></param>
     /// <param name="ct"></param>
-    public static async Task UnSubscribeEvent(this IDaemon daemon, EventType type, IEventMeta? meta, int timeout = -1,
+    public static async Task UnSubscribeEvent(this IDaemon daemon, Guid subscriber, int timeout = -1,
         CancellationToken ct = default)
     {
-        daemon.SubscribedEvents.EventSet.Remove((type, meta));
+        daemon.SubscribedEvents.EventMap.Remove(subscriber);
         await daemon.RequestAsync(ActionType.UnsubscribeEvent, new UnsubscribeEventParameter
         {
-            Type = type,
-            Meta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings))
+            Subscriber = subscriber
         }, timeout, ct);
     }
 

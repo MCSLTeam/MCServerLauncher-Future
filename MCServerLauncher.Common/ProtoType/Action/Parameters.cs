@@ -14,13 +14,12 @@ public sealed record EmptyActionParameter : IActionParameter;
 public sealed record SubscribeEventParameter : IActionParameter
 {
     [JsonRequired] public EventType Type { get; init; }
-    public JToken? Meta { get; init; }
+    public JToken? Filter { get; init; }
 }
 
 public sealed record UnsubscribeEventParameter : IActionParameter
 {
-    [JsonRequired] public EventType Type { get; init; }
-    public JToken? Meta { get; init; }
+    [JsonRequired] public Guid Subscriber { get; init; }
 }
 
 public sealed record FileUploadRequestParameter : IActionParameter

@@ -2,12 +2,12 @@
 
 namespace MCServerLauncher.Common.ProtoType.Event;
 
-public interface IEventMeta
+public interface IEventFilter
 {
 }
 
 [JsonObject(ItemRequired = Required.Always)]
-public sealed record InstanceLogEventMeta : IEventMeta
+public sealed record InstanceLogEventFilter : IEventFilter
 {
     public Guid InstanceId { get; init; }
 }

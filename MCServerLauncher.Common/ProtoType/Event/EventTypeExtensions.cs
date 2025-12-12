@@ -11,30 +11,30 @@ public static class EventTypeExtensions
     ///     获取事件元数据,元数据是事件的一个属性,有的具有(额外)元数据,有的没有(仅需事件类型就可以区分)
     /// </summary>
     /// <param name="type">事件类型</param>
-    /// <param name="metaToken">元数据原始token</param>
+    /// <param name="eventFilter">元数据原始token</param>
     /// <param name="settings">元数据序列化器设置</param>
     /// <exception cref="NullReferenceException">当Event要求EventMeta而metaToken为空,抛出空引用异常</exception>
-    /// <exception cref="ArgumentException"><see cref="metaToken" />的值为null</exception>
+    /// <exception cref="ArgumentException"><see cref="eventFilter" />的值为null</exception>
     /// <returns></returns>
-    public static IEventMeta? GetEventMeta(this EventType type, JToken? metaToken,
+    public static IEventFilter? GetEventFilter(this EventType type, JToken? eventFilter,
         JsonSerializerSettings? settings = null)
     {
         return type switch
         {
-            EventType.InstanceLog => PrivateGetEventMeta<InstanceLogEventMeta>(metaToken,
+            EventType.InstanceLog => PrivateGetEventFilter<InstanceLogEventFilter>(eventFilter,
                 settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.Create(settings)),
             _ => null
         };
     }
 
-    public static IEventData? GetEventData(this EventType type, JToken? metaData,
+    public static IEventData? GetEventData(this EventType type, JToken? eventData,
         JsonSerializerSettings? settings = null)
     {
         return type switch
         {
-            EventType.InstanceLog => PrivateGetEventData<InstanceLogEventData>(metaData,
+            EventType.InstanceLog => PrivateGetEventData<InstanceLogEventData>(eventData,
                 settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.Create(settings)),
-            EventType.DaemonReport => PrivateGetEventData<DaemonReportEventData>(metaData,
+            EventType.DaemonReport => PrivateGetEventData<DaemonReportEventData>(eventData,
                 settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.Create(settings)),
             _ => null
         };
@@ -50,8 +50,8 @@ public static class EventTypeExtensions
         return token.ToObject<TEventData>(serializer);
     }
 
-    private static TEventMeta? PrivateGetEventMeta<TEventMeta>(JToken? token, JsonSerializer serializer)
-        where TEventMeta : class, IEventMeta
+    private static TEventMeta? PrivateGetEventFilter<TEventMeta>(JToken? token, JsonSerializer serializer)
+        where TEventMeta : class, IEventFilter
     {
         if (token is null) return null;
 

@@ -8,8 +8,8 @@ public record EventPacket
     [JsonProperty(Required = Required.Always, PropertyName = "event")]
     public EventType EventType { get; init; }
 
-    [JsonProperty(Required = Required.AllowNull, PropertyName = "meta")]
-    public JToken? EventMeta { get; init; }
+    [JsonProperty(Required = Required.AllowNull, PropertyName = "subscriber")]
+    public Guid Subscriber { get; init; }
 
     [JsonProperty(Required = Required.Always, PropertyName = "data")]
     public JToken? EventData { get; init; }

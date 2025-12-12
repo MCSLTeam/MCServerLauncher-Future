@@ -1,10 +1,13 @@
 ﻿using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using RustyOptions;
 using TouchSocket.Http.WebSockets;
 using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
+
+public sealed record EventContext(EventType Type, IEventFilter? Filter);
 
 // TODO: 使用引用GracefulShutdown的CancelToken防止在GetWebsocket().SendAsync在程序关闭时的边界情况
 /// <summary>
@@ -12,7 +15,7 @@ namespace MCServerLauncher.Daemon.Remote;
 /// </summary>
 public class WsContext
 {
-    private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
+    private readonly ConcurrentDictionary<Guid, EventContext> _subscribedEvents = new();
 
     public WsContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)
     {
@@ -32,43 +35,35 @@ public class WsContext
         return Application.HttpService.GetClient(ClientId).WebSocket;
     }
 
-    public void SubscribeEvent(EventType type, IEventMeta? meta)
+    public Guid SubscribeEvent(EventType type, IEventFilter? filter)
     {
-        if (!_subscribedEvents.TryGetValue(type, out var set))
-        {
-            set = new HashSet<IEventMeta>();
-            _subscribedEvents.TryAdd(type, set);
-        }
+        Guid id;
+        var context = new EventContext(type, filter);
+        var existed = _subscribedEvents.Where(kv => context == kv.Value).FirstOrNone();
+        if (existed.IsSome(out var pair)) return pair.Key;
 
-        if (meta != null) set.Add(meta);
+        do
+        {
+            id = Guid.NewGuid();
+        } while (!_subscribedEvents.TryAdd(id, context));
+
+        return id;
     }
 
-    public void UnsubscribeEvent(EventType type, IEventMeta? meta)
+    public void UnsubscribeEvent(Guid id)
     {
-        if (meta != null)
-        {
-            if (_subscribedEvents.TryGetValue(type, out var set))
-            {
-                if (set.Count > 1) set.Remove(meta);
-                else _subscribedEvents.TryRemove(type, out _);
-            }
-        }
-        else
-        {
-            _subscribedEvents.TryRemove(type, out _);
-        }
+        _subscribedEvents.TryRemove(id, out var value);
     }
 
-    public bool IsSubscribedEvent(EventType type, IEventMeta? meta)
+    public bool IsSubscribedEvent(EventType type, IEventFilter? filter)
     {
-        return _subscribedEvents.TryGetValue(type, out var set) && (meta == null || set.Contains(meta));
+        return _subscribedEvents.Any(kv => kv.Value.Type == type && kv.Value.Filter == filter);
     }
 
-    public IEnumerable<IEventMeta> GetEventMetas(EventType type)
+    public Option<Guid> GetEventID(EventType type, IEventFilter? filter)
     {
-        return _subscribedEvents.TryGetValue(type, out var set)
-            ? new HashSet<IEventMeta>(set)
-            : Enumerable.Empty<IEventMeta>();
+        var context = new EventContext(type, filter);
+        return _subscribedEvents.FirstOrNone(kv => kv.Value == context).Map(r => r.Key);
     }
 
     public void UnsubscribeAllEvents()

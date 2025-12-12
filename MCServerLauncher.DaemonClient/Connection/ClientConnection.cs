@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -44,7 +45,7 @@ internal class ClientConnection : DisposableObject
     public event Action? Reconnected;
     public event Action? ConnectionClosed;
 
-    public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
+    public event Action<EventType, long, Guid, IEventData?>? OnEventReceived;
 
     /// <summary>
     ///     建立连接
@@ -76,7 +77,7 @@ internal class ClientConnection : DisposableObject
             .ConfigurePlugins(a =>
             {
                 var receivedPlugin = new WsReceivedPlugin(connection._pendingRequests);
-                receivedPlugin.OnEventReceived += (t, l, m, d) => { connection.OnEventReceived?.Invoke(t, l, m, d); };
+                receivedPlugin.OnEventReceived += (t, l, f, d) => { connection.OnEventReceived?.Invoke(t, l, f, d); };
                 a.Add(receivedPlugin);
 
                 if (config.HeartBeat)
@@ -141,7 +142,7 @@ internal class ClientConnection : DisposableObject
     {
         _cts.Cancel();
         await Client.CloseAsync();
-        SubscribedEvents.Events.Clear(); // 清空标记的已订阅事件
+        SubscribedEvents.EventMap.Clear(); // 清空标记的已订阅事件
         Log.Debug("[ClientConnection] closed");
     }
 
@@ -273,32 +274,35 @@ internal class ClientConnection : DisposableObject
 
     private async Task OnReconnectedEventHandler()
     {
-        var cts = new CancellationTokenSource();
-        cts.CancelAfter(5000);
-        var events = SubscribedEvents.EventSet;
+        var cts = new CancellationTokenSource(5000);
+        var events = new Dictionary<Guid, (EventType Type, IEventFilter? Filter)>(SubscribedEvents.EventMap);
+
+        SubscribedEvents.EventMap.Clear();
+
         Log.Debug("[ClientConnection] Try recovery {Count} subscribed events", events.Count);
 
-        foreach (var @event in SubscribedEvents.Events)
+        foreach (var @event in events.Values)
+        {
             try
             {
+                // TODO 获取SubscribeEvent的返回值
                 await RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
                 {
                     Type = @event.Type,
-                    Meta = @event.Meta is null
+                    Filter = @event.Filter is null
                         ? null
-                        : JToken.FromObject(@event.Meta, JsonSerializer.Create(JsonSettings.Settings))
+                        : JToken.FromObject(@event.Filter, JsonSerializer.Create(JsonSettings.Settings))
                 }, ct: cts.Token);
             }
             catch (OperationCanceledException e)
             {
                 Log.Debug("[ClientConnection] Cannot recover subscribed event = {0}: timeout", @event);
-                events.Remove(@event);
             }
             catch (Exception e)
             {
                 Log.Debug(e, "[ClientConnection] Cannot recover subscribed event = {0}", @event);
-                events.Remove(@event);
             }
+        }
     }
 
     protected override void ProtectedDispose()

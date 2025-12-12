@@ -4,9 +4,9 @@ namespace MCServerLauncher.Daemon.Remote.Event;
 
 public class EventService : IEventService
 {
-    public event Action<EventType, IEventMeta?, IEventData?>? Signal;
+    public event Action<EventType, IEventFilter?, IEventData?>? Signal;
 
-    public void OnEvent(EventType type, IEventMeta? meta, IEventData? data)
+    public void OnEvent(EventType type, IEventFilter? meta, IEventData? data)
     {
         Signal?.Invoke(type, meta, data);
     }

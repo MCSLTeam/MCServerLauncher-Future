@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using MCServerLauncher.Common.ProtoType.Event;
 
 namespace MCServerLauncher.DaemonClient;
@@ -8,10 +9,10 @@ namespace MCServerLauncher.DaemonClient;
 /// </summary>
 public class SubscribedEvents
 {
-    internal readonly HashSet<(EventType Type, IEventMeta? Meta)> EventSet = new();
+    internal readonly Dictionary<Guid, (EventType Type, IEventFilter? Filter)> EventMap = new();
 
     /// <summary>
     ///     获取已经订阅的事件
     /// </summary>
-    public HashSet<(EventType Type, IEventMeta? Meta)> Events => new(EventSet);
+    public IReadOnlyDictionary<Guid, (EventType Type, IEventFilter? Filter)> Events => EventMap;
 }

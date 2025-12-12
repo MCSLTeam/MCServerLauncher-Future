@@ -12,7 +12,7 @@ public static class IEventServiceExtensions
     {
         service.OnEvent(
             EventType.InstanceLog,
-            new InstanceLogEventMeta { InstanceId = instanceId },
+            new InstanceLogEventFilter { InstanceId = instanceId },
             new InstanceLogEventData { Log = log }
         );
     }

@@ -117,15 +117,16 @@ public class Daemon : IDaemon
         return new Daemon(connection);
     }
 
-    private void OnEvent(EventType type, long timestamp, IEventMeta? meta, IEventData? data)
+    private void OnEvent(EventType type, long timestamp, Guid filterString, IEventData? data)
     {
         // ms timestamp转datetime
+        SubscribedEvents.Events.TryGetValue(filterString, out (EventType _, IEventFilter? filter) value);
         switch (type)
         {
             case EventType.InstanceLog:
                 // TODO 改为异步? 
                 InstanceLogEvent?.Invoke(
-                    (meta as InstanceLogEventMeta)!.InstanceId,
+                    (value.filter as InstanceLogEventFilter)!.InstanceId,
                     (data as InstanceLogEventData)!.Log
                 );
                 break;
@@ -163,8 +164,8 @@ public class Daemon : IDaemon
                     PingTimeout = 5000
                 });
             daemon.DaemonReportEvent += (report, l) => { Console.WriteLine($"Daemon report: {report}\n ({l}ms)"); };
-            // await daemon.SubscribeEvent(EventType.DaemonReport, null);
-            // await Task.Delay(6010);
+            await daemon.SubscribeEvent(EventType.DaemonReport, null);
+            await Task.Delay(6010);
             // await daemon.CloseAsync();
             // return;
             Console.WriteLine("Connection OK");
@@ -226,7 +227,7 @@ public class Daemon : IDaemon
             {
                 if (id == guid) Console.WriteLine($"[{instName}] {log}");
             };
-            await daemon.SubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
+            await daemon.SubscribeEvent(EventType.InstanceLog, new InstanceLogEventFilter
             {
                 InstanceId = guid
             });
