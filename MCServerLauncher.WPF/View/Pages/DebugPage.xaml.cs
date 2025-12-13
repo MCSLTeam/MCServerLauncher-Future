@@ -78,9 +78,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         #region AList
 
-        private async void TestZTsinAList(object sender, RoutedEventArgs e)
+        private async void TestRianYunAList(object sender, RoutedEventArgs e)
         {
-            var results = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI/Paper");
+            var results = await new AList().GetFileList("https://mirrors.rainyun.com", "服务端合集/Arclight");
             var tmpText = results.Aggregate("",
                 (current, result) =>
                     current +
@@ -88,10 +88,10 @@ namespace MCServerLauncher.WPF.View.Pages
             ShowTextResultContentDialog(tmpText);
         }
 
-        private async void TestZTsinAListFile(object sender, RoutedEventArgs e)
+        private async void TestRianYunAListFile(object sender, RoutedEventArgs e)
         {
-            var result = await new AList().GetFileUrl("https://jn.sv.ztsin.cn:5244",
-                "MCSL2/MCSLAPI/Paper/paper-1.20.2-318.jar");
+            var result = await new AList().GetFileUrl("https://mirrors.rainyun.com",
+                "服务端合集/Arclight/1.21-neoforge.zip");
             ShowTextResultContentDialog($"RawUrl: {result}\n");
         }
 

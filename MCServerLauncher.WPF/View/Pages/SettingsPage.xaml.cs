@@ -249,7 +249,7 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             FastMirrorSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "FastMirror";
             PolarsMirrorSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "PolarsMirror";
-            ZCloudFileSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "ZCloudFile";
+            RainYunSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "RainYun";
             MSLAPISrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "MSLAPI";
             MCSLSyncSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "MCSLSync";
         }

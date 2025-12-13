@@ -11,15 +11,15 @@ using System.Windows.Controls;
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
     /// <summary>
-    ///    ZCloudFileProvider.xaml 的交互逻辑
+    ///    RainYunProvider.xaml 的交互逻辑
     /// </summary>
-    public partial class ZCloudFileProvider : IResDownloadProvider
+    public partial class RainYunProvider : IResDownloadProvider
     {
-        public string ResProviderName => "ZCloud File";
+        public string ResProviderName => "RainYun";
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
-        public ZCloudFileProvider()
+        public RainYunProvider()
         {
             InitializeComponent();
         }
@@ -33,7 +33,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             if (_isDataLoading || _isDataLoaded) return true;
             try
             {
-                Log.Information("[Res] [ZCloudFile] Loading core info");
+                Log.Information("[Res] [RainYun] Loading core info");
 
                 CoreGridView.Items.Clear();
                 CoreVersionStackPanel.Children.Clear();
@@ -41,9 +41,9 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsEnabled = false;
 
                 _isDataLoading = true;
-                var zCloudFileInfo = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244", "MCSL2/MCSLAPI");
+                var ryFileInfo = await new AList().GetFileList("https://mirrors.rainyun.com", "服务端合集");
 
-                foreach (var coreItem in zCloudFileInfo.Select(result => new ZCloudFileResCoreItem
+                foreach (var coreItem in ryFileInfo.Select(result => new RainYunResCoreItem
                 {
                     CoreName = result.FileName
                 }))
@@ -53,13 +53,13 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
 
                 _isDataLoading = false;
                 _isDataLoaded = true;
-                if (zCloudFileInfo != null)
-                    Log.Information($"[Res] [ZCloudFile] Core info loaded. Count: {zCloudFileInfo.Count}");
+                if (ryFileInfo != null)
+                    Log.Information($"[Res] [RainYun] Core info loaded. Count: {ryFileInfo.Count}");
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error($"[Res] [ZCloudFile] Failed to load core info. Reason: {ex.Message}");
+                Log.Error($"[Res] [RainYun] Failed to load core info. Reason: {ex.Message}");
                 return false;
             }
             finally
@@ -79,17 +79,17 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         private async void SetCore(object sender, SelectionChangedEventArgs e)
         {
             if (CoreGridView.SelectedIndex == -1) return;
-            var selectedCore = (ZCloudFileResCoreItem)CoreGridView.SelectedItem;
-            Log.Information($"[Res] [ZCloudFile] Selected core \"{selectedCore.CoreName}\"");
+            var selectedCore = (RainYunResCoreItem)CoreGridView.SelectedItem;
+            Log.Information($"[Res] [RainYun] Selected core \"{selectedCore.CoreName}\"");
             CurrentCoreName.Text = selectedCore.CoreName;
             CoreGridView.IsEnabled = false;
             try
             {
-                var zCloudFileInfo = await new AList().GetFileList("https://jn.sv.ztsin.cn:5244",
-                    $"MCSL2/MCSLAPI/{selectedCore.CoreName}");
-                zCloudFileInfo?.Reverse();
+                var ryFileInfo = await new AList().GetFileList("https://mirrors.rainyun.com",
+                    $"服务端合集/{selectedCore.CoreName}");
+                ryFileInfo?.Reverse();
                 CoreVersionStackPanel.Children.Clear();
-                foreach (var coreDetailItem in (zCloudFileInfo ?? throw new InvalidOperationException()).Select(detail => new ZCloudFileResCoreVersionItem
+                foreach (var coreDetailItem in (ryFileInfo ?? throw new InvalidOperationException()).Select(detail => new RainYunResCoreVersionItem
                 {
                     Core = selectedCore.CoreName,
                     FileName = detail.FileName,
@@ -97,12 +97,12 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 }))
                     CoreVersionStackPanel.Children.Add(coreDetailItem);
 
-                Log.Information($"[Res] [ZCloudFile] Core list loaded. Count: {zCloudFileInfo.Count}");
+                Log.Information($"[Res] [RainYun] Core list loaded. Count: {ryFileInfo.Count}");
             }
             catch (Exception ex)
             {
                 Log.Error(
-                    $"[Res] [ZCloudFile] Failed to get core list of \"{selectedCore.CoreName}\". Reason: {ex.Message}");
+                    $"[Res] [RainYun] Failed to get core list of \"{selectedCore.CoreName}\". Reason: {ex.Message}");
             }
 
             CoreGridView.IsEnabled = true;

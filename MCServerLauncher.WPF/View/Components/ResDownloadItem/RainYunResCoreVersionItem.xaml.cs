@@ -7,11 +7,11 @@ using System.Windows;
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
-    ///    ZCloudFileResCoreVersionItem.xaml 的交互逻辑
+    ///    RainYunResCoreVersionItem.xaml 的交互逻辑
     /// </summary>
-    public partial class ZCloudFileResCoreVersionItem
+    public partial class RainYunResCoreVersionItem
     {
-        public ZCloudFileResCoreVersionItem()
+        public RainYunResCoreVersionItem()
         {
             InitializeComponent();
         }
@@ -45,7 +45,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// </summary>
         public async Task<string?> FetchRawUrl()
         {
-            return await new AList().GetFileUrl("https://jn.sv.ztsin.cn:5244", $"MCSL2/MCSLAPI/{Core}/{FileName}");
+            return await new AList().GetFileUrl("https://mirrors.rainyun.com", $"服务端合集/{Core}/{FileName}");
         }
 
         /// <summary>

@@ -52,8 +52,8 @@
                     <TextBlock Grid.Row="0" Margin="0,0,0,10" Style="{StaticResource MinititleTextBlock}" 
                                Text="AList" VerticalAlignment="Top" HorizontalAlignment="Left" />
                     <WrapPanel Grid.Row="1">
-                        <Button Margin="0,0,10,0" Content="Test Z__Tsin's AList Host" Click="TestZTsinAList" />
-                        <Button Margin="0,0,10,0" Content="Test Z__Tsin's AList File" Click="TestZTsinAListFile" />
+                        <Button Margin="0,0,10,0" Content="Test RianYun AList Host" Click="TestRianYunAList" />
+                        <Button Margin="0,0,10,0" Content="Test RianYun AList File" Click="TestRianYunAListFile" />
                     </WrapPanel>
                 </Grid>
 

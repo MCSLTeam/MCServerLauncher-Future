@@ -16,7 +16,7 @@ namespace MCServerLauncher.WPF.View.Pages
         public readonly MCSLSyncProvider? MCSLSync = new();
         public readonly MSLAPIProvider? MSLAPI = new();
         public readonly PolarsMirrorProvider? PolarsMirror = new();
-        public readonly ZCloudFileProvider? ZCloudFile = new();
+        public readonly RainYunProvider? RainYun = new();
 
         public ResDownloadPage()
         {
@@ -59,7 +59,7 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 "FastMirror" => FastMirror,
                 "PolarsMirror" => PolarsMirror,
-                "ZCloudFile" => ZCloudFile,
+                "RainYun" => RainYun,
                 "MSLAPI" => MSLAPI,
                 "MCSLSync" => MCSLSync,
                 _ => null
