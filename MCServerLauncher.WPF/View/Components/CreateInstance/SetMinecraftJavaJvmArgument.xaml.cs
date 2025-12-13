@@ -151,7 +151,6 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             UpdateIsFinishedStatus();
         }
 
-        // 添加一个公共方法供 JvmArgumentItem 在删除时调用
         public void OnItemRemoved(JvmArgumentItem item)
         {
             DetachTextChangedEvent(item);

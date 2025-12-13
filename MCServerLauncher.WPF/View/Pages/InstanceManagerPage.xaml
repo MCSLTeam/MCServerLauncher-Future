@@ -6,6 +6,7 @@
       xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:im="clr-namespace:MCServerLauncher.WPF.View.Components.InstanceManager"
+      xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="InstanceManagerPage">
@@ -31,12 +32,19 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <ComboBox Grid.Column="0" MinWidth="130" Margin="0,0,10,0" x:Name="DaemonFilter" ui:ControlHelper.PlaceholderText="{Binding [AllDaemon], Source={x:Static i18n:Lang.Tr}}"
-                      VerticalAlignment="Top" HorizontalAlignment="Left"/>
-            <ComboBox Grid.Column="1" MinWidth="80" x:Name="RunningStatusFilter" ui:ControlHelper.PlaceholderText="{Binding [AllRunningStatus], Source={x:Static i18n:Lang.Tr}}"
-                      VerticalAlignment="Top" HorizontalAlignment="Left"/>
+            <ComboBox Grid.Column="0" MinWidth="70" MaxWidth="150" Margin="0,0,10,0" x:Name="DaemonFilter"
+                      VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="DaemonFilterChanged" ItemsSource="{Binding DaemonFilterItems}"/>
+            <ComboBox Grid.Column="1" Width="120" x:Name="RunningStatusFilter"
+                      VerticalAlignment="Top" HorizontalAlignment="Left">
+                <ComboBoxItem Tag="All" IsSelected="True" Content="{Binding [AllRunningStatus], Source={x:Static i18n:Lang.Tr}}" />
+                <ComboBoxItem Tag="Starting" Content="{Binding [Starting], Source={x:Static i18n:Lang.Tr}}" />
+                <ComboBoxItem Tag="Running" Content="{Binding [Running], Source={x:Static i18n:Lang.Tr}}" />
+                <ComboBoxItem Tag="Stopping" Content="{Binding [Stopping], Source={x:Static i18n:Lang.Tr}}" />
+                <ComboBoxItem Tag="Stopped" Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}}" />
+                <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
+            </ComboBox>
             <TextBox Grid.Column="3" MaxWidth="400" MinWidth="120" Margin="0,0,10,0" ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
-            <Button Grid.Column="4" Height="32">
+            <Button Grid.Column="4" Height="32" Click="RefreshButton_Click">
                 <Button.Content>
                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.UpdateRestore}" 
                                     Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
@@ -44,7 +52,16 @@
             </Button>
         </Grid>
         <ui:ScrollViewerEx Grid.Row="3" Margin="0,15,0,0">
-            <ui:GridView x:Name="InstanceCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <ge:LoadingLayer Grid.Row="0" Grid.Column="0" x:Name="LoadingLayer" />
+                <ui:GridView Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15" />
+            </Grid>
         </ui:ScrollViewerEx>
     </Grid>
 </ui:Page>

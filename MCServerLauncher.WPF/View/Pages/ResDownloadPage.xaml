@@ -5,7 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
-      xmlns:cr="clr-namespace:MCServerLauncher.WPF.View.Components.ResDownloadItem"
+      xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="ResDownloadPage">
@@ -26,7 +26,7 @@
                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,80,10,0"
                        TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" />
         </Grid>
-        <cr:ResDownloadLoadingLayer Grid.Row="1" Grid.ColumnSpan="2" Margin="0,20,35,35" x:Name="LoadingLayer" />
+        <ge:LoadingLayer Grid.Row="1" Grid.ColumnSpan="2" Margin="0,20,35,35" x:Name="LoadingLayer" />
         <ui:Frame Grid.Row="1" Grid.ColumnSpan="2" Margin="0,20,35,35" x:Name="CurrentResDownloadProvider" />
         <Button x:Name="RefreshButton" Grid.Row="0" Grid.Column="1" Margin="0,0,35,0" Click="Refresh">
             <Button.Content>
