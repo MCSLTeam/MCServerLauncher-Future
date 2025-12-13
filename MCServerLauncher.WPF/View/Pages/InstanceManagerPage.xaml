@@ -14,6 +14,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" 
@@ -22,29 +23,28 @@
         <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" 
                    Text="{Binding [InstanceManagerTip], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
-        <ui:ScrollViewerEx Grid.Row="2" Margin="0,15,0,0">
-            <ui:GridView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15" >
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-                <im:InstanceCard />
-            </ui:GridView>
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox Grid.Column="0" MinWidth="130" Margin="0,0,10,0" x:Name="DaemonFilter" ui:ControlHelper.PlaceholderText="{Binding [AllDaemon], Source={x:Static i18n:Lang.Tr}}"
+                      VerticalAlignment="Top" HorizontalAlignment="Left"/>
+            <ComboBox Grid.Column="1" MinWidth="80" x:Name="RunningStatusFilter" ui:ControlHelper.PlaceholderText="{Binding [AllRunningStatus], Source={x:Static i18n:Lang.Tr}}"
+                      VerticalAlignment="Top" HorizontalAlignment="Left"/>
+            <TextBox Grid.Column="3" MaxWidth="400" MinWidth="120" Margin="0,0,10,0" ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
+            <Button Grid.Column="4" Height="32">
+                <Button.Content>
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.UpdateRestore}" 
+                                    Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
+                </Button.Content>
+            </Button>
+        </Grid>
+        <ui:ScrollViewerEx Grid.Row="3" Margin="0,15,0,0">
+            <ui:GridView x:Name="InstanceCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15" />
         </ui:ScrollViewerEx>
     </Grid>
 </ui:Page>

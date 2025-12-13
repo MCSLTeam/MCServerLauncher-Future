@@ -37,11 +37,32 @@
                 <TextBlock Style="{StaticResource BodyTextBlock}" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,5,5,5" x:Name="AddressLine" />
                 <Grid Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,5" x:Name="StatusLine" />
             </Grid>
-            <Button Grid.Row="2" Margin="20,0,0,0" HorizontalAlignment="Right">
-                <Button.Content>
+            <ui:DropDownButton Grid.Row="2" Margin="20,0,0,0" HorizontalAlignment="Right" ShowChevronArrow="False">
+                <ui:DropDownButton.Content>
                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
-                </Button.Content>
-            </Button>
+                </ui:DropDownButton.Content>
+                <ui:DropDownButton.Flyout>
+                    <ui:MenuFlyout Placement="Bottom">
+                        <MenuItem Header="{Binding [ShowRealtimeLog], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CommandPrompt}" FontSize="16" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Edit}"
+                             FontSize="16" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"
+                             FontSize="16" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ui:MenuFlyout>
+                </ui:DropDownButton.Flyout>
+            </ui:DropDownButton>
         </Grid>
     </Border>
 </UserControl>

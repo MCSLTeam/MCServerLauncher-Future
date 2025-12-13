@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Media;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -141,6 +142,24 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 Status = "err";
                 return false;
             }
+        }
+
+        private async Task<bool> DeleteDaemonAsync()
+        {
+            try
+            {
+                await ThisDaemon.CloseAsync();
+            }
+            catch { }
+            DaemonsListManager.RemoveDaemon(new DaemonsListManager.DaemonConfigModel
+            {
+                EndPoint = EndPoint,
+                Port = Port,
+                Token = Token,
+                IsSecure = IsSecure,
+                FriendlyName = FriendlyName
+            });
+            return true;
         }
     }
 }
