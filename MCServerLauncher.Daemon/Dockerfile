@@ -2,7 +2,7 @@
 USER $APP_UID
 WORKDIR /app
 
-EXPOSE 11451
+EXPOSE 11452
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 ARG BUILD_CONFIGURATION=Release
