@@ -48,7 +48,7 @@ internal class AppConfig
 
     private static AppConfig GetDefault()
     {
-        return new AppConfig(11451, GenerateRandomString(), GenerateRandomString());
+        return new AppConfig(11452, GenerateRandomString(), GenerateRandomString());
     }
 
     private static string GenerateRandomString(int length = 32)
