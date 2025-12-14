@@ -83,7 +83,6 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 var parent = this.TryFindParent<CreateInstancePage>();
                 parent?.CurrentCreateInstance.GoBack();
             } else {
-
                 ContentDialog dialog = new()
                 {
                     Title = Lang.Tr["AreYouSure"],

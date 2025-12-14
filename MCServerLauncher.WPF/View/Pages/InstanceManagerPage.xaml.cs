@@ -54,11 +54,12 @@ namespace MCServerLauncher.WPF.View.Pages
                 Lang.Tr["AllDaemon"]
             };
 #pragma warning disable CS8602 // 解引用可能出现空引用。
-            if (DaemonsListManager.Get.Count > 0)
+            if (DaemonsListManager.Get?.Count > 0)
             {
-                foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.Get)
+                var daemonDisplayNames = DaemonsListManager.Get
+                    .Select(daemon => $"{daemon.FriendlyName} [{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}]");
+                foreach (var displayText in daemonDisplayNames)
                 {
-                    string displayText = $"{daemon.FriendlyName} [{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}]";
                     DaemonFilterItems.Add(displayText);
                 }
             }

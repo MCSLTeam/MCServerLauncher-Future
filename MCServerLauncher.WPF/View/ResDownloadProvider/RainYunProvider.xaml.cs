@@ -15,7 +15,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
     /// </summary>
     public partial class RainYunProvider : IResDownloadProvider
     {
-        public string ResProviderName => "RainYun";
+        public string ResProviderName => Lang.Tr["ResDownloadPage_ProviderName_RainYun"];
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
