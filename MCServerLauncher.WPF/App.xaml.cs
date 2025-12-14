@@ -34,7 +34,7 @@ namespace MCServerLauncher.WPF
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
-                MessageBox.Show(Lang.Tr["NotAllowedOverOpening"], Lang.Tr["Tip"],
+                MessageBox.Show(Lang.Tr["NotAllowedMultipleProcess"], Lang.Tr["Tip"],
                     MessageBoxButton.OK, MessageBoxImage.Asterisk);
 
                 Environment.Exit(0);
