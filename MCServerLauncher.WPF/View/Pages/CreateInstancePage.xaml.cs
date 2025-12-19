@@ -107,6 +107,10 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             var daemonDisplayNames = DaemonsListManager.Get
                 .Select(daemon => $"{daemon.FriendlyName} [{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}]");
+            ScrollViewerEx scroll = new()
+            {
+                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto
+            };
             SimpleStackPanel panel = new();
             ListView listView = new()
             {
@@ -115,6 +119,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 Margin = new Thickness(0, 0, 0, 12)
             };
             panel.Children.Add(listView);
+            scroll.Content = panel;
             ContentDialog dialog = new()
             {
                 Title = Lang.Tr["PleaseSelectDaemon"],
