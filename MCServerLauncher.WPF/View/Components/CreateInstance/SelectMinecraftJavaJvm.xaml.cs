@@ -78,6 +78,15 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
         private async void GetJvmResult(object sender, RoutedEventArgs e)
         {
+            Notification.Push(
+                Lang.Tr["PleaseWait"],
+                Lang.Tr["SearchingJvmTip"],
+                false,
+                InfoBarSeverity.Informational,
+                InfoBarPosition.Top,
+                2000,
+                false
+            );
             IDaemon? daemon = null;
             DaemonConfigModel daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
             try
@@ -103,7 +112,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             JavaInfo[] jvms = await Task.Run(() => DaemonExtensions.GetJavaListAsync(daemon));
             if (jvms.Length > 0)
             {
-                var jvmDisplayNames = jvms.Select(info => $"{info.Version} | {info.Architecture} | {info.Path}");
+                var jvmDisplayNames = jvms.Select(info => $"({info.Version}, {info.Architecture}) {info.Path}");
                 ScrollViewerEx scroll = new()
                 {
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
