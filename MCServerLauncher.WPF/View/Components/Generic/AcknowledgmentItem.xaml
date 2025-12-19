@@ -15,7 +15,7 @@
         <Image
             x:Name="Pic"
             Grid.Column="0"
-            Margin="15,0,10,0"
+            Margin="0,0,10,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Stretch"
             RenderOptions.BitmapScalingMode="HighQuality"
@@ -25,7 +25,7 @@
                 <RectangleGeometry RadiusX="6" RadiusY="6" Rect="0,0,40,40"/>
             </Image.Clip>
         </Image>
-        <Grid Grid.Column="1" Margin="0,0,15,0">
+        <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="*" />
@@ -33,6 +33,6 @@
             <TextBlock x:Name="AckTitle" Grid.Row="0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" VerticalAlignment="Bottom" TextAlignment="Left" Margin="0,0,0,2"/>
             <TextBlock x:Name="AckDesc" Grid.Row="1" Opacity="0.615" FontSize="12" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" VerticalAlignment="Top" TextAlignment="Left" Margin="0,2,0,0"/>
         </Grid>
-        <Button Grid.Column="2" x:Name="AckButton" Click="ActionButtonTriggered" Margin="0,0,15,0" />
+        <Button Grid.Column="2" x:Name="AckButton" Click="ActionButtonTriggered" />
     </Grid>
 </UserControl>

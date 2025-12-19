@@ -1,5 +1,6 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Pages;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,7 +16,6 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     {
 
         private string _creatingInstanceType = "PreCreating";
-        private string selectedDaemon = string.Empty;
         public PreCreateInstance()
         {
             InitializeComponent();
@@ -50,7 +50,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }, new DrillInNavigationTransitionInfo());
                 if (listView != null && listView.SelectedItem != null)
                 {
-                    selectedDaemon = listView.SelectedItem.ToString() ?? string.Empty;
+                    Constants.SelectedDaemon = listView.SelectedItem.ToString() ?? string.Empty;
                 }
             }
         }

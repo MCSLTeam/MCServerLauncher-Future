@@ -27,7 +27,6 @@ namespace MCServerLauncher.WPF.View.Pages
             DataContext = this;
 
             # region Initialize nums
-
             InitDownloadSourceSelection();
             ResDownload_DownloadThreadCnt.SettingSlider.Value = SettingsManager.Get.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex =
@@ -68,10 +67,30 @@ namespace MCServerLauncher.WPF.View.Pages
             More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += OnAutoCheckUpdateForLauncherChanged;
 
             #endregion
+            // 读取并处理构建信息
+            var buildInfo = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.BuildInfo");
+            if (buildInfo != null)
+            {
+                using var reader = new System.IO.StreamReader(buildInfo);
+                var buildInfoJson = reader.ReadToEnd();
+                try
+                {
+                    var buildInfoObj = System.Text.Json.JsonSerializer.Deserialize<BuildInfoModel>(buildInfoJson);
+                    if (buildInfoObj != null)
+                    {
+                        BuildInfoReplacer.Text = $"Build Time: {buildInfoObj.BuildTime}\nBuild Info: {buildInfoObj.Branch}-{Assembly.GetExecutingAssembly().GetName().Version}-{buildInfoObj.CommitHash}";
+                    }
+                }
+                catch
+                {
+                    BuildInfoReplacer.Text = buildInfoJson;
+                }
+            }
 
-            AboutVersionReplacer.Text = $"Release Version {Assembly.GetExecutingAssembly().GetName().Version}";
+            AboutVersionReplacer.Text = $"v{Assembly.GetExecutingAssembly().GetName().Version}-REL";
 #if DEBUG
-            AboutVersionReplacer.Text = $"Developer Version {Assembly.GetExecutingAssembly().GetName().Version}";
+            AboutVersionReplacer.Text = $"v{Assembly.GetExecutingAssembly().GetName().Version}-DBG";
 #endif
         }
 
@@ -536,6 +555,18 @@ namespace MCServerLauncher.WPF.View.Pages
                 var parent = this.TryFindParent<MainWindow>();
                 parent.DebugItem.Visibility = Visibility.Visible;
             }
+        }
+
+        private class BuildInfoModel
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("buildTime")]
+            public string BuildTime { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("commitHash")]
+            public string CommitHash { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("branch")]
+            public string Branch { get; set; }
         }
     }
 }
