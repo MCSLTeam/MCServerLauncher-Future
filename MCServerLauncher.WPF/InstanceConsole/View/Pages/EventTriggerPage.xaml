@@ -22,7 +22,7 @@
             <ui:DropDownButton Grid.Column="0" Background="Transparent" BorderThickness="0" Height="35"
                                Margin="0,0,10,0">
                 <ui:DropDownButton.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Add}" Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}}" />
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}}" />
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">

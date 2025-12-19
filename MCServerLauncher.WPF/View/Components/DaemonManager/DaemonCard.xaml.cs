@@ -151,7 +151,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 await ThisDaemon.CloseAsync();
             }
             catch { }
-            DaemonsListManager.RemoveDaemon(new DaemonsListManager.DaemonConfigModel
+            DaemonsListManager.RemoveDaemon(new Constants.DaemonConfigModel
             {
                 EndPoint = EndPoint,
                 Port = Port,

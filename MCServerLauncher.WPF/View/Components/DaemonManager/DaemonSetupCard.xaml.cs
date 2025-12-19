@@ -104,7 +104,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 Status = "ok";
                 await ThisDaemon.CloseAsync();
                 DaemonsListManager.AddDaemon(
-                    new DaemonsListManager.DaemonConfigModel
+                    new Constants.DaemonConfigModel
                     {
                         FriendlyName = FriendlyName,
                         EndPoint = EndPoint,

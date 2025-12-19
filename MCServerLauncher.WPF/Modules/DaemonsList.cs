@@ -3,7 +3,9 @@ using Serilog;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -11,7 +13,7 @@ namespace MCServerLauncher.WPF.Modules
     {
         private static readonly ConcurrentQueue<KeyValuePair<string, string>> Queue = new();
         private static readonly object QueueLock = new();
-        public static List<DaemonConfigModel>? Get { get; set; }
+        public static List<Constants.DaemonConfigModel>? Get { get; set; }
 
         /// <summary>
         ///    Initialize daemon list.
@@ -24,7 +26,7 @@ namespace MCServerLauncher.WPF.Modules
                 {
                     Log.Information("[Set] Found daemon list, reading");
                     Get =
-                        JsonConvert.DeserializeObject<List<DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
+                        JsonConvert.DeserializeObject<List<Constants.DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
                             Encoding.UTF8));
                 }
                 else
@@ -39,7 +41,7 @@ namespace MCServerLauncher.WPF.Modules
                 }
             }
         }
-        public static void AddDaemon(DaemonConfigModel config)
+        public static void AddDaemon(Constants.DaemonConfigModel config)
         {
             lock (QueueLock)
             {
@@ -47,7 +49,7 @@ namespace MCServerLauncher.WPF.Modules
                 SaveDaemonList();
             }
         }
-        public static void RemoveDaemon(DaemonConfigModel config)
+        public static void RemoveDaemon(Constants.DaemonConfigModel config)
         {
             lock (QueueLock)
             {
@@ -67,14 +69,13 @@ namespace MCServerLauncher.WPF.Modules
             }
         }
 
-        public class DaemonConfigModel
+        public static Constants.DaemonConfigModel MatchDaemonBySelection(string selection)
         {
-            public bool IsSecure { get; set; }
-            public string? EndPoint { get; set; }
-            public int Port { get; set; }
-            public string? Token { get; set; }
-            public string? FriendlyName { get; set; }
+            return Get?.FirstOrDefault(daemon =>
+            {
+                string displayName = $"{daemon.FriendlyName} [{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}]";
+                return displayName == selection;
+            })!;
         }
-
     }
 }

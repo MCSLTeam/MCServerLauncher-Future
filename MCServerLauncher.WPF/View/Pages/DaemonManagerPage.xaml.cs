@@ -27,7 +27,7 @@ namespace MCServerLauncher.WPF.View.Pages
                     if (DaemonsListManager.Get.Count > 0)
                     {
                         var connectionTasks = new List<Task>();
-                        foreach (DaemonsListManager.DaemonConfigModel daemon in DaemonsListManager.Get)
+                        foreach (Constants.DaemonConfigModel daemon in DaemonsListManager.Get)
                         {
 #pragma warning disable CS8601 // 引用类型赋值可能为 null。
                             DaemonCard daemonCard = new()
@@ -115,7 +115,7 @@ namespace MCServerLauncher.WPF.View.Pages
             if (await daemon.ConnectDaemon() is true)
             {
                 DaemonsListManager.AddDaemon(
-                    new DaemonsListManager.DaemonConfigModel
+                    new Constants.DaemonConfigModel
                     {
                         FriendlyName = friendlyName,
                         EndPoint = endPoint,

@@ -137,7 +137,7 @@ namespace MCServerLauncher.WPF.View.Pages
 #pragma warning restore CS8602 // 解引用可能出现空引用。
         }
 
-        private async Task LoadDaemonInstancesAsync(DaemonsListManager.DaemonConfigModel daemonConfig)
+        private async Task LoadDaemonInstancesAsync(Constants.DaemonConfigModel daemonConfig)
         {
             IDaemon? daemon = null;
             try

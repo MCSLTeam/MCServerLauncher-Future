@@ -30,6 +30,7 @@ namespace MCServerLauncher.WPF.Modules
     
     public class Constants
     {
+        public static string SelectedDaemon = string.Empty;
         public enum InfoBarPosition
         {
             Top,
@@ -65,6 +66,14 @@ namespace MCServerLauncher.WPF.Modules
         {
             public string MCVersion;
             public string LoaderVersion;
+        }
+        public class DaemonConfigModel
+        {
+            public bool IsSecure { get; set; }
+            public string? EndPoint { get; set; }
+            public int Port { get; set; }
+            public string? Token { get; set; }
+            public string? FriendlyName { get; set; }
         }
 
         public class CreateInstanceData
