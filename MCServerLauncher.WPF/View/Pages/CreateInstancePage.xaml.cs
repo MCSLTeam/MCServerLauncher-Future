@@ -118,7 +118,7 @@ namespace MCServerLauncher.WPF.View.Pages
             ContentDialog dialog = new()
             {
                 Title = Lang.Tr["PleaseSelectDaemon"],
-                PrimaryButtonText = Lang.Tr["Next"],
+                PrimaryButtonText = Lang.Tr["Continue"],
                 SecondaryButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,
