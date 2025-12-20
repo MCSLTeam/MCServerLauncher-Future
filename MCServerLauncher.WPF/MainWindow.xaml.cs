@@ -42,7 +42,7 @@ namespace MCServerLauncher.WPF
         /// <summary>
         ///    Determine which component to show.
         /// </summary>
-        private async Task InitializeView()
+        private async void InitializeView()
         {
             DownloadHistoryFlyout.Content = DownloadHistoryFlyoutContent.Instance;
             GlobalGrid.Children.Add(NotificationContainer.Instance);

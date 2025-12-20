@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media.Animation;
 
 namespace MCServerLauncher.WPF.View.Pages
@@ -31,6 +32,10 @@ namespace MCServerLauncher.WPF.View.Pages
             DataContext = this;
             LoadDaemonFilterItems();
             RunningStatusFilter.SelectionChanged += RunningStatusFilterChanged;
+            IsVisibleChanged += (s, e) =>
+            {
+                if (IsVisible) RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            };
         }
 
         private ObservableCollection<string> _daemonFilterItems;

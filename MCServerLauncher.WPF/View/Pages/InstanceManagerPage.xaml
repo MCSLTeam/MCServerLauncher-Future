@@ -44,7 +44,7 @@
                 <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
             </ComboBox>
             <TextBox Grid.Column="3" MaxWidth="400" MinWidth="120" Margin="0,0,10,0" ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
-            <Button Grid.Column="4" Height="32" Click="RefreshButton_Click">
+            <Button Grid.Column="4" Height="32" x:Name="RefreshButton" Click="RefreshButton_Click">
                 <Button.Content>
                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.UpdateRestore}" 
                                     Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
