@@ -16,7 +16,7 @@
             </Style>
         </ResourceDictionary>
     </FrameworkElement.Resources>
-    <Grid>
+    <Grid x:Name="PreCreateInstanceGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

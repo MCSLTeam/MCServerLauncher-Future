@@ -78,6 +78,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
         private async void GetJvmResult(object sender, RoutedEventArgs e)
         {
+            ((MenuItem)sender).IsEnabled = false;
             Notification.Push(
                 Lang.Tr["PleaseWait"],
                 Lang.Tr["SearchingJvmTip"],
@@ -128,6 +129,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                     }
                 }
             }
+            ((MenuItem)sender).IsEnabled = true;
         }
     }
 }

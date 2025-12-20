@@ -54,6 +54,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void LoadDaemonFilterItems()
         {
+            DaemonFilter.IsEnabled = false;
             DaemonFilterItems = new ObservableCollection<string>
             {
                 Lang.Tr["AllDaemon"]
@@ -70,6 +71,7 @@ namespace MCServerLauncher.WPF.View.Pages
             }
             
             DaemonFilter.SelectedIndex = 0;
+            DaemonFilter.IsEnabled = true;
 #pragma warning restore CS8602 // 解引用可能出现空引用。
         }
         
@@ -91,6 +93,9 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async Task Refresh()
         {
+            RefreshButton.IsEnabled = false;
+            DaemonFilter.IsEnabled = false;
+            RunningStatusFilter.IsEnabled = false;
             _allInstanceCards.Clear();
             InstanceCardGrid.Items.Clear();
             try
@@ -110,6 +115,12 @@ namespace MCServerLauncher.WPF.View.Pages
             catch (Exception ex)
             {
                 Log.Error($"[InstanceManager] Error loading instances: {ex.Message}");
+            }
+            finally
+            {
+                RefreshButton.IsEnabled = true;
+                DaemonFilter.IsEnabled = true;
+                RunningStatusFilter.IsEnabled = true;
             }
         }
 
