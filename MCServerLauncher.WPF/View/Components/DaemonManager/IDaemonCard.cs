@@ -11,6 +11,5 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         int Port { get; set; }
         string Token { get; set; }
         string FriendlyName { get; set; }
-        Task<bool> ConnectDaemon();
     }
 }

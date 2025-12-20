@@ -6,7 +6,6 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using MCServerLauncher.DaemonClient;
-using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -18,7 +17,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         public DaemonSetupCard()
         {
             InitializeComponent();
-            ThisDaemon = null!;
             EndPoint = string.Empty;
             Token = string.Empty;
             FriendlyName = string.Empty;
@@ -26,7 +24,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Address = string.Empty;
             Status = string.Empty;
         }
-        private IDaemon ThisDaemon { get; set; }
         public bool IsSecure { get; set; }
         public string EndPoint { get; set; }
         public int Port { get; set; }
@@ -92,17 +89,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Status = "ing";
             try
             {
-                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, Token, IsSecure, new ClientConnectionConfig
-                {
-                    MaxFailCount = 3,
-                    PendingRequestCapacity = 100,
-                    HeartBeatTick = TimeSpan.FromSeconds(5),
-                    PingTimeout = 5000
-                });
-                Log.Information("[Daemon] Connected: {0}", Address);
-                await ThisDaemon.PingAsync();
-                Status = "ok";
-                await ThisDaemon.CloseAsync();
                 DaemonsListManager.AddDaemon(
                     new Constants.DaemonConfigModel
                     {
@@ -113,11 +99,28 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                         IsSecure = IsSecure
                     }
                 );
+                var daemon = await DaemonsWsManager.Get(new Constants.DaemonConfigModel
+                {
+                    EndPoint = EndPoint,
+                    Port = Port,
+                    Token = Token,
+                    IsSecure = IsSecure,
+                    FriendlyName = FriendlyName
+                });
+                Log.Information("[Daemon] Connected: {0}", Address);
+                Status = "ok";
                 return true;
             }
             catch (Exception e)
             {
-                try { await ThisDaemon.CloseAsync(); } catch { }
+                DaemonsWsManager.Remove(new Constants.DaemonConfigModel
+                {
+                    EndPoint = EndPoint,
+                    Port = Port,
+                    Token = Token,
+                    IsSecure = IsSecure,
+                    FriendlyName = FriendlyName
+                }).Wait();
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
                 return false;

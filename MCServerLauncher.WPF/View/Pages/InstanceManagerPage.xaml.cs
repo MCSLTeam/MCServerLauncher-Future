@@ -139,42 +139,14 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async Task LoadDaemonInstancesAsync(Constants.DaemonConfigModel daemonConfig)
         {
-            IDaemon? daemon = null;
-            try
-            {
-                daemon = await Daemon.OpenAsync(
-                    daemonConfig.EndPoint,
-                    daemonConfig.Port,
-                    daemonConfig.Token,
-                    daemonConfig.IsSecure,
-                    new ClientConnectionConfig
-                    {
-                        MaxFailCount = 3,
-                        PendingRequestCapacity = 100,
-                        HeartBeatTick = TimeSpan.FromSeconds(5),
-                        PingTimeout = 5000
-                    }
-                );
-                var instanceReports = await GetAllInstances(daemon);
+            try {
+            var daemon = await DaemonsWsManager.Get(daemonConfig);
+            var instanceReports = await GetAllInstances(daemon);
                 await AddInstanceCards(instanceReports);
             }
             catch (Exception ex)
             {
                 Log.Error($"[InstanceManager] Failed to load instances from daemon {daemonConfig.EndPoint}:{daemonConfig.Port}: {ex.Message}");
-            }
-            finally
-            {
-                if (daemon != null)
-                {
-                    try
-                    {
-                        await daemon.CloseAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning($"[InstanceManager] Error closing daemon connection: {ex.Message}");
-                    }
-                }
             }
         }
 

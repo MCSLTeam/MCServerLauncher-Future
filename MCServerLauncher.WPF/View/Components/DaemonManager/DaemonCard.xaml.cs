@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Media;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection;
-using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -21,10 +20,8 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         {
             InitializeComponent();
             Token = string.Empty;
-            ThisDaemon = null!;
             EndPoint = string.Empty;
         }
-        private IDaemon ThisDaemon { get; set; }
 
         private string SystemTypeString = string.Empty;
         public bool IsSecure { get; set; }
@@ -111,16 +108,16 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             Status = "ing";
             try
             {
-                ThisDaemon = await Daemon.OpenAsync(EndPoint, Port, Token, IsSecure, new ClientConnectionConfig
+                var daemon = await DaemonsWsManager.Get(new Constants.DaemonConfigModel
                 {
-                    MaxFailCount = 3,
-                    PendingRequestCapacity = 100,
-                    HeartBeatTick = TimeSpan.FromSeconds(5),
-                    PingTimeout = 5000
+                    EndPoint = EndPoint,
+                    Port = Port,
+                    Token = Token,
+                    IsSecure = IsSecure,
+                    FriendlyName = FriendlyName
                 });
-                Log.Information("[Daemon] Connected: {0}", Address);
-                
-                var systemInfo = await ThisDaemon.GetSystemInfoAsync();
+
+                var systemInfo = await daemon.GetSystemInfoAsync();
 
                 var systemName = systemInfo.Os.Name;
                 var cpuVendor = systemInfo.Cpu.Vendor;
@@ -132,12 +129,10 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 }
                 
                 Status = "ok";
-                await ThisDaemon.CloseAsync();
                 return true;
             }
             catch (Exception e)
             {
-                // try { await ThisDaemon.CloseAsync(); } catch { }
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
                 return false;
@@ -148,7 +143,14 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
         {
             try
             {
-                await ThisDaemon.CloseAsync();
+                await DaemonsWsManager.Remove(new Constants.DaemonConfigModel
+                {
+                    EndPoint = EndPoint,
+                    Port = Port,
+                    Token = Token,
+                    IsSecure = IsSecure,
+                    FriendlyName = FriendlyName
+                });
             }
             catch { }
             DaemonsListManager.RemoveDaemon(new Constants.DaemonConfigModel

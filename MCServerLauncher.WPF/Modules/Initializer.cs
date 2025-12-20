@@ -151,6 +151,7 @@ namespace MCServerLauncher.WPF.Modules
                 Environment.Exit(0);
             }
             Lang.Tr.ChangeLanguage(new CultureInfo(SettingsManager.Get?.App?.Language ?? throw new InvalidOperationException()));
+            DaemonsWsManager.CreateAllDaemonWsAsync().Wait();
         }
     }
 }

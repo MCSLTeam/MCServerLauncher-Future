@@ -89,27 +89,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             );
             IDaemon? daemon = null;
             DaemonConfigModel daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
-            try
-            {
-                daemon = await Daemon.OpenAsync(
-                    daemonConfig.EndPoint,
-                    daemonConfig.Port,
-                    daemonConfig.Token,
-                    daemonConfig.IsSecure,
-                    new ClientConnectionConfig
-                    {
-                        MaxFailCount = 3,
-                        PendingRequestCapacity = 100,
-                        HeartBeatTick = TimeSpan.FromSeconds(5),
-                        PingTimeout = 5000
-                    }
-                );
-            }
-            catch (Exception ex)
-            {
-                return;
-            }
+            daemon = await DaemonsWsManager.Get(daemonConfig);
+#pragma warning disable CS8604 // 引用类型参数可能为 null。
             JavaInfo[] jvms = await Task.Run(() => DaemonExtensions.GetJavaListAsync(daemon));
+#pragma warning restore CS8604 // 引用类型参数可能为 null。
             if (jvms.Length > 0)
             {
                 var jvmDisplayNames = jvms.Select(info => $"({info.Version}, {info.Architecture}) {info.Path}");
