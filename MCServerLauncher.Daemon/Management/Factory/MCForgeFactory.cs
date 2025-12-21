@@ -7,10 +7,10 @@ using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Management.Factory;
 
-[InstanceFactory(InstanceType.Forge, minVersion: "1.5.2")]
-[InstanceFactory(InstanceType.NeoForge, minVersion: "1.20.2")] // TODO BMCLAPI加速
-[InstanceFactory(InstanceType.Cleanroom, minVersion: "1.12.2", maxVersion: "1.12.2")]
-public class ForgeFactory : ICoreInstanceFactory
+[InstanceFactory(InstanceType.MCForge, minVersion: "1.5.2")]
+[InstanceFactory(InstanceType.MCNeoForge, minVersion: "1.20.2")] // TODO BMCLAPI加速
+[InstanceFactory(InstanceType.MCCleanroom, minVersion: "1.12.2", maxVersion: "1.12.2")]
+public class MCForgeFactory : ICoreInstanceFactory
 {
     public async Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting)
     {

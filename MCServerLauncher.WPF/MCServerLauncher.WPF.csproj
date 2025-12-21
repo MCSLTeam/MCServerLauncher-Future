@@ -45,7 +45,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\BakaXL.png" />
-    <Resource Include="Resources\PCL2.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\iNKORE.png" />

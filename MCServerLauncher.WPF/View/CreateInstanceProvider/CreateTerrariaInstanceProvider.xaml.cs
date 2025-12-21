@@ -18,7 +18,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     public partial class CreateTerrariaInstanceProvider : ICreateInstanceProvider
     {
         private List<ICreateInstanceStep> StepList;
-        public InstanceType InstanceType { get; } = InstanceType.None;
+        public InstanceType InstanceType { get; } = InstanceType.Terraria;
         // start-server.bat
         // need to change according to system
         public TargetType TargetType { get; } = TargetType.Script;

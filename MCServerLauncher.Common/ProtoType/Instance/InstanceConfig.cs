@@ -28,8 +28,8 @@ public record InstanceConfig
     public string Target { get; init; } = null!;
 
     /// <summary>
-    ///     默认为MC服务器,实例服务器类型(none, universal, fabric, forge ...).
-    ///     如果不为MC服务器, 则因置为<see cref="InstanceType.None" />
+    ///     默认为MC服务器,实例服务器类型(mcjava, mcfabric, mcforge ...).
+    ///     如果不为MC服务器/Terraria/Steam, 则因置为<see cref="InstanceType.Universal" />
     /// </summary>
     [JsonProperty(Required = Required.Always)]
     public InstanceType InstanceType { get; init; }

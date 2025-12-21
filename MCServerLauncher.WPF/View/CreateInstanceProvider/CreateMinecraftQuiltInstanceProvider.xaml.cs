@@ -18,7 +18,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     public partial class CreateMinecraftQuiltInstanceProvider : ICreateInstanceProvider
     {
         private List<ICreateInstanceStep> StepList;
-        public InstanceType InstanceType { get; } = InstanceType.Quilt;
+        public InstanceType InstanceType { get; } = InstanceType.MCQuilt;
         public TargetType TargetType { get; } = TargetType.Jar;
         public CreateMinecraftQuiltInstanceProvider()
         {

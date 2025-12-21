@@ -9,15 +9,35 @@ using RustyOptions.Async;
 namespace MCServerLauncher.Daemon.Management.Factory;
 
 /// <summary>
-///     原版服务器实例的安装工厂
+///     通用服务器实例的安装工厂
 /// </summary>
-[InstanceFactory(InstanceType.Universal)]
-// make sure that the core file(*.jar) is downloaded from: https://fabricmc.net/use/server/
-[InstanceFactory(InstanceType.Fabric)]
-[InstanceFactory(InstanceType.Forge, SourceType.Archive, "1.5.2")]
-[InstanceFactory(InstanceType.NeoForge, SourceType.Archive, "1.20.2")]
-[InstanceFactory(InstanceType.Cleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
-public class UniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
+
+[InstanceFactory(InstanceType.MCJava)]
+[InstanceFactory(InstanceType.MCVanilla)]
+[InstanceFactory(InstanceType.MCCraftBukkit)]
+[InstanceFactory(InstanceType.MCSpigot)]
+[InstanceFactory(InstanceType.MCPaper)]
+[InstanceFactory(InstanceType.MCLeaf)]
+[InstanceFactory(InstanceType.MCLeaves)]
+[InstanceFactory(InstanceType.MCFolia)]
+[InstanceFactory(InstanceType.MCPufferfish)]
+[InstanceFactory(InstanceType.MCPurpur)]
+[InstanceFactory(InstanceType.MCMohist)]
+[InstanceFactory(InstanceType.MCBanner)]
+[InstanceFactory(InstanceType.MCYouer)]
+[InstanceFactory(InstanceType.MCThermos)]
+[InstanceFactory(InstanceType.MCCrucible)]
+[InstanceFactory(InstanceType.MCTaiyitist)]
+[InstanceFactory(InstanceType.MCCatServer)]
+[InstanceFactory(InstanceType.MCArclight)]
+//make sure that the core file(*.jar) is downloaded from: https://fabricmc.net/use/server/
+// the user shouldn't use any installer, but server jar. (MCFabric, MCLegacyFabric)
+[InstanceFactory(InstanceType.MCFabric)]
+//[InstanceFactory(InstanceType.MCLegacyFabric)]
+[InstanceFactory(InstanceType.MCForge, SourceType.Archive, "1.5.2")]
+[InstanceFactory(InstanceType.MCNeoForge, SourceType.Archive, "1.20.2")]
+[InstanceFactory(InstanceType.MCCleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
+public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
     public async Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting)
     {

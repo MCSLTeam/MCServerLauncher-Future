@@ -31,7 +31,7 @@ public static class InstanceConfigExtensions
     /// <returns></returns>
     public static Result<Unit, Error> ValidateConfig(this InstanceConfig config)
     {
-        if (config.InstanceType is not InstanceType.None)
+        if (IsMinecraftJavaInstance(config.InstanceType))
             try
             {
                 McVersion.Of(config.McVersion);
@@ -50,6 +50,25 @@ public static class InstanceConfigExtensions
         if (config.Uuid == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
 
         return ResultExt.Ok(Unit.Default);
+    }
+
+    public static bool IsMinecraftJavaInstance(InstanceType type)
+    {
+        var NonMCJavaList = new[]
+        {
+            InstanceType.Universal,
+            InstanceType.MCBedrock,
+            InstanceType.MCNukkit,
+            InstanceType.MCBDS,
+            InstanceType.MCCloudburst,
+            InstanceType.MCPocketMine,
+            InstanceType.Terraria,
+            InstanceType.TShock,
+            InstanceType.TDSM,
+            InstanceType.MCDReforged,
+            InstanceType.SteamServer
+        };
+        return !NonMCJavaList.Contains(type);
     }
 
     public static InstanceConfig AllocateNewUuid(this InstanceConfig config, Func<IEnumerable<Guid>> uuidSetFunc)
@@ -73,7 +92,7 @@ public static class InstanceConfigExtensions
     public static bool CanCastTo<TInstance>(this InstanceConfig config)
         where TInstance : IInstance
     {
-        if (typeof(TInstance) == typeof(MinecraftInstance)) return config.InstanceType is not InstanceType.None;
+        if (typeof(TInstance) == typeof(MinecraftInstance)) return config.InstanceType is not InstanceType.Universal;
 
         if (typeof(TInstance) == typeof(GenericInstance)) return true;
 

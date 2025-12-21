@@ -196,7 +196,7 @@ public class Daemon : IDaemon
                 {
                     Uuid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3"),
                     Name = "1-21-1-vanilla",
-                    InstanceType = InstanceType.Universal,
+                    InstanceType = InstanceType.MCJava,
                     Target = "server.jar",
                     TargetType = TargetType.Jar,
                     JavaPath = "java",

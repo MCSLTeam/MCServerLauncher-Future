@@ -18,7 +18,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     public partial class CreateMinecraftBedrockInstanceProvider : ICreateInstanceProvider
     {
         private List<ICreateInstanceStep> StepList;
-        public InstanceType InstanceType { get; } = InstanceType.None;
+        public InstanceType InstanceType { get; } = InstanceType.Universal;
         // 通常是可执行文件
         public TargetType TargetType { get; } = TargetType.Executable;
 
