@@ -84,6 +84,7 @@
                            ItemInvoked="NavigationTriggered"
                            IsBackButtonVisible="Collapsed"
                            PaneDisplayMode="Auto"
+                           OpenPaneLength="200"
                            Grid.Row="1">
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="{Binding [Main_HomeNavMenu], Source={x:Static i18n:Lang.Tr}}"

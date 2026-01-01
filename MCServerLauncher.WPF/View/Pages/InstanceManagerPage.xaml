@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}" 
@@ -24,7 +25,58 @@
         <TextBlock Grid.Row="1" Style="{StaticResource MinititleTextBlock}" 
                    Text="{Binding [InstanceManagerTip], Source={x:Static i18n:Lang.Tr}}" 
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+        
+        <!-- 批量操作栏 -->
+        <Grid Grid.Row="2" Margin="0,10,0,0" x:Name="BatchOperationBar" Visibility="Collapsed">
+            <Border Background="{DynamicResource SystemControlBackgroundAccentBrush}" 
+                    CornerRadius="4" Padding="15,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="SelectedCountTextBlock" Text="0 selected" 
+                                   Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Margin="0,0,10,0" Click="BatchSelectAll_Click">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.SelectAll}" 
+                                                Content="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                        <Button Margin="0,0,10,0" Click="BatchStart_Click">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}" 
+                                                Content="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                        <Button Margin="0,0,10,0" Click="BatchStop_Click">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Stop}" 
+                                                Content="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                        <Button Margin="0,0,10,0" Click="BatchDelete_Click">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Delete}" 
+                                                Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                        <Button Click="BatchCancel_Click">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}" 
+                                                Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <Grid Grid.Row="3" Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -51,7 +103,7 @@
                 </Button.Content>
             </Button>
         </Grid>
-        <ui:ScrollViewerEx Grid.Row="3" Margin="0,15,0,0">
+        <ui:ScrollViewerEx Grid.Row="4" Margin="0,15,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -60,6 +112,7 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <ge:LoadingLayer Grid.Row="0" Grid.Column="0" x:Name="LoadingLayer" />
+                <ge:ContainerEmptyTip Grid.Row="0" Grid.Column="0" x:Name="ContainerEmptyTip" Visibility="Collapsed" />
                 <ui:GridView Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15" />
             </Grid>
         </ui:ScrollViewerEx>

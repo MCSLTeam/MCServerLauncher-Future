@@ -6,7 +6,8 @@
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
       mc:Ignorable="d"
-      d:DesignHeight="450" d:DesignWidth="800">
+      d:DesignHeight="450" d:DesignWidth="800"
+      Loaded="Page_Loaded">
 
     <Grid Margin="25,15,25,25">
         <Grid.RowDefinitions>
@@ -21,9 +22,18 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="{Binding [ConsoleCommand_FeedbackTip], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" />
-            <Button Height="30" Background="Transparent" BorderThickness="0" Grid.Column="1" Margin="0,0,10,0">
+            <Button Height="30" Background="Transparent" BorderThickness="0" Grid.Column="1" Margin="0,0,10,0" Click="ToggleFullscreen">
                 <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.FullScreen}" Content="{Binding [ConsoleCommand_EnterFullScreenConsole], Source={x:Static i18n:Lang.Tr}}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ui:IconAndText Grid.Column="0" Grid.Row="0" x:Name="OnFullscreenButtonContent" IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.FullScreen}" Content="{Binding [ConsoleCommand_EnterFullScreenConsole], Source={x:Static i18n:Lang.Tr}}" />
+                        <ui:IconAndText Grid.Column="0" Grid.Row="0" x:Name="OffFullscreenButtonContent" IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Stop}" Content="{Binding [ConsoleCommand_ExitFullScreenConsole], Source={x:Static i18n:Lang.Tr}}" />
+                    </Grid>
                 </Button.Content>
             </Button>
             <ui:DropDownButton Height="30" Background="Transparent" BorderThickness="0" ShowChevronArrow="False"
@@ -33,17 +43,17 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" Click="StopInstance_Click">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.PowerButton}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}" Click="KillInstance_Click">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}" Click="RestartInstance_Click" IsEnabled="False">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" FontSize="16" />
                             </MenuItem.Icon>
@@ -52,14 +62,24 @@
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>
         </Grid>
-        <TextBox Grid.Row="1" IsReadOnly="True" Margin="0,15,0,0" />
+        <TextBox Grid.Row="1" x:Name="ConsoleLogTextBox" 
+                 IsReadOnly="True" 
+                 Margin="0,15,0,0" 
+                 TextWrapping="Wrap" 
+                 FontFamily="Consolas" 
+                 VerticalScrollBarVisibility="Auto"
+                 TextChanged="ConsoleLogTextBox_TextChanged" />
         <Grid Grid.Row="2" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" ui:ControlHelper.PlaceholderText="{Binding [ConsoleCommand_EnterCommandTip], Source={x:Static i18n:Lang.Tr}}" Height="32" />
-            <Button Grid.Column="1" Height="32" Margin="10,0,0,0">
+            <TextBox Grid.Column="0" 
+                     x:Name="CommandInputTextBox"
+                     ui:ControlHelper.PlaceholderText="{Binding [ConsoleCommand_EnterCommandTip], Source={x:Static i18n:Lang.Tr}}" 
+                     Height="32" 
+                     KeyDown="CommandInputTextBox_KeyDown" />
+            <Button Grid.Column="1" Height="32" Margin="10,0,0,0" Click="SendCommand_Click">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Send}" FontSize="16" />
                 </Button.Content>

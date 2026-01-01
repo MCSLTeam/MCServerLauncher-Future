@@ -6,8 +6,8 @@
              xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
-             d:DesignHeight="160" d:DesignWidth="400">
-    <Border x:Name="InstanceItem" Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="160"
+             d:DesignHeight="210" d:DesignWidth="400">
+    <Border x:Name="InstanceItem" Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="210"
             Width="400">
         <Grid>
             <Grid.RowDefinitions>
@@ -15,9 +15,22 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" x:Name="InstanceNameTextBlock" Style="{StaticResource SubtitleTextBlock}"
-                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,15,15,0" />
-            <Grid Grid.Row="1">
+
+            <!-- 选择框 -->
+            <CheckBox Grid.Row="0" x:Name="SelectCheckBox" VerticalAlignment="Top" HorizontalAlignment="Right" 
+                      Margin="0,15,15,0" Checked="SelectCheckBox_CheckedChanged" Unchecked="SelectCheckBox_CheckedChanged"/>
+
+            <!-- 标题和状态 -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,15,50,0">
+                <TextBlock x:Name="InstanceNameTextBlock" Style="{StaticResource SubtitleTextBlock}"
+                           VerticalAlignment="Center" />
+                <Border x:Name="StatusBadge" CornerRadius="10" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="StatusTextBlock" FontSize="12" FontWeight="SemiBold" />
+                </Border>
+            </StackPanel>
+
+            <!-- 信息区域 -->
+            <Grid Grid.Row="1" Margin="0,10,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -27,30 +40,72 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [InstanceType], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
+                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" 
+                           Text="{Binding [InstanceType], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
                            TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" Text="{Binding [CreateTime], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
-                           TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,15" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" 
+                           Text="{Binding [McVersion], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
+                           TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" 
+                           Text="{Binding [Players], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
+                           TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5" />
                 <TextBlock Grid.Row="0" Grid.Column="1" x:Name="InstanceTypeTextBlock" TextWrapping="Wrap"
                            FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5" />
-                <TextBlock Grid.Row="1" Grid.Column="2" x:Name="InstanceCreatedTimeTextBlock" TextWrapping="Wrap"
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="McVersionTextBlock" TextWrapping="Wrap"
+                           FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5" />
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="PlayerCountTextBlock" TextWrapping="Wrap"
                            FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5" />
             </Grid>
-            <Grid Grid.Row="2" HorizontalAlignment="Right">
+
+            <!-- 操作按钮区域 -->
+            <Grid Grid.Row="2" HorizontalAlignment="Right" Margin="0,10,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Style="{StaticResource AccentButtonStyle}" Margin="20,0,0,20">
+                <Button Grid.Column="0" Style="{StaticResource AccentButtonStyle}" Margin="20,0,0,20" Click="ConsoleButton_Click">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}" Content="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" />
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.View}" 
+                                        Content="{Binding [View], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
-                <Button Grid.Column="1" Margin="10,0,20,20">
-                    <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
-                    </Button.Content>
-                </Button>
+                <ui:DropDownButton Grid.Column="1" Margin="10,0,20,20" ShowChevronArrow="False">
+                    <ui:DropDownButton.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" 
+                                        Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
+                    </ui:DropDownButton.Content>
+                    <ui:DropDownButton.Flyout>
+                        <ui:MenuFlyout Placement="Bottom">
+                            <MenuItem x:Name="StartMenuItem" Header="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" Click="StartInstance_Click">
+                                <MenuItem.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem x:Name="StopMenuItem" Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" Click="StopInstance_Click">
+                                <MenuItem.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Stop}" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem x:Name="RestartMenuItem" Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}" Click="RestartInstance_Click" IsEnabled="False">
+                                <MenuItem.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem x:Name="KillMenuItem" Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}" Click="KillInstance_Click">
+                                <MenuItem.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem x:Name="DeleteMenuItem" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" Click="DeleteInstance_Click">
+                                <MenuItem.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ui:MenuFlyout>
+                    </ui:DropDownButton.Flyout>
+                </ui:DropDownButton>
             </Grid>
         </Grid>
     </Border>

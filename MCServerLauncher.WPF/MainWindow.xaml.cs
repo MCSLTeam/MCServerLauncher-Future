@@ -91,7 +91,7 @@ namespace MCServerLauncher.WPF
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>
-        private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
+        public void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
         {
             var preNavPageType = CurrentPage.Content.GetType();
             if (navPageType == preNavPageType) return;

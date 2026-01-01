@@ -418,6 +418,22 @@ public static class DaemonExtensions
     }
 
     /// <summary>
+    ///     Action: 重启实例（组合操作：Stop + Start）
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    public static async Task RestartInstanceAsync(this IDaemon daemon, Guid id, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        await daemon.StopInstanceAsync(id, timeout, ct);
+        // 等待一小段时间确保进程完全停止
+        await Task.Delay(1000, ct);
+        await daemon.StartInstanceAsync(id, timeout, ct);
+    }
+
+    /// <summary>
     ///     Action: 向实例发送消息
     /// </summary>
     /// <param name="daemon"></param>

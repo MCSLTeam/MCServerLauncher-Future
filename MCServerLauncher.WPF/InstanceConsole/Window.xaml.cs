@@ -1,14 +1,18 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
+using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.InstanceConsole.View.Pages;
+using MCServerLauncher.WPF.Modules;
+using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.InstanceConsole
 {
     /// <summary>
-    ///    Window.xaml 的交互逻辑
+    ///    Instance Console Window
     /// </summary>
     public partial class Window
     {
@@ -18,10 +22,75 @@ namespace MCServerLauncher.WPF.InstanceConsole
         private readonly Page _eventTrigger = new EventTriggerPage();
         private readonly Page _fileManager = new FileManagerPage();
 
+        private Constants.DaemonConfigModel? _daemonConfig;
+        private Guid _instanceId;
+
         public Window()
         {
             InitializeComponent();
-            CurrentPage.Navigate(_board);
+            Loaded += Window_Loaded;
+            Closing += Window_Closing;
+        }
+
+        /// <summary>
+        /// Initialize console window with daemon and instance information
+        /// </summary>
+        public void Initialize(Constants.DaemonConfigModel daemonConfig, Guid instanceId)
+        {
+            _daemonConfig = daemonConfig;
+            _instanceId = instanceId;
+
+            // Update window title
+            Title = $"Instance Console - {instanceId}";
+        }
+
+        private async void Window_Loaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (_daemonConfig == null || _instanceId == Guid.Empty)
+            {
+                Log.Error("[InstanceConsole] Window not properly initialized");
+                Notification.Push(
+                    "Error",
+                    "Instance console not properly initialized",
+                    true,
+                    iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
+                );
+                return;
+            }
+
+            try
+            {
+                // Initialize data manager
+                await InstanceDataManager.Instance.InitializeAsync(_daemonConfig, _instanceId);
+
+                // Navigate to board page
+                CurrentPage.Navigate(_board);
+
+                Log.Information("[InstanceConsole] Window loaded successfully for instance {0}", _instanceId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[InstanceConsole] Failed to load window");
+                Notification.Push(
+                    "Error",
+                    $"Failed to load instance console: {ex.Message}",
+                    true,
+                    iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
+                );
+            }
+        }
+
+        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                await InstanceDataManager.Instance.DisposeAsync();
+                Log.Information("[InstanceConsole] Window closed");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[InstanceConsole] Error during window close");
+            }
         }
 
         /// <summary>

@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <LangVersion>10</LangVersion>
     <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
+	<XamlDebuggingInformation>True</XamlDebuggingInformation>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>MCServerLauncher.WPF.App</StartupObject>
@@ -23,10 +24,12 @@
 	<Title>MCServerLauncher Future</Title>
 	<Description>A brand new server management tool</Description>
 	<Company>MCSLTeam</Company>
-	<Copyright>Copyright © 2022-2025 MCSLTeam. All rights reserved.</Copyright>
+	<Copyright>Copyright © 2022-2026 MCSLTeam. All rights reserved.</Copyright>
 	<Product>MCServerLauncher Future</Product>
 	<Version>1.0.0.0</Version>
 	<SignAssembly>False</SignAssembly>
+	<RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
+	<EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Resources\BuildInfo" />
@@ -113,7 +116,12 @@
   <ItemGroup>
     <Reference Include="sysglobl" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="InstanceConsole\Modules\" />
+  </ItemGroup>
+	<!--
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <Exec Command="pwsh ./GenerateBuildInfo.ps1" />
   </Target>
+  -->
 </Project>

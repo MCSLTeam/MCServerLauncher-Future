@@ -1,6 +1,7 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Modules.CreateInstance;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
@@ -98,7 +99,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                 if (mainWindow.FindName("CurrentPage") is Frame currentPage)
                 {
                     var resDownloadField = mainWindow.GetType().GetField("_resDownload",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        BindingFlags.NonPublic | BindingFlags.Instance);
 
                     if (resDownloadField != null)
                     {
@@ -133,24 +134,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
         private void GoResDownloadBack(object sender, RoutedEventArgs e)
         {
-            if (Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                if (mainWindow.FindName("CurrentPage") is Frame currentPage)
-                {
-                    var thisField = mainWindow.GetType().GetField("_createInstance",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (thisField != null)
-                    {
-                        var thisPage = thisField.GetValue(mainWindow);
-                        if (thisPage != null)
-                        {
-                            mainWindow.ToggleNavBarVisibility();
-                            currentPage.Navigate(thisPage);
-                        }
-                    }
-                }
-            }
+            VisualTreeHelper.Navigate("MCServerLauncher.WPF.View.Pages.ResDownloadPage", "_resDownload", true);
         }
     }
 }
