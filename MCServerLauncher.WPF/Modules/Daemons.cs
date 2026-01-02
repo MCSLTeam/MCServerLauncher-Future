@@ -32,6 +32,9 @@ namespace MCServerLauncher.WPF.Modules
                     Get =
                         JsonConvert.DeserializeObject<List<Constants.DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
                             Encoding.UTF8));
+                    if (Get is null) {
+                        Get = new List<Constants.DaemonConfigModel>();
+                    }
                 }
                 else
                 {
