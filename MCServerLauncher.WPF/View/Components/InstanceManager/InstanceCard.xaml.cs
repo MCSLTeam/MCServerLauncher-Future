@@ -1,6 +1,7 @@
 ﻿using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Pages;
 using Serilog;
 using System;
 using System.ComponentModel;
@@ -265,6 +266,10 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
             {
                 Log.Error(ex, "[InstanceCard] Failed to start instance {0}", InstanceId);
                 Notification.Push("Error", $"Failed to start instance: {ex.Message}", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+            }
+            finally
+            {
+
             }
         }
 

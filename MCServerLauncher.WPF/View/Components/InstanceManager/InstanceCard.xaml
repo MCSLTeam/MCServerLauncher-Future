@@ -44,7 +44,7 @@
                            Text="{Binding [InstanceType], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
                            TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5" />
                 <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" 
-                           Text="{Binding [McVersion], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
+                           Text="{Binding [MinecraftVersion], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"
                            TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,5,15,5" />
                 <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource MinititleTextBlock}" 
                            Text="{Binding [Players], StringFormat={}：, Source={x:Static i18n:Lang.Tr}}"

@@ -111,6 +111,7 @@ namespace MCServerLauncher.WPF.View.Pages
         {
 #pragma warning disable CS8602 // 解引用可能出现空引用。
             var daemonIndex = DaemonFilter.SelectedIndex;
+            Console.WriteLine(daemonIndex);
             if (DaemonsListManager.Get == null || daemonIndex >= DaemonsListManager.Get.Count)
                 return;
 
