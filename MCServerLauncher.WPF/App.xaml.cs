@@ -26,11 +26,13 @@ namespace MCServerLauncher.WPF
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
         }
 
+#pragma warning disable CS8603 // 可能返回 null 引用。
         public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version;
+#pragma warning restore CS8603 // 可能返回 null 引用。
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            new Initializer().InitApp();
+            Initializer.InitApp();
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
@@ -89,18 +91,18 @@ namespace MCServerLauncher.WPF
             }
         }
         
-        private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
             e.SetObserved();
-            
+
             var exception = e.Exception;
             string exceptionString = exception?.ToString() ?? "Unknown Task Err";
-            
+
             try
             {
                 Clipboard.SetText(exceptionString);
-                
-                Dispatcher.Invoke(() => 
+
+                Dispatcher.Invoke(() =>
                 {
                     new ExceptionWindow(exceptionString).ShowDialog();
                 });

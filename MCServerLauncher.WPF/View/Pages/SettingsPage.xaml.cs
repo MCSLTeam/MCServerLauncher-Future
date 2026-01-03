@@ -560,13 +560,13 @@ namespace MCServerLauncher.WPF.View.Pages
         private class BuildInfoModel
         {
             [System.Text.Json.Serialization.JsonPropertyName("buildTime")]
-            public string BuildTime { get; set; }
+            public string? BuildTime { get; set; }
 
             [System.Text.Json.Serialization.JsonPropertyName("commitHash")]
-            public string CommitHash { get; set; }
+            public string? CommitHash { get; set; }
 
             [System.Text.Json.Serialization.JsonPropertyName("branch")]
-            public string Branch { get; set; }
+            public string? Branch { get; set; }
         }
     }
 }

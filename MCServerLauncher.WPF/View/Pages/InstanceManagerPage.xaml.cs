@@ -94,6 +94,10 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async Task Refresh()
         {
+            if (!(DaemonsListManager.Get.Count > 0))
+            {
+
+            }
             RefreshButton.IsEnabled = false;
             DaemonFilter.IsEnabled = false;
             RunningStatusFilter.IsEnabled = false;
@@ -112,7 +116,7 @@ namespace MCServerLauncher.WPF.View.Pages
 #pragma warning disable CS8602 // 解引用可能出现空引用。
             var daemonIndex = DaemonFilter.SelectedIndex;
             Console.WriteLine(daemonIndex);
-            if (DaemonsListManager.Get == null || daemonIndex >= DaemonsListManager.Get.Count)
+            if (!(DaemonsListManager.Get.Count > 0) || daemonIndex + 1 >= DaemonsListManager.Get.Count)
                 return;
 
             var daemonConfig = DaemonsListManager.Get[daemonIndex];
@@ -148,7 +152,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 var instanceCard = new InstanceCard
                 {
                     InstanceId = instanceId,
-                    daemonAddr = currentDaemonConfig?.EndPoint,
+                    daemonAddr = currentDaemonConfig.EndPoint,
                     DaemonConfig = currentDaemonConfig,
                     InstanceName = report.Config.Name,
                     InstanceType = report.Config.InstanceType.ToString(),

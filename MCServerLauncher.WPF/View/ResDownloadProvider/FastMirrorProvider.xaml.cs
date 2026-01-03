@@ -119,7 +119,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         /// <param name="e"></param>
         private void OpenHomePage(object sender, RoutedEventArgs e)
         {
-            Network.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString());
+            Network.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString()!);
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         private async void GetCoreDetail(object sender, SelectionChangedEventArgs e)
         {
             var currentCore = (FastMirrorResCoreItem)CoreGridView.SelectedItem;
-            var currentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
+            var currentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString()!.Replace("Minecraft ", "");
             if (currentCore.CoreName == null || currentMinecraftVersion == null) return;
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;

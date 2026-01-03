@@ -80,7 +80,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
             }
         }
 
-        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private async void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             try
             {
@@ -103,7 +103,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
             if (args.IsSettingsInvoked)
                 NavigateTo(typeof(int), args.RecommendedNavigationTransitionInfo);
             else if (args.InvokedItemContainer != null)
-                NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()),
+                NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()!)!,
                     args.RecommendedNavigationTransitionInfo);
         }
 
@@ -112,7 +112,9 @@ namespace MCServerLauncher.WPF.InstanceConsole
         /// </summary>
         /// <param name="navPageType">Type of the page.</param>
         /// <param name="transitionInfo">Transition animation.</param>
-        private void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
+#pragma warning disable IDE0060 // 删除未使用的参数
+        private void NavigateTo(Type navPageType, NavigationTransitionInfo _transitionInfo)
+#pragma warning restore IDE0060 // 删除未使用的参数
         {
             var preNavPageType = CurrentPage.Content.GetType();
             if (navPageType == preNavPageType) return;

@@ -43,7 +43,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 _isDataLoading = true;
                 var ryFileInfo = await new AList().GetFileList("https://mirrors.rainyun.com", "服务端合集");
 
-                foreach (var coreItem in ryFileInfo.Select(result => new RainYunResCoreItem
+                foreach (var coreItem in ryFileInfo!.Select(result => new RainYunResCoreItem
                 {
                     CoreName = result.FileName
                 }))

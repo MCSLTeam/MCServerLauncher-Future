@@ -44,8 +44,22 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             Lang.Tr.ChangeLanguage(new CultureInfo(Lang.LanguageList.ElementAt(LanguageComboBox.SelectedIndex) ?? throw new InvalidOperationException()));
             SettingsManager.SaveSetting("App.Language", Lang.LanguageList.ElementAt(LanguageComboBox.SelectedIndex));
             // restart this app
-            Process.Start(Application.ResourceAssembly.Location);
-            Environment.Exit(0);
+            //var startInfo = new ProcessStartInfo
+            //{
+            //    FileName = Environment.ProcessPath!,
+            //    UseShellExecute = true,
+            //    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory
+            //};
+
+            //var args = Environment.GetCommandLineArgs();
+            //if (args.Length > 1)
+            //{
+            //    startInfo.Arguments = string.Join(" ", args.Skip(1).Select(arg =>
+            //        arg.Contains(' ') ? $"\"{arg}\"" : arg));
+            //}
+
+            //Process.Start(startInfo);
+            //Environment.Exit(0);
         }
     }
 }

@@ -110,7 +110,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         private async void GetCoreDetail(object sender, SelectionChangedEventArgs e)
         {
             var currentCore = (MCSLSyncResCoreItem)CoreGridView.SelectedItem;
-            var currentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString().Replace("Minecraft ", "");
+            var currentMinecraftVersion = MinecraftVersionComboBox.SelectedItem.ToString()!.Replace("Minecraft ", "");
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             Log.Information(
@@ -120,7 +120,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 var mcslSyncCoreVersions =
                     await new MCSLSync().GetCoreVersions(currentCore.CoreName, currentMinecraftVersion);
                 CoreVersionStackPanel.Children.Clear();
-                foreach (var coreDetailItem in mcslSyncCoreVersions.Select(detail => new MCSLSyncResCoreVersionItem
+                foreach (var coreDetailItem in mcslSyncCoreVersions!.Select(detail => new MCSLSyncResCoreVersionItem
                 {
                     Core = currentCore.CoreName,
                     CoreVersion = detail,

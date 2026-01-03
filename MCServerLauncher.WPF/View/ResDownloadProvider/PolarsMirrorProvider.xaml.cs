@@ -87,7 +87,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             Log.Information($"[Res] [PolarsMirror] Selected core \"{selectedCore.CoreName}\"");
             CurrentCoreName.Text = selectedCore.CoreName;
             CurrentCoreDescription.Text = selectedCore.CoreDescription;
-            CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(selectedCore.CoreIconUrl), BitmapCreateOptions.None,
+            CurrentCoreIcon.Source = BitmapFrame.Create(new Uri(selectedCore.CoreIconUrl!), BitmapCreateOptions.None,
                 BitmapCacheOption.OnDemand);
             CoreGridView.IsEnabled = false;
             try

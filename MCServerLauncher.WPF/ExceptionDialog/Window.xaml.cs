@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 
 namespace MCServerLauncher.WPF.ExceptionDialog
@@ -28,7 +29,21 @@ namespace MCServerLauncher.WPF.ExceptionDialog
 
         private void RestartApp(object sender, RoutedEventArgs e)
         {
-            Process.Start(Application.ResourceAssembly.Location);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Environment.ProcessPath!,
+                UseShellExecute = true,
+                WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory
+            };
+
+            var args = Environment.GetCommandLineArgs();
+            if (args.Length > 1)
+            {
+                startInfo.Arguments = string.Join(" ", args.Skip(1).Select(arg =>
+                    arg.Contains(' ') ? $"\"{arg}\"" : arg));
+            }
+
+            Process.Start(startInfo);
             Environment.Exit(0);
         }
 

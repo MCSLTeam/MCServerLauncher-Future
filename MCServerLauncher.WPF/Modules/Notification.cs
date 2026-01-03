@@ -2,10 +2,12 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.View.Components.Generic;
 using Microsoft.Toolkit.Uwp.Notifications;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Threading;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -97,10 +99,104 @@ namespace MCServerLauncher.WPF.Modules
             NotificationContainer.Instance.AddNotification(infoBar, position, durationMs);
             if (systemNotify)
             {
+                ShowSystemNotification(title, message, severity);
+            }
+        }
+
+        private static void ShowSystemNotification(string title, string message, InfoBarSeverity severity)
+        {
+            try
+            {
+                var osVersion = Environment.OSVersion.Version;
+                
+                if (osVersion.Major >= 10)
+                {
+                    ShowToastNotification(title, message);
+                }
+                else if (osVersion.Major >= 6)
+                {
+                    ShowBalloonNotification(title, message, severity);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static void ShowToastNotification(string title, string message)
+        {
+            try
+            {
                 new ToastContentBuilder()
-                .AddText(title)
-                .AddText(message)
-                .Show();
+                    .AddText(title)
+                    .AddText(message)
+                    .Show();
+            }
+            catch
+            {
+            }
+        }
+
+        private static void ShowBalloonNotification(string title, string message, InfoBarSeverity severity)
+        {
+            try
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    var notifyIcon = new System.Windows.Forms.NotifyIcon
+                    {
+                        Visible = true,
+                        Icon = System.Drawing.SystemIcons.Information,
+                        BalloonTipTitle = title,
+                        BalloonTipText = message
+                    };
+
+                    switch (severity)
+                    {
+                        case InfoBarSeverity.Error:
+                            notifyIcon.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Error;
+                            notifyIcon.Icon = System.Drawing.SystemIcons.Error;
+                            break;
+                        case InfoBarSeverity.Warning:
+                            notifyIcon.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Warning;
+                            notifyIcon.Icon = System.Drawing.SystemIcons.Warning;
+                            break;
+                        case InfoBarSeverity.Success:
+                            notifyIcon.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
+                            notifyIcon.Icon = System.Drawing.SystemIcons.Information;
+                            break;
+                        default:
+                            notifyIcon.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
+                            notifyIcon.Icon = System.Drawing.SystemIcons.Information;
+                            break;
+                    }
+
+                    notifyIcon.ShowBalloonTip(3000);
+
+                    notifyIcon.BalloonTipClosed += (s, e) =>
+                    {
+                        notifyIcon.Visible = false;
+                        notifyIcon.Dispose();
+                    };
+
+                    var timer = new DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromSeconds(5)
+                    };
+                    timer.Tick += (s, e) =>
+                    {
+                        timer.Stop();
+                        if (notifyIcon != null)
+                        {
+                            notifyIcon.Visible = false;
+                            notifyIcon.Dispose();
+                        }
+                    };
+                    timer.Start();
+                });
+            }
+            catch
+            {
             }
         }
     }
