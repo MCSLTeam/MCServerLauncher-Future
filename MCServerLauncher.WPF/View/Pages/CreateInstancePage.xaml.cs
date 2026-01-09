@@ -1,6 +1,8 @@
 ﻿using iNKORE.UI.WPF.Controls;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.CreateInstanceProvider;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,8 +22,33 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             InitializeComponent();
             CurrentCreateInstance.Content = PreCreateInstance;
+            IsVisibleChanged += (s, e) =>
+            {
+                if (IsVisible) ValidateFuncAvailable();
+            };
         }
 
+        private void ValidateFuncAvailable()
+        {
+            if (!(DaemonsListManager.Get!.Count > 0))
+            {
+                ShowNoDaemonLayer();
+                return;
+            }
+            StopTipLayer.Visibility = Visibility.Collapsed;
+            CurrentCreateInstance.Visibility = Visibility.Visible;
+        }
+        private void ShowNoDaemonLayer()
+        {
+            CurrentCreateInstance.Visibility = Visibility.Collapsed;
+            StopTipLayer.Visibility = Visibility.Collapsed;
+            StopTipLayer.Symbol = "❌";
+            StopTipLayer.StopTip = Lang.Tr["FuncDisabled"];
+            StopTipLayer.StopDescription = Lang.Tr["FuncDisabledReason_NoDaemon"];
+            StopTipLayer.ButtonIcon = SegoeFluentIcons.ConnectApp;
+            StopTipLayer.ButtonText = Lang.Tr["ConnectDaemon"];
+            StopTipLayer.Visibility = Visibility.Visible;
+        }
         #region Creeate Instance Pages
 
         public UserControl NewPreMinecraftInstancePage()
@@ -105,7 +132,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public async Task<(ContentDialogResult, ListView)> SelectDaemon()
         {
-            var daemonDisplayNames = DaemonsListManager.Get
+            var daemonDisplayNames = DaemonsListManager.Get!
                 .Select(daemon => $"{daemon.FriendlyName} [{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}]");
             ScrollViewerEx scroll = new()
             {

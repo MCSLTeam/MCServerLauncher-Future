@@ -80,7 +80,7 @@
         </Grid>
         <fs:FirstSetup Grid.Row="1" Visibility="Hidden" x:Name="SetupView" />
         <ui:NavigationView Visibility="Hidden" x:Name="NavView"
-                           IsPaneOpen="False"
+                           IsPaneOpen="True"
                            ItemInvoked="NavigationTriggered"
                            IsBackButtonVisible="Collapsed"
                            PaneDisplayMode="Auto"

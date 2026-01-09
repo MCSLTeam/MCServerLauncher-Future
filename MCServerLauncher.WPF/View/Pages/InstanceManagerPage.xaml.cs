@@ -25,7 +25,7 @@ namespace MCServerLauncher.WPF.View.Pages
     /// </summary>
     public partial class InstanceManagerPage : INotifyPropertyChanged
     {
-        private readonly List<InstanceCard> _allInstanceCards = new();
+        private readonly List<InstanceCard> _allInstanceCards = [];
         private int _selectedCount = 0;
 
         public InstanceManagerPage()
@@ -38,8 +38,6 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 if (IsVisible) RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             };
-            ContainerEmptyTip.ActionButton.Click += GoCreateInstance;
-            ContainerEmptyTip.ActionButton.Content = new IconAndText() { Icon = SegoeFluentIcons.Add, Content = Lang.Tr["Main_CreateInstanceNavMenu"] };
         }
 
         private ObservableCollection<string> _daemonFilterItems;
@@ -59,8 +57,7 @@ namespace MCServerLauncher.WPF.View.Pages
         private void LoadDaemonFilterItems()
         {
             DaemonFilter.IsEnabled = false;
-            DaemonFilterItems = new ObservableCollection<string>();
-#pragma warning disable CS8602 // 解引用可能出现空引用。
+            DaemonFilterItems = [];
             if (DaemonsListManager.Get?.Count > 0)
             {
                 var daemonDisplayNames = DaemonsListManager.Get
@@ -73,12 +70,11 @@ namespace MCServerLauncher.WPF.View.Pages
             
             DaemonFilter.SelectedIndex = 0;
             DaemonFilter.IsEnabled = true;
-#pragma warning restore CS8602 // 解引用可能出现空引用。
         }
         
         private async void DaemonFilterChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is not ComboBox comboBox) return;
+            if (sender is not ComboBox) return;
             await Refresh();
         }
 
@@ -94,15 +90,16 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async Task Refresh()
         {
-            if (!(DaemonsListManager.Get.Count > 0))
+            _allInstanceCards.Clear();
+            InstanceCardGrid.Items.Clear();
+            if (!(DaemonsListManager.Get!.Count > 0))
             {
-
+                ShowNoDaemonLayer();
+                return;
             }
             RefreshButton.IsEnabled = false;
             DaemonFilter.IsEnabled = false;
             RunningStatusFilter.IsEnabled = false;
-            _allInstanceCards.Clear();
-            InstanceCardGrid.Items.Clear();
             ShowLoadingLayer();
             await LoadDaemonInstances();
             ApplyFilters();
@@ -113,33 +110,38 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async Task LoadDaemonInstances()
         {
-#pragma warning disable CS8602 // 解引用可能出现空引用。
+            StopTipLayer.Visibility = Visibility.Collapsed;
             var daemonIndex = DaemonFilter.SelectedIndex;
-            Console.WriteLine(daemonIndex);
-            if (!(DaemonsListManager.Get.Count > 0) || daemonIndex + 1 >= DaemonsListManager.Get.Count)
+            if (!(DaemonsListManager.Get!.Count > 0) || daemonIndex + 1 >= DaemonsListManager.Get!.Count)
+            {
+                HideLoadingLayer();
+                ShowNoDaemonLayer();
                 return;
+            }
 
             var daemonConfig = DaemonsListManager.Get[daemonIndex];
             try
             {
                 var daemon = await DaemonsWsManager.Get(daemonConfig);
-                var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon);
+                var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon!);
                 await AddInstanceCards(instanceReports);
             }
             catch (Exception ex)
             {
-                ContainerEmptyTip.Visibility = Visibility.Visible;
                 InstanceCardGrid.Visibility = Visibility.Collapsed;
+                ShowLoadErrorLayer();
                 Log.Error($"[InstanceManager] Failed to load instances from daemon {daemonConfig.EndPoint}:{daemonConfig.Port}: {ex.Message}");
             }
             HideLoadingLayer();
-#pragma warning restore CS8602 // 解引用可能出现空引用。
         }
 
         private async Task AddInstanceCards(Dictionary<Guid, InstanceReport> instanceReports)
         {
             if (instanceReports == null || instanceReports.Count == 0)
+            {
+                ShowNoInstanceLayer();
                 return;
+            }
 
             // Get current daemon config
             var currentDaemonConfig = DaemonsListManager.Get?[DaemonFilter.SelectedIndex];
@@ -152,7 +154,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 var instanceCard = new InstanceCard
                 {
                     InstanceId = instanceId,
-                    daemonAddr = currentDaemonConfig.EndPoint,
+                    daemonAddr = currentDaemonConfig!.EndPoint!,
                     DaemonConfig = currentDaemonConfig,
                     InstanceName = report.Config.Name,
                     InstanceType = report.Config.InstanceType.ToString(),
@@ -168,6 +170,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
                 _allInstanceCards.Add(instanceCard);
             }
+            EnableFilterControls();
         }
 
         private void InstanceCard_SelectionChanged(object? sender, bool isSelected)
@@ -211,9 +214,9 @@ namespace MCServerLauncher.WPF.View.Pages
             }
         }
 
-        public void ShowLoadingLayer()
+        private void ShowLoadingLayer()
         {
-            ContainerEmptyTip.Visibility = Visibility.Collapsed;
+            StopTipLayer.Visibility = Visibility.Collapsed;
             InstanceCardGrid.Visibility = Visibility.Visible;
             LoadingLayer.Visibility = Visibility.Visible;
             var fadeInAnimation = new DoubleAnimation
@@ -226,7 +229,7 @@ namespace MCServerLauncher.WPF.View.Pages
             LoadingLayer.BeginAnimation(OpacityProperty, fadeInAnimation);
         }
 
-        public void HideLoadingLayer()
+        private void HideLoadingLayer()
         {
             var fadeOutAnimation = new DoubleAnimation
             {
@@ -237,10 +240,63 @@ namespace MCServerLauncher.WPF.View.Pages
             };
             fadeOutAnimation.Completed += (s, e) =>
             {
-                LoadingLayer.Visibility = Visibility.Hidden;
+                LoadingLayer.Visibility = Visibility.Collapsed;
             };
             LoadingLayer.BeginAnimation(OpacityProperty, fadeOutAnimation);
         }
+        private void DisableFilterControls()
+        {
+            DaemonFilter.Visibility = Visibility.Collapsed;
+            RunningStatusFilter.Visibility = Visibility.Collapsed;
+            SearchTextBox.Visibility = Visibility.Collapsed;
+            RefreshButton.Visibility = Visibility.Collapsed;
+        }
+        private void EnableFilterControls()
+        {
+            DaemonFilter.Visibility = Visibility.Visible;
+            RunningStatusFilter.Visibility = Visibility.Visible;
+            SearchTextBox.Visibility = Visibility.Visible;
+            RefreshButton.Visibility = Visibility.Visible;
+        }
+        private void ShowNoDaemonLayer()
+        {
+            LoadingLayer.Visibility = Visibility.Collapsed;
+            InstanceCardGrid.Visibility = Visibility.Collapsed;
+            DisableFilterControls();
+            StopTipLayer.Visibility = Visibility.Collapsed;
+            StopTipLayer.Symbol = "❌";
+            StopTipLayer.StopTip = Lang.Tr["FuncDisabled"];
+            StopTipLayer.StopDescription = Lang.Tr["FuncDisabledReason_NoDaemon"];
+            StopTipLayer.ButtonIcon = SegoeFluentIcons.ConnectApp;
+            StopTipLayer.ButtonText = Lang.Tr["ConnectDaemon"];
+            StopTipLayer.Visibility = Visibility.Visible;
+        }
+        private void ShowNoInstanceLayer()
+        {
+            LoadingLayer.Visibility = Visibility.Collapsed;
+            InstanceCardGrid.Visibility = Visibility.Collapsed;
+            StopTipLayer.Visibility = Visibility.Collapsed;
+            StopTipLayer.Symbol = "🤔";
+            StopTipLayer.StopTip = Lang.Tr["NothingHere"];
+            StopTipLayer.StopDescription = Lang.Tr["TryAddSomething"];
+            StopTipLayer.ButtonIcon = SegoeFluentIcons.AddTo;
+            StopTipLayer.ButtonText = Lang.Tr["Main_CreateInstanceNavMenu"];
+            StopTipLayer.Visibility = Visibility.Visible;
+        }
+
+        private void ShowLoadErrorLayer()
+        {
+            LoadingLayer.Visibility = Visibility.Collapsed;
+            InstanceCardGrid.Visibility = Visibility.Collapsed;
+            StopTipLayer.Visibility = Visibility.Collapsed;
+            StopTipLayer.Symbol = "❌";
+            StopTipLayer.StopTip = Lang.Tr["ConnectDaemonFailedTip"];
+            StopTipLayer.StopDescription = Lang.Tr["ConnectDaemonFailedSubTip"];
+            StopTipLayer.ButtonIcon = SegoeFluentIcons.RestartUpdate;
+            StopTipLayer.ButtonText = Lang.Tr["Refresh"];
+            StopTipLayer.Visibility = Visibility.Visible;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)

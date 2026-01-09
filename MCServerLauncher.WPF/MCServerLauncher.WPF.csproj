@@ -99,6 +99,11 @@
   <ItemGroup>
     <Folder Include="InstanceConsole\Modules\" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="View\Components\Generic\StopTipLayer.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
   <!--
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <Exec Command="pwsh ./GenerateBuildInfo.ps1" />

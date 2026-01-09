@@ -26,7 +26,7 @@
                    TextWrapping="WrapWithOverflow" HorizontalAlignment="Left" />
         <Button Grid.Row="2" Margin="40,10,40,0" Click="AddDaemonConnection">
             <Button.Content>
-                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
+                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.ConnectApp}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
             </Button.Content>
         </Button>
         <ui:ScrollViewerEx Grid.Row="3" Margin="35,10,35,10">
