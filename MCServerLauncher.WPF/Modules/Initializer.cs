@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using static MCServerLauncher.WPF.App;
 
 namespace MCServerLauncher.WPF.Modules
@@ -256,7 +257,7 @@ namespace MCServerLauncher.WPF.Modules
         /// <summary>
         ///    Initialize program.
         /// </summary>
-        public static void InitApp()
+        public async static Task InitApp()
         {
             InitLogger();
             Log.Information($"[Exe] MCServerLauncher Future v{AppVersion}");
@@ -286,7 +287,7 @@ namespace MCServerLauncher.WPF.Modules
             }
             
             Lang.Tr.ChangeLanguage(new CultureInfo(SettingsManager.Get?.App?.Language ?? throw new InvalidOperationException()));
-            DaemonsWsManager.CreateAllDaemonWsAsync().Wait();
+            await DaemonsWsManager.CreateAllDaemonWsAsync();
         }
     }
 }

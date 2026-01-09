@@ -30,9 +30,9 @@ namespace MCServerLauncher.WPF
         public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version;
 #pragma warning restore CS8603 // 可能返回 null 引用。
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected async override void OnStartup(StartupEventArgs e)
         {
-            Initializer.InitApp();
+            await Initializer.InitApp();
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
             {
