@@ -1,4 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using iNKORE.UI.WPF.Modern.Controls;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -12,6 +13,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         public StopTipLayer()
         {
             InitializeComponent();
+            UpdateButtonContent();
         }
 
         public static readonly DependencyProperty SymbolProperty =
@@ -42,7 +44,8 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         }
 
         public static readonly DependencyProperty ButtonTextProperty =
-            DependencyProperty.Register(nameof(ButtonText), typeof(string), typeof(StopTipLayer), new PropertyMetadata(default(string)));
+            DependencyProperty.Register(nameof(ButtonText), typeof(string), typeof(StopTipLayer),
+                new PropertyMetadata(default(string), OnButtonContentChanged));
 
         public string ButtonText
         {
@@ -51,12 +54,34 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         }
 
         public static readonly DependencyProperty ButtonIconProperty =
-            DependencyProperty.Register(nameof(ButtonIcon), typeof(FontIconData), typeof(StopTipLayer), new PropertyMetadata(default(FontIconData)));
+            DependencyProperty.Register(nameof(ButtonIcon), typeof(FontIconData), typeof(StopTipLayer),
+                new PropertyMetadata(default(FontIconData), OnButtonContentChanged));
 
         public FontIconData ButtonIcon
         {
             get => (FontIconData)GetValue(ButtonIconProperty);
             set => SetValue(ButtonIconProperty, value);
+        }
+
+        private static void OnButtonContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is StopTipLayer ctl)
+            {
+                ctl.UpdateButtonContent();
+            }
+        }
+
+        private void UpdateButtonContent()
+        {
+            if (ActionButton == null)
+                return;
+
+            ActionButton.Content = new IconAndText
+            {
+                IsTabStop = false,
+                Icon = ButtonIcon,
+                Content = ButtonText
+            };
         }
     }
 }

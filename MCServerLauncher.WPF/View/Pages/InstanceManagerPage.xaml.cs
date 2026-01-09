@@ -112,7 +112,7 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             StopTipLayer.Visibility = Visibility.Collapsed;
             var daemonIndex = DaemonFilter.SelectedIndex;
-            if (!(DaemonsListManager.Get!.Count > 0) || daemonIndex + 1 >= DaemonsListManager.Get!.Count)
+            if (!(DaemonsListManager.Get!.Count > 0))
             {
                 HideLoadingLayer();
                 ShowNoDaemonLayer();
@@ -292,7 +292,7 @@ namespace MCServerLauncher.WPF.View.Pages
             StopTipLayer.Symbol = "❌";
             StopTipLayer.StopTip = Lang.Tr["ConnectDaemonFailedTip"];
             StopTipLayer.StopDescription = Lang.Tr["ConnectDaemonFailedSubTip"];
-            StopTipLayer.ButtonIcon = SegoeFluentIcons.RestartUpdate;
+            StopTipLayer.ButtonIcon = SegoeFluentIcons.Sync;
             StopTipLayer.ButtonText = Lang.Tr["Refresh"];
             StopTipLayer.Visibility = Visibility.Visible;
         }

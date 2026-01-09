@@ -17,31 +17,20 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="1" Grid.Row="1"
+        <TextBlock Grid.Row="1"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
                    Text="{Binding Symbol, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    FontFamily="Segoe UI Symbol" FontSize="80" />
-        <TextBlock Grid.Column="1" Grid.Row="2"
+        <TextBlock Grid.Row="2"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
                    Text="{Binding StopTip, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    Style="{StaticResource TitleTextBlock}"/>
-        <TextBlock Grid.Column="1" Grid.Row="3"
+        <TextBlock Grid.Row="3"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
                    Text="{Binding StopDescription, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    Style="{StaticResource BodyTextBlock}" Margin="0,10,0,0"/>
-        <Button Grid.Column="1" Grid.Row="4"
+        <Button Grid.Row="4"
                 VerticalAlignment="Top" HorizontalAlignment="Center"
-                Width="120" Margin="0,20,0,0" x:Name="ActionButton">
-            <Button.Content>
-                <ui:IconAndText IsTabStop="False"
-                                Icon="{Binding ButtonIcon, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                Content="{Binding ButtonText, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}" />
-            </Button.Content>
-        </Button>
+                Width="120" Margin="0,20,0,0" x:Name="ActionButton" />
     </Grid>
 </UserControl>
