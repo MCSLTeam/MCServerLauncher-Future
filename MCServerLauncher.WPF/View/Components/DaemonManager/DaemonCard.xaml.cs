@@ -117,6 +117,12 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     FriendlyName = FriendlyName
                 });
 
+                if (daemon == null)
+                {
+                    Status = "err";
+                    return false;
+                }
+
                 var systemInfo = await daemon.GetSystemInfoAsync();
 
                 var systemName = systemInfo.Os.Name;
@@ -139,29 +145,61 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             }
         }
 
-        private async Task<bool> DeleteDaemonAsync()
+        public event Func<Task>? EditRequested;
+        public event Func<Task>? DeleteRequested;
+
+        private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            if (EditRequested != null)
             {
-                await DaemonsWsManager.Remove(new Constants.DaemonConfigModel
-                {
-                    EndPoint = EndPoint,
-                    Port = Port,
-                    Token = Token,
-                    IsSecure = IsSecure,
-                    FriendlyName = FriendlyName
-                });
+                await EditRequested.Invoke();
             }
-            catch { }
-            DaemonsListManager.RemoveDaemon(new Constants.DaemonConfigModel
+        }
+
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 显示确认对话框
+            var dialog = new ContentDialog
             {
-                EndPoint = EndPoint,
-                Port = Port,
-                Token = Token,
-                IsSecure = IsSecure,
-                FriendlyName = FriendlyName
-            });
-            return true;
+                Title = Lang.Tr["ConfirmDelete"],
+                Content = string.Format(Lang.Tr["ConfirmDeleteDaemonMessage"] ?? "Are you sure you want to delete daemon '{0}'?", FriendlyName),
+                PrimaryButtonText = Lang.Tr["Delete"],
+                CloseButtonText = Lang.Tr["Cancel"],
+                DefaultButton = ContentDialogButton.Close
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                try
+                {
+                    // 断开连接
+                    await DaemonsWsManager.Remove(new Constants.DaemonConfigModel
+                    {
+                        EndPoint = EndPoint,
+                        Port = Port,
+                        Token = Token,
+                        IsSecure = IsSecure,
+                        FriendlyName = FriendlyName
+                    });
+
+                    // 触发删除事件，通知父级移除此卡片
+                    if (DeleteRequested != null)
+                    {
+                        await DeleteRequested.Invoke();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[Daemon] Error occurred when deleting daemon: {ex}");
+                }
+            }
+        }
+
+        private void RealtimeLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 实时日志功能暂不实现
+            // TODO: 未来实现实时日志查看功能
         }
     }
 }

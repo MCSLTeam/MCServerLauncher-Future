@@ -1,4 +1,5 @@
 ﻿using Downloader;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using System;
@@ -216,8 +217,6 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             }
             else
             {
-                ContinueIconAndText.Visibility = Visibility.Visible;
-                PauseIconAndText.Visibility = Visibility.Hidden;
                 DownloadServiceInstance.Pause();
             }
         }

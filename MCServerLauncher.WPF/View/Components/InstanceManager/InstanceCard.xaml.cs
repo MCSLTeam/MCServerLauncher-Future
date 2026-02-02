@@ -1,7 +1,6 @@
 ﻿using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Pages;
 using Serilog;
 using System;
 using System.ComponentModel;

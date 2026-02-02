@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
              xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:emoji="http://schemas.inkore.net/lib/ui/wpf/emojis"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -17,10 +18,10 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="1"
+        <emoji:EmojiedTextBlock Grid.Row="1"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
                    Text="{Binding Symbol, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                   FontFamily="Segoe UI Symbol" FontSize="80" />
+                   FontSize="80" />
         <TextBlock Grid.Row="2"
                    VerticalAlignment="Center" HorizontalAlignment="Center"
                    Text="{Binding StopTip, RelativeSource={RelativeSource AncestorType=UserControl}}"

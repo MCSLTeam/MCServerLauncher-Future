@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.View.Components
         private static readonly string _windowsIllegalChars = new string(System.IO.Path.GetInvalidFileNameChars()) + System.IO.Path.GetInvalidPathChars();
         private static readonly List<string> _windowsIllegalCharsFolderName = new List<string> { "aux", "com1", "com2", "prn", "con", "lpt1", "lpt2", "nul" };
 
-        public static Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endPoint = "", string port = "", bool isSecure = false, string token = "", string name = "", bool isRetrying = false)
+        public static Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endPoint = "", string port = "", bool isSecure = false, string token = "", string name = "", bool isRetrying = false, bool isEditing = false)
         {
             NewDaemonConnectionInput newDaemonConnectionInput = new();
             newDaemonConnectionInput.wsEdit.Text = endPoint;
@@ -21,10 +21,14 @@ namespace MCServerLauncher.WPF.View.Components
             newDaemonConnectionInput.WebSocketScheme.SelectedIndex = isSecure ? 1 : 0;
             newDaemonConnectionInput.tokenEdit.Password = token;
             newDaemonConnectionInput.friendlyNameEdit.Text = name;
+            
+            string title = isEditing ? "EditDaemon" : (isRetrying ? "ConnectDaemonFailedTip" : "ConnectDaemon");
+            string primaryButtonText = isEditing ? "Save" : "Connect";
+            
             ContentDialog dialog = new()
             {
-                Title = Lang.Tr[isRetrying ? "ConnectDaemonFailedTip" : "ConnectDaemon"],
-                PrimaryButtonText = Lang.Tr["Connect"],
+                Title = Lang.Tr[title],
+                PrimaryButtonText = Lang.Tr[primaryButtonText],
                 SecondaryButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,

@@ -43,18 +43,18 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <MenuItem Header="{Binding [ShowRealtimeLog], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [ShowRealtimeLog], Source={x:Static i18n:Lang.Tr}}" Click="RealtimeLogButton_Click">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CommandPrompt}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}" Click="EditButton_Click">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Edit}"
                              FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" Click="DeleteButton_Click">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"
                              FontSize="16" />
