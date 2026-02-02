@@ -1,8 +1,7 @@
 ﻿<Application x:Class="MCServerLauncher.WPF.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-             StartupUri="MainWindow.xaml">
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
