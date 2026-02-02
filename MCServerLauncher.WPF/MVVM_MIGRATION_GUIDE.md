@@ -243,14 +243,20 @@ public partial class MyViewModel : ViewModelBase
 - MainWindow (navigation service integration)
 - App.xaml.cs (DI container configuration)
 - Backward compatibility wrapper
+- **Components and Providers ViewModels**:
+  - FirstSetupHelper ViewModels (5 ViewModels)
+  - Provider ViewModels (15 ViewModels)
+  - All registered in DI container
 
 ### 🔄 Partially Complete
 - SettingsPage.xaml - Still uses original binding approach (works with current implementation)
 - Complex pages (CreateInstance, DaemonManager, etc.) - Have basic ViewModel structure, full logic TODO
+- **Components/Providers** - Have ViewModels registered, code-behind updates TODO
 
 ### ❌ Not Started
 - DebugPage - Not migrated, navigates directly as before
 - Complete XAML binding migration for SettingsPage
+- Full implementation of Components/Providers with constructor injection
 
 ## Benefits Achieved
 
@@ -271,10 +277,15 @@ public partial class MyViewModel : ViewModelBase
 
 1. Update SettingsPage.xaml to bind directly to ViewModel properties
 2. Implement full logic in complex page ViewModels (CreateInstance, DaemonManager, etc.)
-3. Migrate DebugPage to MVVM
-4. Add unit tests for ViewModels
-5. Consider using `ObservableCollection` for dynamic data in ViewModels
-6. Add validation logic using `INotifyDataErrorInfo`
+3. **Update Components and Providers code-behind to use constructor injection**:
+   - FirstSetupHelper components (5 components)
+   - CreateInstanceProvider components (8 providers)
+   - ResDownloadProvider components (5 providers)
+   - PreCreateInstanceProvider components (2 providers)
+4. Migrate DebugPage to MVVM
+5. Add unit tests for ViewModels
+6. Consider using `ObservableCollection` for dynamic data in ViewModels
+7. Add validation logic using `INotifyDataErrorInfo`
 
 ## Notes
 

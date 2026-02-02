@@ -3,6 +3,8 @@ using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.Services.Interfaces;
 using MCServerLauncher.WPF.View.Pages;
 using MCServerLauncher.WPF.ViewModels;
+using MCServerLauncher.WPF.ViewModels.FirstSetupHelper;
+using MCServerLauncher.WPF.ViewModels.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -47,7 +49,7 @@ namespace MCServerLauncher.WPF
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddSingleton<INavigationService, NavigationService>();
 
-            // ViewModels (Transient)
+            // Page ViewModels (Transient)
             services.AddTransient<MainWindowViewModel>();
             services.AddTransient<HomePageViewModel>();
             services.AddTransient<CreateInstancePageViewModel>();
@@ -57,7 +59,31 @@ namespace MCServerLauncher.WPF
             services.AddTransient<HelpPageViewModel>();
             services.AddTransient<SettingsPageViewModel>();
 
-            // Views (Transient)
+            // FirstSetupHelper ViewModels (Transient)
+            services.AddTransient<FirstSetupViewModel>();
+            services.AddTransient<WelcomeSetupPageViewModel>();
+            services.AddTransient<LanguageSetupPageViewModel>();
+            services.AddTransient<EulaSetupPageViewModel>();
+            services.AddTransient<DaemonSetupPageViewModel>();
+
+            // Provider ViewModels (Transient)
+            services.AddTransient<PreCreateInstanceViewModel>();
+            services.AddTransient<PreCreateMinecraftInstanceViewModel>();
+            services.AddTransient<FastMirrorProviderViewModel>();
+            services.AddTransient<PolarsMirrorProviderViewModel>();
+            services.AddTransient<MCSLSyncProviderViewModel>();
+            services.AddTransient<MSLAPIProviderViewModel>();
+            services.AddTransient<RainYunProviderViewModel>();
+            services.AddTransient<CreateMinecraftJavaInstanceProviderViewModel>();
+            services.AddTransient<CreateMinecraftForgeInstanceProviderViewModel>();
+            services.AddTransient<CreateMinecraftNeoForgeInstanceProviderViewModel>();
+            services.AddTransient<CreateMinecraftFabricInstanceProviderViewModel>();
+            services.AddTransient<CreateMinecraftQuiltInstanceProviderViewModel>();
+            services.AddTransient<CreateMinecraftBedrockInstanceProviderViewModel>();
+            services.AddTransient<CreateTerrariaInstanceProviderViewModel>();
+            services.AddTransient<CreateOtherExecutableInstanceProviderViewModel>();
+
+            // Main Views (Transient)
             services.AddTransient<MainWindow>();
             services.AddTransient<HomePage>();
             services.AddTransient<CreateInstancePage>();
@@ -66,6 +92,9 @@ namespace MCServerLauncher.WPF
             services.AddTransient<ResDownloadPage>();
             services.AddTransient<HelpPage>();
             services.AddTransient<SettingsPage>();
+
+            // Note: Component views are typically created directly with 'new' as needed
+            // They can be registered here if they need dependency injection
         }
 
 #pragma warning disable CS8603 // 可能返回 null 引用。
