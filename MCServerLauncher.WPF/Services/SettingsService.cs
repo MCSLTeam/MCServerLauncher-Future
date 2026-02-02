@@ -13,6 +13,10 @@ namespace MCServerLauncher.WPF.Services
         public void Initialize()
         {
             SettingsManager.InitSettings();
+            // Initialize legacy static wrapper for backward compatibility
+#pragma warning disable CS0618 // Type or member is obsolete
+            SettingsManagerLegacy.Initialize(this);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public void SaveSetting<T>(string settingPath, T value)

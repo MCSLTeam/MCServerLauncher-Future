@@ -9,6 +9,28 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.WPF.Modules
 {
+    /// <summary>
+    /// Static wrapper for backward compatibility with existing code.
+    /// New code should use ISettingsService via dependency injection.
+    /// </summary>
+    [Obsolete("Use ISettingsService via DI instead")]
+    public static class SettingsManagerLegacy
+    {
+        private static Services.Interfaces.ISettingsService? _instance;
+
+        internal static void Initialize(Services.Interfaces.ISettingsService service)
+        {
+            _instance = service;
+        }
+
+        public static SettingsManager.Settings? Get => _instance?.CurrentSettings;
+
+        public static void SaveSetting<T>(string settingPath, T value)
+        {
+            _instance?.SaveSetting(settingPath, value);
+        }
+    }
+
     public class SettingsManager
     {
         private static Task _writeTask = Task.CompletedTask;
