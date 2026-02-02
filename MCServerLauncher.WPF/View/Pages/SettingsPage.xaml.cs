@@ -18,9 +18,14 @@ namespace MCServerLauncher.WPF.View.Pages
             InitializeComponent();
             DataContext = viewModel;
 
+            // Set text for version and build info from ViewModel
+            // These use x:Name in XAML instead of binding for backward compatibility
+            AboutVersionReplacer.Text = viewModel.VersionInfo;
+            BuildInfoReplacer.Text = viewModel.BuildInfo;
+
             // Note: Most logic has been moved to SettingsPageViewModel.
             // The ViewModel handles all settings through data binding and property change handlers.
-            // Remaining code here is only for XAML compatibility with legacy RadioButton event handlers.
+            // Remaining code here is only for XAML compatibility with legacy controls.
         }
 
         // Keep debug mode toggle for development purposes (UI-only concern)

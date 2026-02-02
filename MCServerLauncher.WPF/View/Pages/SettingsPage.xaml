@@ -149,7 +149,7 @@
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
                                       Title="{Binding [Settings_FollowStartupForLauncher_Title], Source={x:Static i18n:Lang.Tr}}"
                                       Description="{Binding [Settings_FollowStartupForLauncher_Description], Source={x:Static i18n:Lang.Tr}}"
-                                      Status="{Binding Path=AutoCheckUpdateForLauncher}" />
+                                      Status="{Binding Path=FollowStartup}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForLauncher"
                                       Icon="{x:Static ui:SegoeFluentIcons.Sync}" Title="{Binding [Settings_CheckUpdateForLauncher_Title], Source={x:Static i18n:Lang.Tr}}"
                                       Description="{Binding [Settings_CheckUpdateForLauncher_Description], Source={x:Static i18n:Lang.Tr}}"
@@ -159,7 +159,7 @@
                                       Icon="{x:Static ui:SegoeFluentIcons.DevUpdate}"
                                       Title="{Binding [Settings_AutoCheckUpdateForLauncher_Title], Source={x:Static i18n:Lang.Tr}}"
                                       Description="{Binding [Settings_AutoCheckUpdateForLauncher_Description], Source={x:Static i18n:Lang.Tr}}"
-                                      Status="{Binding Path=AutoCheckUpdateForLauncher}" />
+                                      Status="{Binding Path=AutoCheckUpdate}" />
                 <sc:ActionSettingCard x:Name="More_CheckUpdateForDaemon" IsEnabled="False"
                                       Icon="{x:Static ui:SegoeFluentIcons.Processing}"
                                       Title="{Binding [Settings_CheckUpdateForDaemon_Title], Source={x:Static i18n:Lang.Tr}}"
