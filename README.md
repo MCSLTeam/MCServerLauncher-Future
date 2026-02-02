@@ -26,7 +26,7 @@ of [MCServerLauncher 2](https://github.com/MCSLTeam/MCSL2), offering enhanced co
 ## Components
 
 [.NET Daemon](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon): The core service
-built with .NET 6.0 C#, delivering robust performance and flexibility.
+built with .NET C#, delivering robust performance and flexibility.
 
 [Rust Daemon](https://github.com/MCSLTeam/mcsl-daemon-rs/): The core service
 built with Rust, experimental!
@@ -42,8 +42,7 @@ non-Windows users.
 
 ## System Requirements
 
-Daemon: Requires [.NET 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)  
-WPF Desktop Launcher: Requires [.NET Framework 4.6.2+](http://go.microsoft.com/fwlink/?linkid=780600)
+Requires [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
 
 ## Contribute
 
