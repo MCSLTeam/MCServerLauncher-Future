@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
+using MCServerLauncher.WPF.ViewModels;
 using System;
 using System.Windows;
 using System.Windows.Controls.Primitives;
@@ -18,9 +19,10 @@ namespace MCServerLauncher.WPF.View.Pages
         public readonly PolarsMirrorProvider? PolarsMirror = new();
         public readonly RainYunProvider? RainYun = new();
 
-        public ResDownloadPage()
+        public ResDownloadPage(ResDownloadPageViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel;
             // Refresh trigger when page is visible
             IsVisibleChanged += (s, e) =>
             {

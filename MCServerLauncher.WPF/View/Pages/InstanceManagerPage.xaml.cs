@@ -5,6 +5,7 @@ using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.Components.InstanceManager;
+using MCServerLauncher.WPF.ViewModels;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -28,10 +29,10 @@ namespace MCServerLauncher.WPF.View.Pages
         private readonly List<InstanceCard> _allInstanceCards = [];
         private int _selectedCount = 0;
 
-        public InstanceManagerPage()
+        public InstanceManagerPage(InstanceManagerPageViewModel viewModel)
         {
             InitializeComponent();
-            DataContext = this;
+            DataContext = viewModel;
             LoadDaemonFilterItems();
             RunningStatusFilter.SelectionChanged += RunningStatusFilterChanged;
             IsVisibleChanged += (s, e) =>

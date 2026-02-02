@@ -1,6 +1,7 @@
 ﻿using iNKORE.UI.WPF.Modern;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.SettingCard;
+using MCServerLauncher.WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -21,10 +22,10 @@ namespace MCServerLauncher.WPF.View.Pages
     public partial class SettingsPage
     {
         private int _debugClickCount = 0;
-        public SettingsPage()
+        public SettingsPage(SettingsPageViewModel viewModel)
         {
             InitializeComponent();
-            DataContext = this;
+            DataContext = viewModel;
 
             # region Initialize nums
             InitDownloadSourceSelection();

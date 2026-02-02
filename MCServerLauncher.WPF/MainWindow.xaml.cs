@@ -2,8 +2,10 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services.Interfaces;
 using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.Pages;
+using MCServerLauncher.WPF.ViewModels;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -18,24 +20,27 @@ namespace MCServerLauncher.WPF
     /// </summary>
     public partial class MainWindow
     {
-        private readonly Page _home = new HomePage();
-        private readonly Page _createInstance = new CreateInstancePage();
-        private readonly Page _daemonManager = new DaemonManagerPage();
-        private readonly Page _instanceManager = new InstanceManagerPage();
-        private readonly Page _resDownload = new ResDownloadPage();
-        private readonly Page _help = new HelpPage();
-        private readonly Page _settings = new SettingsPage();
+        private readonly INavigationService _navigationService;
+        private readonly ISettingsService _settingsService;
 
-        public MainWindow()
+        public MainWindow(
+            INavigationService navigationService,
+            ISettingsService settingsService,
+            MainWindowViewModel viewModel)
         {
+            _navigationService = navigationService;
+            _settingsService = settingsService;
+
             // Set correct theme
-            ThemeManager.Current.ApplicationTheme = SettingsManager.Get?.App?.Theme switch
+            ThemeManager.Current.ApplicationTheme = _settingsService.CurrentSettings?.App?.Theme switch
             {
                 "light" => ApplicationTheme.Light,
                 "dark" => ApplicationTheme.Dark,
                 _ => null
             };
+
             InitializeComponent();
+            DataContext = viewModel;
             InitializeView();
         }
 
@@ -48,7 +53,13 @@ namespace MCServerLauncher.WPF
             GlobalGrid.Children.Add(NotificationContainer.Instance);
             Grid.SetRow(NotificationContainer.Instance, 1);
             SetupView.Visibility = Visibility.Hidden;
-            CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
+
+            // Set navigation frame
+            _navigationService.SetNavigationFrame(CurrentPage);
+
+            // Navigate to home
+            _navigationService.NavigateTo<HomePageViewModel>();
+
             await Task.Delay(1500);
             var fadeOutAnimation = new DoubleAnimation
             {
@@ -80,45 +91,39 @@ namespace MCServerLauncher.WPF
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
-                NavigateTo(typeof(int), args.RecommendedNavigationTransitionInfo);
-            else if (args.InvokedItemContainer != null)
-                NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()),
-                    args.RecommendedNavigationTransitionInfo);
+            {
+                _navigationService.NavigateTo<SettingsPageViewModel>();
+            }
+            else if (args.InvokedItemContainer != null && args.InvokedItemContainer.Tag != null)
+            {
+                NavigateByTag(args.InvokedItemContainer.Tag.ToString()!);
+            }
         }
 
-        /// <summary>
-        ///    Navigation to a specific page.
-        /// </summary>
-        /// <param name="navPageType">Type of the page.</param>
-        /// <param name="transitionInfo">Transition animation.</param>
-        public void NavigateTo(Type navPageType, NavigationTransitionInfo transitionInfo)
+        private void NavigateByTag(string tag)
         {
-            var preNavPageType = CurrentPage.Content.GetType();
-            if (navPageType == preNavPageType) return;
-            switch (navPageType)
+            switch (tag)
             {
-                case not null when navPageType == typeof(HomePage):
-                    CurrentPage.Navigate(_home);
+                case "MCServerLauncher.WPF.View.Pages.HomePage":
+                    _navigationService.NavigateTo<HomePageViewModel>();
                     break;
-                case not null when navPageType == typeof(CreateInstancePage):
-                    CurrentPage.Navigate(_createInstance);
+                case "MCServerLauncher.WPF.View.Pages.CreateInstancePage":
+                    _navigationService.NavigateTo<CreateInstancePageViewModel>();
                     break;
-                case not null when navPageType == typeof(DaemonManagerPage):
-                    CurrentPage.Navigate(_daemonManager);
+                case "MCServerLauncher.WPF.View.Pages.DaemonManagerPage":
+                    _navigationService.NavigateTo<DaemonManagerPageViewModel>();
                     break;
-                case not null when navPageType == typeof(InstanceManagerPage):
-                    CurrentPage.Navigate(_instanceManager);
+                case "MCServerLauncher.WPF.View.Pages.InstanceManagerPage":
+                    _navigationService.NavigateTo<InstanceManagerPageViewModel>();
                     break;
-                case not null when navPageType == typeof(ResDownloadPage):
-                    CurrentPage.Navigate(_resDownload);
+                case "MCServerLauncher.WPF.View.Pages.ResDownloadPage":
+                    _navigationService.NavigateTo<ResDownloadPageViewModel>();
                     break;
-                case not null when navPageType == typeof(HelpPage):
-                    CurrentPage.Navigate(_help);
+                case "MCServerLauncher.WPF.View.Pages.HelpPage":
+                    _navigationService.NavigateTo<HelpPageViewModel>();
                     break;
-                case not null when navPageType == typeof(SettingsPage):
-                    CurrentPage.Navigate(_settings);
-                    break;
-                case not null when navPageType == typeof(DebugPage):
+                case "MCServerLauncher.WPF.View.Pages.DebugPage":
+                    // DebugPage is not yet migrated to MVVM, navigate directly
                     CurrentPage.Navigate(new DebugPage());
                     break;
             }

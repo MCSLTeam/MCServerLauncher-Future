@@ -1,4 +1,6 @@
-﻿namespace MCServerLauncher.WPF.View.Pages
+﻿using MCServerLauncher.WPF.ViewModels;
+
+namespace MCServerLauncher.WPF.View.Pages
 
 {
     /// <summary>
@@ -6,9 +8,10 @@
     /// </summary>
     public partial class HelpPage
     {
-        public HelpPage()
+        public HelpPage(HelpPageViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel;
         }
     }
 }

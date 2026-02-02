@@ -4,6 +4,7 @@ using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.CreateInstanceProvider;
+using MCServerLauncher.WPF.ViewModels;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -18,9 +19,10 @@ namespace MCServerLauncher.WPF.View.Pages
     {
         public readonly PreCreateInstance PreCreateInstance = new();
 
-        public CreateInstancePage()
+        public CreateInstancePage(CreateInstancePageViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel;
             CurrentCreateInstance.Content = PreCreateInstance;
             IsVisibleChanged += (s, e) =>
             {

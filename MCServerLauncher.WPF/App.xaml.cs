@@ -1,4 +1,10 @@
 ﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
+using MCServerLauncher.WPF.Services.Interfaces;
+using MCServerLauncher.WPF.View.Pages;
+using MCServerLauncher.WPF.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Reflection;
 using System.Threading;
@@ -18,12 +24,48 @@ namespace MCServerLauncher.WPF
     {
         // Prevent over-opening
         private Mutex? _mutex;
+        private static IHost? _host;
+
+        public static IServiceProvider Services => _host!.Services;
 
         public App()
         {
             DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
+            // Build DI container
+            _host = Host.CreateDefaultBuilder()
+                .ConfigureServices(ConfigureServices)
+                .Build();
+        }
+
+        private void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+        {
+            // Services (Singleton)
+            services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSingleton<INavigationService, NavigationService>();
+
+            // ViewModels (Transient)
+            services.AddTransient<MainWindowViewModel>();
+            services.AddTransient<HomePageViewModel>();
+            services.AddTransient<CreateInstancePageViewModel>();
+            services.AddTransient<DaemonManagerPageViewModel>();
+            services.AddTransient<InstanceManagerPageViewModel>();
+            services.AddTransient<ResDownloadPageViewModel>();
+            services.AddTransient<HelpPageViewModel>();
+            services.AddTransient<SettingsPageViewModel>();
+
+            // Views (Transient)
+            services.AddTransient<MainWindow>();
+            services.AddTransient<HomePage>();
+            services.AddTransient<CreateInstancePage>();
+            services.AddTransient<DaemonManagerPage>();
+            services.AddTransient<InstanceManagerPage>();
+            services.AddTransient<ResDownloadPage>();
+            services.AddTransient<HelpPage>();
+            services.AddTransient<SettingsPage>();
         }
 
 #pragma warning disable CS8603 // 可能返回 null 引用。
@@ -32,6 +74,10 @@ namespace MCServerLauncher.WPF
 
         protected async override void OnStartup(StartupEventArgs e)
         {
+            // Initialize settings service
+            var settingsService = Services.GetRequiredService<ISettingsService>();
+            settingsService.Initialize();
+
             await Initializer.InitApp();
             _mutex = new Mutex(true, Assembly.GetExecutingAssembly().GetName().Name, out var createNew);
             if (!createNew)
@@ -42,12 +88,17 @@ namespace MCServerLauncher.WPF
                 Environment.Exit(0);
             }
 
+            // Show main window via DI
+            var mainWindow = Services.GetRequiredService<MainWindow>();
+            mainWindow.Show();
+
             base.OnStartup(e);
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             _mutex?.ReleaseMutex();
+            _host?.Dispose();
             base.OnExit(e);
         }
 

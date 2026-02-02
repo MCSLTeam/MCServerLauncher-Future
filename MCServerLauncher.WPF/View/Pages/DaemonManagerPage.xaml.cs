@@ -2,6 +2,7 @@
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components;
 using MCServerLauncher.WPF.View.Components.DaemonManager;
+using MCServerLauncher.WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,9 +15,10 @@ namespace MCServerLauncher.WPF.View.Pages
     /// </summary>
     public partial class DaemonManagerPage
     {
-        public DaemonManagerPage()
+        public DaemonManagerPage(DaemonManagerPageViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel;
             // Refresh trigger when page is visible
             IsVisibleChanged += async (s, e) =>
             {
