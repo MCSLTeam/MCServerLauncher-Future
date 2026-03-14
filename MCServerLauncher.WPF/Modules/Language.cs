@@ -20,9 +20,9 @@ namespace MCServerLauncher.WPF.Modules
             {
                 if (name == null)
                 {
-                    throw new ArgumentNullException(nameof(name));
+                    return string.Empty;
                 }
-                return _resourceManager.GetString(name)!.Replace("\\n", "\n");
+                return _resourceManager.GetString(name)?.Replace("\\n", "\n") ?? name;
             }
         }
 

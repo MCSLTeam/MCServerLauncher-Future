@@ -92,7 +92,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 if (_instanceType != value)
                 {
                     _instanceType = value;
-                    InstanceTypeTextBlock.Text = value;
+                    InstanceTypeTextBlock.Text = Lang.Tr[value];
                     OnPropertyChanged();
                 }
             }
@@ -128,7 +128,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
             }
         }
 
-        public string StatusText => Status.ToString();
+        public string StatusText => Lang.Tr[Status.ToString()];
 
         public int PlayerCount
         {
@@ -230,8 +230,8 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
             if (DaemonConfig == null)
             {
                 Notification.Push(
-                    "Error",
-                    "Daemon configuration not set for this instance",
+                    Lang.Tr["Status_Error"],
+                    Lang.Tr["InstanceCard_NoDaemonConfig"],
                     true,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
@@ -253,18 +253,18 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
                 if (daemon == null)
                 {
-                    Notification.Push("Error", "Failed to connect to daemon", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                    Notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
                     return;
                 }
 
                 await daemon.StartInstanceAsync(InstanceId);
-                Notification.Push("Success", $"Starting instance: {InstanceName}", false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
+                Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StartingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Started instance {0}", InstanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceCard] Failed to start instance {0}", InstanceId);
-                Notification.Push("Error", $"Failed to start instance: {ex.Message}", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                Notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_StartFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
             }
             finally
             {
@@ -279,18 +279,18 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
                 if (daemon == null)
                 {
-                    Notification.Push("Error", "Failed to connect to daemon", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                    Notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
                     return;
                 }
 
                 await daemon.StopInstanceAsync(InstanceId);
-                Notification.Push("Success", $"Stopping instance: {InstanceName}", false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
+                Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StoppingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Stopped instance {0}", InstanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceCard] Failed to stop instance {0}", InstanceId);
-                Notification.Push("Error", $"Failed to stop instance: {ex.Message}", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                Notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_StopFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
             }
         }
 
@@ -301,18 +301,18 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
                 if (daemon == null)
                 {
-                    Notification.Push("Error", "Failed to connect to daemon", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                    Notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
                     return;
                 }
 
                 await daemon.RestartInstanceAsync(InstanceId);
-                Notification.Push("Success", $"Restarting instance: {InstanceName}", false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
+                Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_RestartingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Restarted instance {0}", InstanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceCard] Failed to restart instance {0}", InstanceId);
-                Notification.Push("Error", $"Failed to restart instance: {ex.Message}", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                Notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_RestartFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
             }
         }
 
@@ -323,18 +323,18 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
                 if (daemon == null)
                 {
-                    Notification.Push("Error", "Failed to connect to daemon", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                    Notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
                     return;
                 }
 
                 await daemon.KillInstanceAsync(InstanceId);
-                Notification.Push("Warning", $"Killed instance: {InstanceName}", false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning);
+                Notification.Push(Lang.Tr["Warning"], string.Format(Lang.Tr["InstanceCard_KillingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning);
                 Log.Warning("[InstanceCard] Killed instance {0}", InstanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceCard] Failed to kill instance {0}", InstanceId);
-                Notification.Push("Error", $"Failed to kill instance: {ex.Message}", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                Notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_KillFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
             }
         }
 
@@ -342,10 +342,10 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
         {
             var dialog = new iNKORE.UI.WPF.Modern.Controls.ContentDialog
             {
-                Title = "Confirm Deletion",
-                Content = $"Are you sure you want to delete instance '{InstanceName}'?\nThis action cannot be undone.",
-                PrimaryButtonText = "Delete",
-                CloseButtonText = "Cancel",
+                Title = Lang.Tr["InstanceCard_DeleteConfirmTitle"],
+                Content = string.Format(Lang.Tr["InstanceCard_DeleteConfirmContent"], InstanceName),
+                PrimaryButtonText = Lang.Tr["Delete"],
+                CloseButtonText = Lang.Tr["Cancel"],
                 DefaultButton = iNKORE.UI.WPF.Modern.Controls.ContentDialogButton.Close
             };
 
@@ -358,18 +358,18 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
                 if (daemon == null)
                 {
-                    Notification.Push("Error", "Failed to connect to daemon", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                    Notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
                     return;
                 }
 
                 await daemon.RemoveInstanceAsync(InstanceId);
-                Notification.Push("Success", $"Deleted instance: {InstanceName}", false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
+                Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_DeletedInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Deleted instance {0}", InstanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceCard] Failed to delete instance {0}", InstanceId);
-                Notification.Push("Error", $"Failed to delete instance: {ex.Message}", true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
+                Notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_DeleteFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
             }
         }
 

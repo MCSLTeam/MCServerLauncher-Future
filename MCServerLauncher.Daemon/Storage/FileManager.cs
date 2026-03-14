@@ -424,6 +424,15 @@ internal static class FileManager
     public static bool ValidatePath(string path, string? root = null)
     {
         root ??= Root;
+
+        // 如果是绝对路径，直接判断是否以 root 开头
+        if (Path.IsPathRooted(path))
+        {
+            var fullPath = Path.GetFullPath(path);
+            var fullRoot = Path.GetFullPath(root);
+            return fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
+        }
+
         var normalizedPath = NormalizePath(path);
         var normalizedRoot = NormalizePath(root);
 

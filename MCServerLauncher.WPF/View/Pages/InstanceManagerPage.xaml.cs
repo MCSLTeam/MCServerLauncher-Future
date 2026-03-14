@@ -181,7 +181,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void UpdateBatchOperationBar()
         {
-            SelectedCountTextBlock.Text = $"{_selectedCount} selected";
+            SelectedCountTextBlock.Text = string.Format(Lang.Tr["SelectedCount"], _selectedCount);
             BatchOperationBar.Visibility = _selectedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -339,10 +339,10 @@ namespace MCServerLauncher.WPF.View.Pages
 
             var dialog = new ContentDialog
             {
-                Title = "Confirm Batch Start",
-                Content = $"Start {selectedCards.Count} instances?",
-                PrimaryButtonText = "Start",
-                CloseButtonText = "Cancel",
+                Title = Lang.Tr["BatchStartConfirmTitle"],
+                Content = string.Format(Lang.Tr["BatchStartConfirmContent"], selectedCards.Count),
+                PrimaryButtonText = Lang.Tr["Start"],
+                CloseButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Close
             };
 
@@ -375,8 +375,8 @@ namespace MCServerLauncher.WPF.View.Pages
             }
 
             Notification.Push(
-                "Batch Start Complete",
-                $"Success: {successCount}, Failed: {failCount}",
+                Lang.Tr["BatchStartComplete"],
+                string.Format(Lang.Tr["BatchOperationResult"], successCount, failCount),
                 false,
                 failCount > 0 ? iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning : iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
             );
@@ -393,10 +393,10 @@ namespace MCServerLauncher.WPF.View.Pages
 
             var dialog = new ContentDialog
             {
-                Title = "Confirm Batch Stop",
-                Content = $"Stop {selectedCards.Count} instances?",
-                PrimaryButtonText = "Stop",
-                CloseButtonText = "Cancel",
+                Title = Lang.Tr["BatchStopConfirmTitle"],
+                Content = string.Format(Lang.Tr["BatchStopConfirmContent"], selectedCards.Count),
+                PrimaryButtonText = Lang.Tr["Stop"],
+                CloseButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Close
             };
 
@@ -429,8 +429,8 @@ namespace MCServerLauncher.WPF.View.Pages
             }
 
             Notification.Push(
-                "Batch Stop Complete",
-                $"Success: {successCount}, Failed: {failCount}",
+                Lang.Tr["BatchStopComplete"],
+                string.Format(Lang.Tr["BatchOperationResult"], successCount, failCount),
                 false,
                 failCount > 0 ? iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning : iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
             );
@@ -447,10 +447,10 @@ namespace MCServerLauncher.WPF.View.Pages
 
             var dialog = new ContentDialog
             {
-                Title = "Confirm Batch Delete",
-                Content = $"Delete {selectedCards.Count} instances?\nThis action CANNOT be undone!",
-                PrimaryButtonText = "Delete",
-                CloseButtonText = "Cancel",
+                Title = Lang.Tr["BatchDeleteConfirmTitle"],
+                Content = string.Format(Lang.Tr["BatchDeleteConfirmContent"], selectedCards.Count),
+                PrimaryButtonText = Lang.Tr["Delete"],
+                CloseButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Close
             };
 
@@ -483,8 +483,8 @@ namespace MCServerLauncher.WPF.View.Pages
             }
 
             Notification.Push(
-                "Batch Delete Complete",
-                $"Success: {successCount}, Failed: {failCount}",
+                Lang.Tr["BatchDeleteComplete"],
+                string.Format(Lang.Tr["BatchOperationResult"], successCount, failCount),
                 false,
                 failCount > 0 ? iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning : iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
             );

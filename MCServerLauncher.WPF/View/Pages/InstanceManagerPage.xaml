@@ -37,7 +37,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="SelectedCountTextBlock" Text="0 selected" 
+                        <TextBlock x:Name="SelectedCountTextBlock" 
                                    Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
