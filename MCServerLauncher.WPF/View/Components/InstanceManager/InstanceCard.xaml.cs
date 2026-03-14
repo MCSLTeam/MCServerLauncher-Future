@@ -302,6 +302,19 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
 
         private async void StopInstance_Click(object sender, RoutedEventArgs e)
         {
+            var dialog = new iNKORE.UI.WPF.Modern.Controls.ContentDialog
+            {
+                Title = Lang.Tr["InstanceCard_StopConfirmTitle"],
+                Content = string.Format(Lang.Tr["InstanceCard_StopConfirmContent"], InstanceName),
+                PrimaryButtonText = Lang.Tr["Stop"],
+                CloseButtonText = Lang.Tr["Cancel"],
+                DefaultButton = iNKORE.UI.WPF.Modern.Controls.ContentDialogButton.Close
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != iNKORE.UI.WPF.Modern.Controls.ContentDialogResult.Primary)
+                return;
+
             try
             {
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
@@ -325,6 +338,19 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
 
         private async void RestartInstance_Click(object sender, RoutedEventArgs e)
         {
+            var dialog = new iNKORE.UI.WPF.Modern.Controls.ContentDialog
+            {
+                Title = Lang.Tr["InstanceCard_RestartConfirmTitle"],
+                Content = string.Format(Lang.Tr["InstanceCard_RestartConfirmContent"], InstanceName),
+                PrimaryButtonText = Lang.Tr["Restart"],
+                CloseButtonText = Lang.Tr["Cancel"],
+                DefaultButton = iNKORE.UI.WPF.Modern.Controls.ContentDialogButton.Close
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != iNKORE.UI.WPF.Modern.Controls.ContentDialogResult.Primary)
+                return;
+
             try
             {
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
@@ -348,6 +374,19 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
 
         private async void KillInstance_Click(object sender, RoutedEventArgs e)
         {
+            var dialog = new iNKORE.UI.WPF.Modern.Controls.ContentDialog
+            {
+                Title = Lang.Tr["InstanceCard_KillConfirmTitle"],
+                Content = string.Format(Lang.Tr["InstanceCard_KillConfirmContent"], InstanceName),
+                PrimaryButtonText = Lang.Tr["Kill"],
+                CloseButtonText = Lang.Tr["Cancel"],
+                DefaultButton = iNKORE.UI.WPF.Modern.Controls.ContentDialogButton.Close
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != iNKORE.UI.WPF.Modern.Controls.ContentDialogResult.Primary)
+                return;
+
             try
             {
                 var daemon = await DaemonsWsManager.Get(DaemonConfig);
