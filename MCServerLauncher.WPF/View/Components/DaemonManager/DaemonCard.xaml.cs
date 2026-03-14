@@ -165,10 +165,35 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                 Content = string.Format(Lang.Tr["ConfirmDeleteDaemonMessage"] ?? "Are you sure you want to delete daemon '{0}'?", FriendlyName),
                 PrimaryButtonText = Lang.Tr["Delete"],
                 CloseButtonText = Lang.Tr["Cancel"],
-                DefaultButton = ContentDialogButton.Close
+                DefaultButton = ContentDialogButton.Close,
+                IsPrimaryButtonEnabled = false
             };
 
+            var timer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            int countdown = 5;
+            dialog.PrimaryButtonText = $"{Lang.Tr["Delete"]} ({countdown}s)";
+
+            timer.Tick += (s, args) =>
+            {
+                countdown--;
+                if (countdown > 0)
+                {
+                    dialog.PrimaryButtonText = $"{Lang.Tr["Delete"]} ({countdown}s)";
+                }
+                else
+                {
+                    timer.Stop();
+                    dialog.PrimaryButtonText = Lang.Tr["Delete"];
+                    dialog.IsPrimaryButtonEnabled = true;
+                }
+            };
+            timer.Start();
+
             var result = await dialog.ShowAsync();
+            timer.Stop();
             if (result == ContentDialogResult.Primary)
             {
                 try

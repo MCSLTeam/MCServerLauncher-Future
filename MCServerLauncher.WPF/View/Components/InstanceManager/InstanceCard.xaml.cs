@@ -346,10 +346,35 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 Content = string.Format(Lang.Tr["InstanceCard_DeleteConfirmContent"], InstanceName),
                 PrimaryButtonText = Lang.Tr["Delete"],
                 CloseButtonText = Lang.Tr["Cancel"],
-                DefaultButton = iNKORE.UI.WPF.Modern.Controls.ContentDialogButton.Close
+                DefaultButton = iNKORE.UI.WPF.Modern.Controls.ContentDialogButton.Close,
+                IsPrimaryButtonEnabled = false
             };
 
+            var timer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            int countdown = 5;
+            dialog.PrimaryButtonText = $"{Lang.Tr["Delete"]} ({countdown}s)";
+
+            timer.Tick += (s, args) =>
+            {
+                countdown--;
+                if (countdown > 0)
+                {
+                    dialog.PrimaryButtonText = $"{Lang.Tr["Delete"]} ({countdown}s)";
+                }
+                else
+                {
+                    timer.Stop();
+                    dialog.PrimaryButtonText = Lang.Tr["Delete"];
+                    dialog.IsPrimaryButtonEnabled = true;
+                }
+            };
+            timer.Start();
+
             var result = await dialog.ShowAsync();
+            timer.Stop();
             if (result != iNKORE.UI.WPF.Modern.Controls.ContentDialogResult.Primary)
                 return;
 
