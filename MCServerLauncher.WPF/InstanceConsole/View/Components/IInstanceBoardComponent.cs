@@ -19,6 +19,11 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
         Task RefreshAsync();
 
         /// <summary>
+        /// Dispose component resources
+        /// </summary>
+        Task DisposeAsync();
+
+        /// <summary>
         /// Indicates whether the component is currently loading data
         /// </summary>
         bool IsLoading { get; }

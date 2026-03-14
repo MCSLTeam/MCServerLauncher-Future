@@ -64,6 +64,18 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             // Universal components (PerformanceComponent, ConnectionInfoComponent) are always visible
         }
 
+        public async Task DisposeAsync()
+        {
+            InstanceDataManager.Instance.ReportUpdated -= OnReportUpdated;
+            
+            await Task.WhenAll(
+                PerformanceComponent.DisposeAsync(),
+                ConnectionInfoComponent.DisposeAsync(),
+                AddressComponent.DisposeAsync(),
+                PlayerListComponent.DisposeAsync()
+            );
+        }
+
         private async Task InitializeComponentsAsync()
         {
             try

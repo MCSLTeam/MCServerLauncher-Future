@@ -35,6 +35,16 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             }
         }
 
+        public Task DisposeAsync()
+        {
+            if (_isPageLoaded)
+            {
+                InstanceDataManager.Instance.LogReceived -= OnLogReceived;
+                _isPageLoaded = false;
+            }
+            return Task.CompletedTask;
+        }
+
         private void OnLogReceived(object? sender, string logMessage)
         {
             Dispatcher.Invoke(() =>

@@ -54,6 +54,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
             }
         }
 
+        public Task DisposeAsync()
+        {
+            InstanceDataManager.Instance.ReportUpdated -= OnReportUpdated;
+            return Task.CompletedTask;
+        }
+
         public async Task RefreshAsync()
         {
             try

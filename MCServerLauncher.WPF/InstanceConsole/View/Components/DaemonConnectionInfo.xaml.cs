@@ -89,5 +89,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
                 });
             }
         }
+
+        public Task DisposeAsync()
+        {
+            _refreshTimer?.Stop();
+            _refreshTimer = null;
+            return Task.CompletedTask;
+        }
     }
 }

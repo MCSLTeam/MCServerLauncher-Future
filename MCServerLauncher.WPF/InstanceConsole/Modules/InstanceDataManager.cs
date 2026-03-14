@@ -268,6 +268,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
+                if (_isDisposed)
+                    return -1;
+
                 if (_daemon == null)
                     throw new InvalidOperationException("Daemon not initialized");
 
@@ -320,6 +323,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
 
             _daemon = null;
             _latestReport = null;
+            _instance = null; // Reset the singleton instance so it can be re-initialized
 
             Log.Information("[InstanceDataManager] Disposed");
         }

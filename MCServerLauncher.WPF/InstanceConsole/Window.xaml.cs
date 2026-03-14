@@ -84,6 +84,15 @@ namespace MCServerLauncher.WPF.InstanceConsole
         {
             try
             {
+                if (_board is BoardPage boardPage)
+                {
+                    await boardPage.DisposeAsync();
+                }
+                if (_command is CommandPage commandPage)
+                {
+                    await commandPage.DisposeAsync();
+                }
+                
                 await InstanceDataManager.Instance.DisposeAsync();
                 Log.Information("[InstanceConsole] Window closed");
             }
