@@ -141,7 +141,10 @@ public class InstanceProcess : DisposableObject
             _monitor = new AsyncTimedLazyCell<(long Memory, double Cpu)>(() =>
             {
                 if (process.Status is InstanceStatus.Running or InstanceStatus.Starting)
-                    return ProcessInfo.GetProcessUsageAsync(process.ServerProcessId);
+                {
+                    if (process.ServerProcessId != -1 && !process.HasExit)
+                        return ProcessInfo.GetProcessUsageAsync(process.ServerProcessId);
+                }
 
                 return Task.FromResult((0L, 0.0));
             }, TimeSpan.FromMilliseconds(freq));
