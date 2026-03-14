@@ -19,6 +19,8 @@ namespace MCServerLauncher.WPF.Modules
         private static readonly object QueueLock = new();
         public static List<Constants.DaemonConfigModel>? Get { get; set; }
 
+        private static string DaemonsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Configuration", "MCSL", "Daemons.json");
+
         /// <summary>
         ///    Initialize daemon list.
         /// </summary>
@@ -26,11 +28,11 @@ namespace MCServerLauncher.WPF.Modules
         {
             lock (QueueLock)
             {
-                if (File.Exists("Data/Configuration/MCSL/Daemons.json"))
+                if (File.Exists(DaemonsPath))
                 {
                     Log.Information("[Set] Found daemon list, reading");
                     Get =
-                        JsonConvert.DeserializeObject<List<Constants.DaemonConfigModel>>(File.ReadAllText("Data/Configuration/MCSL/Daemons.json",
+                        JsonConvert.DeserializeObject<List<Constants.DaemonConfigModel>>(File.ReadAllText(DaemonsPath,
                             Encoding.UTF8));
                     if (Get is null) {
                         Get = new List<Constants.DaemonConfigModel>();
@@ -41,7 +43,7 @@ namespace MCServerLauncher.WPF.Modules
                     Log.Information("[Set] Daemon list not found, creating");
                     List<string> newList = new();
                     File.WriteAllText(
-                        "Data/Configuration/MCSL/Daemons.json",
+                        DaemonsPath,
                         JsonConvert.SerializeObject(newList, Formatting.Indented),
                         Encoding.UTF8
                     );
@@ -69,7 +71,7 @@ namespace MCServerLauncher.WPF.Modules
             lock (QueueLock)
             {
                 File.WriteAllText(
-                    "Data/Configuration/MCSL/Daemons.json",
+                    DaemonsPath,
                     JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );

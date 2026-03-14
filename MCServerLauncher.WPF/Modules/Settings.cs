@@ -16,16 +16,18 @@ namespace MCServerLauncher.WPF.Modules
         public static Settings? Get { get; set; }
 
 
+        private static string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Configuration", "MCSL", "Settings.json");
+
         /// <summary>
         ///    Initialize program settings.
         /// </summary>
         public static void InitSettings()
         {
-            if (File.Exists("Data/Configuration/MCSL/Settings.json"))
+            if (File.Exists(SettingsPath))
             {
                 Log.Information("[Set] Found profile, reading");
                 Get =
-                    JsonConvert.DeserializeObject<Settings>(File.ReadAllText("Data/Configuration/MCSL/Settings.json",
+                    JsonConvert.DeserializeObject<Settings>(File.ReadAllText(SettingsPath,
                         Encoding.UTF8));
             }
             else
@@ -67,7 +69,7 @@ namespace MCServerLauncher.WPF.Modules
                     }
                 };
                 File.WriteAllText(
-                    "Data/Configuration/MCSL/Settings.json",
+                    SettingsPath,
                     JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );
@@ -141,7 +143,7 @@ namespace MCServerLauncher.WPF.Modules
                 if (property == null) continue;
                 var value = property.GetValue(settingClass);
                 File.WriteAllText(
-                    "Data/Configuration/MCSL/Settings.json",
+                    SettingsPath,
                     JsonConvert.SerializeObject(Get, Formatting.Indented),
                     Encoding.UTF8
                 );

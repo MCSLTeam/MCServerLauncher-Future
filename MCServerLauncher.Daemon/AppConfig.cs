@@ -71,8 +71,11 @@ internal class AppConfig
         return TrySave();
     }
 
-    public bool TrySave(string path = "config.json")
+    private static string ConfigPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+
+    public bool TrySave(string? path = null)
     {
+        path ??= ConfigPath;
         try
         {
             File.WriteAllText(path,
@@ -86,8 +89,9 @@ internal class AppConfig
         }
     }
 
-    private static AppConfig LoadOrDefault(string path = "config.json")
+    private static AppConfig LoadOrDefault(string? path = null)
     {
+        path ??= ConfigPath;
         return FileManager.ReadJsonOr(path, GetDefault);
     }
 

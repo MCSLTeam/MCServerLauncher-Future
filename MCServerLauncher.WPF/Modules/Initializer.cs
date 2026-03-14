@@ -31,13 +31,14 @@ namespace MCServerLauncher.WPF.Modules
         /// </summary>
         private static void InitDataDirectory()
         {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var dataFolders = new List<string>
             {
-                "Data",
-                Path.Combine("Data", "Logs"),
-                Path.Combine("Data", "Logs", "WPF"),
-                Path.Combine("Data", "Configuration"),
-                Path.Combine("Data", "Configuration", "MCSL")
+                Path.Combine(baseDir, "Data"),
+                Path.Combine(baseDir, "Data", "Logs"),
+                Path.Combine(baseDir, "Data", "Logs", "WPF"),
+                Path.Combine(baseDir, "Data", "Configuration"),
+                Path.Combine(baseDir, "Data", "Configuration", "MCSL")
             };
 
             foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
@@ -174,9 +175,10 @@ namespace MCServerLauncher.WPF.Modules
         /// </summary>
         private static void InitLogger()
         {
+            var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Logs", "WPF", "WPFLog-.txt");
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.Async(a => a.File("Data/Logs/WPF/WPFLog-.txt", rollingInterval: RollingInterval.Day,
+                .WriteTo.Async(a => a.File(logPath, rollingInterval: RollingInterval.Day,
                     outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"))
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();

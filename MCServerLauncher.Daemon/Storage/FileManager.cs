@@ -14,7 +14,7 @@ public record struct DownloadRequestInfo(Guid Id, long Size, string Sha1);
 
 internal static class FileManager
 {
-    public const string Root = "daemon";
+    public static readonly string Root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "daemon");
     public static readonly string InstancesRoot = Path.Combine(Root, "instances");
     public static readonly string CacheRoot = Path.Combine(Root, "caches");
     public static readonly string UploadRoot = Path.Combine(CacheRoot, "uploads");
@@ -421,8 +421,9 @@ internal static class FileManager
     /// <param name="path"></param>
     /// <param name="root"></param>
     /// <returns></returns>
-    public static bool ValidatePath(string path, string root = Root)
+    public static bool ValidatePath(string path, string? root = null)
     {
+        root ??= Root;
         var normalizedPath = NormalizePath(path);
         var normalizedRoot = NormalizePath(root);
 
