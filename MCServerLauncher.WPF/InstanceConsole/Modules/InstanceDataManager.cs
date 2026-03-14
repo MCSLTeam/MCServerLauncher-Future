@@ -268,11 +268,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_isDisposed)
+                if (_isDisposed || _daemon == null)
                     return -1;
-
-                if (_daemon == null)
-                    throw new InvalidOperationException("Daemon not initialized");
 
                 return await _daemon.PingAsync();
             }
