@@ -18,7 +18,8 @@
 
             <!-- 选择框 -->
             <CheckBox Grid.Row="0" x:Name="SelectCheckBox" VerticalAlignment="Top" HorizontalAlignment="Right" 
-                      Margin="0,15,15,0" Checked="SelectCheckBox_CheckedChanged" Unchecked="SelectCheckBox_CheckedChanged"/>
+                      Margin="0,15,15,0" Checked="SelectCheckBox_CheckedChanged" Unchecked="SelectCheckBox_CheckedChanged"
+                      MinWidth="0" MinHeight="0" Width="24" Height="24" Padding="0"/>
 
             <!-- 标题和状态 -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,15,50,0">

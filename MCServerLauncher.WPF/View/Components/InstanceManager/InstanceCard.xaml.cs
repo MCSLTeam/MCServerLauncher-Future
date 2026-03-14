@@ -19,7 +19,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
         private string _instanceName;
         private string _instanceType;
         private string _mcVersion;
-        private InstanceStatus _status;
+        private InstanceStatus _status = (InstanceStatus)(-1);
         private int _playerCount;
         private double _cpuUsage;
         private long _memoryUsage;
@@ -42,6 +42,11 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
         /// Selection changed event for batch operations
         /// </summary>
         public event EventHandler<bool>? SelectionChanged;
+
+        /// <summary>
+        /// Event fired when an operation requires the instance list to be refreshed
+        /// </summary>
+        public event EventHandler? OperationCompleted;
 
         public bool IsSelected
         {
@@ -206,13 +211,14 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
         {
             Dispatcher.Invoke(() =>
             {
-                bool isRunning = Status == InstanceStatus.Running || Status == InstanceStatus.Starting;
+                bool isRunning = Status == InstanceStatus.Running;
+                bool isStarting = Status == InstanceStatus.Starting;
                 bool isStopped = Status == InstanceStatus.Stopped || Status == InstanceStatus.Crashed;
 
                 StartMenuItem.IsEnabled = isStopped;
-                StopMenuItem.IsEnabled = isRunning;
-                RestartMenuItem.IsEnabled = isRunning;
-                KillMenuItem.IsEnabled = isRunning;
+                StopMenuItem.IsEnabled = isRunning || isStarting;
+                RestartMenuItem.IsEnabled = isRunning || isStarting;
+                KillMenuItem.IsEnabled = isRunning || isStarting;
             });
         }
 
@@ -260,15 +266,12 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 await daemon.StartInstanceAsync(InstanceId);
                 Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StartingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Started instance {0}", InstanceId);
+                OperationCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceCard] Failed to start instance {0}", InstanceId);
                 Notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_StartFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-            }
-            finally
-            {
-
             }
         }
 
@@ -286,6 +289,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 await daemon.StopInstanceAsync(InstanceId);
                 Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StoppingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Stopped instance {0}", InstanceId);
+                OperationCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -308,6 +312,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 await daemon.RestartInstanceAsync(InstanceId);
                 Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_RestartingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Restarted instance {0}", InstanceId);
+                OperationCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -330,6 +335,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 await daemon.KillInstanceAsync(InstanceId);
                 Notification.Push(Lang.Tr["Warning"], string.Format(Lang.Tr["InstanceCard_KillingInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning);
                 Log.Warning("[InstanceCard] Killed instance {0}", InstanceId);
+                OperationCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -390,6 +396,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                 await daemon.RemoveInstanceAsync(InstanceId);
                 Notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_DeletedInstance"], InstanceName), false, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 Log.Information("[InstanceCard] Deleted instance {0}", InstanceId);
+                OperationCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {

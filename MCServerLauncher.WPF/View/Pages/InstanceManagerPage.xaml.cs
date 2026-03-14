@@ -27,6 +27,7 @@ namespace MCServerLauncher.WPF.View.Pages
     {
         private readonly List<InstanceCard> _allInstanceCards = [];
         private int _selectedCount = 0;
+        private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
         public InstanceManagerPage()
         {
@@ -36,8 +37,34 @@ namespace MCServerLauncher.WPF.View.Pages
             RunningStatusFilter.SelectionChanged += RunningStatusFilterChanged;
             IsVisibleChanged += (s, e) =>
             {
-                if (IsVisible) RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                if (IsVisible)
+                {
+                    RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    StartAutoRefresh();
+                }
+                else
+                {
+                    StopAutoRefresh();
+                }
             };
+        }
+
+        private void StartAutoRefresh()
+        {
+            if (_refreshTimer == null)
+            {
+                _refreshTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(3)
+                };
+                _refreshTimer.Tick += async (s, e) => await Refresh(true);
+            }
+            _refreshTimer.Start();
+        }
+
+        private void StopAutoRefresh()
+        {
+            _refreshTimer?.Stop();
         }
 
         private ObservableCollection<string> _daemonFilterItems;
@@ -85,37 +112,53 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            await Refresh();
+            await Refresh(false);
         }
 
-        private async Task Refresh()
+        private async Task Refresh(bool isAutoRefresh = false)
         {
-            _allInstanceCards.Clear();
-            InstanceCardGrid.Items.Clear();
+            if (!isAutoRefresh)
+            {
+                _allInstanceCards.Clear();
+                InstanceCardGrid.Items.Clear();
+            }
+            
             if (!(DaemonsListManager.Get!.Count > 0))
             {
-                ShowNoDaemonLayer();
+                if (!isAutoRefresh) ShowNoDaemonLayer();
                 return;
             }
-            RefreshButton.IsEnabled = false;
-            DaemonFilter.IsEnabled = false;
-            RunningStatusFilter.IsEnabled = false;
-            ShowLoadingLayer();
-            await LoadDaemonInstances();
-            ApplyFilters();
-            RefreshButton.IsEnabled = true;
-            DaemonFilter.IsEnabled = true;
-            RunningStatusFilter.IsEnabled = true;
+
+            if (!isAutoRefresh)
+            {
+                RefreshButton.IsEnabled = false;
+                DaemonFilter.IsEnabled = false;
+                RunningStatusFilter.IsEnabled = false;
+                ShowLoadingLayer();
             }
 
-        private async Task LoadDaemonInstances()
+            await LoadDaemonInstances(isAutoRefresh);
+            ApplyFilters(isAutoRefresh);
+
+            if (!isAutoRefresh)
+            {
+                RefreshButton.IsEnabled = true;
+                DaemonFilter.IsEnabled = true;
+                RunningStatusFilter.IsEnabled = true;
+            }
+        }
+
+        private async Task LoadDaemonInstances(bool isAutoRefresh = false)
         {
-            StopTipLayer.Visibility = Visibility.Collapsed;
+            if (!isAutoRefresh) StopTipLayer.Visibility = Visibility.Collapsed;
             var daemonIndex = DaemonFilter.SelectedIndex;
             if (!(DaemonsListManager.Get!.Count > 0))
             {
-                HideLoadingLayer();
-                ShowNoDaemonLayer();
+                if (!isAutoRefresh)
+                {
+                    HideLoadingLayer();
+                    ShowNoDaemonLayer();
+                }
                 return;
             }
 
@@ -124,53 +167,118 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 var daemon = await DaemonsWsManager.Get(daemonConfig);
                 var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon!);
-                await AddInstanceCards(instanceReports);
+
+                await AddInstanceCards(instanceReports, isAutoRefresh);
             }
             catch (Exception ex)
             {
-                InstanceCardGrid.Visibility = Visibility.Collapsed;
-                ShowLoadErrorLayer();
+                if (!isAutoRefresh)
+                {
+                    InstanceCardGrid.Visibility = Visibility.Collapsed;
+                    ShowLoadErrorLayer();
+                }
                 Log.Error($"[InstanceManager] Failed to load instances from daemon {daemonConfig.EndPoint}:{daemonConfig.Port}: {ex.Message}");
             }
-            HideLoadingLayer();
+            if (!isAutoRefresh) HideLoadingLayer();
         }
 
-        private async Task AddInstanceCards(Dictionary<Guid, InstanceReport> instanceReports)
+        private async Task AddInstanceCards(Dictionary<Guid, InstanceReport> instanceReports, bool isAutoRefresh = false)
         {
             if (instanceReports == null || instanceReports.Count == 0)
             {
-                ShowNoInstanceLayer();
+                if (!isAutoRefresh) ShowNoInstanceLayer();
                 return;
             }
 
             // Get current daemon config
             var currentDaemonConfig = DaemonsListManager.Get?[DaemonFilter.SelectedIndex];
 
-            foreach (var kvp in instanceReports)
+            if (isAutoRefresh)
             {
-                Guid instanceId = kvp.Key;
-                InstanceReport report = kvp.Value;
+                // Update existing cards or add new ones
+                var existingIds = _allInstanceCards.Select(c => c.InstanceId).ToList();
+                var newIds = instanceReports.Keys.ToList();
 
-                var instanceCard = new InstanceCard
+                // Remove deleted instances
+                var idsToRemove = existingIds.Except(newIds).ToList();
+                foreach (var id in idsToRemove)
                 {
-                    InstanceId = instanceId,
-                    daemonAddr = currentDaemonConfig!.EndPoint!,
-                    DaemonConfig = currentDaemonConfig,
-                    InstanceName = report.Config.Name,
-                    InstanceType = report.Config.InstanceType.ToString(),
-                    McVersion = report.Config.McVersion ?? "",
-                    Status = report.Status,
-                    PlayerCount = report.Players?.Length ?? 0,
-                    CpuUsage = report.PerformanceCounter.Cpu,
-                    MemoryUsage = report.PerformanceCounter.Memory
-                };
+                    var cardToRemove = _allInstanceCards.FirstOrDefault(c => c.InstanceId == id);
+                    if (cardToRemove != null)
+                    {
+                        _allInstanceCards.Remove(cardToRemove);
+                    }
+                }
 
-                // Subscribe to selection change event
-                instanceCard.SelectionChanged += InstanceCard_SelectionChanged;
+                // Update or add instances
+                foreach (var kvp in instanceReports)
+                {
+                    Guid instanceId = kvp.Key;
+                    InstanceReport report = kvp.Value;
 
-                _allInstanceCards.Add(instanceCard);
+                    var existingCard = _allInstanceCards.FirstOrDefault(c => c.InstanceId == instanceId);
+                    if (existingCard != null)
+                    {
+                        // Update existing card properties
+                        existingCard.Status = report.Status;
+                        existingCard.PlayerCount = report.Players?.Length ?? 0;
+                        existingCard.CpuUsage = report.PerformanceCounter.Cpu;
+                        existingCard.MemoryUsage = report.PerformanceCounter.Memory;
+                    }
+                    else
+                    {
+                        // Add new card
+                        var instanceCard = new InstanceCard
+                        {
+                            InstanceId = instanceId,
+                            daemonAddr = currentDaemonConfig!.EndPoint!,
+                            DaemonConfig = currentDaemonConfig,
+                            InstanceName = report.Config.Name,
+                            InstanceType = report.Config.InstanceType.ToString(),
+                            McVersion = report.Config.McVersion ?? "",
+                            Status = report.Status,
+                            PlayerCount = report.Players?.Length ?? 0,
+                            CpuUsage = report.PerformanceCounter.Cpu,
+                            MemoryUsage = report.PerformanceCounter.Memory
+                        };
+
+                        instanceCard.SelectionChanged += InstanceCard_SelectionChanged;
+                        instanceCard.OperationCompleted += (s, e) => RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                        _allInstanceCards.Add(instanceCard);
+                    }
+                }
             }
-            EnableFilterControls();
+            else
+            {
+                foreach (var kvp in instanceReports)
+                {
+                    Guid instanceId = kvp.Key;
+                    InstanceReport report = kvp.Value;
+
+                    var instanceCard = new InstanceCard
+                    {
+                        InstanceId = instanceId,
+                        daemonAddr = currentDaemonConfig!.EndPoint!,
+                        DaemonConfig = currentDaemonConfig,
+                        InstanceName = report.Config.Name,
+                        InstanceType = report.Config.InstanceType.ToString(),
+                        McVersion = report.Config.McVersion ?? "",
+                        Status = report.Status,
+                        PlayerCount = report.Players?.Length ?? 0,
+                        CpuUsage = report.PerformanceCounter.Cpu,
+                        MemoryUsage = report.PerformanceCounter.Memory
+                    };
+
+                    // Subscribe to selection change event
+                    instanceCard.SelectionChanged += InstanceCard_SelectionChanged;
+                    
+                    // Subscribe to operation completed event to refresh list
+                    instanceCard.OperationCompleted += (s, e) => RefreshButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+
+                    _allInstanceCards.Add(instanceCard);
+                }
+                EnableFilterControls();
+            }
         }
 
         private void InstanceCard_SelectionChanged(object? sender, bool isSelected)
@@ -185,10 +293,8 @@ namespace MCServerLauncher.WPF.View.Pages
             BatchOperationBar.Visibility = _selectedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ApplyFilters()
+        private void ApplyFilters(bool isAutoRefresh = false)
         {
-            InstanceCardGrid.Items.Clear();
-
             var filteredCards = _allInstanceCards.AsEnumerable();
 
             // Apply running status filter
@@ -207,10 +313,35 @@ namespace MCServerLauncher.WPF.View.Pages
                 };
             }
 
-            // Add filtered cards to UI
-            foreach (var card in filteredCards)
+            var filteredList = filteredCards.ToList();
+
+            if (isAutoRefresh)
             {
-                InstanceCardGrid.Items.Add(card);
+                // Remove items that are no longer in the filtered list
+                for (int i = InstanceCardGrid.Items.Count - 1; i >= 0; i--)
+                {
+                    if (InstanceCardGrid.Items[i] is InstanceCard card && !filteredList.Contains(card))
+                    {
+                        InstanceCardGrid.Items.RemoveAt(i);
+                    }
+                }
+
+                // Add items that are in the filtered list but not in the grid
+                foreach (var card in filteredList)
+                {
+                    if (!InstanceCardGrid.Items.Contains(card))
+                    {
+                        InstanceCardGrid.Items.Add(card);
+                    }
+                }
+            }
+            else
+            {
+                InstanceCardGrid.Items.Clear();
+                foreach (var card in filteredList)
+                {
+                    InstanceCardGrid.Items.Add(card);
+                }
             }
         }
 
