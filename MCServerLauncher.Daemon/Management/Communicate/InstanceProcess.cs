@@ -8,9 +8,12 @@ using MCServerLauncher.Daemon.Utils.Status;
 
 namespace MCServerLauncher.Daemon.Management.Communicate;
 
+using System.Collections.Concurrent;
+
 public class InstanceProcess : DisposableObject
 {
     private readonly Process _process;
+    private readonly ConcurrentQueue<string> _logHistory = new();
 
     public InstanceProcess(ProcessStartInfo info, bool isMcServer, int monitorFrequency = 2000)
     {
@@ -23,12 +26,21 @@ public class InstanceProcess : DisposableObject
 
         process.OutputDataReceived += (_, arg) =>
         {
-            if (arg.Data is not null) OnLog?.Invoke(arg.Data);
+            if (arg.Data is not null)
+            {
+                AddLogHistory(arg.Data);
+                OnLog?.Invoke(arg.Data);
+            }
         };
 
         process.ErrorDataReceived += (_, arg) =>
         {
-            if (arg.Data is not null) OnLog?.Invoke("[STDERR] " + arg.Data);
+            if (arg.Data is not null)
+            {
+                var msg = "[STDERR] " + arg.Data;
+                AddLogHistory(msg);
+                OnLog?.Invoke(msg);
+            }
         };
 
         Monitor = new ProcessMonitor(this, isMcServer, monitorFrequency);
@@ -75,6 +87,21 @@ public class InstanceProcess : DisposableObject
     public void Close()
     {
         _process.Close();
+    }
+
+    private void AddLogHistory(string log)
+    {
+        _logHistory.Enqueue(log);
+        var maxLogHistory = 500;
+        while (_logHistory.Count > maxLogHistory)
+        {
+            _logHistory.TryDequeue(out _);
+        }
+    }
+
+    public IReadOnlyList<string> GetLogHistory()
+    {
+        return _logHistory.ToArray();
     }
 
     public void KillProcess()

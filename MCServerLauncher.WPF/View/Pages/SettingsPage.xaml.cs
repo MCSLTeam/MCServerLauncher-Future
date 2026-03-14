@@ -23,6 +23,15 @@ namespace MCServerLauncher.WPF.View.Pages
         private int _debugClickCount = 0;
         public SettingsPage()
         {
+            ActionOnDoubleClick = new List<string>
+            {
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Console"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Start"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Stop"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Restart"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Kill"]
+            };
+
             InitializeComponent();
             DataContext = this;
 
@@ -31,8 +40,9 @@ namespace MCServerLauncher.WPF.View.Pages
             ResDownload_DownloadThreadCnt.SettingSlider.Value = SettingsManager.Get.Download.ThreadCnt;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex =
                 _actionWhenDownloadErrorList.IndexOf(SettingsManager.Get.Download.ActionWhenDownloadError);
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex =
-                _actionWhenDeleteConfirmList.IndexOf(SettingsManager.Get.Instance.ActionWhenDeleteConfirm);
+            Instance_AutoRefreshInterval.SettingSlider.Value = SettingsManager.Get.Instance.AutoRefreshInterval;
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex =
+                _actionOnDoubleClickList.IndexOf(SettingsManager.Get.Instance.ActionOnDoubleClick);
             More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(SettingsManager.Get.App.Theme);
             More_LauncherLanguage.SettingComboBox.SelectedIndex = Lang.LanguageList.IndexOf(SettingsManager.Get.App.Language);
 
@@ -58,8 +68,8 @@ namespace MCServerLauncher.WPF.View.Pages
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged +=
                 OnActionWhenDownloadErrorSelectionChanged;
 
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectionChanged +=
-                OnActionWhenDeleteConfirmIndexSelectionChanged;
+            Instance_AutoRefreshInterval.SettingSlider.ValueChanged += OnAutoRefreshIntervalValueChanged;
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged += OnActionOnDoubleClickSelectionChanged;
 
             More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
             More_LauncherLanguage.SettingComboBox.SelectionChanged += OnLauncherLanguageIndexSelectionChanged;
@@ -312,6 +322,65 @@ namespace MCServerLauncher.WPF.View.Pages
 
         #endregion
 
+        #region AutoRefreshInterval
+
+        public int AutoRefreshInterval
+        {
+            get => (int)GetValue(AutoRefreshIntervalProperty);
+            set => SetValue(AutoRefreshIntervalProperty, value);
+        }
+
+        public static readonly DependencyProperty AutoRefreshIntervalProperty =
+            DependencyProperty.Register(
+                "AutoRefreshInterval",
+                typeof(int),
+                typeof(RangeSettingCard),
+                new PropertyMetadata(SettingsManager.Get.Instance.AutoRefreshInterval)
+            );
+
+        private void OnAutoRefreshIntervalValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            SettingsManager.SaveSetting("Instance.AutoRefreshInterval", (int)Instance_AutoRefreshInterval.SettingSlider.Value);
+        }
+
+        #endregion
+
+        #region ActionOnDoubleClick
+
+        private static readonly List<string?> _actionOnDoubleClickList = new() { "Console", "Start", "Stop", "Restart", "Kill" };
+
+        public static IEnumerable<string> ActionOnDoubleClick { get; set; } = new List<string>();
+
+        public int ActionOnDoubleClickIndex
+        {
+            get => (int)GetValue(ActionOnDoubleClickIndexProperty);
+            set => SetValue(ActionOnDoubleClickIndexProperty, value);
+        }
+
+        public static readonly DependencyProperty ActionOnDoubleClickIndexProperty =
+            DependencyProperty.Register(
+                "ActionOnDoubleClickIndex",
+                typeof(int),
+                typeof(ComboSettingCard),
+                new PropertyMetadata(
+                    _actionOnDoubleClickList.IndexOf(SettingsManager.Get.Instance.ActionOnDoubleClick))
+            );
+
+        private void OnActionOnDoubleClickSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                SettingsManager.SaveSetting("Instance.ActionOnDoubleClick",
+                    _actionOnDoubleClickList[Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex]);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // ignored due to mtfk error
+            }
+        }
+
+        #endregion
+
         #region ActionWhenDownloadErrorIndex
 
         private static readonly List<string?> _actionWhenDownloadErrorList = new() { "stop", "retry1", "retry3" };
@@ -344,46 +413,6 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 SettingsManager.SaveSetting("ResDownload.ActionWhenDownloadError",
                     _actionWhenDownloadErrorList[ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex]);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // ignored due to mtfk error
-            }
-        }
-
-        #endregion
-
-        #region ActionWhenDeleteConfirm
-
-        public static IEnumerable<string> ActionWhenDeleteConfirm { get; set; } = new List<string>
-        {
-            Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeName"],
-            Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeKey"]
-        };
-
-        private static readonly List<string?> _actionWhenDeleteConfirmList = new() { "name", "key" };
-
-        public int ActionWhenDeleteConfirmIndex
-        {
-            get => (int)GetValue(ActionWhenDeleteConfirmIndexProperty);
-            set => SetValue(ActionWhenDeleteConfirmIndexProperty, value);
-        }
-
-        public static readonly DependencyProperty ActionWhenDeleteConfirmIndexProperty =
-            DependencyProperty.Register(
-                "ActionWhenDeleteConfirmIndex",
-                typeof(int),
-                typeof(ComboSettingCard),
-                new PropertyMetadata(
-                    _actionWhenDeleteConfirmList.IndexOf(SettingsManager.Get.Instance.ActionWhenDeleteConfirm))
-            );
-
-        private void OnActionWhenDeleteConfirmIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            try
-            {
-                SettingsManager.SaveSetting("Instance.ActionWhenDeleteConfirm",
-                    _actionWhenDeleteConfirmList[Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex]);
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -458,6 +487,20 @@ namespace MCServerLauncher.WPF.View.Pages
         /// </summary>
         public void OnLanguageChanged()
         {
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged -= OnActionOnDoubleClickSelectionChanged;
+            var actionOnDoubleClickIndex = Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex;
+            ActionOnDoubleClick = new List<string>
+            {
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Console"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Start"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Stop"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Restart"],
+                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Kill"]
+            };
+            Instance_ActionOnDoubleClick.SettingComboBox.ItemsSource = ActionOnDoubleClick;
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex = actionOnDoubleClickIndex;
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged += OnActionOnDoubleClickSelectionChanged;
+
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged -=
                 OnActionWhenDownloadErrorSelectionChanged;
             var actionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
@@ -471,19 +514,6 @@ namespace MCServerLauncher.WPF.View.Pages
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = actionWhenDownloadErrorIndex;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged +=
                 OnActionWhenDownloadErrorSelectionChanged;
-
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectionChanged -=
-                OnActionWhenDeleteConfirmIndexSelectionChanged;
-            var actionWhenDeleteConfirmIndex = Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex;
-            ActionWhenDeleteConfirm = new List<string>
-            {
-                Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeName"],
-                Lang.Tr["Settings_ActionWhenDeleteConfirm_TypeKey"]
-            };
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.ItemsSource = ActionWhenDeleteConfirm;
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectedIndex = actionWhenDeleteConfirmIndex;
-            Instance_ActionWhenDeleteConfirm.SettingComboBox.SelectionChanged +=
-                OnActionWhenDeleteConfirmIndexSelectionChanged;
 
             More_LauncherTheme.SettingComboBox.SelectionChanged -= OnLauncherThemeIndexSelectionChanged;
             var themeForAppIndex = More_LauncherTheme.SettingComboBox.SelectedIndex;

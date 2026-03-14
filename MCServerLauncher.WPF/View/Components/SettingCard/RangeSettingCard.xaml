@@ -28,7 +28,7 @@
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Slider TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" x:Name="SettingSlider"
+                <Slider TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight" VerticalAlignment="Center" x:Name="SettingSlider"
                         Grid.Column="0" Margin="0,0,10,0" />
                 <TextBlock VerticalAlignment="Center" Grid.Column="1"
                            Text="{Binding ElementName=SettingSlider, Path=Value}" />

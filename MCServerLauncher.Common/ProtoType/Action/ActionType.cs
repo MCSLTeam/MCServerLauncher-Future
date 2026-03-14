@@ -30,5 +30,6 @@ public enum ActionType
     KillInstance,
     SendToInstance,
     GetInstanceReport,
-    GetAllReports
+    GetAllReports,
+    GetInstanceLogHistory
 }

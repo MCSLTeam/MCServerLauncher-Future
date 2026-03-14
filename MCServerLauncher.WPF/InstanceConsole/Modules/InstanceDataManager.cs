@@ -280,6 +280,25 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             }
         }
 
+        /// <summary>
+        /// Get instance log history
+        /// </summary>
+        public async Task<string[]> GetInstanceLogHistoryAsync()
+        {
+            try
+            {
+                if (_isDisposed || _daemon == null)
+                    return Array.Empty<string>();
+
+                return await _daemon.GetInstanceLogHistoryAsync(_instanceId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[InstanceDataManager] Failed to get instance log history");
+                return Array.Empty<string>();
+            }
+        }
+
         private void OnInstanceLog(Guid instanceId, string log)
         {
             if (instanceId == _instanceId)

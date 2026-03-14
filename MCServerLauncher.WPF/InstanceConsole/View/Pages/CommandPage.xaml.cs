@@ -24,7 +24,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             OffFullscreenButtonContent.Visibility = Visibility.Collapsed;
         }
 
-        private void Page_Loaded(object sender, RoutedEventArgs e)
+        private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
             if (!_isPageLoaded)
             {
@@ -32,6 +32,21 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 // Subscribe to log events
                 InstanceDataManager.Instance.LogReceived += OnLogReceived;
                 CommandInputTextBox.Focus();
+
+                // Load log history
+                try
+                {
+                    var history = await InstanceDataManager.Instance.GetInstanceLogHistoryAsync();
+                    if (history != null && history.Length > 0)
+                    {
+                        ConsoleLogTextBox.AppendText(string.Join(Environment.NewLine, history) + Environment.NewLine);
+                        ConsoleLogTextBox.ScrollToEnd();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "[CommandPage] Failed to load log history");
+                }
             }
         }
 

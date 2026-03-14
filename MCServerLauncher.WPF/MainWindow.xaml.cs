@@ -18,13 +18,13 @@ namespace MCServerLauncher.WPF
     /// </summary>
     public partial class MainWindow
     {
-        private readonly Page _home = new HomePage();
-        private readonly Page _createInstance = new CreateInstancePage();
-        private readonly Page _daemonManager = new DaemonManagerPage();
-        private readonly Page _instanceManager = new InstanceManagerPage();
-        private readonly Page _resDownload = new ResDownloadPage();
-        private readonly Page _help = new HelpPage();
-        private readonly Page _settings = new SettingsPage();
+        private Page? _home;
+        private Page? _createInstance;
+        private Page? _daemonManager;
+        private Page? _instanceManager;
+        private Page? _resDownload;
+        private Page? _help;
+        private Page? _settings;
 
         public MainWindow()
         {
@@ -44,6 +44,14 @@ namespace MCServerLauncher.WPF
         /// </summary>
         private async void InitializeView()
         {
+            _home = new HomePage();
+            _createInstance = new CreateInstancePage();
+            _daemonManager = new DaemonManagerPage();
+            _instanceManager = new InstanceManagerPage();
+            _resDownload = new ResDownloadPage();
+            _help = new HelpPage();
+            _settings = new SettingsPage();
+
             DownloadHistoryFlyout.Content = DownloadHistoryFlyoutContent.Instance;
             GlobalGrid.Children.Add(NotificationContainer.Instance);
             Grid.SetRow(NotificationContainer.Instance, 1);

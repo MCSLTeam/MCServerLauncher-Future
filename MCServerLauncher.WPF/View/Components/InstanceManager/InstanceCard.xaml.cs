@@ -252,6 +252,31 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
             OpenConsole();
         }
 
+        private void InstanceCard_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.ClickCount != 2) return;
+
+            var action = SettingsManager.Get.Instance.ActionOnDoubleClick;
+            switch (action)
+            {
+                case "Console":
+                    OpenConsole();
+                    break;
+                case "Start":
+                    StartInstance_Click(sender, e);
+                    break;
+                case "Stop":
+                    StopInstance_Click(sender, e);
+                    break;
+                case "Restart":
+                    RestartInstance_Click(sender, e);
+                    break;
+                case "Kill":
+                    KillInstance_Click(sender, e);
+                    break;
+            }
+        }
+
         private async void StartInstance_Click(object sender, RoutedEventArgs e)
         {
             try

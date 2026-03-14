@@ -53,7 +53,6 @@ namespace MCServerLauncher.WPF.Modules
                     },
                     Instance = new InstanceSettingsModel
                     {
-                        ActionWhenDeleteConfirm = "name",
                         FollowStart = new List<string?>()
                     },
                     App = new AppSettingsModel
@@ -169,8 +168,9 @@ namespace MCServerLauncher.WPF.Modules
 
         public class InstanceSettingsModel
         {
-            public string? ActionWhenDeleteConfirm { get; set; }
             public List<string?>? FollowStart { get; set; }
+            public int AutoRefreshInterval { get; set; } = 3;
+            public string? ActionOnDoubleClick { get; set; } = "Console";
         }
 
         public class AppSettingsModel

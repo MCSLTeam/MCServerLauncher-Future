@@ -94,6 +94,11 @@ public abstract class InstanceBase : DisposableObject, IInstance
         Process?.KillProcess();
     }
 
+    public IReadOnlyList<string> GetLogHistory()
+    {
+        return Process?.GetLogHistory() ?? Array.Empty<string>();
+    }
+
     protected event Action? ConfigReloaded;
 
     /// <summary>

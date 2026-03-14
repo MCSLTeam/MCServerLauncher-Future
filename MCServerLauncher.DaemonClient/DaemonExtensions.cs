@@ -546,5 +546,25 @@ public static class DaemonExtensions
         return resp.Reports;
     }
 
+    /// <summary>
+    ///     Action: 获取实例历史日志
+    /// </summary>
+    /// <param name="daemon"></param>
+    /// <param name="id"></param>
+    /// <param name="timeout"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<string[]> GetInstanceLogHistoryAsync(this IDaemon daemon, Guid id, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        var resp = await daemon.RequestAsync<GetInstanceLogHistoryResult>(
+            ActionType.GetInstanceLogHistory,
+            new GetInstanceLogHistoryParameter
+            {
+                Id = id
+            }, timeout, ct);
+        return resp.Logs;
+    }
+
     #endregion
 }

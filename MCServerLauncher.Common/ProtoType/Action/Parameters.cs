@@ -105,3 +105,8 @@ public sealed record GetInstanceReportParameter : IActionParameter
 {
     [JsonRequired] public Guid Id { get; init; }
 }
+
+public sealed record GetInstanceLogHistoryParameter : IActionParameter
+{
+    [JsonRequired] public Guid Id { get; init; }
+}

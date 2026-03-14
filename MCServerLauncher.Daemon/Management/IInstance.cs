@@ -18,4 +18,6 @@ public interface IInstance : IDisposable
     Task<bool> StartAsync(int delayToCheck = 500);
 
     void Stop();
+
+    IReadOnlyList<string> GetLogHistory();
 }

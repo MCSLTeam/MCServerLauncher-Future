@@ -51,14 +51,19 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void StartAutoRefresh()
         {
+            var interval = SettingsManager.Get.Instance.AutoRefreshInterval;
+            if (interval <= 0)
+            {
+                StopAutoRefresh();
+                return;
+            }
+
             if (_refreshTimer == null)
             {
-                _refreshTimer = new System.Windows.Threading.DispatcherTimer
-                {
-                    Interval = TimeSpan.FromSeconds(3)
-                };
+                _refreshTimer = new System.Windows.Threading.DispatcherTimer();
                 _refreshTimer.Tick += async (s, e) => await Refresh(true);
             }
+            _refreshTimer.Interval = TimeSpan.FromSeconds(interval);
             _refreshTimer.Start();
         }
 

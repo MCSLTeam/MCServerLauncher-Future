@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DesignHeight="210" d:DesignWidth="400">
     <Border x:Name="InstanceItem" Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="210"
-            Width="400">
+            Width="400" MouseLeftButtonDown="InstanceCard_MouseDoubleClick">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

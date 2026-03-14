@@ -71,6 +71,11 @@ public sealed record GetInstanceReportResult : IActionResult
     [JsonRequired] public InstanceReport Report { get; init; } = null!;
 }
 
+public sealed record GetInstanceLogHistoryResult : IActionResult
+{
+    [JsonRequired] public string[] Logs { get; init; } = null!;
+}
+
 public sealed record GetAllReportsResult : IActionResult
 {
     [JsonRequired] public Dictionary<Guid, InstanceReport> Reports { get; init; } = null!;

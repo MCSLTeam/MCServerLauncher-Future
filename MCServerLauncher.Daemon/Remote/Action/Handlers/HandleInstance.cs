@@ -141,3 +141,22 @@ internal class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportPa
         });
     }
 }
+
+[ActionHandler(ActionType.GetInstanceLogHistory, "*")]
+internal class HandleGetInstanceLogHistory : IActionHandler<GetInstanceLogHistoryParameter, GetInstanceLogHistoryResult>
+{
+    public Result<GetInstanceLogHistoryResult, ActionError> Handle(GetInstanceLogHistoryParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
+    {
+        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+        if (!instanceManager.Instances.TryGetValue(param.Id, out var instance))
+        {
+            return this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.Id));
+        }
+
+        return this.Ok(new GetInstanceLogHistoryResult
+        {
+            Logs = instance.GetLogHistory().ToArray()
+        });
+    }
+}
