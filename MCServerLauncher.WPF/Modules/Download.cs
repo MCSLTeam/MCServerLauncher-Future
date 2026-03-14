@@ -49,13 +49,15 @@ namespace MCServerLauncher.WPF.Modules
                 .Replace("snapshot", "0")
                 .Replace(".beta", "beta")
                 .Replace("beta", "0");
-            var parts = version.Split('.');
-            if (parts.Length == 2)
-                return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
-            if (parts.Length == 3)
-                return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), 0);
+
+            // Remove non-numeric parts for parsing
+            var parts = version.Split('.').Select(p => new string(p.Where(char.IsDigit).ToArray())).Where(p => !string.IsNullOrEmpty(p)).ToArray();
+
+            if (parts.Length == 0) return (0, 0, 0, 0);
+            if (parts.Length == 1) return (int.Parse(parts[0]), 0, 0, 0);
+            if (parts.Length == 2) return (int.Parse(parts[0]), int.Parse(parts[1]), 0, 0);
+            if (parts.Length == 3) return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), 0);
             return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), int.Parse(parts[3]));
-            ;
         };
 
         private static readonly Func<string, string> VersionComparator = version =>
