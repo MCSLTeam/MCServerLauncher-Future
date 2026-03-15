@@ -38,21 +38,25 @@ MCServerLauncher-Future/
 ## Code Organization
 
 ### MCServerLauncher.WPF
+
 - **Translations/**: Contains `.resx` files for internationalization (i18n). Use `Lang.Tr("Key")` to get localized strings.
 - **Modules/**: Core logic modules (e.g., `Initializer.cs`, `Language.cs`, `Settings.cs`).
 - **View/**: WPF XAML pages and components.
 
 ### MCServerLauncher.Daemon
+
 - **Storage/**: File management and storage logic (e.g., `FileManager.cs`).
 - **Management/**: Instance management logic.
 - **Remote/**: WebSocket and HTTP communication plugins.
 
 ### MCServerLauncher.Common
+
 - **ProtoType/**: Shared data structures and enums used for communication between Client and Daemon.
 
 ## Naming Conventions & Code Style
 
 **C#**:
+
 - Use PascalCase for classes, methods, properties, and events.
 - Use camelCase for local variables and method parameters.
 - Use `_camelCase` for private fields.

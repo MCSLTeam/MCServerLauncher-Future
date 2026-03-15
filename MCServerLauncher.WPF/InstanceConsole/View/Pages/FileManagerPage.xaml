@@ -4,6 +4,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+      xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800">
 
@@ -21,31 +22,104 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" Background="Transparent" BorderThickness="0" Height="35" Width="42"
-                    Margin="0,0,10,0">
+                    Margin="0,0,10,0" Command="{Binding BackCommand}">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Back}" />
                 </Button.Content>
             </Button>
             <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Height="35" Width="42"
-                    Margin="0,0,10,0">
+                    Margin="0,0,10,0" Command="{Binding ForwardCommand}">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Forward}" />
                 </Button.Content>
             </Button>
             <Button Grid.Column="2" Background="Transparent" BorderThickness="0" Height="35" Width="42"
-                    Margin="0,0,10,0">
+                    Margin="0,0,10,0" Command="{Binding UpCommand}">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Up}" />
                 </Button.Content>
             </Button>
             <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Height="35" Width="42"
-                    Margin="0,0,10,0">
+                    Margin="0,0,10,0" Command="{Binding RefreshCommand}">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" />
                 </Button.Content>
             </Button>
-            <TextBox Grid.Column="4" Height="35" VerticalContentAlignment="Center" />
+            <TextBox Grid.Column="4" Height="35" VerticalContentAlignment="Center" Text="{Binding CurrentPath, UpdateSourceTrigger=PropertyChanged}">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding NavigateCommand}" />
+                </TextBox.InputBindings>
+            </TextBox>
         </Grid>
-        <ui:ListView Grid.Row="1" Margin="0,15,0,0" />
+        
+        <ge:StopTipLayer Grid.Row="1" x:Name="StopTipLayer" Visibility="Collapsed" Margin="0,15,0,0" Panel.ZIndex="10" />
+        
+        <Grid Grid.Row="1" Margin="0,15,0,0" x:Name="MainContentGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            
+            <TreeView Grid.Column="0" ItemsSource="{Binding TreeItems}" BorderThickness="1" ui:ControlHelper.CornerRadius="4" Margin="0,0,5,0">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <ui:FontIcon Glyph="&#xE8B7;" Margin="0,0,8,0" FontSize="14" />
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+            
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" />
+            
+            <ListView Grid.Column="2" x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" Margin="5,0,0,0" VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Static GridView.GridViewItemContainerStyleKey}}">
+                        <Setter Property="MinHeight" Value="28" />
+                        <Setter Property="Padding" Value="2" />
+                        <Setter Property="Margin" Value="1" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="名称" Width="300">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="4,2">
+                                        <ui:FontIcon Glyph="{Binding Icon}" Margin="0,0,6,0" FontSize="14" />
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="修改日期" Width="150" DisplayMemberBinding="{Binding ModifiedDate}" />
+                        <GridViewColumn Header="类型" Width="100" DisplayMemberBinding="{Binding Type}" />
+                        <GridViewColumn Header="大小" Width="100" DisplayMemberBinding="{Binding Size}" />
+                    </GridView>
+                </ListView.View>
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="打开" Command="{Binding OpenCommand}" />
+                        <Separator />
+                        <MenuItem Header="下载" Command="{Binding DownloadCommand}" />
+                        <MenuItem Header="上传文件" Command="{Binding UploadFileCommand}" />
+                        <Separator />
+                        <MenuItem Header="重命名" Command="{Binding RenameCommand}" />
+                        <MenuItem Header="删除" Command="{Binding DeleteCommand}" />
+                        <Separator />
+                        <MenuItem Header="新建文件夹" Command="{Binding CreateDirectoryCommand}" />
+                        <MenuItem Header="刷新" Command="{Binding RefreshCommand}" />
+                    </ContextMenu>
+                </ListView.ContextMenu>
+            </ListView>
+        </Grid>
     </Grid>
 </Page>

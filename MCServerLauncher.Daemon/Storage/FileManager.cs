@@ -77,10 +77,15 @@ internal static class FileManager
         timeout ??= SessionTimeout;
 
         // Validate path
-        if (path != null && !ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
-
-        // path is null means upload to upload root
-        path ??= UploadRoot;
+        if (path != null)
+        {
+            path = ResolveAndValidatePath(path);
+        }
+        else
+        {
+            // path is null means upload to upload root
+            path = UploadRoot;
+        }
 
 
         // check if file is in upload session
@@ -201,7 +206,7 @@ internal static class FileManager
         timeout ??= SessionTimeout;
 
         // Validate path
-        if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        path = ResolveAndValidatePath(path);
         if (!File.Exists(path)) throw new FileNotFoundException();
 
         // do not check if file in download session
@@ -275,7 +280,7 @@ internal static class FileManager
     public static FileMetadata GetFileInfo(string path)
     {
         // validate path
-        if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        path = ResolveAndValidatePath(path);
 
         var fileInfo = new FileInfo(path);
         // if (!fileInfo.Exists) throw new IOException("File not found");
@@ -291,9 +296,9 @@ internal static class FileManager
     public static DirectoryEntry GetDirectoryInfo(string path)
     {
         // validate path
-        if (!ValidatePath(path)) throw new IOException("Invalid path: out of daemon root");
+        var fullPath = ResolveAndValidatePath(path);
 
-        return new DirectoryEntry(path, Root);
+        return new DirectoryEntry(fullPath, Root);
     }
 
     /// <summary>
@@ -337,7 +342,10 @@ internal static class FileManager
         out IDownload download,
         string? sha1 = null, int maxThreads = 16)
     {
-        if (targetDir != null && ValidatePath(targetDir)) throw new IOException("Invalid path: out of daemon root");
+        if (targetDir != null)
+        {
+            targetDir = ResolveAndValidatePath(targetDir);
+        }
 
         // 确保存在
         Directory.CreateDirectory(DownloadRoot);
@@ -416,53 +424,48 @@ internal static class FileManager
     #region Validate Path
 
     /// <summary>
-    ///     检查path是否在root范围下,若root在./之外,也返回false (不访问磁盘)
+    ///     解析并验证路径。将客户端提供的路径（相对于 root）解析为绝对路径，并验证其是否在 root 范围内。
     /// </summary>
-    /// <param name="path"></param>
-    /// <param name="root"></param>
-    /// <returns></returns>
-    public static bool ValidatePath(string path, string? root = null)
+    /// <param name="path">客户端提供的路径，例如 "/instances/xxx"</param>
+    /// <param name="root">根目录，默认为 Daemon Root</param>
+    /// <returns>解析后的绝对路径</returns>
+    /// <exception cref="IOException">如果路径无效或超出 root 范围</exception>
+    public static string ResolveAndValidatePath(string path, string? root = null)
     {
         root ??= Root;
 
-        // 如果是绝对路径，直接判断是否以 root 开头
-        if (Path.IsPathRooted(path))
+        // 统一将路径分隔符转换为当前系统的分隔符
+        path = path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+
+        // 如果客户端传入的是绝对路径（例如 C:\xxx），且以 root 开头，则直接验证
+        // 注意：在 Windows 上，"/xxx" 会被 IsPathRooted 识别为 true，但它实际上是相对于当前盘符的路径。
+        // 我们需要区分真正的绝对路径（如 C:\xxx）和虚拟的绝对路径（如 /xxx）。
+        if (Path.IsPathRooted(path) && path.Length >= 2 && path[1] == Path.VolumeSeparatorChar)
         {
             var fullPath = Path.GetFullPath(path);
             var fullRoot = Path.GetFullPath(root);
-            return fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
+            if (fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return fullPath;
+            }
+            throw new IOException("Invalid path: out of daemon root");
         }
 
-        var normalizedPath = NormalizePath(path);
-        var normalizedRoot = NormalizePath(root);
+        // 移除路径开头的斜杠，防止 Path.Combine 将其视为根目录
+        var relativePath = path.TrimStart(Path.DirectorySeparatorChar);
 
-        return !normalizedPath.StartsWith(".") && normalizedPath.StartsWith(normalizedRoot);
-    }
+        // 将相对路径与 root 结合
+        var combinedPath = Path.Combine(root, relativePath);
+        var resolvedPath = Path.GetFullPath(combinedPath);
+        var resolvedRoot = Path.GetFullPath(root);
 
-    /// <summary>
-    ///     从算法层面，去除相对路径中的..和.
-    /// </summary>
-    /// <param name="path"></param>
-    /// <returns></returns>
-    private static string NormalizePath(string path)
-    {
-        var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+        // 验证解析后的路径是否在 root 范围内
+        if (!resolvedPath.StartsWith(resolvedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new IOException("Invalid path: out of daemon root");
+        }
 
-        var normalized = new Stack<string>();
-        foreach (var part in parts)
-            switch (part)
-            {
-                case ".": continue;
-                case "..":
-                    if (normalized.Count > 0)
-                        normalized.Pop();
-                    break;
-                default:
-                    normalized.Push(part);
-                    break;
-            }
-
-        return string.Join("/", normalized.Reverse());
+        return resolvedPath;
     }
 
     #endregion
@@ -577,6 +580,149 @@ internal static class FileManager
         {
             Log.Error("[FileManager] Failed to remove file {0}: {1}", path, e);
             return false;
+        }
+    }
+
+    public static void DeleteFile(string path)
+    {
+        path = ResolveAndValidatePath(path);
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+        else
+        {
+            throw new FileNotFoundException("File not found", path);
+        }
+    }
+
+    public static void DeleteDirectory(string path, bool recursive)
+    {
+        path = ResolveAndValidatePath(path);
+        if (Directory.Exists(path))
+        {
+            Directory.Delete(path, recursive);
+        }
+        else
+        {
+            throw new DirectoryNotFoundException($"Directory not found: {path}");
+        }
+    }
+
+    public static void RenameFile(string path, string newName)
+    {
+        path = ResolveAndValidatePath(path);
+        var directory = Path.GetDirectoryName(path);
+        if (directory == null) throw new IOException("Invalid path");
+        
+        var newPath = Path.Combine(directory, newName);
+        newPath = ResolveAndValidatePath(newPath);
+
+        if (File.Exists(path))
+        {
+            File.Move(path, newPath);
+        }
+        else
+        {
+            throw new FileNotFoundException("File not found", path);
+        }
+    }
+
+    public static void RenameDirectory(string path, string newName)
+    {
+        path = ResolveAndValidatePath(path);
+        var directory = Path.GetDirectoryName(path);
+        if (directory == null) throw new IOException("Invalid path");
+        
+        var newPath = Path.Combine(directory, newName);
+        newPath = ResolveAndValidatePath(newPath);
+
+        if (Directory.Exists(path))
+        {
+            Directory.Move(path, newPath);
+        }
+        else
+        {
+            throw new DirectoryNotFoundException($"Directory not found: {path}");
+        }
+    }
+
+    public static void CreateDirectory(string path)
+    {
+        path = ResolveAndValidatePath(path);
+        Directory.CreateDirectory(path);
+    }
+
+    public static void MoveFile(string sourcePath, string destinationPath)
+    {
+        sourcePath = ResolveAndValidatePath(sourcePath);
+        destinationPath = ResolveAndValidatePath(destinationPath);
+
+        if (File.Exists(sourcePath))
+        {
+            File.Move(sourcePath, destinationPath);
+        }
+        else
+        {
+            throw new FileNotFoundException("Source file not found", sourcePath);
+        }
+    }
+
+    public static void MoveDirectory(string sourcePath, string destinationPath)
+    {
+        sourcePath = ResolveAndValidatePath(sourcePath);
+        destinationPath = ResolveAndValidatePath(destinationPath);
+
+        if (Directory.Exists(sourcePath))
+        {
+            Directory.Move(sourcePath, destinationPath);
+        }
+        else
+        {
+            throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
+        }
+    }
+
+    public static void CopyFile(string sourcePath, string destinationPath)
+    {
+        sourcePath = ResolveAndValidatePath(sourcePath);
+        destinationPath = ResolveAndValidatePath(destinationPath);
+
+        if (File.Exists(sourcePath))
+        {
+            File.Copy(sourcePath, destinationPath, true);
+        }
+        else
+        {
+            throw new FileNotFoundException("Source file not found", sourcePath);
+        }
+    }
+
+    public static void CopyDirectory(string sourcePath, string destinationPath)
+    {
+        sourcePath = ResolveAndValidatePath(sourcePath);
+        destinationPath = ResolveAndValidatePath(destinationPath);
+
+        if (!Directory.Exists(sourcePath))
+        {
+            throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
+        }
+
+        DirectoryInfo dir = new DirectoryInfo(sourcePath);
+        DirectoryInfo[] dirs = dir.GetDirectories();
+
+        Directory.CreateDirectory(destinationPath);
+
+        foreach (FileInfo file in dir.GetFiles())
+        {
+            string targetFilePath = Path.Combine(destinationPath, file.Name);
+            file.CopyTo(targetFilePath, true);
+        }
+
+        foreach (DirectoryInfo subDir in dirs)
+        {
+            string newDestinationDir = Path.Combine(destinationPath, subDir.Name);
+            CopyDirectory(subDir.FullName, newDestinationDir);
         }
     }
 

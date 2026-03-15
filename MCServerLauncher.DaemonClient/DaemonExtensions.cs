@@ -322,6 +322,55 @@ public static class DaemonExtensions
 
     #endregion
 
+    #region File Operations
+
+    public static async Task DeleteFileAsync(this IDaemon daemon, string path, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.DeleteFile, new DeleteFileParameter { Path = path }, timeout, ct);
+    }
+
+    public static async Task DeleteDirectoryAsync(this IDaemon daemon, string path, bool recursive = true, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.DeleteDirectory, new DeleteDirectoryParameter { Path = path, Recursive = recursive }, timeout, ct);
+    }
+
+    public static async Task RenameFileAsync(this IDaemon daemon, string path, string newName, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.RenameFile, new RenameFileParameter { Path = path, NewName = newName }, timeout, ct);
+    }
+
+    public static async Task RenameDirectoryAsync(this IDaemon daemon, string path, string newName, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.RenameDirectory, new RenameDirectoryParameter { Path = path, NewName = newName }, timeout, ct);
+    }
+
+    public static async Task CreateDirectoryAsync(this IDaemon daemon, string path, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.CreateDirectory, new CreateDirectoryParameter { Path = path }, timeout, ct);
+    }
+
+    public static async Task MoveFileAsync(this IDaemon daemon, string sourcePath, string destinationPath, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.MoveFile, new MoveFileParameter { SourcePath = sourcePath, DestinationPath = destinationPath }, timeout, ct);
+    }
+
+    public static async Task MoveDirectoryAsync(this IDaemon daemon, string sourcePath, string destinationPath, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.MoveDirectory, new MoveDirectoryParameter { SourcePath = sourcePath, DestinationPath = destinationPath }, timeout, ct);
+    }
+
+    public static async Task CopyFileAsync(this IDaemon daemon, string sourcePath, string destinationPath, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.CopyFile, new CopyFileParameter { SourcePath = sourcePath, DestinationPath = destinationPath }, timeout, ct);
+    }
+
+    public static async Task CopyDirectoryAsync(this IDaemon daemon, string sourcePath, string destinationPath, int timeout = -1, CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(ActionType.CopyDirectory, new CopyDirectoryParameter { SourcePath = sourcePath, DestinationPath = destinationPath }, timeout, ct);
+    }
+
+    #endregion
+
     #region File Info
 
     /// <summary>

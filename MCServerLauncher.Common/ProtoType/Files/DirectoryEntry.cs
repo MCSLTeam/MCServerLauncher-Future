@@ -11,6 +11,10 @@ public record FileSystemMetadata
     public long LastWriteTime;
     // public string? LinkTarget;
 
+    public FileSystemMetadata()
+    {
+    }
+
     protected FileSystemMetadata(FileSystemInfo info)
     {
         CreationTime = info.CreationTime.ToUnixTimeSeconds();
@@ -25,6 +29,9 @@ public record FileMetadata : FileSystemMetadata
     public bool ReadOnly;
     public long Size;
 
+    public FileMetadata()
+    {
+    }
 
     public FileMetadata(FileInfo info) : base(info)
     {
@@ -35,6 +42,10 @@ public record FileMetadata : FileSystemMetadata
 
 public record DirectoryMetadata : FileSystemMetadata
 {
+    public DirectoryMetadata()
+    {
+    }
+
     public DirectoryMetadata(DirectoryInfo info) : base(info)
     {
     }
@@ -45,6 +56,12 @@ public record DirectoryEntry
     public DirectoryInformation[] Directories;
     public FileInformation[] Files;
     public string? Parent;
+
+    public DirectoryEntry()
+    {
+        Directories = Array.Empty<DirectoryInformation>();
+        Files = Array.Empty<FileInformation>();
+    }
 
     public DirectoryEntry(string path, string root) : this(new DirectoryInfo(path), root)
     {
@@ -62,6 +79,12 @@ public record DirectoryEntry
         public FileMetadata Meta;
         public string Name;
 
+        public FileInformation()
+        {
+            Meta = new FileMetadata();
+            Name = string.Empty;
+        }
+
         public FileInformation(FileInfo info)
         {
             Name = info.Name;
@@ -73,6 +96,12 @@ public record DirectoryEntry
     {
         public DirectoryMetadata Meta;
         public string Name;
+
+        public DirectoryInformation()
+        {
+            Meta = new DirectoryMetadata();
+            Name = string.Empty;
+        }
 
         public DirectoryInformation(DirectoryInfo info)
         {

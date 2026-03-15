@@ -40,6 +40,7 @@ MCServerLauncher.Daemon/
 ## Naming Conventions & Code Style
 
 **C#**:
+
 - Use PascalCase for classes, methods, properties, and events.
 - Use camelCase for local variables and method parameters.
 - Use `_camelCase` for private fields.

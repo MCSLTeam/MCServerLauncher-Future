@@ -110,6 +110,30 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             }
         }
 
+        private async void StartInstance_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await InstanceDataManager.Instance.StartInstanceAsync();
+                Notification.Push(
+                    "Success",
+                    "Start command sent successfully",
+                    false,
+                    iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
+                );
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[CommandPage] Failed to start instance");
+                Notification.Push(
+                    "Error",
+                    $"Failed to start instance: {ex.Message}",
+                    true,
+                    iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
+                );
+            }
+        }
+
         private async void StopInstance_Click(object sender, RoutedEventArgs e)
         {
             try
