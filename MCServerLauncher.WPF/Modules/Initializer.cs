@@ -263,7 +263,7 @@ namespace MCServerLauncher.WPF.Modules
         {
             InitLogger();
             Log.Information($"[Exe] MCServerLauncher Future v{AppVersion}");
-            Log.Information($"[Env] WorkingDir: {Environment.CurrentDirectory}");
+            Log.Information($"[Env] WorkingDir: {AppDomain.CurrentDomain.BaseDirectory}");
             Log.Information($"[Env] OS Version: {Environment.OSVersion.Version} (Build {Environment.OSVersion.Version.Build})");
             InitDataDirectory();
             SettingsManager.InitSettings();

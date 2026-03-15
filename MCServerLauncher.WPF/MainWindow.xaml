@@ -80,7 +80,7 @@
         </Grid>
         <fs:FirstSetup Grid.Row="1" Visibility="Hidden" x:Name="SetupView" />
         <ui:NavigationView Visibility="Hidden" x:Name="NavView"
-                           IsPaneOpen="True"
+                           IsPaneOpen="False"
                            ItemInvoked="NavigationTriggered"
                            IsBackButtonVisible="Collapsed"
                            PaneDisplayMode="Auto"
@@ -94,22 +94,21 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{Binding [Main_CreateInstanceNavMenu], Source={x:Static i18n:Lang.Tr}}"
-                                       Tag="MCServerLauncher.WPF.View.Pages.CreateInstancePage"
-                                       IsSelected="True">
+                                       Tag="MCServerLauncher.WPF.View.Pages.CreateInstancePage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AddTo}" FontSize="16" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{Binding [Main_DaemonManagerNavMenu], Source={x:Static i18n:Lang.Tr}}"
-                                       Tag="MCServerLauncher.WPF.View.Pages.DaemonManagerPage">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ThisPC}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.View.Pages.InstanceManagerPage">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Package}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{Binding [Main_DaemonManagerNavMenu], Source={x:Static i18n:Lang.Tr}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.DaemonManagerPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ThisPC}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{Binding [Main_ResDownloadNavMenu], Source={x:Static i18n:Lang.Tr}}"
