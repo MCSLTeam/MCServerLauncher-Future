@@ -56,6 +56,8 @@ namespace MCServerLauncher.WPF.Modules
 
                 // Show window
                 consoleWindow.Show();
+                consoleWindow.Activate();
+                consoleWindow.Focus();
 
                 Log.Information("[Instance] Opened console window for instance {0}", instanceId);
             }
