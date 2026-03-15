@@ -110,6 +110,67 @@ actions:
         files: DirectoryEntry.FileInformation[]
         directories: DirectoryEntry.DirectoryInformation[]
 
+  - delete_file:
+      req:
+        path: string
+      
+      resp:
+
+  - delete_directory:
+      req:
+        path: string
+        recursive: bool
+      
+      resp:
+
+  - rename_file:
+      req:
+        path: string
+        new_name: string
+      
+      resp:
+
+  - rename_directory:
+      req:
+        path: string
+        new_name: string
+      
+      resp:
+
+  - create_directory:
+      req:
+        path: string
+      
+      resp:
+
+  - move_file:
+      req:
+        source_path: string
+        destination_path: string
+      
+      resp:
+
+  - move_directory:
+      req:
+        source_path: string
+        destination_path: string
+      
+      resp:
+
+  - copy_file:
+      req:
+        source_path: string
+        destination_path: string
+      
+      resp:
+
+  - copy_directory:
+      req:
+        source_path: string
+        destination_path: string
+      
+      resp:
+
   - add_instance:
       req:
         setting: InstanceFactorySetting

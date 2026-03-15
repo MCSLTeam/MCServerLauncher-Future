@@ -22,6 +22,17 @@ public enum ActionType
     FileDownloadRange,
     FileDownloadClose,
 
+    // File operations
+    DeleteFile,
+    DeleteDirectory,
+    RenameFile,
+    RenameDirectory,
+    CreateDirectory,
+    MoveFile,
+    MoveDirectory,
+    CopyFile,
+    CopyDirectory,
+
     // Instance operation
     AddInstance,
     RemoveInstance,

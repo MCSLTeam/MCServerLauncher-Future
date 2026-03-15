@@ -70,6 +70,58 @@ public sealed record GetDirectoryInfoParameter : IActionParameter
     [JsonRequired] public string Path { get; init; } = null!;
 }
 
+public sealed record DeleteFileParameter : IActionParameter
+{
+    [JsonRequired] public string Path { get; init; } = null!;
+}
+
+public sealed record DeleteDirectoryParameter : IActionParameter
+{
+    [JsonRequired] public string Path { get; init; } = null!;
+    [JsonRequired] public bool Recursive { get; init; }
+}
+
+public sealed record RenameFileParameter : IActionParameter
+{
+    [JsonRequired] public string Path { get; init; } = null!;
+    [JsonRequired] public string NewName { get; init; } = null!;
+}
+
+public sealed record RenameDirectoryParameter : IActionParameter
+{
+    [JsonRequired] public string Path { get; init; } = null!;
+    [JsonRequired] public string NewName { get; init; } = null!;
+}
+
+public sealed record CreateDirectoryParameter : IActionParameter
+{
+    [JsonRequired] public string Path { get; init; } = null!;
+}
+
+public sealed record MoveFileParameter : IActionParameter
+{
+    [JsonRequired] public string SourcePath { get; init; } = null!;
+    [JsonRequired] public string DestinationPath { get; init; } = null!;
+}
+
+public sealed record MoveDirectoryParameter : IActionParameter
+{
+    [JsonRequired] public string SourcePath { get; init; } = null!;
+    [JsonRequired] public string DestinationPath { get; init; } = null!;
+}
+
+public sealed record CopyFileParameter : IActionParameter
+{
+    [JsonRequired] public string SourcePath { get; init; } = null!;
+    [JsonRequired] public string DestinationPath { get; init; } = null!;
+}
+
+public sealed record CopyDirectoryParameter : IActionParameter
+{
+    [JsonRequired] public string SourcePath { get; init; } = null!;
+    [JsonRequired] public string DestinationPath { get; init; } = null!;
+}
+
 public sealed record AddInstanceParameter : IActionParameter
 {
     [JsonRequired] public InstanceFactorySetting Setting { get; init; } = null!;
