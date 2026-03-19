@@ -5,8 +5,13 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
+      xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Page.Resources>
 
     <Grid Margin="25,15,25,25">
         <Grid.RowDefinitions>
@@ -15,6 +20,7 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -45,7 +51,7 @@
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" />
                 </Button.Content>
             </Button>
-            <TextBox Grid.Column="4" Height="35" VerticalContentAlignment="Center" Text="{Binding CurrentPath, UpdateSourceTrigger=PropertyChanged}">
+            <TextBox Grid.Column="5" Height="35" VerticalContentAlignment="Center" Text="{Binding CurrentPath, UpdateSourceTrigger=PropertyChanged}">
                 <TextBox.InputBindings>
                     <KeyBinding Key="Enter" Command="{Binding NavigateCommand}" />
                 </TextBox.InputBindings>
@@ -55,13 +61,19 @@
         <ge:StopTipLayer Grid.Row="1" x:Name="StopTipLayer" Visibility="Collapsed" Margin="0,15,0,0" Panel.ZIndex="10" />
         
         <Grid Grid.Row="1" Margin="0,15,0,0" x:Name="MainContentGrid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             
-            <TreeView Grid.Column="0" ItemsSource="{Binding TreeItems}" BorderThickness="1" ui:ControlHelper.CornerRadius="4" Margin="0,0,5,0">
+            <ui:InfoBar Grid.Row="0" Grid.ColumnSpan="3" x:Name="MultiSelectTipBar" IsOpen="True" Severity="Informational" Message="{Binding [MultiSelectTip], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="0,0,0,10" IsClosable="True" Closed="MultiSelectTipBar_DoNotShowAgain_Click" />
+            
+            <TreeView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding TreeItems}" BorderThickness="1" ui:ControlHelper.CornerRadius="4" Margin="0,0,5,0">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
@@ -78,9 +90,9 @@
                 </TreeView.ItemTemplate>
             </TreeView>
             
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" />
+            <GridSplitter Grid.Row="1" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" />
             
-            <ListView Grid.Column="2" x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" Margin="5,0,0,0" VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListView Grid.Row="1" Grid.Column="2" x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" Margin="5,0,0,0" VirtualizingPanel.VirtualizationMode="Recycling" SelectionMode="Extended">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Static GridView.GridViewItemContainerStyleKey}}">
                         <Setter Property="MinHeight" Value="28" />
@@ -90,7 +102,7 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="名称" Width="300">
+                        <GridViewColumn Header="{Binding [Name], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="300">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="4,2">
@@ -100,23 +112,23 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="修改日期" Width="150" DisplayMemberBinding="{Binding ModifiedDate}" />
-                        <GridViewColumn Header="类型" Width="100" DisplayMemberBinding="{Binding Type}" />
-                        <GridViewColumn Header="大小" Width="100" DisplayMemberBinding="{Binding Size}" />
+                        <GridViewColumn Header="{Binding [ModifiedDate], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="150" DisplayMemberBinding="{Binding ModifiedDate}" />
+                        <GridViewColumn Header="{Binding [Type], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="100" DisplayMemberBinding="{Binding Type}" />
+                        <GridViewColumn Header="{Binding [Size], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="100" DisplayMemberBinding="{Binding Size}" />
                     </GridView>
                 </ListView.View>
                 <ListView.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="打开" Command="{Binding OpenCommand}" />
+                        <MenuItem Header="{Binding [Open], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding OpenCommand}" />
                         <Separator />
-                        <MenuItem Header="下载" Command="{Binding DownloadCommand}" />
-                        <MenuItem Header="上传文件" Command="{Binding UploadFileCommand}" />
+                        <MenuItem Header="{Binding [Download], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding DownloadCommand}" />
+                        <MenuItem Header="{Binding [UploadFile], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding UploadFileCommand}" />
                         <Separator />
-                        <MenuItem Header="重命名" Command="{Binding RenameCommand}" />
-                        <MenuItem Header="删除" Command="{Binding DeleteCommand}" />
+                        <MenuItem Header="{Binding [Rename], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding RenameCommand}" />
+                        <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding DeleteCommand}" />
                         <Separator />
-                        <MenuItem Header="新建文件夹" Command="{Binding CreateDirectoryCommand}" />
-                        <MenuItem Header="刷新" Command="{Binding RefreshCommand}" />
+                        <MenuItem Header="{Binding [CreateDirectory], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding CreateDirectoryCommand}" />
+                        <MenuItem Header="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding RefreshCommand}" />
                     </ContextMenu>
                 </ListView.ContextMenu>
             </ListView>

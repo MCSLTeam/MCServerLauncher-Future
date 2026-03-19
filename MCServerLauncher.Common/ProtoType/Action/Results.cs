@@ -85,3 +85,8 @@ public sealed record GetSystemInfoResult : IActionResult
 {
     [JsonRequired] public SystemInfo Info { get; init; }
 }
+
+public sealed record GetEventRulesResult : IActionResult
+{
+    [JsonProperty("rules")] public List<EventTrigger.EventRule> Rules { get; init; } = new();
+}

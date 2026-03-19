@@ -29,6 +29,13 @@ public class FileChange
         if (!exists && _lastFileInfo is null) return false;
 
         // 2. 如果曾今和现在都存在, 比较最后修改时间
-        return exists && _lastFileInfo!.LastWriteTimeUtc != new FileInfo(Path).LastWriteTimeUtc;
+        var newFileInfo = new FileInfo(Path);
+        if (exists && _lastFileInfo!.LastWriteTimeUtc != newFileInfo.LastWriteTimeUtc)
+        {
+            _lastFileInfo = newFileInfo;
+            return true;
+        }
+
+        return false;
     }
 }

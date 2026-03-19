@@ -171,7 +171,8 @@ namespace MCServerLauncher.WPF.View.Pages
             try
             {
                 var daemon = await DaemonsWsManager.Get(daemonConfig);
-                var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon!);
+                if (daemon == null) throw new Exception("Daemon is offline or unreachable.");
+                var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon);
 
                 await AddInstanceCards(instanceReports, isAutoRefresh);
             }

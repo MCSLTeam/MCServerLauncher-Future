@@ -94,6 +94,11 @@ public class InstanceManager : IInstanceManager
         {
             target.OnStatusChanged -= OnInstanceStatusChangedHandler;
             target.OnStatusChanged += OnInstanceStatusChangedHandler;
+            
+            // Hook event triggers
+            var eventTriggerService = Application.HttpService?.Resolver.Resolve(typeof(MCServerLauncher.Daemon.Remote.Event.EventTriggerService)) as MCServerLauncher.Daemon.Remote.Event.EventTriggerService;
+            eventTriggerService?.HookInstance(target);
+
             if (await target.StartAsync())
 
             {

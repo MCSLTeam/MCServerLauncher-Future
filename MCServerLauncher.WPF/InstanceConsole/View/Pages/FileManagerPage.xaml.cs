@@ -48,7 +48,25 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private async void FileManagerPage_Loaded(object sender, RoutedEventArgs e)
         {
+            if (SettingsManager.Get?.App?.HideTips != null && 
+                SettingsManager.Get.App.HideTips.TryGetValue("FileManagerMultiSelect", out var hide) && hide)
+            {
+                MultiSelectTipBar.IsOpen = false;
+            }
             await _viewModel.InitializeAsync();
+        }
+
+        private void MultiSelectTipBar_DoNotShowAgain_Click(iNKORE.UI.WPF.Modern.Controls.InfoBar sender, object args)
+        {
+            if (SettingsManager.Get?.App != null)
+            {
+                if (SettingsManager.Get.App.HideTips == null)
+                {
+                    SettingsManager.Get.App.HideTips = new System.Collections.Generic.Dictionary<string, bool>();
+                }
+                SettingsManager.Get.App.HideTips["FileManagerMultiSelect"] = true;
+                SettingsManager.SaveSetting("App.HideTips", SettingsManager.Get.App.HideTips);
+            }
         }
 
         private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)

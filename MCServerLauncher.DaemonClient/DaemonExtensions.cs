@@ -592,7 +592,7 @@ public static class DaemonExtensions
         var resp = await daemon.RequestAsync<GetAllReportsResult>(
             ActionType.GetAllReports,
             new EmptyActionParameter(), timeout, ct);
-        return resp.Reports;
+        return resp?.Reports ?? new Dictionary<Guid, InstanceReport>();
     }
 
     /// <summary>
@@ -613,6 +613,40 @@ public static class DaemonExtensions
                 Id = id
             }, timeout, ct);
         return resp.Logs;
+    }
+
+    #endregion
+
+    #region Event Triggers
+
+    /// <summary>
+    ///     Action: 获取实例的事件触发规则
+    /// </summary>
+    public static async Task<List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync(this IDaemon daemon, Guid id, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        var resp = await daemon.RequestAsync<GetEventRulesResult>(
+            ActionType.GetEventRules,
+            new GetEventRulesParameter
+            {
+                InstanceId = id
+            }, timeout, ct);
+        return resp.Rules;
+    }
+
+    /// <summary>
+    ///     Action: 保存实例的事件触发规则
+    /// </summary>
+    public static async Task SaveEventRulesAsync(this IDaemon daemon, Guid id, List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule> rules, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        await daemon.RequestAsync(
+            ActionType.SaveEventRules,
+            new SaveEventRulesParameter
+            {
+                InstanceId = id,
+                Rules = rules
+            }, timeout, ct);
     }
 
     #endregion

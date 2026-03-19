@@ -27,10 +27,6 @@
                 <Setter Property="FontSize" Value="20" />
             </Style>
 
-            <Style TargetType="ui:ToggleSwitch">
-                <Setter Property="MinWidth" Value="0" />
-            </Style>
-
         </ResourceDictionary>
     </FrameworkElement.Resources>
     <Grid Margin="35,35,35,0">

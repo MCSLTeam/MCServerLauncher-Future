@@ -28,7 +28,7 @@ public abstract class InstanceBase : DisposableObject, IInstance
             try
             {
                 var newConfig = FileManager.ReadJson<InstanceConfig>(configPath)!;
-                if (Config.Uuid != newConfig.Uuid)
+                if (ProtectedConfig.Uuid != newConfig.Uuid)
                 {
                     Log.Debug("[Instance] Uuid changed, ignored");
                     return;

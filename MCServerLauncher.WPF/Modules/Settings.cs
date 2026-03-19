@@ -183,6 +183,7 @@ namespace MCServerLauncher.WPF.Modules
             public bool IsFontInstalled { get; set; }
             public bool IsAppEulaAccepted { get; set; }
             public bool IsFirstSetupFinished { get; set; }
+            public Dictionary<string, bool> HideTips { get; set; } = new();
         }
 
         public class Settings

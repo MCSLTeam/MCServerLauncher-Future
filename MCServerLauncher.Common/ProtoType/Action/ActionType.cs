@@ -42,5 +42,9 @@ public enum ActionType
     SendToInstance,
     GetInstanceReport,
     GetAllReports,
-    GetInstanceLogHistory
+    GetInstanceLogHistory,
+
+    // Event Triggers
+    GetEventRules,
+    SaveEventRules
 }

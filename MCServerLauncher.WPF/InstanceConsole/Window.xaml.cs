@@ -53,7 +53,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
                     "Error",
                     "Instance console not properly initialized",
                     true,
-                    iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
+                    InfoBarSeverity.Error
                 );
                 return;
             }

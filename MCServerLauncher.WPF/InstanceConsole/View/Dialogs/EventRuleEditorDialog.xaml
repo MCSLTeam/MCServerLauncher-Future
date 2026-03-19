@@ -1,0 +1,317 @@
+﻿<Window x:Class="MCServerLauncher.WPF.InstanceConsole.View.Dialogs.EventRuleEditorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
+        xmlns:local="clr-namespace:MCServerLauncher.WPF.InstanceConsole.View.Dialogs"
+        mc:Ignorable="d"
+        Title="{Binding [Edit], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}"
+        Width="650" Height="600"
+        WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True"
+        ui:ThemeManager.IsThemeAware="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
+        ui:TitleBar.IsIconVisible="False"
+        ui:TitleBar.Height="40"
+        ui:TitleBar.IsBackEnabled="False"
+        ui:TitleBar.IsBackButtonVisible="False">
+
+    <Window.Resources>
+        <Style TargetType="Expander" BasedOn="{StaticResource {x:Static ui:ThemeKeys.ExpanderCardStyleKey}}">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+
+        <!-- Converter for ActionExecutionMode to Separator Text -->
+        <local:ActionExecutionModeToTextConverter x:Key="ActionExecutionModeToTextConverter" />
+
+        <!-- ConsoleOutputTrigger Template -->
+        <DataTemplate DataType="{x:Type local:ConsoleOutputTriggerWrapper}">
+            <StackPanel>
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_ConsoleOutputTrigger], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBox Text="{Binding Pattern, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Pattern], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="0,0,0,5" />
+                <CheckBox IsChecked="{Binding IsRegex}" Content="{Binding [ConsoleCommand_EventTrigger_IsRegex], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+        
+        <!-- ScheduleTrigger Template -->
+        <DataTemplate DataType="{x:Type local:ScheduleTriggerWrapper}">
+            <StackPanel>
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_ScheduleTrigger], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBox Text="{Binding CronExpression, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_CronExpression], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+        
+        <!-- InstanceStatusTrigger Template -->
+        <DataTemplate DataType="{x:Type local:InstanceStatusTriggerWrapper}">
+            <StackPanel>
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_InstanceStatusTrigger], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <ComboBox SelectedValue="{Binding TargetStatus}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_TargetStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
+                    <ComboBoxItem Content="{Binding [Status_Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
+                    <ComboBoxItem Content="{Binding [Status_Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
+                    <ComboBoxItem Content="{Binding [Status_Crashed], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Crashed" />
+                </ComboBox>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- SendCommandAction Template -->
+        <DataTemplate DataType="{x:Type local:SendCommandActionWrapper}">
+            <StackPanel>
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_SendCommandAction], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBox Text="{Binding Command, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Command], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" />
+            </StackPanel>
+        </DataTemplate>
+        
+        <!-- ChangeInstanceStatusAction Template -->
+        <DataTemplate DataType="{x:Type local:ChangeInstanceStatusActionWrapper}">
+            <StackPanel>
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_ChangeInstanceStatusAction], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <ComboBox SelectedValue="{Binding ActionType}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Action], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
+                    <ComboBoxItem Content="{Binding [Start], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Start" />
+                    <ComboBoxItem Content="{Binding [Stop], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stop" />
+                    <ComboBoxItem Content="{Binding [Restart], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Restart" />
+                    <ComboBoxItem Content="{Binding [Kill], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Kill" />
+                </ComboBox>
+            </StackPanel>
+        </DataTemplate>
+        
+        <!-- SendNotificationAction Template -->
+        <DataTemplate DataType="{x:Type local:SendNotificationActionWrapper}">
+            <StackPanel>
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_SendNotificationAction], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Title], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="0,0,0,5" />
+                <TextBox Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Message], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="0,0,0,5" />
+                <ComboBox SelectedValue="{Binding Severity}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Severity], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
+                    <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_Info], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Info" />
+                    <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_Success], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Success" />
+                    <ComboBoxItem Content="{Binding [Warning], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Warning" />
+                    <ComboBoxItem Content="{Binding [Status_Error], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Error" />
+                </ComboBox>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- AlwaysTrueRuleset Template -->
+        <DataTemplate DataType="{x:Type local:AlwaysTrueRulesetWrapper}">
+            <StackPanel>
+                <TextBlock Text="总是为真" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBlock Text="无论在什么情况下，该规则都会返回真。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- AlwaysFalseRuleset Template -->
+        <DataTemplate DataType="{x:Type local:AlwaysFalseRulesetWrapper}">
+            <StackPanel>
+                <TextBlock Text="总是为假" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBlock Text="无论在什么情况下，该规则都会返回假。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- InstanceStatusRuleset Template -->
+        <DataTemplate DataType="{x:Type local:InstanceStatusRulesetWrapper}">
+            <StackPanel>
+                <TextBlock Text="实例状态" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <ComboBox SelectedValue="{Binding TargetStatus}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_TargetStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
+                    <ComboBoxItem Content="{Binding [Status_Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
+                    <ComboBoxItem Content="{Binding [Status_Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
+                    <ComboBoxItem Content="{Binding [Status_Crashed], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Crashed" />
+                </ComboBox>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        
+        <!-- Title Bar Area -->
+        <Grid Grid.Row="0" Margin="10,0,0,10">
+            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Text="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}" HorizontalAlignment="Left" />
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="15,0,15,15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+        <!-- Basic Info -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBox Text="{Binding Rule.Name, UpdateSourceTrigger=PropertyChanged}" 
+                     ui:ControlHelper.Header="{Binding [Name], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" 
+                     Margin="0,0,0,10" />
+            <TextBox Text="{Binding Rule.Description, UpdateSourceTrigger=PropertyChanged}" 
+                     ui:ControlHelper.Header="{Binding [Description], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" 
+                     TextWrapping="Wrap" AcceptsReturn="True" Height="60" />
+        </StackPanel>
+
+        <!-- Automation Flow -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,10,0,0">
+                <!-- Triggers Section -->
+                <Expander IsExpanded="True" ExpandDirection="Down" Margin="0,0,0,10">
+                    <Expander.Header>
+                        <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_Trigger], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_Condition], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ComboBox SelectedValue="{Binding Rule.TriggerCondition}" SelectedValuePath="Tag" Width="120">
+                                    <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_Any], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Any" />
+                                    <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_All], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="All" />
+                                </ComboBox>
+                                
+                                <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">
+                                    <ui:DropDownButton.Flyout>
+                                        <ui:MenuFlyout Placement="Bottom">
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_ConsoleOutput], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddConsoleOutputTrigger_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_Schedule], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddScheduleTrigger_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_InstanceStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddInstanceStatusTrigger_Click" />
+                                        </ui:MenuFlyout>
+                                    </ui:DropDownButton.Flyout>
+                                </ui:DropDownButton>
+                            </StackPanel>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Triggers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,5" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ContentControl Content="{Binding}" Grid.Column="0" Margin="10" />
+                                        
+                                        <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="DeleteTrigger_Click" Tag="{Binding}" VerticalAlignment="Top" Margin="0,10,10,0">
+                                            <ui:FontIcon Glyph="&#xE74D;" />
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Rulesets Section -->
+                <Expander IsExpanded="True" ExpandDirection="Down" Margin="0,0,0,10">
+                    <Expander.Header>
+                        <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="规则集" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="满足以下条件时执行行动" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                
+                                <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">
+                                    <ui:DropDownButton.Flyout>
+                                        <ui:MenuFlyout Placement="Bottom">
+                                            <MenuItem Header="总是为真" Click="AddAlwaysTrueRuleset_Click" />
+                                            <MenuItem Header="总是为假" Click="AddAlwaysFalseRuleset_Click" />
+                                            <MenuItem Header="实例状态" Click="AddInstanceStatusRuleset_Click" />
+                                        </ui:MenuFlyout>
+                                    </ui:DropDownButton.Flyout>
+                                </ui:DropDownButton>
+                            </StackPanel>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Rulesets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,5" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ContentControl Content="{Binding}" Grid.Column="0" Margin="10" />
+                                        
+                                        <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="DeleteRuleset_Click" Tag="{Binding}" VerticalAlignment="Top" Margin="0,10,10,0">
+                                            <ui:FontIcon Glyph="&#xE74D;" />
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Actions Section -->
+                <Expander IsExpanded="True" ExpandDirection="Down" Margin="0,0,0,10">
+                    <Expander.Header>
+                        <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_Event], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="执行方式" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ComboBox SelectedValue="{Binding Rule.ActionExecutionMode}" SelectedValuePath="Tag" Width="120">
+                                    <ComboBoxItem Content="顺序" Tag="Sequential" />
+                                    <ComboBoxItem Content="并行" Tag="Parallel" />
+                                </ComboBox>
+
+                                <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">
+                                    <ui:DropDownButton.Flyout>
+                                        <ui:MenuFlyout Placement="Bottom">
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_SendCommand], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddSendCommandAction_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_ChangeInstanceStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddChangeInstanceStatusAction_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_SendNotification], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddSendNotificationAction_Click" />
+                                        </ui:MenuFlyout>
+                                    </ui:DropDownButton.Flyout>
+                                </ui:DropDownButton>
+                            </StackPanel>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Actions}" AlternationCount="9999">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <!-- Separator (Hidden for the first item) -->
+                                        <TextBlock Text="{Binding DataContext.Rule.ActionExecutionMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ActionExecutionModeToTextConverter}}" 
+                                                   HorizontalAlignment="Center" FontWeight="Bold" Margin="0,5,0,5" 
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <Grid Margin="0,5" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <ContentControl Content="{Binding}" Grid.Column="0" Margin="10" />
+                                            
+                                            <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="DeleteAction_Click" Tag="{Binding}" VerticalAlignment="Top" Margin="0,10,10,0">
+                                                <ui:FontIcon Glyph="&#xE74D;" />
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="{Binding [Save], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Style="{StaticResource AccentButtonStyle}" Click="SaveButton_Click" Margin="0,0,10,0" Width="100" />
+            <Button Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="CancelButton_Click" Width="100" />
+        </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

@@ -46,6 +46,7 @@ public static class Application
                 a.RegisterSingleton<IEventService, EventService>();
                 a.RegisterSingleton<WsContextContainer>();
                 a.RegisterSingleton(InstanceManager.Create());
+                a.RegisterSingleton<EventTriggerService>();
                 a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(
                     new AsyncTimedLazyCell<SystemInfo>(
                         SystemInfoHelper.GetSystemInfo,

@@ -57,6 +57,11 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         public Guid InstanceId => _instanceId;
 
         /// <summary>
+        /// Check if daemon is connected
+        /// </summary>
+        public bool IsConnected => _daemon != null && _daemon.Online;
+
+        /// <summary>
         /// Check if current instance is a Minecraft server
         /// </summary>
         public bool IsMinecraftInstance
@@ -149,7 +154,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || _isDisposed)
+                if (_daemon == null || _isDisposed || !_daemon.Online)
                     return;
 
                 var report = await _daemon.GetInstanceReportAsync(_instanceId);
@@ -168,8 +173,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null)
-                    throw new InvalidOperationException("Daemon not initialized");
+                if (_daemon == null || !_daemon.Online)
+                    throw new InvalidOperationException("Daemon not initialized or offline");
 
                 await _daemon.StartInstanceAsync(_instanceId);
                 Log.Information("[InstanceDataManager] Started instance {0}", _instanceId);
@@ -188,8 +193,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null)
-                    throw new InvalidOperationException("Daemon not initialized");
+                if (_daemon == null || !_daemon.Online)
+                    throw new InvalidOperationException("Daemon not initialized or offline");
 
                 await _daemon.StopInstanceAsync(_instanceId);
                 Log.Information("[InstanceDataManager] Stopped instance {0}", _instanceId);
@@ -208,8 +213,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null)
-                    throw new InvalidOperationException("Daemon not initialized");
+                if (_daemon == null || !_daemon.Online)
+                    throw new InvalidOperationException("Daemon not initialized or offline");
 
                 await _daemon.KillInstanceAsync(_instanceId);
                 Log.Information("[InstanceDataManager] Killed instance {0}", _instanceId);
@@ -228,8 +233,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null)
-                    throw new InvalidOperationException("Daemon not initialized");
+                if (_daemon == null || !_daemon.Online)
+                    throw new InvalidOperationException("Daemon not initialized or offline");
 
                 await _daemon.RestartInstanceAsync(_instanceId);
                 Log.Information("[InstanceDataManager] Restarted instance {0}", _instanceId);
@@ -248,8 +253,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null)
-                    throw new InvalidOperationException("Daemon not initialized");
+                if (_daemon == null || !_daemon.Online)
+                    throw new InvalidOperationException("Daemon not initialized or offline");
 
                 await _daemon.SentToInstanceAsync(_instanceId, command);
                 Log.Debug("[InstanceDataManager] Sent command to instance {0}: {1}", _instanceId, command);
@@ -268,7 +273,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_isDisposed || _daemon == null)
+                if (_isDisposed || _daemon == null || !_daemon.Online)
                     return -1;
 
                 return await _daemon.PingAsync();
@@ -287,7 +292,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_isDisposed || _daemon == null)
+                if (_isDisposed || _daemon == null || !_daemon.Online)
                     return Array.Empty<string>();
 
                 return await _daemon.GetInstanceLogHistoryAsync(_instanceId);
@@ -296,6 +301,44 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to get instance log history");
                 return Array.Empty<string>();
+            }
+        }
+
+        /// <summary>
+        /// Get event rules
+        /// </summary>
+        public async Task<System.Collections.Generic.List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync()
+        {
+            try
+            {
+                if (_isDisposed || _daemon == null || !_daemon.Online)
+                    return new();
+
+                return await _daemon.GetEventRulesAsync(_instanceId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[InstanceDataManager] Failed to get event rules");
+                return new();
+            }
+        }
+
+        /// <summary>
+        /// Save event rules
+        /// </summary>
+        public async Task SaveEventRulesAsync(System.Collections.Generic.List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule> rules)
+        {
+            try
+            {
+                if (_isDisposed || _daemon == null || !_daemon.Online)
+                    return;
+
+                await _daemon.SaveEventRulesAsync(_instanceId, rules);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[InstanceDataManager] Failed to save event rules");
+                throw;
             }
         }
 

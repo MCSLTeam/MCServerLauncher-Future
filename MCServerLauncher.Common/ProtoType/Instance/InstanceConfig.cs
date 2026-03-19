@@ -81,5 +81,11 @@ public record InstanceConfig
     /// </summary>
     public Dictionary<string, PlaceHolderString> Env { get; init; } = new();
 
+    /// <summary>
+    ///     事件触发器规则
+    /// </summary>
+    [JsonProperty("event_rules")]
+    public List<EventTrigger.EventRule> EventRules { get; init; } = new();
+
     #endregion
 }
