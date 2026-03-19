@@ -7,11 +7,11 @@ $otherLangs = @(
     "MCServerLauncher.WPF/Translations/Lang.zh-TW.resx"
 )
 
-[xml]$zhCnXml = Get-Content $zhCnPath
+[xml]$zhCnXml = Get-Content $zhCnPath -Raw -Encoding UTF8
 $zhCnKeys = $zhCnXml.root.data | Select-Object -ExpandProperty name
 
 foreach ($langPath in $otherLangs) {
-    [xml]$langXml = Get-Content $langPath
+    [xml]$langXml = Get-Content $langPath -Raw -Encoding UTF8
     $langKeys = $langXml.root.data | Select-Object -ExpandProperty name
     
     $missingKeys = $zhCnKeys | Where-Object { $_ -notin $langKeys }
