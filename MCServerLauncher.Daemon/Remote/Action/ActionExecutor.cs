@@ -27,24 +27,41 @@ internal class AnotherActionExecutor : IActionExecutor
 
         ActionHandleBlock = new TransformBlock<ActionTask, ActionTask>(async task =>
         {
-            task.Result =
-                await task.AsyncHandler.Invoke(task.Param, task.Id, task.Context, task.Resolver,
-                    task.CancellationToken);
+            try
+            {
+                task.Result =
+                    await task.AsyncHandler.Invoke(task.Param, task.Id, task.Context, task.Resolver,
+                        task.CancellationToken);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "[Remote] Unhandled exception in async action handler");
+                task.Result = ResponseUtils.Err(
+                    ActionRetcode.UnexpectedError.WithMessage(e.Message),
+                    task.Id);
+            }
             return task;
         }, new ExecutionDataflowBlockOptions
         {
-            BoundedCapacity = 16, CancellationToken = Cts.Token, MaxDegreeOfParallelism = 16,
+            BoundedCapacity = -1, CancellationToken = Cts.Token, MaxDegreeOfParallelism = 16,
             EnsureOrdered = false
         });
 
         ActionSendBlock = new ActionBlock<ActionTask>(async task =>
         {
-            var o = JsonConvert.SerializeObject(task.Result, DaemonJsonSettings.Settings);
-            Log.Verbose("[Remote] Sending message: \n{0}", o);
-            await task.Context.GetWebsocket().SendAsync(o, cancellationToken: task.CancellationToken);
+            try
+            {
+                var o = JsonConvert.SerializeObject(task.Result, DaemonJsonSettings.Settings);
+                Log.Verbose("[Remote] Sending message: \n{0}", o);
+                await task.Context.GetWebsocket().SendAsync(o, cancellationToken: task.CancellationToken);
+            }
+            finally
+            {
+                ActionTaskPool.Return(task);
+            }
         }, new ExecutionDataflowBlockOptions
         {
-            BoundedCapacity = 16, CancellationToken = Cts.Token, MaxDegreeOfParallelism = 16,
+            BoundedCapacity = -1, CancellationToken = Cts.Token, MaxDegreeOfParallelism = 16,
             EnsureOrdered = false
         });
 

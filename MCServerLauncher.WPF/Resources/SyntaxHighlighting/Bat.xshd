@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Bat" extensions=".bat;.cmd" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Comment" foreground="Green" />
+	<Color name="String" foreground="Brown" />
+	<Color name="Command" foreground="Blue" fontWeight="bold" />
+	<Color name="Variable" foreground="Teal" />
+	<Color name="Label" foreground="DarkMagenta" fontWeight="bold" />
+	<Color name="Operator" foreground="Red" />
+
+	<RuleSet>
+		<Span color="Comment" begin="REM " />
+		<Span color="Comment" begin="::" />
+		
+		<Span color="String">
+			<Begin>"</Begin>
+			<End>"</End>
+		</Span>
+
+		<Rule color="Variable">
+			%[\w\d_]+%
+		</Rule>
+		<Rule color="Variable">
+			![\w\d_]+!
+		</Rule>
+
+		<Rule color="Label">
+			^:\w+
+		</Rule>
+
+		<Rule color="Command">
+			\b(echo|goto|call|exit|if|else|for|set|pause|cls|cd|md|rd|del|copy|xcopy|move|ren|start|title|color|mode|timeout|choice|shift|pushd|popd)\b
+		</Rule>
+
+		<Rule color="Operator">
+			[=\x3e\x3c|]
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>

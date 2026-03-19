@@ -544,7 +544,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private async Task OpenItemAsync()
         {
-            if (SelectedItem == null) return;
+            if (SelectedItem == null || _daemon == null) return;
 
             if (SelectedItem.IsDirectory)
             {
@@ -552,7 +552,15 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             }
             else
             {
-                MessageBox.Show("暂不支持直接打开文件，请先下载。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                var realPath = GetRealPath(SelectedItem.Path);
+                var editor = new MCServerLauncher.WPF.InstanceConsole.View.Dialogs.FileEditorWindow();
+                var vm = new MCServerLauncher.WPF.InstanceConsole.View.Dialogs.FileEditorViewModel(_daemon, realPath, SelectedItem.Path, SelectedItem.SizeBytes, editor);
+                editor.DataContext = vm;
+                
+                // Fire and forget loading
+                _ = vm.LoadFileAsync();
+                
+                editor.Show();
             }
         }
 

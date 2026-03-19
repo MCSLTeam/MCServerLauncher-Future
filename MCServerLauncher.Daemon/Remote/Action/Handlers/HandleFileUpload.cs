@@ -22,14 +22,23 @@ internal class HandleFileUploadRequest : IActionHandler<FileUploadRequestParamet
                 param.Sha1
             ))
             .MapErr(ex => new ActionError(ActionRetcode.FileError).CauseBy(ex))
-            .AndThen(fileId => fileId != Guid.Empty
-                ? this.Ok(new FileUploadRequestResult
+            .AndThen(fileId =>
+            {
+                if (fileId != Guid.Empty)
                 {
-                    FileId = fileId
-                })
-                : this.Err(
-                    ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space").ToError()
-                ));
+                    ctx.RegisterFileUploadSession(fileId);
+                    return this.Ok(new FileUploadRequestResult
+                    {
+                        FileId = fileId
+                    });
+                }
+                else
+                {
+                    return this.Err(
+                        ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space").ToError()
+                    );
+                }
+            });
     }
 }
 
@@ -51,6 +60,11 @@ internal class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParame
                 chunkParameter.Data
             );
 
+            if (done)
+            {
+                ctx.UnregisterFileUploadSession(chunkParameter.FileId);
+            }
+
             return new FileUploadChunkResult
             {
                 Done = done,
@@ -68,7 +82,10 @@ internal class HandleFileUploadCancel : IActionHandler<FileUploadCancelParameter
     public Result<EmptyActionResult, ActionError> Handle(FileUploadCancelParameter param, WsContext ctx,
         IResolver resolver, CancellationToken ct)
     {
-        return FileManager.FileUploadCancel(param.FileId)
+        var result = FileManager.FileUploadCancel(param.FileId);
+        ctx.UnregisterFileUploadSession(param.FileId);
+        
+        return result
             ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
             : this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId).ToError());
     }

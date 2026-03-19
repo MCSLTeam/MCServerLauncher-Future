@@ -39,6 +39,17 @@
                 <Button Content="Warning-TopRight" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
                 <Button Content="Error-Bottom" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
                 <Button Content="Success-BottomRight" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
+                
+                <TextBlock Text="Debug - File Editor" Style="{StaticResource SubtitleTextBlock}" Margin="0,20,0,10" />
+                <WrapPanel Orientation="Horizontal">
+                    <Button Content="Log" Click="OpenFileEditor_Log" Margin="0,0,10,10" />
+                    <Button Content="Ini" Click="OpenFileEditor_Ini" Margin="0,0,10,10" />
+                    <Button Content="Yaml" Click="OpenFileEditor_Yaml" Margin="0,0,10,10" />
+                    <Button Content="Toml" Click="OpenFileEditor_Toml" Margin="0,0,10,10" />
+                    <Button Content="Bat" Click="OpenFileEditor_Bat" Margin="0,0,10,10" />
+                    <Button Content="Shell" Click="OpenFileEditor_Shell" Margin="0,0,10,10" />
+                    <Button Content="CSV" Click="OpenFileEditor_Csv" Margin="0,0,10,10" />
+                </WrapPanel>
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

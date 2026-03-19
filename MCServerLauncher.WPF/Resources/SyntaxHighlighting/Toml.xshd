@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Toml" extensions=".toml" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Comment" foreground="Green" />
+	<Color name="Table" foreground="Blue" fontWeight="bold" />
+	<Color name="Key" foreground="DarkBlue" />
+	<Color name="String" foreground="Brown" />
+	<Color name="Number" foreground="DarkCyan" />
+	<Color name="Boolean" foreground="DarkMagenta" fontWeight="bold" />
+	<Color name="Date" foreground="DarkRed" />
+
+	<RuleSet>
+		<Span color="Comment" begin="#" />
+		
+		<Span color="Table">
+			<Begin>\[</Begin>
+			<End>\]</End>
+		</Span>
+
+		<Span color="String">
+			<Begin>"""</Begin>
+			<End>"""</End>
+		</Span>
+
+		<Span color="String">
+			<Begin>"</Begin>
+			<End>"</End>
+		</Span>
+		
+		<Span color="String">
+			<Begin>'</Begin>
+			<End>'</End>
+		</Span>
+
+		<Rule color="Key">
+			^[\w\d_-]+(?=\s*=)
+		</Rule>
+
+		<Rule color="Boolean">
+			\b(true|false)\b
+		</Rule>
+
+		<Rule color="Number">
+			\b\d+(\.\d+)?\b
+		</Rule>
+		
+		<Rule color="Date">
+			\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(Z|[\+\-]\d{2}:\d{2})?)?
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>

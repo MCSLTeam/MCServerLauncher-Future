@@ -23,12 +23,15 @@ internal class HandleFileDownloadRequest : IAsyncActionHandler<FileDownloadReque
                     .OkOr(ActionRetcode.RateLimitExceeded.WithMessage(
                         $"Max download sessions of file '{requestParameter.Path}' reached").ToError())
                     .AndThen(rv =>
-                        this.Ok(new FileDownloadRequestResult
+                    {
+                        ctx.RegisterFileDownloadSession(rv.Id);
+                        return this.Ok(new FileDownloadRequestResult
                         {
                             FileId = rv.Id,
                             Size = rv.Size,
                             Sha1 = rv.Sha1
-                        }));
+                        });
+                    });
             }, param)
             .MapTask(result => result.UnwrapOrElse(ex =>
                 this.Err(ActionRetcode.FileError.ToError().CauseBy(ex)))
@@ -64,7 +67,18 @@ internal class HandleFileDownloadClose : IActionHandler<FileDownloadCloseParamet
     public Result<EmptyActionResult, ActionError> Handle(FileDownloadCloseParameter param, WsContext ctx,
         IResolver resolver, CancellationToken ct)
     {
-        FileManager.FileDownloadClose(param.FileId);
+        try
+        {
+            FileManager.FileDownloadClose(param.FileId);
+        }
+        catch (Exception)
+        {
+            // Ignore if already closed
+        }
+        finally
+        {
+            ctx.UnregisterFileDownloadSession(param.FileId);
+        }
         return this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }

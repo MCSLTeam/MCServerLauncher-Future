@@ -60,6 +60,10 @@
     <Resource Include="Resources\bangbang93.jpg" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\SyntaxHighlighting\*.xshd" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="Downloader">
       <Version>4.0.3</Version>
     </PackageReference>

@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
+      xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Loaded="Page_Loaded">
@@ -67,13 +68,24 @@
                 </ui:DropDownButton.Flyout>
             </ui:DropDownButton>
         </Grid>
-        <TextBox Grid.Row="1" x:Name="ConsoleLogTextBox" 
-                 IsReadOnly="True" 
-                 Margin="0,15,0,0" 
-                 TextWrapping="Wrap" 
-                 FontFamily="Consolas" 
-                 VerticalScrollBarVisibility="Auto"
-                 TextChanged="ConsoleLogTextBox_TextChanged" />
+        <avalonEdit:TextEditor Grid.Row="1" x:Name="ConsoleLogEditor"
+                               IsReadOnly="True"
+                               Margin="0,15,0,0"
+                               FontFamily="Consolas"
+                               ShowLineNumbers="False"
+                               WordWrap="True"
+                               Background="Transparent"
+                               Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}">
+            <avalonEdit:TextEditor.Options>
+                <avalonEdit:TextEditorOptions ShowBoxForControlCharacters="True" EnableTextDragDrop="False" EnableRectangularSelection="True" />
+            </avalonEdit:TextEditor.Options>
+            <avalonEdit:TextEditor.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                </ContextMenu>
+            </avalonEdit:TextEditor.ContextMenu>
+        </avalonEdit:TextEditor>
         <Grid Grid.Row="2" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

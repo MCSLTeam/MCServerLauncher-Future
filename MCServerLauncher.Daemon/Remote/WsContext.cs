@@ -76,6 +76,39 @@ public class WsContext
         _subscribedEvents.Clear();
     }
 
+    private readonly ConcurrentDictionary<Guid, byte> _fileDownloadSessions = new();
+    private readonly ConcurrentDictionary<Guid, byte> _fileUploadSessions = new();
+
+    public void RegisterFileDownloadSession(Guid fileId)
+    {
+        _fileDownloadSessions.TryAdd(fileId, 0);
+    }
+
+    public void UnregisterFileDownloadSession(Guid fileId)
+    {
+        _fileDownloadSessions.TryRemove(fileId, out _);
+    }
+
+    public IEnumerable<Guid> GetFileDownloadSessions()
+    {
+        return _fileDownloadSessions.Keys;
+    }
+
+    public void RegisterFileUploadSession(Guid fileId)
+    {
+        _fileUploadSessions.TryAdd(fileId, 0);
+    }
+
+    public void UnregisterFileUploadSession(Guid fileId)
+    {
+        _fileUploadSessions.TryRemove(fileId, out _);
+    }
+
+    public IEnumerable<Guid> GetFileUploadSessions()
+    {
+        return _fileUploadSessions.Keys;
+    }
+
     // /// <summary>
     // /// 异步发送文本消息。
     // /// </summary>

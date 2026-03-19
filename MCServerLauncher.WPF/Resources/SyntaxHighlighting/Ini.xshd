@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Ini" extensions=".ini;.cfg;.conf;.properties" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Comment" foreground="Green" />
+	<Color name="Section" foreground="Blue" fontWeight="bold" />
+	<Color name="Key" foreground="DarkBlue" />
+	<Color name="Value" foreground="Brown" />
+	<Color name="Assignment" foreground="Black" />
+
+	<RuleSet>
+		<Span color="Comment" begin=";" />
+		<Span color="Comment" begin="#" />
+		<Span color="Comment" begin="!" />
+		
+		<Span color="Section">
+			<Begin>\[</Begin>
+			<End>\]</End>
+		</Span>
+
+		<Rule color="Key">
+			^[\w\d\._\-\s]+(?=[=:])
+		</Rule>
+
+		<Rule color="Assignment">
+			[=:]
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>

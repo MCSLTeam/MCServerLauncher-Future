@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Yaml" extensions=".yaml;.yml" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Comment" foreground="Green" />
+	<Color name="Key" foreground="DarkBlue" fontWeight="bold" />
+	<Color name="Value" foreground="Black" />
+	<Color name="String" foreground="Brown" />
+	<Color name="Number" foreground="DarkCyan" />
+	<Color name="Boolean" foreground="DarkMagenta" fontWeight="bold" />
+
+	<RuleSet>
+		<Span color="Comment" begin="#" />
+		
+		<Span color="String">
+			<Begin>"</Begin>
+			<End>"</End>
+		</Span>
+		
+		<Span color="String">
+			<Begin>'</Begin>
+			<End>'</End>
+		</Span>
+
+		<Rule color="Key">
+			^[\s-]*[\w\d_-]+:
+		</Rule>
+
+		<Rule color="Boolean">
+			\b(true|false|yes|no|on|off)\b
+		</Rule>
+
+		<Rule color="Number">
+			\b\d+(\.\d+)?\b
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>

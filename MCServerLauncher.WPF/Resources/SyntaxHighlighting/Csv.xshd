@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="CSV" extensions=".csv" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="String" foreground="Brown" />
+	<Color name="Separator" foreground="Red" fontWeight="bold" />
+
+	<RuleSet>
+		<Span color="String">
+			<Begin>"</Begin>
+			<End>"</End>
+		</Span>
+
+		<Rule color="Separator">
+			,
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>

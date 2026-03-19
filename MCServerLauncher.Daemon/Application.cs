@@ -12,6 +12,7 @@ using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using MCServerLauncher.Daemon.Utils.Status;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -31,6 +32,7 @@ public static class Application
     public static async Task SetupAsync()
     {
         IServiceCollection collection = new ServiceCollection();
+        collection.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
 
         HttpService = new HttpService();
         await HttpService.SetupAsync(new TouchSocketConfig()

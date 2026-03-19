@@ -128,6 +128,8 @@ public static class DaemonExtensions
 
     #region File Upload / Download
 
+    private static readonly SemaphoreSlim _fileTransferSemaphore = new(3, 3);
+
     /// <summary>
     ///     action: 上传文件
     /// </summary>
@@ -141,96 +143,121 @@ public static class DaemonExtensions
     public static async Task<UploadContext> UploadFileAsync(this IDaemon daemon, string path, string dst, int chunkSize,
         int timeout = -1, CancellationToken ct = default)
     {
-        string sha1;
-        using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await _fileTransferSemaphore.WaitAsync(ct);
+        try
         {
-            sha1 = await Utils.FileSha1(fs);
-        }
-
-        var size = new FileInfo(path).Length;
-
-        var fileId = (
-            await daemon.RequestAsync<FileUploadRequestResult>(
-                ActionType.FileUploadRequest,
-                new FileUploadRequestParameter
-                {
-                    Path = dst,
-                    Sha1 = sha1,
-                    Timeout = null, // TODO 可配置的文件块上传间隔的超时时间
-                    Size = size
-                },
-                timeout,
-                ct)
-        ).FileId;
-        var cts = new CancellationTokenSource();
-
-        var uploadSpeed = new NetworkLoadSpeed
-        {
-            TotalBytes = size
-        };
-
-        var context = new UploadContext(fileId, cts, uploadSpeed, daemon);
-
-        // 后台异步的分块上传文件
-        var uploadTask = Task.Run(async () =>
-        {
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            var buffer = new byte[chunkSize];
-            var offset = 0;
-            int bytesRead;
-
-            while ((bytesRead = await fs.ReadAsync(buffer, 0, chunkSize, cts.Token)) > 0 &&
-                   !cts.IsCancellationRequested)
+            string sha1;
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                string strData;
-                if (bytesRead == chunkSize)
-                {
-                    strData = Encoding.BigEndianUnicode.GetString(buffer, 0, chunkSize);
-                }
-                else if (bytesRead % 2 != 0) // 末尾补0x00
-                {
-                    buffer[bytesRead] = 0x00;
-                    strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead + 1);
-                }
-                else
-                {
-                    strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead);
-                }
-
-                try
-                {
-                    var response = await daemon.RequestAsync<FileUploadChunkResult>(
-                        ActionType.FileUploadChunk,
-                        new FileUploadChunkParameter
-                        {
-                            Data = strData,
-                            FileId = fileId,
-                            Offset = offset
-                        }, cancellationToken: cts.Token);
-
-                    // 更新context
-                    context.Done = response.Done;
-                    context.LoadedBytes = response.Received;
-                    uploadSpeed.Push(bytesRead);
-
-                    if (context.Done) context.OnDone();
-                }
-                catch (DaemonRequestException e)
-                {
-                    Log.Error($"[Daemon] Error occurred when uploading file chunk: {e}");
-
-                    throw;
-                }
-
-                offset += bytesRead;
+                sha1 = await Utils.FileSha1(fs);
             }
 
-            if (cts.IsCancellationRequested)
-                await context.CancelAsync().Suppress(typeof(DaemonRequestException)); // 不传入cancellationToken
-        }, cts.Token);
-        context.NetworkLoadTask = uploadTask;
-        return context;
+            var size = new FileInfo(path).Length;
+
+            var fileId = (
+                await daemon.RequestAsync<FileUploadRequestResult>(
+                    ActionType.FileUploadRequest,
+                    new FileUploadRequestParameter
+                    {
+                        Path = dst,
+                        Sha1 = sha1,
+                        Timeout = null, // TODO 可配置的文件块上传间隔的超时时间
+                        Size = size
+                    },
+                    timeout,
+                    ct)
+            ).FileId;
+            var cts = new CancellationTokenSource();
+
+            var uploadSpeed = new NetworkLoadSpeed
+            {
+                TotalBytes = size
+            };
+
+            var context = new UploadContext(fileId, cts, uploadSpeed, daemon);
+
+            // 后台异步的分块上传文件
+            var uploadTask = Task.Run(async () =>
+            {
+                try
+                {
+                    using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                    var buffer = new byte[chunkSize];
+                    var offset = 0;
+                    int bytesRead;
+
+                    while ((bytesRead = await fs.ReadAsync(buffer, 0, chunkSize, cts.Token)) > 0 &&
+                           !cts.IsCancellationRequested)
+                    {
+                        string strData;
+                        if (bytesRead == chunkSize)
+                        {
+                            strData = Encoding.BigEndianUnicode.GetString(buffer, 0, chunkSize);
+                        }
+                        else if (bytesRead % 2 != 0) // 末尾补0x00
+                        {
+                            buffer[bytesRead] = 0x00;
+                            strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead + 1);
+                        }
+                        else
+                        {
+                            strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead);
+                        }
+
+                        try
+                        {
+                            var response = await daemon.RequestAsync<FileUploadChunkResult>(
+                                ActionType.FileUploadChunk,
+                                new FileUploadChunkParameter
+                                {
+                                    Data = strData,
+                                    FileId = fileId,
+                                    Offset = offset
+                                }, cancellationToken: cts.Token);
+
+                            // 更新context
+                            context.Done = response.Done;
+                            context.LoadedBytes = response.Received;
+                            uploadSpeed.Push(bytesRead);
+
+                            if (context.Done) context.OnDone();
+                        }
+                        catch (DaemonRequestException e)
+                        {
+                            Log.Error($"[Daemon] Error occurred when uploading file chunk: {e}");
+
+                            throw;
+                        }
+
+                        offset += bytesRead;
+                        await Task.Delay(10, cts.Token);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[Daemon] Error occurred during file upload: {ex}");
+                    try
+                    {
+                        await daemon.RequestAsync(ActionType.FileUploadCancel, new FileUploadCancelParameter { FileId = fileId }, timeout, CancellationToken.None);
+                    }
+                    catch { /* ignore */ }
+                    throw;
+                }
+                finally
+                {
+                    _fileTransferSemaphore.Release();
+                }
+            }, cts.Token);
+            context.NetworkLoadTask = uploadTask;
+            return context;
+        }
+        catch (Exception)
+        {
+            _fileTransferSemaphore.Release();
+            throw;
+        }
     }
 
     /// <summary>
@@ -247,77 +274,113 @@ public static class DaemonExtensions
         int chunkSize,
         int timeout = -1, CancellationToken ct = default)
     {
-        var resp = await daemon.RequestAsync<FileDownloadRequestResult>(
-            ActionType.FileDownloadRequest,
-            new FileDownloadRequestParameter
-            {
-                Path = path,
-                Timeout = null // TODO 可配置的文件块下载间隔的超时时间
-            },
-            timeout,
-            ct
-        );
-
-        var cts = new CancellationTokenSource();
-        var context =
-            new DownloadContext(resp.FileId, cts, new NetworkLoadSpeed { TotalBytes = resp.Size }, daemon);
-
+        await _fileTransferSemaphore.WaitAsync(ct);
         try
         {
-            // 预分配空间
-            using var fs = new FileStream(dst, FileMode.Create, FileAccess.Write, FileShare.None);
-            fs.SetLength(resp.Size);
+            var resp = await daemon.RequestAsync<FileDownloadRequestResult>(
+                ActionType.FileDownloadRequest,
+                new FileDownloadRequestParameter
+                {
+                    Path = path,
+                    Timeout = null // TODO 可配置的文件块下载间隔的超时时间
+                },
+                timeout,
+                ct
+            );
+
+            var cts = new CancellationTokenSource();
+            var context =
+                new DownloadContext(resp.FileId, cts, new NetworkLoadSpeed { TotalBytes = resp.Size }, daemon);
+
+            try
+            {
+                // 预分配空间
+                using var fs = new FileStream(dst, FileMode.Create, FileAccess.Write, FileShare.None);
+                fs.SetLength(resp.Size);
+            }
+            catch (IOException e)
+            {
+                Log.Error($"[Daemon] Error occurred when starting download file: {e}");
+                await context.CancelAsync().Suppress(typeof(DaemonRequestException));
+                throw;
+            }
+
+
+            // 后台异步的分块下载文件
+            var downloadTask = Task.Run(async () =>
+            {
+                try
+                {
+                    using var fs = new FileStream(dst, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                    long downloadedBytes = 0;
+                    while (!cts.IsCancellationRequested)
+                    {
+                        // 写入数据
+                        var count = Math.Min(chunkSize, resp.Size - downloadedBytes);
+
+                        // TODO DaemonRequestException处理
+                        var data = await daemon.RequestAsync<FileDownloadRangeResult>(
+                            ActionType.FileDownloadRange,
+                            new FileDownloadRangeParameter
+                            {
+                                FileId = resp.FileId,
+                                Range =
+                                    $"{downloadedBytes}..{downloadedBytes + count}"
+                            },
+                            timeout,
+                            ct
+                        );
+
+                        // TODO IOException处理
+                        await fs.WriteAsync(Encoding.BigEndianUnicode.GetBytes(data.Content), 0, (int)count, ct);
+                        downloadedBytes += count;
+
+                        // 更新context
+                        context.Done = downloadedBytes >= resp.Size;
+                        context.LoadedBytes = downloadedBytes;
+                        if (context.Done)
+                        {
+                            context.OnDone();
+                            try
+                            {
+                                await daemon.RequestAsync(ActionType.FileDownloadClose, new FileDownloadCloseParameter { FileId = resp.FileId }, timeout, ct);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error($"[Daemon] Error occurred when closing download file: {ex}");
+                            }
+                            break;
+                        }
+                        
+                        await Task.Delay(10, cts.Token);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[Daemon] Error occurred during file download: {ex}");
+                    try
+                    {
+                        await daemon.RequestAsync(ActionType.FileDownloadClose, new FileDownloadCloseParameter { FileId = resp.FileId }, timeout, CancellationToken.None);
+                    }
+                    catch { /* ignore */ }
+                    throw;
+                }
+                finally
+                {
+                    _fileTransferSemaphore.Release();
+                }
+            }, cts.Token);
+
+            // 更新context
+            context.NetworkLoadTask = downloadTask;
+
+            return context;
         }
-        catch (IOException e)
+        catch (Exception)
         {
-            Log.Error($"[Daemon] Error occurred when starting download file: {e}");
-            await context.CancelAsync().Suppress(typeof(DaemonRequestException));
+            _fileTransferSemaphore.Release();
             throw;
         }
-
-
-        // 后台异步的分块下载文件
-        var downloadTask = Task.Run(async () =>
-        {
-            using var fs = new FileStream(dst, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-            long downloadedBytes = 0;
-            while (!cts.IsCancellationRequested)
-            {
-                // 写入数据
-                var count = Math.Min(chunkSize, resp.Size - downloadedBytes);
-
-                // TODO DaemonRequestException处理
-                var data = await daemon.RequestAsync<FileDownloadRangeResult>(
-                    ActionType.FileDownloadRange,
-                    new FileDownloadRangeParameter
-                    {
-                        FileId = resp.FileId,
-                        Range =
-                            $"{downloadedBytes}..{downloadedBytes + count}"
-                    },
-                    timeout,
-                    ct
-                );
-
-                // TODO IOException处理
-                await fs.WriteAsync(Encoding.BigEndianUnicode.GetBytes(data.Content), 0, (int)count, ct);
-                downloadedBytes += count;
-
-                // 更新context
-                context.Done = downloadedBytes >= resp.Size;
-                context.LoadedBytes = downloadedBytes;
-                if (context.Done)
-                {
-                    context.OnDone();
-                    break;
-                }
-            }
-        }, cts.Token);
-
-        // 更新context
-        context.NetworkLoadTask = downloadTask;
-
-        return context;
     }
 
     #endregion

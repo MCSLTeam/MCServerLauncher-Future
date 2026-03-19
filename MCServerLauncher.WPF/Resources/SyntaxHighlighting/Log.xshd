@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Log" extensions=".log" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Time" foreground="Gray" />
+	<Color name="Thread" foreground="DarkCyan" />
+	<Color name="Info" foreground="Green" />
+	<Color name="Warn" foreground="Orange" />
+	<Color name="Error" foreground="Red" fontWeight="bold" />
+	<Color name="Debug" foreground="Gray" />
+	<Color name="Trace" foreground="DarkGray" />
+	<Color name="Fatal" foreground="DarkRed" fontWeight="bold" />
+	<Color name="Exception" foreground="DarkRed" />
+	<Color name="ClassName" foreground="Teal" />
+	<Color name="Link" foreground="Blue" />
+
+	<RuleSet>
+		<!-- Time: [HH:mm:ss] or HH:mm:ss -->
+		<Rule color="Time">
+			\b\d{2}:\d{2}:\d{2}(,\d{3})?
+		</Rule>
+
+		<!-- Thread: [Thread-Name] -->
+		<Rule color="Thread">
+			\[[^\]]+\]
+		</Rule>
+
+		<!-- Log Levels -->
+		<Rule color="Info">
+			\b(INFO|Info|INFORMATION)\b
+		</Rule>
+		<Rule color="Warn">
+			\b(WARN|Warn|WARNING)\b
+		</Rule>
+		<Rule color="Error">
+			\b(ERROR|Error|FAIL|Failed)\b
+		</Rule>
+		<Rule color="Debug">
+			\b(DEBUG|Debug)\b
+		</Rule>
+		<Rule color="Trace">
+			\b(TRACE|Trace)\b
+		</Rule>
+		<Rule color="Fatal">
+			\b(FATAL|Fatal)\b
+		</Rule>
+
+		<!-- Exception Stack Traces -->
+		<Rule color="Exception">
+			^\s*at\s+[\w\.]+\(.*\).*$
+		</Rule>
+		<Rule color="Exception">
+			^\s*Caused by:.*$
+		</Rule>
+		<Rule color="Exception">
+			\w+Exception
+		</Rule>
+
+		<!-- Links -->
+		<Rule color="Link">
+			\b(https?|ftp|file)://[-A-Za-z0-9+&amp;@#/%?=~_|!:,.;]*[-A-Za-z0-9+&amp;@#/%=~_|]
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>

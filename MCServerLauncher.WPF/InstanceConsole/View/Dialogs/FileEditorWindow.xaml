@@ -1,0 +1,156 @@
+<Window x:Class="MCServerLauncher.WPF.InstanceConsole.View.Dialogs.FileEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
+        mc:Ignorable="d"
+        Title="{Binding [FileEditor], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True"
+        ui:ThemeManager.IsThemeAware="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
+        ui:TitleBar.IsIconVisible="True"
+        ui:TitleBar.Height="40"
+        ui:TitleBar.IsBackEnabled="False"
+        ui:TitleBar.IsBackButtonVisible="False">
+    
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+    
+    <Window.InputBindings>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveCommand}" />
+        <KeyBinding Key="OemPlus" Modifiers="Control" Command="{Binding ZoomInCommand}" />
+        <KeyBinding Key="Add" Modifiers="Control" Command="{Binding ZoomInCommand}" />
+        <KeyBinding Key="OemMinus" Modifiers="Control" Command="{Binding ZoomOutCommand}" />
+        <KeyBinding Key="Subtract" Modifiers="Control" Command="{Binding ZoomOutCommand}" />
+        <KeyBinding Key="D0" Modifiers="Control" Command="{Binding RestoreDefaultZoomCommand}" />
+        <KeyBinding Key="NumPad0" Modifiers="Control" Command="{Binding RestoreDefaultZoomCommand}" />
+        <KeyBinding Key="F5" Command="{Binding InsertTimeDateCommand}" CommandParameter="{Binding ElementName=TextEditor}" />
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar Area -->
+        <Grid Grid.Row="0" Margin="10,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality"
+                   Source="../../../../Resources/MCServerLauncherFutureConsole.ico" Width="20" Height="20" />
+            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="{Binding [FileEditor], Source={x:Static i18n:Lang.Tr}}" HorizontalAlignment="Left" />
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Menu -->
+            <Menu Grid.Row="0" Background="Transparent">
+                <MenuItem Header="{Binding [File], Source={x:Static i18n:Lang.Tr}}">
+                    <MenuItem Header="{Binding [Save], Source={x:Static i18n:Lang.Tr}}" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S">
+                        <MenuItem.Icon>
+                            <ui:FontIcon Glyph="&#xE74E;" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{Binding [Reload], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ReloadCommand}" />
+                    <Separator />
+                    <MenuItem Header="{Binding [Encoding], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ChangeEncodingCommand}" />
+                    <Separator />
+                    <MenuItem Header="{Binding [Exit], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ExitCommand}" />
+                </MenuItem>
+
+                <MenuItem Header="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}">
+                    <MenuItem Command="Undo" Header="{Binding [Undo], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="Redo" Header="{Binding [Redo], Source={x:Static i18n:Lang.Tr}}" />
+                    <Separator />
+                    <MenuItem Command="Cut" Header="{Binding [Cut], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="Paste" Header="{Binding [Paste], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="Delete" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                    <Separator />
+                    <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Header="{Binding [TimeDate], Source={x:Static i18n:Lang.Tr}}" Command="{Binding InsertTimeDateCommand}" CommandParameter="{Binding ElementName=TextEditor}" InputGestureText="F5" />
+                </MenuItem>
+
+                <MenuItem Header="{Binding [Format], Source={x:Static i18n:Lang.Tr}}">
+                    <MenuItem Header="{Binding [WordWrap], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding WordWrap}" />
+                    <MenuItem Header="{Binding [Font], Source={x:Static i18n:Lang.Tr}}" IsEnabled="False" />
+                </MenuItem>
+
+                <MenuItem Header="{Binding [View], Source={x:Static i18n:Lang.Tr}}">
+                    <MenuItem Header="{Binding [Zoom], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem Header="{Binding [ZoomIn], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl+Plus" />
+                        <MenuItem Header="{Binding [ZoomOut], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+Minus" />
+                        <MenuItem Header="{Binding [RestoreDefaultZoom], Source={x:Static i18n:Lang.Tr}}" Command="{Binding RestoreDefaultZoomCommand}" InputGestureText="Ctrl+0" />
+                    </MenuItem>
+                    <MenuItem Header="{Binding [StatusBar], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding ShowStatusBar}" />
+                    <MenuItem Header="{Binding [ShowLineNumbers], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
+                </MenuItem>
+
+            </Menu>
+
+            <!-- Editor -->
+            <avalonEdit:TextEditor Grid.Row="1" x:Name="TextEditor"
+                                   FontFamily="Consolas"
+                                   FontSize="{Binding FontSize}"
+                                   ShowLineNumbers="{Binding ShowLineNumbers}"
+                                   WordWrap="{Binding WordWrap}"
+                                   Margin="0"
+                                   BorderThickness="0,1,0,0"
+                                   BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                   Background="Transparent"
+                                   Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"
+                                   Document="{Binding Document}"
+                                   SyntaxHighlighting="{Binding SelectedSyntaxHighlighting}">
+                <avalonEdit:TextEditor.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Command="Undo" Header="{Binding [Undo], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="Redo" Header="{Binding [Redo], Source={x:Static i18n:Lang.Tr}}" />
+                        <Separator />
+                        <MenuItem Command="Cut" Header="{Binding [Cut], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="Paste" Header="{Binding [Paste], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="Delete" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                        <Separator />
+                        <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                    </ContextMenu>
+                </avalonEdit:TextEditor.ContextMenu>
+            </avalonEdit:TextEditor>
+
+            <!-- Status Bar -->
+            <StatusBar Grid.Row="2" Background="Transparent" Padding="0,5" Visibility="{Binding ShowStatusBar, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StatusBarItem>
+                    <TextBlock Text="{Binding FilePath}" Margin="10,0,0,0" />
+                </StatusBarItem>
+                <StatusBarItem HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                        <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Text="{Binding SelectedEncoding.DisplayName}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    </StackPanel>
+                </StatusBarItem>
+            </StatusBar>
+        </Grid>
+        
+        <!-- Loading Overlay -->
+        <Grid Grid.Row="0" Grid.RowSpan="2" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ui:ProgressRing IsActive="True" Width="50" Height="50" Margin="0,0,0,10" />
+                <TextBlock Text="{Binding LoadingText}" Foreground="White" FontSize="16" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

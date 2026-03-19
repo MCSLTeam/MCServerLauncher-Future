@@ -20,7 +20,34 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IW
     {
         var context = Container.RemoveContext(this.GetClientId(webSocket));
         Log.Information("[Remote] Websocket connection from {0} with ClientId={1} disconnected",
-            webSocket.Client.GetIPPort(), context.ClientId);
+            webSocket.Client.GetIPPort(), context?.ClientId);
+
+        if (context != null)
+        {
+            foreach (var fileId in context.GetFileDownloadSessions())
+            {
+                try
+                {
+                    Storage.FileManager.FileDownloadClose(fileId);
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+            }
+
+            foreach (var fileId in context.GetFileUploadSessions())
+            {
+                try
+                {
+                    Storage.FileManager.FileUploadCancel(fileId);
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+            }
+        }
 
         await e.InvokeNext();
     }

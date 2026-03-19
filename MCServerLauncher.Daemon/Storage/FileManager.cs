@@ -209,7 +209,6 @@ internal static class FileManager
         path = ResolveAndValidatePath(path);
         if (!File.Exists(path)) throw new FileNotFoundException();
 
-        // do not check if file in download session
         // balance the concurrency of file downloads (limited number of download sessions for a single file)
         if (DownloadSessions.Count(kv => kv.Value.Path == path) >= AppConfig.Get().FileDownloadSessions)
             // Max download sessions of file reached
@@ -239,10 +238,19 @@ internal static class FileManager
     {
         if (!DownloadSessions.TryGetValue(id, out var info))
             throw new ArgumentException("Invalid download session id or timeout");
-        if (from < 0 || to < 0 || from > to || to >= info.Size) throw new ArgumentException("Invalid range");
+            
+        // 修正范围，防止超出文件大小
+        if (to >= info.Size)
+        {
+            to = (int)info.Size;
+        }
+        
+        if (from < 0 || to < 0 || from > to) throw new ArgumentException("Invalid range");
         info.Touch();
 
         var size = to - from;
+        if (size == 0) return string.Empty; // 处理空文件或零长度请求
+        
         var buffer = new byte[size % 2 == 0 ? size : size + 1];
 
         info.File.Seek(from, SeekOrigin.Begin);

@@ -1,4 +1,7 @@
-﻿using MCServerLauncher.WPF.InstanceConsole.Modules;
+﻿using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Highlighting.Xshd;
+using MCServerLauncher.WPF.InstanceConsole.Modules;
+using MCServerLauncher.WPF.InstanceConsole.View.Dialogs;
 using MCServerLauncher.WPF.Modules;
 using Serilog;
 using System;
@@ -6,6 +9,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Xml;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 {
@@ -22,6 +27,93 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             InitializeComponent();
             OnFullscreenButtonContent.Visibility = Visibility.Visible;
             OffFullscreenButtonContent.Visibility = Visibility.Collapsed;
+            
+            InitializeSyntaxHighlighting();
+        }
+
+        private void InitializeSyntaxHighlighting()
+        {
+            try
+            {
+                // Register Log syntax highlighting if not already registered
+                if (HighlightingManager.Instance.GetDefinition("Log") == null)
+                {
+                    var resourceName = "MCServerLauncher.WPF.Resources.SyntaxHighlighting.Log.xshd";
+                    using (var stream = typeof(FileEditorWindow).Assembly.GetManifestResourceStream(resourceName))
+                    {
+                        if (stream != null)
+                        {
+                            using (var reader = new XmlTextReader(stream))
+                            {
+                                var definition = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                                HighlightingManager.Instance.RegisterHighlighting("Log", new[] { ".log", ".txt" }, definition);
+                            }
+                        }
+                        else
+                        {
+                            Log.Error("[CommandPage] Could not find embedded resource '{0}'. Available resources: {1}", 
+                                resourceName, 
+                                string.Join(", ", typeof(FileEditorWindow).Assembly.GetManifestResourceNames()));
+                        }
+                    }
+                }
+
+                var highlighting = HighlightingManager.Instance.GetDefinition("Log");
+                if (highlighting != null)
+                {
+                    // Apply theme-aware colors
+                    FixHighlightingColors(highlighting);
+                    ConsoleLogEditor.SyntaxHighlighting = highlighting;
+                }
+                
+                // Hide cursor
+                ConsoleLogEditor.TextArea.Caret.Hide();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[CommandPage] Failed to initialize syntax highlighting");
+            }
+        }
+
+        private void FixHighlightingColors(IHighlightingDefinition definition)
+        {
+            if (definition == null) return;
+
+            var visitedRuleSets = new System.Collections.Generic.HashSet<HighlightingRuleSet>();
+
+            foreach (var color in definition.NamedHighlightingColors)
+            {
+                FixColor(color);
+            }
+
+            FixRuleSet(definition.MainRuleSet, visitedRuleSets);
+        }
+
+        private void FixRuleSet(HighlightingRuleSet ruleSet, System.Collections.Generic.HashSet<HighlightingRuleSet> visited)
+        {
+            if (ruleSet == null || visited.Contains(ruleSet)) return;
+            visited.Add(ruleSet);
+
+            foreach (var rule in ruleSet.Rules)
+            {
+                FixColor(rule.Color);
+            }
+
+            foreach (var span in ruleSet.Spans)
+            {
+                FixColor(span.StartColor);
+                FixColor(span.EndColor);
+                FixRuleSet(span.RuleSet, visited);
+            }
+        }
+
+        private void FixColor(HighlightingColor color)
+        {
+            if (color == null) return;
+            if (color.Foreground is SimpleHighlightingBrush simpleBrush && simpleBrush.GetBrush(null) is SolidColorBrush solidBrush)
+            {
+                color.Foreground = new ThemeAwareHighlightingBrush(solidBrush.Color);
+            }
         }
 
         private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -39,8 +131,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     var history = await InstanceDataManager.Instance.GetInstanceLogHistoryAsync();
                     if (history != null && history.Length > 0)
                     {
-                        ConsoleLogTextBox.AppendText(string.Join(Environment.NewLine, history) + Environment.NewLine);
-                        ConsoleLogTextBox.ScrollToEnd();
+                        ConsoleLogEditor.AppendText(string.Join(Environment.NewLine, history) + Environment.NewLine);
+                        ConsoleLogEditor.ScrollToEnd();
                     }
                 }
                 catch (Exception ex)
@@ -64,14 +156,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             Dispatcher.Invoke(() =>
             {
-                ConsoleLogTextBox.AppendText(logMessage + Environment.NewLine);
+                ConsoleLogEditor.AppendText(logMessage + Environment.NewLine);
+                ConsoleLogEditor.ScrollToEnd();
             });
-        }
-
-        private void ConsoleLogTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // Auto scroll to bottom
-            ConsoleLogTextBox.ScrollToEnd();
         }
 
         private async void SendCommand_Click(object sender, RoutedEventArgs e)
@@ -102,8 +189,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 Log.Error(ex, "[CommandPage] Failed to send command: {0}", command);
                 Notification.Push(
-                    "Error",
-                    $"Failed to send command: {ex.Message}",
+                    Lang.Tr["Error"],
+                    string.Format(Lang.Tr["SendCommandFailed"], ex.Message),
                     true,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
@@ -116,8 +203,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 await InstanceDataManager.Instance.StartInstanceAsync();
                 Notification.Push(
-                    "Success",
-                    "Start command sent successfully",
+                    Lang.Tr["Success"],
+                    Lang.Tr["StartCommandSentSuccess"],
                     false,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
                 );
@@ -126,8 +213,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 Log.Error(ex, "[CommandPage] Failed to start instance");
                 Notification.Push(
-                    "Error",
-                    $"Failed to start instance: {ex.Message}",
+                    Lang.Tr["Error"],
+                    string.Format(Lang.Tr["InstanceCard_StartFailed"], ex.Message),
                     true,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
@@ -140,8 +227,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 await InstanceDataManager.Instance.StopInstanceAsync();
                 Notification.Push(
-                    "Success",
-                    "Stop command sent successfully",
+                    Lang.Tr["Success"],
+                    Lang.Tr["StopCommandSentSuccess"],
                     false,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
                 );
@@ -150,8 +237,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 Log.Error(ex, "[CommandPage] Failed to stop instance");
                 Notification.Push(
-                    "Error",
-                    $"Failed to stop instance: {ex.Message}",
+                    Lang.Tr["Error"],
+                    string.Format(Lang.Tr["InstanceCard_StopFailed"], ex.Message),
                     true,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
@@ -164,8 +251,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 await InstanceDataManager.Instance.KillInstanceAsync();
                 Notification.Push(
-                    "Success",
-                    "Kill command sent successfully",
+                    Lang.Tr["Success"],
+                    Lang.Tr["KillCommandSentSuccess"],
                     false,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
                 );
@@ -174,8 +261,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 Log.Error(ex, "[CommandPage] Failed to kill instance");
                 Notification.Push(
-                    "Error",
-                    $"Failed to kill instance: {ex.Message}",
+                    Lang.Tr["Error"],
+                    string.Format(Lang.Tr["InstanceCard_KillFailed"], ex.Message),
                     true,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
@@ -188,8 +275,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 await InstanceDataManager.Instance.RestartInstanceAsync();
                 Notification.Push(
-                    "Success",
-                    "Instance restarted successfully",
+                    Lang.Tr["Success"],
+                    Lang.Tr["RestartCommandSentSuccess"],
                     false,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
                 );
@@ -198,8 +285,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 Log.Error(ex, "[CommandPage] Failed to restart instance");
                 Notification.Push(
-                    "Error",
-                    $"Failed to restart instance: {ex.Message}",
+                    Lang.Tr["Error"],
+                    string.Format(Lang.Tr["InstanceCard_RestartFailed"], ex.Message),
                     true,
                     iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
