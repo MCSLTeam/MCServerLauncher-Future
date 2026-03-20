@@ -1,4 +1,5 @@
 ﻿using MCServerLauncher.Daemon.Remote.Authentication;
+using Serilog;
 using TouchSocket.Http;
 
 namespace MCServerLauncher.Daemon.Remote;
@@ -25,7 +26,7 @@ public static class WsVerifyHandler
         }
         catch (Exception e)
         {
-            System.Console.WriteLine(e);
+            Log.Error(e, "[WsVerifyHandler] Verify failed");
             await context.Response.SetStatus(500, e.Message).AnswerAsync();
             return false;
         }

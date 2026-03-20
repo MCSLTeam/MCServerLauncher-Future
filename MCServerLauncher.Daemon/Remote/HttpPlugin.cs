@@ -20,7 +20,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
-        Log.Verbose($"Method: {method}, Path: {request.URL}");
+        Log.Verbose("Method: {Method}, Path: {URL}", method, request.URL);
         try
         {
             if (method == HttpMethod.Get)

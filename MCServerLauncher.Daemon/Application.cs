@@ -156,13 +156,13 @@ public static class Application
 
     private static void InitDataDirectory()
     {
-        var dataFolders = new List<string>
-        {
+        List<string> dataFolders =
+        [
             FileManager.Root,
             FileManager.InstancesRoot,
             FileManager.LogRoot,
             FileManager.ContainedRoot
-        };
+        ];
 
         foreach (var dataFolder in dataFolders.Where(dataFolder => !Directory.Exists(dataFolder)))
             Directory.CreateDirectory(dataFolder!);

@@ -39,10 +39,10 @@ public class MinecraftInstance : InstanceBase
             }
             catch (Exception e)when (e is SocketException or ArgumentOutOfRangeException)
             {
-                return Array.Empty<Player>();
+                return [];
             }
 
-        return Array.Empty<Player>();
+        return [];
     }
 
     public override async Task<InstanceReport> GetReportAsync()

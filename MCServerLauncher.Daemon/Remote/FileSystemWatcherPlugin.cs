@@ -12,10 +12,10 @@ public class FileSystemWatcherPlugin : PluginBase
     public FileSystemWatcherPlugin(IHttpService httpService)
     {
         var resolver = httpService.Resolver;
-        _watchers = new List<IDisposable>
-        {
+        _watchers =
+        [
             new InstancesManagerFsWatcher(resolver.GetRequiredService<IInstanceManager>())
-        };
+        ];
     }
 
     protected override void Unloaded(IPluginManager pluginManager)

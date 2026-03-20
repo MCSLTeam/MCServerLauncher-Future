@@ -8,14 +8,9 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosedPlugin
+public class WsBasePlugin(IHttpService httpService, WsContextContainer container)
+    : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosedPlugin
 {
-    public WsBasePlugin(IHttpService httpService, WsContextContainer container)
-    {
-        HttpService = httpService;
-        Container = container;
-    }
-
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
     {
         var context = Container.RemoveContext(this.GetClientId(webSocket));
@@ -77,6 +72,6 @@ public class WsBasePlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IW
         await e.InvokeNext();
     }
 
-    public IHttpService HttpService { get; init; }
-    public WsContextContainer Container { get; init; }
+    public IHttpService HttpService { get; init; } = httpService;
+    public WsContextContainer Container { get; init; } = container;
 }

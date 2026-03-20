@@ -40,7 +40,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         {
             if (!context.IsSubscribedEvent(type, meta)) return;
 
-            if (meta != null)
+            if (meta is not null)
             {
                 await PrivateSendEvent(type, meta, data, context.GetWebsocket()); // 单一发送(只有带meta的事件类型才会触发)
             }

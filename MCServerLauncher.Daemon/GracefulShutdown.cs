@@ -38,7 +38,7 @@ public class GracefulShutdown : IDisposable
         if (_source.IsCancellationRequested)
             throw new InvalidOperationException("Already shutdown");
 
-        _source.Cancel();
+        await _source.CancelAsync();
         Log.Information("[GracefulShutdown] shutting down...");
         if (OnShutdown is not null) await OnShutdown.Invoke();
         _semaphore.Release();

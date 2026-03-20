@@ -32,7 +32,7 @@ internal interface IActionHandlerBase<TParam, TResult>
         }
         catch (JsonSerializationException e)
         {
-            var @params = e.Path?.Split(new[] { '.' });
+            var @params = e.Path?.Split('.');
             var errorMessage = "Could not deserialize param";
 
             if (@params is not null) errorMessage += $"'{@params[1]}' at '{e.Path}'";

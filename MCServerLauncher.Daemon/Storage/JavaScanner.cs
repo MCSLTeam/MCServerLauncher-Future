@@ -24,8 +24,8 @@ public static class JavaScanner
             ? s => s.Equals("java.exe")
             : s => s.Equals("java");
 
-    private static readonly List<string> MatchedKeywords = new()
-    {
+    private static readonly List<string> MatchedKeywords =
+    [
         "intellij", "cache", "官启", "vape", "组件", "我的", "liteloader", "运行", "pcl", "bin", "appcode", "untitled folder",
         "content", "microsoft", "program", "lunar", "goland", "download", "corretto", "dragonwell", "客户", "client",
         "新建文件夹", "badlion", "usr", "temp", "ext", "run", "server", "软件", "software", "arctime", "jdk", "phpstorm",
@@ -35,9 +35,9 @@ public static class JavaScanner
         "green", "zulu", "官方", "forge", "游戏", "blc", "user", "国服", "pycharm", "3dmark", "data", "roaming", "程序", "java",
         "前置", "soar", "1.", "mc", "世界", "jetbrains", "cheatbreaker", "game", "网易", "launch", "fsm", "root",
         Environment.UserName
-    };
+    ];
 
-    private static readonly List<string> ExcludedKeywords = new() { "$", "{", "}", "__", "office", "volumes" };
+    private static readonly List<string> ExcludedKeywords = ["$", "{", "}", "__", "office", "volumes"];
 
     private static bool IsMatchedKey(string directoryName)
     {
@@ -116,7 +116,7 @@ public static class JavaScanner
         var startTime = DateTime.Now;
         Log.Verbose("[JVM] Start scanning available Java");
 
-        List<Task<JavaInfo?>> tasks = new();
+        List<Task<JavaInfo?>> tasks = [];
 
         // Disk
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

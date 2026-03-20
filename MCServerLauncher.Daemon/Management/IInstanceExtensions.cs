@@ -12,7 +12,7 @@ public static class IInstanceExtensions
     public static bool TryCastTo<TInstance>(this IInstance instance, out TInstance? castedInstance)
         where TInstance : IInstance
     {
-        var rv = instance.Config.CanCastTo<TInstance>();
+        var rv = instance.Config.CanSafeCastTo<TInstance>();
         castedInstance = rv ? (TInstance)instance : default;
         return rv;
     }

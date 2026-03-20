@@ -77,7 +77,7 @@ internal static class FileManager
         timeout ??= SessionTimeout;
 
         // Validate path
-        if (path != null)
+        if (path is not null)
         {
             path = ResolveAndValidatePath(path);
         }
@@ -350,7 +350,7 @@ internal static class FileManager
         out IDownload download,
         string? sha1 = null, int maxThreads = 16)
     {
-        if (targetDir != null)
+        if (targetDir is not null)
         {
             targetDir = ResolveAndValidatePath(targetDir);
         }
@@ -380,7 +380,7 @@ internal static class FileManager
 
         download.DownloadFileCompleted += async (_, args) =>
         {
-            if (args.Error != null)
+            if (args.Error is not null)
             {
                 File.Delete(tmpFilePath);
                 Log.Warning("[FileManager] Failed to download file {0}: {1}", filename, args.Error.Message);
@@ -621,7 +621,7 @@ internal static class FileManager
     {
         path = ResolveAndValidatePath(path);
         var directory = Path.GetDirectoryName(path);
-        if (directory == null) throw new IOException("Invalid path");
+        if (directory is null) throw new IOException("Invalid path");
         
         var newPath = Path.Combine(directory, newName);
         newPath = ResolveAndValidatePath(newPath);
@@ -640,7 +640,7 @@ internal static class FileManager
     {
         path = ResolveAndValidatePath(path);
         var directory = Path.GetDirectoryName(path);
-        if (directory == null) throw new IOException("Invalid path");
+        if (directory is null) throw new IOException("Invalid path");
         
         var newPath = Path.Combine(directory, newName);
         newPath = ResolveAndValidatePath(newPath);
@@ -716,20 +716,20 @@ internal static class FileManager
             throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
         }
 
-        DirectoryInfo dir = new DirectoryInfo(sourcePath);
-        DirectoryInfo[] dirs = dir.GetDirectories();
+        var dir = new DirectoryInfo(sourcePath);
+        var dirs = dir.GetDirectories();
 
         Directory.CreateDirectory(destinationPath);
 
-        foreach (FileInfo file in dir.GetFiles())
+        foreach (var file in dir.GetFiles())
         {
-            string targetFilePath = Path.Combine(destinationPath, file.Name);
+            var targetFilePath = Path.Combine(destinationPath, file.Name);
             file.CopyTo(targetFilePath, true);
         }
 
-        foreach (DirectoryInfo subDir in dirs)
+        foreach (var subDir in dirs)
         {
-            string newDestinationDir = Path.Combine(destinationPath, subDir.Name);
+            var newDestinationDir = Path.Combine(destinationPath, subDir.Name);
             CopyDirectory(subDir.FullName, newDestinationDir);
         }
     }

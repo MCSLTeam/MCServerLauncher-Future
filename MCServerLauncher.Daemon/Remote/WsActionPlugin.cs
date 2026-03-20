@@ -7,26 +7,18 @@ using TouchSocket.Http.WebSockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
+public class WsActionPlugin(IActionExecutor executor,
+    IHttpService httpService, WsContextContainer container)
+    : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
 
 {
-    private readonly IActionExecutor _executor;
-
-    public WsActionPlugin(IActionExecutor executor,
-        IHttpService httpService, WsContextContainer container)
-    {
-        _executor = executor;
-        HttpService = httpService;
-        Container = container;
-    }
-    
     public async Task OnWebSocketReceived(IWebSocket webSocket, WSDataFrameEventArgs e)
     {
         if (e.DataFrame.IsText)
         {
             var actionString = e.DataFrame.ToText();
             var context = Container.GetContext((webSocket.Client as IHttpSessionClient)!.Id);
-            var response = _executor.ProcessAction(actionString, context);
+            var response = executor.ProcessAction(actionString, context);
 
             if (response is not null)
                 await webSocket.SendAsync(JsonConvert.SerializeObject(response, DaemonJsonSettings.Settings));
@@ -36,6 +28,6 @@ public class WsActionPlugin : PluginBase, IWsPlugin, IWebSocketReceivedPlugin
     }
 
 
-    public IHttpService HttpService { get; init; }
-    public WsContextContainer Container { get; init; }
+    public IHttpService HttpService { get; init; } = httpService;
+    public WsContextContainer Container { get; init; } = container;
 }

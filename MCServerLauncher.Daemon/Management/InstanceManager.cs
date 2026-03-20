@@ -184,7 +184,7 @@ public class InstanceManager : IInstanceManager
             var dir = new DirectoryInfo(directory);
             var serverConfig = dir.GetFiles(InstanceConfig.FileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
 
-            if (serverConfig == null) continue;
+            if (serverConfig is null) continue;
 
             try
             {

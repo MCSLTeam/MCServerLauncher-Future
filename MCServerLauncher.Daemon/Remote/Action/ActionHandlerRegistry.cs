@@ -14,16 +14,10 @@ public enum EActionHandlerType
     Async
 }
 
-public class ActionHandlerMeta
+public class ActionHandlerMeta(IMatchable permission, EActionHandlerType type)
 {
-    internal ActionHandlerMeta(IMatchable permission, EActionHandlerType type)
-    {
-        Permission = permission;
-        Type = type;
-    }
-
-    public IMatchable Permission { get; }
-    public EActionHandlerType Type { get; }
+    public IMatchable Permission { get; } = permission;
+    public EActionHandlerType Type { get; } = type;
 }
 
 internal static class AnotherActionHandlerRegistry
@@ -65,7 +59,7 @@ internal static class AnotherActionHandlerRegistry
             i.IsGenericType &&
             i.GetGenericTypeDefinition() == typeof(IActionHandler<,>));
 
-        if (actionHandlerInterface != null)
+        if (actionHandlerInterface is not null)
         {
             // 获取泛型参数
             var genericArgs = actionHandlerInterface.GetGenericArguments();
@@ -77,7 +71,7 @@ internal static class AnotherActionHandlerRegistry
                 .GetMethod(nameof(BuildHandler), BindingFlags.Static | BindingFlags.NonPublic)
                 ?.MakeGenericMethod(tParam, tResult);
 
-            if (buildHandlerMethod != null)
+            if (buildHandlerMethod is not null)
             {
                 var handlerDelegate = buildHandlerMethod.Invoke(null, new[] { handlerInstance })!;
                 Handlers[attr.ActionType] =
@@ -94,7 +88,7 @@ internal static class AnotherActionHandlerRegistry
             i.IsGenericType &&
             i.GetGenericTypeDefinition() == typeof(IAsyncActionHandler<,>));
 
-        if (asyncActionHandlerInterface != null)
+        if (asyncActionHandlerInterface is not null)
         {
             // 获取泛型参数
             var genericArgs = asyncActionHandlerInterface.GetGenericArguments();
@@ -106,7 +100,7 @@ internal static class AnotherActionHandlerRegistry
                 .GetMethod(nameof(BuildAsyncHandler), BindingFlags.Static | BindingFlags.NonPublic)
                 ?.MakeGenericMethod(tParam, tResult);
 
-            if (buildAsyncHandlerMethod != null)
+            if (buildAsyncHandlerMethod is not null)
             {
                 var handlerDelegate = buildAsyncHandlerMethod.Invoke(null, new[] { handlerInstance })!;
                 AsyncHandlers[attr.ActionType] =

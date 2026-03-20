@@ -4,19 +4,14 @@ using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Management.Minecraft;
 
-public class PropertiesHandler
+public class PropertiesHandler(string path)
 {
     public const string FileName = "server.properties";
-    private readonly FileChange _fileChange;
+    private readonly FileChange _fileChange = new(path);
 
     private readonly ReaderWriterLockSlim _lock = new();
 
     private readonly Dictionary<string, string> _properties = new();
-
-    public PropertiesHandler(string path)
-    {
-        _fileChange = new FileChange(path);
-    }
 
     public event Action<IReadOnlyDictionary<string, string>>? OnPropertiesUpdated;
 

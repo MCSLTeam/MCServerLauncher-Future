@@ -9,7 +9,8 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosingPlugin
+public class WsExpirationPlugin(IHttpService httpService, WsContextContainer container)
+    : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosingPlugin
 {
     private const int CF_MAX_DELAY_SECOND = int.MaxValue / 1000;
 
@@ -18,12 +19,6 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlug
     private readonly CancellationTokenSource _loopCts = new();
     private readonly SemaphoreSlim _sync = new(0);
     private Task? _loopTask;
-
-    public WsExpirationPlugin(IHttpService httpService, WsContextContainer container)
-    {
-        HttpService = httpService;
-        Container = container;
-    }
 
     public async Task OnWebSocketClosing(IWebSocket webSocket, ClosingEventArgs e)
     {
@@ -37,8 +32,8 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlug
         await e.InvokeNext();
     }
 
-    public IHttpService HttpService { get; init; }
-    public WsContextContainer Container { get; init; }
+    public IHttpService HttpService { get; init; } = httpService;
+    public WsContextContainer Container { get; init; } = container;
 
     private async Task CheckExpireLoop()
     {
@@ -69,8 +64,8 @@ public class WsExpirationPlugin : PluginBase, IWsPlugin, IWebSocketConnectedPlug
                         }
                         catch (Exception e)
                         {
-                            Log.Error(
-                                $"[WsExpirePlugin / CheckExpireLoop] Error occurred while closing websocket connection: {e}");
+                            Log.Error(e,
+                                "[WsExpirePlugin / CheckExpireLoop] Error occurred while closing websocket connection");
                         }
                     }
                 }

@@ -66,7 +66,7 @@ public abstract class InstanceBase : DisposableObject, IInstance
             Status,
             Config,
             new Dictionary<string, string>(),
-            Array.Empty<Player>(),
+            [],
             Process is null ? default : await Process!.Monitor.GetMonitorData()
         );
     }
@@ -82,7 +82,7 @@ public abstract class InstanceBase : DisposableObject, IInstance
 
         RequestReloadConfig();
 
-        Process = new InstanceProcess(Config.GetStartInfo(), Config.CanCastTo<MinecraftInstance>());
+        Process = new InstanceProcess(Config.GetStartInfo(), Config.CanSafeCastTo<MinecraftInstance>());
         Process.OnStatusChanged += st => { OnStatusChanged?.Invoke(Config.Uuid, st); };
         Process.OnLog += message => OnLog?.Invoke(Config.Uuid, message);
 
@@ -96,7 +96,7 @@ public abstract class InstanceBase : DisposableObject, IInstance
 
     public IReadOnlyList<string> GetLogHistory()
     {
-        return Process?.GetLogHistory() ?? Array.Empty<string>();
+        return Process?.GetLogHistory() ?? [];
     }
 
     protected event Action? ConfigReloaded;

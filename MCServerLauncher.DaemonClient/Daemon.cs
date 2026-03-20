@@ -151,8 +151,8 @@ public class Daemon : IDaemon
             // var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
             var daemon = await OpenAsync(
                 "127.0.0.1",
-                11451,
-                "0GC3dszRrwmg7AQXTCIiVfy0N7EeBppT"
+                11452,
+                "Zb8ISMV5f71z0CL5YLMMNKg4CG2EzABZ"
                 , false,
                 new ClientConnectionConfig
                 {
@@ -202,7 +202,7 @@ public class Daemon : IDaemon
                     JavaPath = "java",
                     Arguments = Array.Empty<string>(),
                     SourceType = SourceType.Core,
-                    Source = "https://download.fastmirror.net/download/Vanilla/release/1.21.1-59353f",
+                    Source = "https://download.fastmirror.net/download/Vanilla/1.21.1/release",
                     // Source = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",
                     // Source = "daemon/downloads/forge-1.20.4-49.2.0-installer.jar",
                     McVersion = "1.21.1",

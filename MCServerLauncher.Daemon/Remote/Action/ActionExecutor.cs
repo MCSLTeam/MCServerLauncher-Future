@@ -113,7 +113,7 @@ internal class AnotherActionExecutor : IActionExecutor
                 : ResponseUtils.Err(ActionRetcode.RateLimitExceeded, request.Id),
 
             _ => ResponseUtils.Err(
-                ActionRetcode.UnexpectedError.WithMessage($"Unknown action handler type: {meta.Type.ToString()}"),
+                ActionRetcode.UnexpectedError.WithMessage($"Unknown action handler type: {meta.Type}"),
                 request.Id)
         };
     }

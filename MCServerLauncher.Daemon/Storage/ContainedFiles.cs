@@ -10,9 +10,9 @@ public static class ContainedFiles
     private static readonly Assembly Assembly = Assembly.GetExecutingAssembly();
 
     private static readonly string[] Files =
-    {
+    [
         NeoForgeServerLauncher
-    };
+    ];
 
     public static void ExtractContained()
     {
@@ -28,7 +28,7 @@ public static class ContainedFiles
         if (stream == null) throw new FileNotFoundException($"Contained file not found: {contained}");
         await using var file = File.Create(target);
         await stream.CopyToAsync(file);
-        Log.Debug($"[ContainedFiles]Extracted contained file: {target}");
+        Log.Debug("[ContainedFiles] Extracted contained file: {Target}", target);
         return target;
     }
 }

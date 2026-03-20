@@ -7,16 +7,11 @@ using Exception = System.Exception;
 
 namespace MCServerLauncher.Daemon.Console;
 
-public class ConsoleApplication
+public class ConsoleApplication(IHttpService httpService)
 {
     public const int EXIT = -255;
 
-    public ConsoleApplication(IHttpService httpService)
-    {
-        HttpService = httpService;
-    }
-
-    private IHttpService HttpService { get; }
+    private IHttpService HttpService { get; } = httpService;
 
     public void Serve()
     {

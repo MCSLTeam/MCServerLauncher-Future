@@ -84,7 +84,7 @@ internal class AppConfig
         }
         catch (Exception e)
         {
-            Log.Fatal($"Failed to save config file: {e.Message}");
+            Log.Fatal("Failed to save config file: {Message}", e.Message);
             return false;
         }
     }

@@ -6,14 +6,9 @@ namespace MCServerLauncher.Daemon.Remote.Action;
 /// <summary>
 ///     ActionError is a wrapper of ActionRetcode.
 /// </summary>
-public sealed class ActionError : Error
+public sealed class ActionError(ActionRetcode? retcode = null) : Error
 {
-    public ActionError(ActionRetcode? retcode = null)
-    {
-        Retcode = retcode ?? ActionRetcode.UnexpectedError;
-    }
-
-    public ActionRetcode Retcode { get; }
+    public ActionRetcode Retcode { get; } = retcode ?? ActionRetcode.UnexpectedError;
 
     public override string Cause => Retcode.Message;
 

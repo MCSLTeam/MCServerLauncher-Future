@@ -10,22 +10,14 @@ namespace MCServerLauncher.Daemon.Remote;
 /// <summary>
 ///     线程安全的ws服务上下文
 /// </summary>
-public class WsContext
+public class WsContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)
 {
     private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
 
-    public WsContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)
-    {
-        ClientId = clientId;
-        Permissions = permissions is null ? Permissions.Never : new Permissions(permissions);
-        ExpiredTo = expiredTo;
-        JTI = jti;
-    }
-
-    public Permissions Permissions { get; }
-    public DateTime ExpiredTo { get; }
-    public Guid JTI { get; }
-    public string ClientId { get; }
+    public Permissions Permissions { get; } = permissions is null ? Authentication.Permissions.Never : new Permissions(permissions);
+    public DateTime ExpiredTo { get; } = expiredTo;
+    public Guid JTI { get; } = jti;
+    public string ClientId { get; } = clientId;
 
     public IWebSocket GetWebsocket()
     {
@@ -40,12 +32,12 @@ public class WsContext
             _subscribedEvents.TryAdd(type, set);
         }
 
-        if (meta != null) set.Add(meta);
+        if (meta is not null) set.Add(meta);
     }
 
     public void UnsubscribeEvent(EventType type, IEventMeta? meta)
     {
-        if (meta != null)
+        if (meta is not null)
         {
             if (_subscribedEvents.TryGetValue(type, out var set))
             {
@@ -68,7 +60,7 @@ public class WsContext
     {
         return _subscribedEvents.TryGetValue(type, out var set)
             ? new HashSet<IEventMeta>(set)
-            : Enumerable.Empty<IEventMeta>();
+            : [];
     }
 
     public void UnsubscribeAllEvents()

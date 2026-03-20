@@ -26,7 +26,7 @@ public class Permissions
 
     private Permissions()
     {
-        PermissionList = Array.Empty<Permission>();
+        PermissionList = [];
     }
 
     public Permission[] PermissionList { get; }

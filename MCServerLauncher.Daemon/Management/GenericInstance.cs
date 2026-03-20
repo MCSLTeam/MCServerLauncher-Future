@@ -2,9 +2,4 @@
 
 namespace MCServerLauncher.Daemon.Management;
 
-public class GenericInstance : InstanceBase
-{
-    public GenericInstance(InstanceConfig config) : base(config)
-    {
-    }
-}
+public class GenericInstance(InstanceConfig config) : InstanceBase(config);

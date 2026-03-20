@@ -89,7 +89,7 @@ public static class InstanceConfigExtensions
     /// <param name="config"></param>
     /// <typeparam name="TInstance"></typeparam>
     /// <returns></returns>
-    public static bool CanCastTo<TInstance>(this InstanceConfig config)
+    public static bool CanSafeCastTo<TInstance>(this InstanceConfig config)
         where TInstance : IInstance
     {
         if (typeof(TInstance) == typeof(MinecraftInstance)) return config.InstanceType is not InstanceType.Universal;
@@ -106,7 +106,7 @@ public static class InstanceConfigExtensions
     /// <returns></returns>
     public static IInstance CreateInstance(this InstanceConfig config)
     {
-        if (config.CanCastTo<MinecraftInstance>()) return new MinecraftInstance(config);
+        if (config.CanSafeCastTo<MinecraftInstance>()) return new MinecraftInstance(config);
 
         return new GenericInstance(config);
     }
@@ -143,7 +143,7 @@ public static class InstanceConfigExtensions
     private static (string File, string ArgumentString) GetLaunchScript(this InstanceConfig config)
     {
         var fullPath = Path.GetFullPath(Path.Combine(config.GetWorkingDirectory(), config.Target));
-        var isMcServer = config.CanCastTo<MinecraftInstance>();
+        var isMcServer = config.CanSafeCastTo<MinecraftInstance>();
         return config.TargetType switch
         {
             TargetType.Jar => (
