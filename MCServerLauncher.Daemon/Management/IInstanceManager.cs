@@ -58,7 +58,7 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    Task<InstanceReport> GetInstanceReport(Guid instanceId);
+    Task<InstanceReport?> GetInstanceReport(Guid instanceId);
 
 
     /// <summary>

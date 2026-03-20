@@ -94,9 +94,12 @@ public class InstanceManager : IInstanceManager
         {
             target.OnStatusChanged -= OnInstanceStatusChangedHandler;
             target.OnStatusChanged += OnInstanceStatusChangedHandler;
-            
+
             // Hook event triggers
-            var eventTriggerService = Application.HttpService?.Resolver.Resolve(typeof(MCServerLauncher.Daemon.Remote.Event.EventTriggerService)) as MCServerLauncher.Daemon.Remote.Event.EventTriggerService;
+            var eventTriggerService =
+                Application.HttpService?.Resolver.Resolve(
+                        typeof(MCServerLauncher.Daemon.Remote.Event.EventTriggerService)) as
+                    MCServerLauncher.Daemon.Remote.Event.EventTriggerService;
             eventTriggerService?.HookInstance(target);
 
             if (await target.StartAsync())
@@ -143,11 +146,11 @@ public class InstanceManager : IInstanceManager
         if (RunningInstances.TryGetValue(instanceId, out var instance)) instance.Process!.KillProcess();
     }
 
-    public Task<InstanceReport> GetInstanceReport(Guid instanceId)
+    public async Task<InstanceReport?> GetInstanceReport(Guid instanceId)
     {
         if (!Instances.TryGetValue(instanceId, out var instance))
-            throw new ArgumentException("Instance not found.");
-        return instance.GetReportAsync();
+            return null;
+        return await instance.GetReportAsync();
     }
 
     public async Task<Dictionary<Guid, InstanceReport>> GetAllReports()

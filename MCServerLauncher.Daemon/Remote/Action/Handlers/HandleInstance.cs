@@ -135,10 +135,10 @@ internal class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportPa
         WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return this.Ok(new GetInstanceReportResult
-        {
-            Report = await instanceManager.GetInstanceReport(param.Id)
-        });
+        var report = await instanceManager.GetInstanceReport(param.Id);
+        return report is not null
+            ? this.Ok(new GetInstanceReportResult { Report = report })
+            : this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.Id));
     }
 }
 
