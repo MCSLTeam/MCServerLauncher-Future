@@ -36,22 +36,24 @@ public class InstanceManager : IInstanceManager
             .Flatten()
             .MapErr(err => new Error("Instance manager failed to run instance factory").WithInner(err));
 
-        var saveInstanceResult = appliedFactoryResult.Map((state, config) =>
+        var saveInstanceResult = appliedFactoryResult.Map(static (state, config) =>
             {
-                var (root, keysSupplier) = state;
+                var (root, keysSupplier, manager) = state;
                 config.AllocateNewUuid(keysSupplier);
 
-                return ResultExt.Try(innerState =>
+                return ResultExt.Try(static innerState =>
                 {
-                    var (innerRoot, innerConfig) = innerState;
+                    var (innerRoot, innerConfig, innerManager) = innerState;
                     FileManager.WriteJsonAndBackup(
                         Path.Combine(innerRoot, InstanceConfig.FileName),
                         innerConfig
                     );
+
+                    innerManager.Instances.TryAdd(innerConfig.Uuid, innerConfig.CreateInstance());
                     return innerConfig;
-                }, (root, config)).MapErr(Error.FromException);
+                }, (root, config, manager)).MapErr(Error.FromException);
             }
-            , (instanceRoot, KeysSupplier: InstanceKeysSupplier)).Flatten();
+            , (instanceRoot, KeysSupplier: InstanceKeysSupplier, this)).Flatten();
 
         if (saveInstanceResult.IsErr(out var error))
         {
@@ -69,10 +71,13 @@ public class InstanceManager : IInstanceManager
         if (!Instances.TryRemove(instanceId, out var instance)) return false;
         instance.Dispose();
 
-        // remove server directory
+        // remove server directory (may already be deleted externally, e.g., by user or FsWatcher)
         try
         {
-            Directory.Delete(Path.Combine(FileManager.InstancesRoot, instanceId.ToString()), true);
+            var instanceDir = Path.Combine(FileManager.InstancesRoot, instanceId.ToString());
+            if (Directory.Exists(instanceDir))
+                Directory.Delete(instanceDir, true);
+
             Log.Information("[InstanceManager] Removed instance '{0}'", instanceId);
             return true;
         }

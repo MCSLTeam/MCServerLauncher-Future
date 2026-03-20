@@ -28,7 +28,11 @@ public class InstancesManagerFsWatcher : DisposableObject
 
     private void OnInstanceDelete(object sender, FileSystemEventArgs e)
     {
-        if (Guid.TryParse(e.Name, out var id)) _instanceManager.TryRemoveInstance(id);
+        if (Guid.TryParse(e.Name, out var id))
+        {
+            _instanceManager.TryRemoveInstance(id);
+            Log.Information("[InstancesWatchService] Removed instance(id={0}): User try to remove instance directory", id);
+        }
     }
 
     private static void OnError(object sender, ErrorEventArgs e)
