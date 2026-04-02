@@ -1,14 +1,13 @@
-﻿using System;
+using System;
 using System.Net.WebSockets;
-using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.DaemonClient.WebSocketPlugin;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -19,6 +18,8 @@ namespace MCServerLauncher.DaemonClient.Connection;
 
 internal class ClientConnection : DisposableObject
 {
+    private static readonly JsonSerializerOptions RpcStjOptions = DaemonClientRpcJsonBoundary.StjOptions;
+
     private const int CF_PROTOCOL_VERSION = 1;
 
     private readonly CancellationTokenSource _cts;
@@ -104,8 +105,7 @@ internal class ClientConnection : DisposableObject
         return PrivateSendAsync(new ActionRequest
         {
             ActionType = actionType,
-            Parameter = JToken.FromObject(param ?? new EmptyActionParameter(),
-                JsonSerializer.Create(JsonSettings.Settings)),
+            Parameter = System.Text.Json.JsonSerializer.SerializeToElement(param ?? new EmptyActionParameter(), RpcStjOptions),
             Id = Guid.NewGuid()
         }, ct);
     }
@@ -160,15 +160,16 @@ internal class ClientConnection : DisposableObject
         CancellationToken cancellationToken = default
     )
     {
-        var json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
-            request,
-            Formatting.Indented,
-            JsonSettings.Settings
-        ));
+        var json = SerializeActionRequestForTransport(request);
 
         cancellationToken.ThrowIfCancellationRequested();
         // TODO 大数据的分段传输
         return Client.SendAsync(new ReadOnlyMemory<byte>(json), WSDataType.Text);
+    }
+
+    internal static byte[] SerializeActionRequestForTransport(ActionRequest request)
+    {
+        return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, RpcStjOptions);
     }
 
     /// <summary>
@@ -189,11 +190,10 @@ internal class ClientConnection : DisposableObject
     {
         var id = Guid.NewGuid();
 
-        var jsonSerializer = JsonSerializer.Create(JsonSettings.Settings);
         var request = new ActionRequest
         {
             ActionType = actionType,
-            Parameter = JToken.FromObject(param ?? new EmptyActionParameter(), jsonSerializer),
+            Parameter = System.Text.Json.JsonSerializer.SerializeToElement(param ?? new EmptyActionParameter(), RpcStjOptions),
             Id = id
         };
 
@@ -252,11 +252,11 @@ internal class ClientConnection : DisposableObject
         try
         {
             var response = await tcs.Task.WaitAsync(timeout, ct);
-            var serializer = JsonSerializer.Create(JsonSettings.Settings);
-
             return response.RequestStatus switch
             {
-                ActionRequestStatus.Ok => response.Data?.ToObject<TResult>(serializer),
+                ActionRequestStatus.Ok => response.Data is null
+                    ? null
+                    : System.Text.Json.JsonSerializer.Deserialize<TResult>(response.Data.Value.GetRawText(), RpcStjOptions),
                 ActionRequestStatus.Error => throw new DaemonRequestException(ActionRetcode.FromCode(response.Retcode),
                     response.Message),
                 _ => throw new NotImplementedException()
@@ -284,9 +284,7 @@ internal class ClientConnection : DisposableObject
                 await RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
                 {
                     Type = @event.Type,
-                    Meta = @event.Meta is null
-                        ? null
-                        : JToken.FromObject(@event.Meta, JsonSerializer.Create(JsonSettings.Settings))
+                    Meta = @event.Meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(@event.Meta, RpcStjOptions)
                 }, ct: cts.Token);
             }
             catch (OperationCanceledException e)

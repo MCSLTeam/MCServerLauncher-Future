@@ -1,7 +1,9 @@
-﻿using MCServerLauncher.Common.ProtoType.Files;
+using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Status;
 using Newtonsoft.Json;
+using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
+using SysTextJsonPropertyName = System.Text.Json.Serialization.JsonPropertyNameAttribute;
 
 namespace MCServerLauncher.Common.ProtoType.Action;
 
@@ -13,80 +15,123 @@ public sealed record EmptyActionResult : IActionResult;
 
 public sealed record GetPermissionsResult : IActionResult
 {
-    [JsonRequired] public string[] Permissions { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public string[] Permissions { get; init; } = null!;
 }
 
 public sealed record PingResult : IActionResult
 {
-    [JsonRequired] public long Time { get; init; }
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public long Time { get; init; }
 }
 
 public sealed record GetJavaListResult : IActionResult
 {
-    [JsonRequired] public JavaInfo[] JavaList { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public JavaInfo[] JavaList { get; init; } = null!;
 }
 
 public sealed record FileUploadRequestResult : IActionResult
 {
-    [JsonRequired] public Guid FileId { get; init; }
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public Guid FileId { get; init; }
 }
 
 public sealed record FileUploadChunkResult : IActionResult
 {
-    [JsonRequired] public bool Done { get; init; }
-    [JsonRequired] public long Received { get; init; }
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public bool Done { get; init; }
+
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public long Received { get; init; }
 }
 
 public sealed record FileDownloadRequestResult : IActionResult
 {
-    [JsonRequired] public Guid FileId { get; init; }
-    [JsonRequired] public long Size { get; init; }
-    [JsonRequired] public string Sha1 { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public Guid FileId { get; init; }
+
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public long Size { get; init; }
+
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public string Sha1 { get; init; } = null!;
 }
 
 public sealed record FileDownloadRangeResult : IActionResult
 {
-    [JsonRequired] public string Content { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public string Content { get; init; } = null!;
 }
 
 public sealed record GetFileInfoResult : IActionResult
 {
-    [JsonRequired] public FileMetadata Meta { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public FileMetadata Meta { get; init; } = null!;
 }
 
 public sealed record GetDirectoryInfoResult : IActionResult
 {
     public string? Parent { get; init; }
-    [JsonRequired] public DirectoryEntry.FileInformation[] Files { get; init; } = null!;
-    [JsonRequired] public DirectoryEntry.DirectoryInformation[] Directories { get; init; } = null!;
+
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public DirectoryEntry.FileInformation[] Files { get; init; } = null!;
+
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public DirectoryEntry.DirectoryInformation[] Directories { get; init; } = null!;
 }
 
 public sealed record AddInstanceResult : IActionResult
 {
-    [JsonRequired] public InstanceConfig Config { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public InstanceConfig Config { get; init; } = null!;
 }
 
 public sealed record GetInstanceReportResult : IActionResult
 {
-    [JsonRequired] public InstanceReport Report { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public InstanceReport Report { get; init; } = null!;
 }
 
 public sealed record GetInstanceLogHistoryResult : IActionResult
 {
-    [JsonRequired] public string[] Logs { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public string[] Logs { get; init; } = null!;
 }
 
 public sealed record GetAllReportsResult : IActionResult
 {
-    [JsonRequired] public Dictionary<Guid, InstanceReport> Reports { get; init; } = null!;
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public Dictionary<Guid, InstanceReport> Reports { get; init; } = null!;
 }
 
 public sealed record GetSystemInfoResult : IActionResult
 {
-    [JsonRequired] public SystemInfo Info { get; init; }
+    [JsonRequired]
+    [SysTextJsonRequired]
+    public SystemInfo Info { get; init; }
 }
 
 public sealed record GetEventRulesResult : IActionResult
 {
-    [JsonProperty("rules")] public List<EventTrigger.EventRule> Rules { get; init; } = new();
+    [JsonProperty("rules")]
+    [SysTextJsonPropertyName("rules")]
+    public List<EventTrigger.EventRule> Rules { get; init; } = new();
 }

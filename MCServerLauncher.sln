@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.Common", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.DaemonClient", "MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj", "{ABBE6781-BDB9-45F7-B419-98E89B3FED79}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCServerLauncher.ProtocolTests", "MCServerLauncher.ProtocolTests\MCServerLauncher.ProtocolTests.csproj", "{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|AnyCPU = Debug|AnyCPU
@@ -87,6 +89,22 @@ Global
 		{ABBE6781-BDB9-45F7-B419-98E89B3FED79}.Release|x64.Build.0 = Release|Any CPU
 		{ABBE6781-BDB9-45F7-B419-98E89B3FED79}.Release|x86.ActiveCfg = Release|Any CPU
 		{ABBE6781-BDB9-45F7-B419-98E89B3FED79}.Release|x86.Build.0 = Release|Any CPU
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|AnyCPU.ActiveCfg = Debug|AnyCPU
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|AnyCPU.Build.0 = Debug|AnyCPU
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|x64.ActiveCfg = Debug|x64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|x64.Build.0 = Debug|x64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|x86.ActiveCfg = Debug|x86
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Debug|x86.Build.0 = Debug|x86
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|AnyCPU.ActiveCfg = Release|AnyCPU
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|AnyCPU.Build.0 = Release|AnyCPU
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|ARM64.Build.0 = Release|ARM64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|x64.ActiveCfg = Release|x64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|x64.Build.0 = Release|x64
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|x86.ActiveCfg = Release|x86
+		{F6626B42-E83B-44FD-B73B-FC371DA9A2E1}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

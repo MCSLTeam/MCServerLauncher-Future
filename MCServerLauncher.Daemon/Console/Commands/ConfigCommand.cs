@@ -1,8 +1,8 @@
-﻿using Brigadier.NET;
+using Brigadier.NET;
 using Brigadier.NET.Builder;
 using Brigadier.NET.Tree;
-using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
+using System.Text.Json;
+using MCServerLauncher.Daemon.Serialization;
 
 namespace MCServerLauncher.Daemon.Console.Commands;
 
@@ -19,7 +19,7 @@ public static class ConfigCommand
                         var config = AppConfig.Get();
                         cmd.Source.SendFeedback(
                             "config.json: {0}",
-                            JsonConvert.SerializeObject(config, Formatting.Indented, DaemonJsonSettings.Settings)
+                            JsonSerializer.Serialize(config, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions)
                         );
                         return 0;
                     }))

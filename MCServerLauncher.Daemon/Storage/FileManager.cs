@@ -1,10 +1,11 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text;
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Files;
+using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
 using Serilog;
 using Timer = System.Timers.Timer;
 
@@ -499,7 +500,7 @@ internal static class FileManager
     /// <returns></returns>
     public static T? ReadJson<T>(string path)
     {
-        return JsonConvert.DeserializeObject<T>(ReadText(path), DaemonJsonSettings.Settings);
+        return JsonSerializer.Deserialize<T>(ReadText(path), DaemonPersistenceJsonBoundary.StjOptions);
     }
 
     /// <summary>
@@ -518,12 +519,7 @@ internal static class FileManager
         catch (FileNotFoundException)
         {
             var invoke = defaultFactory.Invoke();
-            File.WriteAllText(path, JsonConvert.SerializeObject(
-                invoke,
-                typeof(T),
-                Formatting.Indented,
-                DaemonJsonSettings.Settings
-            ));
+            File.WriteAllText(path, JsonSerializer.Serialize(invoke, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions));
             return invoke;
         }
     }
@@ -552,17 +548,12 @@ internal static class FileManager
     {
         BackupAndWriteText(
             path,
-            JsonConvert.SerializeObject(
-                obj,
-                typeof(T),
-                Formatting.Indented,
-                DaemonJsonSettings.Settings
-            ),
+            JsonSerializer.Serialize(obj, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions),
             content =>
             {
                 try
                 {
-                    JsonConvert.DeserializeObject<T>(content, DaemonJsonSettings.Settings);
+                    JsonSerializer.Deserialize<T>(content, DaemonPersistenceJsonBoundary.StjOptions);
                     return true;
                 }
                 catch (Exception)

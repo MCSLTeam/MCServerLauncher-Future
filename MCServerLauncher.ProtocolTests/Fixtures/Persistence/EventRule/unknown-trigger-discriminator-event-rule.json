@@ -1,0 +1,28 @@
+{
+  "id": "31313131-3131-3131-3131-313131313131",
+  "name": "unknown-trigger",
+  "description": "unknown trigger discriminator failure path",
+  "is_enabled": true,
+  "trigger_condition": "Any",
+  "triggers": [
+    {
+      "id": "32323232-3232-3232-3232-323232323232",
+      "type": "FutureTrigger",
+      "pattern": "Done"
+    }
+  ],
+  "action_execution_mode": "Sequential",
+  "rulesets": [
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "type": "AlwaysTrue"
+    }
+  ],
+  "actions": [
+    {
+      "id": "34343434-3434-3434-3434-343434343434",
+      "type": "SendCommand",
+      "command": "say hi"
+    }
+  ]
+}

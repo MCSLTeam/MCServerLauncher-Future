@@ -1,10 +1,12 @@
-﻿using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RustyOptions;
 using Serilog;
+using System.Text.Json;
 using TouchSocket.Core;
+using JsonElement = System.Text.Json.JsonElement;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using Result = RustyOptions.Result;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -14,11 +16,11 @@ public interface IActionExecutor
     IReadOnlyDictionary<ActionType, ActionHandlerMeta> HandlerMetas { get; }
 
     IReadOnlyDictionary<ActionType,
-            Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
         SyncHandlers { get; }
 
     IReadOnlyDictionary<ActionType,
-            Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
         AsyncHandlers { get; }
 
     ActionResponse? ProcessAction(string text, WsContext ctx);
@@ -32,8 +34,7 @@ public static class ActionExecutorExtensions
     {
         try
         {
-            // TODO 反序列化使用System.Text.Json
-            var request = JsonConvert.DeserializeObject<ActionRequest>(text, DaemonJsonSettings.Settings)!;
+            var request = StjJsonSerializer.Deserialize<ActionRequest>(text, DaemonRpcJsonBoundary.StjOptions)!;
             Log.Verbose("[Remote] Received message:{0}", request);
             return Result.Ok<ActionRequest, ActionResponse>(request);
         }

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.Helpers;
@@ -10,7 +11,7 @@ using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.DaemonClient.Connection;
-using Newtonsoft.Json;
+using MCServerLauncher.DaemonClient.Serialization;
 
 namespace MCServerLauncher.DaemonClient;
 
@@ -172,7 +173,7 @@ public class Daemon : IDaemon
 
             Console.WriteLine("\nDaemon system info:");
             var systemInfo = await daemon.GetSystemInfoAsync();
-            Console.WriteLine(JsonConvert.SerializeObject(systemInfo, Formatting.Indented));
+            Console.WriteLine(JsonSerializer.Serialize(systemInfo, DaemonClientRpcJsonBoundary.CreateStjOptions(writeIndented: true)));
 
             Console.WriteLine("Wait 3000ms");
             await Task.Delay(3000);

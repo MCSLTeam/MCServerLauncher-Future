@@ -1,0 +1,28 @@
+{
+  "id": "41414141-4141-4141-4141-414141414141",
+  "name": "missing-ruleset-type",
+  "description": "missing ruleset discriminator failure path",
+  "is_enabled": true,
+  "trigger_condition": "Any",
+  "triggers": [
+    {
+      "id": "42424242-4242-4242-4242-424242424242",
+      "type": "ConsoleOutput",
+      "pattern": "Done",
+      "is_regex": false
+    }
+  ],
+  "action_execution_mode": "Sequential",
+  "rulesets": [
+    {
+      "id": "43434343-4343-4343-4343-434343434343"
+    }
+  ],
+  "actions": [
+    {
+      "id": "44444444-4444-4444-4444-444444444444",
+      "type": "SendCommand",
+      "command": "say hi"
+    }
+  ]
+}

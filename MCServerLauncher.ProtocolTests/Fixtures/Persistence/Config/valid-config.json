@@ -1,0 +1,7 @@
+{
+  "port": 11452,
+  "secret": "0123456789abcdef0123456789abcdef",
+  "main_token": "fedcba9876543210fedcba9876543210",
+  "file_download_sessions": 5,
+  "verbose": true
+}

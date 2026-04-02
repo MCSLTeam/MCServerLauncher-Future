@@ -1,5 +1,6 @@
 using System.Text;
 using Newtonsoft.Json;
+using SysTextJsonPropertyName = System.Text.Json.Serialization.JsonPropertyNameAttribute;
 
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
@@ -85,6 +86,7 @@ public record InstanceConfig
     ///     事件触发器规则
     /// </summary>
     [JsonProperty("event_rules")]
+    [SysTextJsonPropertyName("event_rules")]
     public List<EventTrigger.EventRule> EventRules { get; init; } = new();
 
     #endregion

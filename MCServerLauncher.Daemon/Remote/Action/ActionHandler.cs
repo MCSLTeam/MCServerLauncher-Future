@@ -1,10 +1,13 @@
-﻿using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RustyOptions;
+using System.Text.Json;
 using TouchSocket.Core;
+using JsonElement = System.Text.Json.JsonElement;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using Result = RustyOptions.Result;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -19,23 +22,27 @@ internal interface IActionHandlerBase<TParam, TResult>
     where TResult : class, IActionResult
 {
     // TODO 之后换成System.Text.Json的JsonElement
-    Result<TParam, ActionError> ParseParameter(JToken? token)
+    Result<TParam, ActionError> ParseParameter(JsonElement? token)
     {
         if (token is null)
-            return Result.Err<TParam, ActionError>(ActionRetcode.BadRequest.WithMessage("Missing parameters"));
+            return Result.Err<TParam, ActionError>(ActionRetcode.ParamError.WithMessage("Missing parameters"));
 
         try
         {
-            // paramToken一定不为null
-            var result = token.ToObject<TParam>(JsonSerializer.Create(DaemonJsonSettings.Settings))!;
+            var result = token.Value.Deserialize<TParam>(DaemonRpcJsonBoundary.StjOptions)!;
             return Result.Ok<TParam, ActionError>(result);
         }
-        catch (JsonSerializationException e)
+        catch (JsonException e)
         {
-            var @params = e.Path?.Split('.');
             var errorMessage = "Could not deserialize param";
 
-            if (@params is not null) errorMessage += $"'{@params[1]}' at '{e.Path}'";
+            if (!string.IsNullOrWhiteSpace(e.Path))
+            {
+                var @params = e.Path.Split('.');
+                errorMessage += @params.Length > 1
+                    ? $"'{@params[1]}' at '{e.Path}'"
+                    : $" at '{e.Path}'";
+            }
 
             return Result.Err<TParam, ActionError>(ActionRetcode.ParamError.WithMessage(errorMessage));
         }
@@ -58,7 +65,7 @@ internal interface IActionHandlerBase<TParam, TResult>
                 RequestStatus = ActionRequestStatus.Ok,
                 Retcode = ActionRetcode.Ok.Code,
                 Message = ActionRetcode.Ok.Message,
-                Data = JObject.FromObject(r, JsonSerializer.Create(DaemonJsonSettings.Settings)),
+                Data = ToJsonElement(r),
                 Id = id
             },
             err => new ActionResponse
@@ -69,6 +76,14 @@ internal interface IActionHandlerBase<TParam, TResult>
                 Data = null,
                 Id = id
             });
+    }
+
+    private static JsonElement ToJsonElement(object? value)
+    {
+        if (value is null)
+            return default;
+
+        return StjJsonSerializer.SerializeToElement(value, DaemonRpcJsonBoundary.StjOptions);
     }
 }
 
@@ -131,7 +146,7 @@ internal static class ActionHandlerExtensions
 
     public static ActionResponse Process<TParam, TResult>(
         this IActionHandler<TParam, TResult> self,
-        JToken? param,
+        JsonElement? param,
         Guid id,
         WsContext ctx,
         IResolver resolver,
@@ -151,7 +166,7 @@ internal static class ActionHandlerExtensions
 
     public static async Task<ActionResponse> ProcessAsync<TParam, TResult>(
         this IAsyncActionHandler<TParam, TResult> self,
-        JToken? param,
+        JsonElement? param,
         Guid id,
         WsContext ctx,
         IResolver resolver,
