@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.DaemonClient.Connection;
+using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.DaemonClient.WebSocketPlugin;
 using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
@@ -14,6 +15,29 @@ namespace MCServerLauncher.ProtocolTests;
 public class T12DaemonClientOutboundCutoverTests
 {
     private static readonly Guid FixedRequestId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    [Fact]
+    [Trait("Category", "ClientOutbound")]
+    [Trait("Category", "ClientOutboundRoundTrip")]
+    public void ClientOutboundSendSeam_InterfaceTypedGetInstanceReportParameter_PreservesIdPayload()
+    {
+        IActionParameter param = new GetInstanceReportParameter
+        {
+            Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        };
+
+        var request = new ActionRequest
+        {
+            ActionType = ActionType.GetInstanceReport,
+            Parameter = InvokePrivateSerializeParameterForTransport(param),
+            Id = FixedRequestId
+        };
+
+        var actual = FixtureHarness.ParseJson(SerializeAtClientSendSeam(request));
+        var payload = actual.GetProperty("params");
+
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), payload.GetProperty("id").GetGuid());
+    }
 
     [Fact]
     [Trait("Category", "ClientOutbound")]
@@ -210,6 +234,14 @@ public class T12DaemonClientOutboundCutoverTests
     private static string SerializeAtClientSendSeam(ActionRequest request)
     {
         return Encoding.UTF8.GetString(ClientConnection.SerializeActionRequestForTransport(request));
+    }
+
+    private static JsonElement InvokePrivateSerializeParameterForTransport(IActionParameter? param)
+    {
+        var method = typeof(ClientConnection).GetMethod("SerializeParameterForTransport", BindingFlags.Static | BindingFlags.NonPublic)
+                     ?? throw new MissingMethodException(typeof(ClientConnection).FullName, "SerializeParameterForTransport");
+
+        return (JsonElement)method.Invoke(null, new object?[] { param })!;
     }
 
     private static void InvokePrivateDispatchAction(WsReceivedPlugin plugin, string received)

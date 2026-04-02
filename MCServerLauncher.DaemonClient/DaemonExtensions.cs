@@ -104,7 +104,7 @@ public static class DaemonExtensions
         await daemon.RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
         {
             Type = type,
-            Meta = meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(meta, RpcStjOptions)
+            Meta = meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(meta, meta.GetType(), RpcStjOptions)
         }, timeout, ct);
     }
 
@@ -123,7 +123,7 @@ public static class DaemonExtensions
         await daemon.RequestAsync(ActionType.UnsubscribeEvent, new UnsubscribeEventParameter
         {
             Type = type,
-            Meta = meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(meta, RpcStjOptions)
+            Meta = meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(meta, meta.GetType(), RpcStjOptions)
         }, timeout, ct);
     }
 

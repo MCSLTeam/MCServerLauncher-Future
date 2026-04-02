@@ -105,7 +105,7 @@ internal class ClientConnection : DisposableObject
         return PrivateSendAsync(new ActionRequest
         {
             ActionType = actionType,
-            Parameter = System.Text.Json.JsonSerializer.SerializeToElement(param ?? new EmptyActionParameter(), RpcStjOptions),
+            Parameter = SerializeParameterForTransport(param),
             Id = Guid.NewGuid()
         }, ct);
     }
@@ -193,12 +193,18 @@ internal class ClientConnection : DisposableObject
         var request = new ActionRequest
         {
             ActionType = actionType,
-            Parameter = System.Text.Json.JsonSerializer.SerializeToElement(param ?? new EmptyActionParameter(), RpcStjOptions),
+            Parameter = SerializeParameterForTransport(param),
             Id = id
         };
 
         var tcs = await PrivateBeginRequestAsync(request, timeout, ct);
         return await PrivateEndRequestAsync<TResult>(tcs, id, timeout, ct);
+    }
+
+    private static JsonElement SerializeParameterForTransport(IActionParameter? param)
+    {
+        var value = param ?? new EmptyActionParameter();
+        return System.Text.Json.JsonSerializer.SerializeToElement(value, value.GetType(), RpcStjOptions);
     }
 
 
@@ -284,7 +290,7 @@ internal class ClientConnection : DisposableObject
                 await RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
                 {
                     Type = @event.Type,
-                    Meta = @event.Meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(@event.Meta, RpcStjOptions)
+                    Meta = @event.Meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(@event.Meta, @event.Meta.GetType(), RpcStjOptions)
                 }, ct: cts.Token);
             }
             catch (OperationCanceledException e)
