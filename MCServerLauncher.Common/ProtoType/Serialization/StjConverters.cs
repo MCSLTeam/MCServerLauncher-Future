@@ -23,6 +23,16 @@ public sealed class GuidStjConverter : JsonConverter<Guid>
     {
         writer.WriteStringValue(value.ToString());
     }
+
+    public override Guid ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return Guid.TryParse(reader.GetString(), out var result) ? result : Guid.Empty;
+    }
+
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
+    {
+        writer.WritePropertyName(value.ToString());
+    }
 }
 
 /// <summary>
