@@ -1,9 +1,11 @@
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RustyOptions;
 using Serilog;
+using JsonElement = System.Text.Json.JsonElement;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -27,7 +29,7 @@ public static class ResponseUtils
         return Err(code.WithMessage(verbose ? exception.ToString() : exception.Message), request.Id);
     }
 
-    public static ActionResponse Ok(JObject? data, Guid id)
+    public static ActionResponse Ok(JsonElement? data, Guid id)
     {
         return new ActionResponse
         {
@@ -48,8 +50,8 @@ public static class ResponseUtils
                 Retcode = ActionRetcode.Ok.Code,
                 Message = ActionRetcode.Ok.Message,
                 Data = option.MapOr(
-                    data => JObject.FromObject(data, JsonSerializer.Create(DaemonJsonSettings.Settings)),
-                    new JObject()),
+                    ToJsonElement,
+                    EmptyObject),
                 Id = id
             },
             err => new ActionResponse
@@ -62,4 +64,15 @@ public static class ResponseUtils
             }
         );
     }
+
+    private static JsonElement ToJsonElement(object? value)
+    {
+        if (value is null)
+            return default;
+
+        return StjJsonSerializer.SerializeToElement(value, DaemonRpcJsonBoundary.StjOptions);
+    }
+
+    private static readonly JsonElement EmptyObject = StjJsonSerializer.SerializeToElement(new EmptyActionResult(),
+        DaemonRpcJsonBoundary.StjOptions);
 }

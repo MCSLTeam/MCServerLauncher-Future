@@ -1,7 +1,8 @@
+using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
 using Serilog;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MCServerLauncher.Daemon;
 
@@ -18,7 +19,7 @@ internal class AppConfig
     public readonly bool Verbose;
 
     [JsonConstructor]
-    private AppConfig(ushort port, string secret, string mainToken, byte fileDownloadSessions = 3, bool verbose = false)
+    private AppConfig(ushort port, string secret, string mainToken, int fileDownloadSessions = 3, bool verbose = false)
     {
         Port = port;
         Secret = secret;
@@ -79,12 +80,12 @@ internal class AppConfig
         try
         {
             File.WriteAllText(path,
-                JsonConvert.SerializeObject(this, Formatting.Indented, DaemonJsonSettings.Settings));
+                JsonSerializer.Serialize(this, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions));
             return true;
         }
         catch (Exception e)
         {
-            Log.Fatal("Failed to save config file: {Message}", e.Message);
+            Log.Fatal($"Failed to save config file: {e.Message}");
             return false;
         }
     }

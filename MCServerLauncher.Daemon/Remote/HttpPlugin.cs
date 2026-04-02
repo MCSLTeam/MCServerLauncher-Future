@@ -1,6 +1,6 @@
 using System.Reflection;
+using System.Text.Json;
 using MCServerLauncher.Daemon.Remote.Authentication;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -31,14 +31,13 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "application/json")
                             .AddHeader("Access-Control-Allow-Origin", "*")
-                            .SetContent(new JObject
+                            .SetContent(JsonSerializer.Serialize(new
                             {
-                                ["message"] = "MCServerLauncher Future Daemon CSharp",
-                                ["version"] =
-                                    Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                                ["status"] = "ok",
-                                ["api_version"] = "v1"
-                            }.ToString())
+                                message = "MCServerLauncher Future Daemon CSharp",
+                                version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                                status = "ok",
+                                api_version = "v1"
+                            }))
                             .AnswerAsync();
                         break;
 
@@ -47,13 +46,12 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "application/json")
                             .AddHeader("Access-Control-Allow-Origin", "*")
-                            .SetContent(new JObject
+                            .SetContent(JsonSerializer.Serialize(new
                             {
-                                ["name"] = "MCServerLauncher Future Daemon CSharp",
-                                ["version"] =
-                                    Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                                ["api_version"] = "v1"
-                            }.ToString())
+                                name = "MCServerLauncher Future Daemon CSharp",
+                                version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                                api_version = "v1"
+                            }))
                             .AnswerAsync();
                         break;
                 }

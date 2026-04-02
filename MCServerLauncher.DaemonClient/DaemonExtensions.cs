@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.Helpers;
@@ -10,15 +11,17 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Common.ProtoType.Status;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using MCServerLauncher.DaemonClient.Serialization;
 using Serilog;
 
 namespace MCServerLauncher.DaemonClient;
 
 public static class DaemonExtensions
 {
+    private static readonly JsonSerializerOptions RpcStjOptions = DaemonClientRpcJsonBoundary.StjOptions;
+
     #region MISC
 
     /// <summary>
@@ -101,7 +104,7 @@ public static class DaemonExtensions
         await daemon.RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
         {
             Type = type,
-            Meta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings))
+            Meta = meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(meta, RpcStjOptions)
         }, timeout, ct);
     }
 
@@ -120,7 +123,7 @@ public static class DaemonExtensions
         await daemon.RequestAsync(ActionType.UnsubscribeEvent, new UnsubscribeEventParameter
         {
             Type = type,
-            Meta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings))
+            Meta = meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(meta, RpcStjOptions)
         }, timeout, ct);
     }
 

@@ -1,0 +1,60 @@
+{
+  "id": "12121212-1212-1212-1212-121212121212",
+  "name": "known-discriminators",
+  "description": "all known event-rule discriminators",
+  "is_enabled": true,
+  "trigger_condition": "Any",
+  "triggers": [
+    {
+      "id": "13131313-1313-1313-1313-131313131313",
+      "type": "ConsoleOutput",
+      "pattern": "Done",
+      "is_regex": false
+    },
+    {
+      "id": "14141414-1414-1414-1414-141414141414",
+      "type": "Schedule",
+      "cron_expression": "0 */10 * * * *"
+    },
+    {
+      "id": "15151515-1515-1515-1515-151515151515",
+      "type": "InstanceStatus",
+      "target_status": "Running"
+    }
+  ],
+  "action_execution_mode": "Sequential",
+  "rulesets": [
+    {
+      "id": "16161616-1616-1616-1616-161616161616",
+      "type": "AlwaysTrue"
+    },
+    {
+      "id": "17171717-1717-1717-1717-171717171717",
+      "type": "AlwaysFalse"
+    },
+    {
+      "id": "18181818-1818-1818-1818-181818181818",
+      "type": "InstanceStatus",
+      "target_status": "Stopped"
+    }
+  ],
+  "actions": [
+    {
+      "id": "19191919-1919-1919-1919-191919191919",
+      "type": "SendCommand",
+      "command": "say hello"
+    },
+    {
+      "id": "20202020-2020-2020-2020-202020202020",
+      "type": "ChangeInstanceStatus",
+      "action": "Restart"
+    },
+    {
+      "id": "21212121-2121-2121-2121-212121212121",
+      "type": "SendNotification",
+      "title": "rule-fired",
+      "message": "all good",
+      "severity": "Info"
+    }
+  ]
+}

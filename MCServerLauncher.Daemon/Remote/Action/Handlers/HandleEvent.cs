@@ -1,7 +1,9 @@
-﻿using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using TouchSocket.Core;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
@@ -14,7 +16,7 @@ internal class HandleSubscribeEvent : IActionHandler<SubscribeEventParameter, Em
     {
         return ResultExt.Try(wsCtx =>
                 wsCtx.SubscribeEvent(param.Type,
-                    param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
+                    HandleEventMetaAdapter.GetEventMeta(param.Type, param.Meta)
                 ), ctx).Map(unit => ActionHandlerExtensions.EmptyActionResult)
             .MapErr(ex =>
                 ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
@@ -30,10 +32,26 @@ internal class HandleUnsubscribeEvent : IActionHandler<UnsubscribeEventParameter
     {
         return ResultExt.Try(wsCtx =>
                 wsCtx.UnsubscribeEvent(param.Type,
-                    param.Type.GetEventMeta(param.Meta, DaemonJsonSettings.Settings)
+                    HandleEventMetaAdapter.GetEventMeta(param.Type, param.Meta)
                 ), ctx).Map(unit => ActionHandlerExtensions.EmptyActionResult)
             .MapErr(ex =>
                 ActionRetcode.ParamError.WithMessage($"Event {param.Type} missing meta").ToError().CauseBy(ex)
             );
+    }
+}
+
+internal static class HandleEventMetaAdapter
+{
+    public static IEventMeta? GetEventMeta(EventType eventType, System.Text.Json.JsonElement? meta)
+    {
+        if (meta is null)
+            return null;
+
+        return eventType switch
+        {
+            EventType.InstanceLog => StjJsonSerializer.Deserialize<InstanceLogEventMeta>(meta.Value,
+                DaemonRpcJsonBoundary.StjOptions),
+            _ => null
+        };
     }
 }

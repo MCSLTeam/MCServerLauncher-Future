@@ -1,0 +1,1 @@
+{"event":"daemon_report","meta":null,"data":{"report":{"os":{"name":"Windows","arch":"x64"},"cpu":{"vendor":"GenuineIntel","name":"Intel(R)","count":16,"usage":0.25},"mem":{"total":1048576,"free":524288},"drive":{"drive_format":"NTFS","total":1000000000,"free":500000000},"start_time_stamp":1717171717000}},"time":1717171717999}

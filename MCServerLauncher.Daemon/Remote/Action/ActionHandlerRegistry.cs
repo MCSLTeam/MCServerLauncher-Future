@@ -1,10 +1,10 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using System.Reflection;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
+using JsonElement = System.Text.Json.JsonElement;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -25,19 +25,19 @@ internal static class AnotherActionHandlerRegistry
     private static readonly Dictionary<ActionType, ActionHandlerMeta> HandlerMeta = new();
 
     private static readonly Dictionary<ActionType,
-            Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
         Handlers = new();
 
     private static readonly Dictionary<ActionType,
-            Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
         AsyncHandlers = new();
 
     public static IReadOnlyDictionary<ActionType, ActionHandlerMeta> HandlerMetaMap => HandlerMeta;
 
-    public static IReadOnlyDictionary<ActionType, Func<JToken?, Guid, WsContext, IResolver, CancellationToken,
+    public static IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken,
         Task<ActionResponse>>> AsyncHandlerMap => AsyncHandlers;
 
-    public static IReadOnlyDictionary<ActionType, Func<JToken?, Guid, WsContext, IResolver, CancellationToken,
+    public static IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken,
         ActionResponse>> SyncHandlerMap => Handlers;
 
     /// <summary>
@@ -75,7 +75,7 @@ internal static class AnotherActionHandlerRegistry
             {
                 var handlerDelegate = buildHandlerMethod.Invoke(null, new[] { handlerInstance })!;
                 Handlers[attr.ActionType] =
-                    (Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>)handlerDelegate;
+                    (Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>)handlerDelegate;
                 HandlerMeta[attr.ActionType] = new ActionHandlerMeta(attr.Permission, EActionHandlerType.Sync);
                 Log.Verbose(template, type.Name, attr.ActionType, "Sync", attr.Permission.ToString());
             }
@@ -104,7 +104,7 @@ internal static class AnotherActionHandlerRegistry
             {
                 var handlerDelegate = buildAsyncHandlerMethod.Invoke(null, new[] { handlerInstance })!;
                 AsyncHandlers[attr.ActionType] =
-                    (Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>)handlerDelegate;
+                    (Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>)handlerDelegate;
                 HandlerMeta[attr.ActionType] = new ActionHandlerMeta(attr.Permission, EActionHandlerType.Async);
                 Log.Verbose(template, type.Name, attr.ActionType, "Async", attr.Permission.ToString());
             }
@@ -137,14 +137,14 @@ internal static class AnotherActionHandlerRegistry
     /// <typeparam name="TParam"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    private static Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse> BuildHandler<TParam,
+    private static Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse> BuildHandler<TParam,
         TResult>(
         IActionHandler<TParam, TResult> handler)
         where TParam : class, IActionParameter
         where TResult : class, IActionResult
     {
         // 构建表达式树
-        var paramTokenExpr = Expression.Parameter(typeof(JToken), "paramToken");
+        var paramTokenExpr = Expression.Parameter(typeof(JsonElement?), "paramToken");
         var idExpr = Expression.Parameter(typeof(Guid), "id");
         var ctxExpr = Expression.Parameter(typeof(WsContext), "ctx");
         var resolverExpr = Expression.Parameter(typeof(IResolver), "resolver");
@@ -169,7 +169,7 @@ internal static class AnotherActionHandlerRegistry
         );
 
         // 编译为委托
-        return Expression.Lambda<Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>(
+        return Expression.Lambda<Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>(
             callExpr,
             paramTokenExpr,
             idExpr,
@@ -186,7 +186,7 @@ internal static class AnotherActionHandlerRegistry
     /// <typeparam name="TParam"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    private static Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>> BuildAsyncHandler<
+    private static Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>> BuildAsyncHandler<
         TParam,
         TResult>(
         IAsyncActionHandler<TParam, TResult> handler)
@@ -194,7 +194,7 @@ internal static class AnotherActionHandlerRegistry
         where TResult : class, IActionResult
     {
         // 构建表达式树
-        var paramTokenExpr = Expression.Parameter(typeof(JToken), "paramToken");
+        var paramTokenExpr = Expression.Parameter(typeof(JsonElement?), "paramToken");
         var idExpr = Expression.Parameter(typeof(Guid), "id");
         var ctxExpr = Expression.Parameter(typeof(WsContext), "ctx");
         var resolverExpr = Expression.Parameter(typeof(IResolver), "resolver");
@@ -219,7 +219,7 @@ internal static class AnotherActionHandlerRegistry
         );
 
         // 编译为委托
-        return Expression.Lambda<Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>(
+        return Expression.Lambda<Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>(
             callExpr,
             paramTokenExpr,
             idExpr,

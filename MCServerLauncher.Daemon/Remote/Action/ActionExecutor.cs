@@ -1,11 +1,11 @@
-﻿using System.Threading.Tasks.Dataflow;
+using System.Threading.Tasks.Dataflow;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.Daemon.Serialization;
 using Microsoft.Extensions.ObjectPool;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using TouchSocket.Core;
+using JsonElement = System.Text.Json.JsonElement;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 
@@ -51,7 +51,7 @@ internal class AnotherActionExecutor : IActionExecutor
         {
             try
             {
-                var o = JsonConvert.SerializeObject(task.Result, DaemonJsonSettings.Settings);
+                var o = StjJsonSerializer.Serialize(task.Result, DaemonRpcJsonBoundary.StjOptions);
                 Log.Verbose("[Remote] Sending message: \n{0}", o);
                 await task.Context.GetWebsocket().SendAsync(o, cancellationToken: task.CancellationToken);
             }
@@ -76,11 +76,11 @@ internal class AnotherActionExecutor : IActionExecutor
     public IReadOnlyDictionary<ActionType, ActionHandlerMeta> HandlerMetas { get; }
 
     public IReadOnlyDictionary<ActionType,
-            Func<JToken?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
         SyncHandlers { get; }
 
     public IReadOnlyDictionary<ActionType,
-            Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
         AsyncHandlers { get; }
 
 
@@ -126,7 +126,7 @@ internal class AnotherActionExecutor : IActionExecutor
         await ActionSendBlock.Completion;
     }
 
-    private bool PostAsyncAction(ActionType actionType, JToken? param, WsContext ctx, Guid id)
+    private bool PostAsyncAction(ActionType actionType, JsonElement? param, WsContext ctx, Guid id)
     {
         var task = ActionTaskPool.Get();
 
@@ -142,11 +142,11 @@ internal class AnotherActionExecutor : IActionExecutor
 
     private class ActionTask
     {
-        public Func<JToken?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>> AsyncHandler;
+        public Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>> AsyncHandler;
         public CancellationToken CancellationToken;
         public WsContext Context;
         public Guid Id;
-        public JToken? Param;
+        public JsonElement? Param;
         public IResolver Resolver;
         public ActionResponse Result;
     }

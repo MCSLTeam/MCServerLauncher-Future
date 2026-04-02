@@ -1,6 +1,6 @@
 using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
+using MCServerLauncher.Daemon.Serialization;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
@@ -21,7 +21,7 @@ public class WsActionPlugin(IActionExecutor executor,
             var response = executor.ProcessAction(actionString, context);
 
             if (response is not null)
-                await webSocket.SendAsync(JsonConvert.SerializeObject(response, DaemonJsonSettings.Settings));
+                await webSocket.SendAsync(StjJsonSerializer.Serialize(response, DaemonRpcJsonBoundary.StjOptions));
         }
 
         await e.InvokeNext();

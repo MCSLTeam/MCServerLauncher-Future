@@ -1,0 +1,20 @@
+{
+  "name": "Vanilla Main",
+  "target": "server.jar",
+  "instance_type": "mc_vanilla",
+  "target_type": "jar",
+  "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "mc_version": "1.20.6",
+  "input_encoding": "utf-8",
+  "output_encoding": "utf-8",
+  "java_path": "",
+  "arguments": [
+    "nogui",
+    "--demo"
+  ],
+  "env": {
+    "JAVA_HOME": "{JAVA_HOME}",
+    "XMS": "1G"
+  },
+  "event_rules": []
+}

@@ -1,22 +1,20 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using System.IO;
+using MCServerLauncher.Common.ProtoType.Serialization;
+using Newtonsoft.Json;
 
 namespace MCServerLauncher.Common.ProtoType.Event;
 
 public static class EventTypeExtensions
 {
-    private static readonly JValue NullToken = JValue.CreateNull();
-
     /// <summary>
-    ///     获取事件元数据,元数据是事件的一个属性,有的具有(额外)元数据,有的没有(仅需事件类型就可以区分)
+    ///     获取事件元数据, 元数据是事件的一个属性, 有的具有(额外)元数据, 有的没有(仅需事件类型就可以区分)。
+    ///     约定: null(缺失meta) => 返回null; 显式JSON null(meta:null) => 抛出异常。
     /// </summary>
     /// <param name="type">事件类型</param>
-    /// <param name="metaToken">元数据原始token</param>
+    /// <param name="metaToken">元数据原始负载</param>
     /// <param name="settings">元数据序列化器设置</param>
-    /// <exception cref="NullReferenceException">当Event要求EventMeta而metaToken为空,抛出空引用异常</exception>
-    /// <exception cref="ArgumentException"><see cref="metaToken" />的值为null</exception>
-    /// <returns></returns>
-    public static IEventMeta? GetEventMeta(this EventType type, JToken? metaToken,
+    /// <exception cref="ArgumentException"><see cref="metaToken" />是显式 JSON null 时抛出</exception>
+    public static IEventMeta? GetEventMeta(this EventType type, JsonPayloadBuffer? metaToken,
         JsonSerializerSettings? settings = null)
     {
         return type switch
@@ -27,7 +25,7 @@ public static class EventTypeExtensions
         };
     }
 
-    public static IEventData? GetEventData(this EventType type, JToken? metaData,
+    public static IEventData? GetEventData(this EventType type, JsonPayloadBuffer? metaData,
         JsonSerializerSettings? settings = null)
     {
         return type switch
@@ -40,23 +38,36 @@ public static class EventTypeExtensions
         };
     }
 
-    private static IEventData? PrivateGetEventData<TEventData>(JToken? token, JsonSerializer serializer)
+    private static IEventData? PrivateGetEventData<TEventData>(JsonPayloadBuffer? token, JsonSerializer serializer)
         where TEventData : class, IEventData
     {
         if (token is null) return null;
 
-        if (token.Equals(NullToken)) throw new ArgumentException("event meta token is null");
+        if (token.Value.IsExplicitJsonNull)
+        {
+            throw new ArgumentException("event data payload is explicit json null");
+        }
 
-        return token.ToObject<TEventData>(serializer);
+        return DeserializeWithNewtonsoft<TEventData>(token.Value, serializer);
     }
 
-    private static TEventMeta? PrivateGetEventMeta<TEventMeta>(JToken? token, JsonSerializer serializer)
+    private static TEventMeta? PrivateGetEventMeta<TEventMeta>(JsonPayloadBuffer? token, JsonSerializer serializer)
         where TEventMeta : class, IEventMeta
     {
         if (token is null) return null;
 
-        if (token.Equals(NullToken)) throw new ArgumentException("event meta token is null");
+        if (token.Value.IsExplicitJsonNull)
+        {
+            throw new ArgumentException("event meta payload is explicit json null");
+        }
 
-        return token.ToObject<TEventMeta>(serializer);
+        return DeserializeWithNewtonsoft<TEventMeta>(token.Value, serializer);
+    }
+
+    private static T? DeserializeWithNewtonsoft<T>(JsonPayloadBuffer buffer, JsonSerializer serializer)
+    {
+        using var textReader = new StringReader(buffer.GetRawText());
+        using var jsonReader = new JsonTextReader(textReader);
+        return serializer.Deserialize<T>(jsonReader);
     }
 }

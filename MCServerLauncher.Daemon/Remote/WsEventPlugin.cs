@@ -1,9 +1,9 @@
-﻿using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Remote.Event;
-using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using MCServerLauncher.Daemon.Serialization;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
@@ -63,9 +63,18 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         var packet = new EventPacket
         {
             EventType = type,
-            EventMeta = meta is null ? null : JToken.FromObject(meta, JsonSerializer.Create(JsonSettings.Settings)),
-            EventData = data is null ? null : JToken.FromObject(data, JsonSerializer.Create(JsonSettings.Settings))
+            EventMeta = ToPayloadBuffer(meta),
+            EventData = ToPayloadBuffer(data)
         };
-        await ws.SendAsync(JsonConvert.SerializeObject(packet, DaemonJsonSettings.Settings));
+        await ws.SendAsync(StjJsonSerializer.Serialize(packet, DaemonRpcJsonBoundary.StjOptions));
+    }
+
+    private static JsonPayloadBuffer? ToPayloadBuffer(object? payload)
+    {
+        if (payload is null)
+            return null;
+
+        var element = StjJsonSerializer.SerializeToElement(payload, DaemonRpcJsonBoundary.StjOptions);
+        return new JsonPayloadBuffer(element);
     }
 }

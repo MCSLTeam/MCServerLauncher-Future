@@ -1,0 +1,31 @@
+{
+  "id": "51515151-5151-5151-5151-515151515151",
+  "name": "invalid-action-type",
+  "description": "invalid action discriminator token type failure path",
+  "is_enabled": true,
+  "trigger_condition": "Any",
+  "triggers": [
+    {
+      "id": "52525252-5252-5252-5252-525252525252",
+      "type": "ConsoleOutput",
+      "pattern": "Done",
+      "is_regex": false
+    }
+  ],
+  "action_execution_mode": "Sequential",
+  "rulesets": [
+    {
+      "id": "53535353-5353-5353-5353-535353535353",
+      "type": "AlwaysTrue"
+    }
+  ],
+  "actions": [
+    {
+      "id": "54545454-5454-5454-5454-545454545454",
+      "type": {
+        "bad": "token"
+      },
+      "command": "say hi"
+    }
+  ]
+}
