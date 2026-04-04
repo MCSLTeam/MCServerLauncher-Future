@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Internal.Performance;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
@@ -6,7 +7,6 @@ using Serilog;
 using System.Text.Json;
 using TouchSocket.Core;
 using JsonElement = System.Text.Json.JsonElement;
-using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using Result = RustyOptions.Result;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -34,7 +34,9 @@ public static class ActionExecutorExtensions
     {
         try
         {
-            var request = StjJsonSerializer.Deserialize<ActionRequest>(text, DaemonRpcJsonBoundary.StjOptions)!;
+            var request = JsonElementHotPathAdapters.Deserialize(
+                text,
+                DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo);
             Log.Verbose("[Remote] Received message:{0}", request);
             return Result.Ok<ActionRequest, ActionResponse>(request);
         }

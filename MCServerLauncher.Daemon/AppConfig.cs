@@ -19,13 +19,20 @@ internal class AppConfig
     public readonly bool Verbose;
 
     [JsonConstructor]
-    private AppConfig(ushort port, string secret, string mainToken, int fileDownloadSessions = 3, bool verbose = false)
+    private AppConfig(
+        ushort port,
+        string secret,
+        string mainToken,
+        int fileDownloadSessions = 3,
+        bool verbose = false,
+        bool? useGeneratedActionRegistry = null)
     {
         Port = port;
         Secret = secret;
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
         Verbose = verbose;
+        UseGeneratedActionRegistry = useGeneratedActionRegistry;
         Log.Information("[AppConfig] Main token: {0}", mainToken);
     }
 
@@ -46,6 +53,9 @@ internal class AppConfig
     public string Secret { get; private set; }
 
     public int FileDownloadSessions { get; private set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? UseGeneratedActionRegistry { get; }
 
     private static AppConfig GetDefault()
     {

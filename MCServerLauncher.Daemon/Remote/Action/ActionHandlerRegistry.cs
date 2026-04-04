@@ -20,6 +20,104 @@ public class ActionHandlerMeta(IMatchable permission, EActionHandlerType type)
     public EActionHandlerType Type { get; } = type;
 }
 
+internal enum ActionHandlerRegistryMode
+{
+    Legacy,
+    Generated
+}
+
+internal interface IActionHandlerRegistry
+{
+    ActionHandlerRegistryMode Mode { get; }
+
+    IReadOnlyDictionary<ActionType, ActionHandlerMeta> HandlerMetas { get; }
+
+    IReadOnlyDictionary<ActionType,
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+        SyncHandlers { get; }
+
+    IReadOnlyDictionary<ActionType,
+            Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
+        AsyncHandlers { get; }
+}
+
+internal sealed class ActionHandlerRegistrySnapshot(
+    ActionHandlerRegistryMode mode,
+    IReadOnlyDictionary<ActionType, ActionHandlerMeta> handlerMetas,
+    IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+        syncHandlers,
+    IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
+        asyncHandlers)
+    : IActionHandlerRegistry
+{
+    public ActionHandlerRegistryMode Mode { get; } = mode;
+
+    public IReadOnlyDictionary<ActionType, ActionHandlerMeta> HandlerMetas { get; } = handlerMetas;
+
+    public IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+        SyncHandlers { get; } = syncHandlers;
+
+    public IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
+        AsyncHandlers { get; } = asyncHandlers;
+}
+
+internal static class ActionHandlerRegistryRuntime
+{
+    private static ActionHandlerRegistrySnapshot? _selected;
+
+    public static ActionHandlerRegistrySnapshot Selected =>
+        _selected ?? throw new InvalidOperationException("Action handler registry has not been initialized.");
+
+    public static ActionHandlerRegistrySnapshot CreateSelected(bool? useGeneratedActionRegistry)
+    {
+        return useGeneratedActionRegistry switch
+        {
+            true => CreateGenerated(),
+            false => CreateLegacy(),
+            null => CreateGenerated()
+        };
+    }
+
+    public static ActionHandlerRegistrySnapshot Initialize(bool? useGeneratedActionRegistry)
+    {
+        _selected = CreateSelected(useGeneratedActionRegistry);
+        return _selected;
+    }
+
+    public static void Reset()
+    {
+        _selected = null;
+    }
+
+    private static ActionHandlerRegistrySnapshot CreateLegacy()
+    {
+        AnotherActionHandlerRegistry.Reset();
+
+        foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+        {
+            AnotherActionHandlerRegistry.LoadHandlerFromType(type);
+        }
+
+        return new ActionHandlerRegistrySnapshot(
+            ActionHandlerRegistryMode.Legacy,
+            new Dictionary<ActionType, ActionHandlerMeta>(AnotherActionHandlerRegistry.HandlerMetaMap),
+            new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>(
+                AnotherActionHandlerRegistry.SyncHandlerMap),
+            new Dictionary<ActionType,
+                Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>(
+                AnotherActionHandlerRegistry.AsyncHandlerMap));
+    }
+
+    private static ActionHandlerRegistrySnapshot CreateGenerated()
+    {
+        return new ActionHandlerRegistrySnapshot(
+            ActionHandlerRegistryMode.Generated,
+            GeneratedActionHandlerRegistryArtifacts.CreateHandlerMetaMap(),
+            GeneratedActionHandlerRegistryArtifacts.CreateSyncHandlerMap(),
+            GeneratedActionHandlerRegistryArtifacts.CreateAsyncHandlerMap());
+    }
+}
+
 internal static class AnotherActionHandlerRegistry
 {
     private static readonly Dictionary<ActionType, ActionHandlerMeta> HandlerMeta = new();
@@ -39,6 +137,13 @@ internal static class AnotherActionHandlerRegistry
 
     public static IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken,
         ActionResponse>> SyncHandlerMap => Handlers;
+
+    public static void Reset()
+    {
+        HandlerMeta.Clear();
+        Handlers.Clear();
+        AsyncHandlers.Clear();
+    }
 
     /// <summary>
     ///     注册handler，如果handler类同时实现了同步和异步接口，那么只会注册同步接口

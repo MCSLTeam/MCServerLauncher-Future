@@ -1,4 +1,5 @@
-﻿using System.IO;
+using System.IO;
+using MCServerLauncher.Common.Internal.Performance;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using Newtonsoft.Json;
 
@@ -66,7 +67,9 @@ public static class EventTypeExtensions
 
     private static T? DeserializeWithNewtonsoft<T>(JsonPayloadBuffer buffer, JsonSerializer serializer)
     {
-        using var textReader = new StringReader(buffer.GetRawText());
+        var view = new JsonPayloadBufferView(buffer);
+        var rawJson = JsonPayloadBufferAdapters.GetRawJson(view);
+        using var textReader = new StringReader(rawJson);
         using var jsonReader = new JsonTextReader(textReader);
         return serializer.Deserialize<T>(jsonReader);
     }
