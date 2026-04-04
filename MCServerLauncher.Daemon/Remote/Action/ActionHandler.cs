@@ -1,4 +1,5 @@
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.Internal.Performance;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Serialization;
@@ -7,7 +8,6 @@ using RustyOptions;
 using System.Text.Json;
 using TouchSocket.Core;
 using JsonElement = System.Text.Json.JsonElement;
-using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using Result = RustyOptions.Result;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
@@ -29,7 +29,9 @@ internal interface IActionHandlerBase<TParam, TResult>
 
         try
         {
-            var result = token.Value.Deserialize<TParam>(DaemonRpcJsonBoundary.StjOptions)!;
+            var result = JsonElementHotPathAdapters.Deserialize(
+                token.Value,
+                DaemonRpcTypeInfoCache<TParam>.TypeInfo);
             return Result.Ok<TParam, ActionError>(result);
         }
         catch (JsonException e)
@@ -46,7 +48,7 @@ internal interface IActionHandlerBase<TParam, TResult>
 
             return Result.Err<TParam, ActionError>(ActionRetcode.ParamError.WithMessage(errorMessage));
         }
-        catch (NullReferenceException e)
+        catch (NullReferenceException)
         {
             return Result.Err<TParam, ActionError>(ActionRetcode.ParamError.WithMessage("Could not deserialize param"));
         }
@@ -78,12 +80,12 @@ internal interface IActionHandlerBase<TParam, TResult>
             });
     }
 
-    private static JsonElement ToJsonElement(object? value)
+    private static JsonElement ToJsonElement(TResult? value)
     {
         if (value is null)
             return default;
 
-        return StjJsonSerializer.SerializeToElement(value, DaemonRpcJsonBoundary.StjOptions);
+        return JsonElementHotPathAdapters.SerializeToElement(value, DaemonRpcTypeInfoCache<TResult>.TypeInfo);
     }
 }
 

@@ -1,11 +1,13 @@
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Action.Handlers;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using RustyOptions;
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using TouchSocket.Core;
 using RResult = RustyOptions.Result;
 
@@ -49,6 +51,7 @@ public class T9DaemonInboundParsingTests
         var result = executor.ParseRequest("{\"action\":\"Ping\"");
 
         Assert.True(result.IsErr(out var response));
+        Assert.NotNull(response);
         Assert.Equal(ActionRequestStatus.Error, response.RequestStatus);
         Assert.Equal(ActionRetcode.BadRequest.Code, response.Retcode);
         Assert.Equal("Bad Request: Could not parse action json", response.Message);
@@ -65,6 +68,7 @@ public class T9DaemonInboundParsingTests
         var parsed = ((IActionHandlerBase<EmptyActionParameter, EmptyActionResult>)handler).ParseParameter(null);
 
         Assert.True(parsed.IsErr(out var err));
+        Assert.NotNull(err);
         Assert.Equal(ActionRetcode.ParamError.Code, err.Retcode.Code);
         Assert.Equal("Param Error: Missing parameters", err.Retcode.Message);
     }
@@ -81,6 +85,7 @@ public class T9DaemonInboundParsingTests
         var parsed = ((IActionHandlerBase<GetFileInfoParameter, EmptyActionResult>)handler).ParseParameter(param);
 
         Assert.True(parsed.IsErr(out var err));
+        Assert.NotNull(err);
         Assert.Equal(ActionRetcode.ParamError.Code, err.Retcode.Code);
         Assert.Contains("Could not deserialize param", err.Retcode.Message);
     }
@@ -103,6 +108,7 @@ public class T9DaemonInboundParsingTests
         var result = executor.CheckHandler(request, ctx);
 
         Assert.True(result.IsErr(out var response));
+        Assert.NotNull(response);
         Assert.Equal(ActionRetcode.ActionUnavailable.Code, response.Retcode);
         Assert.Equal("Action Unavailable: Action not implemented", response.Message);
     }
@@ -129,6 +135,7 @@ public class T9DaemonInboundParsingTests
         var result = executor.CheckHandler(request, ctx);
 
         Assert.True(result.IsErr(out var response));
+        Assert.NotNull(response);
         Assert.Equal(ActionRetcode.PermissionDenied.Code, response.Retcode);
         Assert.Equal("Permission Denied: Permission denied", response.Message);
     }
@@ -171,10 +178,86 @@ public class T9DaemonInboundParsingTests
         Assert.Empty(response.Data.Value.EnumerateObject());
     }
 
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void CommonAssembly_InternalsVisibleTo_AllowsDaemonAndProtocolTestsToConsumeInternalPerformanceHelpers()
+    {
+        var friendAssemblies = typeof(StjResolver).Assembly
+            .GetCustomAttributes(typeof(InternalsVisibleToAttribute), inherit: false)
+            .Cast<InternalsVisibleToAttribute>()
+            .Select(attribute => attribute.AssemblyName)
+            .ToArray();
+
+        Assert.Contains("MCServerLauncher.Daemon", friendAssemblies);
+        Assert.Contains("MCServerLauncher.ProtocolTests", friendAssemblies);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void ActionHandlerFile_UsesCachedDaemonRpcTypeInfo_ForTypedParamAndResultPaths()
+    {
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs",
+            "JsonElementHotPathAdapters.Deserialize(");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs",
+            "DaemonRpcTypeInfoCache<TParam>.TypeInfo");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs",
+            "JsonElementHotPathAdapters.SerializeToElement(");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs",
+            "DaemonRpcTypeInfoCache<TResult>.TypeInfo");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs",
+            "token.Value.Deserialize<TParam>(DaemonRpcJsonBoundary.StjOptions)");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs",
+            "SerializeToElement(value, DaemonRpcJsonBoundary.StjOptions)");
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "CleanupValidation")]
+    public void ActionExecutorFile_UsesCachedDaemonRpcTypeInfo_ForRequestParsing()
+    {
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
+            "JsonElementHotPathAdapters.Deserialize(");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
+            "DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
+            "Deserialize<ActionRequest>(text, DaemonRpcJsonBoundary.StjOptions)");
+    }
+
     private static JsonElement ParseElement(string json)
     {
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.Clone();
+    }
+
+    private static void AssertFileContains(string relativePath, string expectedText)
+    {
+        var repoRoot = ResolveRepoRoot();
+        var source = File.ReadAllText(Path.Combine(repoRoot, relativePath));
+        Assert.Contains(expectedText, source, StringComparison.Ordinal);
+    }
+
+    private static void AssertFileDoesNotContain(string relativePath, string forbiddenText)
+    {
+        var repoRoot = ResolveRepoRoot();
+        var source = File.ReadAllText(Path.Combine(repoRoot, relativePath));
+        Assert.DoesNotContain(forbiddenText, source, StringComparison.Ordinal);
+    }
+
+    private static string ResolveRepoRoot()
+    {
+        var dir = AppDomain.CurrentDomain.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "MCServerLauncher.sln")))
+        {
+            dir = Directory.GetParent(dir)?.FullName;
+        }
+
+        return dir ?? throw new DirectoryNotFoundException("Repository root not found");
     }
 
     private sealed class FakeExecutor : IActionExecutor

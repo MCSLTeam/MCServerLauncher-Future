@@ -1,0 +1,29 @@
+name: Protocol Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  protocol-tests:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MCServerLauncher.sln
+
+      - name: Build solution (Release)
+        run: dotnet build MCServerLauncher.sln -c Release --no-restore
+
+      - name: Run protocol tests (Release)
+        run: dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build

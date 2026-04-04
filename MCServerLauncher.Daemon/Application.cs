@@ -31,6 +31,7 @@ public static class Application
 
     public static async Task SetupAsync()
     {
+        var selectedRegistry = ActionHandlerRegistryRuntime.Selected;
         IServiceCollection collection = new ServiceCollection();
         collection.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
 
@@ -44,6 +45,7 @@ public static class Application
                 a.RegisterSingleton<ConsoleApplication>();
                 a.RegisterSingleton<GracefulShutdown>();
                 a.RegisterSingleton<IHttpService>(HttpService);
+                a.RegisterSingleton(selectedRegistry);
                 a.RegisterSingleton<IActionExecutor, AnotherActionExecutor>();
                 a.RegisterSingleton<IEventService, EventService>();
                 a.RegisterSingleton<WsContextContainer>();
@@ -205,8 +207,10 @@ public static class Application
         foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
         {
             InstanceFactoryRegistry.LoadFactoryFromType(type);
-            AnotherActionHandlerRegistry.LoadHandlerFromType(type);
         }
+
+        var selectedRegistry = ActionHandlerRegistryRuntime.Initialize(AppConfig.Get().UseGeneratedActionRegistry);
+        Log.Information("[ActionHandlerRegistry] Using {Mode} registry path", selectedRegistry.Mode);
 
         return true;
     }
