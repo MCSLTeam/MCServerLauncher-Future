@@ -7,10 +7,10 @@ using Xunit;
 namespace MCServerLauncher.ProtocolTests;
 
 /// <summary>
-/// T5: Verify serializer-boundary ownership scaffolding and trim-friendly fallback policy behavior.
+/// Verify serializer-boundary ownership scaffolding and trim-friendly fallback policy behavior.
 /// </summary>
 [Collection("RuntimeSwitchIsolation")]
-public class T5SerializerBoundaryScaffoldTests
+public class JsonBoundaryConfigurationTests
 {
     [Fact]
     public void DaemonRpcBoundary_ProvidesNewtonsoftAndStjOptions()

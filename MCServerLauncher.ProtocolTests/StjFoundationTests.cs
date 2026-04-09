@@ -9,9 +9,9 @@ using Xunit;
 namespace MCServerLauncher.ProtocolTests;
 
 /// <summary>
-/// T4: Verify STJ foundation types compile and basic serialization works
+/// Verify STJ foundation types compile and basic serialization works.
 /// </summary>
-public class T4StjFoundationTests
+public class StjFoundationTests
 {
     [Fact]
     public void StjResolver_CreateDefaultResolver_ReturnsNonNull()
