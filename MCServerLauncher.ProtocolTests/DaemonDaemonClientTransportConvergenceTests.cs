@@ -31,7 +31,7 @@ namespace MCServerLauncher.ProtocolTests;
 /// These tests prove the migrated daemon and migrated daemonclient seams agree on the approved transport contract.
 /// They do not claim mixed-version runtime compatibility.
 /// </summary>
-public class T18DaemonDaemonClientConvergenceTests
+public class DaemonDaemonClientTransportConvergenceTests
 {
     private static readonly Guid FixedRequestId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid FixedResponseId = Guid.Parse("22222222-2222-2222-2222-222222222222");

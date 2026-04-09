@@ -22,7 +22,7 @@ namespace MCServerLauncher.ProtocolTests;
 /// a separate evidence stream and are not used as direct numeric substitutes for these gate medians.
 /// </summary>
 [Collection("PerformanceGate")]
-public class T19DaemonClientRoundTripPerformanceGateTests
+public class DaemonClientTransportPerformanceGateTests
 {
     private static readonly Guid FixedRequestId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid FixedResponseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
