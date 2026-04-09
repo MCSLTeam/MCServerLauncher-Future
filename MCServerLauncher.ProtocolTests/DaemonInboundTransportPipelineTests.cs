@@ -14,7 +14,7 @@ using RResult = RustyOptions.Result;
 
 namespace MCServerLauncher.ProtocolTests;
 
-public class T9DaemonInboundParsingTests
+public class DaemonInboundTransportPipelineTests
 {
     private static readonly Guid FixedId = Guid.Parse("33333333-3333-3333-3333-333333333333");
 

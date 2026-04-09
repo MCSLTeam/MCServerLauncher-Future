@@ -11,7 +11,7 @@ using StjJsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MCServerLauncher.ProtocolTests;
 
-public class T10DaemonOutboundSerializationTests
+public class DaemonOutboundTransportSerializationTests
 {
     private static readonly Guid FixedResponseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
