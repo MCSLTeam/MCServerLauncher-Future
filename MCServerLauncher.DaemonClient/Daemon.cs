@@ -153,7 +153,7 @@ public class Daemon : IDaemon
             var daemon = await OpenAsync(
                 "127.0.0.1",
                 11452,
-                "Zb8ISMV5f71z0CL5YLMMNKg4CG2EzABZ"
+                "pDCd6VIRWTHgyEB2KDMQfYFYMFbOg1d9"
                 , false,
                 new ClientConnectionConfig
                 {

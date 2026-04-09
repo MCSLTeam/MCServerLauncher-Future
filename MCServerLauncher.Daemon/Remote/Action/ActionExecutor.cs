@@ -118,8 +118,8 @@ internal class AnotherActionExecutor : IActionExecutor
 
     private TransformBlock<ActionTask, ActionTask> ActionHandleBlock { get; }
     private ActionBlock<ActionTask> ActionSendBlock { get; }
-    private IResolver Resolver { get; }
-    private CancellationTokenSource Cts { get; }
+    internal IResolver Resolver { get; }
+    internal CancellationTokenSource Cts { get; }
     private IActionExecutorInstrumentation Instrumentation { get; }
     private Func<WsContext, string, CancellationToken, Task> SendAsync { get; }
 
@@ -142,30 +142,7 @@ internal class AnotherActionExecutor : IActionExecutor
     /// <returns></returns>
     public ActionResponse? ProcessAction(string text, WsContext ctx)
     {
-        var parsed = this.ParseRequest(text);
-
-        if (parsed.IsErr(out var response)) return response;
-
-        var request = parsed.Unwrap();
-
-        var @checked = this.CheckHandler(request, ctx);
-        if (@checked.IsErr(out response)) return response;
-
-        var meta = @checked.Unwrap();
-
-        return meta.Type switch
-        {
-            EActionHandlerType.Sync => SyncHandlers[request.ActionType]
-                .Invoke(request.Parameter, request.Id, ctx, Resolver, Cts.Token),
-
-            EActionHandlerType.Async => PostAsyncAction(request.ActionType, request.Parameter, ctx, request.Id)
-                ? null
-                : ResponseUtils.Err(ActionRetcode.RateLimitExceeded, request.Id),
-
-            _ => ResponseUtils.Err(
-                ActionRetcode.UnexpectedError.WithMessage($"Unknown action handler type: {meta.Type}"),
-                request.Id)
-        };
+        return this.ProcessParsedRequest(this.ParseRequest(text), ctx);
     }
 
     public async Task ShutdownAsync()
@@ -176,7 +153,7 @@ internal class AnotherActionExecutor : IActionExecutor
         await ActionSendBlock.Completion;
     }
 
-    private bool PostAsyncAction(ActionType actionType, JsonElement? param, WsContext ctx, Guid id)
+    internal bool PostAsyncAction(ActionType actionType, JsonElement? param, WsContext ctx, Guid id)
     {
         var task = ActionTaskPool.Get();
         Instrumentation.OnQueueSubmitted();

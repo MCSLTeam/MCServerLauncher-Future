@@ -6,6 +6,7 @@ using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Action.Handlers;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using RustyOptions;
+using System.Text;
 using System.Text.Json;
 using System.Runtime.CompilerServices;
 using TouchSocket.Core;
@@ -33,6 +34,30 @@ public class T9DaemonInboundParsingTests
             """;
 
         var result = executor.ParseRequest(json);
+
+        Assert.True(result.IsOk(out var request));
+        Assert.Equal(ActionType.Ping, request.ActionType);
+        Assert.True(request.Parameter.HasValue);
+        Assert.Equal(JsonValueKind.Object, request.Parameter.Value.ValueKind);
+        Assert.Equal(FixedId, request.Id);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    public void ParseRequest_ValidUtf8ActionEnvelope_ParsesWithCachedTypeInfo()
+    {
+        var executor = new FakeExecutor();
+        var json =
+            """
+            {
+              "action": 2,
+              "params": {},
+              "id": "33333333-3333-3333-3333-333333333333"
+            }
+            """;
+
+        var result = executor.ParseRequest(Encoding.UTF8.GetBytes(json));
 
         Assert.True(result.IsOk(out var request));
         Assert.Equal(ActionType.Ping, request.ActionType);
@@ -225,6 +250,10 @@ public class T9DaemonInboundParsingTests
             "JsonElementHotPathAdapters.Deserialize(");
         AssertFileContains("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
             "DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/WsActionPlugin.cs",
+            "e.DataFrame.PayloadData");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsActionPlugin.cs",
+            "e.DataFrame.ToText()");
         AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
             "Deserialize<ActionRequest>(text, DaemonRpcJsonBoundary.StjOptions)");
     }

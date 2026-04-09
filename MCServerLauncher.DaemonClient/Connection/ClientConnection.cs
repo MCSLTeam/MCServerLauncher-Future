@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
@@ -9,10 +11,7 @@ using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.DaemonClient.WebSocketPlugin;
 using Serilog;
-using TouchSocket.Core;
-using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
-using TouchSocket.Sockets;
 
 namespace MCServerLauncher.DaemonClient.Connection;
 
@@ -24,21 +23,41 @@ internal class ClientConnection : DisposableObject
 
     private readonly CancellationTokenSource _cts;
     private readonly ConnectionPendingRequests _pendingRequests;
+    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendingResponses = new();
+    private readonly TouchSocketClientTransport _transport;
 
     private ClientConnection(ClientConnectionConfig config)
     {
         _cts = new CancellationTokenSource();
         _pendingRequests = new ConnectionPendingRequests(config.PendingRequestCapacity);
+        _transport = new TouchSocketClientTransport(config);
         Config = config;
 
-        Reconnected += async () => await OnReconnectedEventHandler();
-        ConnectionClosed += () => _pendingRequests.Close();
+        _transport.EventReceived += (t, l, m, d) => OnEventReceived?.Invoke(t, l, m, d);
+        _transport.ActionResponseReceived += HandleActionResponse;
+        _transport.Reconnected += async () =>
+        {
+            Reconnected?.Invoke();
+            await OnReconnectedEventHandler();
+        };
+        _transport.ConnectionLost += () =>
+        {
+            _pendingRequests.Close();
+            CancelPendingResponses();
+            ConnectionLost?.Invoke();
+        };
+        _transport.ConnectionClosed += () =>
+        {
+            _pendingRequests.Close();
+            CancelPendingResponses();
+            ConnectionClosed?.Invoke();
+        };
     }
 
     public SubscribedEvents SubscribedEvents { get; } = new();
-    public DateTime LastPong { get; private set; } = DateTime.Now;
-    public bool IsConnectionLost { get; private set; }
-    public WebSocketClient Client { get; } = new();
+    public DateTime LastPong => _transport.LastPong;
+    public bool IsConnectionLost => _transport.IsConnectionLost;
+    public WebSocketClient Client => _transport.Client;
     public ClientConnectionConfig Config { get; }
 
     public event Action? ConnectionLost;
@@ -70,30 +89,7 @@ internal class ClientConnection : DisposableObject
     {
         // create instance
         ClientConnection connection = new(config);
-
-        // connect ws
-        await connection.Client.SetupAsync(new TouchSocketConfig()
-            .SetRemoteIPHost(new IPHost($"ws://{address}:{port}/api/v{CF_PROTOCOL_VERSION}?token={token}"))
-            .ConfigurePlugins(a =>
-            {
-                var receivedPlugin = new WsReceivedPlugin(connection._pendingRequests);
-                receivedPlugin.OnEventReceived += (t, l, m, d) => { connection.OnEventReceived?.Invoke(t, l, m, d); };
-                a.Add(receivedPlugin);
-
-                if (config.HeartBeat)
-                {
-                    var heartbeatPlugin = new WsHeartbeatPlugin(connection);
-                    heartbeatPlugin.MaxFailCount = config.MaxFailCount;
-                    heartbeatPlugin.Tick = config.HeartBeatTick;
-                    a.Add(heartbeatPlugin);
-                }
-
-                a.Add(new WsConnectionEventPlugin(connection));
-                a.UseWebSocketReconnection();
-            })
-        );
-
-        await connection.Client.ConnectAsync();
+        await connection._transport.OpenAsync(address, port, token, isSecure, cancellationToken);
         return connection;
     }
 
@@ -140,7 +136,7 @@ internal class ClientConnection : DisposableObject
     public async Task CloseAsync()
     {
         _cts.Cancel();
-        await Client.CloseAsync();
+        await _transport.CloseAsync();
         SubscribedEvents.Events.Clear(); // 清空标记的已订阅事件
         Log.Debug("[ClientConnection] closed");
     }
@@ -161,15 +157,20 @@ internal class ClientConnection : DisposableObject
     )
     {
         var json = SerializeActionRequestForTransport(request);
-
-        cancellationToken.ThrowIfCancellationRequested();
-        // TODO 大数据的分段传输
-        return Client.SendAsync(new ReadOnlyMemory<byte>(json), WSDataType.Text);
+        return _transport.SendAsync(new ReadOnlyMemory<byte>(json), cancellationToken);
     }
 
     internal static byte[] SerializeActionRequestForTransport(ActionRequest request)
     {
-        return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, RpcStjOptions);
+        if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
+            return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, RpcStjOptions);
+
+        var startTimestamp = Stopwatch.GetTimestamp();
+        var payload = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, RpcStjOptions);
+        instrumentation.OnOutboundSerialize(
+            DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
+            payload.Length);
+        return payload;
     }
 
     /// <summary>
@@ -223,7 +224,7 @@ internal class ClientConnection : DisposableObject
         CancellationToken ct
     )
     {
-        var tcs = new TaskCompletionSource<ActionResponse>();
+        var tcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // add to pending
         if (!await _pendingRequests.AddPendingAsync(request.Id, tcs, timeout, ct))
@@ -232,8 +233,22 @@ internal class ClientConnection : DisposableObject
             throw new DaemonRequestLimitException();
         }
 
-        await PrivateSendAsync(request, ct);
-        return tcs;
+        if (!_pendingResponses.TryAdd(request.Id, tcs))
+        {
+            _pendingRequests.TryRemovePending(request.Id, out _);
+            throw new InvalidOperationException($"Duplicate pending request id: {request.Id}");
+        }
+
+        try
+        {
+            await PrivateSendAsync(request, ct);
+            return tcs;
+        }
+        catch
+        {
+            TryCompletePendingResponse(request.Id, out _);
+            throw;
+        }
     }
 
     /// <summary>
@@ -270,11 +285,41 @@ internal class ClientConnection : DisposableObject
         }
         catch (Exception e)when (e is TimeoutException or OperationCanceledException)
         {
-            _pendingRequests.TryRemovePending(id, out _);
+            TryCompletePendingResponse(id, out _);
             if (e is TimeoutException)
                 Log.Debug("[ClientConnection] timeout when waiting for echo: {0}", id);
             throw;
         }
+    }
+
+    private void HandleActionResponse(ActionResponse response)
+    {
+        if (TryCompletePendingResponse(response.Id, out var pending))
+            pending.TrySetResult(response);
+        else
+            Log.Warning("[ClientConnection] Received canceled action's result: {RequestId}, ignore it.", response.Id);
+    }
+
+    private bool TryCompletePendingResponse(Guid id, out TaskCompletionSource<ActionResponse> pending)
+    {
+        if (_pendingResponses.TryRemove(id, out pending!))
+        {
+            _pendingRequests.TryRemovePending(id, out _);
+            return true;
+        }
+
+        pending = null!;
+        return false;
+    }
+
+    private void CancelPendingResponses()
+    {
+        foreach (var pending in _pendingResponses)
+            if (_pendingResponses.TryRemove(pending.Key, out var taskCompletionSource))
+            {
+                _pendingRequests.TryRemovePending(pending.Key, out _);
+                taskCompletionSource.TrySetCanceled();
+            }
     }
 
     private async Task OnReconnectedEventHandler()
@@ -293,7 +338,7 @@ internal class ClientConnection : DisposableObject
                     Meta = @event.Meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(@event.Meta, @event.Meta.GetType(), RpcStjOptions)
                 }, ct: cts.Token);
             }
-            catch (OperationCanceledException e)
+            catch (OperationCanceledException)
             {
                 Log.Debug("[ClientConnection] Cannot recover subscribed event = {0}: timeout", @event);
                 events.Remove(@event);
@@ -308,85 +353,6 @@ internal class ClientConnection : DisposableObject
     protected override void ProtectedDispose()
     {
         _cts.Dispose();
-        Client.SafeDispose();
-    }
-
-    private class WsConnectionEventPlugin : PluginBase, IWebSocketHandshakedPlugin, IWebSocketClosedPlugin
-    {
-        private readonly ClientConnection _connection;
-        private bool _firstHandshaked = true;
-
-        public WsConnectionEventPlugin(ClientConnection connection)
-        {
-            _connection = connection;
-        }
-
-        public Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
-        {
-            if (!_connection.IsConnectionLost) _connection.ConnectionClosed?.Invoke();
-
-            return e.InvokeNext();
-        }
-
-        public Task OnWebSocketHandshaked(IWebSocket webSocket, HttpContextEventArgs e)
-        {
-            _firstHandshaked = _firstHandshaked && false;
-
-            _connection.IsConnectionLost = false;
-            _connection.LastPong = DateTime.Now;
-
-            if (!_firstHandshaked) _connection.Reconnected?.Invoke();
-
-            return e.InvokeNext();
-        }
-    }
-
-    private class WsHeartbeatPlugin : HeartbeatPlugin, IWebSocketHandshakedPlugin
-    {
-        private readonly ClientConnection _connection;
-
-        public WsHeartbeatPlugin(ClientConnection connection)
-        {
-            _connection = connection;
-        }
-
-        public async Task OnWebSocketHandshaked(IWebSocket client, HttpContextEventArgs e)
-        {
-            _ = EasyTask.SafeRun(async () =>
-            {
-                var failedCount = 0;
-                while (true)
-                {
-                    await Task.Delay(Tick).ConfigureAwait(EasyTask.ContinueOnCapturedContext);
-                    if (!client.Online) return;
-
-                    try
-                    {
-                        await client.PingAsync().ConfigureAwait(EasyTask.ContinueOnCapturedContext);
-                        _connection.LastPong = DateTime.Now;
-                        failedCount = 0;
-                    }
-                    catch
-                    {
-                        failedCount++;
-                    }
-
-                    if (failedCount > MaxFailCount)
-                    {
-                        OnConnectionLostHandler();
-                        await client.CloseAsync("自动心跳失败次数达到最大，已断开连接。")
-                            .ConfigureAwait(EasyTask.ContinueOnCapturedContext);
-                    }
-                }
-            });
-
-            await e.InvokeNext().ConfigureAwait(EasyTask.ContinueOnCapturedContext);
-        }
-
-        private void OnConnectionLostHandler()
-        {
-            _connection.IsConnectionLost = true;
-            _connection.ConnectionLost?.Invoke();
-        }
+        _transport.Dispose();
     }
 }

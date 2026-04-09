@@ -51,6 +51,11 @@
         <DebugType>full</DebugType>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>obj\Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
+
     <ItemGroup>
         <Compile Remove=".Resources\Docs" />
     </ItemGroup>
@@ -78,6 +83,7 @@
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
+        <PackageReference Include="TouchSocket" Version="4.2.1" />
         <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="4.0.0" />
         <PackageReference Include="TouchSocket.Http" Version="4.0.0" />
     </ItemGroup>

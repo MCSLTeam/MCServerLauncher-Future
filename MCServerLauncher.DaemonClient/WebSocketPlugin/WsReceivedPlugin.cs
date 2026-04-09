@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType;
@@ -15,18 +17,29 @@ namespace MCServerLauncher.DaemonClient.WebSocketPlugin;
 
 public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 {
+    internal readonly record struct ParsedInboundEnvelope(
+        InboundEnvelopeType EnvelopeType,
+        EventPacket? EventPacket,
+        ActionResponse? ActionResponse)
+    {
+        public static ParsedInboundEnvelope Unknown { get; } = new(InboundEnvelopeType.Unknown, null, null);
+
+        public static ParsedInboundEnvelope FromEvent(EventPacket packet)
+        {
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Event, packet, null);
+        }
+
+        public static ParsedInboundEnvelope FromAction(ActionResponse response)
+        {
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Action, null, response);
+        }
+    }
+
     internal enum InboundEnvelopeType
     {
         Unknown,
         Event,
         Action
-    }
-
-    private readonly ConnectionPendingRequests _pendingRequests;
-
-    internal WsReceivedPlugin(ConnectionPendingRequests requests)
-    {
-        _pendingRequests = requests;
     }
 
     // TODO 中继包支持
@@ -39,16 +52,17 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         }
 
         var received = e.DataFrame.ToText();
-        var envelopeType = DetectEnvelopeType(received);
-        if (envelopeType == InboundEnvelopeType.Event)
-            DispatchEvent(received);
-        else if (envelopeType == InboundEnvelopeType.Action)
-            DispatchAction(received);
+        var inbound = ParseInboundEnvelope(received);
+        if (inbound.EnvelopeType == InboundEnvelopeType.Event)
+            DispatchEvent(inbound.EventPacket!);
+        else if (inbound.EnvelopeType == InboundEnvelopeType.Action)
+            DispatchAction(inbound.ActionResponse!);
 
         await e.InvokeNext();
     }
 
     public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
+    public event Action<ActionResponse>? OnActionResponseReceived;
 
     internal static InboundEnvelopeType DetectEnvelopeType(string received)
     {
@@ -62,10 +76,118 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         return InboundEnvelopeType.Unknown;
     }
 
-    internal static EventPacket ParseEventPacket(string received)
+    internal static ParsedInboundEnvelope ParseInboundEnvelope(string received)
     {
         using var document = JsonDocument.Parse(received);
         var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Inbound message root must be a JSON object.");
+
+        if (root.TryGetProperty("event", out _))
+        {
+            try
+            {
+                return ParsedInboundEnvelope.FromEvent(ParseEventPacket(root));
+            }
+            catch (JsonException)
+            {
+                Log.Fatal(
+                    "[ClientConnection] [ReceiveLoop] Received unexpected event packet: {0}\nmay be connected to a unofficial daemon?",
+                    received);
+                throw;
+            }
+        }
+
+        if (root.TryGetProperty("status", out _))
+            return ParsedInboundEnvelope.FromAction(ParseActionResponse(root));
+
+        return ParsedInboundEnvelope.Unknown;
+    }
+
+    internal static EventPacket ParseEventPacket(string received)
+    {
+        if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
+        {
+            using var noInstrumentationDocument = JsonDocument.Parse(received);
+            return ParseEventPacket(noInstrumentationDocument.RootElement);
+        }
+
+        var startTimestamp = Stopwatch.GetTimestamp();
+        using var document = JsonDocument.Parse(received);
+        var packet = ParseEventPacket(document.RootElement);
+        instrumentation.OnInboundEventPacketParse(
+            DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
+            Encoding.UTF8.GetByteCount(received));
+        return packet;
+    }
+
+    internal static ActionResponse ParseActionResponse(string received)
+    {
+        if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
+        {
+            using var noInstrumentationDocument = JsonDocument.Parse(received);
+            return ParseActionResponse(noInstrumentationDocument.RootElement);
+        }
+
+        var startTimestamp = Stopwatch.GetTimestamp();
+        using var document = JsonDocument.Parse(received);
+        var response = ParseActionResponse(document.RootElement);
+        instrumentation.OnInboundActionResponseParse(
+            DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
+            Encoding.UTF8.GetByteCount(received));
+        return response;
+    }
+
+    internal static IEventMeta? MaterializeEventMeta(EventType eventType, JsonPayloadBuffer? metaToken)
+    {
+        return eventType switch
+        {
+            EventType.InstanceLog when metaToken is null => null,
+            EventType.InstanceLog when metaToken.Value.IsExplicitJsonNull => throw new ArgumentException("event meta payload is explicit json null"),
+            EventType.InstanceLog => System.Text.Json.JsonSerializer.Deserialize<InstanceLogEventMeta>(
+                metaToken!.Value.Value,
+                DaemonClientRpcJsonBoundary.StjOptions),
+            _ => null
+        };
+    }
+
+    internal static IEventData? MaterializeEventData(EventType eventType, JsonPayloadBuffer? dataToken)
+    {
+        if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
+            return MaterializeEventDataCore(eventType, dataToken);
+
+        var startTimestamp = Stopwatch.GetTimestamp();
+        var data = MaterializeEventDataCore(eventType, dataToken);
+        instrumentation.OnEventDataMaterialized(
+            eventType,
+            DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
+            data is not null);
+
+        return data;
+    }
+
+    private static IEventData? MaterializeEventDataCore(EventType eventType, JsonPayloadBuffer? dataToken)
+    {
+        IEventData? data = eventType switch
+        {
+            EventType.InstanceLog when dataToken is null => null,
+            EventType.InstanceLog when dataToken.Value.IsExplicitJsonNull => throw new ArgumentException("event data payload is explicit json null"),
+            EventType.InstanceLog => System.Text.Json.JsonSerializer.Deserialize<InstanceLogEventData>(
+                dataToken!.Value.Value,
+                DaemonClientRpcJsonBoundary.StjOptions),
+            EventType.DaemonReport when dataToken is null => null,
+            EventType.DaemonReport when dataToken.Value.IsExplicitJsonNull => throw new ArgumentException("event data payload is explicit json null"),
+            EventType.DaemonReport => System.Text.Json.JsonSerializer.Deserialize<DaemonReportEventData>(
+                dataToken!.Value.Value,
+                DaemonClientRpcJsonBoundary.StjOptions),
+            _ => null
+        };
+
+        return data;
+    }
+
+    private static EventPacket ParseEventPacket(JsonElement root)
+    {
         if (root.ValueKind != JsonValueKind.Object)
             throw new JsonException("Inbound event message root must be a JSON object.");
 
@@ -90,9 +212,9 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         };
     }
 
-    internal static ActionResponse ParseActionResponse(string received)
+    private static ActionResponse ParseActionResponse(JsonElement root)
     {
-        var response = System.Text.Json.JsonSerializer.Deserialize<ActionResponse>(received, DaemonClientRpcJsonBoundary.StjOptions)
+        var response = root.Deserialize<ActionResponse>(DaemonClientRpcJsonBoundary.StjOptions)
                        ?? throw new JsonException("Received action envelope could not be materialized.");
 
         return response.Data.HasValue
@@ -100,73 +222,32 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             : response;
     }
 
-    internal static IEventMeta? MaterializeEventMeta(EventType eventType, JsonPayloadBuffer? metaToken)
+    private void DispatchEvent(EventPacket packet)
     {
-        return eventType switch
-        {
-            EventType.InstanceLog when metaToken is null => null,
-            EventType.InstanceLog when metaToken.Value.IsExplicitJsonNull => throw new ArgumentException("event meta payload is explicit json null"),
-            EventType.InstanceLog => System.Text.Json.JsonSerializer.Deserialize<InstanceLogEventMeta>(
-                metaToken!.Value.Value,
-                DaemonClientRpcJsonBoundary.StjOptions),
-            _ => null
-        };
+        var eventType = packet.EventType;
+
+        // TODO 改为异步? BeginInvoke?
+        OnEventReceived?.Invoke(
+            eventType,
+            packet.Timestamp,
+            MaterializeEventMeta(eventType, packet.EventMeta),
+            MaterializeEventData(eventType, packet.EventData)
+        );
     }
 
-    internal static IEventData? MaterializeEventData(EventType eventType, JsonPayloadBuffer? dataToken)
+    private void DispatchAction(ActionResponse response)
     {
-        return eventType switch
-        {
-            EventType.InstanceLog when dataToken is null => null,
-            EventType.InstanceLog when dataToken.Value.IsExplicitJsonNull => throw new ArgumentException("event data payload is explicit json null"),
-            EventType.InstanceLog => System.Text.Json.JsonSerializer.Deserialize<InstanceLogEventData>(
-                dataToken!.Value.Value,
-                DaemonClientRpcJsonBoundary.StjOptions),
-            EventType.DaemonReport when dataToken is null => null,
-            EventType.DaemonReport when dataToken.Value.IsExplicitJsonNull => throw new ArgumentException("event data payload is explicit json null"),
-            EventType.DaemonReport => System.Text.Json.JsonSerializer.Deserialize<DaemonReportEventData>(
-                dataToken!.Value.Value,
-                DaemonClientRpcJsonBoundary.StjOptions),
-            _ => null
-        };
-    }
-
-    private void DispatchEvent(string received)
-    {
-        try
-        {
-            var packet = ParseEventPacket(received);
-            var eventType = packet.EventType;
-
-            // TODO 改为异步? BeginInvoke?
-            OnEventReceived?.Invoke(
-                eventType,
-                packet.Timestamp,
-                MaterializeEventMeta(eventType, packet.EventMeta),
-                MaterializeEventData(eventType, packet.EventData)
-            );
-        }
-        catch (JsonException)
-        {
-            Log.Fatal(
-                "[ClientConnection] [ReceiveLoop] Received unexpected event packet: {0}\nmay be connected to a unofficial daemon?",
-                received);
-            throw;
-        }
-    }
-
-    private void DispatchAction(string received)
-    {
-        var response = ParseActionResponse(received);
         if (response.Id == Guid.Empty)
         {
             Log.Error("[ClientConnection] [ReceiveLoop] Received Id=Guid.Empty message: {0}.", response.Message);
             throw new ArgumentNullException(nameof(response.Id));
         }
 
-        if (_pendingRequests.TryRemovePending(response.Id, out var pending))
-            pending.SetResult(response);
-        else
-            Log.Warning($"[ClientConnection] Received canceled action's result: {received},\nignore it.");
+        OnActionResponseReceived?.Invoke(response);
+    }
+
+    private void DispatchAction(string received)
+    {
+        DispatchAction(ParseActionResponse(received));
     }
 }

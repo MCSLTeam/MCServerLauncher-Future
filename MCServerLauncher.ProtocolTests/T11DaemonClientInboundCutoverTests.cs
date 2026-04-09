@@ -198,7 +198,18 @@ public class T11DaemonClientInboundCutoverTests
     {
         var malformed = "{\"status\":\"ok\"";
 
-        Assert.Throws<JsonException>(() => WsReceivedPlugin.ParseActionResponse(malformed));
+        Assert.ThrowsAny<JsonException>(() => WsReceivedPlugin.ParseActionResponse(malformed));
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    [Trait("Category", "CleanupValidation")]
+    public void InboundReceivePath_UsesSingleParseInboundAdapterBeforeDispatch()
+    {
+        var source = File.ReadAllText(Path.Combine(ResolveRepoRoot(), "MCServerLauncher.DaemonClient/WebSocketPlugin/WsReceivedPlugin.cs"));
+
+        Assert.Contains("var inbound = ParseInboundEnvelope(received);", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("var envelopeType = DetectEnvelopeType(received);", source, StringComparison.Ordinal);
     }
 
     [Fact]

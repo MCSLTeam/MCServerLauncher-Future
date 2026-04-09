@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Linq;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
@@ -326,6 +327,68 @@ public class T18DaemonDaemonClientConvergenceTests
 
     [Fact]
     [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public async Task DaemonOutboundPreparedEventSeam_InstanceLogEvent_RoundTripsThroughRealSeams()
+    {
+        var before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var wireJson = await SerializeAtDaemonPreparedEventPluginSeamAsync(
+            EventType.InstanceLog,
+            new JsonPayloadBuffer(StjJsonSerializer.SerializeToElement(
+                new InstanceLogEventMeta
+                {
+                    InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                },
+                DaemonRpcJsonBoundary.StjOptions)),
+            new JsonPayloadBuffer(StjJsonSerializer.SerializeToElement(
+                new InstanceLogEventData
+                {
+                    Log = "[12:00:00] [Server thread/INFO]: Hello"
+                },
+                DaemonRpcJsonBoundary.StjOptions)));
+        var after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        AssertEventMatchesFixtureExceptTimestamp(
+            wireJson,
+            Path.Combine(RpcFixturePaths.EventPacketDir, "with-meta-and-data.json"),
+            before,
+            after);
+
+        var parsedPacket = WsReceivedPlugin.ParseEventPacket(wireJson);
+        var meta = Assert.IsType<InstanceLogEventMeta>(WsReceivedPlugin.MaterializeEventMeta(parsedPacket.EventType, parsedPacket.EventMeta));
+        var data = Assert.IsType<InstanceLogEventData>(WsReceivedPlugin.MaterializeEventData(parsedPacket.EventType, parsedPacket.EventData));
+
+        Assert.Equal(EventType.InstanceLog, parsedPacket.EventType);
+        Assert.InRange(parsedPacket.Timestamp, before, after);
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), meta.InstanceId);
+        Assert.Equal("[12:00:00] [Server thread/INFO]: Hello", data.Log);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public void DaemonEventFanOut_EnumeratesLaterSubscribedContexts_AfterUnsubscribedContext()
+    {
+        var container = new WsContextContainer();
+        var first = container.CreateContext("t18-fanout-first", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+        var skipped = container.CreateContext("t18-fanout-skipped", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+        var last = container.CreateContext("t18-fanout-last", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+
+        first.SubscribeEvent(EventType.DaemonReport, null);
+        last.SubscribeEvent(EventType.DaemonReport, null);
+
+        var contexts = InvokeEnumerateSubscribedContexts(container, EventType.DaemonReport, null);
+        var clientIds = contexts.Select(context => context.ClientId).ToArray();
+
+        Assert.Contains(first.ClientId, clientIds);
+        Assert.DoesNotContain(skipped.ClientId, clientIds);
+        Assert.Contains(last.ClientId, clientIds);
+        Assert.Equal(2, clientIds.Length);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
     [Trait("Category", "SchemaLockConvergence")]
     [Trait("Category", "EndToEndIntegration")]
     public void CoordinatedCutoverOnly_ConvergenceSuite_ReassertsRpcGoldenPersistenceAndDocumentationLocks()
@@ -406,7 +469,18 @@ public class T18DaemonDaemonClientConvergenceTests
         var container = new WsContextContainer();
         container.CreateContext(clientId, Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
 
-        var executor = new ActionPluginExecutor((_, _) => response);
+        var snapshot = new ActionHandlerRegistrySnapshot(
+            ActionHandlerRegistryMode.Generated,
+            new Dictionary<ActionType, ActionHandlerMeta>
+            {
+                [ActionType.Ping] = new ActionHandlerMeta(MCServerLauncher.Daemon.Remote.Authentication.Permission.Of("*"), EActionHandlerType.Sync)
+            },
+            new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
+            {
+                [ActionType.Ping] = (_, _, _, _, _) => response
+            },
+            new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>());
+        var executor = new AnotherActionExecutor(CreateProxy<IResolver>((_, _) => null), snapshot);
         var plugin = new WsActionPlugin(executor, CreateProxy<IHttpService>((_, _) => null), container);
 
         string? sent = null;
@@ -448,6 +522,15 @@ public class T18DaemonDaemonClientConvergenceTests
         return sent!;
     }
 
+    private static WsContext[] InvokeEnumerateSubscribedContexts(WsContextContainer container, EventType eventType, IEventMeta? meta)
+    {
+        var method = typeof(WsEventPlugin).GetMethod("EnumerateSubscribedContexts", BindingFlags.Static | BindingFlags.NonPublic)
+                     ?? throw new MissingMethodException(typeof(WsEventPlugin).FullName, "EnumerateSubscribedContexts");
+
+        var contexts = (IEnumerable<WsContext>?)method.Invoke(null, [container, eventType, meta]);
+        return (contexts ?? throw new InvalidOperationException("EnumerateSubscribedContexts returned null.")).ToArray();
+    }
+
     private static async Task<string> SerializeAtDaemonEventPluginSeamAsync(
         EventType eventType,
         IEventMeta? meta,
@@ -468,6 +551,40 @@ public class T18DaemonDaemonClientConvergenceTests
                                ?? throw new MissingMethodException(typeof(WsEventPlugin).FullName, "PrivateSendEvent");
 
         var invoked = privateSendEvent.Invoke(null, [eventType, meta, data, webSocket]);
+        switch (invoked)
+        {
+            case ValueTask valueTask:
+                await valueTask;
+                break;
+            case Task task:
+                await task;
+                break;
+        }
+
+        Assert.NotNull(sent);
+        return sent!;
+    }
+
+    private static async Task<string> SerializeAtDaemonPreparedEventPluginSeamAsync(
+        EventType eventType,
+        JsonPayloadBuffer? eventMeta,
+        JsonPayloadBuffer? eventData)
+    {
+        string? sent = null;
+        var webSocket = CreateProxy<IWebSocket>((method, args) =>
+        {
+            return method.Name switch
+            {
+                "SendAsync" when method.GetParameters().Length == 3 && method.GetParameters()[0].ParameterType == typeof(string)
+                    => CaptureSentString((string)args![0]!, value => sent = value),
+                _ => GetDefaultReturnValue(method.ReturnType)
+            };
+        });
+
+        var privateSendPreparedEvent = typeof(WsEventPlugin).GetMethod("PrivateSendPreparedEvent", BindingFlags.Static | BindingFlags.NonPublic)
+                                      ?? throw new MissingMethodException(typeof(WsEventPlugin).FullName, "PrivateSendPreparedEvent");
+
+        var invoked = privateSendPreparedEvent.Invoke(null, [eventType, eventMeta, eventData, webSocket]);
         switch (invoked)
         {
             case ValueTask valueTask:
@@ -577,31 +694,6 @@ public class T18DaemonDaemonClientConvergenceTests
         public ActionResponse? ProcessAction(string text, WsContext ctx)
         {
             throw new NotSupportedException();
-        }
-
-        public Task ShutdownAsync()
-        {
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class ActionPluginExecutor(Func<string, WsContext, ActionResponse> responseFactory) : IActionExecutor
-    {
-        public IReadOnlyDictionary<ActionType, ActionHandlerMeta> HandlerMetas { get; } =
-            new Dictionary<ActionType, ActionHandlerMeta>();
-
-        public IReadOnlyDictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>
-            SyncHandlers { get; } =
-            new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>();
-
-        public IReadOnlyDictionary<ActionType,
-                Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
-            AsyncHandlers { get; } =
-            new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>();
-
-        public ActionResponse? ProcessAction(string text, WsContext ctx)
-        {
-            return responseFactory(text, ctx);
         }
 
         public Task ShutdownAsync()

@@ -9,7 +9,7 @@ namespace MCServerLauncher.DaemonClient.Connection;
 internal class ConnectionPendingRequests
 {
     private readonly SemaphoreSlim _full;
-    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendings = new();
+    private readonly ConcurrentDictionary<Guid, byte> _pendings = new();
     public readonly int Size;
     private bool _closed;
 
@@ -36,24 +36,29 @@ internal class ConnectionPendingRequests
 
         if (!await _full.WaitAsync(timeout, cancellationToken)) return false;
 
-        return _pendings.TryAdd(id, tcs); // 确保echo在size范围内不会重复
+        if (_pendings.TryAdd(id, 0)) return true;
+
+        _full.Release();
+        return false;
     }
 
     public bool TryRemovePending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
     {
-        var rv = _pendings.TryRemove(id, out tcs);
-        _full.Release();
+        tcs = null!;
+        var rv = _pendings.TryRemove(id, out _);
+        if (rv)
+            _full.Release();
         return rv;
     }
 
     public bool TryGetPending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
     {
-        return _pendings.TryGetValue(id, out tcs);
+        tcs = null!;
+        return _pendings.ContainsKey(id);
     }
 
     public void Close()
     {
         _closed = true;
-        foreach (var tcs in _pendings.Values) tcs.TrySetCanceled();
     }
 }
