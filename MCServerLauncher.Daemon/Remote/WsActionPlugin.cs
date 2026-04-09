@@ -16,9 +16,8 @@ public class WsActionPlugin(IActionExecutor executor,
     {
         if (e.DataFrame.IsText)
         {
-            var actionString = e.DataFrame.ToText();
             var context = Container.GetContext((webSocket.Client as IHttpSessionClient)!.Id);
-            var response = executor.ProcessAction(actionString, context);
+            var response = executor.ProcessAction(e.DataFrame.PayloadData, context);
 
             if (response is not null)
                 await webSocket.SendAsync(StjJsonSerializer.Serialize(response, DaemonRpcJsonBoundary.StjOptions));

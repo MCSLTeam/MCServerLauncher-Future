@@ -15,6 +15,8 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 {
     private readonly IEventService _eventService;
 
+    private readonly record struct PreparedEventPayload(JsonPayloadBuffer? EventMeta, JsonPayloadBuffer? EventData);
+
     public WsEventPlugin(IEventService eventService, WsContextContainer container, IHttpService httpService)
     {
         _eventService = eventService;
@@ -36,37 +38,69 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 
     private async Task OnEventSignalReceived(EventType type, IEventMeta? meta, IEventData? data)
     {
-        foreach (var (_, context) in Container)
+        if (meta is not null)
         {
-            if (!context.IsSubscribedEvent(type, meta)) return;
+            var preparedPayload = PreparePayload(meta, data);
 
-            if (meta is not null)
+            foreach (var context in EnumerateSubscribedContexts(Container, type, meta))
             {
-                await PrivateSendEvent(type, meta, data, context.GetWebsocket()); // 单一发送(只有带meta的事件类型才会触发)
+                await PrivateSendPreparedEvent(type, preparedPayload.EventMeta, preparedPayload.EventData, context.GetWebsocket());
             }
-            else
-            {
-                var eventMetas = context.GetEventMetas(type).ToArray();
 
-                if (eventMetas.Length == 0)
-                    await PrivateSendEvent(type, meta, data, context.GetWebsocket()); // 单一事件(不带meta的事件类型)
-                else // 批量发送(只有带meta的事件类型才会触发)
-                    // TODO 合并发送
-                    foreach (var eventMeta in eventMetas)
-                        await PrivateSendEvent(type, eventMeta, data, context.GetWebsocket());
-            }
+            return;
+        }
+
+        var eventDataBuffer = ToPayloadBuffer(data);
+
+        foreach (var context in EnumerateSubscribedContexts(Container, type, meta))
+        {
+            var webSocket = context.GetWebsocket();
+            var eventMetas = context.GetEventMetas(type).ToArray();
+
+            if (eventMetas.Length == 0)
+                await PrivateSendPreparedEvent(type, null, eventDataBuffer, webSocket); // 单一事件(不带meta的事件类型)
+            else // 批量发送(只有带meta的事件类型才会触发)
+                // TODO 合并发送
+                foreach (var eventMeta in eventMetas)
+                    await PrivateSendPreparedEvent(type, ToPayloadBuffer(eventMeta), eventDataBuffer, webSocket);
+        }
+    }
+
+    private static IEnumerable<WsContext> EnumerateSubscribedContexts(WsContextContainer container, EventType type, IEventMeta? meta)
+    {
+        foreach (var (_, context) in container)
+        {
+            if (!context.IsSubscribedEvent(type, meta))
+                continue;
+
+            yield return context;
         }
     }
 
     private static async ValueTask PrivateSendEvent(EventType type, IEventMeta? meta, IEventData? data, IWebSocket ws)
     {
+        var preparedPayload = PreparePayload(meta, data);
+        await PrivateSendPreparedEvent(type, preparedPayload.EventMeta, preparedPayload.EventData, ws);
+    }
+
+    private static async ValueTask PrivateSendPreparedEvent(
+        EventType type,
+        JsonPayloadBuffer? eventMeta,
+        JsonPayloadBuffer? eventData,
+        IWebSocket ws)
+    {
         var packet = new EventPacket
         {
             EventType = type,
-            EventMeta = ToPayloadBuffer(meta),
-            EventData = ToPayloadBuffer(data)
+            EventMeta = eventMeta,
+            EventData = eventData
         };
         await ws.SendAsync(StjJsonSerializer.Serialize(packet, DaemonRpcJsonBoundary.StjOptions));
+    }
+
+    private static PreparedEventPayload PreparePayload(object? meta, object? data)
+    {
+        return new PreparedEventPayload(ToPayloadBuffer(meta), ToPayloadBuffer(data));
     }
 
     private static JsonPayloadBuffer? ToPayloadBuffer(object? payload)

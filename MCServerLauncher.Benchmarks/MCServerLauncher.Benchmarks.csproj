@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
     <ProjectReference Include="..\MCServerLauncher.Daemon\MCServerLauncher.Daemon.csproj" />
+    <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
   </ItemGroup>
 
 </Project>

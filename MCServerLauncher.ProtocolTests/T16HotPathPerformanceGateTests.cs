@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Serialization;
@@ -47,15 +48,16 @@ public class T16HotPathPerformanceGateTests
     public void PerfGate_DaemonInboundActionParse_DoesNotRegressMoreThanFivePercent()
     {
         var actionRequestJson = File.ReadAllText(Path.Combine(RpcFixturePaths.ActionRequestDir, "save-event-rules-nested-parameter.json"));
+        var actionRequestUtf8 = Encoding.UTF8.GetBytes(actionRequestJson);
         const int operationsPerSample = 1500;
 
-        var precheck = ActionExecutorExtensions.ParseRequest(null!, actionRequestJson);
+        var precheck = ActionExecutorExtensions.ParseRequest(null!, actionRequestUtf8);
         Assert.True(precheck.IsOk(out _));
 
         var measurement = PerformanceGateHarness.Measure(
             operation: () =>
             {
-                var result = ActionExecutorExtensions.ParseRequest(null!, actionRequestJson);
+                var result = ActionExecutorExtensions.ParseRequest(null!, actionRequestUtf8);
                 if (!result.IsOk(out _))
                     throw new InvalidOperationException("Inbound action parse replay sample failed unexpectedly");
             },

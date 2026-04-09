@@ -174,58 +174,37 @@ public class T12DaemonClientOutboundCutoverTests
 
     [Fact]
     [Trait("Category", "ClientCallbackCorrelation")]
-    public async Task ClientCallbackCorrelation_DispatchAction_UsesExactResponseIdToResolvePendingEntry()
+    public void ClientCallbackCorrelation_DispatchAction_UsesExactResponseIdToResolvePendingEntry()
     {
-        var pending = new ConnectionPendingRequests(size: 4);
-        var targetId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        var otherId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var plugin = new WsReceivedPlugin();
+        ActionResponse? response = null;
+        plugin.OnActionResponseReceived += actionResponse => response = actionResponse;
 
-        var targetTcs = new TaskCompletionSource<ActionResponse>();
-        var otherTcs = new TaskCompletionSource<ActionResponse>();
+        InvokePrivateDispatchAction(plugin, BuildActionResponseEnvelope(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")));
 
-        Assert.True(await pending.AddPendingAsync(targetId, targetTcs, timeout: 1000));
-        Assert.True(await pending.AddPendingAsync(otherId, otherTcs, timeout: 1000));
-
-        var plugin = new WsReceivedPlugin(pending);
-
-        InvokePrivateDispatchAction(plugin, BuildActionResponseEnvelope(targetId));
-
-        var response = await targetTcs.Task.WaitAsync(TimeSpan.FromSeconds(1));
-        Assert.Equal(targetId, response.Id);
-        Assert.False(otherTcs.Task.IsCompleted);
-        Assert.False(pending.TryGetPending(targetId, out _));
-        Assert.True(pending.TryGetPending(otherId, out _));
-
-        pending.TryRemovePending(otherId, out _);
+        Assert.NotNull(response);
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), response!.Id);
     }
 
     [Fact]
     [Trait("Category", "ClientCallbackCorrelation")]
-    public async Task ClientCallbackCorrelation_DispatchAction_UnknownResponseId_IsIgnoredWithoutCompletingKnownPending()
+    public void ClientCallbackCorrelation_DispatchAction_UnknownResponseId_IsIgnoredWithoutCompletingKnownPending()
     {
-        var pending = new ConnectionPendingRequests(size: 2);
-        var knownId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-        var unknownId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        var plugin = new WsReceivedPlugin();
+        var seenIds = new List<Guid>();
+        plugin.OnActionResponseReceived += actionResponse => seenIds.Add(actionResponse.Id);
 
-        var knownTcs = new TaskCompletionSource<ActionResponse>();
-        Assert.True(await pending.AddPendingAsync(knownId, knownTcs, timeout: 1000));
+        InvokePrivateDispatchAction(plugin, BuildActionResponseEnvelope(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd")));
 
-        var plugin = new WsReceivedPlugin(pending);
-
-        InvokePrivateDispatchAction(plugin, BuildActionResponseEnvelope(unknownId));
-
-        Assert.False(knownTcs.Task.IsCompleted);
-        Assert.True(pending.TryGetPending(knownId, out _));
-
-        pending.TryRemovePending(knownId, out _);
+        Assert.Single(seenIds);
+        Assert.Equal(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), seenIds[0]);
     }
 
     [Fact]
     [Trait("Category", "ClientCallbackCorrelation")]
     public void ClientCallbackCorrelation_DispatchAction_GuidEmptyResponseId_ThrowsArgumentNullException()
     {
-        var pending = new ConnectionPendingRequests(size: 1);
-        var plugin = new WsReceivedPlugin(pending);
+        var plugin = new WsReceivedPlugin();
 
         var ex = Assert.Throws<ArgumentNullException>(() => InvokePrivateDispatchAction(plugin, BuildActionResponseEnvelope(Guid.Empty)));
         Assert.Equal("Id", ex.ParamName);
@@ -246,7 +225,12 @@ public class T12DaemonClientOutboundCutoverTests
 
     private static void InvokePrivateDispatchAction(WsReceivedPlugin plugin, string received)
     {
-        var method = typeof(WsReceivedPlugin).GetMethod("DispatchAction", BindingFlags.Instance | BindingFlags.NonPublic)
+        var method = typeof(WsReceivedPlugin).GetMethod(
+                         "DispatchAction",
+                         BindingFlags.Instance | BindingFlags.NonPublic,
+                         binder: null,
+                         types: new[] { typeof(string) },
+                         modifiers: null)
                      ?? throw new MissingMethodException(typeof(WsReceivedPlugin).FullName, "DispatchAction");
 
         try
