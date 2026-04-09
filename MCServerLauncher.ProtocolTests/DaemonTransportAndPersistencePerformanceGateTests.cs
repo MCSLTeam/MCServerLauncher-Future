@@ -14,7 +14,7 @@ using StjJsonSerializer = System.Text.Json.JsonSerializer;
 namespace MCServerLauncher.ProtocolTests;
 
 [Collection("PerformanceGate")]
-public class T16HotPathPerformanceGateTests
+public class DaemonTransportAndPersistencePerformanceGateTests
 {
     private static readonly Type InstanceConfigType =
         Type.GetType("MCServerLauncher.Common.ProtoType.Instance.InstanceConfig, MCServerLauncher.Common", throwOnError: true)!;

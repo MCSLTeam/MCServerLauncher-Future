@@ -10,10 +10,10 @@ using MCServerLauncher.ProtocolTests.Helpers;
 namespace MCServerLauncher.ProtocolTests;
 
 /// <summary>
-/// T15: trim/AOT/source-gen verification smoke tests.
+/// Trim/AOT/source-gen verification smoke tests.
 /// </summary>
 [Collection("RuntimeSwitchIsolation")]
-public class T15TrimAotVerificationTests
+public class TrimAotBoundaryVerificationTests
 {
     [Fact]
     [Trait("Category", "TrimAot")]
