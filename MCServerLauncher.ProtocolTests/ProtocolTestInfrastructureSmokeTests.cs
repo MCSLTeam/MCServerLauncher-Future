@@ -1,6 +1,6 @@
 namespace MCServerLauncher.ProtocolTests;
 
-public class SeedProtocolTest
+public class ProtocolTestInfrastructureSmokeTests
 {
     [Fact]
     public void ProtocolTestInfrastructure_IsOperational()
