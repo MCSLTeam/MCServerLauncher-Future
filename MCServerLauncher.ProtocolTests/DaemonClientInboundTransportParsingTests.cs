@@ -5,7 +5,7 @@ using MCServerLauncher.DaemonClient.WebSocketPlugin;
 
 namespace MCServerLauncher.ProtocolTests;
 
-public class T11DaemonClientInboundCutoverTests
+public class DaemonClientInboundTransportParsingTests
 {
     [Fact]
     [Trait("Category", "ClientInbound")]

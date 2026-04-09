@@ -12,7 +12,7 @@ using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
 
-public class T12DaemonClientOutboundCutoverTests
+public class DaemonClientOutboundTransportAndCallbackTests
 {
     private static readonly Guid FixedRequestId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
