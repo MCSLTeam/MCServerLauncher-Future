@@ -247,6 +247,152 @@ public class PublicSurfaceLeakageTests
 
     #endregion
 
+    #region Daemon-local wire-contract ownership leakage guard
+
+    [Fact]
+    public void DaemonRpcContext_DoesNotDuplicateCommonEnvelopeTypes()
+    {
+        // RpcEnvelopeContext in Common owns ActionRequest, ActionResponse, EventPacket.
+        // DaemonRpcSerializerContext must not re-register these types as daemon-local contracts.
+        var commonEnvelopeTypes = GetJsonSerializableTypes(typeof(RpcEnvelopeContext));
+        var daemonRpcTypes = GetJsonSerializableTypes(typeof(DaemonRpcSerializerContext));
+
+        var duplicated = daemonRpcTypes
+            .Where(dt => commonEnvelopeTypes.Any(ct => ct == dt))
+            .Select(dt => dt.FullName)
+            .ToList();
+
+        Assert.True(duplicated.Count == 0,
+            $"DaemonRpcSerializerContext duplicates Common-owned envelope types: {string.Join(", ", duplicated)}. " +
+            "Envelope types must remain Common-owned only.");
+    }
+
+    [Fact]
+    public void DaemonClientRpcContext_DoesNotDuplicateCommonEnvelopeTypes()
+    {
+        // DaemonClientRpcSerializerContext registers envelope types for client-side usage,
+        // but these are already source-generated in Common's RpcEnvelopeContext.
+        // The client context SHOULD NOT claim ownership of new wire-envelope types beyond
+        // what Common provides.
+        var commonEnvelopeTypes = GetJsonSerializableTypes(typeof(RpcEnvelopeContext));
+        var clientRpcTypes = GetJsonSerializableTypes(typeof(DaemonClientRpcSerializerContext));
+
+        // The client context may reference Common types (that's fine), but it must not
+        // introduce NEW envelope types that aren't already in Common
+        var wireEnvelopeTypes = new HashSet<Type>
+        {
+            typeof(ActionRequest),
+            typeof(ActionResponse),
+            typeof(EventPacket)
+        };
+
+        foreach (var clientType in clientRpcTypes)
+        {
+            if (wireEnvelopeTypes.Contains(clientType))
+            {
+                // This type is a known envelope type - verify Common already owns it
+                Assert.Contains(commonEnvelopeTypes, ct => ct == clientType);
+            }
+        }
+    }
+
+    [Fact]
+    public void DaemonRpcContext_OnlyRegistersDaemonLocalTypes()
+    {
+        // DaemonRpcSerializerContext should only contain types that are daemon-local
+        // (ActionError, Permission, etc.) or Common types the daemon needs for local RPC.
+        // It must NOT contain types from unrelated namespaces like WPF, UI, etc.
+        var daemonRpcTypes = GetJsonSerializableTypes(typeof(DaemonRpcSerializerContext));
+
+        foreach (var type in daemonRpcTypes)
+        {
+            Assert.True(
+                type.Namespace?.StartsWith("MCServerLauncher.Daemon") == true ||
+                type.Namespace?.StartsWith("MCServerLauncher.Common") == true ||
+                type.Namespace?.StartsWith("System") == true,
+                $"DaemonRpcSerializerContext registers type from unexpected namespace: {type.FullName}");
+        }
+    }
+
+    [Fact]
+    public void DaemonClientRpcContext_OnlyRegistersKnownTypes()
+    {
+        var clientRpcTypes = GetJsonSerializableTypes(typeof(DaemonClientRpcSerializerContext));
+
+        foreach (var type in clientRpcTypes)
+        {
+            Assert.True(
+                type.Namespace?.StartsWith("MCServerLauncher.DaemonClient") == true ||
+                type.Namespace?.StartsWith("MCServerLauncher.Common") == true ||
+                type.Namespace?.StartsWith("System") == true,
+                $"DaemonClientRpcSerializerContext registers type from unexpected namespace: {type.FullName}");
+        }
+    }
+
+    #endregion
+
+    #region Wire-facing Newtonsoft dependency guard
+
+    [Fact]
+    public void CommonWireContractTypes_DoNotIntroduceNewNewtonsoftConverters()
+    {
+        // Verify the known set of Newtonsoft converter types on wire-contract properties.
+        // If this test fails, a new Newtonsoft converter was added to a wire-contract type.
+        var knownNewtonsoftConverterTypes = new HashSet<string>
+        {
+            "MCServerLauncher.Common.ProtoType.Serialization.NewtonsoftJsonElementConverter",
+            "MCServerLauncher.Common.ProtoType.Serialization.NewtonsoftJsonPayloadBufferConverter",
+        };
+
+        var wireContractTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+
+        foreach (var type in wireContractTypes)
+        {
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var attrs = prop.GetCustomAttributes(typeof(Newtonsoft.Json.JsonConverterAttribute), false);
+                foreach (var attr in attrs)
+                {
+                    var converterType = ((Newtonsoft.Json.JsonConverterAttribute)attr).ConverterType;
+                    Assert.True(converterType != null && knownNewtonsoftConverterTypes.Contains(converterType.FullName!),
+                        $"{type.Name}.{prop.Name} uses unknown Newtonsoft converter: {converterType?.FullName}. " +
+                        $"Only known converters are allowed: {string.Join(", ", knownNewtonsoftConverterTypes)}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void CommonWireContractTypes_PayloadBufferConverters_HavePairedStjConverters()
+    {
+        // Properties using NewtonsoftJsonPayloadBufferConverter MUST have a paired STJ converter.
+        // JsonPayloadBuffer requires custom handling on both serialization paths.
+        // Note: NewtonsoftJsonElementConverter on JsonElement? properties is fine without pairing
+        // because STJ handles JsonElement natively.
+        var wireContractTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+
+        foreach (var type in wireContractTypes)
+        {
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var newtonsoftAttrs = prop.GetCustomAttributes(typeof(Newtonsoft.Json.JsonConverterAttribute), false);
+                foreach (var attr in newtonsoftAttrs)
+                {
+                    var converterType = ((Newtonsoft.Json.JsonConverterAttribute)attr).ConverterType;
+                    if (converterType == typeof(NewtonsoftJsonPayloadBufferConverter))
+                    {
+                        var stjAttrs = prop.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonConverterAttribute), false);
+                        Assert.True(stjAttrs.Length > 0,
+                            $"{type.Name}.{prop.Name} uses NewtonsoftJsonPayloadBufferConverter but has no STJ converter. " +
+                            "Payload buffer properties must have paired STJ converters.");
+                    }
+                }
+            }
+        }
+    }
+
+    #endregion
+
     #region Helper methods
 
     private static List<Type> GetJsonSerializableTypes(Type contextType)

@@ -1,4 +1,10 @@
 #if !NO_DAEMON_REFS
+using System;
+using System.Text.Json;
+using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.ProtocolTests.Helpers;
@@ -20,6 +26,17 @@ public class JsonBoundaryConfigurationTests
     }
 
     [Fact]
+    public void DaemonRpcBoundary_StjOptions_AreOwnedByCommonContexts()
+    {
+        var options = DaemonRpcJsonBoundary.StjOptions;
+
+        Assert.Equal(JsonNamingPolicy.SnakeCaseLower, options.PropertyNamingPolicy);
+        Assert.NotNull(options.GetTypeInfo(typeof(ActionRequest)));
+        Assert.NotNull(options.GetTypeInfo(typeof(ActionResponse)));
+        Assert.NotNull(options.GetTypeInfo(typeof(EventPacket)));
+    }
+
+    [Fact]
     public void DaemonPersistenceBoundary_ProvidesNewtonsoftAndStjOptions()
     {
         Assert.NotNull(DaemonPersistenceJsonBoundary.StjOptions);
@@ -27,10 +44,31 @@ public class JsonBoundaryConfigurationTests
     }
 
     [Fact]
+    public void DaemonPersistenceBoundary_StjOptions_AreOwnedByCommonContexts()
+    {
+        var options = DaemonPersistenceJsonBoundary.StjOptions;
+
+        Assert.Equal(JsonNamingPolicy.SnakeCaseLower, options.PropertyNamingPolicy);
+        Assert.NotNull(options.GetTypeInfo(typeof(InstanceConfig)));
+        Assert.NotNull(options.GetTypeInfo(typeof(InstanceFactorySetting)));
+    }
+
+    [Fact]
     public void DaemonClientRpcBoundary_ProvidesNewtonsoftAndStjOptions()
     {
         Assert.NotNull(DaemonClientRpcJsonBoundary.StjOptions);
         Assert.NotNull(DaemonClientRpcJsonBoundary.StjOptions.TypeInfoResolver);
+    }
+
+    [Fact]
+    public void DaemonClientRpcBoundary_StjOptions_AreOwnedByCommonContexts()
+    {
+        var options = DaemonClientRpcJsonBoundary.StjOptions;
+
+        Assert.Equal(JsonNamingPolicy.SnakeCaseLower, options.PropertyNamingPolicy);
+        Assert.NotNull(options.GetTypeInfo(typeof(ActionRequest)));
+        Assert.NotNull(options.GetTypeInfo(typeof(ActionResponse)));
+        Assert.NotNull(options.GetTypeInfo(typeof(EventPacket)));
     }
 
     [Fact]
@@ -52,6 +90,26 @@ public class JsonBoundaryConfigurationTests
     {
         var resolver = DaemonClientRpcJsonBoundary.CreateStjResolver(DaemonClientStjReflectionFallbackPolicy.Disabled);
         Assert.NotNull(resolver);
+    }
+
+    [Fact]
+    public void DisabledFallback_DoesNotSerializeUnknownTypes()
+    {
+        var options = DaemonRpcJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            JsonSerializer.Serialize(new UnknownBoundaryPayload("fallback-off"), options));
+
+        Assert.Contains(nameof(UnknownBoundaryPayload), ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EnabledFallback_SerializesUnknownTypes()
+    {
+        var options = DaemonRpcJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Enabled);
+        var json = JsonSerializer.Serialize(new UnknownBoundaryPayload("fallback-on"), options);
+
+        Assert.Contains("\"wire_value\":\"fallback-on\"", json, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -97,5 +155,7 @@ public class JsonBoundaryConfigurationTests
                 AppContext.SetData(key, null);
         }
     }
+
+    private sealed record UnknownBoundaryPayload(string WireValue);
 }
 #endif

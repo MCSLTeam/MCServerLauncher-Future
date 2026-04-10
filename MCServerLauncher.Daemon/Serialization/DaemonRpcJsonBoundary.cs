@@ -10,20 +10,35 @@ namespace MCServerLauncher.Daemon.Serialization;
 
 /// <summary>
 /// Daemon-owned serializer boundary for RPC envelopes and payload tokens.
+/// Composition: Common-owned wire-contract contexts are consumed first via
+/// <see cref="StjResolver.CreateDefaultResolver()"/>, followed by daemon-local
+/// additions (<see cref="DaemonRpcSerializerContext"/>). Reflection fallback is
+/// switch-controlled and never the normal path.
 /// </summary>
 public static class DaemonRpcJsonBoundary
 {
     public static readonly JsonSerializerOptions StjOptions = CreateStjOptions();
+
+    /// <summary>
+    /// STJ options with reflection fallback explicitly disabled.
+    /// Used by <see cref="DaemonRpcTypeInfoCache{T}"/> to guarantee that only types
+    /// registered in Common or Daemon source-generated contexts are resolvable.
+    /// Unknown types throw <see cref="NotSupportedException"/> rather than silently
+    /// falling back to reflection.
+    /// </summary>
+    public static readonly JsonSerializerOptions SourceGenStjOptions =
+        CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
 
     public static IJsonTypeInfoResolver CreateStjResolver(
         DaemonStjReflectionFallbackPolicy fallbackPolicy = DaemonStjReflectionFallbackPolicy.TrimFriendlyDefault)
     {
         var resolvers = new List<IJsonTypeInfoResolver>
         {
+            // 1. Common-owned wire-contract contexts (envelopes, parameters, results, event types)
             StjResolver.CreateDefaultResolver(),
+            // 2. Daemon-local additions (ActionError, Permission, etc.)
             DaemonRpcSerializerContext.Default
         };
-
         if (fallbackPolicy.ShouldEnableFallback())
             resolvers.Add(new DefaultJsonTypeInfoResolver());
 
