@@ -100,6 +100,18 @@ public class PublicContractSafetyTests
     }
 
     [Fact]
+    public void EventDataContext_OwnsInstanceLogEventMeta()
+    {
+        // InstanceLogEventMeta is a Common-owned event meta type used on the RPC wire path.
+        // Common must be the explicit source-generated metadata owner for this type.
+        var context = EventDataContext.Default;
+        Assert.NotNull(context);
+
+        var typeInfo = context.GetTypeInfo(typeof(InstanceLogEventMeta));
+        Assert.NotNull(typeInfo);
+    }
+
+    [Fact]
     public void StjResolver_CombinesAllCommonContexts()
     {
         var resolver = StjResolver.CreateDefaultResolver();
@@ -236,6 +248,136 @@ public class PublicContractSafetyTests
         Assert.Contains(options.Converters, c => c is GuidStjConverter);
         Assert.Contains(options.Converters, c => c is EncodingStjConverter);
         Assert.Contains(options.Converters, c => c is PlaceHolderStringStjConverter);
+    }
+
+    #endregion
+
+    #region Common ownership: envelope types reside in Common assembly
+
+    [Fact]
+    public void ActionRequest_OwnedByCommonAssembly()
+    {
+        var type = typeof(ActionRequest);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ActionResponse_OwnedByCommonAssembly()
+    {
+        var type = typeof(ActionResponse);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void EventPacket_OwnedByCommonAssembly()
+    {
+        var type = typeof(EventPacket);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RpcEnvelopeContext_OwnedByCommonAssembly()
+    {
+        var type = typeof(RpcEnvelopeContext);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void StjResolver_OwnedByCommonAssembly()
+    {
+        var type = typeof(StjResolver);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    #endregion
+
+    #region Boundary composition: daemon/client consume Common contexts first
+
+    [Fact]
+    public void DaemonRpcBoundary_ResolvesWireEnvelopeTypes_WithoutFallback()
+    {
+        var options = DaemonRpcJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+
+        // Wire envelope types must resolve without any reflection fallback
+        var wireTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+        foreach (var wireType in wireTypes)
+        {
+            var info = options.TypeInfoResolver?.GetTypeInfo(wireType, options);
+            Assert.NotNull(info);
+        }
+    }
+
+    [Fact]
+    public void DaemonClientRpcBoundary_ResolvesWireEnvelopeTypes_WithoutFallback()
+    {
+        var options = DaemonClientRpcJsonBoundary.CreateStjOptions(DaemonClientStjReflectionFallbackPolicy.Disabled);
+
+        var wireTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+        foreach (var wireType in wireTypes)
+        {
+            var info = options.TypeInfoResolver?.GetTypeInfo(wireType, options);
+            Assert.NotNull(info);
+        }
+    }
+
+    [Fact]
+    public void DaemonRpcBoundary_Options_HasSameCoreConvertersAsCommon()
+    {
+        // Daemon boundary must include the same core converters Common defines
+        var daemonOptions = DaemonRpcJsonBoundary.StjOptions;
+
+        Assert.Contains(daemonOptions.Converters, c => c is GuidStjConverter);
+        Assert.Contains(daemonOptions.Converters, c => c is EncodingStjConverter);
+        Assert.Contains(daemonOptions.Converters, c => c is PlaceHolderStringStjConverter);
+    }
+
+    [Fact]
+    public void DaemonClientRpcBoundary_Options_HasSameCoreConvertersAsCommon()
+    {
+        var daemonClientOptions = DaemonClientRpcJsonBoundary.StjOptions;
+
+        Assert.Contains(daemonClientOptions.Converters, c => c is GuidStjConverter);
+        Assert.Contains(daemonClientOptions.Converters, c => c is EncodingStjConverter);
+        Assert.Contains(daemonClientOptions.Converters, c => c is PlaceHolderStringStjConverter);
+    }
+
+    #endregion
+
+    #region Wire-facing Newtonsoft converter budget lock
+
+    // The number of Newtonsoft [JsonConverter] attributes on Common ProtoType wire-contract types.
+    // This count must not increase; any new wire-facing Newtonsoft dependency is a regression.
+    // Current budget: 9 annotations across Packet.cs, Parameters.cs, EventRule.cs
+    private const int MaxAllowedNewtonsoftConverterAnnotations = 9;
+
+    [Fact]
+    public void CommonWireContractTypes_NewtonsoftConverterCount_DoesNotExceedBudget()
+    {
+        var wireContractTypes = new[]
+        {
+            typeof(ActionRequest),
+            typeof(ActionResponse),
+            typeof(EventPacket),
+        };
+
+        var newtonsoftConverterCount = 0;
+        foreach (var type in wireContractTypes)
+        {
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var newtonsoftAttrs = prop.GetCustomAttributes(typeof(Newtonsoft.Json.JsonConverterAttribute), false);
+                newtonsoftConverterCount += newtonsoftAttrs.Length;
+            }
+        }
+
+        Assert.True(newtonsoftConverterCount <= MaxAllowedNewtonsoftConverterAnnotations,
+            $"Wire-facing Newtonsoft converter count {newtonsoftConverterCount} exceeds budget {MaxAllowedNewtonsoftConverterAnnotations}. " +
+            "No new wire-facing Newtonsoft dependencies should be added.");
     }
 
     #endregion
