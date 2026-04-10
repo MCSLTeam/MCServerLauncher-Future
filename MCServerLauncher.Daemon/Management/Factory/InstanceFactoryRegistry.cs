@@ -9,6 +9,8 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 
 public static class InstanceFactoryRegistry
 {
+    private static readonly Type[] DefaultFactoryTypes = [typeof(MCUniversalFactory), typeof(MCForgeFactory)];
+
     private const string CF_TEMPLATE =
         "[InstanceFactoryRegistry] Loaded \"{0}\" as {1}(SourceType={2}); Minecraft version range: \"{3}\" ~ \"{4}\"";
 
@@ -23,6 +25,21 @@ public static class InstanceFactoryRegistry
                 >
             >
         > InstanceFactoryMapping = new();
+
+    public static void Reset()
+    {
+        InstanceFactoryMapping.Clear();
+    }
+
+    public static void InitializeDefaults()
+    {
+        Reset();
+
+        foreach (var type in DefaultFactoryTypes)
+        {
+            LoadFactoryFromType(type);
+        }
+    }
 
     public static void LoadFactoryFromType(Type type)
     {
@@ -107,8 +124,14 @@ public static class InstanceFactoryRegistry
                 new Dictionary<(McVersion, McVersion),
                     Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>());
 
+        var versionRange = (McVersion.Of(attribute.MinVersion), McVersion.Of(attribute.MaxVersion));
 
-        factories[(McVersion.Of(attribute.MinVersion), McVersion.Of(attribute.MaxVersion))] = instanceFactory;
+        if (!factories.TryAdd(versionRange, instanceFactory))
+        {
+            throw new InvalidOperationException(
+                $"Duplicate instance factory registration for InstanceType={attribute.InstanceType}, SourceType={sourceType}, VersionRange={attribute.MinVersion}~{attribute.MaxVersion}."
+            );
+        }
     }
 
     /// <summary>

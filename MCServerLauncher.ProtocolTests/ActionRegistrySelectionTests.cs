@@ -91,6 +91,48 @@ public class ActionRegistrySelectionTests
 
     [Fact]
     [Trait("Category", "ActionRegistrySelection")]
+    public void Initialize_Null_StoresGeneratedSnapshotAsSelected()
+    {
+        ResetRuntimeRegistry();
+
+        try
+        {
+            var initialized = InitializeRuntimeRegistry(useGeneratedActionRegistry: null);
+            var selected = GetSelectedRuntimeRegistry();
+
+            Assert.Same(initialized, selected);
+            Assert.Equal("Generated", GetRegistryMode(initialized));
+            Assert.Equal("Generated", GetRegistryMode(selected));
+        }
+        finally
+        {
+            ResetRuntimeRegistry();
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "ActionRegistrySelection")]
+    public void Reset_ClearsSelectedRegistry()
+    {
+        ResetRuntimeRegistry();
+
+        try
+        {
+            _ = InitializeRuntimeRegistry(useGeneratedActionRegistry: true);
+            Assert.Equal("Generated", GetRegistryMode(GetSelectedRuntimeRegistry()));
+
+            ResetRuntimeRegistry();
+
+            Assert.Throws<TargetInvocationException>(() => _ = GetSelectedRuntimeRegistry());
+        }
+        finally
+        {
+            ResetRuntimeRegistry();
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "ActionRegistrySelection")]
     public async Task ExecutorConstruction_ProvidedRegistrySnapshot_TakesPrecedenceOverRuntimeSelection()
     {
         ActionHandlerRegistryRuntime.Reset();
@@ -172,6 +214,52 @@ public class ActionRegistrySelectionTests
         var registry = createSelectedMethod!.Invoke(null, [useGeneratedActionRegistry]);
         Assert.NotNull(registry);
         return registry!;
+    }
+
+    private static object InitializeRuntimeRegistry(bool? useGeneratedActionRegistry)
+    {
+        Assert.NotNull(ActionHandlerRegistryRuntimeType);
+
+        var initializeMethod = ActionHandlerRegistryRuntimeType!.GetMethod(
+            "Initialize",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: [typeof(bool?)],
+            modifiers: null);
+
+        Assert.NotNull(initializeMethod);
+
+        var registry = initializeMethod!.Invoke(null, [useGeneratedActionRegistry]);
+        Assert.NotNull(registry);
+        return registry!;
+    }
+
+    private static object GetSelectedRuntimeRegistry()
+    {
+        Assert.NotNull(ActionHandlerRegistryRuntimeType);
+
+        var selectedProperty = ActionHandlerRegistryRuntimeType!.GetProperty(
+            "Selected",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+        Assert.NotNull(selectedProperty);
+
+        return selectedProperty!.GetValue(null) ?? throw new InvalidOperationException("Selected registry was null.");
+    }
+
+    private static void ResetRuntimeRegistry()
+    {
+        Assert.NotNull(ActionHandlerRegistryRuntimeType);
+
+        var resetMethod = ActionHandlerRegistryRuntimeType!.GetMethod(
+            "Reset",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: Type.EmptyTypes,
+            modifiers: null);
+
+        Assert.NotNull(resetMethod);
+        resetMethod!.Invoke(null, null);
     }
 
     private static string GetRegistryMode(object registry)
