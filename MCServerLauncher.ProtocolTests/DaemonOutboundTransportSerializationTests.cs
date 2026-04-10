@@ -123,6 +123,85 @@ public class DaemonOutboundTransportSerializationTests
     }
 
     [Fact]
+    [Trait("Category", "DaemonOutbound")]
+    public void EventPacket_DirectStjEventPacket_WithMetaAndData_StructurallyMatchesPreparedEventPacket()
+    {
+        var meta = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        };
+        var data = new InstanceLogEventData
+        {
+            Log = "[12:00:00] [Server thread/INFO]: Hello"
+        };
+        const long frozenTimestamp = 1717171717000;
+
+        // Direct EventPacket (what PrivateSendEvent produces via PreparePayload)
+        var directPacket = new EventPacket
+        {
+            EventType = EventType.InstanceLog,
+            EventMeta = SerializePayloadBuffer(meta),
+            EventData = SerializePayloadBuffer(data),
+            Timestamp = frozenTimestamp
+        };
+
+        // Prepared EventPacket (what PrivateSendPreparedEvent produces from pre-buffered payloads)
+        var preparedPacket = new EventPacket
+        {
+            EventType = EventType.InstanceLog,
+            EventMeta = new JsonPayloadBuffer(StjJsonSerializer.SerializeToElement(meta, DaemonRpcJsonBoundary.StjOptions)),
+            EventData = new JsonPayloadBuffer(StjJsonSerializer.SerializeToElement(data, DaemonRpcJsonBoundary.StjOptions)),
+            Timestamp = frozenTimestamp
+        };
+
+        var directJson = SerializeOutbound(directPacket);
+        var preparedJson = SerializeOutbound(preparedPacket);
+
+        var direct = FixtureHarness.ParseJson(directJson);
+        var prepared = FixtureHarness.ParseJson(preparedJson);
+        FixtureHarness.AssertStructuralEquals(direct, prepared, "prepared-vs-direct-meta-and-data");
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonOutbound")]
+    public void EventPacket_DirectStjEventPacket_NullMetaStructuredData_StructurallyMatchesPreparedEventPacket()
+    {
+        var data = new DaemonReportEventData
+        {
+            Report = new DaemonReport(
+                new OsInfo("Windows", "x64"),
+                new CpuInfo("GenuineIntel", "Intel(R)", 16, 0.25d),
+                new MemInfo(1024UL * 1024UL, 512UL * 1024UL),
+                new DriveInformation("NTFS", 1_000_000_000UL, 500_000_000UL),
+                1717171717000)
+        };
+        const long frozenTimestamp = 1717171717999;
+
+        var directPacket = new EventPacket
+        {
+            EventType = EventType.DaemonReport,
+            EventMeta = null,
+            EventData = SerializePayloadBuffer(data),
+            Timestamp = frozenTimestamp
+        };
+
+        var preparedPacket = new EventPacket
+        {
+            EventType = EventType.DaemonReport,
+            EventMeta = null,
+            EventData = new JsonPayloadBuffer(StjJsonSerializer.SerializeToElement(data, DaemonRpcJsonBoundary.StjOptions)),
+            Timestamp = frozenTimestamp
+        };
+
+        var directJson = SerializeOutbound(directPacket);
+        var preparedJson = SerializeOutbound(preparedPacket);
+
+        var direct = FixtureHarness.ParseJson(directJson);
+        var prepared = FixtureHarness.ParseJson(preparedJson);
+        FixtureHarness.AssertStructuralEquals(direct, prepared, "prepared-vs-direct-null-meta");
+    }
+
+    [Fact]
     [Trait("Category", "DaemonOutboundStatic")]
     [Trait("Category", "CleanupValidation")]
     public void DaemonOutboundFiles_DoNotUseJsonConvertSerializeObjectAtTransportBoundary()
