@@ -1,7 +1,9 @@
 #if !NO_DAEMON_REFS
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
@@ -105,6 +107,22 @@ public class TrimAotBoundaryVerificationTests
 
     [Fact]
     [Trait("Category", "TrimAot")]
+    public void RpcBoundary_DisabledFallback_RejectsUnknownEventRuleDiscriminatorWithoutReflection()
+    {
+        var fixture = FixtureHarness.LoadFixture(Path.Combine(
+            MCServerLauncher.ProtocolTests.Fixtures.Persistence.PersistenceFixturePaths.EventRuleDir,
+            "unknown-trigger-discriminator-event-rule.json"));
+
+        var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        var ex = Assert.Throws<System.Text.Json.JsonException>(() =>
+            JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), options));
+
+        Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
+        Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);
+    }
+
+    [Fact]
+    [Trait("Category", "TrimAot")]
     public void RpcBoundary_DisabledFallback_ThrowsForUnknownTypeThatNeedsReflectionResolver()
     {
         var options = DaemonRpcJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
@@ -139,6 +157,22 @@ public class TrimAotBoundaryVerificationTests
             AppContext.SetData(key, null);
     }
 
+
+    [Fact]
+    [Trait("Category", "TrimAot")]
+    public void TypeInfoCache_RejectsNonSourceGenType_Explicitly()
+    {
+        // The cache must NOT silently resolve unregistered types via ambient reflection fallback.
+        // Only types explicitly registered in Common or Daemon serializer contexts should be resolvable.
+        var ex = Assert.Throws<NotSupportedException>(() =>
+        {
+            _ = DaemonRpcTypeInfoCache<NonSourceGenEnvelope>.TypeInfo;
+        });
+
+        Assert.Contains(nameof(NonSourceGenEnvelope), ex.Message, StringComparison.Ordinal);
+    }
+
     private sealed record TrimAotUnknownPayload(string Value);
-}
+    private sealed record NonSourceGenEnvelope(string Payload);
+    }
 #endif
