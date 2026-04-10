@@ -64,6 +64,112 @@ public class DaemonClientInboundTransportParsingTests
 
     [Fact]
     [Trait("Category", "ClientInbound")]
+    public void ParseInboundEnvelope_EventEnvelope_ReturnsEventPacket_AndMatchesWrapperPath()
+    {
+        var envelope =
+            """
+            {
+              "event": "instance_log",
+              "meta": { "instance_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" },
+              "data": { "log": "[12:00:00] hello" },
+              "time": 1717171717000
+            }
+            """;
+
+        var parsed = WsReceivedPlugin.ParseInboundEnvelope(envelope);
+        var wrapperPacket = WsReceivedPlugin.ParseEventPacket(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Event, parsed.EnvelopeType);
+        Assert.NotNull(parsed.EventPacket);
+        Assert.Null(parsed.ActionResponse);
+
+        var parsedPacket = parsed.EventPacket!;
+        Assert.Equal(wrapperPacket.EventType, parsedPacket.EventType);
+        Assert.Equal(wrapperPacket.Timestamp, parsedPacket.Timestamp);
+
+        var parsedMeta = Assert.IsType<InstanceLogEventMeta>(
+            WsReceivedPlugin.MaterializeEventMeta(parsedPacket.EventType, parsedPacket.EventMeta));
+        var wrapperMeta = Assert.IsType<InstanceLogEventMeta>(
+            WsReceivedPlugin.MaterializeEventMeta(wrapperPacket.EventType, wrapperPacket.EventMeta));
+        var parsedData = Assert.IsType<InstanceLogEventData>(
+            WsReceivedPlugin.MaterializeEventData(parsedPacket.EventType, parsedPacket.EventData));
+        var wrapperData = Assert.IsType<InstanceLogEventData>(
+            WsReceivedPlugin.MaterializeEventData(wrapperPacket.EventType, wrapperPacket.EventData));
+
+        Assert.Equal(wrapperMeta.InstanceId, parsedMeta.InstanceId);
+        Assert.Equal(wrapperData.Log, parsedData.Log);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void ParseInboundEnvelope_ActionEnvelope_ReturnsActionResponse_AndMatchesWrapperPath()
+    {
+        var envelope =
+            """
+            {
+              "status": "ok",
+              "retcode": 0,
+              "data": { "time": 1717171717171 },
+              "message": "OK",
+              "id": "22222222-2222-2222-2222-222222222222"
+            }
+            """;
+
+        var parsed = WsReceivedPlugin.ParseInboundEnvelope(envelope);
+        var wrapperResponse = WsReceivedPlugin.ParseActionResponse(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Action, parsed.EnvelopeType);
+        Assert.Null(parsed.EventPacket);
+        Assert.NotNull(parsed.ActionResponse);
+
+        var parsedResponse = parsed.ActionResponse!;
+        Assert.Equal(wrapperResponse.RequestStatus, parsedResponse.RequestStatus);
+        Assert.Equal(wrapperResponse.Retcode, parsedResponse.Retcode);
+        Assert.Equal(wrapperResponse.Message, parsedResponse.Message);
+        Assert.Equal(wrapperResponse.Id, parsedResponse.Id);
+        Assert.True(parsedResponse.Data.HasValue);
+        Assert.Equal(JsonValueKind.Object, parsedResponse.Data.Value.ValueKind);
+        Assert.Equal(wrapperResponse.Data!.Value.GetProperty("time").GetInt64(), parsedResponse.Data.Value.GetProperty("time").GetInt64());
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void ParseInboundEnvelope_UnknownEnvelope_ReturnsUnknown()
+    {
+        var envelope =
+            """
+            {
+              "ping": "pong"
+            }
+            """;
+
+        var parsed = WsReceivedPlugin.ParseInboundEnvelope(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Unknown, parsed.EnvelopeType);
+        Assert.Null(parsed.EventPacket);
+        Assert.Null(parsed.ActionResponse);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInboundErrors")]
+    public void ClientInboundErrors_ParseInboundEnvelope_MalformedJson_ThrowsJsonException()
+    {
+        var malformed = "{\"event\":\"instance_log\"";
+
+        Assert.ThrowsAny<JsonException>(() => WsReceivedPlugin.ParseInboundEnvelope(malformed));
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInboundErrors")]
+    public void ClientInboundErrors_ParseInboundEnvelope_NonObjectRoot_ThrowsJsonException()
+    {
+        var malformed = "[]";
+
+        Assert.Throws<JsonException>(() => WsReceivedPlugin.ParseInboundEnvelope(malformed));
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
     public void ParseEventPacket_ValidInstanceLogPayload_MaterializesTypedMetaAndData()
     {
         var envelope =
@@ -130,6 +236,18 @@ public class DaemonClientInboundTransportParsingTests
         var malformed = "[]";
 
         Assert.Throws<JsonException>(() => WsReceivedPlugin.DetectEnvelopeType(malformed));
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    [Trait("Category", "CleanupValidation")]
+    public void DetectEnvelopeType_EventShapedPayloadMissingMetaAndData_ReturnsEventWithoutThrowing()
+    {
+        var incompleteEventEnvelope = "{\"event\":\"instance_log\"}";
+
+        var detected = WsReceivedPlugin.DetectEnvelopeType(incompleteEventEnvelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Event, detected);
     }
 
     [Fact]
