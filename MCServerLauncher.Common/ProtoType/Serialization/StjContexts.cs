@@ -7,8 +7,13 @@ using MCServerLauncher.Common.ProtoType.Files;
 
 namespace MCServerLauncher.Common.ProtoType.Serialization;
 
+// Canonical wire-contract source-generation owner.
+// All contexts defined here are the single source of truth for STJ metadata used by
+// daemon/client RPC boundaries. Daemon/client boundaries consume Common contexts first
+// and keep only their local additions in project-local serializer contexts.
 /// <summary>
-/// STJ source-generation context for RPC envelope types (ActionRequest, ActionResponse, EventPacket)
+/// RPC envelope types — the top-level wire packets exchanged between daemon and client.
+/// Common is the canonical source-generated metadata owner for these types.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
@@ -87,19 +92,22 @@ public partial class ActionResultsContext : JsonSerializerContext
 }
 
 /// <summary>
-/// STJ source-generation context for event data types
+/// Event data and meta types — used in EventPacket payloads on the RPC wire path.
+/// Common is the canonical source-generated metadata owner for these types.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 [JsonSerializable(typeof(InstanceLogEventData))]
 [JsonSerializable(typeof(DaemonReportEventData))]
+[JsonSerializable(typeof(InstanceLogEventMeta))]
 public partial class EventDataContext : JsonSerializerContext
 {
 }
 
 /// <summary>
-/// STJ source-generation context for persistence types (InstanceConfig, InstanceFactorySetting)
+/// Persistence types (InstanceConfig, InstanceFactorySetting) — used by daemon persistence paths.
+/// Shared between daemon persistence and instance management; not wire-facing RPC types.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
