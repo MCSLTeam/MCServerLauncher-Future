@@ -389,6 +389,158 @@ public class DaemonDaemonClientTransportConvergenceTests
 
     [Fact]
     [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public async Task PreparedEventSend_NormalEventSend_InstanceLogMetaAndData_StructurallyEquivalent()
+    {
+        var meta = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        };
+        var data = new InstanceLogEventData
+        {
+            Log = "[12:00:00] [Server thread/INFO]: Hello"
+        };
+
+        var normalWireJson = await SerializeAtDaemonEventPluginSeamAsync(
+            EventType.InstanceLog,
+            meta,
+            data);
+
+        var preparedMetaBuffer = new JsonPayloadBuffer(
+            StjJsonSerializer.SerializeToElement(meta, DaemonRpcJsonBoundary.StjOptions));
+        var preparedDataBuffer = new JsonPayloadBuffer(
+            StjJsonSerializer.SerializeToElement(data, DaemonRpcJsonBoundary.StjOptions));
+        var preparedWireJson = await SerializeAtDaemonPreparedEventPluginSeamAsync(
+            EventType.InstanceLog,
+            preparedMetaBuffer,
+            preparedDataBuffer);
+
+        AssertStructurallyEqualExceptTimestamp(normalWireJson, preparedWireJson);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public async Task PreparedEventSend_NormalEventSend_NullMetaStructuredData_StructurallyEquivalent()
+    {
+        var data = new DaemonReportEventData
+        {
+            Report = new DaemonReport(
+                new OsInfo("Windows", "x64"),
+                new CpuInfo("GenuineIntel", "Intel(R)", 16, 0.25d),
+                new MemInfo(1024UL * 1024UL, 512UL * 1024UL),
+                new DriveInformation("NTFS", 1_000_000_000UL, 500_000_000UL),
+                1717171717000)
+        };
+
+        var normalWireJson = await SerializeAtDaemonEventPluginSeamAsync(
+            EventType.DaemonReport,
+            null,
+            data);
+
+        var preparedDataBuffer = new JsonPayloadBuffer(
+            StjJsonSerializer.SerializeToElement(data, DaemonRpcJsonBoundary.StjOptions));
+        var preparedWireJson = await SerializeAtDaemonPreparedEventPluginSeamAsync(
+            EventType.DaemonReport,
+            null,
+            preparedDataBuffer);
+
+        AssertStructurallyEqualExceptTimestamp(normalWireJson, preparedWireJson);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public void DaemonEventFanOut_UnsubscribedContextWithDifferentMeta_IsSkipped()
+    {
+        var container = new WsContextContainer();
+        var subscribed = container.CreateContext("t18-meta-sub", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+        var differentMeta = container.CreateContext("t18-meta-diff", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+        var unsubscribed = container.CreateContext("t18-meta-none", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+
+        var targetMeta = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        };
+        var otherMeta = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+        };
+
+        subscribed.SubscribeEvent(EventType.InstanceLog, targetMeta);
+        differentMeta.SubscribeEvent(EventType.InstanceLog, otherMeta);
+
+        var contexts = InvokeEnumerateSubscribedContexts(container, EventType.InstanceLog, targetMeta);
+        var clientIds = contexts.Select(c => c.ClientId).ToArray();
+
+        Assert.Single(clientIds);
+        Assert.Contains(subscribed.ClientId, clientIds);
+        Assert.DoesNotContain(differentMeta.ClientId, clientIds);
+        Assert.DoesNotContain(unsubscribed.ClientId, clientIds);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public void DaemonEventFanOut_ContextSubscribedAfterOtherContexts_IsIncludedInEnumeration()
+    {
+        var container = new WsContextContainer();
+        var earlyContext = container.CreateContext("t18-early", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+        var lateContext = container.CreateContext("t18-late", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+
+        earlyContext.SubscribeEvent(EventType.DaemonReport, null);
+
+        var firstEnumeration = InvokeEnumerateSubscribedContexts(container, EventType.DaemonReport, null);
+        var firstIds = firstEnumeration.Select(c => c.ClientId).ToArray();
+        Assert.Single(firstIds);
+        Assert.Contains(earlyContext.ClientId, firstIds);
+
+        lateContext.SubscribeEvent(EventType.DaemonReport, null);
+
+        var secondEnumeration = InvokeEnumerateSubscribedContexts(container, EventType.DaemonReport, null);
+        var secondIds = secondEnumeration.Select(c => c.ClientId).ToArray();
+        Assert.Equal(2, secondIds.Length);
+        Assert.Contains(earlyContext.ClientId, secondIds);
+        Assert.Contains(lateContext.ClientId, secondIds);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public void DaemonEventFanOut_GetEventMetasSnapshot_IsIndependentOfLiveMutations()
+    {
+        var container = new WsContextContainer();
+        var context = container.CreateContext("t18-snapshot", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+
+        var meta1 = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        };
+        context.SubscribeEvent(EventType.InstanceLog, meta1);
+
+        var snapshot = context.GetEventMetas(EventType.InstanceLog).ToArray();
+        Assert.Single(snapshot);
+
+        var meta2 = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+        };
+        context.SubscribeEvent(EventType.InstanceLog, meta2);
+
+        var liveMetas = context.GetEventMetas(EventType.InstanceLog).ToArray();
+        Assert.Equal(2, liveMetas.Length);
+
+        // The earlier snapshot must remain unchanged after subsequent mutation
+        Assert.Single(snapshot);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
     [Trait("Category", "SchemaLockConvergence")]
     [Trait("Category", "EndToEndIntegration")]
     public void CoordinatedCutoverOnly_ConvergenceSuite_ReassertsRpcGoldenPersistenceAndDocumentationLocks()
@@ -625,6 +777,18 @@ public class DaemonDaemonClientTransportConvergenceTests
         Assert.True(JsonElement.DeepEquals(expected.GetProperty("meta"), actual.GetProperty("meta")));
         Assert.True(JsonElement.DeepEquals(expected.GetProperty("data"), actual.GetProperty("data")));
         Assert.InRange(actual.GetProperty("time").GetInt64(), minTimestamp, maxTimestamp);
+    }
+
+    private static void AssertStructurallyEqualExceptTimestamp(string leftJson, string rightJson)
+    {
+        var left = FixtureHarness.ParseJson(leftJson);
+        var right = FixtureHarness.ParseJson(rightJson);
+
+        Assert.Equal(left.GetProperty("event").GetString(), right.GetProperty("event").GetString());
+        Assert.True(JsonElement.DeepEquals(left.GetProperty("meta"), right.GetProperty("meta")));
+        Assert.True(JsonElement.DeepEquals(left.GetProperty("data"), right.GetProperty("data")));
+        // Timestamps are expected to differ between separately-serialized packets;
+        // the structural equivalence contract covers event, meta, and data only.
     }
 
     private static Task CaptureSentString(string value, Action<string> setter)
