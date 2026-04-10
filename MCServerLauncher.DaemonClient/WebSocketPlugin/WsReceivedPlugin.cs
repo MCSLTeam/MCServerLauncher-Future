@@ -107,14 +107,10 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     internal static EventPacket ParseEventPacket(string received)
     {
         if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
-        {
-            using var noInstrumentationDocument = JsonDocument.Parse(received);
-            return ParseEventPacket(noInstrumentationDocument.RootElement);
-        }
+            return ParseInboundEnvelope(received).EventPacket!;
 
         var startTimestamp = Stopwatch.GetTimestamp();
-        using var document = JsonDocument.Parse(received);
-        var packet = ParseEventPacket(document.RootElement);
+        var packet = ParseInboundEnvelope(received).EventPacket!;
         instrumentation.OnInboundEventPacketParse(
             DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
             Encoding.UTF8.GetByteCount(received));
@@ -124,14 +120,10 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     internal static ActionResponse ParseActionResponse(string received)
     {
         if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
-        {
-            using var noInstrumentationDocument = JsonDocument.Parse(received);
-            return ParseActionResponse(noInstrumentationDocument.RootElement);
-        }
+            return ParseInboundEnvelope(received).ActionResponse!;
 
         var startTimestamp = Stopwatch.GetTimestamp();
-        using var document = JsonDocument.Parse(received);
-        var response = ParseActionResponse(document.RootElement);
+        var response = ParseInboundEnvelope(received).ActionResponse!;
         instrumentation.OnInboundActionResponseParse(
             DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
             Encoding.UTF8.GetByteCount(received));
