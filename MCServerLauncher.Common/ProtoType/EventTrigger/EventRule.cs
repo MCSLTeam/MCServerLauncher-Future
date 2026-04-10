@@ -194,6 +194,11 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         public string Severity { get; set; } = "Info"; // Info, Success, Warning, Error
     }
 
+    /// <summary>
+    /// Newtonsoft compatibility converter for <see cref="RulesetDefinition" /> polymorphic deserialization.
+    /// Retained for backward compatibility with Newtonsoft-based callers only.
+    /// The canonical wire-contract converter is <see cref="RulesetDefinitionStjConverter" />.
+    /// </summary>
     internal sealed class RulesetDefinitionJsonConverter : JsonConverter
     {
         private static readonly string[] KnownDiscriminators =
@@ -268,6 +273,11 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Newtonsoft compatibility converter for <see cref="TriggerDefinition" /> polymorphic deserialization.
+    /// Retained for backward compatibility with Newtonsoft-based callers only.
+    /// The canonical wire-contract converter is <see cref="TriggerDefinitionStjConverter" />.
+    /// </summary>
     internal sealed class TriggerDefinitionJsonConverter : JsonConverter
     {
         private static readonly string[] KnownDiscriminators =
@@ -350,6 +360,11 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Newtonsoft compatibility converter for <see cref="ActionDefinition" /> polymorphic deserialization.
+    /// Retained for backward compatibility with Newtonsoft-based callers only.
+    /// The canonical wire-contract converter is <see cref="ActionDefinitionStjConverter" />.
+    /// </summary>
     internal sealed class ActionDefinitionJsonConverter : JsonConverter
     {
         private static readonly string[] KnownDiscriminators =
@@ -434,6 +449,11 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Canonical STJ wire-contract converter for <see cref="RulesetDefinition" /> polymorphic deserialization.
+    /// Handles discriminator-based deserialization using the 'type' field.
+    /// Discriminator error behavior is locked by characterization tests.
+    /// </summary>
     internal sealed class RulesetDefinitionStjConverter : System.Text.Json.Serialization.JsonConverter<RulesetDefinition>
     {
         private static readonly string[] KnownDiscriminators =
@@ -515,6 +535,11 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Canonical STJ wire-contract converter for <see cref="TriggerDefinition" /> polymorphic deserialization.
+    /// Handles discriminator-based deserialization using the 'type' field.
+    /// Discriminator error behavior is locked by characterization tests.
+    /// </summary>
     internal sealed class TriggerDefinitionStjConverter : System.Text.Json.Serialization.JsonConverter<TriggerDefinition>
     {
         private static readonly string[] KnownDiscriminators =
@@ -621,6 +646,11 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Canonical STJ wire-contract converter for <see cref="ActionDefinition" /> polymorphic deserialization.
+    /// Handles discriminator-based deserialization using the 'type' field.
+    /// Discriminator error behavior is locked by characterization tests.
+    /// </summary>
     internal sealed class ActionDefinitionStjConverter : System.Text.Json.Serialization.JsonConverter<ActionDefinition>
     {
         private static readonly string[] KnownDiscriminators =
@@ -732,6 +762,10 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Discriminator helpers for the canonical STJ converter path.
+    /// Error messages and behavior are locked by characterization tests.
+    /// </summary>
     internal static class EventRuleDiscriminatorStjHelper
     {
         public static string ReadDiscriminator(StjJsonElement obj, string baseTypeName)
@@ -821,6 +855,10 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
         }
     }
 
+    /// <summary>
+    /// Discriminator helpers for the Newtonsoft compatibility converter path.
+    /// Kept for backward compatibility; mirrors <see cref="EventRuleDiscriminatorStjHelper" /> error behavior.
+    /// </summary>
     internal static class EventRuleDiscriminatorJsonHelper
     {
         public static string ReadDiscriminator(JObject obj, string baseTypeName)
