@@ -55,6 +55,31 @@ public class DaemonClientTransportModernizationTests
 
     [Fact]
     [Trait("Category", "DaemonClientTransportModernization")]
+    public void SendFacade_UsesCurrentActionRequestTransportShape_ForNullMetaParameters()
+    {
+        var request = new ActionRequest
+        {
+            ActionType = ActionType.SubscribeEvent,
+            Parameter = InvokePrivateSerializeParameterForTransport(new SubscribeEventParameter
+            {
+                Type = EventType.InstanceLog,
+                Meta = null
+            }),
+            Id = Guid.Parse("11111111-1111-1111-1111-111111111111")
+        };
+
+        var payload = ParseJsonElement(Encoding.UTF8.GetString(ClientConnection.SerializeActionRequestForTransport(request)));
+
+        Assert.Equal("subscribe_event", payload.GetProperty("action").GetString());
+        Assert.Equal(request.Id, payload.GetProperty("id").GetGuid());
+
+        var parameters = payload.GetProperty("params");
+        Assert.Equal("instance_log", parameters.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Null, parameters.GetProperty("meta").ValueKind);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonClientTransportModernization")]
     public void TransportConfig_WhenIsSecureFalse_UsesWsEndpoint()
     {
         var endpoint = InvokeBuildServerEndpoint("127.0.0.1", 24444, "plain-token", isSecure: false);

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.DaemonClient.Connection;
 using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.DaemonClient.WebSocketPlugin;
@@ -105,6 +106,39 @@ public class DaemonClientOutboundTransportAndCallbackTests
             SerializeAtClientSendSeam(request),
             RpcFixturePaths.ActionRequestDir,
             "subscribe-event-concrete-meta.json");
+    }
+
+    [Fact]
+    [Trait("Category", "ClientOutbound")]
+    [Trait("Category", "ClientOutboundRoundTrip")]
+    public void ClientOutboundSerializeParameterForTransport_SubscribeEventParameter_NullMeta_PreservesTypeAndNullMeta()
+    {
+        var payload = InvokePrivateSerializeParameterForTransport(new SubscribeEventParameter
+        {
+            Type = EventType.InstanceLog,
+            Meta = null
+        });
+
+        Assert.Equal(JsonValueKind.Object, payload.ValueKind);
+        Assert.Equal("instance_log", payload.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Null, payload.GetProperty("meta").ValueKind);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientOutbound")]
+    [Trait("Category", "ClientOutboundRoundTrip")]
+    public void ClientOutboundSerializeParameterForTransport_SubscribeEventParameter_ConcreteMeta_PreservesTypeAndInstanceMeta()
+    {
+        var instanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var payload = InvokePrivateSerializeParameterForTransport(new SubscribeEventParameter
+        {
+            Type = EventType.InstanceLog,
+            Meta = JsonSerializer.SerializeToElement(new InstanceLogEventMeta { InstanceId = instanceId })
+        });
+
+        Assert.Equal(JsonValueKind.Object, payload.ValueKind);
+        Assert.Equal("instance_log", payload.GetProperty("type").GetString());
+        Assert.Equal(instanceId, payload.GetProperty("meta").GetProperty("instance_id").GetGuid());
     }
 
     [Fact]
