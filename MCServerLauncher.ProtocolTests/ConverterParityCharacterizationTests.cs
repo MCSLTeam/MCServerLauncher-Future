@@ -1,12 +1,15 @@
 using System.Text;
+using System.Text.Json;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.ProtocolTests.Fixtures.ConverterParity;
 using MCServerLauncher.ProtocolTests.Helpers;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -94,6 +97,36 @@ public class ConverterParityCharacterizationTests
 
     [Fact]
     [Trait("Category", "ConverterParity")]
+    public void JsonPayloadBuffer_NullCreationPaths_PreserveExplicitJsonNullShape()
+    {
+        var fromObject = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
+        var fromJToken = (JsonPayloadBuffer)JValue.CreateNull();
+
+        Assert.True(fromObject.IsExplicitJsonNull);
+        Assert.True(fromJToken.IsExplicitJsonNull);
+        Assert.Equal(JsonValueKind.Null, fromObject.ValueKind);
+        Assert.Equal(JsonValueKind.Null, fromJToken.ValueKind);
+        Assert.Equal("null", fromObject.GetRawText());
+        Assert.Equal(fromObject.GetRawText(), fromJToken.GetRawText());
+    }
+
+    [Fact]
+    [Trait("Category", "ConverterParity")]
+    public void NewtonsoftJsonElementConverter_PreservesCanonicalNestedPayloadShape()
+    {
+        var json = """{"action":"ping","id":"11111111-1111-1111-1111-111111111111","params":{"count":1,"message":"hi","flags":[true,false,null],"inner":{"empty":{},"list":[1,2,3]}}}""";
+
+        var parsed = JsonConvert.DeserializeObject<ActionRequest>(json, JsonSettings.Settings)!;
+
+        Assert.NotNull(parsed.Parameter);
+        Assert.Equal(JsonValueKind.Object, parsed.Parameter.Value.ValueKind);
+        Assert.Equal(
+            """{"count":1,"message":"hi","flags":[true,false,null],"inner":{"empty":{},"list":[1,2,3]}}""",
+            parsed.Parameter.Value.GetRawText());
+    }
+
+    [Fact]
+    [Trait("Category", "ConverterParity")]
     public void Permission_ValidAndInvalidString_BehaviorMatchesCurrentDaemonConverter()
     {
         var valid = JsonConvert.DeserializeObject<PermissionHolder>("""{"permission":"instance.start"}""", PermissionJsonSettings)!;
@@ -174,18 +207,91 @@ public class ConverterParityCharacterizationTests
     [Trait("Category", "ConverterParity")]
     public void EventMetaData_NullVsMissingPolicy_IsExplicitInHelpers()
     {
-        var missingMeta = EventType.InstanceLog.GetEventMeta(null, JsonSettings.Settings);
+        var missingMeta = EventType.InstanceLog.GetEventMeta(null);
         Assert.Null(missingMeta);
 
         var explicitNullMeta = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
         var metaException = Assert.Throws<ArgumentException>(() =>
-            EventType.InstanceLog.GetEventMeta(explicitNullMeta, JsonSettings.Settings));
+            EventType.InstanceLog.GetEventMeta(explicitNullMeta));
         Assert.Contains("explicit json null", metaException.Message, StringComparison.OrdinalIgnoreCase);
 
         var explicitNullData = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
         var dataException = Assert.Throws<ArgumentException>(() =>
-            EventType.DaemonReport.GetEventData(explicitNullData, JsonSettings.Settings));
+            EventType.DaemonReport.GetEventData(explicitNullData));
         Assert.Contains("explicit json null", dataException.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    [Trait("Category", "ConverterParity")]
+    public void EventMeta_Data_StjFirstDeserialization_ProducesTypedResults()
+    {
+        // Verify that the STJ-first path deserializes typed event meta correctly
+        var metaJson = "{\"instance_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\"}";
+        using var metaDoc = System.Text.Json.JsonDocument.Parse(metaJson);
+        var metaBuffer = new JsonPayloadBuffer(metaDoc.RootElement.Clone());
+
+        var meta = EventType.InstanceLog.GetEventMeta(metaBuffer);
+        var typedMeta = Assert.IsType<InstanceLogEventMeta>(meta);
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), typedMeta.InstanceId);
+
+        // Verify that the STJ-first path deserializes typed event data correctly
+        var dataJson = "{\"log\":\"[12:00:00] Server started\"}";
+        using var dataDoc = System.Text.Json.JsonDocument.Parse(dataJson);
+        var dataBuffer = new JsonPayloadBuffer(dataDoc.RootElement.Clone());
+
+        var data = EventType.InstanceLog.GetEventData(dataBuffer);
+        var typedData = Assert.IsType<InstanceLogEventData>(data);
+        Assert.Equal("[12:00:00] Server started", typedData.Log);
+    }
+
+    [Fact]
+    [Trait("Category", "ConverterParity")]
+    public void JsonPayloadBuffer_StjFromObject_CreatesBufferWithCorrectShape()
+    {
+        // STJ-first creation path: null produces explicit JSON null
+        var fromNull = JsonPayloadBuffer.FromObject((InstanceLogEventMeta?)null);
+        Assert.True(fromNull.IsExplicitJsonNull);
+        Assert.Equal(JsonValueKind.Null, fromNull.ValueKind);
+        Assert.Equal("null", fromNull.GetRawText());
+
+        // STJ-first creation path: typed value produces correct wire-shape JSON
+        var stjOptions = StjResolver.CreateDefaultOptions();
+        var meta = new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        };
+        var fromTyped = JsonPayloadBuffer.FromObject(meta, stjOptions);
+        Assert.Equal(JsonValueKind.Object, fromTyped.ValueKind);
+
+        var rawText = fromTyped.GetRawText();
+        Assert.Contains("instance_id", rawText);
+        Assert.Contains("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", rawText);
+
+        // STJ null path matches Newtonsoft null path (parity)
+        var fromNewtonsoftNull = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
+        Assert.Equal(fromNewtonsoftNull.GetRawText(), fromNull.GetRawText());
+        Assert.Equal(fromNewtonsoftNull.ValueKind, fromNull.ValueKind);
+    }
+
+    [Fact]
+    [Trait("Category", "ConverterParity")]
+    public void JsonPayloadBuffer_StjFromObject_NoOptions_UsesCanonicalCommonWireShape()
+    {
+        var payload = new DaemonReportEventData
+        {
+            Report = new DaemonReport(
+                new OsInfo("Windows", "x64"),
+                new CpuInfo("GenuineIntel", "Intel(R)", 4, 0.1),
+                new MemInfo(1024, 512),
+                new DriveInformation("NTFS", 1000, 500),
+                1717171717)
+        };
+
+        var fromTyped = JsonPayloadBuffer.FromObject(payload);
+
+        Assert.Equal(JsonValueKind.Object, fromTyped.ValueKind);
+        Assert.Contains("start_time_stamp", fromTyped.GetRawText());
+        Assert.Contains("drive_format", fromTyped.GetRawText());
     }
 
     private static JsonSerializerSettings CreatePermissionJsonSettings()

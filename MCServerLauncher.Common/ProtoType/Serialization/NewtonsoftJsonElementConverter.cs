@@ -5,8 +5,11 @@ using NewtonsoftLinq = Newtonsoft.Json.Linq;
 namespace MCServerLauncher.Common.ProtoType.Serialization;
 
 /// <summary>
-/// Newtonsoft bridge converter for STJ JsonElement payload buffers.
-/// Keeps raw JSON shape stable while shared contracts migrate off JToken.
+/// Compatibility bridge converter for Newtonsoft → STJ JsonElement interop.
+/// Bounded to RPC parameter paths (ActionRequest.Parameter, ActionResponse.Data)
+/// where Newtonsoft serialization is still used for deserialization.
+/// STJ handles JsonElement natively on the canonical wire path; this converter
+/// exists only to keep Newtonsoft deserialization producing correct JsonElement values.
 /// </summary>
 public sealed class NewtonsoftJsonElementConverter : NewtonsoftJson.JsonConverter<JsonElement?>
 {
