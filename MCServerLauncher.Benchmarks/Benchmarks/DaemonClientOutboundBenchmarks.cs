@@ -15,6 +15,7 @@ public class DaemonClientOutboundBenchmarks
     private static readonly Guid FixedRequestId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     private ActionRequest _pingRequest = null!;
+    private ActionRequest _subscribeEventConcreteMetaRequest = null!;
     private ActionRequest _saveEventRulesRequest = null!;
 
     [GlobalSetup]
@@ -24,6 +25,15 @@ public class DaemonClientOutboundBenchmarks
         {
             ActionType = ActionType.Ping,
             Parameter = BenchmarkFixtureLoader.ParseElement("{}"),
+            Id = FixedRequestId
+        };
+
+        _subscribeEventConcreteMetaRequest = new ActionRequest
+        {
+            ActionType = ActionType.SubscribeEvent,
+            Parameter = BenchmarkFixtureLoader.LoadJson(
+                BenchmarkFixturePaths.ActionRequestDir,
+                "subscribe-event-concrete-meta.json").GetProperty("params").Clone(),
             Id = FixedRequestId
         };
 
@@ -39,6 +49,9 @@ public class DaemonClientOutboundBenchmarks
         if (SerializeActionRequestForTransport(_pingRequest).Length == 0)
             throw new InvalidOperationException("DaemonClient outbound ping benchmark precheck serialized an empty payload.");
 
+        if (SerializeActionRequestForTransport(_subscribeEventConcreteMetaRequest).Length == 0)
+            throw new InvalidOperationException("DaemonClient outbound subscribe-event benchmark precheck serialized an empty payload.");
+
         if (SerializeActionRequestForTransport(_saveEventRulesRequest).Length == 0)
             throw new InvalidOperationException("DaemonClient outbound save-event-rules benchmark precheck serialized an empty payload.");
     }
@@ -47,6 +60,12 @@ public class DaemonClientOutboundBenchmarks
     public int SerializePingActionRequestForTransport()
     {
         return SerializeActionRequestForTransport(_pingRequest).Length;
+    }
+
+    [Benchmark]
+    public int SerializeSubscribeEventConcreteMetaActionRequestForTransport()
+    {
+        return SerializeActionRequestForTransport(_subscribeEventConcreteMetaRequest).Length;
     }
 
     [Benchmark]
