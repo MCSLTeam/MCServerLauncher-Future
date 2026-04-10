@@ -205,6 +205,11 @@ internal class ClientConnection : DisposableObject
     private static JsonElement SerializeParameterForTransport(IActionParameter? param)
     {
         var value = param ?? new EmptyActionParameter();
+        return SerializeRuntimeObjectToTransportElement(value);
+    }
+
+    private static JsonElement SerializeRuntimeObjectToTransportElement(object value)
+    {
         return System.Text.Json.JsonSerializer.SerializeToElement(value, value.GetType(), RpcStjOptions);
     }
 
@@ -335,7 +340,7 @@ internal class ClientConnection : DisposableObject
                 await RequestAsync(ActionType.SubscribeEvent, new SubscribeEventParameter
                 {
                     Type = @event.Type,
-                    Meta = @event.Meta is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(@event.Meta, @event.Meta.GetType(), RpcStjOptions)
+                    Meta = @event.Meta is null ? null : SerializeRuntimeObjectToTransportElement(@event.Meta)
                 }, ct: cts.Token);
             }
             catch (OperationCanceledException)
