@@ -20,7 +20,15 @@ public class WsActionPlugin(IActionExecutor executor,
             var response = executor.ProcessAction(e.DataFrame.PayloadData, context);
 
             if (response is not null)
-                await webSocket.SendAsync(StjJsonSerializer.Serialize(response, DaemonRpcJsonBoundary.StjOptions));
+            {
+                var utf8Payload = StjJsonSerializer.SerializeToUtf8Bytes(response, DaemonRpcJsonBoundary.StjOptions);
+                var frame = new WSDataFrame(utf8Payload)
+                {
+                    Opcode = WSDataType.Text,
+                    FIN = true
+                };
+                await webSocket.SendAsync(frame);
+            }
         }
 
         await e.InvokeNext();

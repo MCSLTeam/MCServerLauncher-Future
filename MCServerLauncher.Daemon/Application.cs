@@ -5,7 +5,6 @@ using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using TouchSocket.Core;
 using TouchSocket.Http;
 
 namespace MCServerLauncher.Daemon;
@@ -14,7 +13,7 @@ public static class Application
 {
     public static readonly DateTime StartTime = DateTime.Now;
     // Timer lifecycle managed by DaemonServiceComposition.AttachDaemonLifecycle
-    public static HttpService HttpService { get; private set; }
+    public static HttpService HttpService { get; private set; } = default!;
     public static Version AppVersion => Assembly.GetExecutingAssembly().GetName().Version!;
     public static event Func<Task>? OnStarted;
     public static event Func<Task>? OnStopping;
@@ -26,12 +25,7 @@ public static class Application
         collection.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
 
         HttpService = new HttpService();
-        await HttpService.SetupAsync(new TouchSocketConfig()
-            .SetListenIPHosts(AppConfig.Get().Port)
-            .UseAspNetCoreContainer(collection)
-            .ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(a, collection, HttpService, selectedRegistry))
-            .ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a))
-        );
+        await HttpService.SetupAsync(DaemonTouchSocketTransportProfile.CreateConfig(collection, HttpService, selectedRegistry));
 
         DaemonServiceComposition.AttachDaemonLifecycle(HttpService);
     }

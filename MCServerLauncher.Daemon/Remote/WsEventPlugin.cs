@@ -41,18 +41,18 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         if (meta is not null)
         {
             var preparedPayload = PreparePayload(meta, data);
-            var wirePayload = BuildWirePayloadString(type, preparedPayload.EventMeta, preparedPayload.EventData);
+            var wirePayload = BuildWirePayloadUtf8(type, preparedPayload.EventMeta, preparedPayload.EventData);
 
             foreach (var context in EnumerateSubscribedContexts(Container, type, meta))
             {
-                await context.GetWebsocket().SendAsync(wirePayload);
+                await SendTextFrameAsync(context.GetWebsocket(), wirePayload);
             }
 
             return;
         }
 
         var eventDataBuffer = ToPayloadBuffer(data);
-        var noMetaWirePayload = BuildWirePayloadString(type, null, eventDataBuffer);
+        var noMetaWirePayload = BuildWirePayloadUtf8(type, null, eventDataBuffer);
 
         foreach (var context in EnumerateSubscribedContexts(Container, type, meta))
         {
@@ -60,11 +60,11 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
             var eventMetas = context.GetEventMetas(type).ToArray();
 
             if (eventMetas.Length == 0)
-                await webSocket.SendAsync(noMetaWirePayload); // 单一事件(不带meta的事件类型)
+                await SendTextFrameAsync(webSocket, noMetaWirePayload); // 单一事件(不带meta的事件类型)
             else // 批量发送(只有带meta的事件类型才会触发)
                 // TODO 合并发送
                 foreach (var eventMeta in eventMetas)
-                    await webSocket.SendAsync(BuildWirePayloadString(type, ToPayloadBuffer(eventMeta), eventDataBuffer));
+                    await SendTextFrameAsync(webSocket, BuildWirePayloadUtf8(type, ToPayloadBuffer(eventMeta), eventDataBuffer));
         }
     }
 
@@ -91,7 +91,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         JsonPayloadBuffer? eventData,
         IWebSocket ws)
     {
-        await ws.SendAsync(BuildWirePayloadString(type, eventMeta, eventData));
+        await SendTextFrameAsync(ws, BuildWirePayloadUtf8(type, eventMeta, eventData));
     }
 
     private static PreparedEventPayload PreparePayload(object? meta, object? data)
@@ -99,7 +99,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         return new PreparedEventPayload(ToPayloadBuffer(meta), ToPayloadBuffer(data));
     }
 
-    private static string BuildWirePayloadString(EventType type, JsonPayloadBuffer? eventMeta, JsonPayloadBuffer? eventData)
+    private static byte[] BuildWirePayloadUtf8(EventType type, JsonPayloadBuffer? eventMeta, JsonPayloadBuffer? eventData)
     {
         var packet = new EventPacket
         {
@@ -107,7 +107,17 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
             EventMeta = eventMeta,
             EventData = eventData
         };
-        return StjJsonSerializer.Serialize(packet, DaemonRpcJsonBoundary.StjOptions);
+        return StjJsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcJsonBoundary.StjOptions);
+    }
+
+    private static async ValueTask SendTextFrameAsync(IWebSocket webSocket, byte[] utf8Payload)
+    {
+        var frame = new WSDataFrame(utf8Payload)
+        {
+            Opcode = WSDataType.Text,
+            FIN = true
+        };
+        await webSocket.SendAsync(frame);
     }
     private static JsonPayloadBuffer? ToPayloadBuffer(object? payload)
     {
