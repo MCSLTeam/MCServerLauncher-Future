@@ -51,8 +51,8 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             return;
         }
 
-        var received = e.DataFrame.ToText();
-        var inbound = ParseInboundEnvelope(received);
+        var payloadData = e.DataFrame.PayloadData;
+        var inbound = ParseInboundEnvelopeFromBytes(payloadData);
         if (inbound.EnvelopeType == InboundEnvelopeType.Event)
             DispatchEvent(inbound.EventPacket!);
         else if (inbound.EnvelopeType == InboundEnvelopeType.Action)
@@ -66,7 +66,12 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 
     internal static InboundEnvelopeType DetectEnvelopeType(string received)
     {
-        using var document = JsonDocument.Parse(received);
+        return DetectEnvelopeTypeFromBytes(Encoding.UTF8.GetBytes(received));
+    }
+
+    internal static InboundEnvelopeType DetectEnvelopeTypeFromBytes(ReadOnlyMemory<byte> utf8Json)
+    {
+        using var document = JsonDocument.Parse(utf8Json);
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw new JsonException("Inbound message root must be a JSON object.");
@@ -78,7 +83,12 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 
     internal static ParsedInboundEnvelope ParseInboundEnvelope(string received)
     {
-        using var document = JsonDocument.Parse(received);
+        return ParseInboundEnvelopeFromBytes(Encoding.UTF8.GetBytes(received));
+    }
+
+    internal static ParsedInboundEnvelope ParseInboundEnvelopeFromBytes(ReadOnlyMemory<byte> utf8Json)
+    {
+        using var document = JsonDocument.Parse(utf8Json);
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw new JsonException("Inbound message root must be a JSON object.");
@@ -93,7 +103,7 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             {
                 Log.Fatal(
                     "[ClientConnection] [ReceiveLoop] Received unexpected event packet: {0}\nmay be connected to a unofficial daemon?",
-                    received);
+                    Encoding.UTF8.GetString(utf8Json.Span));
                 throw;
             }
         }
@@ -106,27 +116,37 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 
     internal static EventPacket ParseEventPacket(string received)
     {
+        return ParseEventPacketFromBytes(Encoding.UTF8.GetBytes(received));
+    }
+
+    internal static EventPacket ParseEventPacketFromBytes(ReadOnlyMemory<byte> utf8Json)
+    {
         if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
-            return ParseInboundEnvelope(received).EventPacket!;
+            return ParseInboundEnvelopeFromBytes(utf8Json).EventPacket!;
 
         var startTimestamp = Stopwatch.GetTimestamp();
-        var packet = ParseInboundEnvelope(received).EventPacket!;
+        var packet = ParseInboundEnvelopeFromBytes(utf8Json).EventPacket!;
         instrumentation.OnInboundEventPacketParse(
             DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
-            Encoding.UTF8.GetByteCount(received));
+            utf8Json.Length);
         return packet;
     }
 
     internal static ActionResponse ParseActionResponse(string received)
     {
+        return ParseActionResponseFromBytes(Encoding.UTF8.GetBytes(received));
+    }
+
+    internal static ActionResponse ParseActionResponseFromBytes(ReadOnlyMemory<byte> utf8Json)
+    {
         if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
-            return ParseInboundEnvelope(received).ActionResponse!;
+            return ParseInboundEnvelopeFromBytes(utf8Json).ActionResponse!;
 
         var startTimestamp = Stopwatch.GetTimestamp();
-        var response = ParseInboundEnvelope(received).ActionResponse!;
+        var response = ParseInboundEnvelopeFromBytes(utf8Json).ActionResponse!;
         instrumentation.OnInboundActionResponseParse(
             DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
-            Encoding.UTF8.GetByteCount(received));
+            utf8Json.Length);
         return response;
     }
 

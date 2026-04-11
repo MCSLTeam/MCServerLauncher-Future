@@ -539,6 +539,33 @@ public class DaemonDaemonClientTransportConvergenceTests
         Assert.Single(snapshot);
     }
 
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
+    public void DaemonEventFanOut_UnsubscribeAll_YieldsZeroContextsInSubsequentEnumeration()
+    {
+        var container = new WsContextContainer();
+        var ctx1 = container.CreateContext("t3-unsub-all-1", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+        var ctx2 = container.CreateContext("t3-unsub-all-2", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
+
+        ctx1.SubscribeEvent(EventType.DaemonReport, null);
+        ctx2.SubscribeEvent(EventType.DaemonReport, null);
+
+        // Both subscribed => both enumerated
+        var before = InvokeEnumerateSubscribedContexts(container, EventType.DaemonReport, null);
+        Assert.Equal(2, before.Length);
+
+        // Simulate websocket close cleanup on ctx1
+        ctx1.UnsubscribeAllEvents();
+
+        // Only ctx2 remains in the fan-out
+        var after = InvokeEnumerateSubscribedContexts(container, EventType.DaemonReport, null);
+        var afterIds = after.Select(c => c.ClientId).ToArray();
+        Assert.Single(afterIds);
+        Assert.Contains(ctx2.ClientId, afterIds);
+    }
     [Fact]
     [Trait("Category", "T18")]
     [Trait("Category", "SchemaLockConvergence")]
@@ -650,8 +677,8 @@ public class DaemonDaemonClientTransportConvergenceTests
             return method.Name switch
             {
                 "get_Client" => sessionClient,
-                "SendAsync" when method.GetParameters().Length == 3 && method.GetParameters()[0].ParameterType == typeof(string)
-                    => CaptureSentString((string)args![0]!, value => sent = value),
+                "SendAsync" when method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
+                    => CaptureSentFrame(args!, value => sent = value),
                 _ => GetDefaultReturnValue(method.ReturnType)
             };
         });
@@ -693,8 +720,8 @@ public class DaemonDaemonClientTransportConvergenceTests
         {
             return method.Name switch
             {
-                "SendAsync" when method.GetParameters().Length == 3 && method.GetParameters()[0].ParameterType == typeof(string)
-                    => CaptureSentString((string)args![0]!, value => sent = value),
+                "SendAsync" when method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
+                    => CaptureSentFrame(args!, value => sent = value),
                 _ => GetDefaultReturnValue(method.ReturnType)
             };
         });
@@ -727,8 +754,8 @@ public class DaemonDaemonClientTransportConvergenceTests
         {
             return method.Name switch
             {
-                "SendAsync" when method.GetParameters().Length == 3 && method.GetParameters()[0].ParameterType == typeof(string)
-                    => CaptureSentString((string)args![0]!, value => sent = value),
+                "SendAsync" when method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
+                    => CaptureSentFrame(args!, value => sent = value),
                 _ => GetDefaultReturnValue(method.ReturnType)
             };
         });
@@ -791,9 +818,10 @@ public class DaemonDaemonClientTransportConvergenceTests
         // the structural equivalence contract covers event, meta, and data only.
     }
 
-    private static Task CaptureSentString(string value, Action<string> setter)
+    private static Task CaptureSentFrame(object?[] args, Action<string> setter)
     {
-        setter(value);
+        var frame = (WSDataFrame)args[0]!;
+        setter(Encoding.UTF8.GetString(frame.PayloadData.Span));
         return Task.CompletedTask;
     }
 

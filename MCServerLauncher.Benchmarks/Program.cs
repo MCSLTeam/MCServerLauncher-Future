@@ -1,9 +1,12 @@
 using System.Reflection;
 using BenchmarkDotNet.Running;
 
-BenchmarkSwitcher.FromAssembly(Assembly.GetExecutingAssembly()).Run(NormalizeArgs(args));
+foreach (var runArgs in NormalizeArgs(args))
+{
+    BenchmarkSwitcher.FromAssembly(Assembly.GetExecutingAssembly()).Run(runArgs);
+}
 
-static string[] NormalizeArgs(string[] args)
+static IReadOnlyList<string[]> NormalizeArgs(string[] args)
 {
     var normalized = new List<string>(args.Length);
     var filters = new List<string>();
@@ -15,6 +18,12 @@ static string[] NormalizeArgs(string[] args)
         if (string.Equals(current, "--filter", StringComparison.Ordinal) && i + 1 < args.Length)
         {
             CollectFilters(filters, args[++i]);
+
+            while (i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.Ordinal))
+            {
+                CollectFilters(filters, args[++i]);
+            }
+
             continue;
         }
 
@@ -27,13 +36,23 @@ static string[] NormalizeArgs(string[] args)
         normalized.Add(current);
     }
 
-    if (filters.Count > 0)
+    if (filters.Count == 0)
     {
-        normalized.Add("--filter");
-        normalized.AddRange(filters);
+        return [normalized.ToArray()];
     }
 
-    return normalized.ToArray();
+    var runs = new List<string[]>(filters.Count);
+
+    foreach (var filter in filters)
+    {
+        var run = new List<string>(normalized.Count + 2);
+        run.AddRange(normalized);
+        run.Add("--filter");
+        run.Add(filter);
+        runs.Add(run.ToArray());
+    }
+
+    return runs;
 }
 
 static void CollectFilters(List<string> filters, string filterValue)

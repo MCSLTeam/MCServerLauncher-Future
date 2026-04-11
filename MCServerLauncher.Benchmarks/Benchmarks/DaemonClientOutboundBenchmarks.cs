@@ -4,6 +4,8 @@ using BenchmarkDotNet.Jobs;
 using MCServerLauncher.Benchmarks.Infrastructure;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.DaemonClient.Connection;
+using TouchSocket.Core;
+using TouchSocket.Http.WebSockets;
 
 namespace MCServerLauncher.Benchmarks.Benchmarks;
 
@@ -17,6 +19,7 @@ public class DaemonClientOutboundBenchmarks
     private ActionRequest _pingRequest = null!;
     private ActionRequest _subscribeEventConcreteMetaRequest = null!;
     private ActionRequest _saveEventRulesRequest = null!;
+    private byte[] _largeSaveEventRulesWirePayload = null!;
 
     [GlobalSetup]
     public void GlobalSetup()
@@ -54,6 +57,23 @@ public class DaemonClientOutboundBenchmarks
 
         if (SerializeActionRequestForTransport(_saveEventRulesRequest).Length == 0)
             throw new InvalidOperationException("DaemonClient outbound save-event-rules benchmark precheck serialized an empty payload.");
+
+        var largeParamsJson = $$"""
+        {
+          "blob": "{{new string('x', 64 * 1024)}}"
+        }
+        """;
+
+        var largePayloadRequest = new ActionRequest
+        {
+            ActionType = ActionType.SaveEventRules,
+            Parameter = BenchmarkFixtureLoader.ParseElement(largeParamsJson),
+            Id = FixedRequestId
+        };
+
+        _largeSaveEventRulesWirePayload = SerializeActionRequestForTransport(largePayloadRequest);
+        if (_largeSaveEventRulesWirePayload.Length < 64 * 1024)
+            throw new InvalidOperationException("DaemonClient outbound large-payload benchmark precheck produced an unexpectedly small payload.");
     }
 
     [Benchmark]
@@ -74,8 +94,41 @@ public class DaemonClientOutboundBenchmarks
         return SerializeActionRequestForTransport(_saveEventRulesRequest).Length;
     }
 
+    [Benchmark]
+    public int SerializeLargeSaveEventRulesActionRequestForTransport_BaselineFrame()
+    {
+        return BuildBaselineTextFramePayloadLength(_largeSaveEventRulesWirePayload);
+    }
+
+    [Benchmark]
+    public int SerializeLargeSaveEventRulesActionRequestForTransport_ByteBlockFrame()
+    {
+        return BuildByteBlockTextFramePayloadLength(_largeSaveEventRulesWirePayload);
+    }
+
     private static byte[] SerializeActionRequestForTransport(ActionRequest request)
     {
         return ClientConnection.SerializeActionRequestForTransport(request);
+    }
+
+    private static int BuildBaselineTextFramePayloadLength(ReadOnlyMemory<byte> utf8Payload)
+    {
+        return new WSDataFrame(utf8Payload)
+        {
+            FIN = true,
+            Opcode = WSDataType.Text
+        }.PayloadData.Length;
+    }
+
+    private static int BuildByteBlockTextFramePayloadLength(ReadOnlyMemory<byte> utf8Payload)
+    {
+        using var byteBlock = new ByteBlock(utf8Payload.Length);
+        byteBlock.Write(utf8Payload.Span);
+
+        return new WSDataFrame(byteBlock.Memory)
+        {
+            FIN = true,
+            Opcode = WSDataType.Text
+        }.PayloadData.Length;
     }
 }

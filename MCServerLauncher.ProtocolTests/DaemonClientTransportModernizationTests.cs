@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -94,6 +95,19 @@ public class DaemonClientTransportModernizationTests
         var endpoint = InvokeBuildServerEndpoint("example.com", 443, "secure-token", isSecure: true);
 
         Assert.Equal("wss://example.com:443/api/v1?token=secure-token", endpoint);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonClientTransportModernization")]
+    public void TransportConfig_BuildServerEndpoint_AlwaysUsesApiV1Path()
+    {
+        var wsEndpoint = InvokeBuildServerEndpoint("127.0.0.1", 24444, "plain-token", isSecure: false);
+        var wssEndpoint = InvokeBuildServerEndpoint("example.com", 443, "secure-token", isSecure: true);
+
+        Assert.Equal("/api/v1", new Uri(wsEndpoint).AbsolutePath);
+        Assert.Equal("/api/v1", new Uri(wssEndpoint).AbsolutePath);
+        Assert.Equal("token=plain-token", new Uri(wsEndpoint).Query.TrimStart('?'));
+        Assert.Equal("token=secure-token", new Uri(wssEndpoint).Query.TrimStart('?'));
     }
 
     [Fact]

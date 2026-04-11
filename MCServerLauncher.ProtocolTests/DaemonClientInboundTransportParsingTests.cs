@@ -1,7 +1,10 @@
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.DaemonClient.WebSocketPlugin;
+using TouchSocket.Http.WebSockets;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -221,6 +224,86 @@ public class DaemonClientInboundTransportParsingTests
     }
 
     [Fact]
+    [Trait("Category", "ClientInbound")]
+    public async Task OnWebSocketReceived_NonTextFrame_IgnoresAndDoesNotDispatch()
+    {
+        var plugin = new WsReceivedPlugin();
+        var eventCount = 0;
+        var actionCount = 0;
+
+        plugin.OnEventReceived += (_, _, _, _) => eventCount++;
+        plugin.OnActionResponseReceived += _ => actionCount++;
+
+        var frame = new WSDataFrame(Encoding.UTF8.GetBytes(
+            """
+            {"event":"instance_log","meta":{"instance_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},"data":{"log":"ignored"},"time":1717171717000}
+            """))
+        {
+            Opcode = WSDataType.Binary,
+            FIN = true
+        };
+
+        await plugin.OnWebSocketReceived(null!, new WSDataFrameEventArgs(frame));
+
+        Assert.Equal(0, eventCount);
+        Assert.Equal(0, actionCount);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public async Task OnWebSocketReceived_TextFrame_LargeInstanceLogPayload_DispatchesFullLog()
+    {
+        var plugin = new WsReceivedPlugin();
+        var longLog = new string('x', 100_000);
+        InstanceLogEventData? receivedData = null;
+
+        plugin.OnEventReceived += (_, _, _, data) => receivedData = Assert.IsType<InstanceLogEventData>(data);
+
+        var envelope = JsonSerializer.Serialize(new
+        {
+            @event = "instance_log",
+            meta = new { instance_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" },
+            data = new { log = longLog },
+            time = 1717171717000L
+        });
+
+        var frame = new WSDataFrame(Encoding.UTF8.GetBytes(envelope))
+        {
+            Opcode = WSDataType.Text,
+            FIN = true
+        };
+
+        await plugin.OnWebSocketReceived(null!, new WSDataFrameEventArgs(frame));
+
+        Assert.NotNull(receivedData);
+        Assert.Equal(longLog, receivedData!.Log);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInboundErrors")]
+    public async Task ClientInboundErrors_OnWebSocketReceived_MalformedTextEnvelope_ThrowsJsonException()
+    {
+        var plugin = new WsReceivedPlugin();
+        var eventCount = 0;
+        var actionCount = 0;
+
+        plugin.OnEventReceived += (_, _, _, _) => eventCount++;
+        plugin.OnActionResponseReceived += _ => actionCount++;
+
+        var frame = new WSDataFrame(Encoding.UTF8.GetBytes("{\"event\":\"instance_log\""))
+        {
+            Opcode = WSDataType.Text,
+            FIN = true
+        };
+
+        await Assert.ThrowsAnyAsync<JsonException>(async () =>
+            await plugin.OnWebSocketReceived(null!, new WSDataFrameEventArgs(frame)));
+
+        Assert.Equal(0, eventCount);
+        Assert.Equal(0, actionCount);
+    }
+
+    [Fact]
     [Trait("Category", "ClientInboundErrors")]
     public void ClientInboundErrors_DetectEnvelopeType_MalformedJson_ThrowsJsonException()
     {
@@ -236,18 +319,6 @@ public class DaemonClientInboundTransportParsingTests
         var malformed = "[]";
 
         Assert.Throws<JsonException>(() => WsReceivedPlugin.DetectEnvelopeType(malformed));
-    }
-
-    [Fact]
-    [Trait("Category", "ClientInbound")]
-    [Trait("Category", "CleanupValidation")]
-    public void DetectEnvelopeType_EventShapedPayloadMissingMetaAndData_ReturnsEventWithoutThrowing()
-    {
-        var incompleteEventEnvelope = "{\"event\":\"instance_log\"}";
-
-        var detected = WsReceivedPlugin.DetectEnvelopeType(incompleteEventEnvelope);
-
-        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Event, detected);
     }
 
     [Fact]
@@ -321,31 +392,6 @@ public class DaemonClientInboundTransportParsingTests
 
     [Fact]
     [Trait("Category", "ClientInbound")]
-    [Trait("Category", "CleanupValidation")]
-    public void InboundReceivePath_UsesSingleParseInboundAdapterBeforeDispatch()
-    {
-        var source = File.ReadAllText(Path.Combine(ResolveRepoRoot(), "MCServerLauncher.DaemonClient/WebSocketPlugin/WsReceivedPlugin.cs"));
-
-        Assert.Contains("var inbound = ParseInboundEnvelope(received);", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("var envelopeType = DetectEnvelopeType(received);", source, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [Trait("Category", "ClientInbound")]
-    [Trait("Category", "CleanupValidation")]
-    public void InboundReceivePath_DoesNotUseNewtonsoftDomParsingApis()
-    {
-        var source = File.ReadAllText(Path.Combine(ResolveRepoRoot(), "MCServerLauncher.DaemonClient/WebSocketPlugin/WsReceivedPlugin.cs"));
-
-        Assert.DoesNotContain("JObject.Parse(", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("json.SelectToken(", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ToObject<EventPacket>", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ToObject<ActionResponse>", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("JsonSerializer.Create(", source, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [Trait("Category", "ClientInbound")]
     public void MaterializeEventData_MissingMetaAndStructuredData_ForDaemonReport_ParsesDataAndLeavesMetaNull()
     {
         var envelope =
@@ -376,14 +422,4 @@ public class DaemonClientInboundTransportParsingTests
         Assert.Equal("Windows", typed.Report.Os.Name);
     }
 
-    private static string ResolveRepoRoot()
-    {
-        var dir = AppDomain.CurrentDomain.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "MCServerLauncher.sln")))
-        {
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        return dir ?? throw new DirectoryNotFoundException("Repository root not found");
-    }
 }

@@ -219,6 +219,22 @@ public class DaemonOutboundTransportSerializationTests
         AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsEventPlugin.cs", "JToken.FromObject(");
     }
 
+
+    [Fact]
+    public void WsEventPluginFile_NormalAndPreparedPaths_ShareBuildWirePayloadUtf8()
+    {
+        // Source-inspection lock: both PrivateSendEvent and PrivateSendPreparedEvent
+        // must route through BuildWirePayloadUtf8 so prepared-vs-normal output is
+        // structurally identical at the transport boundary.
+        var source = ReadSourceFile("MCServerLauncher.Daemon/Remote/WsEventPlugin.cs");
+
+        // PrivateSendEvent must call PrivateSendPreparedEvent (or BuildWirePayloadUtf8)
+        Assert.Contains("PrivateSendPreparedEvent", source, StringComparison.Ordinal);
+
+        // PrivateSendPreparedEvent must route through BuildWirePayloadUtf8
+        Assert.Contains("BuildWirePayloadUtf8", source, StringComparison.Ordinal);
+    }
+
     private static string SerializeOutbound<T>(T value)
     {
         return StjJsonSerializer.Serialize(value, DaemonRpcJsonBoundary.StjOptions);
@@ -259,5 +275,11 @@ public class DaemonOutboundTransportSerializationTests
         }
 
         return dir ?? throw new DirectoryNotFoundException("Repository root not found");
+    }
+
+    private static string ReadSourceFile(string relativePath)
+    {
+        var repoRoot = ResolveRepoRoot();
+        return File.ReadAllText(Path.Combine(repoRoot, relativePath));
     }
 }

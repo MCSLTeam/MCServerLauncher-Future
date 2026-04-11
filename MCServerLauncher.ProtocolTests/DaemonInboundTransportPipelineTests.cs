@@ -258,6 +258,116 @@ public class DaemonInboundTransportPipelineTests
             "Deserialize<ActionRequest>(text, DaemonRpcJsonBoundary.StjOptions)");
     }
 
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "CleanupValidation")]
+    public void DaemonServiceComposition_ConfigurePlugins_LocksPluginRegistrationOrder()
+    {
+        var source = ReadSourceFile("MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
+
+        // The plugin registration order in ConfigurePlugins must remain exactly:
+        //   1. FileSystemWatcherPlugin
+        //   2. HttpPlugin
+        //   3. UseWebSocket (with /api/v1)
+        //   4. WsBasePlugin
+        //   5. WsActionPlugin
+        //   6. WsEventPlugin
+        //   7. WsExpirationPlugin
+        //   8. UseDefaultHttpServicePlugin
+        var configPluginsStart = source.IndexOf("internal static void ConfigurePlugins", StringComparison.Ordinal);
+        Assert.True(configPluginsStart >= 0, "ConfigurePlugins method not found");
+
+        var configPluginsBody = source[configPluginsStart..];
+        var order = new[]
+        {
+            "Add<FileSystemWatcherPlugin>",
+            "Add<HttpPlugin>",
+            "UseWebSocket",
+            "Add<WsBasePlugin>",
+            "Add<WsActionPlugin>",
+            "Add<WsEventPlugin>",
+            "Add<WsExpirationPlugin>",
+            "UseDefaultHttpServicePlugin",
+        };
+
+        var positions = order
+            .Select(marker => configPluginsBody.IndexOf(marker, StringComparison.Ordinal))
+            .ToArray();
+
+        // All markers must be found
+        for (var i = 0; i < order.Length; i++)
+        {
+            Assert.True(positions[i] >= 0, $"Plugin marker '{order[i]}' not found in ConfigurePlugins");
+        }
+
+        // Each marker must appear after the previous one (strict order)
+        for (var i = 1; i < order.Length; i++)
+        {
+            Assert.True(positions[i] > positions[i - 1],
+                $"Plugin '{order[i]}' must appear after '{order[i - 1]}' in ConfigurePlugins");
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "CleanupValidation")]
+    public void DaemonServiceComposition_ConfigurePlugins_LocksApiV1WebsocketPathAndVerifyHandler()
+    {
+        var source = ReadSourceFile("MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
+
+        // The /api/v1 path and verify handler must remain exactly as-is
+        Assert.Contains("options.SetUrl(\"/api/v1\")", source, StringComparison.Ordinal);
+        Assert.Contains("options.SetVerifyConnection(WsVerifyHandler.VerifyHandler)", source, StringComparison.Ordinal);
+        Assert.Contains("options.SetAutoPong(true)", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    public void WsEventPlugin_OnWebSocketClosing_CallsUnsubscribeAllEvents()
+    {
+        var container = new WsContextContainer();
+        var context = container.CreateContext(
+            "close-cleanup-client",
+            Guid.Empty,
+            "*",
+            DateTime.UtcNow.AddHours(1));
+
+        context.SubscribeEvent(EventType.DaemonReport, null);
+        context.SubscribeEvent(EventType.InstanceLog, new InstanceLogEventMeta
+        {
+            InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        });
+
+        // Confirm the context is subscribed before close
+        Assert.True(context.IsSubscribedEvent(EventType.DaemonReport, null));
+        Assert.True(context.IsSubscribedEvent(EventType.InstanceLog, null));
+
+        // Simulate what WsEventPlugin.OnWebSocketClosing does
+        context.UnsubscribeAllEvents();
+
+        // After close cleanup, all subscriptions are gone
+        Assert.False(context.IsSubscribedEvent(EventType.DaemonReport, null));
+        Assert.False(context.IsSubscribedEvent(EventType.InstanceLog, null));
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "CleanupValidation")]
+    public void WsEventPluginFile_OnWebSocketClosing_DelegatesToUnsubscribeAllEvents()
+    {
+        // Source-inspection: confirm OnWebSocketClosing calls UnsubscribeAllEvents
+        AssertFileContains(
+            "MCServerLauncher.Daemon/Remote/WsEventPlugin.cs",
+            "this.GetWsContext(webSocket).UnsubscribeAllEvents()");
+    }
+
     private static JsonElement ParseElement(string json)
     {
         using var doc = JsonDocument.Parse(json);
@@ -287,6 +397,12 @@ public class DaemonInboundTransportPipelineTests
         }
 
         return dir ?? throw new DirectoryNotFoundException("Repository root not found");
+    }
+
+    private static string ReadSourceFile(string relativePath)
+    {
+        var repoRoot = ResolveRepoRoot();
+        return File.ReadAllText(Path.Combine(repoRoot, relativePath));
     }
 
     private sealed class FakeExecutor : IActionExecutor
