@@ -11,12 +11,19 @@
         <Product>MCServerLauncher Future Daemon</Product>
         <Description>Daemon for MCServerLauncher Future</Description>
         <PublishSingleFile>true</PublishSingleFile>
+        <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
         <Nullable>enable</Nullable>
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>14</LangVersion>
         <OutputType>Exe</OutputType>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(PublishTrimmed)'=='true'">
+        <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -95,7 +102,8 @@
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="false"
                           PrivateAssets="all"
-                          SetTargetFramework="TargetFramework=netstandard2.0" />
+                          SetTargetFramework="TargetFramework=netstandard2.0"
+                          GlobalPropertiesToRemove="PublishTrimmed;EnableTrimAnalyzer;TrimmerSingleWarn;RuntimeIdentifier" />
     </ItemGroup>
 
 

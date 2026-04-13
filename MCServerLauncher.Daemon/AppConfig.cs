@@ -3,6 +3,7 @@ using MCServerLauncher.Daemon.Storage;
 using Serilog;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace MCServerLauncher.Daemon;
 
@@ -19,7 +20,7 @@ internal class AppConfig
     public readonly bool Verbose;
 
     [JsonConstructor]
-    private AppConfig(
+    internal AppConfig(
         ushort port,
         string secret,
         string mainToken,
@@ -57,6 +58,8 @@ internal class AppConfig
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? UseGeneratedActionRegistry { get; }
 
+    internal static JsonTypeInfo<AppConfig> PersistenceWriteIndentedTypeInfo { get; } = ResolvePersistenceWriteIndentedTypeInfo();
+
     private static AppConfig GetDefault()
     {
         return new AppConfig(11452, GenerateRandomString(), GenerateRandomString());
@@ -84,13 +87,20 @@ internal class AppConfig
 
     private static string ConfigPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
 
+    private static JsonTypeInfo<AppConfig> ResolvePersistenceWriteIndentedTypeInfo()
+    {
+        return DaemonPersistenceJsonBoundary.StjWriteIndentedOptions.GetTypeInfo(typeof(AppConfig)) as JsonTypeInfo<AppConfig>
+               ?? throw new NotSupportedException(
+                   $"Daemon persistence boundary does not provide source-generated JsonTypeInfo for {typeof(AppConfig).FullName}.");
+    }
+
     public bool TrySave(string? path = null)
     {
         path ??= ConfigPath;
         try
         {
             File.WriteAllText(path,
-                JsonSerializer.Serialize(this, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions));
+                JsonSerializer.Serialize(this, PersistenceWriteIndentedTypeInfo));
             return true;
         }
         catch (Exception e)

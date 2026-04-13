@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.Common.ProtoType.Instance;
+﻿using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Storage;
@@ -12,6 +13,8 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.MCCleanroom, minVersion: "1.12.2", maxVersion: "1.12.2")]
 public class MCForgeFactory : ICoreInstanceFactory
 {
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        Justification = "Forge installer selection intentionally enters localized trim-incompatible installer profile parsing boundaries for third-party Forge metadata.")]
     public async Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting)
     {
         var copyAndRenameTarget = await setting.CopyAndRenameTarget();

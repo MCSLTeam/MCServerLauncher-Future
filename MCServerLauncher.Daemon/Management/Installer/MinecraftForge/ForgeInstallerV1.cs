@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.Common.ProtoType.Instance;
+﻿using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
@@ -138,6 +139,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         return await Download(url, target, info.Checksums, ct);
     }
 
+    [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     public static ForgeInstallerV1? Create(
         string installerPath,
         string? javaPath = null,
@@ -147,7 +149,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
     {
         var rv = ReadInstallerProfile(
             installerPath,
-            content => JsonConvert.DeserializeObject<ProfileFile>(content, InstallProfileJsonSettings.Settings)!
+            DeserializeInstallerProfile
         );
         if (rv is null)
         {
@@ -157,6 +159,10 @@ public class ForgeInstallerV1 : ForgeInstallerBase
 
         return new ForgeInstallerV1(rv, installerPath, javaPath, mirror);
     }
+
+    [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
+    private static ProfileFile DeserializeInstallerProfile(string content) =>
+        JsonConvert.DeserializeObject<ProfileFile>(content, InstallProfileJsonSettings.Settings)!;
 
     public record ProfileFile(InstallV1 Install, VersionInfo VersionInfo);
 }

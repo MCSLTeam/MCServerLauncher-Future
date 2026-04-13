@@ -49,8 +49,8 @@ internal static class HandleEventMetaAdapter
 
         return eventType switch
         {
-            EventType.InstanceLog => StjJsonSerializer.Deserialize<InstanceLogEventMeta>(meta.Value,
-                DaemonRpcJsonBoundary.StjOptions),
+            EventType.InstanceLog => StjJsonSerializer.Deserialize(meta.Value,
+                DaemonRpcSerializerContext.Default.InstanceLogEventMeta),
             _ => null
         };
     }

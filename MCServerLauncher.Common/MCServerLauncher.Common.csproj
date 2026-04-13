@@ -5,8 +5,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
-        <LangVersion>10</LangVersion>
-        <PublishTrimmed>false</PublishTrimmed>
+        <LangVersion>14</LangVersion>
+        <PublishTrimmed Condition="'$(PublishTrimmed)' == 'true'">false</PublishTrimmed>
     </PropertyGroup>
 
     <ItemGroup>

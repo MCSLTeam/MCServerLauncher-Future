@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Serialization;
 using StjJsonSerializer = System.Text.Json.JsonSerializer;
@@ -21,7 +22,7 @@ public class WsActionPlugin(IActionExecutor executor,
 
             if (response is not null)
             {
-                var utf8Payload = StjJsonSerializer.SerializeToUtf8Bytes(response, DaemonRpcJsonBoundary.StjOptions);
+                var utf8Payload = StjJsonSerializer.SerializeToUtf8Bytes(response, DaemonRpcTypeInfoCache<ActionResponse>.TypeInfo);
                 var frame = new WSDataFrame(utf8Payload)
                 {
                     Opcode = WSDataType.Text,

@@ -19,7 +19,7 @@ public static class ConfigCommand
                         var config = AppConfig.Get();
                         cmd.Source.SendFeedback(
                             "config.json: {0}",
-                            JsonSerializer.Serialize(config, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions)
+                            JsonSerializer.Serialize(config, AppConfig.PersistenceWriteIndentedTypeInfo)
                         );
                         return 0;
                     }))

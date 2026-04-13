@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using Serilog;
 using TouchSocket.Core;
@@ -10,6 +11,24 @@ namespace MCServerLauncher.Daemon.Remote;
 
 public class HttpPlugin : PluginBase, IHttpPlugin
 {
+    internal readonly record struct RootResponse(
+        [property: JsonPropertyName("message")]
+        string Message,
+        [property: JsonPropertyName("version")]
+        string Version,
+        [property: JsonPropertyName("status")]
+        string Status,
+        [property: JsonPropertyName("api_version")]
+        string ApiVersion);
+
+    internal readonly record struct InfoResponse(
+        [property: JsonPropertyName("name")]
+        string Name,
+        [property: JsonPropertyName("version")]
+        string Version,
+        [property: JsonPropertyName("api_version")]
+        string ApiVersion);
+
     public async Task OnHttpRequest(IHttpSessionClient client, HttpContextEventArgs e)
     {
         await HandleRequest(client, e.Context.Request.Method, e);
@@ -20,6 +39,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
         Log.Verbose("Method: {Method}, Path: {URL}", method, request.URL);
         try
         {
@@ -31,13 +51,9 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "application/json")
                             .AddHeader("Access-Control-Allow-Origin", "*")
-                            .SetContent(JsonSerializer.Serialize(new
-                            {
-                                message = "MCServerLauncher Future Daemon CSharp",
-                                version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                                status = "ok",
-                                api_version = "v1"
-                            }))
+                            .SetContent(JsonSerializer.Serialize(
+                                new RootResponse("MCServerLauncher Future Daemon CSharp", version, "ok", "v1"),
+                                HttpPluginJsonSerializerContext.Default.RootResponse))
                             .AnswerAsync();
                         break;
 
@@ -46,12 +62,9 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "application/json")
                             .AddHeader("Access-Control-Allow-Origin", "*")
-                            .SetContent(JsonSerializer.Serialize(new
-                            {
-                                name = "MCServerLauncher Future Daemon CSharp",
-                                version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                                api_version = "v1"
-                            }))
+                            .SetContent(JsonSerializer.Serialize(
+                                new InfoResponse("MCServerLauncher Future Daemon CSharp", version, "v1"),
+                                HttpPluginJsonSerializerContext.Default.InfoResponse))
                             .AnswerAsync();
                         break;
                 }
@@ -112,4 +125,11 @@ public class HttpPlugin : PluginBase, IHttpPlugin
             await response.SetStatus(500, ex.Message).AnswerAsync();
         }
     }
+}
+
+[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
+[JsonSerializable(typeof(HttpPlugin.RootResponse))]
+[JsonSerializable(typeof(HttpPlugin.InfoResponse))]
+internal partial class HttpPluginJsonSerializerContext : JsonSerializerContext
+{
 }

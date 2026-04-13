@@ -10,6 +10,7 @@ namespace MCServerLauncher.Daemon.Serialization;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 [JsonSerializable(typeof(Guid))]
+[JsonSerializable(typeof(AppConfig))]
 internal partial class DaemonPersistenceSerializerContext : JsonSerializerContext
 {
 }

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
@@ -9,8 +10,6 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 
 public static class InstanceFactoryRegistry
 {
-    private static readonly Type[] DefaultFactoryTypes = [typeof(MCUniversalFactory), typeof(MCForgeFactory)];
-
     private const string CF_TEMPLATE =
         "[InstanceFactoryRegistry] Loaded \"{0}\" as {1}(SourceType={2}); Minecraft version range: \"{3}\" ~ \"{4}\"";
 
@@ -35,13 +34,24 @@ public static class InstanceFactoryRegistry
     {
         Reset();
 
-        foreach (var type in DefaultFactoryTypes)
-        {
-            LoadFactoryFromType(type);
-        }
+        LoadFactoryFromType(GetDefaultUniversalFactoryType());
+        LoadFactoryFromType(GetDefaultForgeFactoryType());
     }
 
-    public static void LoadFactoryFromType(Type type)
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+    private static Type GetDefaultUniversalFactoryType()
+    {
+        return typeof(MCUniversalFactory);
+    }
+
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+    private static Type GetDefaultForgeFactoryType()
+    {
+        return typeof(MCForgeFactory);
+    }
+
+    public static void LoadFactoryFromType(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
     {
         var attributes = type.GetCustomAttributes<InstanceFactoryAttribute>().ToArray();
 

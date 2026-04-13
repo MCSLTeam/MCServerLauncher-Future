@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using Serilog;
@@ -64,18 +66,19 @@ internal sealed class ActionHandlerRegistrySnapshot(
 internal static class ActionHandlerRegistryRuntime
 {
     private static ActionHandlerRegistrySnapshot? _selected;
+    private const string LegacyRegistryTrimMessage =
+        "Legacy action handler discovery scans the daemon assembly for annotated handler types. Prefer the generated registry in trimmed deployments.";
 
     public static ActionHandlerRegistrySnapshot Selected =>
         _selected ?? throw new InvalidOperationException("Action handler registry has not been initialized.");
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        Justification = "Legacy action handler discovery is an explicit compatibility path that is only selected when reflection-backed registry discovery is intentionally allowed.")]
     public static ActionHandlerRegistrySnapshot CreateSelected(bool? useGeneratedActionRegistry)
     {
-        return useGeneratedActionRegistry switch
-        {
-            true => CreateGenerated(),
-            false => CreateLegacy(),
-            null => CreateGenerated()
-        };
+        return JsonSerializer.IsReflectionEnabledByDefault
+            ? useGeneratedActionRegistry is false ? CreateLegacy() : CreateGenerated()
+            : CreateGenerated();
     }
 
     public static ActionHandlerRegistrySnapshot Initialize(bool? useGeneratedActionRegistry)
@@ -89,6 +92,7 @@ internal static class ActionHandlerRegistryRuntime
         _selected = null;
     }
 
+    [RequiresUnreferencedCode(LegacyRegistryTrimMessage)]
     private static ActionHandlerRegistrySnapshot CreateLegacy()
     {
         AnotherActionHandlerRegistry.Reset();
@@ -149,7 +153,10 @@ internal static class AnotherActionHandlerRegistry
     ///     注册handler，如果handler类同时实现了同步和异步接口，那么只会注册同步接口
     /// </summary>
     /// <param name="type"></param>
-    public static void LoadHandlerFromType(Type type)
+    public static void LoadHandlerFromType(
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces)]
+        Type type)
     {
         const string template =
             "[ActionHandlerRegistry] Loaded Handler: \"{0}\" for \"{1}\", ExecuteType = {2}, Permission = {3}";
@@ -248,40 +255,7 @@ internal static class AnotherActionHandlerRegistry
         where TParam : class, IActionParameter
         where TResult : class, IActionResult
     {
-        // 构建表达式树
-        var paramTokenExpr = Expression.Parameter(typeof(JsonElement?), "paramToken");
-        var idExpr = Expression.Parameter(typeof(Guid), "id");
-        var ctxExpr = Expression.Parameter(typeof(WsContext), "ctx");
-        var resolverExpr = Expression.Parameter(typeof(IResolver), "resolver");
-        var ctExpr = Expression.Parameter(typeof(CancellationToken), "ct");
-
-        // 获取Process方法的引用
-        var processMethod = typeof(ActionHandlerExtensions)
-            .GetMethods()
-            .First(m => m.Name == "Process" && m.GetParameters().Length == 6)
-            .MakeGenericMethod(typeof(TParam), typeof(TResult));
-
-        // 构建调用表达式
-        var handlerExpr = Expression.Constant(handler);
-        var callExpr = Expression.Call(
-            processMethod,
-            handlerExpr,
-            paramTokenExpr,
-            idExpr,
-            ctxExpr,
-            resolverExpr,
-            ctExpr
-        );
-
-        // 编译为委托
-        return Expression.Lambda<Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, ActionResponse>>(
-            callExpr,
-            paramTokenExpr,
-            idExpr,
-            ctxExpr,
-            resolverExpr,
-            ctExpr
-        ).Compile();
+        return (paramToken, id, ctx, resolver, ct) => handler.Process(paramToken, id, ctx, resolver, ct);
     }
 
     /// <summary>
@@ -298,39 +272,6 @@ internal static class AnotherActionHandlerRegistry
         where TParam : class, IActionParameter
         where TResult : class, IActionResult
     {
-        // 构建表达式树
-        var paramTokenExpr = Expression.Parameter(typeof(JsonElement?), "paramToken");
-        var idExpr = Expression.Parameter(typeof(Guid), "id");
-        var ctxExpr = Expression.Parameter(typeof(WsContext), "ctx");
-        var resolverExpr = Expression.Parameter(typeof(IResolver), "resolver");
-        var ctExpr = Expression.Parameter(typeof(CancellationToken), "ct");
-
-        // 获取ProcessAsync方法的引用
-        var processAsyncMethod = typeof(ActionHandlerExtensions)
-            .GetMethods()
-            .First(m => m.Name == "ProcessAsync" && m.GetParameters().Length == 6)
-            .MakeGenericMethod(typeof(TParam), typeof(TResult));
-
-        // 构建调用表达式
-        var handlerExpr = Expression.Constant(handler);
-        var callExpr = Expression.Call(
-            processAsyncMethod,
-            handlerExpr,
-            paramTokenExpr,
-            idExpr,
-            ctxExpr,
-            resolverExpr,
-            ctExpr
-        );
-
-        // 编译为委托
-        return Expression.Lambda<Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>(
-            callExpr,
-            paramTokenExpr,
-            idExpr,
-            ctxExpr,
-            resolverExpr,
-            ctExpr
-        ).Compile();
+        return (paramToken, id, ctx, resolver, ct) => handler.ProcessAsync(paramToken, id, ctx, resolver, ct);
     }
 }

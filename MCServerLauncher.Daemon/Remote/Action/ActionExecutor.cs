@@ -88,7 +88,7 @@ internal class AnotherActionExecutor : IActionExecutor
 
             try
             {
-                var o = StjJsonSerializer.Serialize(task.Result, DaemonRpcJsonBoundary.StjOptions);
+                var o = StjJsonSerializer.Serialize(task.Result, DaemonRpcTypeInfoCache<ActionResponse>.TypeInfo);
                 Log.Verbose("[Remote] Sending message: \n{0}", o);
                 await SendAsync(task.Context, o, task.CancellationToken);
 
