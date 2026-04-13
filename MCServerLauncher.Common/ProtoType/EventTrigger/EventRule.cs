@@ -513,7 +513,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
 
             writer.WriteStartObject();
             writer.WritePropertyName("id");
-            StjJsonSerializer.Serialize(writer, value.Id, options);
+            writer.WriteStringValue(value.Id);
             writer.WriteString("type", value.Type);
 
             switch (value)
@@ -619,7 +619,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
 
             writer.WriteStartObject();
             writer.WritePropertyName("id");
-            StjJsonSerializer.Serialize(writer, value.Id, options);
+            writer.WriteStringValue(value.Id);
             writer.WriteString("type", value.Type);
 
             switch (value)
@@ -734,7 +734,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
 
             writer.WriteStartObject();
             writer.WritePropertyName("id");
-            StjJsonSerializer.Serialize(writer, value.Id, options);
+            writer.WriteStringValue(value.Id);
             writer.WriteString("type", value.Type);
 
             switch (value)

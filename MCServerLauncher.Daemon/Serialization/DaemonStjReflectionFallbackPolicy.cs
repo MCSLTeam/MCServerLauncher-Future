@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 
 namespace MCServerLauncher.Daemon.Serialization;
 
@@ -18,7 +19,7 @@ public enum DaemonStjReflectionFallbackPolicy
     Disabled,
 
     /// <summary>
-    /// Always append reflection fallback resolver.
+    /// Use reflection fallback whenever runtime reflection is enabled.
     /// </summary>
     Enabled
 }
@@ -33,13 +34,15 @@ internal static class DaemonStjReflectionFallbackPolicyExtensions
         {
             DaemonStjReflectionFallbackPolicy.TrimFriendlyDefault => IsReflectionEnabledByDefault(),
             DaemonStjReflectionFallbackPolicy.Disabled => false,
-            DaemonStjReflectionFallbackPolicy.Enabled => true,
+            DaemonStjReflectionFallbackPolicy.Enabled => IsReflectionEnabledByDefault(),
             _ => false
         };
     }
 
     private static bool IsReflectionEnabledByDefault()
     {
-        return !AppContext.TryGetSwitch(ReflectionEnabledSwitch, out var enabled) || enabled;
+        return AppContext.TryGetSwitch(ReflectionEnabledSwitch, out var enabled)
+            ? enabled
+            : JsonSerializer.IsReflectionEnabledByDefault;
     }
 }

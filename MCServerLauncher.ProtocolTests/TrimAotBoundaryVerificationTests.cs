@@ -1,10 +1,12 @@
 #if !NO_DAEMON_REFS
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Reflection;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.ProtocolTests.Helpers;
@@ -95,6 +97,13 @@ public class TrimAotBoundaryVerificationTests
         };
 
         var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        var uuidField = typeof(InstanceConfig).GetField(nameof(InstanceConfig.Uuid), BindingFlags.Public | BindingFlags.Instance);
+        var uuidProperty = typeof(InstanceConfig).GetProperty(nameof(InstanceConfig.Uuid), BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.NotNull(uuidField);
+        Assert.True(uuidField!.IsPublic);
+        Assert.Null(uuidProperty);
+
         var json = JsonSerializer.Serialize(config, options);
         var parsed = JsonSerializer.Deserialize<InstanceConfig>(json, options);
 
@@ -103,6 +112,37 @@ public class TrimAotBoundaryVerificationTests
         Assert.Equal("server.jar", parsed.Target);
         Assert.Equal(InstanceType.MCJava, parsed.InstanceType);
         Assert.Equal(TargetType.Jar, parsed.TargetType);
+    }
+
+    [Fact]
+    [Trait("Category", "TrimAot")]
+    public void PersistenceBoundary_DisabledFallback_RoundTripsAppConfigWithoutReflection()
+    {
+        var appConfigJson = """
+            {
+              "port": 11452,
+              "secret": "0123456789abcdef0123456789abcdef",
+              "main_token": "fedcba9876543210fedcba9876543210",
+              "file_download_sessions": 5,
+              "verbose": true
+            }
+            """;
+
+        var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        var appConfigType = typeof(AppConfig);
+        var typeInfo = options.TypeInfoResolver!.GetTypeInfo(appConfigType, options);
+        var parsed = JsonSerializer.Deserialize(appConfigJson, appConfigType, options);
+
+        Assert.NotNull(typeInfo);
+        Assert.NotNull(parsed);
+
+        var json = JsonSerializer.Serialize(parsed, appConfigType, options);
+        var roundTripped = JsonSerializer.Deserialize(json, appConfigType, options);
+
+        Assert.NotNull(roundTripped);
+        Assert.Equal(json, JsonSerializer.Serialize(roundTripped, appConfigType, options));
+        Assert.Contains("\"verbose\":true", json);
+        Assert.Contains("\"main_token\":\"fedcba9876543210fedcba9876543210\"", json);
     }
 
     [Fact]

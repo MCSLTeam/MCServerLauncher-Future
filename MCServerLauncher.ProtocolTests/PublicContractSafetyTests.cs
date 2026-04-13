@@ -153,6 +153,7 @@ public class PublicContractSafetyTests
         Assert.NotNull(resolver);
 
         var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        Assert.True(options.IncludeFields);
 
         var info = resolver.GetTypeInfo(typeof(Guid), options);
         Assert.NotNull(info);

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Collections.Generic;
@@ -24,11 +25,21 @@ public static class DaemonPersistenceJsonBoundary
             StjResolver.CreateDefaultResolver()
         };
 
-        if (fallbackPolicy.ShouldEnableFallback())
-            resolvers.Add(new DefaultJsonTypeInfoResolver());
+        var reflectionFallbackResolver = JsonSerializer.IsReflectionEnabledByDefault
+            ? fallbackPolicy.ShouldEnableFallback() ? CreateReflectionFallbackResolver() : null
+            : null;
+
+        if (reflectionFallbackResolver is not null)
+            resolvers.Add(reflectionFallbackResolver);
 
         return JsonTypeInfoResolver.Combine(resolvers.ToArray());
     }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        Justification = "Persistence reflection fallback is an explicit compatibility path guarded by JsonSerializer.IsReflectionEnabledByDefault and the boundary fallback policy.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Persistence reflection fallback is an explicit compatibility path guarded by JsonSerializer.IsReflectionEnabledByDefault and the boundary fallback policy.")]
+    private static DefaultJsonTypeInfoResolver CreateReflectionFallbackResolver() => new();
 
     public static bool UsesReflectionFallback(
         DaemonStjReflectionFallbackPolicy fallbackPolicy = DaemonStjReflectionFallbackPolicy.TrimFriendlyDefault)

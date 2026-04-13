@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.Common.ProtoType.Instance;
+﻿using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
@@ -13,6 +14,8 @@ using Json_Version = Json.Version;
 
 public sealed class ForgeInstallerV2 : ForgeInstallerBase
 {
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        Justification = "Forge v2 construction intentionally loads version metadata through a localized Newtonsoft-backed installer boundary.")]
     private ForgeInstallerV2(InstallV1 profile, string installerPath, string? javaPath, InstanceFactoryMirror mirror)
         : base(installerPath, javaPath, mirror)
     {
@@ -24,6 +27,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
 
     public override InstallV1 Install { get; }
 
+    [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     public static ForgeInstallerV2? Create(
         string installerPath,
         string? javaPath = null,
@@ -32,7 +36,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
     {
         var profile = ReadInstallerProfile(
             installerPath,
-            content => JsonConvert.DeserializeObject<InstallV1>(content, InstallProfileJsonSettings.Settings)!
+            DeserializeInstallerProfile
         );
         if (profile is null)
         {
@@ -42,6 +46,10 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
 
         return new ForgeInstallerV2(profile, installerPath, javaPath, mirror);
     }
+
+    [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
+    private static InstallV1 DeserializeInstallerProfile(string content) =>
+        JsonConvert.DeserializeObject<InstallV1>(content, InstallProfileJsonSettings.Settings)!;
 
     public override async Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default)
     {

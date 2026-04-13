@@ -11,7 +11,10 @@ public class Error
 
     public virtual string Cause => ProtectedCause ?? CausedException?.Message ?? "Error occurred";
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public Exception? CausedException { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
     public Error? InnerError { get; set; }
 
     public static Error FromException(Exception exception)

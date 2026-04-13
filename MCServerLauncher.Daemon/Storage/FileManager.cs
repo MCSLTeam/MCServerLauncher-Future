@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Text;
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Files;
@@ -30,6 +31,14 @@ internal static class FileManager
 
     private static readonly ConcurrentDictionary<Guid, FileDownloadInfo> DownloadSessions = new();
     private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
+    private static readonly JsonSerializerOptions PersistenceSourceGenReadOptions =
+        DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+
+    private static readonly JsonSerializerOptions PersistenceSourceGenWriteIndentedOptions =
+        DaemonPersistenceJsonBoundary.CreateStjOptions(
+            DaemonStjReflectionFallbackPolicy.Disabled,
+            writeIndented: true);
+
     private static Timer? _sessionCleanerTimer;
 
     public static void StartFileSessionsWatcher()
@@ -500,7 +509,7 @@ internal static class FileManager
     /// <returns></returns>
     public static T? ReadJson<T>(string path)
     {
-        return JsonSerializer.Deserialize<T>(ReadText(path), DaemonPersistenceJsonBoundary.StjOptions);
+        return JsonSerializer.Deserialize(ReadText(path), FileManagerPersistenceTypeInfoCache<T>.ReadTypeInfo);
     }
 
     /// <summary>
@@ -519,7 +528,7 @@ internal static class FileManager
         catch (FileNotFoundException)
         {
             var invoke = defaultFactory.Invoke();
-            File.WriteAllText(path, JsonSerializer.Serialize(invoke, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions));
+            File.WriteAllText(path, JsonSerializer.Serialize(invoke, FileManagerPersistenceTypeInfoCache<T>.WriteTypeInfo));
             return invoke;
         }
     }
@@ -548,20 +557,48 @@ internal static class FileManager
     {
         BackupAndWriteText(
             path,
-            JsonSerializer.Serialize(obj, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions),
+            JsonSerializer.Serialize(obj, FileManagerPersistenceTypeInfoCache<T>.WriteTypeInfo),
             content =>
             {
                 try
                 {
-                    JsonSerializer.Deserialize<T>(content, DaemonPersistenceJsonBoundary.StjOptions);
+                    JsonSerializer.Deserialize(content, FileManagerPersistenceTypeInfoCache<T>.ReadTypeInfo);
                     return true;
                 }
-                catch (Exception)
+                catch (JsonException)
                 {
                     return false;
                 }
             }
         );
+    }
+
+    private static class FileManagerPersistenceTypeInfoCache<T>
+    {
+        private static readonly JsonTypeInfo<T>? _readTypeInfo = TryResolve(PersistenceSourceGenReadOptions);
+        private static readonly JsonTypeInfo<T>? _writeTypeInfo = TryResolve(PersistenceSourceGenWriteIndentedOptions);
+
+        public static JsonTypeInfo<T> ReadTypeInfo => _readTypeInfo ?? throw CreateMissingTypeInfoException();
+        public static JsonTypeInfo<T> WriteTypeInfo => _writeTypeInfo ?? throw CreateMissingTypeInfoException();
+
+        private static JsonTypeInfo<T>? TryResolve(JsonSerializerOptions options)
+        {
+            try
+            {
+                return options.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
+        }
+
+        private static NotSupportedException CreateMissingTypeInfoException()
+        {
+            return new NotSupportedException(
+                $"FileManager persistence helpers require source-generated JsonTypeInfo for {typeof(T).FullName ?? typeof(T).Name}. "
+                + "Register the type in daemon/common persistence serializer contexts before using these generic APIs.");
+        }
     }
 
     public static bool TryRemove(string path, bool recursive = true)

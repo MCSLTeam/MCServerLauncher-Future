@@ -1,5 +1,7 @@
 using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.Internal.Performance;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -65,14 +67,16 @@ public static class ResponseUtils
         );
     }
 
-    private static JsonElement ToJsonElement(object? value)
+    private static JsonElement ToJsonElement(IActionResult? value)
     {
         if (value is null)
             return default;
 
-        return StjJsonSerializer.SerializeToElement(value, DaemonRpcJsonBoundary.StjOptions);
+        var typeInfo = ActionResultsContext.Default.GetTypeInfo(value.GetType());
+        return StjJsonSerializer.SerializeToElement(value, typeInfo!);
     }
 
-    private static readonly JsonElement EmptyObject = StjJsonSerializer.SerializeToElement(new EmptyActionResult(),
-        DaemonRpcJsonBoundary.StjOptions);
+    private static readonly JsonElement EmptyObject = JsonElementHotPathAdapters.SerializeToElement(
+        new EmptyActionResult(),
+        ActionResultsContext.Default.EmptyActionResult);
 }

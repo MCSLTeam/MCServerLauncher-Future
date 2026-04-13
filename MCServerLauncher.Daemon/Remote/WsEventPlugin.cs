@@ -4,6 +4,7 @@ using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Serialization;
 using StjJsonSerializer = System.Text.Json.JsonSerializer;
+using JsonElement = System.Text.Json.JsonElement;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
@@ -107,7 +108,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
             EventMeta = eventMeta,
             EventData = eventData
         };
-        return StjJsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcJsonBoundary.StjOptions);
+        return StjJsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcTypeInfoCache<EventPacket>.TypeInfo);
     }
 
     private static async ValueTask SendTextFrameAsync(IWebSocket webSocket, byte[] utf8Payload)
@@ -124,7 +125,18 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         if (payload is null)
             return null;
 
-        var element = StjJsonSerializer.SerializeToElement(payload, DaemonRpcJsonBoundary.StjOptions);
-        return new JsonPayloadBuffer(element);
+        return payload switch
+        {
+            JsonPayloadBuffer buffer => buffer,
+            JsonElement element => new JsonPayloadBuffer(element.Clone()),
+            InstanceLogEventMeta value => new JsonPayloadBuffer(
+                StjJsonSerializer.SerializeToElement(value, EventDataContext.Default.InstanceLogEventMeta)),
+            InstanceLogEventData value => new JsonPayloadBuffer(
+                StjJsonSerializer.SerializeToElement(value, EventDataContext.Default.InstanceLogEventData)),
+            DaemonReportEventData value => new JsonPayloadBuffer(
+                StjJsonSerializer.SerializeToElement(value, EventDataContext.Default.DaemonReportEventData)),
+            _ => throw new NotSupportedException(
+                $"WsEventPlugin does not have source-generated JSON metadata for payload type {payload.GetType().FullName}.")
+        };
     }
 }
