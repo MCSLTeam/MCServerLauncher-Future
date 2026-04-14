@@ -61,4 +61,9 @@ internal class ConnectionPendingRequests
     {
         _closed = true;
     }
+
+    public ConnectionPendingRequests CreateFreshInstance()
+    {
+        return new ConnectionPendingRequests(Size);
+    }
 }

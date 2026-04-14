@@ -22,32 +22,16 @@ jobs:
         id: benchmark_project
         shell: pwsh
         run: |
-          $project = Get-ChildItem -Path . -Recurse -Include *.csproj |
-            Where-Object { $_.Name -match 'Benchmark' } |
-            Select-Object -First 1
-
-          if ($null -eq $project) {
-            "found=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-            exit 0
-          }
-
-          "found=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "path=$($project.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $project = & ".github/scripts/Find-BenchmarkProject.ps1" -Root "."
+          "path=$project" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Restore benchmark project
-        if: steps.benchmark_project.outputs.found == 'true'
         run: dotnet restore "${{ steps.benchmark_project.outputs.path }}"
 
       - name: Run benchmarks (Release)
-        if: steps.benchmark_project.outputs.found == 'true'
         run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --artifacts ./BenchmarkDotNet.Artifacts
 
-      - name: Note missing benchmark project
-        if: steps.benchmark_project.outputs.found != 'true'
-        run: Write-Host "No benchmark project found. Workflow completed without running benchmarks."
-
       - name: Upload benchmark artifacts
-        if: steps.benchmark_project.outputs.found == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-artifacts

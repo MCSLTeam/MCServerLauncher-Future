@@ -296,6 +296,56 @@ public class DaemonClientTransportModernizationTests
 
     [Fact]
     [Trait("Category", "DaemonClientTransportModernization")]
+    public async Task Reconnected_ReplaysSubscriptionsBeforeUserNotification()
+    {
+        var connection = CreateOfflineConnection();
+
+        InvokeTransportConnectionReconnected(connection);
+
+        connection.SubscribedEvents.EventSet.Add((EventType.InstanceLog,
+            new InstanceLogEventMeta { InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa") }));
+
+        var userNotification = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.Reconnected += () =>
+        {
+            Assert.Empty(connection.SubscribedEvents.EventSet);
+            userNotification.TrySetResult();
+        };
+
+        InvokeTransportConnectionReconnected(connection);
+
+        await userNotification.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonClientTransportModernization")]
+    public async Task Reconnected_UserHandlerException_DoesNotSkipInternalReplay()
+    {
+        var connection = CreateOfflineConnection();
+
+        InvokeTransportConnectionReconnected(connection);
+
+        connection.SubscribedEvents.EventSet.Add((EventType.InstanceLog,
+            new InstanceLogEventMeta { InstanceId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb") }));
+
+        var userHandlerInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.Reconnected += () =>
+        {
+            userHandlerInvoked.TrySetResult();
+            throw new InvalidOperationException("user reconnect handler failed");
+        };
+
+        InvokeTransportConnectionReconnected(connection);
+
+        await userHandlerInvoked.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await Task.Delay(100);
+
+        Assert.Empty(connection.SubscribedEvents.EventSet);
+        Assert.Empty(connection.SubscribedEvents.Events);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonClientTransportModernization")]
     public async Task ConnectionLost_CancelsPendingResponses_AndClosesPendingSlots()
     {
         var connection = CreateOfflineConnection(new ClientConnectionConfig
@@ -322,6 +372,97 @@ public class DaemonClientTransportModernizationTests
         Assert.False(pendingRequests.TryGetPending(requestId, out _));
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await pendingRequests.AddPendingAsync(Guid.NewGuid(), new TaskCompletionSource<ActionResponse>(), timeout: 1000));
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonClientTransportModernization")]
+    public async Task ConnectionLost_CancelsInFlightRequest_ButPostReconnectRequestSucceeds()
+    {
+        var connection = CreateOfflineConnection(new ClientConnectionConfig
+        {
+            HeartBeat = false,
+            HeartBeatTick = TimeSpan.FromMilliseconds(50),
+            MaxFailCount = 1,
+            PendingRequestCapacity = 1,
+            PingTimeout = 100
+        });
+
+        var lostPendingRequests = GetPendingRequests(connection);
+        var pendingResponses = GetPendingResponses(connection);
+        var requestId = Guid.Parse("bbbbbbbb-1111-2222-3333-444444444444");
+        var pendingTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Assert.True(await lostPendingRequests.AddPendingAsync(requestId, pendingTcs, timeout: 1000));
+        Assert.True(pendingResponses.TryAdd(requestId, pendingTcs));
+
+        InvokeTransportConnectionLost(connection);
+        InvokeTransportConnectionReconnected(connection);
+
+        Assert.True(pendingTcs.Task.IsCanceled);
+        var postReconnectPendingRequests = GetPendingRequests(connection);
+        Assert.NotSame(lostPendingRequests, postReconnectPendingRequests);
+
+        var postReconnectRequestId = Guid.Parse("bbbbbbbb-5555-6666-7777-888888888888");
+        var postReconnectTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Assert.True(await postReconnectPendingRequests.AddPendingAsync(postReconnectRequestId, postReconnectTcs, timeout: 1000));
+        Assert.True(pendingResponses.TryAdd(postReconnectRequestId, postReconnectTcs));
+
+        pendingResponses.TryRemove(postReconnectRequestId, out _);
+        postReconnectPendingRequests.TryRemovePending(postReconnectRequestId, out _);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonClientTransportModernization")]
+    public async Task RepeatedReconnect_DoesNotBrickFutureRequests()
+    {
+        var connection = CreateOfflineConnection(new ClientConnectionConfig
+        {
+            HeartBeat = false,
+            HeartBeatTick = TimeSpan.FromMilliseconds(50),
+            MaxFailCount = 1,
+            PendingRequestCapacity = 1,
+            PingTimeout = 100
+        });
+
+        var pendingResponses = GetPendingResponses(connection);
+
+        var firstPendingRequests = GetPendingRequests(connection);
+        var firstId = Guid.Parse("cccccccc-1111-2222-3333-444444444444");
+        var firstTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Assert.True(await firstPendingRequests.AddPendingAsync(firstId, firstTcs, timeout: 1000));
+        Assert.True(pendingResponses.TryAdd(firstId, firstTcs));
+
+        InvokeTransportConnectionLost(connection);
+
+        Assert.True(firstTcs.Task.IsCanceled);
+        var secondPendingRequests = GetPendingRequests(connection);
+        Assert.NotSame(firstPendingRequests, secondPendingRequests);
+
+        InvokeTransportConnectionReconnected(connection);
+
+        var secondId = Guid.Parse("cccccccc-5555-6666-7777-888888888888");
+        var secondTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Assert.True(await secondPendingRequests.AddPendingAsync(secondId, secondTcs, timeout: 1000));
+        Assert.True(pendingResponses.TryAdd(secondId, secondTcs));
+
+        InvokeTransportConnectionLost(connection);
+        Assert.True(secondTcs.Task.IsCanceled);
+        InvokeTransportConnectionReconnected(connection);
+
+        var thirdPendingRequests = GetPendingRequests(connection);
+        Assert.NotSame(secondPendingRequests, thirdPendingRequests);
+
+        var thirdId = Guid.Parse("cccccccc-9999-aaaa-bbbb-cccccccccccc");
+        var thirdTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Assert.True(await thirdPendingRequests.AddPendingAsync(thirdId, thirdTcs, timeout: 1000));
+        Assert.True(pendingResponses.TryAdd(thirdId, thirdTcs));
+
+        pendingResponses.TryRemove(thirdId, out _);
+        thirdPendingRequests.TryRemovePending(thirdId, out _);
     }
 
     [Fact]
@@ -448,6 +589,18 @@ public class DaemonClientTransportModernizationTests
         var transport = transportField.GetValue(connection) ?? throw new InvalidOperationException("Transport was null.");
         var method = transport.GetType().GetMethod("OnConnectionLost", BindingFlags.Instance | BindingFlags.NonPublic)
                      ?? throw new MissingMethodException(transport.GetType().FullName, "OnConnectionLost");
+
+        method.Invoke(transport, null);
+    }
+
+    private static void InvokeTransportConnectionReconnected(ClientConnection connection)
+    {
+        var transportField = typeof(ClientConnection).GetField("_transport", BindingFlags.Instance | BindingFlags.NonPublic)
+                             ?? throw new MissingFieldException(typeof(ClientConnection).FullName, "_transport");
+        var transport = transportField.GetValue(connection) ?? throw new InvalidOperationException("Transport was null.");
+
+        var method = transport.GetType().GetMethod("OnConnected", BindingFlags.Instance | BindingFlags.NonPublic)
+                     ?? throw new MissingMethodException(transport.GetType().FullName, "OnConnected");
 
         method.Invoke(transport, null);
     }

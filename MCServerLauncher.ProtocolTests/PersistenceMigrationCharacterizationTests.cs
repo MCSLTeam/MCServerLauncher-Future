@@ -92,6 +92,50 @@ public class PersistenceMigrationCharacterizationTests
 
     [Fact]
     [Trait("Category", "PersistenceGolden")]
+    public void InstanceConfig_MissingRequiredProperty_ThrowsJsonException_FromFileManager()
+    {
+        var path = CreateTempFile("""
+                                 {
+                                   "name": "missing-target",
+                                   "instance_type": "mc_vanilla",
+                                   "target_type": "jar"
+                                 }
+                                 """);
+
+        try
+        {
+            var ex = Assert.ThrowsAny<Exception>(() => InvokeReadJsonMethod<InstanceConfig>(path));
+            var root = UnwrapInvocationException(ex);
+            Assert.IsType<JsonException>(root);
+            Assert.Contains("target", root.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "PersistenceGolden")]
+    public void InstanceConfig_NullRequiredProperty_IsAccepted_FromFileManager()
+    {
+        var parsed = ReadJsonWithFileManager("""
+                                             {
+                                               "name": null,
+                                               "target": "server.jar",
+                                               "instance_type": "mc_vanilla",
+                                               "target_type": "jar"
+                                             }
+                                             """);
+
+        Assert.Null(parsed.Name);
+        Assert.Equal("server.jar", parsed.Target);
+        Assert.Equal(InstanceType.MCVanilla, parsed.InstanceType);
+        Assert.Equal(TargetType.Jar, parsed.TargetType);
+    }
+
+    [Fact]
+    [Trait("Category", "PersistenceGolden")]
     public void PersistenceGolden_ReadJsonOr_MissingFile_WritesDefaultAndReturnsIt()
     {
         var path = Path.Combine(Path.GetTempPath(), $"readjsonor-missing-{Guid.NewGuid():N}.json");
