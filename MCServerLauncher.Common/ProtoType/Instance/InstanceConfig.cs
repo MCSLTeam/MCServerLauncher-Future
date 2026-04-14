@@ -1,5 +1,6 @@
 using System.Text;
 using Newtonsoft.Json;
+using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
 using SysTextJsonPropertyName = System.Text.Json.Serialization.JsonPropertyNameAttribute;
 
 namespace MCServerLauncher.Common.ProtoType.Instance;
@@ -20,12 +21,14 @@ public record InstanceConfig
     ///     服务器名称
     /// </summary>
     [JsonProperty(Required = Required.Always)]
+    [SysTextJsonRequired]
     public string Name { get; init; } = null!;
 
     /// <summary>
     ///     服务器启动目标(jar文件名, 脚本文件名, 可执行文件名)
     /// </summary>
     [JsonProperty(Required = Required.Always)]
+    [SysTextJsonRequired]
     public string Target { get; init; } = null!;
 
     /// <summary>
@@ -33,12 +36,14 @@ public record InstanceConfig
     ///     如果不为MC服务器/Terraria/Steam, 则因置为<see cref="InstanceType.Universal" />
     /// </summary>
     [JsonProperty(Required = Required.Always)]
+    [SysTextJsonRequired]
     public InstanceType InstanceType { get; init; }
 
     /// <summary>
     ///     服务器启动目标类型(jar, script[bat, sh], executable)
     /// </summary>
     [JsonProperty(Required = Required.Always)]
+    [SysTextJsonRequired]
     public TargetType TargetType { get; init; }
 
     #endregion

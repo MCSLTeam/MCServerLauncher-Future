@@ -22,7 +22,7 @@ internal class ClientConnection : DisposableObject
     private const int CF_PROTOCOL_VERSION = 1;
 
     private readonly CancellationTokenSource _cts;
-    private readonly ConnectionPendingRequests _pendingRequests;
+    private ConnectionPendingRequests _pendingRequests;
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendingResponses = new();
     private readonly TouchSocketClientTransport _transport;
 
@@ -37,19 +37,28 @@ internal class ClientConnection : DisposableObject
         _transport.ActionResponseReceived += HandleActionResponse;
         _transport.Reconnected += async () =>
         {
-            Reconnected?.Invoke();
             await OnReconnectedEventHandler();
+            try
+            {
+                Reconnected?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "[ClientConnection] Reconnected handler failed");
+            }
         };
         _transport.ConnectionLost += () =>
         {
-            _pendingRequests.Close();
-            CancelPendingResponses();
+            var pendingRequests = _pendingRequests;
+            pendingRequests.Close();
+            CancelPendingResponses(pendingRequests);
+            _pendingRequests = pendingRequests.CreateFreshInstance();
             ConnectionLost?.Invoke();
         };
         _transport.ConnectionClosed += () =>
         {
             _pendingRequests.Close();
-            CancelPendingResponses();
+            CancelPendingResponses(_pendingRequests);
             ConnectionClosed?.Invoke();
         };
     }
@@ -317,12 +326,12 @@ internal class ClientConnection : DisposableObject
         return false;
     }
 
-    private void CancelPendingResponses()
+    private void CancelPendingResponses(ConnectionPendingRequests pendingRequests)
     {
         foreach (var pending in _pendingResponses)
             if (_pendingResponses.TryRemove(pending.Key, out var taskCompletionSource))
             {
-                _pendingRequests.TryRemovePending(pending.Key, out _);
+                pendingRequests.TryRemovePending(pending.Key, out _);
                 taskCompletionSource.TrySetCanceled();
             }
     }
