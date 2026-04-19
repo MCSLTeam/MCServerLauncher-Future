@@ -28,8 +28,8 @@ public class DaemonClientTransportPerformanceGateTests
     private static readonly Guid FixedResponseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     private const double MaxRegressionRatio = 0.20;
-    private const int WarmupSamples = 4;
-    private const int MeasuredSamples = 7;
+    private const int WarmupSamples = 8;
+    private const int MeasuredSamples = 15;
 
     private static readonly ClientPathBaseline OutboundRequestSerializeBaseline = new(
         NanosecondsPerOperation: 3211.47,
@@ -125,15 +125,15 @@ public class DaemonClientTransportPerformanceGateTests
     [Trait("Category", "DaemonClientPerformanceGate")]
     public void PerfGate_DaemonClientInboundActionResponseParse_DoesNotRegressMoreThanTwentyPercent()
     {
-        var actionResponseJson = File.ReadAllText(Path.Combine(RpcFixturePaths.ActionResponseDir, "success-typed-data.json"));
-        if (ParseActionResponse(actionResponseJson).Id == Guid.Empty)
+        var actionResponseBytes = File.ReadAllBytes(Path.Combine(RpcFixturePaths.ActionResponseDir, "success-typed-data.json"));
+        if (ParseActionResponse(actionResponseBytes).Id == Guid.Empty)
             throw new InvalidOperationException("DaemonClient inbound perf gate precheck produced an empty correlation id.");
 
         const int operationsPerSample = 4_000;
         var measurement = PerformanceGateHarness.Measure(
             operation: () =>
             {
-                if (ParseActionResponse(actionResponseJson).Id == Guid.Empty)
+                if (ParseActionResponse(actionResponseBytes).Id == Guid.Empty)
                     throw new InvalidOperationException("DaemonClient inbound perf sample produced an empty correlation id.");
             },
             operationsPerSample: operationsPerSample,
@@ -247,8 +247,8 @@ public class DaemonClientTransportPerformanceGateTests
         if (!parsedRequest.IsOk(out var daemonRequest) || daemonRequest.ActionType != ActionType.Ping)
             throw new InvalidOperationException("DaemonClient action round-trip replay failed at the daemon request parse seam.");
 
-        var responseWireJson = StjJsonSerializer.Serialize(response, DaemonRpcJsonBoundary.StjOptions);
-        var parsedResponse = ParseActionResponse(responseWireJson);
+        var responseWireBytes = StjJsonSerializer.SerializeToUtf8Bytes(response, DaemonRpcJsonBoundary.StjOptions);
+        var parsedResponse = ParseActionResponse(responseWireBytes);
         if (parsedResponse.RequestStatus != ActionRequestStatus.Ok)
             throw new InvalidOperationException("DaemonClient action round-trip replay failed at the client response parse seam.");
 
@@ -257,8 +257,8 @@ public class DaemonClientTransportPerformanceGateTests
 
     private static string RunDaemonEventRoundTrip(EventPacket packet)
     {
-        var wireJson = StjJsonSerializer.Serialize(packet, DaemonRpcJsonBoundary.StjOptions);
-        var parsedPacket = ParseEventPacket(wireJson);
+        var wireBytes = StjJsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcJsonBoundary.StjOptions);
+        var parsedPacket = ParseEventPacket(wireBytes);
         var data = MaterializeEventData(parsedPacket.EventType, parsedPacket.EventData);
         if (data is not InstanceLogEventData instanceLog)
             throw new InvalidOperationException("Daemon event round-trip replay failed to materialize an instance-log payload.");
@@ -271,14 +271,14 @@ public class DaemonClientTransportPerformanceGateTests
         return ClientConnection.SerializeActionRequestForTransport(request);
     }
 
-    private static ActionResponse ParseActionResponse(string received)
+    private static ActionResponse ParseActionResponse(ReadOnlyMemory<byte> received)
     {
-        return WsReceivedPlugin.ParseActionResponse(received);
+        return WsReceivedPlugin.ParseActionResponseFromBytes(received);
     }
 
-    private static EventPacket ParseEventPacket(string received)
+    private static EventPacket ParseEventPacket(ReadOnlyMemory<byte> received)
     {
-        return WsReceivedPlugin.ParseEventPacket(received);
+        return WsReceivedPlugin.ParseEventPacketFromBytes(received);
     }
 
     private static IEventData? MaterializeEventData(EventType eventType, JsonPayloadBuffer? data)

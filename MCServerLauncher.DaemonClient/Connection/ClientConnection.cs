@@ -171,11 +171,12 @@ internal class ClientConnection : DisposableObject
 
     internal static byte[] SerializeActionRequestForTransport(ActionRequest request)
     {
+        var typeInfo = DaemonClientRpcTypeInfoCache<ActionRequest>.TypeInfo;
         if (!DaemonClientTransportInstrumentationScope.TryGetCurrent(out var instrumentation))
-            return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, RpcStjOptions);
+            return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, typeInfo);
 
         var startTimestamp = Stopwatch.GetTimestamp();
-        var payload = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, RpcStjOptions);
+        var payload = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, typeInfo);
         instrumentation.OnOutboundSerialize(
             DaemonClientTransportStopwatch.GetElapsedTime(startTimestamp),
             payload.Length);

@@ -15,6 +15,16 @@ public static class DaemonClientRpcJsonBoundary
 {
     public static readonly JsonSerializerOptions StjOptions = CreateStjOptions();
 
+    /// <summary>
+    ///     STJ options with reflection fallback explicitly disabled.
+    ///     Used by <see cref="DaemonClientRpcTypeInfoCache{T}" /> to guarantee that only types
+    ///     registered in Common or DaemonClient source-generated contexts are resolvable.
+    ///     Unknown types throw <see cref="NotSupportedException" /> rather than silently
+    ///     falling back to reflection.
+    /// </summary>
+    public static readonly JsonSerializerOptions SourceGenStjOptions =
+        CreateStjOptions(DaemonClientStjReflectionFallbackPolicy.Disabled);
+
     public static IJsonTypeInfoResolver CreateStjResolver(
         DaemonClientStjReflectionFallbackPolicy fallbackPolicy = DaemonClientStjReflectionFallbackPolicy.TrimFriendlyDefault)
     {
