@@ -45,12 +45,8 @@ internal static class HandleEventMetaAdapter
 {
     public static IEventMeta? GetEventMeta(EventType eventType, JsonElement? meta)
     {
-        if (meta is null)
+        if (meta is null || meta.Value.ValueKind == JsonValueKind.Null)
             return null;
-
-        if (meta.Value.ValueKind == JsonValueKind.Null)
-            throw new JsonException(
-                $"Event type {eventType} received an explicit JSON null meta; expected a non-null meta object.");
 
         return eventType switch
         {

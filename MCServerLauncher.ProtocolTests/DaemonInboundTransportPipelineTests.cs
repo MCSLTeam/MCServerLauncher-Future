@@ -197,11 +197,11 @@ public class DaemonInboundTransportPipelineTests
     [Fact]
     [Trait("Category", "Inbound")]
     [Trait("Category", "DaemonInbound")]
-    public void HandleEventMetaAdapter_NullLiteralMeta_ThrowsJsonException()
+    public void HandleEventMetaAdapter_NullLiteralMeta_ReturnsNull()
     {
         var meta = ParseElement("null");
-        Assert.Throws<System.Text.Json.JsonException>(() =>
-            HandleEventMetaAdapter.GetEventMeta(EventType.InstanceLog, meta));
+        var result = HandleEventMetaAdapter.GetEventMeta(EventType.InstanceLog, meta);
+        Assert.Null(result);
     }
 
     [Fact]

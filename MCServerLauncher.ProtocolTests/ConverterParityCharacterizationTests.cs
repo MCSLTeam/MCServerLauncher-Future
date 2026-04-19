@@ -211,14 +211,12 @@ public class ConverterParityCharacterizationTests
         Assert.Null(missingMeta);
 
         var explicitNullMeta = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
-        var metaException = Assert.Throws<ArgumentException>(() =>
-            EventType.InstanceLog.GetEventMeta(explicitNullMeta));
-        Assert.Contains("explicit json null", metaException.Message, StringComparison.OrdinalIgnoreCase);
+        var nullMetaResult = EventType.InstanceLog.GetEventMeta(explicitNullMeta);
+        Assert.Null(nullMetaResult);
 
         var explicitNullData = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
-        var dataException = Assert.Throws<ArgumentException>(() =>
-            EventType.DaemonReport.GetEventData(explicitNullData));
-        Assert.Contains("explicit json null", dataException.Message, StringComparison.OrdinalIgnoreCase);
+        var nullDataResult = EventType.DaemonReport.GetEventData(explicitNullData);
+        Assert.Null(nullDataResult);
     }
 
     [Fact]
