@@ -154,8 +154,7 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     {
         return eventType switch
         {
-            EventType.InstanceLog when metaToken is null => null,
-            EventType.InstanceLog when metaToken.Value.IsExplicitJsonNull => throw new ArgumentException("event meta payload is explicit json null"),
+            EventType.InstanceLog when metaToken is null || metaToken.Value.IsExplicitJsonNull => null,
             EventType.InstanceLog => System.Text.Json.JsonSerializer.Deserialize<InstanceLogEventMeta>(
                 metaToken!.Value.Value,
                 DaemonClientRpcJsonBoundary.StjOptions),
@@ -182,13 +181,11 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     {
         IEventData? data = eventType switch
         {
-            EventType.InstanceLog when dataToken is null => null,
-            EventType.InstanceLog when dataToken.Value.IsExplicitJsonNull => throw new ArgumentException("event data payload is explicit json null"),
+            EventType.InstanceLog when dataToken is null || dataToken.Value.IsExplicitJsonNull => null,
             EventType.InstanceLog => System.Text.Json.JsonSerializer.Deserialize<InstanceLogEventData>(
                 dataToken!.Value.Value,
                 DaemonClientRpcJsonBoundary.StjOptions),
-            EventType.DaemonReport when dataToken is null => null,
-            EventType.DaemonReport when dataToken.Value.IsExplicitJsonNull => throw new ArgumentException("event data payload is explicit json null"),
+            EventType.DaemonReport when dataToken is null || dataToken.Value.IsExplicitJsonNull => null,
             EventType.DaemonReport => System.Text.Json.JsonSerializer.Deserialize<DaemonReportEventData>(
                 dataToken!.Value.Value,
                 DaemonClientRpcJsonBoundary.StjOptions),
