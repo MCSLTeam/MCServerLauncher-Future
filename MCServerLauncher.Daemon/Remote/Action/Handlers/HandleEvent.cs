@@ -3,6 +3,7 @@ using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using System.Text.Json;
 using StjJsonSerializer = System.Text.Json.JsonSerializer;
 using TouchSocket.Core;
 
@@ -42,10 +43,14 @@ internal class HandleUnsubscribeEvent : IActionHandler<UnsubscribeEventParameter
 
 internal static class HandleEventMetaAdapter
 {
-    public static IEventMeta? GetEventMeta(EventType eventType, System.Text.Json.JsonElement? meta)
+    public static IEventMeta? GetEventMeta(EventType eventType, JsonElement? meta)
     {
         if (meta is null)
             return null;
+
+        if (meta.Value.ValueKind == JsonValueKind.Null)
+            throw new JsonException(
+                $"Event type {eventType} received an explicit JSON null meta; expected a non-null meta object.");
 
         return eventType switch
         {

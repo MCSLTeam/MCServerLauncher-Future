@@ -200,8 +200,8 @@ public class DaemonInboundTransportPipelineTests
     public void HandleEventMetaAdapter_NullLiteralMeta_ThrowsJsonException()
     {
         var meta = ParseElement("null");
-        var parsed = HandleEventMetaAdapter.GetEventMeta(EventType.InstanceLog, meta);
-        Assert.Null(parsed);
+        Assert.Throws<System.Text.Json.JsonException>(() =>
+            HandleEventMetaAdapter.GetEventMeta(EventType.InstanceLog, meta));
     }
 
     [Fact]
