@@ -24,8 +24,8 @@ public class GeneratedRegistryPerformanceGateTests
     private const int MeasuredSamples = 9;
     private const double StartupTimeRatioThreshold = 0.80;
     private const double StartupAllocationRatioThreshold = 0.25;
-    // SENTINEL: awaiting CI ratio measurement (CI measured 1.212, threshold was 1.05)
-    private const double DispatchTimeRatioThreshold = 2.0;
+    // CI-measured ratio 0.966 (noisy run: 1.212). 1.30 gives ~35% margin for runner variance
+    private const double DispatchTimeRatioThreshold = 1.30;
     private const double DispatchAllocationOverheadThreshold = 32;
 
     [Fact]
