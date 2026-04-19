@@ -244,6 +244,8 @@ public class GeneratedRegistryPerformanceGateTests
     {
         var ratio = generated.NanosecondsPerOperation / legacy.NanosecondsPerOperation;
 
+        Console.WriteLine($"[PERF] {scenarioName}: generated {generated.NanosecondsPerOperation:F2} ns/op vs legacy {legacy.NanosecondsPerOperation:F2} ns/op (ratio {ratio:F3}, threshold {maxRatio:F3})");
+
         Assert.True(
             ratio <= maxRatio,
             $"Perf regression for {scenarioName}: generated {generated.NanosecondsPerOperation:F2} ns/op vs legacy {legacy.NanosecondsPerOperation:F2} ns/op (ratio {ratio:F3}, threshold {maxRatio:F3}).");

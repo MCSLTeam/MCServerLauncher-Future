@@ -298,6 +298,8 @@ public class DaemonClientTransportPerformanceGateTests
         var maxTime = baseline.NanosecondsPerOperation * (1 + MaxRegressionRatio);
         var maxAlloc = baseline.AllocatedBytesPerOperation * (1 + MaxRegressionRatio);
 
+        Console.WriteLine($"[PERF] {scenarioName}: {actual.NanosecondsPerOperation:F2} ns/op (baseline {baseline.NanosecondsPerOperation:F2}, max {maxTime:F2}) | {actual.AllocatedBytesPerOperation:F2} B/op (baseline {baseline.AllocatedBytesPerOperation:F2}, max {maxAlloc:F2})");
+
         Assert.True(
             actual.NanosecondsPerOperation <= maxTime,
             $"Perf regression for {scenarioName}: {actual.NanosecondsPerOperation:F2} ns/op > {maxTime:F2} ns/op (baseline {baseline.NanosecondsPerOperation:F2}, threshold {MaxRegressionRatio:P0}).");
