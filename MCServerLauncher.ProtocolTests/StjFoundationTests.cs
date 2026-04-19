@@ -26,7 +26,8 @@ public class StjFoundationTests
         var options = StjResolver.CreateDefaultOptions();
         Assert.NotNull(options);
         Assert.NotNull(options.TypeInfoResolver);
-        Assert.Equal(3, options.Converters.Count);
+        Assert.All(new[] { typeof(GuidStjConverter), typeof(EncodingStjConverter), typeof(PlaceHolderStringStjConverter) },
+                   t => Assert.Contains(options.Converters, c => c.GetType() == t));
     }
 
     [Fact]
