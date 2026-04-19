@@ -314,9 +314,9 @@ public class ActionRegistrySelectionTests
             method.Name switch
             {
                 "get_Client" => sessionClient,
-                "SendAsync" when method.GetParameters().Length == 3
-                                  && method.GetParameters()[0].ParameterType == typeof(string)
-                    => CaptureSentString((string)args![0]!, value => sent = value),
+                "SendAsync" when method.GetParameters().Length > 0
+                                  && method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
+                    => CaptureSentFrame((WSDataFrame)args![0]!, value => sent = value),
                 _ => GetDefaultReturnValue(method.ReturnType)
             });
 
@@ -341,9 +341,9 @@ public class ActionRegistrySelectionTests
         return sent!;
     }
 
-    private static Task CaptureSentString(string value, Action<string> setter)
+    private static Task CaptureSentFrame(WSDataFrame frame, Action<string> setter)
     {
-        setter(value);
+        setter(Encoding.UTF8.GetString(frame.PayloadData.Span));
         return Task.CompletedTask;
     }
 
