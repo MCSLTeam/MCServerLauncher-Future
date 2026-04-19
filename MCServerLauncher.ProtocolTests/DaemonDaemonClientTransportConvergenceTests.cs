@@ -677,8 +677,9 @@ public class DaemonDaemonClientTransportConvergenceTests
             return method.Name switch
             {
                 "get_Client" => sessionClient,
-                "SendAsync" when method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
-                    => CaptureSentFrame(args!, value => sent = value),
+                "SendAsync" when args?.Length > 0 && args[0] is WSDataFrame df
+                    => CaptureSentFrame(df, value => sent = value),
+                "SendAsync" => Task.CompletedTask,
                 _ => GetDefaultReturnValue(method.ReturnType)
             };
         });
@@ -720,8 +721,9 @@ public class DaemonDaemonClientTransportConvergenceTests
         {
             return method.Name switch
             {
-                "SendAsync" when method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
-                    => CaptureSentFrame(args!, value => sent = value),
+                "SendAsync" when args?.Length > 0 && args[0] is WSDataFrame df
+                    => CaptureSentFrame(df, value => sent = value),
+                "SendAsync" => Task.CompletedTask,
                 _ => GetDefaultReturnValue(method.ReturnType)
             };
         });
@@ -754,8 +756,9 @@ public class DaemonDaemonClientTransportConvergenceTests
         {
             return method.Name switch
             {
-                "SendAsync" when method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
-                    => CaptureSentFrame(args!, value => sent = value),
+                "SendAsync" when args?.Length > 0 && args[0] is WSDataFrame df
+                    => CaptureSentFrame(df, value => sent = value),
+                "SendAsync" => Task.CompletedTask,
                 _ => GetDefaultReturnValue(method.ReturnType)
             };
         });
@@ -818,9 +821,8 @@ public class DaemonDaemonClientTransportConvergenceTests
         // the structural equivalence contract covers event, meta, and data only.
     }
 
-    private static Task CaptureSentFrame(object?[] args, Action<string> setter)
+    private static Task CaptureSentFrame(WSDataFrame frame, Action<string> setter)
     {
-        var frame = (WSDataFrame)args[0]!;
         setter(Encoding.UTF8.GetString(frame.PayloadData.Span));
         return Task.CompletedTask;
     }

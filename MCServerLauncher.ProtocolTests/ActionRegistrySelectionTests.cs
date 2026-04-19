@@ -314,9 +314,9 @@ public class ActionRegistrySelectionTests
             method.Name switch
             {
                 "get_Client" => sessionClient,
-                "SendAsync" when method.GetParameters().Length > 0
-                                  && method.GetParameters()[0].ParameterType == typeof(WSDataFrame)
-                    => CaptureSentFrame((WSDataFrame)args![0]!, value => sent = value),
+                "SendAsync" when args?.Length > 0 && args[0] is WSDataFrame frame
+                    => CaptureSentFrame(frame, value => sent = value),
+                "SendAsync" => Task.CompletedTask,
                 _ => GetDefaultReturnValue(method.ReturnType)
             });
 

@@ -242,7 +242,7 @@ internal class ClientConnection : DisposableObject
         var tcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // add to pending
-        if (!await _pendingRequests.AddPendingAsync(request.Id, tcs, timeout, ct))
+        if (!await _pendingRequests.AddPendingAsync(request.Id, timeout, ct))
         {
             Log.Error("[ClientConnection] failed to add pending request: pending list is full");
             throw new DaemonRequestLimitException();
@@ -250,7 +250,7 @@ internal class ClientConnection : DisposableObject
 
         if (!_pendingResponses.TryAdd(request.Id, tcs))
         {
-            _pendingRequests.TryRemovePending(request.Id, out _);
+            _pendingRequests.TryRemovePending(request.Id);
             throw new InvalidOperationException($"Duplicate pending request id: {request.Id}");
         }
 
@@ -319,7 +319,7 @@ internal class ClientConnection : DisposableObject
     {
         if (_pendingResponses.TryRemove(id, out pending!))
         {
-            _pendingRequests.TryRemovePending(id, out _);
+            _pendingRequests.TryRemovePending(id);
             return true;
         }
 
@@ -332,7 +332,7 @@ internal class ClientConnection : DisposableObject
         foreach (var pending in _pendingResponses)
             if (_pendingResponses.TryRemove(pending.Key, out var taskCompletionSource))
             {
-                pendingRequests.TryRemovePending(pending.Key, out _);
+                pendingRequests.TryRemovePending(pending.Key);
                 taskCompletionSource.TrySetCanceled();
             }
     }

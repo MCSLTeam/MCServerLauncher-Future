@@ -37,6 +37,9 @@ public static class ActionExecutorExtensions
             var request = JsonElementHotPathAdapters.Deserialize(
                 text,
                 DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo);
+            if (request is null)
+                return Result.Err<ActionRequest, ActionResponse>(
+                    ResponseUtils.Err(ActionRetcode.BadRequest.WithMessage("Received null action request envelope"), null));
             Log.Verbose("[Remote] Received message:{0}", request);
             return Result.Ok<ActionRequest, ActionResponse>(request);
         }
@@ -54,8 +57,11 @@ public static class ActionExecutorExtensions
             var request = JsonSerializer.Deserialize(
                 utf8Json,
                 DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo);
+            if (request is null)
+                return Result.Err<ActionRequest, ActionResponse>(
+                    ResponseUtils.Err(ActionRetcode.BadRequest.WithMessage("Received null action request envelope"), null));
             Log.Verbose("[Remote] Received message:{0}", request);
-            return Result.Ok<ActionRequest, ActionResponse>(request!);
+            return Result.Ok<ActionRequest, ActionResponse>(request);
         }
         catch (Exception exception) when (exception is JsonException or NullReferenceException)
         {
