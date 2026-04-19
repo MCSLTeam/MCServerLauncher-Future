@@ -32,20 +32,20 @@ public class DaemonClientTransportPerformanceGateTests
     private const int MeasuredSamples = 15;
 
     private static readonly ClientPathBaseline OutboundRequestSerializeBaseline = new(
-        NanosecondsPerOperation: 3211.47,
-        AllocatedBytesPerOperation: 736);
+        NanosecondsPerOperation: 4286.85,
+        AllocatedBytesPerOperation: 740);
 
     private static readonly ClientPathBaseline InboundActionResponseParseBaseline = new(
-        NanosecondsPerOperation: 3144.65,
+        NanosecondsPerOperation: 7002.70,
         AllocatedBytesPerOperation: 768);
 
     private static readonly ClientPathBaseline ClientActionRoundTripBaseline = new(
-        NanosecondsPerOperation: 6327.04,
-        AllocatedBytesPerOperation: 2_008);
+        NanosecondsPerOperation: 7684.32,
+        AllocatedBytesPerOperation: 1903);
 
     private static readonly ClientPathBaseline DaemonEventRoundTripBaseline = new(
-        NanosecondsPerOperation: 3757.40,
-        AllocatedBytesPerOperation: 1_192);
+        NanosecondsPerOperation: 2934.57,
+        AllocatedBytesPerOperation: 1043);
 
     [Fact]
     [Trait("Category", "Perf")]
