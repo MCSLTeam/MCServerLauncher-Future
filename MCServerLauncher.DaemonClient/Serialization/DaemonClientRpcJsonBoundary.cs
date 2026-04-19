@@ -46,7 +46,7 @@ public static class DaemonClientRpcJsonBoundary
     public static bool UsesReflectionFallback(
         DaemonClientStjReflectionFallbackPolicy fallbackPolicy = DaemonClientStjReflectionFallbackPolicy.TrimFriendlyDefault)
     {
-        return fallbackPolicy.ShouldEnableFallback();
+        return JsonSerializer.IsReflectionEnabledByDefault && fallbackPolicy.ShouldEnableFallback();
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
