@@ -23,13 +23,12 @@ internal class ConnectionPendingRequests
     ///     添加一个pending请求
     /// </summary>
     /// <param name="id"></param>
-    /// <param name="tcs"></param>
     /// <param name="timeout"></param>
     /// <param name="cancellationToken"></param>
     /// <exception cref="OperationCanceledException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
     /// <returns></returns>
-    public async Task<bool> AddPendingAsync(Guid id, TaskCompletionSource<ActionResponse> tcs, int timeout,
+    public async Task<bool> AddPendingAsync(Guid id, int timeout,
         CancellationToken cancellationToken = default)
     {
         if (_closed) throw new InvalidOperationException("ConnectionPendingRequest already closed");
@@ -42,18 +41,16 @@ internal class ConnectionPendingRequests
         return false;
     }
 
-    public bool TryRemovePending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
+    public bool TryRemovePending(Guid id)
     {
-        tcs = null!;
         var rv = _pendings.TryRemove(id, out _);
         if (rv)
             _full.Release();
         return rv;
     }
 
-    public bool TryGetPending(Guid id, out TaskCompletionSource<ActionResponse> tcs)
+    public bool TryGetPending(Guid id)
     {
-        tcs = null!;
         return _pendings.ContainsKey(id);
     }
 

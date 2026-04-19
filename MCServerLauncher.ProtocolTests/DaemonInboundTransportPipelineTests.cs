@@ -86,6 +86,22 @@ public class DaemonInboundTransportPipelineTests
     [Trait("Category", "Inbound")]
     [Trait("Category", "DaemonInbound")]
     [Trait("Category", "DaemonInboundErrors")]
+    public void ParseRequest_NullLiteralEnvelope_ReturnsBadRequest()
+    {
+        var executor = new FakeExecutor();
+        var result = executor.ParseRequest("null");
+
+        Assert.True(result.IsErr(out var response));
+        Assert.NotNull(response);
+        Assert.Equal(ActionRequestStatus.Error, response.RequestStatus);
+        Assert.Equal(ActionRetcode.BadRequest.Code, response.Retcode);
+        Assert.Equal("Bad Request: Received null action request envelope", response.Message);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundErrors")]
     public void ParseParameter_MissingParams_ReturnsParamErrorMissingParameters()
     {
         var handler = new TestParameterHandler();

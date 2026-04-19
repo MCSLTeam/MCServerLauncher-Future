@@ -167,13 +167,13 @@ public class DaemonClientTransportModernizationTests
         var pendingResponses = GetPendingResponses(connection);
         var tcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await pendingRequests.AddPendingAsync(requestId, tcs, timeout: 1000));
+        Assert.True(await pendingRequests.AddPendingAsync(requestId, 1000));
         Assert.True(pendingResponses.TryAdd(requestId, tcs));
 
         await Assert.ThrowsAsync<TimeoutException>(async () =>
             await InvokePrivateEndRequestAsync<PingResult>(connection, tcs, requestId, timeout: 50, CancellationToken.None));
 
-        Assert.False(pendingRequests.TryGetPending(requestId, out _));
+        Assert.False(pendingRequests.TryGetPending(requestId));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public class DaemonClientTransportModernizationTests
         var pendingResponses = GetPendingResponses(connection);
         var tcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await pendingRequests.AddPendingAsync(requestId, tcs, timeout: 1000));
+        Assert.True(await pendingRequests.AddPendingAsync(requestId, 1000));
         Assert.True(pendingResponses.TryAdd(requestId, tcs));
 
         using var cts = new CancellationTokenSource();
@@ -195,7 +195,7 @@ public class DaemonClientTransportModernizationTests
 
         var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await requestTask);
         Assert.True(exception.CancellationToken.CanBeCanceled);
-        Assert.False(pendingRequests.TryGetPending(requestId, out _));
+        Assert.False(pendingRequests.TryGetPending(requestId));
     }
 
     [Fact]
@@ -217,8 +217,8 @@ public class DaemonClientTransportModernizationTests
         var targetTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
         var otherTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await pendingSlots.AddPendingAsync(targetId, targetTcs, timeout: 1000));
-        Assert.True(await pendingSlots.AddPendingAsync(otherId, otherTcs, timeout: 1000));
+        Assert.True(await pendingSlots.AddPendingAsync(targetId, 1000));
+        Assert.True(await pendingSlots.AddPendingAsync(otherId, 1000));
         Assert.True(pendingResponses.TryAdd(targetId, targetTcs));
         Assert.True(pendingResponses.TryAdd(otherId, otherTcs));
 
@@ -238,7 +238,7 @@ public class DaemonClientTransportModernizationTests
         Assert.True(pendingResponses.ContainsKey(otherId));
 
         pendingResponses.TryRemove(otherId, out _);
-        pendingSlots.TryRemovePending(otherId, out _);
+        pendingSlots.TryRemovePending(otherId);
     }
 
     [Fact]
@@ -259,7 +259,7 @@ public class DaemonClientTransportModernizationTests
         var unknownId = Guid.Parse("99999999-9999-9999-9999-999999999999");
         var knownTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await pendingSlots.AddPendingAsync(knownId, knownTcs, timeout: 1000));
+        Assert.True(await pendingSlots.AddPendingAsync(knownId, 1000));
         Assert.True(pendingResponses.TryAdd(knownId, knownTcs));
 
         InvokeHandleActionResponse(connection, new ActionResponse
@@ -275,7 +275,7 @@ public class DaemonClientTransportModernizationTests
         Assert.True(pendingResponses.ContainsKey(knownId));
 
         pendingResponses.TryRemove(knownId, out _);
-        pendingSlots.TryRemovePending(knownId, out _);
+        pendingSlots.TryRemovePending(knownId);
     }
 
     [Fact]
@@ -362,16 +362,16 @@ public class DaemonClientTransportModernizationTests
         var requestId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
         var pendingTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await pendingRequests.AddPendingAsync(requestId, pendingTcs, timeout: 1000));
+        Assert.True(await pendingRequests.AddPendingAsync(requestId, 1000));
         Assert.True(pendingResponses.TryAdd(requestId, pendingTcs));
 
         InvokeTransportConnectionLost(connection);
 
         Assert.True(pendingTcs.Task.IsCanceled);
         Assert.False(pendingResponses.ContainsKey(requestId));
-        Assert.False(pendingRequests.TryGetPending(requestId, out _));
+        Assert.False(pendingRequests.TryGetPending(requestId));
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await pendingRequests.AddPendingAsync(Guid.NewGuid(), new TaskCompletionSource<ActionResponse>(), timeout: 1000));
+            await pendingRequests.AddPendingAsync(Guid.NewGuid(), 1000));
     }
 
     [Fact]
@@ -392,7 +392,7 @@ public class DaemonClientTransportModernizationTests
         var requestId = Guid.Parse("bbbbbbbb-1111-2222-3333-444444444444");
         var pendingTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await lostPendingRequests.AddPendingAsync(requestId, pendingTcs, timeout: 1000));
+        Assert.True(await lostPendingRequests.AddPendingAsync(requestId, 1000));
         Assert.True(pendingResponses.TryAdd(requestId, pendingTcs));
 
         InvokeTransportConnectionLost(connection);
@@ -405,11 +405,11 @@ public class DaemonClientTransportModernizationTests
         var postReconnectRequestId = Guid.Parse("bbbbbbbb-5555-6666-7777-888888888888");
         var postReconnectTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await postReconnectPendingRequests.AddPendingAsync(postReconnectRequestId, postReconnectTcs, timeout: 1000));
+        Assert.True(await postReconnectPendingRequests.AddPendingAsync(postReconnectRequestId, 1000));
         Assert.True(pendingResponses.TryAdd(postReconnectRequestId, postReconnectTcs));
 
         pendingResponses.TryRemove(postReconnectRequestId, out _);
-        postReconnectPendingRequests.TryRemovePending(postReconnectRequestId, out _);
+        postReconnectPendingRequests.TryRemovePending(postReconnectRequestId);
     }
 
     [Fact]
@@ -431,7 +431,7 @@ public class DaemonClientTransportModernizationTests
         var firstId = Guid.Parse("cccccccc-1111-2222-3333-444444444444");
         var firstTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await firstPendingRequests.AddPendingAsync(firstId, firstTcs, timeout: 1000));
+        Assert.True(await firstPendingRequests.AddPendingAsync(firstId, 1000));
         Assert.True(pendingResponses.TryAdd(firstId, firstTcs));
 
         InvokeTransportConnectionLost(connection);
@@ -445,7 +445,7 @@ public class DaemonClientTransportModernizationTests
         var secondId = Guid.Parse("cccccccc-5555-6666-7777-888888888888");
         var secondTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await secondPendingRequests.AddPendingAsync(secondId, secondTcs, timeout: 1000));
+        Assert.True(await secondPendingRequests.AddPendingAsync(secondId, 1000));
         Assert.True(pendingResponses.TryAdd(secondId, secondTcs));
 
         InvokeTransportConnectionLost(connection);
@@ -458,11 +458,11 @@ public class DaemonClientTransportModernizationTests
         var thirdId = Guid.Parse("cccccccc-9999-aaaa-bbbb-cccccccccccc");
         var thirdTcs = new TaskCompletionSource<ActionResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.True(await thirdPendingRequests.AddPendingAsync(thirdId, thirdTcs, timeout: 1000));
+        Assert.True(await thirdPendingRequests.AddPendingAsync(thirdId, 1000));
         Assert.True(pendingResponses.TryAdd(thirdId, thirdTcs));
 
         pendingResponses.TryRemove(thirdId, out _);
-        thirdPendingRequests.TryRemovePending(thirdId, out _);
+        thirdPendingRequests.TryRemovePending(thirdId);
     }
 
     [Fact]

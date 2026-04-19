@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Serialization;
-
 namespace MCServerLauncher.DaemonClient.Serialization;
 
 /// <summary>
@@ -34,9 +34,12 @@ public static class DaemonClientRpcJsonBoundary
             DaemonClientRpcSerializerContext.Default
         };
 
-        if (fallbackPolicy.ShouldEnableFallback())
-            resolvers.Add(new DefaultJsonTypeInfoResolver());
+        var reflectionFallbackResolver = JsonSerializer.IsReflectionEnabledByDefault
+            ? fallbackPolicy.ShouldEnableFallback() ? CreateReflectionFallbackResolver() : null
+            : null;
 
+        if (reflectionFallbackResolver is not null)
+            resolvers.Add(reflectionFallbackResolver);
         return JsonTypeInfoResolver.Combine(resolvers.ToArray());
     }
 
@@ -45,6 +48,12 @@ public static class DaemonClientRpcJsonBoundary
     {
         return fallbackPolicy.ShouldEnableFallback();
     }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        Justification = "RPC reflection fallback is an explicit compatibility path guarded by JsonSerializer.IsReflectionEnabledByDefault and the boundary fallback policy.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "RPC reflection fallback is an explicit compatibility path guarded by JsonSerializer.IsReflectionEnabledByDefault and the boundary fallback policy.")]
+    private static DefaultJsonTypeInfoResolver CreateReflectionFallbackResolver() => new();
 
     public static JsonSerializerOptions CreateStjOptions(
         DaemonClientStjReflectionFallbackPolicy fallbackPolicy = DaemonClientStjReflectionFallbackPolicy.TrimFriendlyDefault,

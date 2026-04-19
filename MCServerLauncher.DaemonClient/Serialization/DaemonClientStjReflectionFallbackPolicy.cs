@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 
 namespace MCServerLauncher.DaemonClient.Serialization;
 
@@ -40,6 +41,8 @@ internal static class DaemonClientStjReflectionFallbackPolicyExtensions
 
     private static bool IsReflectionEnabledByDefault()
     {
-        return !AppContext.TryGetSwitch(ReflectionEnabledSwitch, out var enabled) || enabled;
+        return AppContext.TryGetSwitch(ReflectionEnabledSwitch, out var enabled)
+            ? enabled
+            : JsonSerializer.IsReflectionEnabledByDefault;
     }
 }
