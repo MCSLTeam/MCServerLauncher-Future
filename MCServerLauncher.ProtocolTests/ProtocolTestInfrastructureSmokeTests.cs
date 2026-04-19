@@ -1,3 +1,5 @@
+using MCServerLauncher.Common.ProtoType.Serialization;
+
 namespace MCServerLauncher.ProtocolTests;
 
 public class ProtocolTestInfrastructureSmokeTests
@@ -5,9 +7,9 @@ public class ProtocolTestInfrastructureSmokeTests
     [Fact]
     public void ProtocolTestInfrastructure_IsOperational()
     {
-        // Seed test to verify test infrastructure is operational
-        // This test confirms the test project is properly wired to the solution
-        Assert.True(true);
+        // Verify test infrastructure can resolve a boundary type from Common
+        var resolver = StjResolver.CreateDefaultResolver();
+        Assert.NotNull(resolver);
     }
 
     [Fact]

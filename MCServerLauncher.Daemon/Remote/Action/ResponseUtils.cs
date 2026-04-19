@@ -73,7 +73,9 @@ public static class ResponseUtils
             return default;
 
         var typeInfo = ActionResultsContext.Default.GetTypeInfo(value.GetType());
-        return StjJsonSerializer.SerializeToElement(value, typeInfo!);
+        if (typeInfo is null)
+            throw new NotSupportedException($"No source-generated JSON type info registered for result type '{value.GetType().Name}'. Register it in ActionResultsContext.");
+        return StjJsonSerializer.SerializeToElement(value, typeInfo);
     }
 
     private static readonly JsonElement EmptyObject = JsonElementHotPathAdapters.SerializeToElement(
