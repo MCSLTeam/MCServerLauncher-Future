@@ -44,7 +44,7 @@ public static class DaemonPersistenceJsonBoundary
     public static bool UsesReflectionFallback(
         DaemonStjReflectionFallbackPolicy fallbackPolicy = DaemonStjReflectionFallbackPolicy.TrimFriendlyDefault)
     {
-        return fallbackPolicy.ShouldEnableFallback();
+        return JsonSerializer.IsReflectionEnabledByDefault && fallbackPolicy.ShouldEnableFallback();
     }
 
     public static JsonSerializerOptions CreateStjOptions(
