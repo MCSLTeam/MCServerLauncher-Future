@@ -204,19 +204,21 @@ public class DaemonOutboundTransportSerializationTests
     [Fact]
     [Trait("Category", "DaemonOutboundStatic")]
     [Trait("Category", "CleanupValidation")]
-    public void DaemonOutboundFiles_DoNotUseJsonConvertSerializeObjectAtTransportBoundary()
+    public void DaemonOutboundFiles_UseStjAtTransportBoundary()
     {
-        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsActionPlugin.cs", "JsonConvert.SerializeObject(");
-        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/ActionExecutor.cs", "JsonConvert.SerializeObject(");
-        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsEventPlugin.cs", "JsonConvert.SerializeObject(");
+        // Migration guard: daemon transport must use STJ, not legacy serializer
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsActionPlugin.cs", "SerializeObject(");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/ActionExecutor.cs", "SerializeObject(");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsEventPlugin.cs", "SerializeObject(");
     }
 
     [Fact]
     [Trait("Category", "DaemonOutboundStatic")]
     [Trait("Category", "CleanupValidation")]
-    public void DaemonOutboundEventFile_DoesNotUseJTokenFromObjectAtTransportBoundary()
+    public void DaemonOutboundEventFile_UsesStjForObjectSerialization()
     {
-        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsEventPlugin.cs", "JToken.FromObject(");
+        // Migration guard: event plugin must use STJ, not legacy token API
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsEventPlugin.cs", "FromObject(");
     }
 
 

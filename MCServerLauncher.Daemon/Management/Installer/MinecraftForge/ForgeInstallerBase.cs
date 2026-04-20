@@ -8,7 +8,7 @@ using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
+using System.Text.Json;
 using RustyOptions;
 using Serilog;
 using Version = MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json.Version;
@@ -20,7 +20,7 @@ using Version = Version;
 public abstract class ForgeInstallerBase : IInstanceInstaller
 {
     protected const string ForgeInstallerTrimMessage =
-        "Forge installer metadata parsing uses Newtonsoft.Json against third-party installer JSON and is not trim-compatible.";
+        "Forge installer metadata parsing uses System.Text.Json against third-party installer JSON and is not trim-compatible.";
 
     protected ForgeInstallerBase(string installerPath, string? javaPath, InstanceFactoryMirror mirror)
     {
@@ -106,7 +106,7 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
     #region Download
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
-        Justification = "Forge metadata download selection intentionally enters localized Newtonsoft-backed manifest parsing boundaries for third-party installer metadata.")]
+        Justification = "Forge metadata download selection intentionally enters localized System.Text.Json-backed manifest parsing boundaries for third-party installer metadata.")]
     protected async Task<bool> DownloadMinecraft(string targetPath,
         CancellationToken ct = default)
     {

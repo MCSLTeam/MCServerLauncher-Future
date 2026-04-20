@@ -581,15 +581,15 @@ public class DaemonDaemonClientTransportConvergenceTests
     {
         var rpcGolden = new RpcGoldenCharacterizationTests();
 
-        rpcGolden.ActionRequest_PingEmptyParams_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionRequest_SubscribeEventNullMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionRequest_SubscribeEventConcreteMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionResponse_SuccessTypedData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionResponse_SuccessEmptyObjectData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionResponse_ErrorNullDataMessageRetcodeShape_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.EventPacket_WithMetaAndData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.EventPacket_NullMetaStructuredData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
+        rpcGolden.ActionRequest_PingEmptyParams_ClientRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.ActionRequest_SubscribeEventNullMeta_ClientRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.ActionRequest_SubscribeEventConcreteMeta_ClientRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.ActionRequest_SaveEventRulesNestedParameter_ClientRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.ActionResponse_SuccessTypedData_DaemonRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.ActionResponse_SuccessEmptyObjectData_DaemonRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.ActionResponse_ErrorNullDataMessageRetcodeShape_DaemonRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.EventPacket_WithMetaAndData_DaemonRpcBoundary_MatchesFrozenFixture();
+        rpcGolden.EventPacket_NullMetaStructuredData_DaemonRpcBoundary_MatchesFrozenFixture();
     }
 
     private static void AssertRepresentativePersistenceChecksStillPass()

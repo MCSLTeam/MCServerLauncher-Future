@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
-using Newtonsoft.Json;
 using Version = MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json.Version;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
@@ -9,7 +8,7 @@ namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 public static class InstallExtensions
 {
     private const string ForgeInstallerTrimMessage =
-        "Forge installer metadata parsing uses Newtonsoft.Json against third-party installer JSON and is not trim-compatible.";
+        "Forge installer metadata parsing uses System.Text.Json against third-party installer JSON and is not trim-compatible.";
 
     [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     public static Version LoadVersion(this Install profile, string installerPath)
@@ -50,9 +49,9 @@ public static class InstallExtensions
 
     [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     private static Manifest? DeserializeManifest(string content) =>
-        JsonConvert.DeserializeObject<Manifest>(content, InstallProfileJsonSettings.Settings);
+        System.Text.Json.JsonSerializer.Deserialize<Manifest>(content, InstallProfileJsonSettings.Settings);
 
     [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     private static Version? DeserializeVersion(string content) =>
-        JsonConvert.DeserializeObject<Version>(content, InstallProfileJsonSettings.Settings);
+        System.Text.Json.JsonSerializer.Deserialize<Version>(content, InstallProfileJsonSettings.Settings);
 }

@@ -1,5 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 
 namespace MCServerLauncher.Daemon.Remote.Authentication;
 
@@ -51,30 +52,26 @@ public class Permission : IMatchable
     {
         return _permission;
     }
+}
 
-    public class PermissionJsonConverter : JsonConverter
+/// <summary>
+///     STJ converter for Permission (replaces Newtonsoft PermissionJsonConverter)
+/// </summary>
+public sealed class PermissionStjConverter : JsonConverter<Permission>
+{
+    public override Permission? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        if (reader.TokenType == JsonTokenType.String)
         {
-            var permission = (Permission)value!;
-            writer.WriteValue(permission.ToString());
+            var str = reader.GetString();
+            return str is null ? null : Permission.Of(str);
         }
 
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
-            JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.String)
-            {
-                var str = reader.Value?.ToString();
-                return str == null ? null : Of(str);
-            }
+        throw new JsonException($"Cannot convert {reader.TokenType} to Permission");
+    }
 
-            throw new JsonSerializationException($"Cannot convert {reader.Value} to <class: Permission>");
-        }
-
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(Permission);
-        }
+    public override void Write(Utf8JsonWriter writer, Permission value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString());
     }
 }

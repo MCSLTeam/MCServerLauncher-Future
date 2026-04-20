@@ -223,25 +223,6 @@ internal static class AnotherActionHandlerRegistry
         }
     }
 
-
-    // static void Main(string[] argv)
-    // {
-    //     var token = JToken.Parse("{}");
-    //     var guid = Guid.Empty;
-    //     WsContext ctx = new WsContext("", Guid.Empty, "*", DateTime.Now);
-    //     IResolver resolver = null;
-    //     var ct = CancellationToken.None;
-    //
-    //     var resp1 = Handlers[ActionType.Ping].Invoke(token, guid, ctx, resolver, ct);
-    //     var resp2 = Handlers[ActionType.GetSystemInfo].Invoke(token, guid, ctx, resolver, ct);
-    //     var resp3 = AsyncHandlers[ActionType.GetJavaList].Invoke(token, guid, ctx, resolver, ct).GetAwaiter()
-    //         .GetResult();
-    //
-    //     System.Console.WriteLine(JsonConvert.SerializeObject(resp1, Formatting.Indented));
-    //     System.Console.WriteLine(JsonConvert.SerializeObject(resp2, Formatting.Indented));
-    //     System.Console.WriteLine(JsonConvert.SerializeObject(resp3, Formatting.Indented));
-    // }
-
     /// <summary>
     ///     表达树构造同步handler
     /// </summary>

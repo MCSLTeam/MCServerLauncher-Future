@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
@@ -6,7 +6,7 @@ public class Version
 {
     public string Id { get; set; }
 
-    [JsonProperty("downloads")] public Dictionary<string, Download> DownloadDictionary { get; set; }
+    [JsonPropertyName("downloads")] public Dictionary<string, Download> DownloadDictionary { get; set; }
 
     public Library[] Libraries { get; set; } = Array.Empty<Library>();
 

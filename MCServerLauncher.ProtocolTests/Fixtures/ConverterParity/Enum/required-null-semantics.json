@@ -1,1 +1,1 @@
-{"missing_action_exception":"JsonSerializationException","null_params_is_null":true,"missing_data_exception":"JsonSerializationException","null_meta_is_null":false,"null_meta_is_explicit_json_null":true,"missing_meta_exception":"JsonSerializationException"}
+{"missing_action_exception":"JsonException","null_params_is_null":true,"missing_data_exception":"JsonException","null_meta_is_null":false,"null_meta_is_explicit_json_null":true,"missing_meta_exception":null}

@@ -349,38 +349,5 @@ public class PublicContractSafetyTests
 
     #endregion
 
-    #region Wire-facing Newtonsoft converter budget lock
-
-    // The number of Newtonsoft [JsonConverter] attributes on Common ProtoType wire-contract types.
-    // This count must not increase; any new wire-facing Newtonsoft dependency is a regression.
-    // Current budget: 9 annotations across Packet.cs, Parameters.cs, EventRule.cs
-    private const int MaxAllowedNewtonsoftConverterAnnotations = 9;
-
-    [Fact]
-    public void CommonWireContractTypes_NewtonsoftConverterCount_DoesNotExceedBudget()
-    {
-        var wireContractTypes = new[]
-        {
-            typeof(ActionRequest),
-            typeof(ActionResponse),
-            typeof(EventPacket),
-        };
-
-        var newtonsoftConverterCount = 0;
-        foreach (var type in wireContractTypes)
-        {
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                var newtonsoftAttrs = prop.GetCustomAttributes(typeof(Newtonsoft.Json.JsonConverterAttribute), false);
-                newtonsoftConverterCount += newtonsoftAttrs.Length;
-            }
-        }
-
-        Assert.True(newtonsoftConverterCount <= MaxAllowedNewtonsoftConverterAnnotations,
-            $"Wire-facing Newtonsoft converter count {newtonsoftConverterCount} exceeds budget {MaxAllowedNewtonsoftConverterAnnotations}. " +
-            "No new wire-facing Newtonsoft dependencies should be added.");
-    }
-
-    #endregion
 }
 #endif

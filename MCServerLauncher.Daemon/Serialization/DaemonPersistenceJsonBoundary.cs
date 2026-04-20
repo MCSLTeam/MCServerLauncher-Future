@@ -5,6 +5,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Collections.Generic;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Daemon.Remote.Authentication;
 
 namespace MCServerLauncher.Daemon.Serialization;
 
@@ -64,6 +65,7 @@ public static class DaemonPersistenceJsonBoundary
         options.Converters.Add(new GuidStjConverter());
         options.Converters.Add(new EncodingStjConverter());
         options.Converters.Add(new PlaceHolderStringStjConverter());
+        options.Converters.Add(new PermissionStjConverter());
         return options;
     }
 }

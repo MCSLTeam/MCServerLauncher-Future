@@ -199,11 +199,12 @@ public class DaemonClientOutboundTransportAndCallbackTests
     [Trait("Category", "ClientOutbound")]
     [Trait("Category", "ClientOutboundRoundTrip")]
     [Trait("Category", "CleanupValidation")]
-    public void ClientOutboundSendSeam_DoesNotUseJsonConvertSerializeObject()
+    public void ClientOutboundSendSeam_UsesStjForSerialization()
     {
         var source = File.ReadAllText(Path.Combine(ResolveRepoRoot(), "MCServerLauncher.DaemonClient/Connection/ClientConnection.cs"));
 
-        Assert.DoesNotContain("JsonConvert.SerializeObject(", source, StringComparison.Ordinal);
+        // Migration guard: client transport must use STJ, not legacy serializer
+        Assert.DoesNotContain("SerializeObject(", source, StringComparison.Ordinal);
     }
 
     [Fact]

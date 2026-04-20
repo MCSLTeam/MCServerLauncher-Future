@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Serialization;
 using SysTextJsonConverter = System.Text.Json.Serialization.JsonConverterAttribute;
 using StjJsonDocument = System.Text.Json.JsonDocument;
 using StjJsonElement = System.Text.Json.JsonElement;
@@ -19,48 +18,47 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     /// </summary>
     public class EventRule
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; } = string.Empty;
 
-        [JsonProperty("is_enabled")]
+        [JsonPropertyName("is_enabled")]
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>
         /// How triggers are evaluated. "All" (AND) or "Any" (OR).
         /// </summary>
-        [JsonProperty("trigger_condition")]
+        [JsonPropertyName("trigger_condition")]
         public string TriggerCondition { get; set; } = "Any";
 
-        [JsonProperty("triggers")]
+        [JsonPropertyName("triggers")]
         public List<TriggerDefinition> Triggers { get; set; } = new();
 
-        [JsonProperty("action_execution_mode")]
+        [JsonPropertyName("action_execution_mode")]
         public string ActionExecutionMode { get; set; } = "Sequential"; // "Sequential" or "Parallel"
 
-        [JsonProperty("rulesets")]
+        [JsonPropertyName("rulesets")]
         public List<RulesetDefinition> Rulesets { get; set; } = new();
 
-        [JsonProperty("actions")]
+        [JsonPropertyName("actions")]
         public List<ActionDefinition> Actions { get; set; } = new();
     }
 
     /// <summary>
     /// Base class for all rulesets (conditions that must be met for actions to execute).
     /// </summary>
-    [JsonConverter(typeof(RulesetDefinitionJsonConverter))]
     [SysTextJsonConverter(typeof(RulesetDefinitionStjConverter))]
     public abstract class RulesetDefinition
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public abstract string Type { get; }
     }
 
@@ -87,21 +85,20 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "InstanceStatus";
 
-        [JsonProperty("target_status")]
+        [JsonPropertyName("target_status")]
         public string TargetStatus { get; set; } = string.Empty; // e.g., "Running", "Stopped", "Crashed"
     }
 
     /// <summary>
     /// Base class for all triggers.
     /// </summary>
-    [JsonConverter(typeof(TriggerDefinitionJsonConverter))]
     [SysTextJsonConverter(typeof(TriggerDefinitionStjConverter))]
     public abstract class TriggerDefinition
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public abstract string Type { get; }
     }
 
@@ -112,10 +109,10 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "ConsoleOutput";
 
-        [JsonProperty("pattern")]
+        [JsonPropertyName("pattern")]
         public string Pattern { get; set; } = string.Empty;
 
-        [JsonProperty("is_regex")]
+        [JsonPropertyName("is_regex")]
         public bool IsRegex { get; set; } = false;
     }
 
@@ -126,7 +123,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "Schedule";
 
-        [JsonProperty("cron_expression")]
+        [JsonPropertyName("cron_expression")]
         public string CronExpression { get; set; } = string.Empty;
     }
 
@@ -137,21 +134,20 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "InstanceStatus";
 
-        [JsonProperty("target_status")]
+        [JsonPropertyName("target_status")]
         public string TargetStatus { get; set; } = string.Empty; // e.g., "Running", "Stopped", "Crashed"
     }
 
     /// <summary>
     /// Base class for all actions.
     /// </summary>
-    [JsonConverter(typeof(ActionDefinitionJsonConverter))]
     [SysTextJsonConverter(typeof(ActionDefinitionStjConverter))]
     public abstract class ActionDefinition
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public abstract string Type { get; }
     }
 
@@ -162,7 +158,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "SendCommand";
 
-        [JsonProperty("command")]
+        [JsonPropertyName("command")]
         public string Command { get; set; } = string.Empty;
     }
 
@@ -173,7 +169,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "ChangeInstanceStatus";
 
-        [JsonProperty("action")]
+        [JsonPropertyName("action")]
         public string Action { get; set; } = string.Empty; // e.g., "Start", "Stop", "Restart", "Kill"
     }
 
@@ -184,269 +180,14 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     {
         public override string Type => "SendNotification";
 
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
 
-        [JsonProperty("message")]
+        [JsonPropertyName("message")]
         public string Message { get; set; } = string.Empty;
 
-        [JsonProperty("severity")]
+        [JsonPropertyName("severity")]
         public string Severity { get; set; } = "Info"; // Info, Success, Warning, Error
-    }
-
-    /// <summary>
-    /// Newtonsoft compatibility converter for <see cref="RulesetDefinition" /> polymorphic deserialization.
-    /// Retained for backward compatibility with Newtonsoft-based callers only.
-    /// The canonical wire-contract converter is <see cref="RulesetDefinitionStjConverter" />.
-    /// </summary>
-    internal sealed class RulesetDefinitionJsonConverter : JsonConverter
-    {
-        private static readonly string[] KnownDiscriminators =
-        {
-            "AlwaysTrue",
-            "AlwaysFalse",
-            "InstanceStatus"
-        };
-
-        public override bool CanConvert(Type objectType)
-        {
-            return typeof(RulesetDefinition).IsAssignableFrom(objectType);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
-            JsonSerializer serializer)
-        {
-            var obj = JObject.Load(reader);
-            var discriminator = EventRuleDiscriminatorJsonHelper.ReadDiscriminator(obj, nameof(RulesetDefinition));
-
-            RulesetDefinition ruleset = discriminator switch
-            {
-                "AlwaysTrue" => new AlwaysTrueRuleset(),
-                "AlwaysFalse" => new AlwaysFalseRuleset(),
-                "InstanceStatus" => new InstanceStatusRuleset(),
-                _ => throw EventRuleDiscriminatorJsonHelper.UnknownDiscriminator(
-                    nameof(RulesetDefinition),
-                    discriminator,
-                    KnownDiscriminators)
-            };
-
-            serializer.Populate(obj.CreateReader(), ruleset);
-            return ruleset;
-        }
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value is null)
-            {
-                writer.WriteNull();
-                return;
-            }
-
-            if (value is not RulesetDefinition ruleset)
-            {
-                throw new JsonSerializationException($"Expected {nameof(RulesetDefinition)} value.");
-            }
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("id");
-            serializer.Serialize(writer, ruleset.Id);
-            writer.WritePropertyName("type");
-            writer.WriteValue(ruleset.Type);
-
-            switch (ruleset)
-            {
-                case InstanceStatusRuleset instanceStatus:
-                    writer.WritePropertyName("target_status");
-                    writer.WriteValue(instanceStatus.TargetStatus);
-                    break;
-
-                case AlwaysTrueRuleset:
-                case AlwaysFalseRuleset:
-                    break;
-
-                default:
-                    throw new JsonSerializationException(
-                        $"Unsupported runtime type '{ruleset.GetType().Name}' for {nameof(RulesetDefinition)}.");
-            }
-
-            writer.WriteEndObject();
-        }
-    }
-
-    /// <summary>
-    /// Newtonsoft compatibility converter for <see cref="TriggerDefinition" /> polymorphic deserialization.
-    /// Retained for backward compatibility with Newtonsoft-based callers only.
-    /// The canonical wire-contract converter is <see cref="TriggerDefinitionStjConverter" />.
-    /// </summary>
-    internal sealed class TriggerDefinitionJsonConverter : JsonConverter
-    {
-        private static readonly string[] KnownDiscriminators =
-        {
-            "ConsoleOutput",
-            "Schedule",
-            "InstanceStatus"
-        };
-
-        public override bool CanConvert(Type objectType)
-        {
-            return typeof(TriggerDefinition).IsAssignableFrom(objectType);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
-            JsonSerializer serializer)
-        {
-            var obj = JObject.Load(reader);
-            var discriminator = EventRuleDiscriminatorJsonHelper.ReadDiscriminator(obj, nameof(TriggerDefinition));
-
-            TriggerDefinition trigger = discriminator switch
-            {
-                "ConsoleOutput" => new ConsoleOutputTrigger(),
-                "Schedule" => new ScheduleTrigger(),
-                "InstanceStatus" => new InstanceStatusTrigger(),
-                _ => throw EventRuleDiscriminatorJsonHelper.UnknownDiscriminator(
-                    nameof(TriggerDefinition),
-                    discriminator,
-                    KnownDiscriminators)
-            };
-
-            serializer.Populate(obj.CreateReader(), trigger);
-            return trigger;
-        }
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value is null)
-            {
-                writer.WriteNull();
-                return;
-            }
-
-            if (value is not TriggerDefinition trigger)
-            {
-                throw new JsonSerializationException($"Expected {nameof(TriggerDefinition)} value.");
-            }
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("id");
-            serializer.Serialize(writer, trigger.Id);
-            writer.WritePropertyName("type");
-            writer.WriteValue(trigger.Type);
-
-            switch (trigger)
-            {
-                case ConsoleOutputTrigger consoleOutput:
-                    writer.WritePropertyName("pattern");
-                    writer.WriteValue(consoleOutput.Pattern);
-                    writer.WritePropertyName("is_regex");
-                    writer.WriteValue(consoleOutput.IsRegex);
-                    break;
-
-                case ScheduleTrigger schedule:
-                    writer.WritePropertyName("cron_expression");
-                    writer.WriteValue(schedule.CronExpression);
-                    break;
-
-                case InstanceStatusTrigger instanceStatus:
-                    writer.WritePropertyName("target_status");
-                    writer.WriteValue(instanceStatus.TargetStatus);
-                    break;
-
-                default:
-                    throw new JsonSerializationException(
-                        $"Unsupported runtime type '{trigger.GetType().Name}' for {nameof(TriggerDefinition)}.");
-            }
-
-            writer.WriteEndObject();
-        }
-    }
-
-    /// <summary>
-    /// Newtonsoft compatibility converter for <see cref="ActionDefinition" /> polymorphic deserialization.
-    /// Retained for backward compatibility with Newtonsoft-based callers only.
-    /// The canonical wire-contract converter is <see cref="ActionDefinitionStjConverter" />.
-    /// </summary>
-    internal sealed class ActionDefinitionJsonConverter : JsonConverter
-    {
-        private static readonly string[] KnownDiscriminators =
-        {
-            "SendCommand",
-            "ChangeInstanceStatus",
-            "SendNotification"
-        };
-
-        public override bool CanConvert(Type objectType)
-        {
-            return typeof(ActionDefinition).IsAssignableFrom(objectType);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
-            JsonSerializer serializer)
-        {
-            var obj = JObject.Load(reader);
-            var discriminator = EventRuleDiscriminatorJsonHelper.ReadDiscriminator(obj, nameof(ActionDefinition));
-
-            ActionDefinition action = discriminator switch
-            {
-                "SendCommand" => new SendCommandAction(),
-                "ChangeInstanceStatus" => new ChangeInstanceStatusAction(),
-                "SendNotification" => new SendNotificationAction(),
-                _ => throw EventRuleDiscriminatorJsonHelper.UnknownDiscriminator(
-                    nameof(ActionDefinition),
-                    discriminator,
-                    KnownDiscriminators)
-            };
-
-            serializer.Populate(obj.CreateReader(), action);
-            return action;
-        }
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value is null)
-            {
-                writer.WriteNull();
-                return;
-            }
-
-            if (value is not ActionDefinition action)
-            {
-                throw new JsonSerializationException($"Expected {nameof(ActionDefinition)} value.");
-            }
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("id");
-            serializer.Serialize(writer, action.Id);
-            writer.WritePropertyName("type");
-            writer.WriteValue(action.Type);
-
-            switch (action)
-            {
-                case SendCommandAction sendCommand:
-                    writer.WritePropertyName("command");
-                    writer.WriteValue(sendCommand.Command);
-                    break;
-
-                case ChangeInstanceStatusAction changeInstanceStatus:
-                    writer.WritePropertyName("action");
-                    writer.WriteValue(changeInstanceStatus.Action);
-                    break;
-
-                case SendNotificationAction sendNotification:
-                    writer.WritePropertyName("title");
-                    writer.WriteValue(sendNotification.Title);
-                    writer.WritePropertyName("message");
-                    writer.WriteValue(sendNotification.Message);
-                    writer.WritePropertyName("severity");
-                    writer.WriteValue(sendNotification.Severity);
-                    break;
-
-                default:
-                    throw new JsonSerializationException(
-                        $"Unsupported runtime type '{action.GetType().Name}' for {nameof(ActionDefinition)}.");
-            }
-
-            writer.WriteEndObject();
-        }
     }
 
     /// <summary>
@@ -852,42 +593,6 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
                 StjJsonValueKind.False => false,
                 _ => throw new StjJsonException($"Cannot convert {propertyName} to boolean")
             };
-        }
-    }
-
-    /// <summary>
-    /// Discriminator helpers for the Newtonsoft compatibility converter path.
-    /// Kept for backward compatibility; mirrors <see cref="EventRuleDiscriminatorStjHelper" /> error behavior.
-    /// </summary>
-    internal static class EventRuleDiscriminatorJsonHelper
-    {
-        public static string ReadDiscriminator(JObject obj, string baseTypeName)
-        {
-            if (!obj.TryGetValue("type", out var typeToken) || typeToken.Type == JTokenType.Null)
-            {
-                throw new JsonSerializationException($"Missing discriminator 'type' for {baseTypeName}.");
-            }
-
-            if (typeToken.Type != JTokenType.String)
-            {
-                throw new JsonSerializationException(
-                    $"Invalid discriminator 'type' for {baseTypeName}: expected string.");
-            }
-
-            var discriminator = typeToken.Value<string>();
-            if (string.IsNullOrWhiteSpace(discriminator))
-            {
-                throw new JsonSerializationException($"Missing discriminator 'type' for {baseTypeName}.");
-            }
-
-            return discriminator;
-        }
-
-        public static JsonSerializationException UnknownDiscriminator(string baseTypeName, string discriminator,
-            IReadOnlyCollection<string> knownValues)
-        {
-            return new JsonSerializationException(
-                $"Unknown {baseTypeName} discriminator '{discriminator}'. Known values: {string.Join(", ", knownValues)}.");
         }
     }
 }

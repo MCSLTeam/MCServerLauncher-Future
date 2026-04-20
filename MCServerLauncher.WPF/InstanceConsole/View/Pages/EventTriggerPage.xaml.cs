@@ -115,8 +115,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             if (sender is Button button && button.Tag is EventRule rule)
             {
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(rule, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
-                var newRule = Newtonsoft.Json.JsonConvert.DeserializeObject<EventRule>(json, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
+                var json = System.Text.Json.JsonSerializer.Serialize(rule, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
+                var newRule = System.Text.Json.JsonSerializer.Deserialize<EventRule>(json, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
                 if (newRule != null)
                 {
                     newRule.Id = Guid.NewGuid();
@@ -165,7 +165,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 try
                 {
                     var json = System.IO.File.ReadAllText(dialog.FileName);
-                    var rules = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.List<EventRule>>(json, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
+                    var rules = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<EventRule>>(json, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
                     if (rules != null)
                     {
                         foreach (var rule in rules)
@@ -205,7 +205,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                         ? RulesListView.SelectedItems.Cast<EventRule>().ToList() 
                         : Rules.ToList();
 
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(rulesToExport, Newtonsoft.Json.Formatting.Indented, MCServerLauncher.Common.ProtoType.JsonSettings.Settings);
+                    var json = System.Text.Json.JsonSerializer.Serialize(rulesToExport, new System.Text.Json.JsonSerializerOptions(MCServerLauncher.Common.ProtoType.JsonSettings.Settings) { WriteIndented = true });
                     System.IO.File.WriteAllText(dialog.FileName, json);
                     Notification.Push(Lang.Tr["Success"], Lang.Tr["Success"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
                 }

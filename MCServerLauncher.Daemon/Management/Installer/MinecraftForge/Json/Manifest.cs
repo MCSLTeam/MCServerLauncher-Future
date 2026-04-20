@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
 public class Manifest
 {
-    [JsonProperty("versions")] private List<Info>? _versions;
+    [JsonPropertyName("versions")] private List<Info>? _versions;
 
     public string GetUrl(string version)
     {

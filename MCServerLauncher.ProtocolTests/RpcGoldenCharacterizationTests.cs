@@ -1,12 +1,15 @@
+using System.Text.Json;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Daemon.Serialization;
+using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
-using MCServerLauncher.Common.ProtoType.Serialization;
-using System.Text.Json;
-using Newtonsoft.Json;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -17,10 +20,8 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_PingEmptyParams_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_PingEmptyParams_ClientRpcBoundary_MatchesFrozenFixture()
     {
-        // Schema-lock fixture: keep envelope field names/shape for RPC compatibility.
-        // Required/null cleanup can be intentionally changed later, but shape must remain explicit.
         var request = new ActionRequest
         {
             ActionType = ActionType.Ping,
@@ -29,19 +30,19 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            SerializeClientRpc(request),
             RpcFixturePaths.ActionRequestDir,
             "ping-empty-params.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_SubscribeEventNullMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_SubscribeEventNullMeta_ClientRpcBoundary_MatchesFrozenFixture()
     {
         var request = new ActionRequest
         {
             ActionType = ActionType.SubscribeEvent,
-            Parameter = ParseViaNewtonsoft(new SubscribeEventParameter
+            Parameter = SerializeClientPayloadElement(new SubscribeEventParameter
             {
                 Type = EventType.InstanceLog,
                 Meta = null
@@ -50,22 +51,22 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            SerializeClientRpc(request),
             RpcFixturePaths.ActionRequestDir,
             "subscribe-event-null-meta.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_SubscribeEventConcreteMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_SubscribeEventConcreteMeta_ClientRpcBoundary_MatchesFrozenFixture()
     {
         var request = new ActionRequest
         {
             ActionType = ActionType.SubscribeEvent,
-            Parameter = ParseViaNewtonsoft(new SubscribeEventParameter
+            Parameter = SerializeClientPayloadElement(new SubscribeEventParameter
             {
                 Type = EventType.InstanceLog,
-                Meta = ParseViaNewtonsoft(new InstanceLogEventMeta
+                Meta = SerializeClientPayloadElement(new InstanceLogEventMeta
                 {
                     InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
                 })
@@ -74,86 +75,89 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            SerializeClientRpc(request),
             RpcFixturePaths.ActionRequestDir,
             "subscribe-event-concrete-meta.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_SaveEventRulesNestedParameter_ClientRpcBoundary_MatchesFrozenFixture()
     {
         var request = new ActionRequest
         {
             ActionType = ActionType.SaveEventRules,
-            Parameter = ParseJsonElement(
-                """
-                {
-                  "instance_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-                  "rules": [
+            Parameter = SerializeClientPayloadElement(new SaveEventRulesParameter
+            {
+                InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Rules =
+                [
+                    new EventRule
                     {
-                      "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                      "name": "rule-one",
-                      "description": "nested-shape",
-                      "is_enabled": true,
-                      "trigger_condition": "Any",
-                      "triggers": [
-                        {
-                          "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
-                          "type": "ConsoleOutput",
-                          "pattern": "joined",
-                          "is_regex": false
-                        }
-                      ],
-                      "action_execution_mode": "Sequential",
-                      "rulesets": [
-                        {
-                          "id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
-                          "type": "AlwaysTrue"
-                        }
-                      ],
-                      "actions": [
-                        {
-                          "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
-                          "type": "SendCommand",
-                          "command": "say hi"
-                        }
-                      ]
+                        Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                        Name = "rule-one",
+                        Description = "nested-shape",
+                        IsEnabled = true,
+                        TriggerCondition = "Any",
+                        Triggers =
+                        [
+                            new ConsoleOutputTrigger
+                            {
+                                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                                Pattern = "joined",
+                                IsRegex = false
+                            }
+                        ],
+                        ActionExecutionMode = "Sequential",
+                        Rulesets =
+                        [
+                            new AlwaysTrueRuleset
+                            {
+                                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+                            }
+                        ],
+                        Actions =
+                        [
+                            new SendCommandAction
+                            {
+                                Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                                Command = "say hi"
+                            }
+                        ]
                     }
-                  ]
-                }
-                """),
+                ]
+            }),
             Id = FixedRequestId
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            SerializeClientRpc(request),
             RpcFixturePaths.ActionRequestDir,
             "save-event-rules-nested-parameter.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionResponse_SuccessTypedData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionResponse_SuccessTypedData_DaemonRpcBoundary_MatchesFrozenFixture()
     {
         var response = new ActionResponse
         {
             RequestStatus = ActionRequestStatus.Ok,
             Retcode = ActionRetcode.Ok.Code,
             Message = ActionRetcode.Ok.Message,
-            Data = ParseViaNewtonsoft(new PingResult { Time = 1717171717171 }),
+            Data = StjJsonSerializer.SerializeToElement(new PingResult { Time = 1717171717171 }, DaemonRpcJsonBoundary.StjOptions),
             Id = FixedResponseId
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(response, JsonSettings.Settings),
+            SerializeDaemonRpc(response),
             RpcFixturePaths.ActionResponseDir,
             "success-typed-data.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionResponse_SuccessEmptyObjectData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionResponse_SuccessEmptyObjectData_DaemonRpcBoundary_MatchesFrozenFixture()
     {
         var response = new ActionResponse
         {
@@ -165,14 +169,14 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(response, JsonSettings.Settings),
+            SerializeDaemonRpc(response),
             RpcFixturePaths.ActionResponseDir,
             "success-empty-object-data.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionResponse_ErrorNullDataMessageRetcodeShape_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionResponse_ErrorNullDataMessageRetcodeShape_DaemonRpcBoundary_MatchesFrozenFixture()
     {
         var response = new ActionResponse
         {
@@ -184,44 +188,44 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(response, JsonSettings.Settings),
+            SerializeDaemonRpc(response),
             RpcFixturePaths.ActionResponseDir,
             "error-null-data-message-retcode-shape.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void EventPacket_WithMetaAndData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void EventPacket_WithMetaAndData_DaemonRpcBoundary_MatchesFrozenFixture()
     {
         var packet = new EventPacket
         {
             EventType = EventType.InstanceLog,
-            EventMeta = JsonPayloadBuffer.FromObject(new InstanceLogEventMeta
+            EventMeta = SerializeDaemonPayloadBuffer(new InstanceLogEventMeta
             {
                 InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-            }, JsonSettings.Settings),
-            EventData = JsonPayloadBuffer.FromObject(new InstanceLogEventData
+            }),
+            EventData = SerializeDaemonPayloadBuffer(new InstanceLogEventData
             {
                 Log = "[12:00:00] [Server thread/INFO]: Hello"
-            }, JsonSettings.Settings),
+            }),
             Timestamp = 1717171717000
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(packet, JsonSettings.Settings),
+            SerializeDaemonRpc(packet),
             RpcFixturePaths.EventPacketDir,
             "with-meta-and-data.json");
     }
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void EventPacket_NullMetaStructuredData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void EventPacket_NullMetaStructuredData_DaemonRpcBoundary_MatchesFrozenFixture()
     {
         var packet = new EventPacket
         {
             EventType = EventType.DaemonReport,
-            EventMeta = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings),
-            EventData = JsonPayloadBuffer.FromObject(new DaemonReportEventData
+            EventMeta = null,
+            EventData = SerializeDaemonPayloadBuffer(new DaemonReportEventData
             {
                 Report = new DaemonReport(
                     new OsInfo("Windows", "x64"),
@@ -229,14 +233,34 @@ public class RpcGoldenCharacterizationTests
                     new MemInfo(1024UL * 1024UL, 512UL * 1024UL),
                     new DriveInformation("NTFS", 1_000_000_000UL, 500_000_000UL),
                     1717171717000)
-            }, JsonSettings.Settings),
+            }),
             Timestamp = 1717171717999
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(packet, JsonSettings.Settings),
+            SerializeDaemonRpc(packet),
             RpcFixturePaths.EventPacketDir,
             "null-meta-structured-data.json");
+    }
+
+    private static string SerializeClientRpc<T>(T value)
+    {
+        return StjJsonSerializer.Serialize(value, DaemonClientRpcJsonBoundary.StjOptions);
+    }
+
+    private static string SerializeDaemonRpc<T>(T value)
+    {
+        return StjJsonSerializer.Serialize(value, DaemonRpcJsonBoundary.StjOptions);
+    }
+
+    private static JsonElement SerializeClientPayloadElement<T>(T value)
+    {
+        return StjJsonSerializer.SerializeToElement(value, DaemonClientRpcJsonBoundary.StjOptions);
+    }
+
+    private static JsonPayloadBuffer SerializeDaemonPayloadBuffer<T>(T payload)
+    {
+        return JsonPayloadBuffer.FromObject(payload, DaemonRpcJsonBoundary.StjOptions);
     }
 
     private static void AssertMatchesFixture(string actualJson, string fixtureDir, string fixtureFile)
@@ -244,12 +268,6 @@ public class RpcGoldenCharacterizationTests
         var expected = FixtureHarness.LoadFixture(fixtureDir, fixtureFile);
         var actual = FixtureHarness.ParseJson(actualJson);
         FixtureHarness.AssertStructuralEquals(expected, actual, fixtureFile);
-    }
-
-    private static JsonElement ParseViaNewtonsoft(object payload)
-    {
-        var json = JsonConvert.SerializeObject(payload, JsonSettings.Settings);
-        return ParseJsonElement(json);
     }
 
     private static JsonElement ParseJsonElement(string json)

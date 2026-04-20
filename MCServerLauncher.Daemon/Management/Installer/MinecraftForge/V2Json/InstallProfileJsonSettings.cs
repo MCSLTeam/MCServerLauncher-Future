@@ -1,17 +1,14 @@
-﻿using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 
 public class InstallProfileJsonSettings
 {
-    public static readonly JsonSerializerSettings Settings = new()
+    public static readonly JsonSerializerOptions Settings = new()
     {
-        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-        Converters = new List<JsonConverter>
-        {
-            new Artifact.ArtifactConverter()
-        }
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new Artifact.ArtifactStjConverter() }
     };
 }

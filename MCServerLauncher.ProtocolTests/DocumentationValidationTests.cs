@@ -401,7 +401,7 @@ public class DocumentationValidationTests
     {
         var doc = LoadPolicyDocument();
         
-        // Section 5 should document remaining Newtonsoft dependencies
+        // Section 5 should document remaining migration items
         var expectedDeferredItems = new[]
         {
             "Permission.cs",

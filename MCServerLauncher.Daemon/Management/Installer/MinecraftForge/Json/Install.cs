@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
 public class Install
 {
-    [JsonProperty("filePath")] public string? FilePath { get; set; }
+    [JsonPropertyName("filePath")] public string? FilePath { get; set; }
     public int Spec { get; set; }
     public string Minecraft { get; set; }
     public string Json { get; set; }

@@ -362,3 +362,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 .idea/
+
+.sisyphus

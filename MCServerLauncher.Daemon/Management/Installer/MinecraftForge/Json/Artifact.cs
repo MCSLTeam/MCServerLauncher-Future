@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
@@ -79,26 +80,18 @@ public class Artifact
         return Descriptor;
     }
 
-    public class ArtifactConverter : JsonConverter<Artifact>
+    public class ArtifactStjConverter : JsonConverter<Artifact>
     {
-        public override void WriteJson(JsonWriter writer, Artifact? value, JsonSerializer serializer)
+        public override Artifact? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (value == null)
-                writer.WriteNull();
-            else
-                writer.WriteValue(value.Descriptor);
+            return reader.TokenType == JsonTokenType.String
+                ? FromDescriptor(reader.GetString()!)
+                : null;
         }
 
-        public override Artifact ReadJson(
-            JsonReader reader,
-            Type objectType,
-            Artifact? existingValue,
-            bool hasExistingValue,
-            JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Artifact value, JsonSerializerOptions options)
         {
-            return reader.TokenType == JsonToken.String
-                ? FromDescriptor(reader.Value!.ToString()!)
-                : null!;
+            writer.WriteStringValue(value.Descriptor);
         }
     }
 }

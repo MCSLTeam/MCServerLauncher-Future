@@ -4,10 +4,11 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Serialization;
+using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.ProtocolTests.Fixtures.Persistence;
 using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
-using Newtonsoft.Json;
+using StjJsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -15,12 +16,12 @@ public class EventRuleDiscriminatorCharacterizationTests
 {
     [Fact]
     [Trait("Category", "EventRuleKnown")]
-    public void EventRuleKnown_DedicatedFixture_DeserializesKnownDiscriminatorsAndRoundTrips()
+    public void EventRuleKnown_PersistenceBoundaryFixture_DeserializesKnownDiscriminatorsAndRoundTrips()
     {
         var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, "known-discriminators-event-rule.json");
         var fixture = FixtureHarness.LoadFixture(fixturePath);
 
-        var parsed = JsonConvert.DeserializeObject<EventRule>(fixture.GetRawText(), JsonSettings.Settings);
+        var parsed = StjJsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), DaemonPersistenceJsonBoundary.StjOptions);
         Assert.NotNull(parsed);
 
         Assert.Collection(parsed!.Rulesets,
@@ -38,51 +39,20 @@ public class EventRuleDiscriminatorCharacterizationTests
             action => Assert.IsType<ChangeInstanceStatusAction>(action),
             action => Assert.IsType<SendNotificationAction>(action));
 
-        var canonical = JsonConvert.SerializeObject(parsed, Formatting.Indented, JsonSettings.Settings);
+        var canonical = StjJsonSerializer.Serialize(parsed, DaemonPersistenceJsonBoundary.StjOptions);
         FixtureHarness.AssertStructuralEquals(fixture, FixtureHarness.ParseJson(canonical),
-            "known EventRule discriminators should remain compatible");
-    }
-
-    [Fact]
-    [Trait("Category", "EventRuleKnown")]
-    public void EventRuleKnown_SystemTextJson_DedicatedFixture_RoundTripsKnownDiscriminators()
-    {
-        var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, "known-discriminators-event-rule.json");
-        var fixture = FixtureHarness.LoadFixture(fixturePath);
-
-        var options = DaemonPersistenceJsonBoundary.CreateStjOptions();
-        var parsed = System.Text.Json.JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), options);
-        Assert.NotNull(parsed);
-
-        Assert.Collection(parsed!.Rulesets,
-            ruleset => Assert.IsType<AlwaysTrueRuleset>(ruleset),
-            ruleset => Assert.IsType<AlwaysFalseRuleset>(ruleset),
-            ruleset => Assert.IsType<InstanceStatusRuleset>(ruleset));
-
-        Assert.Collection(parsed.Triggers,
-            trigger => Assert.IsType<ConsoleOutputTrigger>(trigger),
-            trigger => Assert.IsType<ScheduleTrigger>(trigger),
-            trigger => Assert.IsType<InstanceStatusTrigger>(trigger));
-
-        Assert.Collection(parsed.Actions,
-            action => Assert.IsType<SendCommandAction>(action),
-            action => Assert.IsType<ChangeInstanceStatusAction>(action),
-            action => Assert.IsType<SendNotificationAction>(action));
-
-        var canonical = System.Text.Json.JsonSerializer.Serialize(parsed, options);
-        FixtureHarness.AssertStructuralEquals(fixture, FixtureHarness.ParseJson(canonical),
-            "known EventRule discriminators should round-trip through System.Text.Json too");
+            "known EventRule discriminators should round-trip through the persistence boundary");
     }
 
     [Fact]
     [Trait("Category", "EventRuleUnknown")]
-    public void EventRuleUnknown_SystemTextJson_UnknownTriggerDiscriminator_ThrowsExplicitFailure()
+    public void EventRuleUnknown_PersistenceBoundary_UnknownTriggerDiscriminator_ThrowsExplicitFailure()
     {
         var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, "unknown-trigger-discriminator-event-rule.json");
         var fixture = FixtureHarness.LoadFixture(fixturePath);
 
-        var ex = Assert.Throws<System.Text.Json.JsonException>(() =>
-            System.Text.Json.JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), DaemonPersistenceJsonBoundary.StjOptions));
+        var ex = Assert.Throws<JsonException>(() =>
+            StjJsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), DaemonPersistenceJsonBoundary.StjOptions));
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
         Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);
@@ -95,7 +65,9 @@ public class EventRuleDiscriminatorCharacterizationTests
         var persistenceJson = File.ReadAllText(Path.Combine(
             PersistenceFixturePaths.InstanceConfigDir,
             "event-rule-heavy-daemon-instance.json"));
-        var persistenceParsed = JsonConvert.DeserializeObject<InstanceConfig>(persistenceJson, JsonSettings.Settings);
+        var persistenceParsed = StjJsonSerializer.Deserialize<InstanceConfig>(
+            persistenceJson,
+            DaemonPersistenceJsonBoundary.StjOptions);
 
         Assert.NotNull(persistenceParsed);
         Assert.NotEmpty(persistenceParsed!.EventRules);
@@ -109,13 +81,13 @@ public class EventRuleDiscriminatorCharacterizationTests
         var rpcJson = File.ReadAllText(Path.Combine(
             RpcFixturePaths.ActionRequestDir,
             "save-event-rules-nested-parameter.json"));
-        var request = JsonConvert.DeserializeObject<ActionRequest>(rpcJson, JsonSettings.Settings);
+        var request = StjJsonSerializer.Deserialize<ActionRequest>(rpcJson, DaemonClientRpcJsonBoundary.StjOptions);
         Assert.NotNull(request);
         Assert.NotNull(request!.Parameter);
 
-        var parameter = JsonConvert.DeserializeObject<SaveEventRulesParameter>(
+        var parameter = StjJsonSerializer.Deserialize<SaveEventRulesParameter>(
             request.Parameter.Value.GetRawText(),
-            JsonSettings.Settings);
+            DaemonClientRpcJsonBoundary.StjOptions);
         Assert.NotNull(parameter);
         Assert.NotEmpty(parameter!.Rules);
 
@@ -130,19 +102,9 @@ public class EventRuleDiscriminatorCharacterizationTests
 
     [Fact]
     [Trait("Category", "EventRuleUnknown")]
-    public void EventRuleUnknown_UnknownTriggerDiscriminator_ThrowsExplicitFailure()
-    {
-        var ex = Assert.Throws<JsonSerializationException>(() => DeserializeEventRuleFixture("unknown-trigger-discriminator-event-rule.json"));
-
-        Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
-        Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);
-    }
-
-    [Fact]
-    [Trait("Category", "EventRuleUnknown")]
     public void EventRuleUnknown_MissingRulesetDiscriminator_ThrowsExplicitFailure()
     {
-        var ex = Assert.Throws<JsonSerializationException>(() => DeserializeEventRuleFixture("missing-ruleset-discriminator-event-rule.json"));
+        var ex = Assert.Throws<JsonException>(() => DeserializeEventRuleFixture("missing-ruleset-discriminator-event-rule.json"));
 
         Assert.Contains("Missing discriminator 'type' for RulesetDefinition", ex.Message);
     }
@@ -151,7 +113,7 @@ public class EventRuleDiscriminatorCharacterizationTests
     [Trait("Category", "EventRuleUnknown")]
     public void EventRuleUnknown_InvalidActionDiscriminatorType_ThrowsExplicitFailure()
     {
-        var ex = Assert.Throws<JsonSerializationException>(() => DeserializeEventRuleFixture("invalid-action-discriminator-event-rule.json"));
+        var ex = Assert.Throws<JsonException>(() => DeserializeEventRuleFixture("invalid-action-discriminator-event-rule.json"));
 
         Assert.Contains("Invalid discriminator 'type' for ActionDefinition: expected string", ex.Message);
     }
@@ -159,6 +121,6 @@ public class EventRuleDiscriminatorCharacterizationTests
     private static EventRule DeserializeEventRuleFixture(string fixtureFile)
     {
         var json = File.ReadAllText(Path.Combine(PersistenceFixturePaths.EventRuleDir, fixtureFile));
-        return JsonConvert.DeserializeObject<EventRule>(json, JsonSettings.Settings)!;
+        return StjJsonSerializer.Deserialize<EventRule>(json, DaemonPersistenceJsonBoundary.StjOptions)!;
     }
 }

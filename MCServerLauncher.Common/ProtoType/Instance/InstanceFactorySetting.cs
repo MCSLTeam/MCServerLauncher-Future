@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
 
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
@@ -7,10 +7,10 @@ namespace MCServerLauncher.Common.ProtoType.Instance;
 /// </summary>
 public record InstanceFactorySetting : InstanceConfig
 {
-    [JsonProperty(Required = Required.Always)]
+    [SysTextJsonRequired]
     public string Source { get; init; } = null!;
 
-    [JsonProperty(Required = Required.Always)]
+    [SysTextJsonRequired]
     public SourceType SourceType { get; init; }
 
     public InstanceFactoryMirror Mirror { get; init; } = InstanceFactoryMirror.None;

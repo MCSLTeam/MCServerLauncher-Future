@@ -1,1 +1,1 @@
-{"valid":"instance.start","invalid_throws":true,"invalid_exception_type":"ArgumentException","invalid_inner_exception_type":null}
+{"valid_parses":true,"valid_exception_type":null,"valid_inner_exception_type":null,"invalid_parses":false,"invalid_exception_type":"ArgumentException","invalid_inner_exception_type":null}

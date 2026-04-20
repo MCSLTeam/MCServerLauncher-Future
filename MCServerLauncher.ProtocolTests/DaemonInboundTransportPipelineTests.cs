@@ -207,7 +207,7 @@ public class DaemonInboundTransportPipelineTests
     [Fact]
     [Trait("Category", "Inbound")]
     [Trait("Category", "DaemonInbound")]
-    public void ResponseUtils_FromResult_None_ProjectsEmptyObjectWithoutJObjectBridge()
+    public void ResponseUtils_FromResult_None_ProjectsEmptyObjectViaStjOnly()
     {
         var response = ResponseUtils.FromResult(
             RResult.Ok<Option<IActionResult>, ActionError>(Option.None<IActionResult>()),
