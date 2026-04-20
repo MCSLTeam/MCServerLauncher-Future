@@ -9,7 +9,7 @@ using TouchSocket.Sockets;
 namespace MCServerLauncher.Daemon.Remote;
 
 public class WsBasePlugin(IHttpService httpService, WsContextContainer container)
-    : PluginBase, IWsPlugin, IWebSocketConnectedPlugin, IWebSocketClosedPlugin
+    : PluginBase, IWsPlugin, IWebSocketClosedPlugin, IWebSocketConnectingPlugin
 {
     public async Task OnWebSocketClosed(IWebSocket webSocket, ClosedEventArgs e)
     {
@@ -47,7 +47,7 @@ public class WsBasePlugin(IHttpService httpService, WsContextContainer container
         await e.InvokeNext();
     }
 
-    public async Task OnWebSocketConnected(IWebSocket webSocket, HttpContextEventArgs e)
+    public async Task OnWebSocketConnecting(IWebSocket webSocket, HttpContextEventArgs e)
     {
         var token = e.Context.Request.Query["token"].First!;
         WsContext context;
@@ -74,4 +74,5 @@ public class WsBasePlugin(IHttpService httpService, WsContextContainer container
 
     public IHttpService HttpService { get; init; } = httpService;
     public WsContextContainer Container { get; init; } = container;
+    
 }

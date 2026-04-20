@@ -33,7 +33,8 @@ internal sealed class TouchSocketClientTransport : DisposableObject
     public event Action<EventType, long, IEventMeta?, IEventData?>? EventReceived;
     public event Action<ActionResponse>? ActionResponseReceived;
 
-    public async Task OpenAsync(string address, int port, string token, bool isSecure, CancellationToken cancellationToken = default)
+    public async Task OpenAsync(string address, int port, string token, bool isSecure,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         await Client.SetupAsync(CreateTransportConfig(address, port, token, isSecure));
@@ -43,7 +44,7 @@ internal sealed class TouchSocketClientTransport : DisposableObject
     public Task SendAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Client.SendAsync(payload, WSDataType.Text);
+        return Client.SendAsync(payload, WSDataType.Text, true, cancellationToken);
     }
 
     public Task CloseAsync()
