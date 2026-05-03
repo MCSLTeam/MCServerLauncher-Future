@@ -102,6 +102,16 @@ _All high priority items completed!_
 
 ### WPF Improvements
 
+- [x] **Complete create instance functionality** (current)
+  - Implemented FinishSetup method in CreateMinecraftJavaInstanceProvider
+  - Collects data from all steps (Core, Jvm, JvmArgument, InstanceName)
+  - Builds InstanceFactorySetting with proper SourceType.Core and TargetType.Jar
+  - Calls daemon.AddInstanceAsync to create the instance
+  - Provides user feedback via notifications for success/error states
+  - Wired up FinishButton Click event in XAML
+  - Added necessary using statements (DaemonClient, Constants)
+  - Note: Other provider classes (Bedrock, Terraria, etc.) still need implementation
+
 - [ ] **Fix nullable reference type warnings in WPF project**
   - Location: `MCServerLauncher.WPF/` (multiple files)
   - Current: 190 warnings (CS8604, CS8602, CS8618, CS8622)

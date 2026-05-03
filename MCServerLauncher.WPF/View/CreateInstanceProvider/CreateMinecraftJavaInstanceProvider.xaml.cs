@@ -1,5 +1,6 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.CreateInstance;
 using MCServerLauncher.WPF.View.Pages;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using static MCServerLauncher.WPF.Modules.Constants;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
@@ -101,8 +103,107 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             }
         }
 
-        //private void FinishSetup(object sender, RoutedEventArgs e)
-        //{
-        //}
+        private async void FinishSetup(object sender, RoutedEventArgs e)
+        {
+            FinishButton.IsEnabled = false;
+
+            try
+            {
+                var coreData = Core.ActualData;
+                var jvmData = Jvm.ActualData;
+                var jvmArgumentData = JvmArgument.ActualData;
+                var instanceNameData = InstanceName.ActualData;
+
+                string corePath = coreData.Data as string ?? string.Empty;
+                string javaPath = jvmData.Data as string ?? string.Empty;
+                string[] arguments = jvmArgumentData.Data as string[] ?? Array.Empty<string>();
+                string instanceName = instanceNameData.Data as string ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(corePath) || string.IsNullOrWhiteSpace(javaPath) || string.IsNullOrWhiteSpace(instanceName))
+                {
+                    Notification.Push(
+                        Lang.Tr["Error"],
+                        Lang.Tr["CreateInstanceMissingDataError"] ?? "Missing required data",
+                        true,
+                        InfoBarSeverity.Error,
+                        Constants.InfoBarPosition.Top,
+                        5000,
+                        false
+                    );
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
+                var daemonConfig = DaemonsListManager.MatchDaemonBySelection(Constants.SelectedDaemon);
+                var daemon = await DaemonsWsManager.Get(daemonConfig);
+
+                if (daemon == null)
+                {
+                    Notification.Push(
+                        Lang.Tr["Error"],
+                        Lang.Tr["DaemonConnectionError"] ?? "Failed to connect to daemon",
+                        true,
+                        InfoBarSeverity.Error,
+                        Constants.InfoBarPosition.Top,
+                        5000,
+                        false
+                    );
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
+                var setting = new InstanceFactorySetting
+                {
+                    Name = instanceName,
+                    Source = corePath,
+                    SourceType = SourceType.Core,
+                    Target = corePath,
+                    TargetType = TargetType,
+                    InstanceType = InstanceType,
+                    JavaPath = javaPath,
+                    Arguments = arguments,
+                    Mirror = InstanceFactoryMirror.None,
+                    UsePostProcess = false
+                };
+
+                Notification.Push(
+                    Lang.Tr["PleaseWait"],
+                    Lang.Tr["CreatingInstance"] ?? "Creating instance...",
+                    false,
+                    InfoBarSeverity.Informational,
+                    Constants.InfoBarPosition.Top,
+                    -1,
+                    false
+                );
+
+                var config = await daemon.AddInstanceAsync(setting);
+
+                Notification.Push(
+                    Lang.Tr["Success"],
+                    Lang.Tr["InstanceCreatedSuccess"] ?? $"Instance '{instanceName}' created successfully",
+                    true,
+                    InfoBarSeverity.Success,
+                    Constants.InfoBarPosition.Top,
+                    3000,
+                    false
+                );
+
+                var parent = this.TryFindParent<CreateInstancePage>();
+                parent?.CurrentCreateInstance.GoBack();
+            }
+            catch (Exception ex)
+            {
+                Notification.Push(
+                    Lang.Tr["Error"],
+                    $"{Lang.Tr["CreateInstanceError"] ?? "Failed to create instance"}: {ex.Message}",
+                    true,
+                    InfoBarSeverity.Error,
+                    Constants.InfoBarPosition.Top,
+                    5000,
+                    false
+                );
+                FinishButton.IsEnabled = true;
+            }
+        }
     }
 }
