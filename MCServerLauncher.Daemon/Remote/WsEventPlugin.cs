@@ -18,8 +18,10 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 {
     private readonly IEventService _eventService;
     private readonly Channel<(EventType, IEventMeta?, IEventData?)> _eventChannel;
-    private readonly Task _batchProcessorTask;
+    private Task? _batchProcessorTask;
     private readonly CancellationTokenSource _cts;
+    private readonly object _startLock = new();
+    private volatile bool _started;
 
     private readonly record struct PreparedEventPayload(JsonPayloadBuffer? EventMeta, JsonPayloadBuffer? EventData);
     private readonly record struct BatchedEvent(EventType Type, IEventMeta? Meta, IEventData? Data);
@@ -37,8 +39,25 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
             SingleWriter = false
         });
 
-        _eventService.Signal += (e, m, d) => _eventChannel.Writer.TryWrite((e, m, d));
-        _batchProcessorTask = Task.Run(ProcessEventBatchesAsync);
+        _eventService.Signal += OnEventSignal;
+    }
+
+    private void OnEventSignal(EventType e, IEventMeta? m, IEventData? d)
+    {
+        EnsureStarted();
+        _eventChannel.Writer.TryWrite((e, m, d));
+    }
+
+    private void EnsureStarted()
+    {
+        if (_started) return;
+
+        lock (_startLock)
+        {
+            if (_started) return;
+            _batchProcessorTask = Task.Run(ProcessEventBatchesAsync);
+            _started = true;
+        }
     }
 
     private async Task ProcessEventBatchesAsync()
@@ -150,16 +169,20 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 
     public async ValueTask DisposeAsync()
     {
+        _eventService.Signal -= OnEventSignal;
         _cts.Cancel();
         _eventChannel.Writer.Complete();
 
-        try
+        if (_batchProcessorTask is not null)
         {
-            await _batchProcessorTask.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during shutdown
+            try
+            {
+                await _batchProcessorTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown
+            }
         }
 
         _cts.Dispose();

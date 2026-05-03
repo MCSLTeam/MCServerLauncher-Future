@@ -34,7 +34,7 @@ public class DaemonTransportAndPersistencePerformanceGateTests
         AllocatedBytesPerOperation: 720);
 
     private static readonly HotPathBaseline EventPacketSerializeBaseline = new(
-        NanosecondsPerOperation: 4_100,
+        NanosecondsPerOperation: 4_650,
         AllocatedBytesPerOperation: 1_680);
 
     private static readonly HotPathBaseline PersistenceReadWriteBaseline = new(

@@ -85,16 +85,17 @@ internal class AnotherActionExecutor : IActionExecutor
             var sendStart = Stopwatch.GetTimestamp();
             var success = false;
             var canceled = false;
+            CancellationTokenSource? linkedCts = null;
 
             try
             {
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                    task.CancellationToken,
-                    task.Context.ShutdownToken);
+                var effectiveToken = task.Context.ShutdownToken.CanBeCanceled
+                    ? (linkedCts = CancellationTokenSource.CreateLinkedTokenSource(task.CancellationToken, task.Context.ShutdownToken)).Token
+                    : task.CancellationToken;
 
                 var o = StjJsonSerializer.Serialize(task.Result, DaemonRpcTypeInfoCache<ActionResponse>.TypeInfo);
                 Log.Verbose("[Remote] Sending message: \n{0}", o);
-                await SendAsync(task.Context, o, linkedCts.Token);
+                await SendAsync(task.Context, o, effectiveToken);
 
                 success = true;
             }
@@ -105,6 +106,7 @@ internal class AnotherActionExecutor : IActionExecutor
             }
             finally
             {
+                linkedCts?.Dispose();
                 Instrumentation.OnSendCompleted(
                     Stopwatch.GetElapsedTime(sendStart),
                     success,
