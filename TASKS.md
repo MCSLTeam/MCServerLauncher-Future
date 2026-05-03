@@ -16,16 +16,19 @@ _All high priority items completed!_
 
 ### Performance Optimization
 
-- [ ] **Event batching for WebSocket**
-  - Location: `MCServerLauncher.Daemon/Remote/WsEventPlugin.cs`
-  - Current: 1 event = 1 WebSocket send
-  - Proposed: Batch multiple events (harvest mode)
-  - Impact: Reduces WebSocket overhead for high-frequency events
+- [x] **Event batching for WebSocket** (464c703)
+  - Implemented Channel-based event collection with 10ms batching window
+  - Groups events by client to reduce redundant serialization
+  - Supports up to 100 events per batch for high-frequency scenarios
+  - Added proper async disposal for background processor task
+  - Reduces WebSocket overhead for high-frequency events
 
-- [ ] **Merge event sends**
+- [ ] **Merge event sends into single WebSocket frame**
   - Location: `MCServerLauncher.Daemon/Remote/WsEventPlugin.cs`
-  - Related to event batching above
-  - Combine multiple event payloads into single WebSocket frame
+  - Current: Multiple events sent as separate frames (even when batched)
+  - Proposed: Combine multiple EventPacket objects into single frame
+  - Impact: Further reduces WebSocket overhead
+  - Note: Requires protocol change (send array of EventPacket instead of individual packets)
 
 ### Feature Development
 
