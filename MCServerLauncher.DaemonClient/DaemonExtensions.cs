@@ -140,11 +140,12 @@ public static class DaemonExtensions
     /// <param name="path">目标上传文件的本地路径</param>
     /// <param name="dst">位于服务器上的上传目标路径</param>
     /// <param name="chunkSize">传输分块大小</param>
-    /// <param name="timeout">超时时间,单位毫秒,-1表示无限制</param>
+    /// <param name="timeout">超时时间,单位毫秒,-1 表示无限制</param>
+    /// <param name="chunkTimeout">文件块上传间隔的超时时间,单位毫秒,null 表示无限制</param>
     /// <param name="ct">cancellation token</param>
     /// <returns>上传上下文,用于查看进度,剩余时间,上传状态和取消上传等</returns>
     public static async Task<UploadContext> UploadFileAsync(this IDaemon daemon, string path, string dst, int chunkSize,
-        int timeout = -1, CancellationToken ct = default)
+        int timeout = -1, int? chunkTimeout = null, CancellationToken ct = default)
     {
         await _fileTransferSemaphore.WaitAsync(ct);
         try
@@ -164,7 +165,7 @@ public static class DaemonExtensions
                     {
                         Path = dst,
                         Sha1 = sha1,
-                        Timeout = null, // TODO 可配置的文件块上传间隔的超时时间
+                        Timeout = chunkTimeout,
                         Size = size
                     },
                     timeout,
@@ -268,14 +269,15 @@ public static class DaemonExtensions
     /// </summary>
     /// <param name="daemon"></param>
     /// <param name="path">本地路径</param>
-    /// <param name="dst">daemon上的目标路径</param>
+    /// <param name="dst">daemon 上的目标路径</param>
     /// <param name="chunkSize">分块上传大小</param>
     /// <param name="timeout">文件块下载间隔超时时间</param>
+    /// <param name="chunkTimeout">文件块下载间隔的超时时间,单位毫秒,null 表示无限制</param>
     /// <param name="ct"></param>
     /// <returns></returns>
     public static async Task<DownloadContext> DownloadFileAsync(this IDaemon daemon, string path, string dst,
         int chunkSize,
-        int timeout = -1, CancellationToken ct = default)
+        int timeout = -1, int? chunkTimeout = null, CancellationToken ct = default)
     {
         await _fileTransferSemaphore.WaitAsync(ct);
         try
@@ -285,7 +287,7 @@ public static class DaemonExtensions
                 new FileDownloadRequestParameter
                 {
                     Path = path,
-                    Timeout = null // TODO 可配置的文件块下载间隔的超时时间
+                    Timeout = chunkTimeout
                 },
                 timeout,
                 ct
@@ -321,40 +323,51 @@ public static class DaemonExtensions
                         // 写入数据
                         var count = Math.Min(chunkSize, resp.Size - downloadedBytes);
 
-                        // TODO DaemonRequestException处理
-                        var data = await daemon.RequestAsync<FileDownloadRangeResult>(
-                            ActionType.FileDownloadRange,
-                            new FileDownloadRangeParameter
-                            {
-                                FileId = resp.FileId,
-                                Range =
-                                    $"{downloadedBytes}..{downloadedBytes + count}"
-                            },
-                            timeout,
-                            ct
-                        );
-
-                        // TODO IOException处理
-                        await fs.WriteAsync(Encoding.BigEndianUnicode.GetBytes(data.Content), 0, (int)count, ct);
-                        downloadedBytes += count;
-
-                        // 更新context
-                        context.Done = downloadedBytes >= resp.Size;
-                        context.LoadedBytes = downloadedBytes;
-                        if (context.Done)
+                        try
                         {
-                            context.OnDone();
-                            try
+                            var data = await daemon.RequestAsync<FileDownloadRangeResult>(
+                                ActionType.FileDownloadRange,
+                                new FileDownloadRangeParameter
+                                {
+                                    FileId = resp.FileId,
+                                    Range =
+                                        $"{downloadedBytes}..{downloadedBytes + count}"
+                                },
+                                timeout,
+                                ct
+                            );
+
+                            await fs.WriteAsync(Encoding.BigEndianUnicode.GetBytes(data.Content), 0, (int)count, ct);
+                            downloadedBytes += count;
+
+                            // 更新 context
+                            context.Done = downloadedBytes >= resp.Size;
+                            context.LoadedBytes = downloadedBytes;
+                            if (context.Done)
                             {
-                                await daemon.RequestAsync(ActionType.FileDownloadClose, new FileDownloadCloseParameter { FileId = resp.FileId }, timeout, ct);
+                                context.OnDone();
+                                try
+                                {
+                                    await daemon.RequestAsync(ActionType.FileDownloadClose, new FileDownloadCloseParameter { FileId = resp.FileId }, timeout, ct);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"[Daemon] Error occurred when closing download file: {ex}");
+                                }
+                                break;
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Error($"[Daemon] Error occurred when closing download file: {ex}");
-                            }
-                            break;
                         }
-                        
+                        catch (DaemonRequestException e)
+                        {
+                            Log.Error($"[Daemon] Error occurred when downloading file chunk: {e}");
+                            throw;
+                        }
+                        catch (IOException e)
+                        {
+                            Log.Error($"[Daemon] Error occurred when writing file chunk: {e}");
+                            throw;
+                        }
+
                         await Task.Delay(10, cts.Token);
                     }
                 }
