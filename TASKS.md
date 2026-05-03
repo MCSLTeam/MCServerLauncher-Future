@@ -100,6 +100,39 @@ _All high priority items completed!_
   - Added `chunkTimeout` parameter to `DownloadFileAsync`
   - Passed to `FileDownloadRequestParameter.Timeout`
 
+### WPF Improvements
+
+- [ ] **Fix nullable reference type warnings in WPF project**
+  - Location: `MCServerLauncher.WPF/` (multiple files)
+  - Current: 190 warnings (CS8604, CS8602, CS8618, CS8622)
+  - Target: Add proper null checks, required modifiers, and nullable annotations
+  - Files affected:
+    - `View/Pages/DebugPage.xaml.cs`
+    - `View/Components/Generic/DownloadProgressItem.xaml.cs`
+    - `View/Components/CreateInstance/ForgeLoaderSet.xaml.cs`
+    - `View/Components/CreateInstance/NeoForgeLoaderSet.xaml.cs`
+    - `View/Components/CreateInstance/QuiltLoaderSet.xaml.cs`
+    - `View/Components/ResDownloadItem/MCSLSyncResCoreVersionItem.xaml.cs`
+  - Benefit: Improved code safety, better null handling
+
+- [ ] **Improve error handling in download components**
+  - Location: `MCServerLauncher.WPF/View/Components/Generic/DownloadProgressItem.xaml.cs`
+  - Current: Event handlers may not properly handle null references
+  - Target: Add proper null checks and error handling for download operations
+  - Benefit: More robust download UI, better user experience
+
+- [ ] **Refactor loader set components**
+  - Location: `MCServerLauncher.WPF/View/Components/CreateInstance/`
+  - Current: ForgeLoaderSet, NeoForgeLoaderSet, QuiltLoaderSet have similar patterns
+  - Target: Extract common functionality, reduce code duplication
+  - Benefit: Easier maintenance, consistent behavior across loaders
+
+- [ ] **Add input validation for user-facing forms**
+  - Location: `MCServerLauncher.WPF/View/Components/CreateInstance/`
+  - Current: Potential null reference issues when processing user input
+  - Target: Add proper validation before processing form data
+  - Benefit: Better user experience, prevent crashes from invalid input
+
 ---
 
 ## 🟢 Low Priority / Future Enhancements
