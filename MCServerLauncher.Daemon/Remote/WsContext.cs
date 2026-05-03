@@ -6,11 +6,10 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-// TODO: 使用引用GracefulShutdown的CancelToken防止在GetWebsocket().SendAsync在程序关闭时的边界情况
 /// <summary>
-///     线程安全的ws服务上下文
+///     线程安全的 ws 服务上下文
 /// </summary>
-public class WsContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)
+public class WsContext(string clientId, Guid jti, string? permissions, DateTime expiredTo, CancellationToken shutdownToken = default)
 {
     private readonly ConcurrentDictionary<EventType, HashSet<IEventMeta>> _subscribedEvents = new();
 
@@ -18,6 +17,7 @@ public class WsContext(string clientId, Guid jti, string? permissions, DateTime 
     public DateTime ExpiredTo { get; } = expiredTo;
     public Guid JTI { get; } = jti;
     public string ClientId { get; } = clientId;
+    public CancellationToken ShutdownToken { get; } = shutdownToken;
 
     public IWebSocket GetWebsocket()
     {

@@ -119,7 +119,7 @@ internal static class LegacyActionRegistryHarness
 
     public static WsContext CreateContext(string permissions = "*")
     {
-        return new WsContext("legacy-action-test-client", Guid.Empty, permissions, DateTime.UtcNow.AddHours(1));
+        return new WsContext("legacy-action-test-client", Guid.Empty, permissions, DateTime.UtcNow.AddHours(1), CancellationToken.None);
     }
 
     public static SystemInfo CreateSystemInfo()

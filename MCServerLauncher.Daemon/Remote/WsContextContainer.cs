@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsContextContainer : IEnumerable<KeyValuePair<string, WsContext>>
+public class WsContextContainer(GracefulShutdown? gracefulShutdown = null) : IEnumerable<KeyValuePair<string, WsContext>>
 {
     private readonly ConcurrentDictionary<string, WsContext> _contexts = new();
 
@@ -24,7 +24,8 @@ public class WsContextContainer : IEnumerable<KeyValuePair<string, WsContext>>
 
     public WsContext CreateContext(string clientId, Guid jti, string? permissions, DateTime expiredTo)
     {
-        var context = new WsContext(clientId, jti, permissions, expiredTo);
+        var shutdownToken = gracefulShutdown?.CancellationToken ?? CancellationToken.None;
+        var context = new WsContext(clientId, jti, permissions, expiredTo, shutdownToken);
         _contexts.TryAdd(clientId, context);
         return context;
     }

@@ -88,9 +88,13 @@ internal class AnotherActionExecutor : IActionExecutor
 
             try
             {
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                    task.CancellationToken,
+                    task.Context.ShutdownToken);
+
                 var o = StjJsonSerializer.Serialize(task.Result, DaemonRpcTypeInfoCache<ActionResponse>.TypeInfo);
                 Log.Verbose("[Remote] Sending message: \n{0}", o);
-                await SendAsync(task.Context, o, task.CancellationToken);
+                await SendAsync(task.Context, o, linkedCts.Token);
 
                 success = true;
             }

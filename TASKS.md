@@ -8,37 +8,7 @@ Task tracking for the MCServerLauncher-Future project. This document organizes p
 
 ## 🔴 High Priority
 
-### Code Quality & Warnings
-
-- [ ] **Fix nullable reference type warnings (CS8618)**
-  - `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/V2Json/Mirror.cs:5` - Add `required` to `Url` property
-  - `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/V1Json/LibraryInfo.cs:8` - Add `required` to `Name` property
-  - `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/Json/Version.cs` - Multiple properties need `required` modifier
-  - `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/Json/Install.cs` - `Minecraft` and `Json` properties
-  - `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/Json/Artifact.cs` - `Domain`, `Name`, `Version` properties
-  - `MCServerLauncher.Daemon/Remote/Action/ActionExecutor.cs:181-187` - Multiple fields need initialization
-
-- [ ] **Fix switch expression exhaustiveness (CS8524)**
-  - `MCServerLauncher.Daemon/Management/InstanceConfigExtensions.cs:147` - Add missing enum cases for `TargetType`
-
-- [ ] **Fix potential null reference warnings (CS8602)**
-  - `MCServerLauncher.Daemon/Utils/Status/MemoryInfoHelper.cs:26` - Add null check
-  - `MCServerLauncher.Daemon/Utils/Status/MemoryInfoHelper.cs:76` - Add null check
-
-- [ ] **Fix unused field warning (CS0649)**
-  - `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/Json/Manifest.cs:7` - Field `_versions` never assigned
-
-### Critical TODOs
-
-- [ ] **Potential deadlock issue in ConnectionsCommand**
-  - Location: `MCServerLauncher.Daemon/Console/Commands/ConnectionsCommand.cs`
-  - Issue: Potential blocking problem, needs timeout implementation
-  - Priority: High (affects daemon stability)
-
-- [ ] **WebSocket graceful shutdown edge case**
-  - Location: `MCServerLauncher.Daemon/Remote/WsContext.cs`
-  - Issue: `GetWebsocket().SendAsync` may fail during program shutdown
-  - Solution: Use CancellationToken from GracefulShutdown
+_All high priority items completed!_
 
 ---
 
@@ -150,6 +120,29 @@ Task tracking for the MCServerLauncher-Future project. This document organizes p
 
 ## ✅ Recently Completed
 
+### Critical TODOs & Stability Improvements
+
+- ✅ Fixed potential deadlock in ConnectionsCommand expire_all operation
+  - Added 5-second timeout to prevent indefinite blocking on WebSocket close operations
+  - Improved user feedback with timeout notification
+- ✅ Fixed WebSocket graceful shutdown edge case
+  - Integrated GracefulShutdown CancellationToken into WsContext
+  - Modified ActionExecutor to use linked CancellationToken combining task and shutdown tokens
+  - Prevents SendAsync failures during daemon shutdown
+- ✅ Improved i18n compliance in user-facing strings
+  - Added proper spacing between English/Chinese characters and numbers/Chinese characters
+
+### Code Quality & Warnings (ac7e173)
+
+- ✅ Fixed all nullable reference type warnings (CS8618) across 12 files
+  - Added `required` modifiers to Forge installer JSON models
+  - Initialized fields with `= null!` for netstandard2.1 compatibility
+  - Handled object pooling constraints in ActionExecutor
+- ✅ Fixed switch expression exhaustiveness (CS8524) in InstanceConfigExtensions
+- ✅ Fixed potential null reference warnings (CS8602) in MemoryInfoHelper
+- ✅ Fixed unused field warning (CS0649) in Manifest.cs
+- ✅ **Build Status**: 0 warnings, 0 errors
+
 ### Event Metadata Handling
 
 - ✅ Unified explicit JSON null and missing meta semantics in GetEventMeta (ce50cc9)
@@ -181,7 +174,7 @@ Task tracking for the MCServerLauncher-Future project. This document organizes p
 - **Solution**: MCServerLauncher.sln
 - **Projects**: 7 (WPF, Daemon, DaemonClient, Common, Generators, ProtocolTests, Benchmarks)
 - **Target Framework**: .NET 10.0 (C# 14)
-- **Build Warnings**: ~25 (mostly nullable reference types)
+- **Build Warnings**: 0 ✅ (fixed in ac7e173)
 
 ### Test Coverage
 

@@ -22,7 +22,7 @@ public static class ConnectionsCommand
                         var service = source.GetRequiredService<IHttpService>();
 
                         var clientIds = container.GetClientIds().ToArray();
-                        source.SendFeedback("当前Websocket客户端连接数: {Count}", clientIds.Length);
+                        source.SendFeedback("当前 Websocket 客户端连接数: {Count}", clientIds.Length);
                         foreach (var clientId in clientIds)
                             if (service.TryGetClient(clientId, out var client))
                             {
@@ -50,10 +50,14 @@ public static class ConnectionsCommand
                         foreach (var clientId in clientIds)
                             if (service.TryGetClient(clientId, out var client))
                                 tasks.Add(client.WebSocket.CloseAsync("Daemon administrator manual expired this connection"));
-                        
-                        // TODO 潜在的卡死问题：通过设置超时时间解决
-                        Task.WhenAll(tasks.ToArray()).GetAwaiter().GetResult();
-                        source.SendFeedback("已过期并关闭所有Websocket客户端连接");
+
+                        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
+                        var completedTask = Task.WhenAny(Task.WhenAll(tasks.ToArray()), timeoutTask).GetAwaiter().GetResult();
+
+                        if (completedTask == timeoutTask)
+                            source.SendFeedback("已过期并关闭所有 Websocket 客户端连接 (部分连接超时)");
+                        else
+                            source.SendFeedback("已过期并关闭所有 Websocket 客户端连接");
                         return 0;
                     }))
                 .Then(ctx.Argument("cid", Arguments.String()).Executes(cmd =>
