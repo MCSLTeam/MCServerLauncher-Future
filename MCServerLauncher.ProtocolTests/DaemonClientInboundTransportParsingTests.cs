@@ -316,9 +316,20 @@ public class DaemonClientInboundTransportParsingTests
     [Trait("Category", "ClientInboundErrors")]
     public void ClientInboundErrors_DetectEnvelopeType_NonObjectRoot_ThrowsJsonException()
     {
-        var malformed = "[]";
+        var malformed = "\"not an object\"";
 
         Assert.Throws<JsonException>(() => WsReceivedPlugin.DetectEnvelopeType(malformed));
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void DetectEnvelopeType_EmptyArray_ReturnsUnknown()
+    {
+        var emptyBatch = "[]";
+
+        var result = WsReceivedPlugin.DetectEnvelopeType(emptyBatch);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Unknown, result);
     }
 
     [Fact]

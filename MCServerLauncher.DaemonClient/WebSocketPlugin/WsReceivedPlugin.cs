@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -52,11 +53,15 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         }
 
         var payloadData = e.DataFrame.PayloadData;
-        var inbound = ParseInboundEnvelopeFromBytes(payloadData);
-        if (inbound.EnvelopeType == InboundEnvelopeType.Event)
-            DispatchEvent(inbound.EventPacket!);
-        else if (inbound.EnvelopeType == InboundEnvelopeType.Action)
-            DispatchAction(inbound.ActionResponse!);
+        var inbounds = ParseInboundEnvelopesFromBytes(payloadData);
+
+        foreach (var inbound in inbounds)
+        {
+            if (inbound.EnvelopeType == InboundEnvelopeType.Event)
+                DispatchEvent(inbound.EventPacket!);
+            else if (inbound.EnvelopeType == InboundEnvelopeType.Action)
+                DispatchAction(inbound.ActionResponse!);
+        }
 
         await e.InvokeNext();
     }
@@ -73,8 +78,17 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     {
         using var document = JsonDocument.Parse(utf8Json);
         var root = document.RootElement;
+
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            // Batched events - check first element
+            if (root.GetArrayLength() > 0 && root[0].TryGetProperty("event", out _))
+                return InboundEnvelopeType.Event;
+            return InboundEnvelopeType.Unknown;
+        }
+
         if (root.ValueKind != JsonValueKind.Object)
-            throw new JsonException("Inbound message root must be a JSON object.");
+            throw new JsonException("Inbound message root must be a JSON object or array.");
 
         if (root.TryGetProperty("event", out _)) return InboundEnvelopeType.Event;
         if (root.TryGetProperty("status", out _)) return InboundEnvelopeType.Action;
@@ -112,6 +126,65 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             return ParsedInboundEnvelope.FromAction(ParseActionResponse(root));
 
         return ParsedInboundEnvelope.Unknown;
+    }
+
+    internal static List<ParsedInboundEnvelope> ParseInboundEnvelopesFromBytes(ReadOnlyMemory<byte> utf8Json)
+    {
+        var result = new List<ParsedInboundEnvelope>();
+        using var document = JsonDocument.Parse(utf8Json);
+        var root = document.RootElement;
+
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            // Batched events
+            foreach (var element in root.EnumerateArray())
+            {
+                if (element.TryGetProperty("event", out _))
+                {
+                    try
+                    {
+                        result.Add(ParsedInboundEnvelope.FromEvent(ParseEventPacket(element)));
+                    }
+                    catch (JsonException)
+                    {
+                        Log.Fatal(
+                            "[ClientConnection] [ReceiveLoop] Received unexpected event packet in batch: {0}",
+                            element.GetRawText());
+                        throw;
+                    }
+                }
+            }
+            return result;
+        }
+
+        // Single envelope (legacy path)
+        if (root.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Inbound message root must be a JSON object or array.");
+
+        if (root.TryGetProperty("event", out _))
+        {
+            try
+            {
+                result.Add(ParsedInboundEnvelope.FromEvent(ParseEventPacket(root)));
+            }
+            catch (JsonException)
+            {
+                Log.Fatal(
+                    "[ClientConnection] [ReceiveLoop] Received unexpected event packet: {0}\nmay be connected to a unofficial daemon?",
+                    Encoding.UTF8.GetString(utf8Json.Span));
+                throw;
+            }
+            return result;
+        }
+
+        if (root.TryGetProperty("status", out _))
+        {
+            result.Add(ParsedInboundEnvelope.FromAction(ParseActionResponse(root)));
+            return result;
+        }
+
+        result.Add(ParsedInboundEnvelope.Unknown);
+        return result;
     }
 
     internal static EventPacket ParseEventPacket(string received)

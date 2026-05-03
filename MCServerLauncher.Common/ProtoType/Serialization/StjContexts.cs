@@ -21,6 +21,7 @@ namespace MCServerLauncher.Common.ProtoType.Serialization;
 [JsonSerializable(typeof(ActionRequest))]
 [JsonSerializable(typeof(ActionResponse))]
 [JsonSerializable(typeof(EventPacket))]
+[JsonSerializable(typeof(EventPacket[]))]
 public partial class RpcEnvelopeContext : JsonSerializerContext
 {
 }

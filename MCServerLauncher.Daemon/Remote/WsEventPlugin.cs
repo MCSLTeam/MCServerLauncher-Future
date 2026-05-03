@@ -152,10 +152,31 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 
     private static async Task SendEventsToClientAsync(IWebSocket ws, List<(EventType Type, JsonPayloadBuffer? Meta, JsonPayloadBuffer? Data)> events)
     {
-        foreach (var (type, meta, data) in events)
+        if (events.Count == 0)
+            return;
+
+        if (events.Count == 1)
         {
+            var (type, meta, data) = events[0];
             await PrivateSendPreparedEvent(type, meta, data, ws);
+            return;
         }
+
+        // Multiple events: combine into single frame
+        var packets = new EventPacket[events.Count];
+        for (int i = 0; i < events.Count; i++)
+        {
+            var (type, meta, data) = events[i];
+            packets[i] = new EventPacket
+            {
+                EventType = type,
+                EventMeta = meta,
+                EventData = data
+            };
+        }
+
+        var batchPayload = StjJsonSerializer.SerializeToUtf8Bytes(packets, DaemonRpcTypeInfoCache<EventPacket[]>.TypeInfo);
+        await SendTextFrameAsync(ws, batchPayload);
     }
 
     public async Task OnWebSocketClosing(IWebSocket webSocket, ClosingEventArgs e)
