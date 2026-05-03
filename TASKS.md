@@ -26,12 +26,13 @@ _All high priority items completed!_
   - All 297 protocol tests passing consistently
   - Reduces WebSocket overhead for high-frequency events
 
-- [ ] **Merge event sends into single WebSocket frame**
-  - Location: `MCServerLauncher.Daemon/Remote/WsEventPlugin.cs`
-  - Current: Multiple events sent as separate frames (even when batched)
-  - Proposed: Combine multiple EventPacket objects into single frame
-  - Impact: Further reduces WebSocket overhead
-  - Note: Requires protocol change (send array of EventPacket instead of individual packets)
+- [x] **Merge event sends into single WebSocket frame** (4d0d167)
+  - Added EventPacket[] to RpcEnvelopeContext for batch serialization
+  - Combines multiple events into single frame in SendEventsToClientAsync
+  - Client parses both single EventPacket and EventPacket[] arrays
+  - Updated tests to reflect new protocol (arrays are now valid)
+  - All 298 protocol tests passing
+  - Further reduces WebSocket overhead by eliminating per-event frame overhead
 
 ### Feature Development
 
