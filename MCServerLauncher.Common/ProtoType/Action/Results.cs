@@ -126,7 +126,7 @@ public sealed record GetSystemInfoResult : IActionResult
 {
     [JsonRequired]
     [SysTextJsonRequired]
-    public SystemInfo Info { get; init; }
+    public SystemInfo Info { get; init; } = null!;
 }
 
 public sealed record GetEventRulesResult : IActionResult

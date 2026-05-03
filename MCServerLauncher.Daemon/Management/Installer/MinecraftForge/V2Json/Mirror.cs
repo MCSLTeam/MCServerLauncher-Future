@@ -2,5 +2,5 @@
 
 public class Mirror
 {
-    public string Url { get; set; }
+    public required string Url { get; set; }
 }

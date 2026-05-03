@@ -151,7 +151,8 @@ public static class InstanceConfigExtensions
                 $"{string.Join(" ", config.Arguments)} -jar {config.Target}" + (isMcServer ? " nogui" : "")
             ),
             TargetType.Script => (fullPath, ""),
-            TargetType.Executable => (fullPath, string.Join(" ", config.Arguments))
+            TargetType.Executable => (fullPath, string.Join(" ", config.Arguments)),
+            _ => throw new ArgumentOutOfRangeException(nameof(config.TargetType), config.TargetType, "Unknown target type")
         };
     }
 

@@ -11,9 +11,9 @@ public class Artifact
     private string? _path;
 
     // Descriptor parts: group:name:version[:classifier][@extension]
-    public string Domain { get; private set; }
-    public string Name { get; private set; }
-    public string Version { get; private set; }
+    public string Domain { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
+    public string Version { get; private set; } = string.Empty;
     public string? Classifier { get; private set; }
     public string Extension { get; private set; } = "jar";
 

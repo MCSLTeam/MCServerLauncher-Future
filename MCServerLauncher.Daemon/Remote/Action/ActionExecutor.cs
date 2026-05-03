@@ -178,13 +178,13 @@ internal class AnotherActionExecutor : IActionExecutor
 
     private class ActionTask
     {
-        public Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>> AsyncHandler;
+        public Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>> AsyncHandler = null!;
         public CancellationToken CancellationToken;
-        public WsContext Context;
+        public WsContext Context = null!;
         public Guid Id;
         public JsonElement? Param;
-        public IResolver Resolver;
-        public ActionResponse Result;
+        public IResolver Resolver = null!;
+        public ActionResponse Result = null!;
         public long EnqueueTimestamp;
     }
 }

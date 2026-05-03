@@ -19,5 +19,5 @@ public sealed record DaemonReportEventData : IEventData
 {
     [JsonRequired]
     [SysTextJsonRequired]
-    public DaemonReport Report { get; init; }
+    public DaemonReport Report { get; init; } = null!;
 }

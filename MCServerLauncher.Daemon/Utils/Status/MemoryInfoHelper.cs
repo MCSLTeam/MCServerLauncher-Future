@@ -20,7 +20,7 @@ public static class MemoryInfoHelper
 
     private static ulong GetTotalPhysicalMemory()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Session != null)
             try
             {
                 var instances = Session.QueryInstances(
@@ -28,9 +28,8 @@ public static class MemoryInfoHelper
                     "WQL",
                     "SELECT TotalPhysicalMemory FROM Win32_ComputerSystem"
                 ).ToArray();
-                var total = instances.FirstOrDefault()?
-                    .CimInstanceProperties["TotalPhysicalMemory"]?
-                    .Value as ulong? ?? 0UL;
+                var instance = instances.FirstOrDefault();
+                var total = instance?.CimInstanceProperties["TotalPhysicalMemory"]?.Value as ulong? ?? 0UL;
 
                 foreach (var queryInstance in instances) queryInstance.Dispose();
 
@@ -66,7 +65,7 @@ public static class MemoryInfoHelper
 
     public static async Task<MemInfo> GetMemInfo()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Session != null)
         {
             var available = await Task.Run(() =>
             {
@@ -78,9 +77,8 @@ public static class MemoryInfoHelper
                         "WQL",
                         "SELECT FreePhysicalMemory FROM Win32_OperatingSystem"
                     ).ToArray();
-                    var freeKb = instances.FirstOrDefault()?
-                        .CimInstanceProperties["FreePhysicalMemory"]?
-                        .Value as ulong? ?? 0UL;
+                    var instance = instances.FirstOrDefault();
+                    var freeKb = instance?.CimInstanceProperties["FreePhysicalMemory"]?.Value as ulong? ?? 0UL;
 
                     foreach (var queryInstance in instances) queryInstance.Dispose();
 

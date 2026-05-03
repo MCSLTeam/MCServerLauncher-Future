@@ -362,3 +362,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 .idea/
+
+# AI cli configs
+.copilot/
+.claude/
+.gemini/

@@ -4,9 +4,9 @@ namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
 public class Version
 {
-    public string Id { get; set; }
+    public required string Id { get; set; }
 
-    [JsonProperty("downloads")] public Dictionary<string, Download> DownloadDictionary { get; set; }
+    [JsonProperty("downloads")] public required Dictionary<string, Download> DownloadDictionary { get; set; }
 
     public Library[] Libraries { get; set; } = Array.Empty<Library>();
 
@@ -34,19 +34,19 @@ public class Version
 
     public class LibraryDownload : Download
     {
-        public string Path { get; set; }
+        public required string Path { get; set; }
     }
 
     public class Library
     {
-        public Artifact Name { get; set; }
+        public required Artifact Name { get; set; }
 
         public Downloads? Downloads { get; set; }
     }
 
     public class Downloads
     {
-        public LibraryDownload Artifact { get; set; }
+        public required LibraryDownload Artifact { get; set; }
 
         public Dictionary<string, LibraryDownload>? Classifiers { get; set; }
 
