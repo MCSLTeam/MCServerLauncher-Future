@@ -76,25 +76,22 @@ _All high priority items completed!_
 
 ### Error Handling
 
-- [ ] **DaemonRequestException handling**
-  - Location: `MCServerLauncher.DaemonClient/DaemonExtensions.cs`
-  - Add proper exception handling for daemon request failures
+- [x] **DaemonRequestException handling** (1d026bc)
+  - Added proper exception handling in download operations
+  - Added proper exception handling in upload operations (already existed)
 
-- [ ] **IOException handling for file operations**
-  - Location: `MCServerLauncher.DaemonClient/DaemonExtensions.cs`
-  - Add proper exception handling for file I/O operations
+- [x] **IOException handling for file operations** (1d026bc)
+  - Added proper exception handling for file write operations in download
 
 ### Configuration
 
-- [ ] **Configurable file chunk upload timeout**
-  - Location: `MCServerLauncher.DaemonClient/DaemonExtensions.cs`
-  - Current: `Timeout = null`
-  - Add configurable timeout for file chunk uploads
+- [x] **Configurable file chunk upload timeout** (1d026bc)
+  - Added `chunkTimeout` parameter to `UploadFileAsync`
+  - Passed to `FileUploadRequestParameter.Timeout`
 
-- [ ] **Configurable file chunk download timeout**
-  - Location: `MCServerLauncher.DaemonClient/DaemonExtensions.cs`
-  - Current: `Timeout = null`
-  - Add configurable timeout for file chunk downloads
+- [x] **Configurable file chunk download timeout** (1d026bc)
+  - Added `chunkTimeout` parameter to `DownloadFileAsync`
+  - Passed to `FileDownloadRequestParameter.Timeout`
 
 ---
 
@@ -120,7 +117,14 @@ _All high priority items completed!_
 
 ## ✅ Recently Completed
 
-### Critical TODOs & Stability Improvements
+### Configuration & Error Handling (1d026bc)
+
+- ✅ Added configurable file chunk timeouts for upload and download operations
+- ✅ Implemented proper DaemonRequestException handling in file transfer operations
+- ✅ Implemented proper IOException handling in file write operations
+- ✅ Improved i18n spacing in documentation comments
+
+### Critical TODOs & Stability Improvements (7b435a5)
 
 - ✅ Fixed potential deadlock in ConnectionsCommand expire_all operation
   - Added 5-second timeout to prevent indefinite blocking on WebSocket close operations
