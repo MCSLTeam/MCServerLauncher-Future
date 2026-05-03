@@ -67,4 +67,4 @@ the [GNU General Public License Version 3.0](https://github.com/MCSLTeam/MCServe
 
 ## Copyright
 
-Copyright © 2022-2025 MCSLTeam. All rights reserved.
+Copyright © 2022-2026 MCSLTeam. All rights reserved.

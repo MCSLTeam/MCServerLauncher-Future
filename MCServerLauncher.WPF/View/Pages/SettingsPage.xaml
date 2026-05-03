@@ -172,7 +172,7 @@
                                       ButtonContent="{Binding [CheckUpdate], Source={x:Static i18n:Lang.Tr}}" />
 
                 <ui:SettingsExpander Header="{Binding [Settings_About_Title], Source={x:Static i18n:Lang.Tr}}"
-                                     Description="Copyright © 2022-2025 MCSLTeam. All rights reserved.">
+                                     Description="Copyright © 2022-2026 MCSLTeam. All rights reserved.">
                     <ui:SettingsExpander.HeaderIcon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}" />
                     </ui:SettingsExpander.HeaderIcon>
