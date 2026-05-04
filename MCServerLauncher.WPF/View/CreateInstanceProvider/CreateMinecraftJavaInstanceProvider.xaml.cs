@@ -194,6 +194,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     InstanceType = InstanceType,
                     JavaPath = javaPath,
                     Arguments = arguments,
+                    McVersion = "1.21.1", // TODO: Extract from core filename or add version selection step
                     Mirror = InstanceFactoryMirror.None,
                     UsePostProcess = false
                 };
