@@ -41,14 +41,28 @@ public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch
 
     public static McVersion Of(string version)
     {
-        var parts = version.Split('.').Select(ushort.Parse).ToArray();
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            throw new ArgumentException("Version string cannot be null or empty", nameof(version));
+        }
+
+        var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part =>
+            {
+                if (!ushort.TryParse(part, out var value))
+                {
+                    throw new ArgumentException($"Invalid version component '{part}' in version '{version}'", nameof(version));
+                }
+                return value;
+            })
+            .ToArray();
 
         return parts.Length switch
         {
             1 => new McVersion(parts[0], 0, 0),
             2 => new McVersion(parts[0], parts[1], 0),
             3 => new McVersion(parts[0], parts[1], parts[2]),
-            _ => throw new ArgumentException("Invalid minecraft version format")
+            _ => throw new ArgumentException($"Invalid minecraft version format '{version}'. Expected 1-3 numeric components separated by dots.", nameof(version))
         };
     }
 }
