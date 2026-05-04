@@ -184,12 +184,50 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     return;
                 }
 
+                // Upload core file to daemon if it's a local file
+                string sourcePathForDaemon = corePath;
+                if (System.IO.File.Exists(corePath))
+                {
+                    var fileName = System.IO.Path.GetFileName(corePath);
+                    var daemonUploadPath = $"daemon/uploads/{fileName}";
+
+                    Notification.Push(
+                        Lang.Tr["PleaseWait"],
+                        $"【{Lang.Tr["UploadingFile"] ?? "Uploading file"}...】",
+                        false,
+                        InfoBarSeverity.Informational,
+                        Constants.InfoBarPosition.Top,
+                        -1,
+                        false
+                    );
+
+                    var uploadContext = await daemon.UploadFileAsync(corePath, daemonUploadPath, 1024 * 1024); // 1MB chunks
+                    await uploadContext.NetworkLoadTask;
+
+                    if (!uploadContext.Done)
+                    {
+                        Notification.Push(
+                            Lang.Tr["Error"],
+                            $"【{Lang.Tr["FileUploadFailed"] ?? "Failed to upload file"}】",
+                            true,
+                            InfoBarSeverity.Error,
+                            Constants.InfoBarPosition.Top,
+                            5000,
+                            false
+                        );
+                        FinishButton.IsEnabled = true;
+                        return;
+                    }
+
+                    sourcePathForDaemon = daemonUploadPath;
+                }
+
                 var setting = new InstanceFactorySetting
                 {
                     Name = instanceName,
-                    Source = corePath,
+                    Source = sourcePathForDaemon,
                     SourceType = SourceType.Core,
-                    Target = corePath,
+                    Target = System.IO.Path.GetFileName(corePath),
                     TargetType = TargetType,
                     InstanceType = InstanceType,
                     JavaPath = javaPath,
