@@ -5,6 +5,7 @@ using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection;
 using MCServerLauncher.WPF.Modules;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,22 +20,79 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
     /// </summary>
     public partial class SelectMinecraftJavaJvm : ICreateInstanceStep
     {
+        private JavaInfo[]? _cachedJavaList;
+        private bool _isLoadingJavaList;
+        private bool _suppressEvents;
+        private int _pendingSelectionIndex = -1;
+
         public SelectMinecraftJavaJvm()
         {
             InitializeComponent();
 
-            void initialHandler(object sender, TextChangedEventArgs args)
+            JavaRuntimeComboBox.SelectionChanged += OnJavaRuntimeSelectionChanged;
+            JavaRuntimeComboBox.DropDownClosed += OnJavaRuntimeDropDownClosed;
+            JavaRuntimeComboBox.Loaded += OnJavaRuntimeComboBoxLoaded;
+
+            // Load Java list cache on initialization
+            _ = LoadJavaListAsync();
+        }
+
+        private void OnJavaRuntimeComboBoxLoaded(object sender, RoutedEventArgs e)
+        {
+            var textBox = JavaRuntimeComboBox.Template.FindName("PART_EditableTextBox", JavaRuntimeComboBox) as TextBox;
+            if (textBox != null)
             {
-                if (!IsDisposed)
-                {
-                    SetValue(IsFinishedProperty, !string.IsNullOrWhiteSpace(JavaRuntimeTextBox.Text));
-                }
+                textBox.TextChanged += OnJavaRuntimeTextChanged;
+                // Initialize step state on the TextBox, not the ComboBox
+                Modules.VisualTreeHelper.InitStepState(textBox);
             }
+        }
 
-            JavaRuntimeTextBox.TextChanged += initialHandler;
+        private void OnJavaRuntimeTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_suppressEvents)
+            {
+                UpdateIsFinishedStatus();
+            }
+        }
 
-            // As you can see, we have to trigger it manually
-            VisualTreeHelper.InitStepState(JavaRuntimeTextBox);
+        private void OnJavaRuntimeSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsDisposed) return;
+
+            // Store the selected index for processing in DropDownClosed
+            if (e.AddedItems.Count > 0)
+            {
+                _pendingSelectionIndex = JavaRuntimeComboBox.SelectedIndex;
+            }
+        }
+
+        private void OnJavaRuntimeDropDownClosed(object sender, EventArgs e)
+        {
+            if (IsDisposed) return;
+
+            // Process the pending selection after dropdown closes
+            if (_pendingSelectionIndex >= 0 && _cachedJavaList != null && _pendingSelectionIndex < _cachedJavaList.Length)
+            {
+                _suppressEvents = true;
+
+                // Extract only the path
+                var path = _cachedJavaList[_pendingSelectionIndex].Path;
+                JavaRuntimeComboBox.Text = path;
+
+                _suppressEvents = false;
+                _pendingSelectionIndex = -1;
+
+                UpdateIsFinishedStatus();
+            }
+        }
+
+        private void UpdateIsFinishedStatus()
+        {
+            if (!IsDisposed)
+            {
+                SetValue(IsFinishedProperty, !string.IsNullOrWhiteSpace(JavaRuntimeComboBox.Text));
+            }
         }
 
         private bool IsDisposed { get; set; } = false;
@@ -54,6 +112,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             if (d is not SelectMinecraftJavaJvm control) return;
             if (e.NewValue is not bool status) return;
+
             control.StatusShow.Visibility = status switch
             {
                 true => Visibility.Visible,
@@ -72,64 +131,153 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             get => new()
             {
                 Type = CreateInstanceDataType.Path,
-                Data = JavaRuntimeTextBox.Text,
+                Data = JavaRuntimeComboBox.Text,
             };
+        }
+
+        private async Task LoadJavaListAsync()
+        {
+            if (_isLoadingJavaList || _cachedJavaList != null)
+                return;
+
+            _isLoadingJavaList = true;
+
+            try
+            {
+                var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
+                var daemon = await DaemonsWsManager.Get(daemonConfig);
+
+                if (daemon != null)
+                {
+                    _cachedJavaList = await daemon.GetJavaListAsync();
+                    PopulateJavaComboBox();
+                }
+            }
+            catch (Exception)
+            {
+                // Silently fail, user can still manually enter or search
+            }
+            finally
+            {
+                _isLoadingJavaList = false;
+            }
+        }
+
+        private void PopulateJavaComboBox()
+        {
+            if (_cachedJavaList == null || _cachedJavaList.Length == 0)
+                return;
+
+            JavaRuntimeComboBox.Items.Clear();
+            foreach (var jvm in _cachedJavaList)
+            {
+                JavaRuntimeComboBox.Items.Add($"({jvm.Version}, {jvm.Architecture}) {jvm.Path}");
+            }
         }
 
         private async void GetJvmResult(object sender, RoutedEventArgs e)
         {
-            ((MenuItem)sender).IsEnabled = false;
+            var menuItem = (MenuItem)sender;
+            menuItem.IsEnabled = false;
+
             Notification.Push(
                 Lang.Tr["PleaseWait"],
-                Lang.Tr["SearchingJvmTip"],
+                $"【{Lang.Tr["SearchingJvmTip"]}】",
                 false,
                 InfoBarSeverity.Informational,
                 InfoBarPosition.Top,
                 2000,
                 false
             );
-            IDaemon? daemon = null;
-            DaemonConfigModel daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
-            daemon = await DaemonsWsManager.Get(daemonConfig);
-#pragma warning disable CS8604 // 引用类型参数可能为 null。
-            JavaInfo[] jvms = await Task.Run(() => DaemonExtensions.GetJavaListAsync(daemon));
-#pragma warning restore CS8604 // 引用类型参数可能为 null。
-            if (jvms.Length > 0)
+
+            try
             {
-                var jvmDisplayNames = jvms.Select(info => $"({info.Version}, {info.Architecture}) {info.Path}");
-                ScrollViewerEx scroll = new()
+                var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
+                var daemon = await DaemonsWsManager.Get(daemonConfig);
+
+                if (daemon == null)
                 {
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    MaxHeight = 500
-                };
-                SimpleStackPanel panel = new();
-                ListView listView = new()
+                    Notification.Push(
+                        Lang.Tr["Error"],
+                        $"【{Lang.Tr["DaemonConnectionError"] ?? "Failed to connect to daemon"}】",
+                        true,
+                        InfoBarSeverity.Error,
+                        InfoBarPosition.Top,
+                        3000,
+                        false
+                    );
+                    return;
+                }
+
+                var jvms = await daemon.GetJavaListAsync();
+                _cachedJavaList = jvms;
+
+                if (jvms.Length > 0)
                 {
-                    ItemsSource = jvmDisplayNames,
-                    SelectedIndex = 0,
-                    Margin = new Thickness(0, 0, 0, 12)
-                };
-                panel.Children.Add(listView);
-                scroll.Content = panel;
-                ContentDialog dialog = new()
-                {
-                    Title = Lang.Tr["PleaseSelectJvm"],
-                    PrimaryButtonText = Lang.Tr["Continue"],
-                    SecondaryButtonText = Lang.Tr["Cancel"],
-                    DefaultButton = ContentDialogButton.Primary,
-                    FullSizeDesired = false,
-                    Content = scroll,
-                };
-                var result = await dialog.ShowAsync();
-                if (result == ContentDialogResult.Primary)
-                {
-                    if (listView != null && listView.SelectedItem != null)
+                    PopulateJavaComboBox();
+
+                    var jvmDisplayNames = jvms.Select(info => $"({info.Version}, {info.Architecture}) {info.Path}");
+                    ScrollViewerEx scroll = new()
                     {
-                        JavaRuntimeTextBox.Text = jvms[listView.SelectedIndex].Path;
+                        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                        MaxHeight = 500
+                    };
+                    SimpleStackPanel panel = new();
+                    ListView listView = new()
+                    {
+                        ItemsSource = jvmDisplayNames,
+                        SelectedIndex = 0,
+                        Margin = new Thickness(0, 0, 0, 12)
+                    };
+                    panel.Children.Add(listView);
+                    scroll.Content = panel;
+                    ContentDialog dialog = new()
+                    {
+                        Title = Lang.Tr["PleaseSelectJvm"],
+                        PrimaryButtonText = Lang.Tr["Continue"],
+                        SecondaryButtonText = Lang.Tr["Cancel"],
+                        DefaultButton = ContentDialogButton.Primary,
+                        FullSizeDesired = false,
+                        Content = scroll,
+                    };
+                    var result = await dialog.ShowAsync();
+                    if (result == ContentDialogResult.Primary)
+                    {
+                        if (listView != null && listView.SelectedItem != null)
+                        {
+                            JavaRuntimeComboBox.Text = jvms[listView.SelectedIndex].Path;
+                        }
                     }
                 }
+                else
+                {
+                    Notification.Push(
+                        Lang.Tr["Info"],
+                        $"【{Lang.Tr["NoJavaFound"] ?? "No Java runtime found"}】",
+                        true,
+                        InfoBarSeverity.Warning,
+                        InfoBarPosition.Top,
+                        3000,
+                        false
+                    );
+                }
             }
-            ((MenuItem)sender).IsEnabled = true;
+            catch (Exception ex)
+            {
+                Notification.Push(
+                    Lang.Tr["Error"],
+                    $"【{Lang.Tr["SearchJavaError"] ?? "Failed to search Java"}: {ex.Message}】",
+                    true,
+                    InfoBarSeverity.Error,
+                    InfoBarPosition.Top,
+                    5000,
+                    false
+                );
+            }
+            finally
+            {
+                menuItem.IsEnabled = true;
+            }
         }
     }
 }

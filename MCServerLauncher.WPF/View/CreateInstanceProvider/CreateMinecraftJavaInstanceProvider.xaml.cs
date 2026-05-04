@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
@@ -134,6 +135,37 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     return;
                 }
 
+                // Show confirmation dialog
+                var confirmationMessage = $"{Lang.Tr["CreateInstanceConfirmationMessage"] ?? "Are you sure you want to create the following instance?"}\n\n" +
+                                        $"{Lang.Tr["InstanceName"] ?? "Instance Name"}: {instanceName}\n" +
+                                        $"{Lang.Tr["InstanceType"] ?? "Instance Type"}: {InstanceType}\n" +
+                                        $"{Lang.Tr["CorePath"] ?? "Core Path"}: {corePath}\n" +
+                                        $"{Lang.Tr["JavaPath"] ?? "Java Path"}: {javaPath}\n" +
+                                        $"{Lang.Tr["JvmArguments"] ?? "JVM Arguments"}: {(arguments.Length > 0 ? string.Join(" ", arguments) : Lang.Tr["None"] ?? "None")}";
+
+                ContentDialog confirmDialog = new()
+                {
+                    Title = Lang.Tr["CreateInstanceConfirmationTitle"] ?? "Confirm Instance Creation",
+                    Content = new TextBlock
+                    {
+                        Text = confirmationMessage,
+                        TextWrapping = TextWrapping.Wrap,
+                        MaxWidth = 500
+                    },
+                    PrimaryButtonText = Lang.Tr["Continue"],
+                    SecondaryButtonText = Lang.Tr["Cancel"],
+                    DefaultButton = ContentDialogButton.Secondary,
+                    FullSizeDesired = false
+                };
+
+                var confirmResult = await confirmDialog.ShowAsync();
+                if (confirmResult != ContentDialogResult.Primary)
+                {
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
+
                 var daemonConfig = DaemonsListManager.MatchDaemonBySelection(Constants.SelectedDaemon);
                 var daemon = await DaemonsWsManager.Get(daemonConfig);
 
@@ -193,16 +225,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             }
             catch (Exception ex)
             {
-                Notification.Push(
-                    Lang.Tr["Error"],
-                    $"{Lang.Tr["CreateInstanceError"] ?? "Failed to create instance"}: {ex.Message}",
-                    true,
-                    InfoBarSeverity.Error,
-                    Constants.InfoBarPosition.Top,
-                    5000,
-                    false
-                );
                 FinishButton.IsEnabled = true;
+                throw;
             }
         }
     }

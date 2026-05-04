@@ -29,10 +29,12 @@
                        Style="{StaticResource BodyTextBlock}"
                        Text="{Binding [CreateInstance_MinecraftJavaJvm_Description], Source={x:Static i18n:Lang.Tr}}" TextWrapping="Wrap"
                        VerticalAlignment="Top" HorizontalAlignment="Left" />
-            <TextBox x:Name="JavaRuntimeTextBox" ScrollViewer.VerticalScrollBarVisibility="Disabled" Grid.Row="2" Grid.ColumnSpan="2"
-                     Grid.Column="0" Margin="20,15,10,20" ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_MinecraftJavaJvm_Title], Source={x:Static i18n:Lang.Tr}}" />
+            <ComboBox x:Name="JavaRuntimeComboBox" IsEditable="True" MaxDropDownHeight="200"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2" Grid.ColumnSpan="2"
+                      Grid.Column="0" Margin="20,15,10,20" HorizontalAlignment="Stretch"
+                      ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_MinecraftJavaJvm_Title], Source={x:Static i18n:Lang.Tr}}" />
             <ui:DropDownButton ShowChevronArrow="False" Height="32" Margin="0,15,20,0" Grid.Row="2"
-                               Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
+                               Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right" Panel.ZIndex="1">
                 <ui:DropDownButton.Content>
                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                 </ui:DropDownButton.Content>

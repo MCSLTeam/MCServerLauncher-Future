@@ -29,8 +29,8 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             JvmArgumentItem tmpArg = new() { Argument = "111" };
             ArgsListView.Items.Add(tmpArg);
             ArgsListView.Items.Remove(tmpArg);
-            
-            // 初始更新状态
+
+            // JVM arguments are optional, mark as finished by default
             UpdateIsFinishedStatus();
         }
 
@@ -89,10 +89,8 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         }
         private void UpdateIsFinishedStatus()
         {
-            var args = GetAllArgs();
-            // 检查是否至少有一个非空白的参数
-            bool hasValidArgs = args.Any(arg => !string.IsNullOrWhiteSpace(arg));
-            SetValue(IsFinishedProperty, hasValidArgs);
+            // JVM arguments are optional, always mark as finished
+            SetValue(IsFinishedProperty, true);
         }
 
         private bool IsDisposed { get; set; } = false;

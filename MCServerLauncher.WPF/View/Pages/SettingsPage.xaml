@@ -122,7 +122,8 @@
                 <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="{Binding [Settings_DownloadThreadCnt_Title], Source={x:Static i18n:Lang.Tr}}"
                                      x:Name="ResDownload_DownloadThreadCnt"
                                      Description="{Binding [Settings_DownloadThreadCnt_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}" />
+                                     MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}"
+                                     ShowSliderTick="False" />
                 <sc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
                                      Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="{Binding [Settings_ActionWhenDownloadError_Title], Source={x:Static i18n:Lang.Tr}}"
                                      Description="{Binding [Settings_ActionWhenDownloadError_Description], Source={x:Static i18n:Lang.Tr}}"
@@ -133,7 +134,8 @@
                                      Icon="{x:Static ui:SegoeFluentIcons.Sync}"
                                      Title="{Binding [Settings_Instance_AutoRefreshInterval], Source={x:Static i18n:Lang.Tr}}"
                                      Description="{Binding [Settings_Instance_AutoRefreshInterval_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     MinValue="0" MaxValue="5" SliderValue="{Binding Path=AutoRefreshInterval}" />
+                                     MinValue="0" MaxValue="5" SliderValue="{Binding Path=AutoRefreshInterval}"
+                                     ShowSliderTick="True" SliderTickPlacement="BottomRight" />
                 <sc:ComboSettingCard x:Name="Instance_ActionOnDoubleClick"
                                      Icon="{x:Static ui:SegoeFluentIcons.TouchPointer}"
                                      Title="{Binding [Settings_Instance_ActionOnDoubleClick], Source={x:Static i18n:Lang.Tr}}"

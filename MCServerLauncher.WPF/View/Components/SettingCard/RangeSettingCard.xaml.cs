@@ -96,5 +96,60 @@ namespace MCServerLauncher.WPF.View.Components.SettingCard
             if (d is not RangeSettingCard control) return;
             control.SettingSlider.Value = (int)e.NewValue;
         }
+
+        /// <summary>
+        ///    Whether to show slider ticks.
+        /// </summary>
+        public bool ShowSliderTick
+        {
+            get => (bool)GetValue(ShowSliderTickProperty);
+            set => SetValue(ShowSliderTickProperty, value);
+        }
+        public static readonly DependencyProperty ShowSliderTickProperty =
+            DependencyProperty.Register("ShowSliderTick", typeof(bool), typeof(RangeSettingCard),
+                new PropertyMetadata(false, OnShowSliderTickChanged));
+
+        private static void OnShowSliderTickChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not RangeSettingCard control) return;
+            if (e.NewValue is not bool showTick) return;
+            control.SettingSlider.TickPlacement = showTick ? System.Windows.Controls.Primitives.TickPlacement.BottomRight : System.Windows.Controls.Primitives.TickPlacement.None;
+        }
+
+        /// <summary>
+        ///    Slider tick placement.
+        /// </summary>
+        public System.Windows.Controls.Primitives.TickPlacement SliderTickPlacement
+        {
+            get => (System.Windows.Controls.Primitives.TickPlacement)GetValue(SliderTickPlacementProperty);
+            set => SetValue(SliderTickPlacementProperty, value);
+        }
+        public static readonly DependencyProperty SliderTickPlacementProperty =
+            DependencyProperty.Register("SliderTickPlacement", typeof(System.Windows.Controls.Primitives.TickPlacement), typeof(RangeSettingCard),
+                new PropertyMetadata(System.Windows.Controls.Primitives.TickPlacement.None, OnSliderTickPlacementChanged));
+
+        private static void OnSliderTickPlacementChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not RangeSettingCard control) return;
+            control.SettingSlider.TickPlacement = (System.Windows.Controls.Primitives.TickPlacement)e.NewValue;
+        }
+
+        /// <summary>
+        ///    Slider snaps to step values or ticks.
+        /// </summary>
+        public bool SliderSnapsToStepValues
+        {
+            get => (bool)GetValue(SliderSnapsToStepValuesProperty);
+            set => SetValue(SliderSnapsToStepValuesProperty, value);
+        }
+        public static readonly DependencyProperty SliderSnapsToStepValuesProperty =
+            DependencyProperty.Register("SliderSnapsToStepValues", typeof(bool), typeof(RangeSettingCard),
+                new PropertyMetadata(true, OnSliderSnapsToStepValuesChanged));
+
+        private static void OnSliderSnapsToStepValuesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not RangeSettingCard control) return;
+            control.SettingSlider.IsSnapToTickEnabled = (bool)e.NewValue;
+        }
     }
 }

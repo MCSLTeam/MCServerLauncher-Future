@@ -23,9 +23,9 @@ namespace MCServerLauncher.WPF.Modules
 
         public static void InitStepState(ComboBox comboBox)
         {
-            comboBox.Items.Add("1test");
+            comboBox.Items.Add("1");
             comboBox.SelectedIndex = 0;
-            comboBox.Items.Remove("1test");
+            comboBox.Items.Remove("1");
         }
 
         public static void InitStepState(TextBox textBox)
