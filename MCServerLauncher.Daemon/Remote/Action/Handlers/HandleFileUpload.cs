@@ -71,7 +71,11 @@ internal class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParame
                 Received = received
             };
         }, param).MapTask(result =>
-            result.OrElse(ex => this.Err(ActionRetcode.FileError.ToError().CauseBy(ex)))
+            result.OrElse(ex =>
+            {
+                Serilog.Log.Error("[HandleFileUploadChunk] File upload chunk failed: {0}", ex);
+                return this.Err(ActionRetcode.FileError.ToError().CauseBy(ex));
+            })
         );
     }
 }

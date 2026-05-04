@@ -189,7 +189,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 if (System.IO.File.Exists(corePath))
                 {
                     var fileName = System.IO.Path.GetFileName(corePath);
-                    var daemonUploadPath = $"daemon/uploads/{fileName}";
+                    var daemonUploadPath = $"caches/uploads/{fileName}";
 
                     Notification.Push(
                         Lang.Tr["PleaseWait"],
