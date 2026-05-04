@@ -20,14 +20,14 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
     /// </summary>
     public partial class CreateMinecraftJavaInstanceProvider : ICreateInstanceProvider
     {
-        private List<ICreateInstanceStep> StepList;
+        private readonly List<ICreateInstanceStep> StepList;
         public InstanceType InstanceType { get; } = InstanceType.MCJava;
         public TargetType TargetType { get; } = TargetType.Jar;
         
         public CreateMinecraftJavaInstanceProvider()
         {
             InitializeComponent();
-            StepList = new() { Core, Jvm, JvmArgument, InstanceName };
+            StepList = [Core, Jvm, JvmArgument, InstanceName];
             
             foreach (var step in StepList)
             {
@@ -67,7 +67,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         /// </summary>
         private bool CheckIfAnyStepFinished()
         {
-            if (StepList == null || !StepList.Any())
+            if (StepList == null || StepList.Count == 0)
             {
                 return false;
             }
@@ -117,7 +117,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 
                 string corePath = coreData.Data as string ?? string.Empty;
                 string javaPath = jvmData.Data as string ?? string.Empty;
-                string[] arguments = jvmArgumentData.Data as string[] ?? Array.Empty<string>();
+                string[] arguments = jvmArgumentData.Data as string[] ?? [];
                 string instanceName = instanceNameData.Data as string ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(corePath) || string.IsNullOrWhiteSpace(javaPath) || string.IsNullOrWhiteSpace(instanceName))
@@ -143,6 +143,21 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                                         $"{Lang.Tr["JavaPath"] ?? "Java Path"}: {javaPath}\n" +
                                         $"{Lang.Tr["JvmArguments"] ?? "JVM Arguments"}: {(arguments.Length > 0 ? string.Join(" ", arguments) : Lang.Tr["None"] ?? "None")}";
 
+                var setting = new InstanceFactorySetting
+                {
+                    Name = instanceName,
+                    Source = sourcePathForDaemon,
+                    SourceType = SourceType.Core,
+                    Target = System.IO.Path.GetFileName(corePath),
+                    TargetType = TargetType,
+                    InstanceType = InstanceType,
+                    JavaPath = javaPath,
+                    Arguments = arguments,
+                    McVersion = "1.21.1", // TODO: Extract from core filename or add version selection step
+                    Mirror = InstanceFactoryMirror.None,
+                    UsePostProcess = false
+                };
+
                 ContentDialog confirmDialog = new()
                 {
                     Title = Lang.Tr["CreateInstanceConfirmationTitle"] ?? "Confirm Instance Creation",
@@ -157,6 +172,29 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     DefaultButton = ContentDialogButton.Secondary,
                     FullSizeDesired = false
                 };
+
+                var mainWindow = this.TryFindParent<MainWindow>();
+                if (mainWindow?.DebugItem?.Visibility == Visibility.Visible)
+                {
+                    confirmDialog.CloseButtonText = "Debug: Copy Config";
+                    confirmDialog.CloseButtonClick += (s, args) =>
+                    {
+                        var json = System.Text.Json.JsonSerializer.Serialize(setting,
+                            MCServerLauncher.DaemonClient.Serialization.DaemonClientRpcJsonBoundary.CreateStjOptions(
+                                MCServerLauncher.Common.ProtoType.Serialization.DaemonClientStjReflectionFallbackPolicy.TrimFriendlyDefault,
+                                writeIndented: true));
+                        Modules.Clipboard.SetText(json);
+                        Notification.Push(
+                            Lang.Tr["Success"],
+                            "【InstanceConfig copied to clipboard】",
+                            true,
+                            InfoBarSeverity.Success,
+                            Constants.InfoBarPosition.Top,
+                            3000,
+                            false
+                        );
+                    };
+                }
 
                 var confirmResult = await confirmDialog.ShowAsync();
                 if (confirmResult != ContentDialogResult.Primary)
