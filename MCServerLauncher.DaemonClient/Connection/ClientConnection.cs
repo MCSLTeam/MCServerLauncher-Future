@@ -24,6 +24,7 @@ internal class ClientConnection : DisposableObject
     private readonly CancellationTokenSource _cts;
     private ConnectionPendingRequests _pendingRequests;
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<ActionResponse>> _pendingResponses = new();
+    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<(bool Done, long Received)>> _pendingBinaryUploads = new();
     private readonly TouchSocketClientTransport _transport;
 
     private ClientConnection(ClientConnectionConfig config)
@@ -35,6 +36,7 @@ internal class ClientConnection : DisposableObject
 
         _transport.EventReceived += (t, l, m, d) => OnEventReceived?.Invoke(t, l, m, d);
         _transport.ActionResponseReceived += HandleActionResponse;
+        _transport.BinaryUploadResponseReceived += HandleBinaryUploadResponse;
         _transport.Reconnected += async () =>
         {
             await OnReconnectedEventHandler();
@@ -113,6 +115,39 @@ internal class ClientConnection : DisposableObject
             Parameter = SerializeParameterForTransport(param),
             Id = Guid.NewGuid()
         }, ct);
+    }
+
+    public async Task<(bool Done, long Received)> SendBinaryAsync(
+        Guid fileId,
+        long offset,
+        byte[] data,
+        CancellationToken ct)
+    {
+        ThrowIfInvalidState();
+
+        // Register pending response
+        var tcs = new TaskCompletionSource<(bool Done, long Received)>();
+        _pendingBinaryUploads.TryAdd(fileId, tcs);
+
+        try
+        {
+            // Construct binary frame: [16 bytes Guid][8 bytes offset][data]
+            var payload = new byte[16 + 8 + data.Length];
+            fileId.TryWriteBytes(payload.AsSpan(0, 16));
+            BitConverter.TryWriteBytes(payload.AsSpan(16, 8), offset);
+            Array.Copy(data, 0, payload, 24, data.Length);
+
+            // Send binary frame
+            await _transport.SendBinaryAsync(payload, ct);
+
+            // Wait for response
+            return await tcs.Task;
+        }
+        catch
+        {
+            _pendingBinaryUploads.TryRemove(fileId, out _);
+            throw;
+        }
     }
 
     public async Task<TResult> RequestAsync<TResult>(
@@ -335,6 +370,21 @@ internal class ClientConnection : DisposableObject
                 pendingRequests.TryRemovePending(pending.Key);
                 taskCompletionSource.TrySetCanceled();
             }
+    }
+
+    private void HandleBinaryUploadResponse(WebSocketPlugin.WsReceivedPlugin.BinaryUploadResponse response)
+    {
+        if (_pendingBinaryUploads.TryRemove(response.FileId, out var tcs))
+        {
+            if (response.Error != null)
+            {
+                tcs.TrySetException(new DaemonRequestException(ActionRetcode.FileError, response.Error));
+            }
+            else
+            {
+                tcs.TrySetResult((response.Done, response.Received));
+            }
+        }
     }
 
     private async Task OnReconnectedEventHandler()

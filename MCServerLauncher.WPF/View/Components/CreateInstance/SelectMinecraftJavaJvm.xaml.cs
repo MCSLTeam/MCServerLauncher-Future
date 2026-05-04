@@ -39,8 +39,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
         private void OnJavaRuntimeComboBoxLoaded(object sender, RoutedEventArgs e)
         {
-            var textBox = JavaRuntimeComboBox.Template.FindName("PART_EditableTextBox", JavaRuntimeComboBox) as TextBox;
-            if (textBox != null)
+            if (JavaRuntimeComboBox.Template.FindName("PART_EditableTextBox", JavaRuntimeComboBox) is TextBox textBox)
             {
                 textBox.TextChanged += OnJavaRuntimeTextChanged;
                 // Initialize step state on the TextBox, not the ComboBox

@@ -143,21 +143,6 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                                         $"{Lang.Tr["JavaPath"] ?? "Java Path"}: {javaPath}\n" +
                                         $"{Lang.Tr["JvmArguments"] ?? "JVM Arguments"}: {(arguments.Length > 0 ? string.Join(" ", arguments) : Lang.Tr["None"] ?? "None")}";
 
-                var setting = new InstanceFactorySetting
-                {
-                    Name = instanceName,
-                    Source = sourcePathForDaemon,
-                    SourceType = SourceType.Core,
-                    Target = System.IO.Path.GetFileName(corePath),
-                    TargetType = TargetType,
-                    InstanceType = InstanceType,
-                    JavaPath = javaPath,
-                    Arguments = arguments,
-                    McVersion = "1.21.1", // TODO: Extract from core filename or add version selection step
-                    Mirror = InstanceFactoryMirror.None,
-                    UsePostProcess = false
-                };
-
                 ContentDialog confirmDialog = new()
                 {
                     Title = Lang.Tr["CreateInstanceConfirmationTitle"] ?? "Confirm Instance Creation",
@@ -179,9 +164,22 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     confirmDialog.CloseButtonText = "Debug: Copy Config";
                     confirmDialog.CloseButtonClick += (s, args) =>
                     {
-                        var json = System.Text.Json.JsonSerializer.Serialize(setting,
+                        var previewSetting = new InstanceFactorySetting
+                        {
+                            Name = instanceName,
+                            Source = corePath,
+                            SourceType = SourceType.Core,
+                            Target = System.IO.Path.GetFileName(corePath),
+                            TargetType = TargetType,
+                            InstanceType = InstanceType,
+                            JavaPath = javaPath,
+                            Arguments = arguments,
+                            McVersion = "1.21.1",
+                            Mirror = InstanceFactoryMirror.None,
+                            UsePostProcess = false
+                        };
+                        var json = System.Text.Json.JsonSerializer.Serialize(previewSetting,
                             MCServerLauncher.DaemonClient.Serialization.DaemonClientRpcJsonBoundary.CreateStjOptions(
-                                MCServerLauncher.Common.ProtoType.Serialization.DaemonClientStjReflectionFallbackPolicy.TrimFriendlyDefault,
                                 writeIndented: true));
                         Modules.Clipboard.SetText(json);
                         Notification.Push(
@@ -222,12 +220,12 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     return;
                 }
 
-                // Upload core file to daemon if it's a local file
+                // Upload core file to daemon
                 string sourcePathForDaemon = corePath;
                 if (System.IO.File.Exists(corePath))
                 {
                     var fileName = System.IO.Path.GetFileName(corePath);
-                    var daemonUploadPath = $"caches/uploads/{fileName}";
+                    var daemonUploadPath = $"daemon/caches/downloads/{fileName}";
 
                     Notification.Push(
                         Lang.Tr["PleaseWait"],
@@ -239,7 +237,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                         false
                     );
 
-                    var uploadContext = await daemon.UploadFileAsync(corePath, daemonUploadPath, 1024 * 1024); // 1MB chunks
+                    var uploadContext = await daemon.UploadFileAsync(corePath, daemonUploadPath, 1024 * 1024);
                     await uploadContext.NetworkLoadTask;
 
                     if (!uploadContext.Done)

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -25,7 +26,7 @@ internal static class FileManager
     public static readonly string LogRoot = Path.Combine(Root, "logs");
     public static readonly string ContainedRoot = Path.Combine(Root, "contained");
 
-    public static readonly TimeSpan SessionTimeout = TimeSpan.FromMilliseconds(120000);
+    public static readonly TimeSpan SessionTimeout = TimeSpan.FromMilliseconds(1800000); // 30 minutes
 
     private static readonly ConcurrentDictionary<Guid, FileUploadInfo> UploadSessions = new();
 
@@ -105,7 +106,11 @@ internal static class FileManager
         try
         {
             // ensure directory exists
-            Directory.CreateDirectory(UploadRoot);
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
             var tmpFile = path + ".tmp";
             // delete file if exists
             if (File.Exists(tmpFile)) File.Delete(tmpFile);
@@ -122,8 +127,9 @@ internal static class FileManager
             Log.Debug("[FileUploadChunk] Uploading file {0}", Path.GetFileName(path));
             return guid;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Log.Error("[FileUploadRequest] Failed to pre-allocate file at {Path}: {Exception}", path, ex);
             return Guid.Empty;
         }
     }
@@ -138,6 +144,21 @@ internal static class FileManager
     /// <exception cref="IOException">文件操作相关</exception>
     public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, string strData)
     {
+        // Decode Base64 string back to binary data for lossless transmission
+        var data = Convert.FromBase64String(strData);
+        return await FileUploadChunk(id, offset, data);
+    }
+
+    /// <summary>
+    ///     写入文件分片（二进制版本）
+    /// </summary>
+    /// <param name="id">file_id</param>
+    /// <param name="offset">分片文件偏移量</param>
+    /// <param name="data">分片文件的二进制数据</param>
+    /// <returns>范围值为done</returns>
+    /// <exception cref="IOException">文件操作相关</exception>
+    public static async Task<(bool, long)> FileUploadChunk(Guid id, long offset, byte[] data)
+    {
         if (!UploadSessions.TryGetValue(id, out var info))
             throw new IOException("File not found or timeout");
 
@@ -145,10 +166,16 @@ internal static class FileManager
 
         if (offset < 0L || offset >= info.Size) throw new IOException("Offset out of range");
 
-        var data = Encoding.BigEndianUnicode.GetBytes(strData);
+        var dataChecksum = System.Security.Cryptography.SHA1.HashData(data);
+        var checksumHex = BitConverter.ToString(dataChecksum).Replace("-", "");
+        Log.Debug("[FileUploadChunk] Writing to file: offset={Offset}, length={Length}, checksum={Checksum}, first4bytes={First4}",
+            offset, data.Length, checksumHex, BitConverter.ToString(data.Take(4).ToArray()));
 
         info.File.Seek(offset, SeekOrigin.Begin);
-        await info.File.WriteAsync(data); // 可能为奇数长度
+        await info.File.WriteAsync(data);
+        await info.File.FlushAsync();
+
+        Log.Debug("[FileUploadChunk] Write complete, flushed to disk");
 
         // 更新文件状态
         info.Remain.Reduce(offset, offset + data.Length);

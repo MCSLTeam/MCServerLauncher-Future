@@ -21,26 +21,35 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     internal readonly record struct ParsedInboundEnvelope(
         InboundEnvelopeType EnvelopeType,
         EventPacket? EventPacket,
-        ActionResponse? ActionResponse)
+        ActionResponse? ActionResponse,
+        BinaryUploadResponse? BinaryUploadResponse)
     {
-        public static ParsedInboundEnvelope Unknown { get; } = new(InboundEnvelopeType.Unknown, null, null);
+        public static ParsedInboundEnvelope Unknown { get; } = new(InboundEnvelopeType.Unknown, null, null, null);
 
         public static ParsedInboundEnvelope FromEvent(EventPacket packet)
         {
-            return new ParsedInboundEnvelope(InboundEnvelopeType.Event, packet, null);
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Event, packet, null, null);
         }
 
         public static ParsedInboundEnvelope FromAction(ActionResponse response)
         {
-            return new ParsedInboundEnvelope(InboundEnvelopeType.Action, null, response);
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Action, null, response, null);
+        }
+
+        public static ParsedInboundEnvelope FromBinaryUpload(BinaryUploadResponse response)
+        {
+            return new ParsedInboundEnvelope(InboundEnvelopeType.BinaryUpload, null, null, response);
         }
     }
+
+    public record struct BinaryUploadResponse(Guid FileId, bool Done, long Received, string? Error);
 
     internal enum InboundEnvelopeType
     {
         Unknown,
         Event,
-        Action
+        Action,
+        BinaryUpload
     }
 
     // TODO 中继包支持
@@ -61,6 +70,8 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
                 DispatchEvent(inbound.EventPacket!);
             else if (inbound.EnvelopeType == InboundEnvelopeType.Action)
                 DispatchAction(inbound.ActionResponse!);
+            else if (inbound.EnvelopeType == InboundEnvelopeType.BinaryUpload)
+                DispatchBinaryUpload(inbound.BinaryUploadResponse!.Value);
         }
 
         await e.InvokeNext();
@@ -68,6 +79,7 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 
     public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
     public event Action<ActionResponse>? OnActionResponseReceived;
+    public event Action<BinaryUploadResponse>? OnBinaryUploadResponseReceived;
 
     internal static InboundEnvelopeType DetectEnvelopeType(string received)
     {
@@ -92,6 +104,7 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 
         if (root.TryGetProperty("event", out _)) return InboundEnvelopeType.Event;
         if (root.TryGetProperty("status", out _)) return InboundEnvelopeType.Action;
+        if (root.TryGetProperty("file_id", out _)) return InboundEnvelopeType.BinaryUpload;
         return InboundEnvelopeType.Unknown;
     }
 
@@ -180,6 +193,12 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         if (root.TryGetProperty("status", out _))
         {
             result.Add(ParsedInboundEnvelope.FromAction(ParseActionResponse(root)));
+            return result;
+        }
+
+        if (root.TryGetProperty("file_id", out _))
+        {
+            result.Add(ParsedInboundEnvelope.FromBinaryUpload(ParseBinaryUploadResponse(root)));
             return result;
         }
 
@@ -304,6 +323,16 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             : response;
     }
 
+    private static BinaryUploadResponse ParseBinaryUploadResponse(JsonElement root)
+    {
+        var fileId = root.GetProperty("file_id").GetGuid();
+        var done = root.TryGetProperty("done", out var doneElement) && doneElement.GetBoolean();
+        var received = root.TryGetProperty("received", out var receivedElement) ? receivedElement.GetInt64() : 0L;
+        var error = root.TryGetProperty("error", out var errorElement) ? errorElement.GetString() : null;
+
+        return new BinaryUploadResponse(fileId, done, received, error);
+    }
+
     private void DispatchEvent(EventPacket packet)
     {
         var eventType = packet.EventType;
@@ -326,6 +355,11 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         }
 
         OnActionResponseReceived?.Invoke(response);
+    }
+
+    private void DispatchBinaryUpload(BinaryUploadResponse response)
+    {
+        OnBinaryUploadResponseReceived?.Invoke(response);
     }
 
     private void DispatchAction(string received)

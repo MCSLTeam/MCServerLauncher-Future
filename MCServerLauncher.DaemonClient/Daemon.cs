@@ -88,6 +88,19 @@ public class Daemon : IDaemon
         await _connection.RequestAsync(actionType, parameter, timeout, cancellationToken);
     }
 
+    /// <summary>
+    ///     发送二进制文件上传块（绕过 JSON RPC）
+    /// </summary>
+    internal async Task<(bool Done, long Received)> SendBinaryFileChunkAsync(
+        Guid fileId,
+        long offset,
+        byte[] data,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await _connection.SendBinaryAsync(fileId, offset, data, cancellationToken);
+    }
+
     public void Dispose()
     {
         Dispose(true);

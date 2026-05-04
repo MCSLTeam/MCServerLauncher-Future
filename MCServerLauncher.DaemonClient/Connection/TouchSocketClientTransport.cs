@@ -32,6 +32,7 @@ internal sealed class TouchSocketClientTransport : DisposableObject
     public event Action? ConnectionClosed;
     public event Action<EventType, long, IEventMeta?, IEventData?>? EventReceived;
     public event Action<ActionResponse>? ActionResponseReceived;
+    public event Action<WebSocketPlugin.WsReceivedPlugin.BinaryUploadResponse>? BinaryUploadResponseReceived;
 
     public async Task OpenAsync(string address, int port, string token, bool isSecure, CancellationToken cancellationToken = default)
     {
@@ -44,6 +45,12 @@ internal sealed class TouchSocketClientTransport : DisposableObject
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Client.SendAsync(payload, WSDataType.Text);
+    }
+
+    public Task SendBinaryAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Client.SendAsync(payload, WSDataType.Binary);
     }
 
     public Task CloseAsync()
@@ -68,6 +75,7 @@ internal sealed class TouchSocketClientTransport : DisposableObject
                 var receivedPlugin = new WsReceivedPlugin();
                 receivedPlugin.OnEventReceived += (t, l, m, d) => EventReceived?.Invoke(t, l, m, d);
                 receivedPlugin.OnActionResponseReceived += response => ActionResponseReceived?.Invoke(response);
+                receivedPlugin.OnBinaryUploadResponseReceived += response => BinaryUploadResponseReceived?.Invoke(response);
                 a.Add(receivedPlugin);
 
                 a.Add(new WsConnectionLifecyclePlugin(this));

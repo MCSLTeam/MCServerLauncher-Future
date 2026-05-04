@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -188,41 +189,34 @@ public static class DaemonExtensions
                     using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
                     var buffer = new byte[chunkSize];
-                    var offset = 0;
+                    long offset = 0;
                     int bytesRead;
 
                     while ((bytesRead = await fs.ReadAsync(buffer, 0, chunkSize, cts.Token)) > 0 &&
                            !cts.IsCancellationRequested)
                     {
-                        string strData;
-                        if (bytesRead == chunkSize)
-                        {
-                            strData = Encoding.BigEndianUnicode.GetString(buffer, 0, chunkSize);
-                        }
-                        else if (bytesRead % 2 != 0) // 末尾补0x00
-                        {
-                            buffer[bytesRead] = 0x00;
-                            strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead + 1);
-                        }
-                        else
-                        {
-                            strData = Encoding.BigEndianUnicode.GetString(buffer, 0, bytesRead);
-                        }
+                        // Use binary WebSocket frames for lossless transmission
+                        var data = new byte[bytesRead];
+                        Array.Copy(buffer, 0, data, 0, bytesRead);
+
+                        var dataChecksum = System.Security.Cryptography.SHA1.HashData(data);
+                        var checksumHex = BitConverter.ToString(dataChecksum).Replace("-", "");
+                        Log.Debug("[FileUpload] Client sending chunk: offset={Offset}, length={Length}, checksum={Checksum}, first4bytes={First4}",
+                            offset, bytesRead, checksumHex, BitConverter.ToString(data.Take(4).ToArray()));
 
                         try
                         {
-                            var response = await daemon.RequestAsync<FileUploadChunkResult>(
-                                ActionType.FileUploadChunk,
-                                new FileUploadChunkParameter
-                                {
-                                    Data = strData,
-                                    FileId = fileId,
-                                    Offset = offset
-                                }, cancellationToken: cts.Token);
+                            var (done, received) = await ((Daemon)daemon).SendBinaryFileChunkAsync(
+                                fileId,
+                                offset,
+                                data,
+                                cts.Token);
+
+                            Log.Debug("[FileUpload] Client received response: done={Done}, received={Received}", done, received);
 
                             // 更新context
-                            context.Done = response.Done;
-                            context.LoadedBytes = response.Received;
+                            context.Done = done;
+                            context.LoadedBytes = received;
                             uploadSpeed.Push(bytesRead);
 
                             if (context.Done) context.OnDone();
