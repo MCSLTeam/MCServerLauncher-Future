@@ -70,6 +70,7 @@ public static class DaemonRpcJsonBoundary
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
             DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+            IncludeFields = true,
             TypeInfoResolver = CreateStjResolver(fallbackPolicy)
         };
 

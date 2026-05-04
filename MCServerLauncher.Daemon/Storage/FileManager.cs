@@ -104,13 +104,8 @@ internal static class FileManager
         // pre-allocate file in disk
         try
         {
-            // ensure parent directory exists
-            var directory = Path.GetDirectoryName(path);
-            if (directory != null)
-            {
-                Directory.CreateDirectory(directory);
-            }
-
+            // ensure directory exists
+            Directory.CreateDirectory(UploadRoot);
             var tmpFile = path + ".tmp";
             // delete file if exists
             if (File.Exists(tmpFile)) File.Delete(tmpFile);
@@ -127,9 +122,8 @@ internal static class FileManager
             Log.Debug("[FileUploadChunk] Uploading file {0}", Path.GetFileName(path));
             return guid;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log.Error("[FileManager] Failed to pre-allocate file {0} (size: {1}): {2}", path, size, ex.Message);
             return Guid.Empty;
         }
     }
