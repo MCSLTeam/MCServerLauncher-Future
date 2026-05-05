@@ -131,11 +131,15 @@ internal class ClientConnection : DisposableObject
 
         try
         {
-            // Construct binary frame: [16 bytes Guid][8 bytes offset][data]
-            var payload = new byte[16 + 8 + data.Length];
+            // Calculate checksum for this chunk
+            var checksum = System.Security.Cryptography.SHA1.HashData(data);
+
+            // Construct binary frame: [16 bytes Guid][8 bytes offset][20 bytes SHA1][data]
+            var payload = new byte[16 + 8 + 20 + data.Length];
             fileId.TryWriteBytes(payload.AsSpan(0, 16));
             BitConverter.TryWriteBytes(payload.AsSpan(16, 8), offset);
-            Array.Copy(data, 0, payload, 24, data.Length);
+            Array.Copy(checksum, 0, payload, 24, 20);
+            Array.Copy(data, 0, payload, 44, data.Length);
 
             // Send binary frame
             await _transport.SendBinaryAsync(payload, ct);

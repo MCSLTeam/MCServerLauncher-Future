@@ -3,6 +3,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Action;
+using MCServerLauncher.Daemon.Remote;
 
 namespace MCServerLauncher.Daemon.Serialization;
 
@@ -17,6 +18,8 @@ namespace MCServerLauncher.Daemon.Serialization;
 [JsonSerializable(typeof(UnsubscribeEventParameter))]
 [JsonSerializable(typeof(InstanceLogEventMeta))]
 [JsonSerializable(typeof(Permission))]
+[JsonSerializable(typeof(BinaryUploadResponse))]
+[JsonSerializable(typeof(BinaryUploadErrorResponse))]
 internal partial class DaemonRpcSerializerContext : JsonSerializerContext
 {
 }

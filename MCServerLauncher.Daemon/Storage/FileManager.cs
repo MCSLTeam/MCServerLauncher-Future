@@ -182,7 +182,8 @@ internal static class FileManager
 
         if (info.RemainLength > 0) return (false, info.Size - info.RemainLength); // partial done
 
-        // file upload complete
+        // file upload complete - reset file pointer to beginning before calculating SHA1
+        info.File.Seek(0, SeekOrigin.Begin);
         var sha1 = await FileSha1(info.File);
         info.File.Close();
 

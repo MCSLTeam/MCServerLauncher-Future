@@ -67,10 +67,8 @@ public class WsActionPlugin(IActionExecutor executor,
                 fileId, offset, expectedHex, actualHex);
 
             var errorResponse = new BinaryUploadErrorResponse(fileId, $"Checksum mismatch at offset {offset}");
-            var utf8Payload = JsonSerializer.SerializeToUtf8Bytes(errorResponse, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-            });
+            var utf8Payload = StjJsonSerializer.SerializeToUtf8Bytes(errorResponse,
+                DaemonRpcTypeInfoCache<BinaryUploadErrorResponse>.TypeInfo);
             var frame = new WSDataFrame(utf8Payload)
             {
                 Opcode = WSDataType.Text,
@@ -91,10 +89,8 @@ public class WsActionPlugin(IActionExecutor executor,
             Serilog.Log.Debug("[WsActionPlugin] Server wrote chunk: done={Done}, received={Received}", done, received);
 
             var response = new BinaryUploadResponse(fileId, done, received);
-            var utf8Payload = JsonSerializer.SerializeToUtf8Bytes(response, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-            });
+            var utf8Payload = StjJsonSerializer.SerializeToUtf8Bytes(response,
+                DaemonRpcTypeInfoCache<BinaryUploadResponse>.TypeInfo);
             var frame = new WSDataFrame(utf8Payload)
             {
                 Opcode = WSDataType.Text,
@@ -106,10 +102,8 @@ public class WsActionPlugin(IActionExecutor executor,
         {
             Serilog.Log.Error("[WsActionPlugin] Binary file upload chunk failed: {0}", ex);
             var errorResponse = new BinaryUploadErrorResponse(fileId, ex.Message);
-            var utf8Payload = JsonSerializer.SerializeToUtf8Bytes(errorResponse, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-            });
+            var utf8Payload = StjJsonSerializer.SerializeToUtf8Bytes(errorResponse,
+                DaemonRpcTypeInfoCache<BinaryUploadErrorResponse>.TypeInfo);
             var frame = new WSDataFrame(utf8Payload)
             {
                 Opcode = WSDataType.Text,

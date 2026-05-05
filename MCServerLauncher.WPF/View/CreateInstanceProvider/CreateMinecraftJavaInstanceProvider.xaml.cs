@@ -23,12 +23,12 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
         private readonly List<ICreateInstanceStep> StepList;
         public InstanceType InstanceType { get; } = InstanceType.MCJava;
         public TargetType TargetType { get; } = TargetType.Jar;
-        
+
         public CreateMinecraftJavaInstanceProvider()
         {
             InitializeComponent();
             StepList = [Core, Jvm, JvmArgument, InstanceName];
-            
+
             foreach (var step in StepList)
             {
                 if (step is DependencyObject dependencyObject)
@@ -85,7 +85,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             {
                 var parent = this.TryFindParent<CreateInstancePage>();
                 parent?.CurrentCreateInstance.GoBack();
-            } else {
+            }
+            else
+            {
                 ContentDialog dialog = new()
                 {
                     Title = Lang.Tr["AreYouSure"],
@@ -225,7 +227,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 if (System.IO.File.Exists(corePath))
                 {
                     var fileName = System.IO.Path.GetFileName(corePath);
-                    var daemonUploadPath = $"daemon/caches/downloads/{fileName}";
+                    var daemonUploadPath = $"caches/downloads/{fileName}";
 
                     Notification.Push(
                         Lang.Tr["PleaseWait"],

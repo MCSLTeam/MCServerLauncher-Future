@@ -1,6 +1,7 @@
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Factory;
+using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Serilog;
@@ -53,7 +54,9 @@ public static class InstanceFactorySettingExtensions
         }
         else if (setting.Source != dst)
         {
-            var copy = ResultExt.Try(() => File.Copy(setting.Source, dst));
+            // 相对路径需要基于 daemon Root 解析
+            var resolvedSource = FileManager.ResolveAndValidatePath(setting.Source);
+            var copy = ResultExt.Try(() => File.Copy(resolvedSource, dst));
             if (copy.IsErr(out var err))
             {
                 File.Delete(dst);
@@ -92,9 +95,12 @@ public static class InstanceFactorySettingExtensions
             if (uri.IsFile && !File.Exists(uri.LocalPath))
                 return ResultExt.Err<Unit>($"source not found at {uri.LocalPath}");
         }
-        else if (!File.Exists(setting.Source))
+        else
         {
-            return ResultExt.Err<Unit>($"source not found at {setting.Source}");
+            // 相对路径需要基于 daemon Root 解析
+            var resolvedPath = FileManager.ResolveAndValidatePath(setting.Source);
+            if (!File.Exists(resolvedPath))
+                return ResultExt.Err<Unit>($"source not found at {setting.Source}");
         }
 
         return setting.ValidateConfig();
