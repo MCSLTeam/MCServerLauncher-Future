@@ -162,7 +162,7 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
             var dialog = new ContentDialog
             {
                 Title = Lang.Tr["ConfirmDelete"],
-                Content = string.Format(Lang.Tr["ConfirmDeleteDaemonMessage"] ?? "Are you sure you want to delete daemon '{0}'?", FriendlyName),
+                Content = string.Format(Lang.Tr["ConfirmDeleteDaemonMessage"], FriendlyName),
                 PrimaryButtonText = Lang.Tr["Delete"],
                 CloseButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Close,

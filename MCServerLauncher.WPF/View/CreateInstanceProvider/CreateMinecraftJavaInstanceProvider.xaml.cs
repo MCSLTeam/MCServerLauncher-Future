@@ -126,10 +126,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 {
                     Notification.Push(
                         Lang.Tr["Error"],
-                        Lang.Tr["CreateInstanceMissingDataError"] ?? "Missing required data",
+                        Lang.Tr["CreateInstanceMissingDataError"],
                         true,
                         InfoBarSeverity.Error,
-                        Constants.InfoBarPosition.Top,
+                        InfoBarPosition.Top,
                         5000,
                         false
                     );
@@ -138,16 +138,16 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }
 
                 // Show confirmation dialog
-                var confirmationMessage = $"{Lang.Tr["CreateInstanceConfirmationMessage"] ?? "Are you sure you want to create the following instance?"}\n\n" +
-                                        $"{Lang.Tr["InstanceName"] ?? "Instance Name"}: {instanceName}\n" +
-                                        $"{Lang.Tr["InstanceType"] ?? "Instance Type"}: {InstanceType}\n" +
-                                        $"{Lang.Tr["CorePath"] ?? "Core Path"}: {corePath}\n" +
-                                        $"{Lang.Tr["JavaPath"] ?? "Java Path"}: {javaPath}\n" +
-                                        $"{Lang.Tr["JvmArguments"] ?? "JVM Arguments"}: {(arguments.Length > 0 ? string.Join(" ", arguments) : Lang.Tr["None"] ?? "None")}";
+                var confirmationMessage = Lang.Tr["CreateInstanceConfirmationMessage"] +
+                                        $"{Lang.Tr["InstanceName"]}: {instanceName}\n" +
+                                        $"{Lang.Tr["InstanceType"]}: {InstanceType}\n" +
+                                        $"{Lang.Tr["CorePath"]}: {corePath}\n" +
+                                        $"{Lang.Tr["JavaPath"]}: {javaPath}\n" +
+                                        $"{Lang.Tr["JvmArguments"]}: {(arguments.Length > 0 ? string.Join(" ", arguments) : Lang.Tr["None"])}";
 
                 ContentDialog confirmDialog = new()
                 {
-                    Title = Lang.Tr["CreateInstanceConfirmationTitle"] ?? "Confirm Instance Creation",
+                    Title = Lang.Tr["CreateInstanceConfirmationTitle"],
                     Content = new TextBlock
                     {
                         Text = confirmationMessage,
@@ -186,10 +186,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                         Modules.Clipboard.SetText(json);
                         Notification.Push(
                             Lang.Tr["Success"],
-                            "【InstanceConfig copied to clipboard】",
+                            "InstanceConfig copied to clipboard",
                             true,
                             InfoBarSeverity.Success,
-                            Constants.InfoBarPosition.Top,
+                            InfoBarPosition.Top,
                             3000,
                             false
                         );
@@ -211,10 +211,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 {
                     Notification.Push(
                         Lang.Tr["Error"],
-                        Lang.Tr["DaemonConnectionError"] ?? "Failed to connect to daemon",
+                        Lang.Tr["DaemonConnectionError"],
                         true,
                         InfoBarSeverity.Error,
-                        Constants.InfoBarPosition.Top,
+                        InfoBarPosition.Top,
                         5000,
                         false
                     );
@@ -231,11 +231,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 
                     Notification.Push(
                         Lang.Tr["PleaseWait"],
-                        $"【{Lang.Tr["UploadingFile"] ?? "Uploading file"}...】",
+                        Lang.Tr["UploadingFile"],
                         false,
                         InfoBarSeverity.Informational,
-                        Constants.InfoBarPosition.Top,
-                        -1,
+                        InfoBarPosition.Top,
+                        1500,
                         false
                     );
 
@@ -246,10 +246,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     {
                         Notification.Push(
                             Lang.Tr["Error"],
-                            $"【{Lang.Tr["FileUploadFailed"] ?? "Failed to upload file"}】",
+                            Lang.Tr["FileUploadFailed"],
                             true,
                             InfoBarSeverity.Error,
-                            Constants.InfoBarPosition.Top,
+                            InfoBarPosition.Top,
                             5000,
                             false
                         );
@@ -277,11 +277,11 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 
                 Notification.Push(
                     Lang.Tr["PleaseWait"],
-                    Lang.Tr["CreatingInstance"] ?? "Creating instance...",
+                    Lang.Tr["CreatingInstance"],
                     false,
                     InfoBarSeverity.Informational,
-                    Constants.InfoBarPosition.Top,
-                    -1,
+                    InfoBarPosition.Top,
+                    5000,
                     false
                 );
 
@@ -289,10 +289,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 
                 Notification.Push(
                     Lang.Tr["Success"],
-                    Lang.Tr["InstanceCreatedSuccess"] ?? $"Instance '{instanceName}' created successfully",
+                    Lang.Tr["InstanceCreatedSuccess"],
                     true,
                     InfoBarSeverity.Success,
-                    Constants.InfoBarPosition.Top,
+                    InfoBarPosition.Top,
                     3000,
                     false
                 );

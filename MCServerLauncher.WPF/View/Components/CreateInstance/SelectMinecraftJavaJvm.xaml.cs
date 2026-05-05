@@ -181,7 +181,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
             Notification.Push(
                 Lang.Tr["PleaseWait"],
-                $"【{Lang.Tr["SearchingJvmTip"]}】",
+                Lang.Tr["SearchingJvmTip"],
                 false,
                 InfoBarSeverity.Informational,
                 InfoBarPosition.Top,
@@ -198,7 +198,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                 {
                     Notification.Push(
                         Lang.Tr["Error"],
-                        $"【{Lang.Tr["DaemonConnectionError"] ?? "Failed to connect to daemon"}】",
+                        Lang.Tr["DaemonConnectionError"],
                         true,
                         InfoBarSeverity.Error,
                         InfoBarPosition.Top,
@@ -252,7 +252,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                 {
                     Notification.Push(
                         Lang.Tr["Info"],
-                        $"【{Lang.Tr["NoJavaFound"] ?? "No Java runtime found"}】",
+                        Lang.Tr["NoJavaFound"],
                         true,
                         InfoBarSeverity.Warning,
                         InfoBarPosition.Top,
@@ -265,7 +265,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             {
                 Notification.Push(
                     Lang.Tr["Error"],
-                    $"【{Lang.Tr["SearchJavaError"] ?? "Failed to search Java"}: {ex.Message}】",
+                    $"{Lang.Tr["SearchJavaError"]}: {ex.Message}",
                     true,
                     InfoBarSeverity.Error,
                     InfoBarPosition.Top,
