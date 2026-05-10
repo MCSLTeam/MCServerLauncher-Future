@@ -227,7 +227,6 @@ namespace MCServerLauncher.WPF.View.Pages
                     {
                         // Update existing card properties
                         existingCard.Status = report.Status;
-                        existingCard.PlayerCount = report.Players?.Length ?? 0;
                         existingCard.CpuUsage = report.PerformanceCounter.Cpu;
                         existingCard.MemoryUsage = report.PerformanceCounter.Memory;
                     }
@@ -243,7 +242,6 @@ namespace MCServerLauncher.WPF.View.Pages
                             InstanceType = report.Config.InstanceType.ToString(),
                             McVersion = report.Config.McVersion ?? "",
                             Status = report.Status,
-                            PlayerCount = report.Players?.Length ?? 0,
                             CpuUsage = report.PerformanceCounter.Cpu,
                             MemoryUsage = report.PerformanceCounter.Memory
                         };
@@ -270,7 +268,6 @@ namespace MCServerLauncher.WPF.View.Pages
                         InstanceType = report.Config.InstanceType.ToString(),
                         McVersion = report.Config.McVersion ?? "",
                         Status = report.Status,
-                        PlayerCount = report.Players?.Length ?? 0,
                         CpuUsage = report.PerformanceCounter.Cpu,
                         MemoryUsage = report.PerformanceCounter.Memory
                     };

@@ -20,7 +20,6 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
         private string _instanceType;
         private string _mcVersion;
         private InstanceStatus _status = (InstanceStatus)(-1);
-        private int _playerCount;
         private double _cpuUsage;
         private long _memoryUsage;
         private bool _isSelected;
@@ -134,20 +133,6 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
         }
 
         public string StatusText => Lang.Tr[Status.ToString()];
-
-        public int PlayerCount
-        {
-            get => _playerCount;
-            set
-            {
-                if (_playerCount != value)
-                {
-                    _playerCount = value;
-                    PlayerCountTextBlock.Text = value.ToString();
-                    OnPropertyChanged();
-                }
-            }
-        }
 
         public double CpuUsage
         {
