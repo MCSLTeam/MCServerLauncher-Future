@@ -170,8 +170,7 @@ namespace MCServerLauncher.WPF.View.Pages
             var daemonConfig = DaemonsListManager.Get[daemonIndex];
             try
             {
-                var daemon = await DaemonsWsManager.Get(daemonConfig);
-                if (daemon == null) throw new Exception("Daemon is offline or unreachable.");
+                var daemon = await DaemonsWsManager.Get(daemonConfig) ?? throw new Exception("Daemon is offline or unreachable.");
                 var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon);
 
                 await AddInstanceCards(instanceReports, isAutoRefresh);
@@ -240,7 +239,7 @@ namespace MCServerLauncher.WPF.View.Pages
                             DaemonConfig = currentDaemonConfig,
                             InstanceName = report.Config.Name,
                             InstanceType = report.Config.InstanceType.ToString(),
-                            McVersion = report.Config.McVersion ?? "",
+                            Version = report.Config.Version ?? "",
                             Status = report.Status,
                             CpuUsage = report.PerformanceCounter.Cpu,
                             MemoryUsage = report.PerformanceCounter.Memory
@@ -266,7 +265,7 @@ namespace MCServerLauncher.WPF.View.Pages
                         DaemonConfig = currentDaemonConfig,
                         InstanceName = report.Config.Name,
                         InstanceType = report.Config.InstanceType.ToString(),
-                        McVersion = report.Config.McVersion ?? "",
+                        Version = report.Config.Version ?? "",
                         Status = report.Status,
                         CpuUsage = report.PerformanceCounter.Cpu,
                         MemoryUsage = report.PerformanceCounter.Memory

@@ -56,9 +56,37 @@ public record InstanceConfig
     public Guid Uuid = Guid.NewGuid();
 
     /// <summary>
-    ///     Minecraft版本, 非mc服务器可以为空或者null
+    ///     实例版本, 可以为空或者null
     /// </summary>
-    public string McVersion { get; init; } = string.Empty;
+    public string Version { get; init; } = string.Empty;
+
+    /// <summary>
+    ///     Minecraft版本 (McVersion是Version的逻辑子集，用于Minecraft实例)
+    /// </summary>
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string McVersion => Version;
+
+    /// <summary>
+    ///     Steam服务器版本 (SteamServerVersion是Version的逻辑子集，用于Steam服务器实例)
+    /// </summary>
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string SteamServerVersion => Version;
+
+    /// <summary>
+    ///     Terraria版本 (TerrariaVersion是Version的逻辑子集，用于Terraria实例)
+    /// </summary>
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string TerrariaVersion => Version;
+
+    /// <summary>
+    ///     自定义版本 (CustomVersion是Version的逻辑子集，用于自定义实例)
+    /// </summary>
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string CustomVersion => Version;
 
     /// <summary>
     ///     控制台输入编码

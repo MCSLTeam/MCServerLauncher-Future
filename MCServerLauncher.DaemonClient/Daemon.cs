@@ -219,7 +219,7 @@ public class Daemon : IDaemon
                     Source = "https://download.fastmirror.net/download/Vanilla/1.21.1/release",
                     // Source = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.4-49.2.0/forge-1.20.4-49.2.0-installer.jar",
                     // Source = "daemon/downloads/forge-1.20.4-49.2.0-installer.jar",
-                    McVersion = "1.21.1",
+                    Version = "1.21.1",
                     UsePostProcess = false
                 };
                 guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3");

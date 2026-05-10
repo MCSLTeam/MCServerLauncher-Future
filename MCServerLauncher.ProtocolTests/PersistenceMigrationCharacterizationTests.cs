@@ -381,7 +381,7 @@ public class PersistenceMigrationCharacterizationTests
             Target = "updated-server.jar",
             InstanceType = InstanceType.MCFabric,
             TargetType = TargetType.Jar,
-            McVersion = "1.21.1",
+            Version = "1.21.1",
             Arguments = ["nogui"],
             Env = new Dictionary<string, PlaceHolderString>
             {

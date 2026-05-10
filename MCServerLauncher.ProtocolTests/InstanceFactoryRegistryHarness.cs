@@ -18,7 +18,7 @@ internal static class InstanceFactoryRegistryHarness
         {
             InstanceType = instanceType,
             SourceType = sourceType,
-            McVersion = mcVersion,
+            Version = mcVersion,
             Source = "characterization-source"
         };
     }

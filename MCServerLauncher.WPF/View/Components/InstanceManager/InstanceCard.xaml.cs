@@ -102,7 +102,7 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
             }
         }
 
-        public string McVersion
+        public string Version
         {
             get => _mcVersion;
             set
@@ -114,6 +114,15 @@ namespace MCServerLauncher.WPF.View.Components.InstanceManager
                     OnPropertyChanged();
                 }
             }
+        }
+
+        /// <summary>
+        /// McVersion is a logical subset of Version for Minecraft instances
+        /// </summary>
+        public string McVersion
+        {
+            get => Version;
+            set => Version = value;
         }
 
         public InstanceStatus Status

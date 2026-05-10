@@ -20,7 +20,7 @@ public record InstanceFactorySetting : InstanceConfig
     {
         return new InstanceConfig
         {
-            McVersion = McVersion,
+            Version = Version,
             Uuid = Uuid,
             InputEncoding = InputEncoding,
             OutputEncoding = OutputEncoding,
