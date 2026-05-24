@@ -20,6 +20,7 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.MCLeaf)]
 [InstanceFactory(InstanceType.MCLeaves)]
 [InstanceFactory(InstanceType.MCFolia)]
+[InstanceFactory(InstanceType.MCCanvas)]
 [InstanceFactory(InstanceType.MCPufferfish)]
 [InstanceFactory(InstanceType.MCPurpur)]
 [InstanceFactory(InstanceType.MCMohist)]
@@ -37,6 +38,7 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.MCForge, SourceType.Archive, "1.5.2")]
 [InstanceFactory(InstanceType.MCNeoForge, SourceType.Archive, "1.20.2")]
 [InstanceFactory(InstanceType.MCCleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
+[InstanceFactory(InstanceType.MCSponge)]
 public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
     public async Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting)

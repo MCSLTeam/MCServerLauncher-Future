@@ -1,5 +1,6 @@
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Management.Detection;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -80,9 +81,10 @@ public static class InstanceFactorySettingExtensions
     /// <returns></returns>
     public static Task<Result<InstanceConfig, Error>> ApplyInstanceFactory(this InstanceFactorySetting setting)
     {
-        var instanceFactory = InstanceFactoryRegistry.GetInstanceFactory(setting);
-        Log.Information("[InstanceManager] Running InstanceFactory for instance '{0}'", setting.Name);
-        return instanceFactory.Invoke(setting);
+        var reconciledSetting = InstanceVersionDetector.Reconcile(setting);
+        var instanceFactory = InstanceFactoryRegistry.GetInstanceFactory(reconciledSetting);
+        Log.Information("[InstanceManager] Running InstanceFactory for instance '{0}' as {1}", reconciledSetting.Name, reconciledSetting.InstanceType);
+        return instanceFactory.Invoke(reconciledSetting);
     }
 
     public static Result<Unit, Error> ValidateSetting(this InstanceFactorySetting setting)
@@ -97,12 +99,12 @@ public static class InstanceFactorySettingExtensions
         }
         else
         {
-            // 相对路径需要基于 daemon Root 解析
             var resolvedPath = FileManager.ResolveAndValidatePath(setting.Source);
             if (!File.Exists(resolvedPath))
                 return ResultExt.Err<Unit>($"source not found at {setting.Source}");
         }
 
-        return setting.ValidateConfig();
+        var reconciledSetting = InstanceVersionDetector.Reconcile(setting);
+        return reconciledSetting.ValidateConfig();
     }
 }

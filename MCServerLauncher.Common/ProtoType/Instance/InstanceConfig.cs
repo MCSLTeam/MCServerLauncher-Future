@@ -1,7 +1,8 @@
 using System.Text;
 using Newtonsoft.Json;
-using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
+using SysTextJsonIgnore = System.Text.Json.Serialization.JsonIgnoreAttribute;
 using SysTextJsonPropertyName = System.Text.Json.Serialization.JsonPropertyNameAttribute;
+using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
 
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
@@ -58,13 +59,15 @@ public record InstanceConfig
     /// <summary>
     ///     实例版本, 可以为空或者null
     /// </summary>
+    [JsonProperty("mc_version")]
+    [SysTextJsonPropertyName("mc_version")]
     public string Version { get; init; } = string.Empty;
 
     /// <summary>
     ///     Minecraft版本 (McVersion是Version的逻辑子集，用于Minecraft实例)
     /// </summary>
     [JsonIgnore]
-    [System.Text.Json.Serialization.JsonIgnore]
+    [SysTextJsonIgnore]
     public string McVersion => Version;
 
     /// <summary>

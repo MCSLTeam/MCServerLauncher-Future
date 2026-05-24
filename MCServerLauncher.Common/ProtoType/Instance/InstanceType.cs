@@ -25,6 +25,7 @@ public enum InstanceType
     MCLeaf,
     MCLeaves,
     MCFolia,
+    MCCanvas, // Fork of Folia
     MCPufferfish,
     MCPurpur,
     MCMohist,

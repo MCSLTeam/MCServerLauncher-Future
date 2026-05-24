@@ -14,27 +14,6 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
     /// </summary>
     public partial class BoardPage : Page
     {
-        private static readonly InstanceType[] MinecraftTypes = new[]
-        {
-            InstanceType.MCJava,
-            InstanceType.MCFabric,
-            InstanceType.MCForge,
-            InstanceType.MCNeoForge,
-            InstanceType.MCQuilt,
-            InstanceType.MCCleanroom,
-            InstanceType.MCSponge,
-            InstanceType.MCVanilla,
-            InstanceType.MCCraftBukkit,
-            InstanceType.MCSpigot,
-            InstanceType.MCPaper,
-            InstanceType.MCLeaf,
-            InstanceType.MCLeaves,
-            InstanceType.MCFolia,
-            InstanceType.MCPufferfish,
-            InstanceType.MCPurpur,
-            InstanceType.MCMohist
-        };
-
         public BoardPage()
         {
             InitializeComponent();
@@ -55,7 +34,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             if (report == null)
                 return;
 
-            var isMinecraftInstance = MinecraftTypes.Contains(report.Config.InstanceType);
+            var isMinecraftInstance = report.Config.InstanceType.SupportsMinecraftBoardWidgets();
 
             // Show/hide Minecraft-specific components
             AddressComponent.Visibility = isMinecraftInstance ? Visibility.Visible : Visibility.Collapsed;

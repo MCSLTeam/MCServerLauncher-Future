@@ -71,28 +71,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                 if (CurrentReport == null)
                     return false;
 
-                var mcTypes = new[]
-                {
-                    InstanceType.MCJava,
-                    InstanceType.MCFabric,
-                    InstanceType.MCForge,
-                    InstanceType.MCNeoForge,
-                    InstanceType.MCQuilt,
-                    InstanceType.MCCleanroom,
-                    InstanceType.MCSponge,
-                    InstanceType.MCVanilla,
-                    InstanceType.MCCraftBukkit,
-                    InstanceType.MCSpigot,
-                    InstanceType.MCPaper,
-                    InstanceType.MCLeaf,
-                    InstanceType.MCLeaves,
-                    InstanceType.MCFolia,
-                    InstanceType.MCPufferfish,
-                    InstanceType.MCPurpur,
-                    InstanceType.MCMohist
-                };
-
-                return System.Linq.Enumerable.Contains(mcTypes, CurrentReport.Config.InstanceType);
+                return CurrentReport.Config.InstanceType.SupportsMinecraftBoardWidgets();
             }
         }
 

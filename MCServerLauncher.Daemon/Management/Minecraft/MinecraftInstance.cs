@@ -30,6 +30,9 @@ public class MinecraftInstance : InstanceBase
 
     private async Task<Player[]> GetServerPlayersAsync()
     {
+        if (!Config.InstanceType.RequiresNumericMinecraftVersion() || string.IsNullOrWhiteSpace(Config.McVersion))
+            return [];
+
         if (McVersion.Of(Config.McVersion) >= McVersion.Of("1.7") && Status == InstanceStatus.Running)
             try
             {
@@ -37,7 +40,7 @@ public class MinecraftInstance : InstanceBase
                 if (status != null)
                     return status.Payload.Players.Sample.Select(player => new Player(player.Name, player.Id)).ToArray();
             }
-            catch (Exception e)when (e is SocketException or ArgumentOutOfRangeException)
+            catch (Exception e)when (e is SocketException or ArgumentOutOfRangeException or ArgumentException)
             {
                 return [];
             }

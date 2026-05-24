@@ -157,6 +157,16 @@ public static class InstanceFactoryRegistry
         {
             if (sourceTypeMapping.TryGetValue(setting.SourceType, out var versionMapping))
             {
+                if (setting.InstanceType == InstanceType.MCJava && string.IsNullOrWhiteSpace(setting.McVersion))
+                {
+                    var fallbackFactory = versionMapping
+                        .OrderBy(kv => kv.Key.Item1)
+                        .Select(kv => kv.Value)
+                        .FirstOrDefault();
+                    if (fallbackFactory is not null)
+                        return fallbackFactory;
+                }
+
                 var targetVersion = McVersion.Of(setting.McVersion);
                 var kv = versionMapping.FirstOrDefault(kv => targetVersion.Between(kv.Key.Item1, kv.Key.Item2));
                 if (kv.Value != null) return kv.Value;

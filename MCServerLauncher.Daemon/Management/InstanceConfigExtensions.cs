@@ -31,12 +31,15 @@ public static class InstanceConfigExtensions
     /// <returns></returns>
     public static Result<Unit, Error> ValidateConfig(this InstanceConfig config)
     {
-        if (IsMinecraftJavaInstance(config.InstanceType))
+        if (config.InstanceType.RequiresNumericMinecraftVersion() && string.IsNullOrWhiteSpace(config.McVersion))
+            return ResultExt.Err<Unit>("mc_version could not be empty");
+
+        if (config.InstanceType.RequiresNumericMinecraftVersion())
             try
             {
                 McVersion.Of(config.McVersion);
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentException)
             {
                 return ResultExt.Err<Unit>("Could not parse mc_version");
             }
@@ -54,21 +57,7 @@ public static class InstanceConfigExtensions
 
     public static bool IsMinecraftJavaInstance(InstanceType type)
     {
-        var NonMCJavaList = new[]
-        {
-            InstanceType.Universal,
-            InstanceType.MCBedrock,
-            InstanceType.MCNukkit,
-            InstanceType.MCBDS,
-            InstanceType.MCCloudburst,
-            InstanceType.MCPocketMine,
-            InstanceType.Terraria,
-            InstanceType.TShock,
-            InstanceType.TDSM,
-            InstanceType.MCDReforged,
-            InstanceType.SteamServer
-        };
-        return !NonMCJavaList.Contains(type);
+        return type.IsMinecraftJavaRuntimeType();
     }
 
     public static InstanceConfig AllocateNewUuid(this InstanceConfig config, Func<IEnumerable<Guid>> uuidSetFunc)
@@ -92,7 +81,7 @@ public static class InstanceConfigExtensions
     public static bool CanSafeCastTo<TInstance>(this InstanceConfig config)
         where TInstance : IInstance
     {
-        if (typeof(TInstance) == typeof(MinecraftInstance)) return config.InstanceType is not InstanceType.Universal;
+        if (typeof(TInstance) == typeof(MinecraftInstance)) return config.InstanceType.IsMinecraftJavaRuntimeType();
 
         if (typeof(TInstance) == typeof(GenericInstance)) return true;
 

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Management.Detection;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -39,11 +40,16 @@ public class InstanceManager : IInstanceManager
         var saveInstanceResult = appliedFactoryResult.Map(static (state, config) =>
             {
                 var (root, keysSupplier, manager) = state;
-                config.AllocateNewUuid(keysSupplier);
+                var reconciledConfig = InstanceVersionDetector.Reconcile(config, root);
+                reconciledConfig.AllocateNewUuid(keysSupplier);
 
                 return ResultExt.Try(static innerState =>
                 {
                     var (innerRoot, innerConfig, innerManager) = innerState;
+                    var validation = innerConfig.ValidateConfig();
+                    if (validation.IsErr(out var validationError))
+                        throw new InvalidOperationException(validationError.ToString());
+
                     FileManager.WriteJsonAndBackup(
                         Path.Combine(innerRoot, InstanceConfig.FileName),
                         innerConfig
@@ -51,7 +57,7 @@ public class InstanceManager : IInstanceManager
 
                     innerManager.Instances.TryAdd(innerConfig.Uuid, innerConfig.CreateInstance());
                     return innerConfig;
-                }, (root, config, manager)).MapErr(Error.FromException);
+                }, (root, reconciledConfig, manager)).MapErr(Error.FromException);
             }
             , (instanceRoot, KeysSupplier: InstanceKeysSupplier, this)).Flatten();
 
@@ -155,12 +161,14 @@ public class InstanceManager : IInstanceManager
     {
         if (!Instances.TryGetValue(instanceId, out var instance))
             return null;
+
+        instance = ReconcileLoadedInstance(instance);
         return await instance.GetReportAsync();
     }
 
     public async Task<Dictionary<Guid, InstanceReport>> GetAllReports()
     {
-        var tasks = Instances.ToDictionary(kv => kv.Key, kv => kv.Value.GetReportAsync());
+        var tasks = Instances.ToDictionary(kv => kv.Key, kv => ReconcileLoadedInstance(kv.Value).GetReportAsync());
         await Task.WhenAll(tasks.Values);
         return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
     }
@@ -181,6 +189,32 @@ public class InstanceManager : IInstanceManager
         if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceId, out _);
     }
 
+    private IInstance ReconcileLoadedInstance(IInstance instance)
+    {
+        var currentConfig = instance.Config;
+        var reconciledConfig = InstanceVersionDetector.Reconcile(currentConfig, currentConfig.GetWorkingDirectory());
+        if (reconciledConfig.InstanceType == currentConfig.InstanceType && reconciledConfig.Version == currentConfig.Version)
+            return instance;
+
+        try
+        {
+            FileManager.WriteJsonAndBackup(
+                Path.Combine(reconciledConfig.GetWorkingDirectory(), InstanceConfig.FileName),
+                reconciledConfig
+            );
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "[InstanceManager] Failed to persist reconciled config for instance {InstanceId}", currentConfig.Uuid);
+        }
+
+        var replacement = reconciledConfig.CreateInstance();
+        replacement.OnStatusChanged += OnInstanceStatusChangedHandler;
+        Instances[currentConfig.Uuid] = replacement;
+        instance.Dispose();
+        return replacement;
+    }
+
     public static IInstanceManager Create()
     {
         var instanceManager = new InstanceManager();
@@ -196,9 +230,16 @@ public class InstanceManager : IInstanceManager
 
             try
             {
-                var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName);
-                instanceManager.Instances.TryAdd(config!.Uuid, config.CreateInstance());
-                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", config.Name, config.Uuid);
+                var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName)!;
+                var reconciledConfig = InstanceVersionDetector.Reconcile(config, dir.FullName);
+                if (!ReferenceEquals(reconciledConfig, config) &&
+                    (reconciledConfig.InstanceType != config.InstanceType || reconciledConfig.Version != config.Version))
+                {
+                    FileManager.WriteJsonAndBackup(serverConfig.FullName, reconciledConfig);
+                }
+
+                instanceManager.Instances.TryAdd(reconciledConfig.Uuid, reconciledConfig.CreateInstance());
+                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", reconciledConfig.Name, reconciledConfig.Uuid);
             }
             catch (Exception e)
             {
