@@ -38,7 +38,9 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.MCForge, SourceType.Archive, "1.5.2")]
 [InstanceFactory(InstanceType.MCNeoForge, SourceType.Archive, "1.20.2")]
 [InstanceFactory(InstanceType.MCCleanroom, SourceType.Archive, "1.12.2", "1.12.2")]
-[InstanceFactory(InstanceType.MCSponge)]
+[InstanceFactory(InstanceType.MCSpongeVanilla)]
+[InstanceFactory(InstanceType.MCSpongeForge)]
+[InstanceFactory(InstanceType.MCSpongeNeo)]
 public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
     public async Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting)

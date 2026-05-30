@@ -11,7 +11,9 @@ public static class InstanceTypeExtensions
             InstanceType.MCNeoForge or
             InstanceType.MCQuilt or
             InstanceType.MCCleanroom or
-            InstanceType.MCSponge or
+            InstanceType.MCSpongeVanilla or
+            InstanceType.MCSpongeForge or
+            InstanceType.MCSpongeNeo or
             InstanceType.MCVanilla or
             InstanceType.MCCraftBukkit or
             InstanceType.MCSpigot or

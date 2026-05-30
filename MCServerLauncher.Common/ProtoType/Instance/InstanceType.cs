@@ -17,7 +17,9 @@ public enum InstanceType
     MCNeoForge, // TEMPLATE
     MCQuilt, // TEMPLATE
     MCCleanroom, // TEMPLATE
-    MCSponge, // TEMPLATE
+    MCSpongeVanilla, // TEMPLATE
+    MCSpongeForge, // TEMPLATE
+    MCSpongeNeo, // TEMPLATE
     MCVanilla,
     MCCraftBukkit,
     MCSpigot,

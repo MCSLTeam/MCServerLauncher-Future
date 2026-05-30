@@ -21,29 +21,31 @@ internal static partial class InstanceVersionDetector
 
     private static readonly JavaDetectionRule[] JavaRules =
     [
+        new(InstanceType.MCArclight, DetectArclightVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCFabric, DetectFabricVersion, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCForge, DetectVersionJson, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCSpongeVanilla, DetectSpongeVanillaVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
+        new(InstanceType.MCSpongeForge, DetectSpongeForgeVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
+        new(InstanceType.MCForge, DetectForgeVersion, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCNeoForge, DetectNeoForgeVersion, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCQuilt, DetectVersionJson, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCCleanroom, DetectVersionJson, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCTaiyitist, DetectVersionJson, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCPaper, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCLeaf, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCLeaves, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCFolia, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCCanvas, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCPufferfish, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCPurpur, DetectPatchPropertiesVersion, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCPaper, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCLeaf, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCLeaves, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCFolia, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCCanvas, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCPufferfish, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCPurpur, DetectPatchPropertiesOrVersionJson, InstanceVersionDetectionSource.PatchProperties, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCMohist, DetectMinecraftVersionProperties, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCBanner, DetectMinecraftVersionProperties, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCYouer, DetectMinecraftVersionProperties, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCThermos, DetectMinecraftVersionPropertiesWithFilenameFallback, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCCrucible, DetectMinecraftVersionPropertiesWithFilenameFallback, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCCatServer, DetectMinecraftVersionProperties, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
-        new(InstanceType.MCArclight, DetectMinecraftVersionProperties, InstanceVersionDetectionSource.VersionProperties, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCThermos, DetectForgeInstallProfileVersion, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCCrucible, DetectForgeInstallProfileVersion, InstanceVersionDetectionSource.VersionJson, InstanceVersionDetectionConfidence.Exact),
+        new(InstanceType.MCCatServer, DetectCatServerVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Exact),
         new(InstanceType.MCCraftBukkit, DetectCraftBukkitVersion, InstanceVersionDetectionSource.MetaInfVersion, InstanceVersionDetectionConfidence.Strong),
         new(InstanceType.MCSpigot, DetectSpigotVersion, InstanceVersionDetectionSource.MetaInfVersion, InstanceVersionDetectionConfidence.Strong),
-        new(InstanceType.MCSponge, DetectManifestVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
+        new(InstanceType.MCSpongeNeo, DetectSpongeNeoVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
         new(InstanceType.MCBungeeCord, DetectManifestVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
         new(InstanceType.MCVelocity, DetectManifestVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
         new(InstanceType.MCWaterfall, DetectManifestVersion, InstanceVersionDetectionSource.Manifest, InstanceVersionDetectionConfidence.Strong),
@@ -166,6 +168,8 @@ internal static partial class InstanceVersionDetector
                 continue;
 
             var version = rule.Detector(candidateFiles, targetPath, workingDirectory);
+            if (string.IsNullOrWhiteSpace(version) && rule.InstanceType == InstanceType.MCFabric)
+                version = DetectFabricLauncherFilenameVersion(candidateFiles.Append(targetPath));
             if (string.IsNullOrWhiteSpace(version))
                 continue;
 
@@ -493,14 +497,33 @@ internal static partial class InstanceVersionDetector
     private static string? DetectFabricVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
     {
         return DetectVersionJson(candidateFiles, targetPath, workingDirectory)
+               ?? TryReadPropertiesValue(candidateFiles, targetPath, "install.properties", "game-version")
                ?? TryReadFirstLineEntry(candidateFiles, targetPath, "META-INF/versions.list")?.Split('	', ' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+    }
+
+    private static string? DetectForgeVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return DetectVersionJson(candidateFiles, targetPath, workingDirectory)
+               ?? DetectForgeInstallProfileVersion(candidateFiles, targetPath, workingDirectory)
+               ?? DetectVersionFromNestedForgeUniversalJar(candidateFiles, targetPath)
+               ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
     }
 
     private static string? DetectNeoForgeVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
     {
         return DetectVersionJson(candidateFiles, targetPath, workingDirectory)
                ?? TryReadTextEntryFromCandidates(candidateFiles, targetPath, "META-INF/mods.toml", content =>
-                   ExtractPropertyValue(content, "version"));
+                   ExtractPropertyValue(content, "version"))
+               ?? TryReadTextEntryFromCandidates(candidateFiles, targetPath, "META-INF/installer.json", content =>
+                   TryReadJsonProperty(content, ["installer", "minecraft"]))
+               ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
+    }
+
+    private static string? DetectPatchPropertiesOrVersionJson(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return DetectPatchPropertiesVersion(candidateFiles, targetPath, workingDirectory)
+               ?? DetectVersionJson(candidateFiles, targetPath, workingDirectory)
+               ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
     }
 
     private static string? DetectPatchPropertiesVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
@@ -519,6 +542,76 @@ internal static partial class InstanceVersionDetector
     {
         return DetectMinecraftVersionProperties(candidateFiles, targetPath, workingDirectory)
                ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
+    }
+
+    private static string? DetectArclightVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return TryReadTextEntryFromCandidates(candidateFiles, targetPath, "META-INF/installer.json", content =>
+                   TryReadJsonProperty(content, ["installer", "minecraft"]))
+               ?? TryReadTextEntryFromCandidates(candidateFiles, targetPath, "META-INF/MANIFEST.MF", content =>
+                   NormalizeMinecraftVersion(ExtractManifestAttribute(content, "Implementation-Version") ?? string.Empty))
+               ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
+    }
+
+    private static string? DetectCatServerVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return TryReadManifestAttribute(candidateFiles, targetPath, "Git-Branch")
+               ?? TryReadTextEntryFromCandidates(candidateFiles, targetPath, "data/libraries.txt", content =>
+                   FirstVersionToken(content))
+               ?? DetectVersionFromNestedForgeUniversalJar(candidateFiles, targetPath)
+               ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
+    }
+
+    private static string? DetectSpongeVanillaVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return DetectManifestVersion(candidateFiles, targetPath, workingDirectory);
+    }
+
+    private static string? DetectSpongeForgeVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return DetectManifestVersion(candidateFiles, targetPath, workingDirectory);
+    }
+
+    private static string? DetectSpongeNeoVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return NormalizeMinecraftVersion(DetectManifestVersion(candidateFiles, targetPath, workingDirectory) ?? string.Empty)
+               ?? DetectVersionFromFileNames(candidateFiles.Append(targetPath));
+    }
+
+    private static string? DetectForgeInstallProfileVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
+    {
+        return TryReadTextEntryFromCandidates(candidateFiles, targetPath, "install_profile.json", content =>
+                   TryReadJsonProperty(content, ["install", "minecraft"]))
+               ?? TryReadTextEntryFromCandidates(candidateFiles, targetPath, "install_profile.json", content =>
+                   TryReadJsonProperty(content, ["versionInfo", "inheritsFrom"]))
+               ?? TryReadTextEntryFromCandidates(candidateFiles, targetPath, "install_profile.json", content =>
+                   TryReadJsonProperty(content, ["versionInfo", "jar"]));
+    }
+
+    private static string? DetectVersionFromNestedForgeUniversalJar(IReadOnlyList<string> candidateFiles, string targetPath)
+    {
+        return TryReadNestedEntryNameVersion(candidateFiles, targetPath, name =>
+            name.Contains("universal.jar", StringComparison.OrdinalIgnoreCase) &&
+            name.Contains("forge", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string? DetectFabricLauncherFilenameVersion(IEnumerable<string> filePaths)
+    {
+        foreach (var filePath in filePaths)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(filePath);
+            if (string.IsNullOrWhiteSpace(fileName) || !fileName.Contains("fabric", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!fileName.Contains("mc.", StringComparison.OrdinalIgnoreCase) &&
+                !fileName.Contains("loader", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var version = FirstVersionToken(fileName);
+            if (!string.IsNullOrWhiteSpace(version))
+                return version;
+        }
+
+        return null;
     }
 
     private static string? DetectCraftBukkitVersion(IReadOnlyList<string> candidateFiles, string targetPath, string workingDirectory)
@@ -653,7 +746,9 @@ internal static partial class InstanceVersionDetector
             InstanceType.MCCrucible => ContainsName(allNames, "crucible"),
             InstanceType.MCCatServer => ContainsName(allNames, "catserver"),
             InstanceType.MCArclight => ContainsName(allNames, "arclight"),
-            InstanceType.MCSponge => ContainsName(allNames, "sponge"),
+            InstanceType.MCSpongeVanilla => ContainsName(allNames, "spongevanilla"),
+            InstanceType.MCSpongeForge => ContainsName(allNames, "spongeforge"),
+            InstanceType.MCSpongeNeo => ContainsName(allNames, "spongeneo"),
             InstanceType.MCCraftBukkit => ContainsName(allNames, "craftbukkit"),
             InstanceType.MCSpigot => ContainsName(allNames, "spigot"),
             InstanceType.MCBungeeCord => ContainsName(allNames, "bungee"),
@@ -675,7 +770,9 @@ internal static partial class InstanceVersionDetector
     private static bool IsJavaMetadataType(InstanceType type)
     {
         return type is
-            InstanceType.MCSponge or
+            InstanceType.MCSpongeVanilla or
+            InstanceType.MCSpongeForge or
+            InstanceType.MCSpongeNeo or
             InstanceType.MCBungeeCord or
             InstanceType.MCVelocity or
             InstanceType.MCWaterfall or
@@ -868,6 +965,52 @@ internal static partial class InstanceVersionDetector
         {
             return false;
         }
+    }
+
+    private static string? TryReadJsonProperty(string content, params string[] path)
+    {
+        using var document = JsonDocument.Parse(content);
+        var current = document.RootElement;
+        foreach (var segment in path)
+        {
+            if (!current.TryGetProperty(segment, out current))
+                return null;
+        }
+
+        return current.ValueKind == JsonValueKind.String ? current.GetString() : current.ToString();
+    }
+
+    private static string? ExtractManifestAttribute(string content, string key)
+    {
+        foreach (var line in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (line.StartsWith(key + ':', StringComparison.OrdinalIgnoreCase))
+                return line[(key.Length + 1)..].Trim();
+        }
+
+        return null;
+    }
+
+    private static string? TryReadNestedEntryNameVersion(IReadOnlyList<string> candidateFiles, string targetPath, Func<string, bool> predicate)
+    {
+        foreach (var file in candidateFiles.Append(targetPath))
+        {
+            if (!File.Exists(file) || !TryOpenArchive(file, out var archive))
+                continue;
+
+            using (archive)
+            {
+                var nested = archive.Entries.FirstOrDefault(entry => predicate(entry.FullName));
+                if (nested is null)
+                    continue;
+
+                var version = FirstVersionToken(Path.GetFileNameWithoutExtension(nested.FullName));
+                if (!string.IsNullOrWhiteSpace(version))
+                    return version;
+            }
+        }
+
+        return null;
     }
 
     private static string? ExtractPropertyValue(string content, string key)

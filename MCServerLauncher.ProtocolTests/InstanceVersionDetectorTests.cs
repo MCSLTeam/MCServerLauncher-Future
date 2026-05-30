@@ -23,7 +23,8 @@ public class InstanceTypeExtensionsTests
     [Fact]
     public void SupportsMinecraftBoardWidgets_ExcludesProxyPluginAndBedrockTypes()
     {
-        Assert.True(InstanceType.MCSponge.SupportsMinecraftBoardWidgets());
+        Assert.True(InstanceType.MCSpongeVanilla.SupportsMinecraftBoardWidgets());
+        Assert.True(InstanceType.MCSpongeForge.SupportsMinecraftBoardWidgets());
         Assert.False(InstanceType.MCBungeeCord.SupportsMinecraftBoardWidgets());
         Assert.False(InstanceType.MCVelocity.SupportsMinecraftBoardWidgets());
         Assert.False(InstanceType.MCWaterfall.SupportsMinecraftBoardWidgets());
@@ -210,6 +211,272 @@ public class InstanceVersionDetectorTests
         {
             Directory.Delete(workingDirectory, true);
             InstanceFactoryRegistry.Reset();
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToFabricFromInstallProperties()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "fabric-1.20.4-0.19.2-1.1.1.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["install.properties"] = "fabric-loader-version=0.19.2\ngame-version=1.20.4\n",
+                ["META-INF/MANIFEST.MF"] = "Implementation-Version: 1.1.1\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "fabric",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCFabric, reconciled.InstanceType);
+            Assert.Equal("1.20.4", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToLegacyForgeFromInstallProfile()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "forge-1.10.2-12.18.3.2511.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["install_profile.json"] = "{\"install\":{\"minecraft\":\"1.10.2\",\"filePath\":\"forge-1.10.2-12.18.3.2511-universal.jar\"}}"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "forge-legacy",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCForge, reconciled.InstanceType);
+            Assert.Equal("1.10.2", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToArclightFromInstallerMetadata()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "arclight-1.20.4-forge.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["META-INF/installer.json"] = "{\"installer\":{\"minecraft\":\"1.20.4\",\"forge\":\"49.1.0\"}}",
+                ["META-INF/MANIFEST.MF"] = "Implementation-Version: arclight-1.20.4-1.0.4-80ec5df\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "arclight",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCArclight, reconciled.InstanceType);
+            Assert.Equal("1.20.4", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToCatServerFromManifestBranch()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "catserver-1.18.2.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["META-INF/MANIFEST.MF"] = "Git-Branch: 1.18.2\nMain-Class: foxlaunch.FoxServerLauncher\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "catserver",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCCatServer, reconciled.InstanceType);
+            Assert.Equal("1.18.2", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToSpongeVanillaFromManifestVersion()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "spongevanilla-1.20.1.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["META-INF/MANIFEST.MF"] = "Implementation-Version: 1.20.1-11.0.0-RC1359\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "spongevanilla",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCSpongeVanilla, reconciled.InstanceType);
+            Assert.Equal("1.20.1-11.0.0-RC1359", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToSpongeForgeFromManifestVersion()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "spongeforge-1.12.2.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["META-INF/MANIFEST.MF"] = "Implementation-Version: 1.12.2-2838-7.4.8\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "spongeforge",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCSpongeForge, reconciled.InstanceType);
+            Assert.Equal("1.12.2-2838-7.4.8", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_ReconcilesMcJavaToSpongeNeoFromManifestVersion()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "spongeneo-1.21.10.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["META-INF/MANIFEST.MF"] = "Implementation-Version: 1.21.10-21.10.64-17.0.1-RC2598\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "spongeneo",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCJava,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCSpongeNeo, reconciled.InstanceType);
+            Assert.Equal("1.21.10", reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
+        }
+    }
+
+    [Fact]
+    public void Detect_LeavesSpecificFabricInstallerUnchangedWhenOnlyInstallerVersionExists()
+    {
+        var workingDirectory = CreateTempDirectory();
+        try
+        {
+            var jarPath = Path.Combine(workingDirectory, "fabric-installer-1.1.1.jar");
+            CreateArchive(jarPath, new Dictionary<string, string>
+            {
+                ["META-INF/MANIFEST.MF"] = "Implementation-Title: FabricInstaller\nImplementation-Version: 1.1.1\nMain-Class: net.fabricmc.installer.ServerLauncher\n"
+            });
+
+            var config = new InstanceConfig
+            {
+                Name = "fabric-installer",
+                Target = Path.GetFileName(jarPath),
+                TargetType = TargetType.Jar,
+                InstanceType = InstanceType.MCFabric,
+                Version = string.Empty,
+                JavaPath = "java"
+            };
+
+            var reconciled = InstanceVersionDetector.Reconcile(config, workingDirectory);
+
+            Assert.Equal(InstanceType.MCFabric, reconciled.InstanceType);
+            Assert.Equal(string.Empty, reconciled.Version);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, true);
         }
     }
 
