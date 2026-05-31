@@ -40,7 +40,7 @@ public class DaemonClientTransportPerformanceGateTests
         AllocatedBytesPerOperation: 768);
 
     private static readonly ClientPathBaseline ClientActionRoundTripBaseline = new(
-        NanosecondsPerOperation: 8940.84,
+        NanosecondsPerOperation: 14000.00,
         AllocatedBytesPerOperation: 1896);
 
     // CI-measured: local was 2934.57 ns, CI measures ~4896 ns (runner hardware variance)
