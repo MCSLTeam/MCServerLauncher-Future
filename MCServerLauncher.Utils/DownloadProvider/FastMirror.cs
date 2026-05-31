@@ -22,15 +22,14 @@ namespace MCServerLauncher.Utils.DownloadProvider
             var remoteFastMirrorCoreInfoList = JsonConvert
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                 ?.SelectToken("data");
-            return remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
+            return [.. remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
             {
                 Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
                 Tag = fastMirrorCoreInfo.SelectToken("tag")!.ToString(),
                 HomePage = fastMirrorCoreInfo.SelectToken("homepage")!.ToString(),
                 Recommend = fastMirrorCoreInfo.SelectToken("recommend")!.ToObject<bool>(),
                 MinecraftVersions = fastMirrorCoreInfo.SelectToken("mc_versions")!.ToObject<List<string>>()
-            })
-                .ToList();
+            })];
         }
 
         /// <summary>
@@ -48,13 +47,13 @@ namespace MCServerLauncher.Utils.DownloadProvider
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                 ?.SelectToken("data")!
                 .SelectToken("builds");
-            return remoteFastMirrorCoreDetailList!.Select(remoteFastMirrorCoreDetail => new FastMirrorCoreDetail
+            return [.. remoteFastMirrorCoreDetailList!.Select(remoteFastMirrorCoreDetail => new FastMirrorCoreDetail
             {
                 Name = remoteFastMirrorCoreDetail.SelectToken("name")!.ToString(),
                 MinecraftVersion = remoteFastMirrorCoreDetail.SelectToken("mc_version")!.ToString(),
                 CoreVersion = remoteFastMirrorCoreDetail.SelectToken("core_version")!.ToString(),
                 Sha1 = remoteFastMirrorCoreDetail.SelectToken("sha1")!.ToString()
-            }).ToList();
+            })];
         }
 
         /// <summary>
@@ -64,10 +63,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <param name="minecraftVersion"></param>
         /// <param name="coreVersion"></param>
         /// <returns></returns>
-        public string CombineDownloadUrl(string core, string minecraftVersion, string coreVersion)
-        {
-            return $"https://download.fastmirror.net/download/{core}/{minecraftVersion}/{coreVersion}";
-        }
+        public static string CombineDownloadUrl(string core, string minecraftVersion, string coreVersion) => $"https://download.fastmirror.net/download/{core}/{minecraftVersion}/{coreVersion}";
 #nullable enable
         public class FastMirrorCoreInfo
         {
