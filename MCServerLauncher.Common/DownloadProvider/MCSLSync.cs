@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
 {
-    public class MCSLSync
+    public static class MCSLSync
     {
-        private readonly string _endPoint = "https://sync.mcsl.com.cn/api";
+        private const string _endPoint = "https://sync.mcsl.com.cn/api";
 
         /// <summary>
         ///    Get core info from MCSL-Sync
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<string>?> GetCoreInfo()
+        public static async Task<List<string>?> GetCoreInfo()
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core");
             if (response.IsSuccessStatusCode)
@@ -28,7 +28,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// </summary>
         /// <param name="core"></param>
         /// <returns></returns>
-        public async Task<List<string>?> GetMinecraftVersions(string core)
+        public static async Task<List<string>?> GetMinecraftVersions(string core)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{core}");
             if (response.IsSuccessStatusCode)
@@ -43,7 +43,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>
         /// <returns></returns>
-        public async Task<List<string>?> GetCoreVersions(string core, string minecraftVersion)
+        public static async Task<List<string>?> GetCoreVersions(string core, string minecraftVersion)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
@@ -59,7 +59,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// <param name="minecraftVersion"></param>
         /// <param name="coreVersion"></param>
         /// <returns></returns>
-        public async Task<MCSLSyncCoreDetail?> GetCoreDetail(string? core, string minecraftVersion, string coreVersion)
+        public static async Task<MCSLSyncCoreDetail?> GetCoreDetail(string? core, string minecraftVersion, string coreVersion)
         {
             var response =
                 await HttpHelper.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}/{coreVersion}");

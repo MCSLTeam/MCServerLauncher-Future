@@ -35,7 +35,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <param name="e"></param>
         private async void Download(object sender, RoutedEventArgs e)
         {
-            var downloadUrl = await new MSLAPI().GetDownloadUrl(ApiActualName, MinecraftVersion);
+            var downloadUrl = await MSLAPI.GetDownloadUrl(ApiActualName, MinecraftVersion);
             string defaultFileName = $"{ApiActualName}-{MinecraftVersion}.jar";
             await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
         }

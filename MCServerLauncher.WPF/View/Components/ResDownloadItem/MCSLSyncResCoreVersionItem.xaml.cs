@@ -43,7 +43,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// </summary>
         public async Task<string?> GetDownloadUrl()
         {
-            var coreDetail = await new MCSLSync().GetCoreDetail(Core, MinecraftVersion, CoreVersion);
+            var coreDetail = await MCSLSync.GetCoreDetail(Core, MinecraftVersion, CoreVersion);
             return coreDetail?.DownloadUrl;
         }
 

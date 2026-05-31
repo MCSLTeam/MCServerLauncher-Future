@@ -45,7 +45,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsEnabled = false;
 
                 _isDataLoading = true;
-                var mcslSyncCoreInfo = await new MCSLSync().GetCoreInfo();
+                var mcslSyncCoreInfo = await MCSLSync.GetCoreInfo();
 
                 if (mcslSyncCoreInfo != null)
                 {
@@ -93,7 +93,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             MinecraftVersionComboBox.Items.Clear();
             CoreGridView.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            List<string?> minecraftVersions = DownloadManager.SequenceMinecraftVersion((await new MCSLSync().GetMinecraftVersions(selectedCore.CoreName))!);
+            List<string?> minecraftVersions = DownloadManager.SequenceMinecraftVersion((await MCSLSync.GetMinecraftVersions(selectedCore.CoreName))!);
             foreach (var minecraftVersion in minecraftVersions)
                 MinecraftVersionComboBox.Items.Add($"Minecraft {minecraftVersion}");
             MinecraftVersionComboBox.SelectionChanged += GetCoreDetail;
@@ -118,7 +118,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 var mcslSyncCoreVersions =
-                    await new MCSLSync().GetCoreVersions(currentCore.CoreName, currentMinecraftVersion);
+                    await MCSLSync.GetCoreVersions(currentCore.CoreName, currentMinecraftVersion);
                 CoreVersionStackPanel.Children.Clear();
                 foreach (var coreDetailItem in mcslSyncCoreVersions!.Select(detail => new MCSLSyncResCoreVersionItem
                 {

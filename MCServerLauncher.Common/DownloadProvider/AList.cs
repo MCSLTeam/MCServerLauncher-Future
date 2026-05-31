@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
 {
-    public class AList
+    public static class AList
     {
-        private readonly string _fileListApi = "/api/fs/list";
-        private readonly string _fileUrlApi = "/api/fs/get";
+        private const string _fileListApi = "/api/fs/list";
+        private const string _fileUrlApi = "/api/fs/get";
 
         /// <summary>
         ///    Get AList file list.
@@ -18,7 +18,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// <param name="host"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        public async Task<List<AListFileStructure>?> GetFileList(string host, string path)
+        public static async Task<List<AListFileStructure>?> GetFileList(string host, string path)
         {
             var response = await HttpHelper.SendGetRequest($"{host}{_fileListApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
@@ -38,7 +38,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// <param name="host"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        public async Task<string?> GetFileUrl(string host, string path)
+        public static async Task<string?> GetFileUrl(string host, string path)
         {
             var response = await HttpHelper.SendGetRequest($"{host}{_fileUrlApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;

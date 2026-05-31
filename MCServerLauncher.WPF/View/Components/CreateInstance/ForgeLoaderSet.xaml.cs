@@ -140,7 +140,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             ForgeVersionComboBox.ClearSelectedItems();
             MinecraftVersionComboBox.SelectionChanged -= PreFetchForgeVersions;
             MinecraftVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
-                await new Forge().GetMinecraftVersions(UseMirror())
+                await Forge.GetMinecraftVersions(UseMirror())
             );
             MinecraftVersionComboBox.SelectionChanged += PreFetchForgeVersions;
             FetchMinecraftVersionsButton.IsEnabled = true;
@@ -162,7 +162,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             MinecraftVersionComboBox.IsEnabled = false;
             ForgeVersionComboBox.ClearSelectedItems();
             CurrentForgeBuilds =
-                await new Forge().GetForgeVersions(MinecraftVersionComboBox.SelectedItem.ToString(), UseMirror());
+                await Forge.GetForgeVersions(MinecraftVersionComboBox.SelectedItem.ToString(), UseMirror());
             if (CurrentForgeBuilds != null)
                 ForgeVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
                     CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion).ToList()!

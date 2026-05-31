@@ -12,13 +12,13 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
     /// <summary>
     ///    Fetch + parse Forge Minecraft/loader versions from Official or BMCLAPI.
     /// </summary>
-    public class Forge
+    public static class Forge
     {
         /// <summary>
         ///    Get supported Minecraft versions.
         /// </summary>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<List<string>?> GetMinecraftVersions(bool useMirror)
+        public static async Task<List<string>?> GetMinecraftVersions(bool useMirror)
         {
             return useMirror
                 ? await FetchMinecraftVersionsByBmclapi()
@@ -30,7 +30,7 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         /// </summary>
         /// <param name="mcVersion">Target Minecraft version.</param>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<List<ForgeBuild>?> GetForgeVersions(string mcVersion, bool useMirror)
+        public static async Task<List<ForgeBuild>?> GetForgeVersions(string mcVersion, bool useMirror)
         {
             return useMirror
                 ? await FetchForgeVersionsByBmclapi(mcVersion)

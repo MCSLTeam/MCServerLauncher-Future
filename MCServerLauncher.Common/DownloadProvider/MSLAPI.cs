@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
 {
-    public class MSLAPI
+    public static class MSLAPI
     {
-        private readonly string _endPoint = "https://api.mslmc.cn/v3";
+        private const string _endPoint = "https://api.mslmc.cn/v3";
 
         /// <summary>
         ///    Get core info from MSL API.
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<string>?> GetCoreInfo()
+        public static async Task<List<string>?> GetCoreInfo()
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/query/available_server_types");
             if (response.IsSuccessStatusCode)
@@ -28,7 +28,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// </summary>
         /// <param name="Core">Raw name of the core.</param>
         /// <returns>String of the description.</returns>
-        public async Task<string?> GetCoreDescription(string? Core)
+        public static async Task<string?> GetCoreDescription(string? Core)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
             if (response.IsSuccessStatusCode)
@@ -42,7 +42,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// </summary>
         /// <param name="core">Raw name of the core.</param>
         /// <returns>List of Minecraft version.</returns>
-        public async Task<List<string>?> GetMinecraftVersions(string? core)
+        public static async Task<List<string>?> GetMinecraftVersions(string? core)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
             return response.IsSuccessStatusCode
@@ -57,7 +57,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// <param name="core">Raw name of the core.</param>
         /// <param name="minecraftVersion">Minecraft version.</param>
         /// <returns>String of the url.</returns>
-        public async Task<string?> GetDownloadUrl(string core, string minecraftVersion)
+        public static async Task<string?> GetDownloadUrl(string core, string minecraftVersion)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)

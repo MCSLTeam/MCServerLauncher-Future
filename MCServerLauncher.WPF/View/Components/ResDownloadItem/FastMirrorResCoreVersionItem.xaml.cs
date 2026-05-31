@@ -50,7 +50,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
                 throw new ArgumentNullException();
             }
 
-            var downloadUrl = new FastMirror().CombineDownloadUrl(core: Core, minecraftVersion: MinecraftVersion, coreVersion: CoreVersion);
+            var downloadUrl = FastMirror.CombineDownloadUrl(core: Core, minecraftVersion: MinecraftVersion, coreVersion: CoreVersion);
             string defaultFileName = $"{Core}-{MinecraftVersion}-{CoreVersion}.jar";
             await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
         }

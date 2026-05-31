@@ -131,7 +131,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             NeoForgeVersionComboBox.IsEnabled = false;
             var useMirror = SettingsManager.Get?.InstanceCreation != null &&
                             SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall;
-            var neoForgeData = await new NeoForge().GetData(useMirror);
+            var neoForgeData = await NeoForge.GetData(useMirror);
             NeoForgeVersions = neoForgeData.NeoForgeVersions;
             MinecraftVersions = neoForgeData.MinecraftVersions;
             MinecraftVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(MinecraftVersions);

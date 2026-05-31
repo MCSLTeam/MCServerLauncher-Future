@@ -143,7 +143,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.ClearSelectedItems();
             MinecraftVersionComboBox.SelectionChanged -= PreFetchFabricVersions;
-            SupportedAllMinecraftVersions = await new Fabric().GetMinecraftVersions(UseMirror());
+            SupportedAllMinecraftVersions = await Fabric.GetMinecraftVersions(UseMirror());
             ToggleStableMinecraftVersionCheckBox.RaiseEvent(new RoutedEventArgs(ToggleButton.CheckedEvent));
             MinecraftVersionComboBox.IsEnabled = true;
             FetchMinecraftVersionsButton.IsEnabled = true;
@@ -180,7 +180,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             FetchFabricVersionButton.IsEnabled = false;
             FabricVersionComboBox.IsEnabled = false;
             FabricVersionComboBox.ClearSelectedItems();
-            SupportedAllFabricVersions = await new Fabric().GetFabricVersions(UseMirror());
+            SupportedAllFabricVersions = await Fabric.GetFabricVersions(UseMirror());
             ToggleStableFabricVersionCheckBox.RaiseEvent(new RoutedEventArgs(ToggleButton.CheckedEvent));
             FabricVersionComboBox.IsEnabled = true;
             FetchFabricVersionButton.IsEnabled = true;

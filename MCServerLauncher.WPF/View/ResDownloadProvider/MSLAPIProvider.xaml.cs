@@ -42,7 +42,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsEnabled = false;
 
                 _isDataLoading = true;
-                var mslapiInfo = await new MSLAPI().GetCoreInfo();
+                var mslapiInfo = await MSLAPI.GetCoreInfo();
                 if (mslapiInfo == null)
                 {
                     Log.Error("[Res] [MSLAPI] Failed to load core info.");
@@ -90,11 +90,11 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             var selectedCore = (MSLAPIResCoreItem)CoreGridView.SelectedItem;
             Log.Information($"[Res] [MSLAPI] Selected core \"{selectedCore.CoreName}\"");
             CurrentCoreName.Text = selectedCore.CoreName;
-            CurrentCoreDescription.Text = await new MSLAPI().GetCoreDescription(selectedCore.ApiActualName);
+            CurrentCoreDescription.Text = await MSLAPI.GetCoreDescription(selectedCore.ApiActualName);
             CoreGridView.IsEnabled = false;
             try
             {
-                var mslapiCoreDetails = await new MSLAPI().GetMinecraftVersions(selectedCore.ApiActualName);
+                var mslapiCoreDetails = await MSLAPI.GetMinecraftVersions(selectedCore.ApiActualName);
                 CoreVersionStackPanel.Children.Clear();
                 if (mslapiCoreDetails != null)
                 {

@@ -10,13 +10,13 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
     /// <summary>
     ///    Fetch + parse Fabric Minecraft/loader versions from Official or BMCLAPI.
     /// </summary>
-    public class Fabric
+    public static class Fabric
     {
         /// <summary>
         ///    Get supported Minecraft versions.
         /// </summary>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<List<FabricUniversalVersion>?> GetMinecraftVersions(bool useMirror)
+        public static async Task<List<FabricUniversalVersion>?> GetMinecraftVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/game", true);
             var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
@@ -31,7 +31,7 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         ///    Get supported Fabric loader versions, but not below 0.12.0.
         /// </summary>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<List<FabricUniversalVersion>?> GetFabricVersions(bool useMirror)
+        public static async Task<List<FabricUniversalVersion>?> GetFabricVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/loader");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());

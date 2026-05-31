@@ -45,7 +45,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// </summary>
         public async Task<string?> FetchRawUrl()
         {
-            return await new AList().GetFileUrl("https://mirrors.rainyun.com", $"服务端合集/{Core}/{FileName}");
+            return await AList.GetFileUrl("https://mirrors.rainyun.com", $"服务端合集/{Core}/{FileName}");
         }
 
         /// <summary>

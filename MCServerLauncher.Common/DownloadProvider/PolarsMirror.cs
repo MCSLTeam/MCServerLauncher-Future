@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
 {
-    public class PolarsMirror
+    public static class PolarsMirror
     {
-        private readonly string _endPoint = "https://mirror.polars.cc/api/query/minecraft";
+        private const string _endPoint = "https://mirror.polars.cc/api/query/minecraft";
 
         // Unavailable service for now
         //public class PolarsServerPackInfo
@@ -26,7 +26,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         ///    Get core info from Polars Mirror.
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<PolarsMirrorCoreInfo>?> GetCoreInfo()
+        public static async Task<List<PolarsMirrorCoreInfo>?> GetCoreInfo()
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core");
             if (!response.IsSuccessStatusCode) return null;
@@ -46,7 +46,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// </summary>
         /// <param name="coreId">Index of core.</param>
         /// <returns>List of core.</returns>
-        public async Task<List<PolarsMirrorCoreDetail>?> GetCoreDetail(int coreId)
+        public static async Task<List<PolarsMirrorCoreDetail>?> GetCoreDetail(int coreId)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{coreId}");
             if (!response.IsSuccessStatusCode) return null;

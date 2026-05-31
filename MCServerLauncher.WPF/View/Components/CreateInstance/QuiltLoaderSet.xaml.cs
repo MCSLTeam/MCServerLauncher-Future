@@ -140,7 +140,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            SupportedAllMinecraftVersions = await new Quilt().GetMinecraftVersions(UseMirror());
+            SupportedAllMinecraftVersions = await Quilt.GetMinecraftVersions(UseMirror());
             ToggleStableMinecraftVersionCheckBox.RaiseEvent(new RoutedEventArgs(ToggleButton.CheckedEvent));
             MinecraftVersionComboBox.IsEnabled = true;
             FetchMinecraftVersionsButton.IsEnabled = true;
@@ -175,7 +175,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             FetchQuiltVersionButton.IsEnabled = false;
             QuiltVersionComboBox.IsEnabled = false;
-            QuiltLoaderVersions = await new Quilt().GetQuiltVersions(UseMirror());
+            QuiltLoaderVersions = await Quilt.GetQuiltVersions(UseMirror());
             QuiltVersionComboBox.ItemsSource = QuiltLoaderVersions;
             QuiltVersionComboBox.IsEnabled = true;
             FetchQuiltVersionButton.IsEnabled = true;

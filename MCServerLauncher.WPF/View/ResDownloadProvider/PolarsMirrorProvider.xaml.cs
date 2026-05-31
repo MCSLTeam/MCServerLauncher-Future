@@ -43,7 +43,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsEnabled = false;
 
                 _isDataLoading = true;
-                var polarsMirrorInfo = await new PolarsMirror().GetCoreInfo();
+                var polarsMirrorInfo = await PolarsMirror.GetCoreInfo();
 
                 foreach (var coreItem in (polarsMirrorInfo ?? throw new InvalidOperationException()).Select(result => new PolarsMirrorResCoreItem
                 {
@@ -92,7 +92,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             CoreGridView.IsEnabled = false;
             try
             {
-                var polarsMirrorCoreDetails = await new PolarsMirror().GetCoreDetail(selectedCore.CoreId);
+                var polarsMirrorCoreDetails = await PolarsMirror.GetCoreDetail(selectedCore.CoreId);
                 CoreVersionStackPanel.Children.Clear();
                 CoreGridView.IsEnabled = false;
                 if (polarsMirrorCoreDetails != null)

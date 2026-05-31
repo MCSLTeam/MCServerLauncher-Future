@@ -48,7 +48,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsEnabled = false;
 
                 _isDataLoading = true;
-                var fastMirrorInfo = await new FastMirror().GetCoreInfo();
+                var fastMirrorInfo = await FastMirror.GetCoreInfo();
 
                 if (fastMirrorInfo != null)
                 {
@@ -147,7 +147,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             try
             {
                 var fastMirrorCoreDetails =
-                    await new FastMirror().GetCoreDetail(currentCore.CoreName, currentMinecraftVersion);
+                    await FastMirror.GetCoreDetail(currentCore.CoreName, currentMinecraftVersion);
                 CoreVersionStackPanel.Children.Clear();
                 if (fastMirrorCoreDetails != null)
                 {

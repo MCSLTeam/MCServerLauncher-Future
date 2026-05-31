@@ -56,18 +56,18 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestFastMirrorEndPoint(object sender, RoutedEventArgs e)
         {
-            var results = await new FastMirror().GetCoreInfo();
-            var tmpText = results.Aggregate("",
+            var results = await FastMirror.GetCoreInfo();
+            var tmpText = (results ?? []).Aggregate("",
                 (current, result) =>
                     current +
-                    $"Name: {result.Name}\nTag: {result.Tag}\nHomePage: {result.HomePage}\nRecommend: {result.Recommend}\nMinecraftVersions: {string.Join(", ", result.MinecraftVersions)}\n\n");
+                    $"Name: {result.Name}\nTag: {result.Tag}\nHomePage: {result.HomePage}\nRecommend: {result.Recommend}\nMinecraftVersions: {string.Join(", ", result.MinecraftVersions ?? [])}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
 
         private async void TestFastMirrorCore(object sender, RoutedEventArgs e)
         {
-            var results = await new FastMirror().GetCoreDetail("Paper", "1.20.1");
-            var tmpText = results.Aggregate("",
+            var results = await FastMirror.GetCoreDetail("Paper", "1.20.1");
+            var tmpText = (results ?? []).Aggregate("",
                 (current, result) =>
                     current +
                     $"Name: {result.Name}\nMinecraftVersion: {result.MinecraftVersion}\nCoreVersion: {result.CoreVersion}\nSHA1: {result.Sha1}\n\n");
@@ -80,8 +80,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestRianYunAList(object sender, RoutedEventArgs e)
         {
-            var results = await new AList().GetFileList("https://mirrors.rainyun.com", "服务端合集/Arclight");
-            var tmpText = results.Aggregate("",
+            var results = await AList.GetFileList("https://mirrors.rainyun.com", "服务端合集/Arclight");
+            var tmpText = (results ?? []).Aggregate("",
                 (current, result) =>
                     current +
                     $"FileName: {result.FileName}\nFileSize: {result.FileSize}\nIsDirectory: {result.IsDirectory}\n\n");
@@ -90,7 +90,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestRianYunAListFile(object sender, RoutedEventArgs e)
         {
-            var result = await new AList().GetFileUrl("https://mirrors.rainyun.com",
+            var result = await AList.GetFileUrl("https://mirrors.rainyun.com",
                 "服务端合集/Arclight/1.21-neoforge.zip");
             ShowTextResultContentDialog($"RawUrl: {result}\n");
         }
@@ -101,8 +101,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestPolars(object sender, RoutedEventArgs e)
         {
-            var results = await new PolarsMirror().GetCoreInfo();
-            var tmpText = results.Aggregate("",
+            var results = await PolarsMirror.GetCoreInfo();
+            var tmpText = (results ?? []).Aggregate("",
                 (current, result) =>
                     current + $"Name: {result.Name}\nId: {result.Id}\nDescription: {result.Description}\n\n");
             ShowTextResultContentDialog(tmpText);
@@ -110,8 +110,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestPolarsCore(object sender, RoutedEventArgs e)
         {
-            var results = await new PolarsMirror().GetCoreDetail(1);
-            var tmpText = results.Aggregate("",
+            var results = await PolarsMirror.GetCoreDetail(1);
+            var tmpText = (results ?? []).Aggregate("",
                 (current, result) => current + $"Name: {result.FileName}\nDownloadUrl: {result.DownloadUrl}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
@@ -122,21 +122,21 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestMSL(object sender, RoutedEventArgs e)
         {
-            var results = await new MSLAPI().GetCoreInfo();
-            var tmpText = results.Aggregate("", (current, result) => current + $"Name: {result}\n");
+            var results = await MSLAPI.GetCoreInfo();
+            var tmpText = (results ?? []).Aggregate("", (current, result) => current + $"Name: {result}\n");
             ShowTextResultContentDialog(tmpText);
         }
 
         private async void TestMSLCore(object sender, RoutedEventArgs e)
         {
-            var results = await new MSLAPI().GetMinecraftVersions("paper");
-            var tmpText = results.Aggregate("Name: paper\n\n", (current, result) => current + $"Version: {result}\n");
+            var results = await MSLAPI.GetMinecraftVersions("paper");
+            var tmpText = (results ?? []).Aggregate("Name: paper\n\n", (current, result) => current + $"Version: {result}\n");
             ShowTextResultContentDialog(tmpText);
         }
 
         private async void TestMSLDownloadUrl(object sender, RoutedEventArgs e)
         {
-            var result = await new MSLAPI().GetDownloadUrl("paper", "1.21");
+            var result = await MSLAPI.GetDownloadUrl("paper", "1.21");
             ShowTextResultContentDialog($"Name: paper\nVersion:1.21\n{result}\n");
         }
 
@@ -146,29 +146,29 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private async void TestMCSLSync(object sender, RoutedEventArgs e)
         {
-            var results = await new MCSLSync().GetCoreInfo();
-            var tmpText = results.Aggregate("", (current, result) => current + $"Name: {result}\n");
+            var results = await MCSLSync.GetCoreInfo();
+            var tmpText = (results ?? []).Aggregate("", (current, result) => current + $"Name: {result}\n");
             ShowTextResultContentDialog(tmpText);
         }
 
         private async void TestMCSLSyncCore(object sender, RoutedEventArgs e)
         {
-            var results = await new MCSLSync().GetMinecraftVersions("Paper");
-            var tmpText = results.Aggregate("Name: Paper\n\n", (current, result) => current + $"Version: {result}\n\n");
+            var results = await MCSLSync.GetMinecraftVersions("Paper");
+            var tmpText = (results ?? []).Aggregate("Name: Paper\n\n", (current, result) => current + $"Version: {result}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
 
         private async void TestMCSLSyncCoreVersion(object sender, RoutedEventArgs e)
         {
-            var results = await new MCSLSync().GetCoreVersions("Paper", "1.20.6");
-            var tmpText = results.Aggregate("Name: Paper\nVersion: 1.20.6\n\n",
+            var results = await MCSLSync.GetCoreVersions("Paper", "1.20.6");
+            var tmpText = (results ?? []).Aggregate("Name: Paper\nVersion: 1.20.6\n\n",
                 (current, result) => current + $"Version: {result}\n\n");
             ShowTextResultContentDialog(tmpText);
         }
 
         private async void TestMCSLSyncCoreDetail(object sender, RoutedEventArgs e)
         {
-            var result = await new MCSLSync().GetCoreDetail("Paper", "1.20.6", "build148");
+            var result = await MCSLSync.GetCoreDetail("Paper", "1.20.6", "build148");
             ShowTextResultContentDialog(
                 $"Core: {result?.Core}\nMinecraftVersion: {result?.MinecraftVersion}\nCoreVersion: {result?.CoreVersion}\nDownloadUrl: {result?.DownloadUrl}\n");
         }

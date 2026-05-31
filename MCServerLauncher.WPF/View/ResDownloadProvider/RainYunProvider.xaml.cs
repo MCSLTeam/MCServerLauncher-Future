@@ -41,7 +41,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                 IsEnabled = false;
 
                 _isDataLoading = true;
-                var ryFileInfo = await new AList().GetFileList("https://mirrors.rainyun.com", "服务端合集");
+                var ryFileInfo = await AList.GetFileList("https://mirrors.rainyun.com", "服务端合集");
 
                 foreach (var coreItem in ryFileInfo!.Select(result => new RainYunResCoreItem
                 {
@@ -85,7 +85,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             CoreGridView.IsEnabled = false;
             try
             {
-                var ryFileInfo = await new AList().GetFileList("https://mirrors.rainyun.com",
+                var ryFileInfo = await AList.GetFileList("https://mirrors.rainyun.com",
                     $"服务端合集/{selectedCore.CoreName}");
                 ryFileInfo?.Reverse();
                 CoreVersionStackPanel.Children.Clear();

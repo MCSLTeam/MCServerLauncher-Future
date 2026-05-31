@@ -10,13 +10,13 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
     /// <summary>
     ///    Fetch + parse Quilt Minecraft/loader versions from Official or BMCLAPI.
     /// </summary>
-    public class Quilt
+    public static class Quilt
     {
         /// <summary>
         ///    Get supported Minecraft versions.
         /// </summary>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<List<QuiltMinecraftVersion>?> GetMinecraftVersions(bool useMirror)
+        public static async Task<List<QuiltMinecraftVersion>?> GetMinecraftVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/game", true);
             var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
@@ -31,7 +31,7 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         ///    Get supported Quilt loader versions.
         /// </summary>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<List<string>?> GetQuiltVersions(bool useMirror)
+        public static async Task<List<string>?> GetQuiltVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/loader");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());

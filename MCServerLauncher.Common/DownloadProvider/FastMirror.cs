@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
 {
-    public class FastMirror
+    public static class FastMirror
     {
-        private readonly string _endPoint = "https://download.fastmirror.net/api/v3";
+        private const string _endPoint = "https://download.fastmirror.net/api/v3";
 
         /// <summary>
         ///    Get FastMirror core info.
         /// </summary>
         /// <returns>List of core name.</returns>
-        public async Task<List<FastMirrorCoreInfo>?> GetCoreInfo()
+        public async static Task<List<FastMirrorCoreInfo>?> GetCoreInfo()
         {
             var response = await HttpHelper.SendGetRequest(_endPoint);
             if (!response.IsSuccessStatusCode) return null;
@@ -38,7 +38,7 @@ namespace MCServerLauncher.Common.DownloadProvider
         /// <param name="core"></param>
         /// <param name="minecraftVersion"></param>
         /// <returns></returns>
-        public async Task<List<FastMirrorCoreDetail>?> GetCoreDetail(string? core, string minecraftVersion)
+        public static async Task<List<FastMirrorCoreDetail>?> GetCoreDetail(string? core, string minecraftVersion)
         {
             var response =
                 await HttpHelper.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");

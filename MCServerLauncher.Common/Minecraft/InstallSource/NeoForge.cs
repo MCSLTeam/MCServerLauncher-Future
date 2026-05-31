@@ -11,13 +11,13 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
     /// <summary>
     ///    Fetch + parse NeoForge data from Official or BMCLAPI.
     /// </summary>
-    public class NeoForge
+    public static class NeoForge
     {
         /// <summary>
         ///    Get NeoForge data, including Minecraft versions and NeoForge versions.
         /// </summary>
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
-        public async Task<NeoForgeData> GetData(bool useMirror)
+        public static async Task<NeoForgeData> GetData(bool useMirror)
         {
             return useMirror
                 ? await FetchNeoForgeDataByBmclapi()
