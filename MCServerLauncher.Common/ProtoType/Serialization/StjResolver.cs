@@ -37,6 +37,7 @@ public static class StjResolver
         options.Converters.Add(new GuidStjConverter());
         options.Converters.Add(new EncodingStjConverter());
         options.Converters.Add(new PlaceHolderStringStjConverter());
+        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.SnakeCaseLower));
 
         return options;
     }

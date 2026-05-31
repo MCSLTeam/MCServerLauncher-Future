@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace MCServerLauncher.Common.ProtoType.Serialization;
 
 /// <summary>
-/// STJ converter for Guid that falls back to Guid.Empty on invalid strings (parity with Newtonsoft GuidJsonConverter)
+/// Guid converter that falls back to Guid.Empty on invalid strings.
 /// </summary>
 public sealed class GuidStjConverter : JsonConverter<Guid>
 {
@@ -36,7 +36,7 @@ public sealed class GuidStjConverter : JsonConverter<Guid>
 }
 
 /// <summary>
-/// STJ converter for Encoding using WebName (parity with Newtonsoft WebEncodingJsonConverter)
+/// Encoding converter using WebName for serialization/deserialization.
 /// </summary>
 public sealed class EncodingStjConverter : JsonConverter<Encoding>
 {
@@ -57,7 +57,7 @@ public sealed class EncodingStjConverter : JsonConverter<Encoding>
 }
 
 /// <summary>
-/// STJ converter for PlaceHolderString (parity with Newtonsoft PlaceHolderString.JsonConverter)
+/// PlaceHolderString converter: serializes as pattern string, deserializes from string or null.
 /// </summary>
 public sealed class PlaceHolderStringStjConverter : JsonConverter<PlaceHolderString>
 {

@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 using Serilog;
 
 namespace MCServerLauncher.Common.ProtoType;
@@ -55,28 +54,4 @@ public class PlaceHolderString
         return Pattern;
     }
 
-
-    public class JsonConverter : JsonConverter<PlaceHolderString>
-    {
-        public override void WriteJson(JsonWriter writer, PlaceHolderString? value, JsonSerializer serializer)
-        {
-            if (value == null)
-            {
-                writer.WriteNull();
-                return;
-            }
-
-            writer.WriteValue(value.Pattern);
-        }
-
-        public override PlaceHolderString? ReadJson(JsonReader reader, Type objectType,
-            PlaceHolderString? existingValue,
-            bool hasExistingValue,
-            JsonSerializer serializer)
-        {
-            var pattern = reader.Value?.ToString();
-
-            return string.IsNullOrEmpty(pattern) ? null : new PlaceHolderString(pattern!);
-        }
-    }
 }

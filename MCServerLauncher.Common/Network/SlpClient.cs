@@ -1,8 +1,8 @@
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace MCServerLauncher.Common.Network;
@@ -168,7 +168,7 @@ public class SlpClient
             Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             var json = ReadString(received, jsonLength, ref offset);
-            return JsonConvert.DeserializeObject<PingPayload>(json);
+            return JsonSerializer.Deserialize<PingPayload>(json, SlpJsonOptions.Instance);
         }
         catch (Exception e)
         {
@@ -343,70 +343,81 @@ public record PingPayload
     /// <summary>
     ///     Protocol that the server is using and the given name
     /// </summary>
-    [JsonProperty(PropertyName = "version")]
+    [JsonPropertyName("version")]
     public VersionPayload Version { get; set; } = null!;
 
-    [JsonProperty(PropertyName = "players")]
+    [JsonPropertyName("players")]
     public PlayersPayload Players { get; set; } = null!;
 
-    [JsonProperty(PropertyName = "description")]
-    [JsonConverter(typeof(DescriptionConverter))]
+    [JsonPropertyName("description")]
+    [JsonConverter(typeof(DescriptionStjConverter))]
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
     ///     Server icon, important to note that it's encoded in base64
     /// </summary>
-    [JsonProperty(PropertyName = "favicon")]
+    [JsonPropertyName("favicon")]
     public string Icon { get; set; } = string.Empty;
 }
 
-public class DescriptionConverter : JsonConverter<string>
+internal static class SlpJsonOptions
 {
-    public override void WriteJson(JsonWriter writer, string? value, JsonSerializer serializer)
+    public static readonly JsonSerializerOptions Instance = new()
     {
-        // 序列化时保持字符串格式
-        writer.WriteValue(value);
+        PropertyNameCaseInsensitive = true
+    };
+}
+
+/// <summary>
+///     STJ converter for Minecraft description field (can be string or {"text":"..."} object).
+/// </summary>
+public class DescriptionStjConverter : JsonConverter<string>
+{
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+            return reader.GetString();
+
+        if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            using var doc = JsonDocument.ParseValue(ref reader);
+            return doc.RootElement.TryGetProperty("text", out var text) ? text.GetString() : null;
+        }
+
+        reader.Skip();
+        return null;
     }
 
-    public override string? ReadJson(JsonReader reader, Type objectType, string? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
     {
-        // 获取当前JSON token
-        var token = JToken.Load(reader);
-
-        return token.Type switch
-        {
-            JTokenType.String => token.Value<string>(),
-            JTokenType.Object => token["text"]!.Value<string>(),
-            _ => null
-        };
+        writer.WriteStringValue(value);
     }
 }
 
 public record VersionPayload
 {
-    [JsonProperty(PropertyName = "protocol")]
+    [JsonPropertyName("protocol")]
     public int Protocol { get; set; }
 
-    [JsonProperty(PropertyName = "name")] public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
 }
 
 public record PlayersPayload
 {
-    [JsonProperty(PropertyName = "max")] public int Max { get; set; }
+    [JsonPropertyName("max")] public int Max { get; set; }
 
-    [JsonProperty(PropertyName = "online")]
+    [JsonPropertyName("online")]
     public int Online { get; set; }
 
-    [JsonProperty(PropertyName = "sample")]
+    [JsonPropertyName("sample")]
     public PlayerSample[] Sample { get; set; } = Array.Empty<PlayerSample>();
 }
 
 public record PlayerSample
 {
-    [JsonProperty(PropertyName = "name")] public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
 
-    [JsonProperty(PropertyName = "id")] public Guid Id { get; set; }
+    [JsonPropertyName("id")] public Guid Id { get; set; }
 }
 
 #endregion

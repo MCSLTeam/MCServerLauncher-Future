@@ -6,25 +6,24 @@ const:
     - using MCServerLauncher.Common.ProtoType.Files;
     - using MCServerLauncher.Common.ProtoType.Instance;
     - using MCServerLauncher.Common.System;
-    - using Newtonsoft.Json;
-    - using Newtonsoft.Json.Linq;
+    - using System.Text.Json;
   event_base_namespace: MCServerLauncher.Common.ProtoType.Event
   event_imports:
-    - using Newtonsoft.Json;
+    - using System.Text.Json;
 
 
 actions:
   - subscribe_event:
       req:
         type: EventType
-        meta: JToken?
+        meta: JsonElement?
       
       resp:
 
   - unsubscribe_event:
       req:
         type: EventType 
-        meta: JToken?
+        meta: JsonElement?
       
       resp:
 
