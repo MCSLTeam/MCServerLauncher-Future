@@ -75,7 +75,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
                     "Error",
                     $"Failed to load instance console: {ex.Message}",
                     true,
-                    iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
+                    InfoBarSeverity.Error
                 );
             }
         }

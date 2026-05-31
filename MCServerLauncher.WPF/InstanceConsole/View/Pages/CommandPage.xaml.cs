@@ -295,7 +295,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private void ToggleFullscreen(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Window.GetWindow(this) as InstanceConsole.Window;
+            var mainWindow = System.Windows.Window.GetWindow(this) as InstanceConsole.Window;
             if (mainWindow != null)
             {
                 if (!isFullscreen)

@@ -511,7 +511,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 Lang.Tr["BatchStartComplete"],
                 string.Format(Lang.Tr["BatchOperationResult"], successCount, failCount),
                 false,
-                failCount > 0 ? iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning : iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
+                failCount > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Success
             );
 
             BatchCancel_Click(sender, e);
@@ -565,7 +565,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 Lang.Tr["BatchStopComplete"],
                 string.Format(Lang.Tr["BatchOperationResult"], successCount, failCount),
                 false,
-                failCount > 0 ? iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning : iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
+                failCount > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Success
             );
 
             BatchCancel_Click(sender, e);
@@ -644,7 +644,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 Lang.Tr["BatchDeleteComplete"],
                 string.Format(Lang.Tr["BatchOperationResult"], successCount, failCount),
                 false,
-                failCount > 0 ? iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Warning : iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success
+                failCount > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Success
             );
 
             BatchCancel_Click(sender, e);

@@ -181,7 +181,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                             UsePostProcess = false
                         };
                         var json = System.Text.Json.JsonSerializer.Serialize(previewSetting,
-                            MCServerLauncher.DaemonClient.Serialization.DaemonClientRpcJsonBoundary.CreateStjOptions(
+                            DaemonClient.Serialization.DaemonClientRpcJsonBoundary.CreateStjOptions(
                                 writeIndented: true));
                         Modules.Clipboard.SetText(json);
                         Notification.Push(
@@ -204,7 +204,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }
 
 
-                var daemonConfig = DaemonsListManager.MatchDaemonBySelection(Constants.SelectedDaemon);
+                var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
                 var daemon = await DaemonsWsManager.Get(daemonConfig);
 
                 if (daemon == null)

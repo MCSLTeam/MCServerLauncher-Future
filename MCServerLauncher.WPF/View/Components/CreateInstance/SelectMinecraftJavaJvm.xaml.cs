@@ -43,7 +43,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             {
                 textBox.TextChanged += OnJavaRuntimeTextChanged;
                 // Initialize step state on the TextBox, not the ComboBox
-                Modules.VisualTreeHelper.InitStepState(textBox);
+                VisualTreeHelper.InitStepState(textBox);
             }
         }
 
