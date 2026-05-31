@@ -376,7 +376,7 @@ internal class ClientConnection : DisposableObject
             }
     }
 
-    private void HandleBinaryUploadResponse(WebSocketPlugin.WsReceivedPlugin.BinaryUploadResponse response)
+    private void HandleBinaryUploadResponse(WsReceivedPlugin.BinaryUploadResponse response)
     {
         if (_pendingBinaryUploads.TryRemove(response.FileId, out var tcs))
         {

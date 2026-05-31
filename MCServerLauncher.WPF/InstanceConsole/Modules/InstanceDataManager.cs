@@ -286,7 +286,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Get event rules
         /// </summary>
-        public async Task<System.Collections.Generic.List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync()
+        public async Task<System.Collections.Generic.List<Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync()
         {
             try
             {
@@ -305,7 +305,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Save event rules
         /// </summary>
-        public async Task SaveEventRulesAsync(System.Collections.Generic.List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule> rules)
+        public async Task SaveEventRulesAsync(System.Collections.Generic.List<Common.ProtoType.EventTrigger.EventRule> rules)
         {
             try
             {

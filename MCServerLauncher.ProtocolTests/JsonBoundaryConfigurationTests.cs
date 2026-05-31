@@ -19,7 +19,7 @@ namespace MCServerLauncher.ProtocolTests;
 public class JsonBoundaryConfigurationTests
 {
     [Fact]
-    public void DaemonRpcBoundary_ProvidesNewtonsoftAndStjOptions()
+    public void DaemonRpcBoundary_ProvidesStjOptions()
     {
         Assert.NotNull(DaemonRpcJsonBoundary.StjOptions);
         Assert.NotNull(DaemonRpcJsonBoundary.StjOptions.TypeInfoResolver);
@@ -37,7 +37,7 @@ public class JsonBoundaryConfigurationTests
     }
 
     [Fact]
-    public void DaemonPersistenceBoundary_ProvidesNewtonsoftAndStjOptions()
+    public void DaemonPersistenceBoundary_ProvidesStjOptions()
     {
         Assert.NotNull(DaemonPersistenceJsonBoundary.StjOptions);
         Assert.NotNull(DaemonPersistenceJsonBoundary.StjOptions.TypeInfoResolver);
@@ -54,7 +54,7 @@ public class JsonBoundaryConfigurationTests
     }
 
     [Fact]
-    public void DaemonClientRpcBoundary_ProvidesNewtonsoftAndStjOptions()
+    public void DaemonClientRpcBoundary_ProvidesStjOptions()
     {
         Assert.NotNull(DaemonClientRpcJsonBoundary.StjOptions);
         Assert.NotNull(DaemonClientRpcJsonBoundary.StjOptions.TypeInfoResolver);

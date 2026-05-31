@@ -544,7 +544,7 @@ public class DaemonDaemonClientTransportConvergenceTests
     [Trait("Category", "T18")]
     [Trait("Category", "CompatibilityConvergence")]
     [Trait("Category", "EndToEndIntegration")]
-    public void DaemonEventFanOut_UnsubscribeAll_YieldsZeroContextsInSubsequentEnumeration()
+    public void  DaemonEventFanOut_UnsubscribeAll_YieldsZeroContextsInSubsequentEnumeration()
     {
         var container = new WsContextContainer();
         var ctx1 = container.CreateContext("t3-unsub-all-1", Guid.Empty, "*", DateTime.UtcNow.AddHours(1));
@@ -581,15 +581,15 @@ public class DaemonDaemonClientTransportConvergenceTests
     {
         var rpcGolden = new RpcGoldenCharacterizationTests();
 
-        rpcGolden.ActionRequest_PingEmptyParams_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionRequest_SubscribeEventNullMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionRequest_SubscribeEventConcreteMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionResponse_SuccessTypedData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionResponse_SuccessEmptyObjectData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.ActionResponse_ErrorNullDataMessageRetcodeShape_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.EventPacket_WithMetaAndData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
-        rpcGolden.EventPacket_NullMetaStructuredData_SchemaLockedFixture_MatchesNewtonsoftBaseline();
+        rpcGolden.ActionRequest_PingEmptyParams_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.ActionRequest_SubscribeEventNullMeta_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.ActionRequest_SubscribeEventConcreteMeta_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.ActionResponse_SuccessTypedData_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.ActionResponse_SuccessEmptyObjectData_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.ActionResponse_ErrorNullDataMessageRetcodeShape_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.EventPacket_WithMetaAndData_SchemaLockedFixture_MatchesBaseline();
+        rpcGolden.EventPacket_NullMetaStructuredData_SchemaLockedFixture_MatchesBaseline();
     }
 
     private static void AssertRepresentativePersistenceChecksStillPass()
@@ -604,12 +604,7 @@ public class DaemonDaemonClientTransportConvergenceTests
 
     private static void AssertDocumentationSchemaProxyStillPass()
     {
-        var documentation = new DocumentationValidationTests(new NullTestOutputHelper());
-
-        documentation.PolicyDocument_Exists_And_IsReadable();
-        documentation.PolicyDocument_RpcFixtureFiles_ExistOnDisk();
-        documentation.PolicyDocument_ContainsCriticalSections();
-        documentation.PolicyDocument_RequiredNullPolicy_IsDocumentedPerField();
+        // Documentation validation tests removed — migration policy doc deleted after full STJ migration.
     }
 
     private static string SerializeAtClientSendSeam(ActionRequest request)

@@ -331,50 +331,26 @@ public class PublicSurfaceLeakageTests
 
     #endregion
 
-    #region Wire-facing Newtonsoft dependency guard
+    #region Wire-facing legacy dependency guard
 
     [Fact]
-    public void CommonWireContractTypes_DoNotIntroduceNewNewtonsoftConverters()
+    public void CommonWireContractTypes_PayloadBufferConverters_HavePairedStjConverters()
     {
-        // Verify the known set of Newtonsoft converter types on wire-contract properties.
-        // If this test fails, a new Newtonsoft converter was added to a wire-contract type.
-        var knownNewtonsoftConverterTypes = new HashSet<string>
-        {
-            "MCServerLauncher.Common.ProtoType.Serialization.NewtonsoftJsonElementConverter",
-            "MCServerLauncher.Common.ProtoType.Serialization.NewtonsoftJsonPayloadBufferConverter",
-        };
-
+        // All wire-contract JsonPayloadBuffer properties must have STJ converters.
+        // Legacy converters have been fully removed.
         var wireContractTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
 
         foreach (var type in wireContractTypes)
         {
             foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                var attrs = prop.GetCustomAttributes(typeof(Newtonsoft.Json.JsonConverterAttribute), false);
-                foreach (var attr in attrs)
+                if (prop.PropertyType == typeof(JsonPayloadBuffer?))
                 {
-                    var converterType = ((Newtonsoft.Json.JsonConverterAttribute)attr).ConverterType;
-                    Assert.True(converterType != null && knownNewtonsoftConverterTypes.Contains(converterType.FullName!),
-                        $"{type.Name}.{prop.Name} uses unknown Newtonsoft converter: {converterType?.FullName}. " +
-                        $"Only known converters are allowed: {string.Join(", ", knownNewtonsoftConverterTypes)}");
+                    var stjAttrs = prop.GetCustomAttributes(typeof(JsonConverterAttribute), false);
+                    Assert.True(stjAttrs.Length > 0,
+                        $"{type.Name}.{prop.Name} is JsonPayloadBuffer? but has no STJ converter.");
                 }
             }
-        }
-    }
-
-    [Fact]
-    public void CommonWireContractTypes_PayloadBufferConverters_HavePairedStjConverters()
-    {
-        // Properties using NewtonsoftJsonPayloadBufferConverter MUST have a paired STJ converter.
-        // JsonPayloadBuffer requires custom handling on both serialization paths.
-        // Note: NewtonsoftJsonElementConverter on JsonElement? properties is fine without pairing
-        // because STJ handles JsonElement natively.
-        var wireContractTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
-
-        foreach (var type in wireContractTypes)
-        {
-            // Newtonsoft converter attributes have been removed from all models.
-            // This test is retained as a structural placeholder; no Newtonsoft converters remain to check.
         }
     }
 
@@ -417,11 +393,6 @@ public class PublicSurfaceLeakageTests
         // Allow System namespaces for primitives
         if (namespaceName.StartsWith("System"))
             return true;
-
-        // Allow Newtonsoft.Json
-        if (namespaceName.StartsWith("Newtonsoft"))
-            return true;
-
         return false;
     }
 

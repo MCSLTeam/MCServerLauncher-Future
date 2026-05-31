@@ -62,7 +62,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 if (SettingsManager.Get.App.HideTips == null)
                 {
-                    SettingsManager.Get.App.HideTips = new System.Collections.Generic.Dictionary<string, bool>();
+                    SettingsManager.Get.App.HideTips = new Dictionary<string, bool>();
                 }
                 SettingsManager.Get.App.HideTips["FileManagerMultiSelect"] = true;
                 SettingsManager.SaveSetting("App.HideTips", SettingsManager.Get.App.HideTips);
@@ -416,9 +416,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             return virtualPath.Substring(0, lastSlash);
         }
 
-        public async Task<IEnumerable<MCServerLauncher.Common.ProtoType.Files.DirectoryEntry.DirectoryInformation>> GetDirectoriesAsync(string virtualPath)
+        public async Task<IEnumerable<Common.ProtoType.Files.DirectoryEntry.DirectoryInformation>> GetDirectoriesAsync(string virtualPath)
         {
-            if (_daemon == null) return Array.Empty<MCServerLauncher.Common.ProtoType.Files.DirectoryEntry.DirectoryInformation>();
+            if (_daemon == null) return Array.Empty<Common.ProtoType.Files.DirectoryEntry.DirectoryInformation>();
             var realPath = GetRealPath(virtualPath);
             var (directories, _, _) = await _daemon.GetDirectoryInfoAsync(realPath);
             return directories;
@@ -553,8 +553,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             else
             {
                 var realPath = GetRealPath(SelectedItem.Path);
-                var editor = new MCServerLauncher.WPF.InstanceConsole.View.Dialogs.FileEditorWindow();
-                var vm = new MCServerLauncher.WPF.InstanceConsole.View.Dialogs.FileEditorViewModel(_daemon, realPath, SelectedItem.Path, SelectedItem.SizeBytes, editor);
+                var editor = new Dialogs.FileEditorWindow();
+                var vm = new Dialogs.FileEditorViewModel(_daemon, realPath, SelectedItem.Path, SelectedItem.SizeBytes, editor);
                 editor.DataContext = vm;
                 
                 // Fire and forget loading
@@ -630,7 +630,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             var textBox = new System.Windows.Controls.TextBox
             {
                 Text = defaultText,
-                Margin = new System.Windows.Thickness(0, 10, 0, 0)
+                Margin = new Thickness(0, 10, 0, 0)
             };
 
             var dialog = new iNKORE.UI.WPF.Modern.Controls.ContentDialog

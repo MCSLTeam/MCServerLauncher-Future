@@ -109,8 +109,8 @@ public class InstanceManager : IInstanceManager
             // Hook event triggers
             var eventTriggerService =
                 Application.HttpService?.Resolver.Resolve(
-                        typeof(MCServerLauncher.Daemon.Remote.Event.EventTriggerService)) as
-                    MCServerLauncher.Daemon.Remote.Event.EventTriggerService;
+                        typeof(Remote.Event.EventTriggerService)) as
+                    Remote.Event.EventTriggerService;
             eventTriggerService?.HookInstance(target);
 
             if (await target.StartAsync())

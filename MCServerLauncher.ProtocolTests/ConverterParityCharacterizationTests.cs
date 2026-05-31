@@ -8,14 +8,25 @@ using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.ProtocolTests.Fixtures.ConverterParity;
 using MCServerLauncher.ProtocolTests.Helpers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace MCServerLauncher.ProtocolTests;
 
 public class ConverterParityCharacterizationTests
 {
-    private static readonly JsonSerializerSettings PermissionJsonSettings = CreatePermissionJsonSettings();
+    private static readonly JsonSerializerOptions StjOpts = StjResolver.CreateDefaultOptions();
+    private static readonly JsonSerializerOptions SnakeCaseOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+    private static readonly JsonSerializerOptions TestOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        Converters =
+        {
+            new GuidStjConverter(),
+            new EncodingStjConverter(),
+            new PlaceHolderStringStjConverter(),
+            new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower)
+        }
+    };
+    private static readonly JsonSerializerOptions PermissionJsonSettings = CreatePermissionJsonSettings();
 
     [Fact]
     [Trait("Category", "ConverterParity")]
@@ -25,9 +36,9 @@ public class ConverterParityCharacterizationTests
         // If later migration intentionally tightens invalid-guid handling, this test should be updated with explicit policy.
         var json = """{"id":"not-a-guid","action":"ping","params":{}}""";
 
-        var parsed = JsonConvert.DeserializeObject<ActionRequest>(json, JsonSettings.Settings)!;
+        var parsed = JsonSerializer.Deserialize<ActionRequest>(json, StjOpts)!;
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new { parsed.Id }, JsonSettings.Settings));
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(new { parsed.Id }, SnakeCaseOpts));
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.GuidDir, "invalid-string-deserialize.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
     }
@@ -39,8 +50,8 @@ public class ConverterParityCharacterizationTests
         var expectedGuid = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var json = """{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","action":"ping","params":{}}""";
 
-        var parsed = JsonConvert.DeserializeObject<ActionRequest>(json, JsonSettings.Settings)!;
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new { parsed.Id }, JsonSettings.Settings));
+        var parsed = JsonSerializer.Deserialize<ActionRequest>(json, StjOpts)!;
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(new { parsed.Id }, SnakeCaseOpts));
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.GuidDir, "valid-string-roundtrip.json");
 
         Assert.Equal(expectedGuid, parsed.Id);
@@ -51,9 +62,9 @@ public class ConverterParityCharacterizationTests
     [Trait("Category", "ConverterParity")]
     public void Encoding_ValidWebName_DeserializesToEncodingWithMatchingWebName()
     {
-        var parsed = JsonConvert.DeserializeObject<EncodingHolder>("""{"encoding":"utf-8"}""", JsonSettings.Settings)!;
+        var parsed = JsonSerializer.Deserialize<EncodingHolder>("""{"encoding":"utf-8"}""", TestOpts)!;
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new { webName = parsed.Encoding.WebName }, JsonSettings.Settings));
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(new { webName = parsed.Encoding.WebName }, SnakeCaseOpts));
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.EncodingDir, "valid-web-name.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
     }
@@ -63,15 +74,15 @@ public class ConverterParityCharacterizationTests
     public void Encoding_InvalidName_ThrowsArgumentException_CurrentBehaviorLocked()
     {
         var ex = Record.Exception(() =>
-            JsonConvert.DeserializeObject<EncodingHolder>("""{"encoding":"definitely-invalid-encoding"}""", JsonSettings.Settings));
+            JsonSerializer.Deserialize<EncodingHolder>("""{"encoding":"definitely-invalid-encoding"}""", TestOpts));
 
         Assert.NotNull(ex);
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(new
         {
             exceptionType = ex!.GetType().Name,
             innerExceptionType = ex.InnerException?.GetType().Name
-        }, JsonSettings.Settings));
+        }, SnakeCaseOpts));
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.EncodingDir, "invalid-name-exception.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
     }
@@ -80,16 +91,16 @@ public class ConverterParityCharacterizationTests
     [Trait("Category", "ConverterParity")]
     public void PlaceHolderString_NullEmptyNonEmpty_BehaviorMatchesCurrentConverter()
     {
-        var nullHolder = JsonConvert.DeserializeObject<PlaceHolderHolder>("""{"value":null}""", JsonSettings.Settings)!;
-        var emptyHolder = JsonConvert.DeserializeObject<PlaceHolderHolder>("""{"value":""}""", JsonSettings.Settings)!;
-        var nonEmptyHolder = JsonConvert.DeserializeObject<PlaceHolderHolder>("""{"value":"hello-{name}"}""", JsonSettings.Settings)!;
+        var nullHolder = JsonSerializer.Deserialize<PlaceHolderHolder>("""{"value":null}""", TestOpts)!;
+        var emptyHolder = JsonSerializer.Deserialize<PlaceHolderHolder>("""{"value":""}""", TestOpts)!;
+        var nonEmptyHolder = JsonSerializer.Deserialize<PlaceHolderHolder>("""{"value":"hello-{name}"}""", TestOpts)!;
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(new
         {
             nullIsNull = nullHolder.Value is null,
             emptyIsNull = emptyHolder.Value is null,
             nonEmptyPattern = nonEmptyHolder.Value?.Pattern
-        }, JsonSettings.Settings));
+        }, SnakeCaseOpts));
 
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.PlaceHolderStringDir, "null-empty-non-empty.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
@@ -112,7 +123,7 @@ public class ConverterParityCharacterizationTests
 
     [Fact]
     [Trait("Category", "ConverterParity")]
-    public void NewtonsoftJsonElementConverter_PreservesCanonicalNestedPayloadShape()
+    public void JsonElementConverter_PreservesCanonicalNestedPayloadShape()
     {
         var json = """{"action":"ping","id":"11111111-1111-1111-1111-111111111111","params":{"count":1,"message":"hi","flags":[true,false,null],"inner":{"empty":{},"list":[1,2,3]}}}""";
 
@@ -129,17 +140,17 @@ public class ConverterParityCharacterizationTests
     [Trait("Category", "ConverterParity")]
     public void Permission_ValidAndInvalidString_BehaviorMatchesCurrentDaemonConverter()
     {
-        var valid = JsonConvert.DeserializeObject<PermissionHolder>("""{"permission":"instance.start"}""", PermissionJsonSettings)!;
+        var valid = System.Text.Json.JsonSerializer.Deserialize<PermissionHolder>("""{"permission":"instance.start"}""", PermissionJsonSettings)!;
         var invalidException = Record.Exception(() =>
-            JsonConvert.DeserializeObject<PermissionHolder>("""{"permission":"!!!"}""", PermissionJsonSettings));
+            System.Text.Json.JsonSerializer.Deserialize<PermissionHolder>("""{"permission":"!!!"}""", PermissionJsonSettings));
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(new
         {
             valid = valid.Permission.ToString(),
             invalidThrows = invalidException is not null,
             invalidExceptionType = invalidException?.GetType().Name,
             invalidInnerExceptionType = invalidException?.InnerException?.GetType().Name
-        }, JsonSettings.Settings));
+        }, SnakeCaseOpts));
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.PermissionDir, "valid-invalid-behavior.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
     }
@@ -155,7 +166,7 @@ public class ConverterParityCharacterizationTests
             eventType = EventType.DaemonReport
         };
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(payload, JsonSettings.Settings));
+        var actual = FixtureHarness.ParseJson(JsonSerializer.Serialize(payload, TestOpts));
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.EnumDir, "snake-case-formatting.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
     }
@@ -170,7 +181,7 @@ public class ConverterParityCharacterizationTests
         // - `data` is now explicitly required in ActionResponse envelope even when null is allowed.
         var opts = StjResolver.CreateDefaultOptions();
 
-        var missingActionThrows = Assert.Throws<System.Text.Json.JsonException>(() =>
+        var missingActionThrows = Assert.Throws<JsonException>(() =>
             System.Text.Json.JsonSerializer.Deserialize<ActionRequest>("""{"id":"11111111-1111-1111-1111-111111111111","params":{}}""", opts));
 
         var nullParamsParses = System.Text.Json.JsonSerializer.Deserialize<ActionRequest>(
@@ -178,7 +189,7 @@ public class ConverterParityCharacterizationTests
             opts)!;
 
         // Missing "data" throws — Data has [SysTextJsonRequired]
-        var missingDataThrows = Assert.Throws<System.Text.Json.JsonException>(() =>
+        var missingDataThrows = Assert.Throws<JsonException>(() =>
             System.Text.Json.JsonSerializer.Deserialize<ActionResponse>(
                 """{"status":"ok","retcode":0,"message":"OK","id":"22222222-2222-2222-2222-222222222222"}""",
                 opts));
@@ -200,7 +211,7 @@ public class ConverterParityCharacterizationTests
             nullMetaIsNull = nullMetaParses.EventMeta is null,
             nullMetaIsExplicitJsonNull = nullMetaParses.EventMeta?.IsExplicitJsonNull == true,
             missingMetaIsNull = missingMetaParses.EventMeta is null
-        }, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }));
+        }, new JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }));
 
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.EnumDir, "required-null-semantics.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
@@ -268,10 +279,10 @@ public class ConverterParityCharacterizationTests
         Assert.Contains("instance_id", rawText);
         Assert.Contains("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", rawText);
 
-        // STJ null path matches Newtonsoft null path (parity)
-        var fromNewtonsoftNull = JsonPayloadBuffer.FromObject<object>(null);
-        Assert.Equal(fromNewtonsoftNull.GetRawText(), fromNull.GetRawText());
-        Assert.Equal(fromNewtonsoftNull.ValueKind, fromNull.ValueKind);
+        // Both null creation paths produce the same result
+        var fromAlternateNull = JsonPayloadBuffer.FromObject<object>(null);
+        Assert.Equal(fromAlternateNull.GetRawText(), fromNull.GetRawText());
+        Assert.Equal(fromAlternateNull.ValueKind, fromNull.ValueKind);
     }
 
     [Fact]
@@ -295,28 +306,32 @@ public class ConverterParityCharacterizationTests
         Assert.Contains("drive_format", fromTyped.GetRawText());
     }
 
-    private static JsonSerializerSettings CreatePermissionJsonSettings()
+    private static JsonSerializerOptions CreatePermissionJsonSettings()
     {
-        var settings = new JsonSerializerSettings(JsonSettings.Settings);
-        settings.Converters.Add(new Permission.PermissionJsonConverter());
-        return settings;
+        return new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower,
+            Converters = { new Permission.PermissionJsonConverter() }
+        };
     }
 
     private sealed class EncodingHolder
     {
-        [JsonProperty("encoding")]
-        public UTF8Encoding Encoding { get; init; } = null!;
+        [System.Text.Json.Serialization.JsonPropertyName("encoding")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(EncodingStjConverter))]
+        public Encoding Encoding { get; init; } = null!;
     }
 
     private sealed class PlaceHolderHolder
     {
-        [JsonProperty("value")]
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public PlaceHolderString? Value { get; init; }
     }
 
     private sealed class PermissionHolder
     {
-        [JsonProperty("permission")]
+        [System.Text.Json.Serialization.JsonPropertyName("permission")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Permission.PermissionJsonConverter))]
         public Permission Permission { get; init; } = null!;
     }
 }

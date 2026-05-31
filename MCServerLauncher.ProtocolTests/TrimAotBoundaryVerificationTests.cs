@@ -153,7 +153,7 @@ public class TrimAotBoundaryVerificationTests
             "unknown-trigger-discriminator-event-rule.json"));
 
         var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
-        var ex = Assert.Throws<System.Text.Json.JsonException>(() =>
+        var ex = Assert.Throws<JsonException>(() =>
             JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), options));
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);

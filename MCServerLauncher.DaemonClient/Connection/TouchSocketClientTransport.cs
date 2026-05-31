@@ -32,7 +32,7 @@ internal sealed class TouchSocketClientTransport : DisposableObject
     public event Action? ConnectionClosed;
     public event Action<EventType, long, IEventMeta?, IEventData?>? EventReceived;
     public event Action<ActionResponse>? ActionResponseReceived;
-    public event Action<WebSocketPlugin.WsReceivedPlugin.BinaryUploadResponse>? BinaryUploadResponseReceived;
+    public event Action<WsReceivedPlugin.BinaryUploadResponse>? BinaryUploadResponseReceived;
 
     public async Task OpenAsync(string address, int port, string token, bool isSecure, CancellationToken cancellationToken = default)
     {

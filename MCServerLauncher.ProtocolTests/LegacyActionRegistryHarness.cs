@@ -100,7 +100,7 @@ internal static class LegacyActionRegistryHarness
 
         if (systemInfoCell is not null)
         {
-            services.AddSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
+            services.AddSingleton(systemInfoCell);
         }
 
         var container = new AspNetCoreContainer(services);

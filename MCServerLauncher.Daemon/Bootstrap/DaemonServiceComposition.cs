@@ -24,7 +24,7 @@ internal static class DaemonServiceComposition
         HttpService httpService,
         ActionHandlerRegistrySnapshot selectedRegistry)
     {
-        a.RegisterSingleton<IServiceCollection>(collection);
+        a.RegisterSingleton(collection);
         a.RegisterSingleton<ConsoleApplication>();
         a.RegisterSingleton<GracefulShutdown>();
         a.RegisterSingleton<IHttpService>(httpService);

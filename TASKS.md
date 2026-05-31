@@ -69,12 +69,6 @@ _All high priority items completed!_
   - Refactor: Add `CancellationToken` parameter to all async methods
   - Benefit: Proper cancellation support, better resource cleanup
 
-- [ ] **Switch from Newtonsoft.Json to System.Text.Json**
-  - Location: `MCServerLauncher.Daemon/Remote/Action/ActionHandler.cs`
-  - Current: Uses Newtonsoft.Json `JObject`
-  - Target: Use System.Text.Json `JsonElement`
-  - Benefit: AOT compatibility, better performance
-
 - [ ] **Change input to Span<byte> for deserialization**
   - Location: `MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs`
   - Current: String-based deserialization
@@ -273,7 +267,6 @@ _All high priority items completed!_
 
 ## 📝 Notes
 
-- **Serialization Strategy**: Migrating from Newtonsoft.Json to System.Text.Json for AOT compatibility
 - **Performance Focus**: Recent work emphasizes transport layer optimization and serialization efficiency
 - **Testing**: Performance baselines are tracked in CI with [PERF] logging
 - **Build Configuration**: Daemon supports Native AOT with trimming enabled

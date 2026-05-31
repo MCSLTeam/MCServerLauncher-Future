@@ -54,7 +54,7 @@ public class DaemonClientInboundBenchmarks
         return instanceLog.Log;
     }
 
-    private static MCServerLauncher.Common.ProtoType.Action.ActionResponse ParseActionResponse(string received)
+    private static Common.ProtoType.Action.ActionResponse ParseActionResponse(string received)
     {
         return WsReceivedPlugin.ParseActionResponse(received);
     }

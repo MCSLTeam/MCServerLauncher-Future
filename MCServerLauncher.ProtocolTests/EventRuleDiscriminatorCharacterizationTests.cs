@@ -38,7 +38,7 @@ public class EventRuleDiscriminatorCharacterizationTests
             action => Assert.IsType<ChangeInstanceStatusAction>(action),
             action => Assert.IsType<SendNotificationAction>(action));
 
-        var canonical = System.Text.Json.JsonSerializer.Serialize(parsed, new System.Text.Json.JsonSerializerOptions(StjResolver.CreateDefaultOptions()) { WriteIndented = true });
+        var canonical = System.Text.Json.JsonSerializer.Serialize(parsed, new JsonSerializerOptions(StjResolver.CreateDefaultOptions()) { WriteIndented = true });
         FixtureHarness.AssertStructuralEquals(fixture, FixtureHarness.ParseJson(canonical),
             "known EventRule discriminators should remain compatible");
     }
@@ -81,7 +81,7 @@ public class EventRuleDiscriminatorCharacterizationTests
         var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, "unknown-trigger-discriminator-event-rule.json");
         var fixture = FixtureHarness.LoadFixture(fixturePath);
 
-        var ex = Assert.Throws<System.Text.Json.JsonException>(() =>
+        var ex = Assert.Throws<JsonException>(() =>
             System.Text.Json.JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), DaemonPersistenceJsonBoundary.StjOptions));
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
@@ -132,7 +132,7 @@ public class EventRuleDiscriminatorCharacterizationTests
     [Trait("Category", "EventRuleUnknown")]
     public void EventRuleUnknown_UnknownTriggerDiscriminator_ThrowsExplicitFailure()
     {
-        var ex = Assert.Throws<System.Text.Json.JsonException>(() => DeserializeEventRuleFixture("unknown-trigger-discriminator-event-rule.json"));
+        var ex = Assert.Throws<JsonException>(() => DeserializeEventRuleFixture("unknown-trigger-discriminator-event-rule.json"));
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
         Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);
@@ -142,7 +142,7 @@ public class EventRuleDiscriminatorCharacterizationTests
     [Trait("Category", "EventRuleUnknown")]
     public void EventRuleUnknown_MissingRulesetDiscriminator_ThrowsExplicitFailure()
     {
-        var ex = Assert.Throws<System.Text.Json.JsonException>(() => DeserializeEventRuleFixture("missing-ruleset-discriminator-event-rule.json"));
+        var ex = Assert.Throws<JsonException>(() => DeserializeEventRuleFixture("missing-ruleset-discriminator-event-rule.json"));
 
         Assert.Contains("Missing discriminator 'type' for RulesetDefinition", ex.Message);
     }
@@ -151,7 +151,7 @@ public class EventRuleDiscriminatorCharacterizationTests
     [Trait("Category", "EventRuleUnknown")]
     public void EventRuleUnknown_InvalidActionDiscriminatorType_ThrowsExplicitFailure()
     {
-        var ex = Assert.Throws<System.Text.Json.JsonException>(() => DeserializeEventRuleFixture("invalid-action-discriminator-event-rule.json"));
+        var ex = Assert.Throws<JsonException>(() => DeserializeEventRuleFixture("invalid-action-discriminator-event-rule.json"));
 
         Assert.Contains("Invalid discriminator 'type' for ActionDefinition: expected string", ex.Message);
     }

@@ -12,7 +12,6 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.DaemonClient.Serialization;
 using Serilog;
@@ -695,7 +694,7 @@ public static class DaemonExtensions
     /// <summary>
     ///     Action: 获取实例的事件触发规则
     /// </summary>
-    public static async Task<List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync(this IDaemon daemon, Guid id, int timeout = -1,
+    public static async Task<List<Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync(this IDaemon daemon, Guid id, int timeout = -1,
         CancellationToken ct = default)
     {
         var resp = await daemon.RequestAsync<GetEventRulesResult>(
@@ -710,7 +709,7 @@ public static class DaemonExtensions
     /// <summary>
     ///     Action: 保存实例的事件触发规则
     /// </summary>
-    public static async Task SaveEventRulesAsync(this IDaemon daemon, Guid id, List<MCServerLauncher.Common.ProtoType.EventTrigger.EventRule> rules, int timeout = -1,
+    public static async Task SaveEventRulesAsync(this IDaemon daemon, Guid id, List<Common.ProtoType.EventTrigger.EventRule> rules, int timeout = -1,
         CancellationToken ct = default)
     {
         await daemon.RequestAsync(

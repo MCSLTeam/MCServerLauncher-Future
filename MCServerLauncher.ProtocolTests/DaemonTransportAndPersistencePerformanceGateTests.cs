@@ -139,18 +139,18 @@ public class DaemonTransportAndPersistencePerformanceGateTests
         var fixtureJson = File.ReadAllText(fixturePath);
         var instanceConfig = DeserializePersistenceFixture(fixtureJson);
 
-        var precheckSerialized = JsonSerializer.Serialize(instanceConfig, InstanceConfigType, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions);
+        var precheckSerialized = StjJsonSerializer.Serialize(instanceConfig, InstanceConfigType, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions);
         Assert.NotEmpty(precheckSerialized);
 
         const int operationsPerSample = 500;
         var measurement = PerformanceGateHarness.Measure(
             operation: () =>
             {
-                var loaded = JsonSerializer.Deserialize(fixtureJson, InstanceConfigType, DaemonPersistenceJsonBoundary.StjOptions);
+                var loaded = StjJsonSerializer.Deserialize(fixtureJson, InstanceConfigType, DaemonPersistenceJsonBoundary.StjOptions);
                 if (loaded is null)
                     throw new InvalidOperationException("Persistence replay sample read returned null");
 
-                var serialized = JsonSerializer.Serialize(loaded, InstanceConfigType, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions);
+                var serialized = StjJsonSerializer.Serialize(loaded, InstanceConfigType, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions);
                 if (serialized.Length == 0)
                     throw new InvalidOperationException("Persistence replay sample write serialized empty payload");
             },
@@ -163,7 +163,7 @@ public class DaemonTransportAndPersistencePerformanceGateTests
 
     private static object DeserializePersistenceFixture(string fixtureJson)
     {
-        var value = JsonSerializer.Deserialize(fixtureJson, InstanceConfigType, DaemonPersistenceJsonBoundary.StjOptions);
+        var value = StjJsonSerializer.Deserialize(fixtureJson, InstanceConfigType, DaemonPersistenceJsonBoundary.StjOptions);
         return value ?? throw new InvalidOperationException("Failed to deserialize persistence fixture instance config");
     }
 

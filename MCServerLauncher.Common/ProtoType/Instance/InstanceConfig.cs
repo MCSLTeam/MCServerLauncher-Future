@@ -66,19 +66,19 @@ public record InstanceConfig
     /// <summary>
     ///     Steam服务器版本 (SteamServerVersion是Version的逻辑子集，用于Steam服务器实例)
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [SysTextJsonIgnore]
     public string SteamServerVersion => Version;
 
     /// <summary>
     ///     Terraria版本 (TerrariaVersion是Version的逻辑子集，用于Terraria实例)
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [SysTextJsonIgnore]
     public string TerrariaVersion => Version;
 
     /// <summary>
     ///     自定义版本 (CustomVersion是Version的逻辑子集，用于自定义实例)
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [SysTextJsonIgnore]
     public string CustomVersion => Version;
 
     /// <summary>
@@ -92,7 +92,7 @@ public record InstanceConfig
     public Encoding OutputEncoding { get; init; } = Encoding.UTF8;
 
     /// <summary>
-    ///     java虚拟机路径, 非MC服务器或<see cref="InstanceConfig.TargetType" />不为<see cref="TargetType.Jar" />可以缺省
+    ///     java虚拟机路径, 非MC服务器或<see cref="TargetType" />不为<see cref="TargetType.Jar" />可以缺省
     /// </summary>
     public string JavaPath { get; init; } = string.Empty;
 

@@ -13,8 +13,8 @@ namespace MCServerLauncher.Benchmarks.Benchmarks;
 public class ActionDispatchBenchmarks
 {
     private DaemonDispatchBenchmarkContext _context = null!;
-    private Func<System.Text.Json.JsonElement?, Guid, MCServerLauncher.Daemon.Remote.WsContext, TouchSocket.Core.IResolver, CancellationToken, ActionResponse> _pingHandler = null!;
-    private Func<System.Text.Json.JsonElement?, Guid, MCServerLauncher.Daemon.Remote.WsContext, TouchSocket.Core.IResolver, CancellationToken, Task<ActionResponse>> _getSystemInfoHandler = null!;
+    private Func<System.Text.Json.JsonElement?, Guid, Daemon.Remote.WsContext, TouchSocket.Core.IResolver, CancellationToken, ActionResponse> _pingHandler = null!;
+    private Func<System.Text.Json.JsonElement?, Guid, Daemon.Remote.WsContext, TouchSocket.Core.IResolver, CancellationToken, Task<ActionResponse>> _getSystemInfoHandler = null!;
 
     [GlobalSetup]
     public void GlobalSetup()

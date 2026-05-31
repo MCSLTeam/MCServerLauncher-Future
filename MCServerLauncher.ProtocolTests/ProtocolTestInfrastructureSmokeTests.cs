@@ -16,7 +16,7 @@ public class ProtocolTestInfrastructureSmokeTests
     public void CommonLibrary_IsReferenced()
     {
         // Verify the Common library reference is functional
-        var commonAssembly = typeof(MCServerLauncher.Common.ProtoType.Action.ActionRequest).Assembly;
+        var commonAssembly = typeof(Common.ProtoType.Action.ActionRequest).Assembly;
         Assert.NotNull(commonAssembly);
     }
 }

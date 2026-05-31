@@ -4,7 +4,7 @@ using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
+using System.Text.Json;
 using RustyOptions;
 using Serilog;
 
@@ -15,7 +15,7 @@ using Json_Version = Json.Version;
 public sealed class ForgeInstallerV2 : ForgeInstallerBase
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
-        Justification = "Forge v2 construction intentionally loads version metadata through a localized Newtonsoft-backed installer boundary.")]
+        Justification = "Forge v2 construction intentionally loads version metadata through a localized installer boundary.")]
     private ForgeInstallerV2(InstallV1 profile, string installerPath, string? javaPath, InstanceFactoryMirror mirror)
         : base(installerPath, javaPath, mirror)
     {
@@ -49,7 +49,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
 
     [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     private static InstallV1 DeserializeInstallerProfile(string content) =>
-        JsonConvert.DeserializeObject<InstallV1>(content, InstallProfileJsonSettings.Settings)!;
+        JsonSerializer.Deserialize<InstallV1>(content, InstallProfileJsonSettings.Settings)!;
 
     public override async Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default)
     {

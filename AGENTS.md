@@ -91,7 +91,7 @@ MCServerLauncher-Future/
 
 - **ProtoType/**: Shared data structures and enums for Client-Daemon communication.
 - Cross-platform compatibility layer.
-- Uses both Newtonsoft.Json and System.Text.Json.
+- Uses System.Text.Json exclusively.
 
 ### MCServerLauncher.Daemon.Generators (netstandard2.0)
 
@@ -109,7 +109,7 @@ MCServerLauncher-Future/
 - Interfaces start with `I` (e.g., `IInstance`, `IInstanceManager`, `IInstanceFactory`).
 - Nullable reference types are enabled (`<Nullable>enable</Nullable>`).
 - Use `required` modifier for non-nullable properties without constructors (addresses CS8618 warnings).
-- Prefer `System.Text.Json` with source generators over `Newtonsoft.Json` for new code.
+- Use `System.Text.Json` with source generators for all serialization.
 - Use implicit usings where enabled (`<ImplicitUsings>enable</ImplicitUsings>`).
 - Attributes use PascalCase without "Attribute" suffix in usage (e.g., `[InstanceFactory]`).
 

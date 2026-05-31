@@ -5,7 +5,7 @@ using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
-using Newtonsoft.Json;
+using System.Text.Json;
 using RustyOptions;
 using Serilog;
 
@@ -162,7 +162,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
 
     [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]
     private static ProfileFile DeserializeInstallerProfile(string content) =>
-        JsonConvert.DeserializeObject<ProfileFile>(content, InstallProfileJsonSettings.Settings)!;
+        JsonSerializer.Deserialize<ProfileFile>(content, InstallProfileJsonSettings.Settings)!;
 
     public record ProfileFile(InstallV1 Install, VersionInfo VersionInfo);
 }

@@ -17,7 +17,7 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_PingEmptyParams_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_PingEmptyParams_SchemaLockedFixture_MatchesBaseline()
     {
         // Schema-lock fixture: keep envelope field names/shape for RPC compatibility.
         // Required/null cleanup can be intentionally changed later, but shape must remain explicit.
@@ -36,12 +36,12 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_SubscribeEventNullMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_SubscribeEventNullMeta_SchemaLockedFixture_MatchesBaseline()
     {
         var request = new ActionRequest
         {
             ActionType = ActionType.SubscribeEvent,
-            Parameter = ParseViaNewtonsoft(new SubscribeEventParameter
+            Parameter = ParseToElement(new SubscribeEventParameter
             {
                 Type = EventType.InstanceLog,
                 Meta = null
@@ -57,15 +57,15 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_SubscribeEventConcreteMeta_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_SubscribeEventConcreteMeta_SchemaLockedFixture_MatchesBaseline()
     {
         var request = new ActionRequest
         {
             ActionType = ActionType.SubscribeEvent,
-            Parameter = ParseViaNewtonsoft(new SubscribeEventParameter
+            Parameter = ParseToElement(new SubscribeEventParameter
             {
                 Type = EventType.InstanceLog,
-                Meta = ParseViaNewtonsoft(new InstanceLogEventMeta
+                Meta = ParseToElement(new InstanceLogEventMeta
                 {
                     InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
                 })
@@ -81,7 +81,7 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesBaseline()
     {
         var request = new ActionRequest
         {
@@ -134,14 +134,14 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionResponse_SuccessTypedData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionResponse_SuccessTypedData_SchemaLockedFixture_MatchesBaseline()
     {
         var response = new ActionResponse
         {
             RequestStatus = ActionRequestStatus.Ok,
             Retcode = ActionRetcode.Ok.Code,
             Message = ActionRetcode.Ok.Message,
-            Data = ParseViaNewtonsoft(new PingResult { Time = 1717171717171 }),
+            Data = ParseToElement(new PingResult { Time = 1717171717171 }),
             Id = FixedResponseId
         };
 
@@ -153,7 +153,7 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionResponse_SuccessEmptyObjectData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionResponse_SuccessEmptyObjectData_SchemaLockedFixture_MatchesBaseline()
     {
         var response = new ActionResponse
         {
@@ -172,7 +172,7 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void ActionResponse_ErrorNullDataMessageRetcodeShape_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void ActionResponse_ErrorNullDataMessageRetcodeShape_SchemaLockedFixture_MatchesBaseline()
     {
         var response = new ActionResponse
         {
@@ -191,7 +191,7 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void EventPacket_WithMetaAndData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void EventPacket_WithMetaAndData_SchemaLockedFixture_MatchesBaseline()
     {
         var packet = new EventPacket
         {
@@ -215,7 +215,7 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
-    public void EventPacket_NullMetaStructuredData_SchemaLockedFixture_MatchesNewtonsoftBaseline()
+    public void EventPacket_NullMetaStructuredData_SchemaLockedFixture_MatchesBaseline()
     {
         var packet = new EventPacket
         {
@@ -246,7 +246,7 @@ public class RpcGoldenCharacterizationTests
         FixtureHarness.AssertStructuralEquals(expected, actual, fixtureFile);
     }
 
-    private static JsonElement ParseViaNewtonsoft(object payload)
+    private static JsonElement ParseToElement(object payload)
     {
         var json = JsonSerializer.Serialize(payload, StjResolver.CreateDefaultOptions());
         return ParseJsonElement(json);
