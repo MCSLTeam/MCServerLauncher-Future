@@ -1,3 +1,0 @@
-files:
-  - source: /MCServerLauncher.WPF/Resources/Language.zh-Hans.resx
-    translation: /%original_path%/Language.%locale%.resx
