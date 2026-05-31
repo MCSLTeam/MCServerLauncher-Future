@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
 using Serilog;
 using System;
 using System.Collections.Concurrent;
@@ -27,7 +27,7 @@ namespace MCServerLauncher.WPF.Modules
             {
                 Log.Information("[Set] Found profile, reading");
                 Get =
-                    JsonConvert.DeserializeObject<Settings>(File.ReadAllText(SettingsPath,
+                    JsonSerializer.Deserialize<Settings>(File.ReadAllText(SettingsPath,
                         Encoding.UTF8));
             }
             else
@@ -69,7 +69,7 @@ namespace MCServerLauncher.WPF.Modules
                 };
                 File.WriteAllText(
                     SettingsPath,
-                    JsonConvert.SerializeObject(Get, Formatting.Indented),
+                    JsonSerializer.Serialize(Get, new JsonSerializerOptions { WriteIndented = true }),
                     Encoding.UTF8
                 );
             }
@@ -143,7 +143,7 @@ namespace MCServerLauncher.WPF.Modules
                 var value = property.GetValue(settingClass);
                 File.WriteAllText(
                     SettingsPath,
-                    JsonConvert.SerializeObject(Get, Formatting.Indented),
+                    JsonSerializer.Serialize(Get, new JsonSerializerOptions { WriteIndented = true }),
                     Encoding.UTF8
                 );
             }

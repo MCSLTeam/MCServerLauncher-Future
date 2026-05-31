@@ -1,6 +1,6 @@
 ﻿using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Serilog;
 using System;
 using System.Collections.Concurrent;
@@ -32,7 +32,7 @@ namespace MCServerLauncher.WPF.Modules
                 {
                     Log.Information("[Set] Found daemon list, reading");
                     Get =
-                        JsonConvert.DeserializeObject<List<Constants.DaemonConfigModel>>(File.ReadAllText(DaemonsPath,
+                        JsonSerializer.Deserialize<List<Constants.DaemonConfigModel>>(File.ReadAllText(DaemonsPath,
                             Encoding.UTF8));
                     if (Get is null) {
                         Get = new List<Constants.DaemonConfigModel>();
@@ -44,7 +44,7 @@ namespace MCServerLauncher.WPF.Modules
                     List<string> newList = new();
                     File.WriteAllText(
                         DaemonsPath,
-                        JsonConvert.SerializeObject(newList, Formatting.Indented),
+                        JsonSerializer.Serialize(newList, new JsonSerializerOptions { WriteIndented = true }),
                         Encoding.UTF8
                     );
                 }
@@ -72,7 +72,7 @@ namespace MCServerLauncher.WPF.Modules
             {
                 File.WriteAllText(
                     DaemonsPath,
-                    JsonConvert.SerializeObject(Get, Formatting.Indented),
+                    JsonSerializer.Serialize(Get, new JsonSerializerOptions { WriteIndented = true }),
                     Encoding.UTF8
                 );
             }
