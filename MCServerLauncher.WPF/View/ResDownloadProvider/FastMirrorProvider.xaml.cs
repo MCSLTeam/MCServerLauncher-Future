@@ -127,7 +127,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         /// <param name="e"></param>
         private void OpenHomePage(object sender, RoutedEventArgs e)
         {
-            Network.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString()!);
+                BrowserHelper.OpenUrl(((FastMirrorResCoreItem)CoreGridView.SelectedItem).GetProperty("HomePage").ToString()!);
         }
 
         /// <summary>

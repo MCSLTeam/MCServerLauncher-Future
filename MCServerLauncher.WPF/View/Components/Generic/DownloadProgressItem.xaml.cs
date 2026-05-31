@@ -36,7 +36,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
                 ParallelDownload = true,
                 RequestConfiguration =
                 {
-                    UserAgent = Network.CommonUserAgent
+                        UserAgent = MCServerLauncher.Utils.Network.UserAgent
                 }
             };
             DownloadServiceInstance = new DownloadService(DownloadConfig);

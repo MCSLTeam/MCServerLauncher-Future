@@ -1,6 +1,5 @@
-﻿using MCServerLauncher.WPF.Modules;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using MCServerLauncher.Utils.Minecraft.InstallSource;
+using MCServerLauncher.WPF.Modules;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -49,7 +48,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
 #nullable enable
 
-        private List<QuiltMinecraftVersion>? SupportedAllMinecraftVersions { get; set; }
+        private List<Quilt.QuiltMinecraftVersion>? SupportedAllMinecraftVersions { get; set; }
         private List<string>? QuiltLoaderVersions { get; set; }
 
         private bool IsDisposed1 { get; set; } = false;
@@ -124,14 +123,12 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         };
 
         /// <summary>
-        ///    Determine the endpoint to fetch data.
+        ///    Determine whether to use the mirror endpoint.
         /// </summary>
-        /// <returns>The correct endpoint.</returns>
-        private string GetEndPoint()
+        private static bool UseMirror()
         {
-            return SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftQuiltInstall
-                ? "https://bmclapi2.bangbang93.com/quilt-meta"
-                : "https://meta.quiltmc.org";
+            return SettingsManager.Get?.InstanceCreation != null &&
+                   SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftQuiltInstall;
         }
 
         /// <summary>
@@ -143,13 +140,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             FetchMinecraftVersionsButton.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
-            var response = await Network.SendGetRequest($"{GetEndPoint()}/v3/versions/game", true);
-            var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            SupportedAllMinecraftVersions = allSupportedVersionsList!.Select(mcVersion => new QuiltMinecraftVersion
-            {
-                MinecraftVersion = mcVersion.SelectToken("version")!.ToString(),
-                IsStable = mcVersion.SelectToken("stable")!.ToObject<bool>()
-            }).ToList();
+            SupportedAllMinecraftVersions = await new Quilt().GetMinecraftVersions(UseMirror());
             ToggleStableMinecraftVersionCheckBox.RaiseEvent(new RoutedEventArgs(ToggleButton.CheckedEvent));
             MinecraftVersionComboBox.IsEnabled = true;
             FetchMinecraftVersionsButton.IsEnabled = true;
@@ -184,18 +175,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             FetchQuiltVersionButton.IsEnabled = false;
             QuiltVersionComboBox.IsEnabled = false;
-            var response = await Network.SendGetRequest($"{GetEndPoint()}/v3/versions/loader");
-            var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            QuiltLoaderVersions = apiData!.Select(version => version.SelectToken("version")!.ToString()).ToList();
+            QuiltLoaderVersions = await new Quilt().GetQuiltVersions(UseMirror());
             QuiltVersionComboBox.ItemsSource = QuiltLoaderVersions;
             QuiltVersionComboBox.IsEnabled = true;
             FetchQuiltVersionButton.IsEnabled = true;
-        }
-
-        private class QuiltMinecraftVersion
-        {
-            public string? MinecraftVersion { get; set; }
-            public bool IsStable { get; set; }
         }
 #nullable disable
     }

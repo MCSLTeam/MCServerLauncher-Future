@@ -1,7 +1,6 @@
 ﻿using iNKORE.UI.WPF.DragDrop.Utilities;
+using MCServerLauncher.Utils.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -50,14 +49,8 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 #nullable enable
-        private List<FabricUniversalVersion>? SupportedAllMinecraftVersions { get; set; }
-        private List<FabricUniversalVersion>? SupportedAllFabricVersions { get; set; }
-
-        private class FabricUniversalVersion
-        {
-            public string? Version { get; set; }
-            public bool IsStable { get; set; }
-        }
+        private List<Fabric.FabricUniversalVersion>? SupportedAllMinecraftVersions { get; set; }
+        private List<Fabric.FabricUniversalVersion>? SupportedAllFabricVersions { get; set; }
 
         private bool IsDisposed1 { get; set; } = false;
         private bool IsDisposed2 { get; set; } = false;
@@ -131,14 +124,12 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         };
 
         /// <summary>
-        ///    Determine the endpoint to fetch data.
+        ///    Determine whether to use the mirror endpoint.
         /// </summary>
-        /// <returns>The correct endpoint.</returns>
-        private string GetEndPoint()
+        private static bool UseMirror()
         {
-            return SettingsManager.Get?.InstanceCreation != null && SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftFabricInstall
-                ? "https://bmclapi2.bangbang93.com/fabric-meta/v2/versions"
-                : "https://meta.fabricmc.net/v2/versions";
+            return SettingsManager.Get?.InstanceCreation != null &&
+                   SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftFabricInstall;
         }
 
         /// <summary>
@@ -152,13 +143,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             MinecraftVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.ClearSelectedItems();
             MinecraftVersionComboBox.SelectionChanged -= PreFetchFabricVersions;
-            var response = await Network.SendGetRequest($"{GetEndPoint()}/game", true);
-            var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            SupportedAllMinecraftVersions = allSupportedVersionsList!.Select(mcVersion => new FabricUniversalVersion
-            {
-                Version = mcVersion.SelectToken("version")!.ToString(),
-                IsStable = mcVersion.SelectToken("stable")!.ToObject<bool>()
-            }).ToList();
+            SupportedAllMinecraftVersions = await new Fabric().GetMinecraftVersions(UseMirror());
             ToggleStableMinecraftVersionCheckBox.RaiseEvent(new RoutedEventArgs(ToggleButton.CheckedEvent));
             MinecraftVersionComboBox.IsEnabled = true;
             FetchMinecraftVersionsButton.IsEnabled = true;
@@ -195,13 +180,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             FetchFabricVersionButton.IsEnabled = false;
             FabricVersionComboBox.IsEnabled = false;
             FabricVersionComboBox.ClearSelectedItems();
-            var response = await Network.SendGetRequest($"{GetEndPoint()}/loader");
-            var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            SupportedAllFabricVersions = apiData!.Select(mcVersion => new FabricUniversalVersion
-            {
-                Version = mcVersion.SelectToken("version")!.ToString(),
-                IsStable = mcVersion.SelectToken("stable")!.ToObject<bool>()
-            }).Where(fabricVersion => fabricVersion.Version != "0.12.0").ToList();
+            SupportedAllFabricVersions = await new Fabric().GetFabricVersions(UseMirror());
             ToggleStableFabricVersionCheckBox.RaiseEvent(new RoutedEventArgs(ToggleButton.CheckedEvent));
             FabricVersionComboBox.IsEnabled = true;
             FetchFabricVersionButton.IsEnabled = true;
