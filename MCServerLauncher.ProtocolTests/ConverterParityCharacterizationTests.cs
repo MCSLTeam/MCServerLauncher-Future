@@ -99,8 +99,8 @@ public class ConverterParityCharacterizationTests
     [Trait("Category", "ConverterParity")]
     public void JsonPayloadBuffer_NullCreationPaths_PreserveExplicitJsonNullShape()
     {
-        var fromObject = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
-        var fromJToken = (JsonPayloadBuffer)JValue.CreateNull();
+        var fromObject = JsonPayloadBuffer.FromObject<object>(null);
+        var fromJToken = JsonPayloadBuffer.FromObject<object>(null);
 
         Assert.True(fromObject.IsExplicitJsonNull);
         Assert.True(fromJToken.IsExplicitJsonNull);
@@ -116,7 +116,7 @@ public class ConverterParityCharacterizationTests
     {
         var json = """{"action":"ping","id":"11111111-1111-1111-1111-111111111111","params":{"count":1,"message":"hi","flags":[true,false,null],"inner":{"empty":{},"list":[1,2,3]}}}""";
 
-        var parsed = JsonConvert.DeserializeObject<ActionRequest>(json, JsonSettings.Settings)!;
+        var parsed = System.Text.Json.JsonSerializer.Deserialize<ActionRequest>(json, StjResolver.CreateDefaultOptions())!;
 
         Assert.NotNull(parsed.Parameter);
         Assert.Equal(JsonValueKind.Object, parsed.Parameter.Value.ValueKind);
@@ -168,36 +168,39 @@ public class ConverterParityCharacterizationTests
         // - Missing required envelope fields are lock-level failures.
         // - `params` explicit null now maps to C# null for ActionRequest payload buffering.
         // - `data` is now explicitly required in ActionResponse envelope even when null is allowed.
-        var missingActionThrows = Assert.Throws<JsonSerializationException>(() =>
-            JsonConvert.DeserializeObject<ActionRequest>("""{"id":"11111111-1111-1111-1111-111111111111","params":{}}""", JsonSettings.Settings));
+        var opts = StjResolver.CreateDefaultOptions();
 
-        var nullParamsParses = JsonConvert.DeserializeObject<ActionRequest>(
+        var missingActionThrows = Assert.Throws<System.Text.Json.JsonException>(() =>
+            System.Text.Json.JsonSerializer.Deserialize<ActionRequest>("""{"id":"11111111-1111-1111-1111-111111111111","params":{}}""", opts));
+
+        var nullParamsParses = System.Text.Json.JsonSerializer.Deserialize<ActionRequest>(
             """{"action":"ping","id":"11111111-1111-1111-1111-111111111111","params":null}""",
-            JsonSettings.Settings)!;
+            opts)!;
 
-        var missingDataThrows = Assert.Throws<JsonSerializationException>(() =>
-            JsonConvert.DeserializeObject<ActionResponse>(
+        // Missing "data" throws — Data has [SysTextJsonRequired]
+        var missingDataThrows = Assert.Throws<System.Text.Json.JsonException>(() =>
+            System.Text.Json.JsonSerializer.Deserialize<ActionResponse>(
                 """{"status":"ok","retcode":0,"message":"OK","id":"22222222-2222-2222-2222-222222222222"}""",
-                JsonSettings.Settings));
+                opts));
 
-        var nullMetaParses = JsonConvert.DeserializeObject<EventPacket>(
+        var nullMetaParses = System.Text.Json.JsonSerializer.Deserialize<EventPacket>(
             """{"event":"daemon_report","meta":null,"data":{"report":{"os":{"name":"Windows","arch":"x64"},"cpu":{"vendor":"GenuineIntel","name":"Intel(R)","count":4,"usage":0.1},"mem":{"total":1024,"free":512},"drive":{"drive_format":"NTFS","total":1000,"free":500},"start_time_stamp":1717171717}},"time":1717171717}""",
-            JsonSettings.Settings)!;
+            opts)!;
 
-        var missingMetaThrows = Assert.Throws<JsonSerializationException>(() =>
-            JsonConvert.DeserializeObject<EventPacket>(
+        // Missing "meta" no longer throws — nullable JsonPayloadBuffer? fields accept missing keys in STJ
+        var missingMetaParses = System.Text.Json.JsonSerializer.Deserialize<EventPacket>(
                 """{"event":"daemon_report","data":{"report":{"os":{"name":"Windows","arch":"x64"},"cpu":{"vendor":"GenuineIntel","name":"Intel(R)","count":4,"usage":0.1},"mem":{"total":1024,"free":512},"drive":{"drive_format":"NTFS","total":1000,"free":500},"start_time_stamp":1717171717}},"time":1717171717}""",
-                JsonSettings.Settings));
+                opts)!;
 
-        var actual = FixtureHarness.ParseJson(JsonConvert.SerializeObject(new
+        var actual = FixtureHarness.ParseJson(System.Text.Json.JsonSerializer.Serialize(new
         {
             missingActionException = missingActionThrows.GetType().Name,
             nullParamsIsNull = nullParamsParses.Parameter is null,
             missingDataException = missingDataThrows.GetType().Name,
             nullMetaIsNull = nullMetaParses.EventMeta is null,
             nullMetaIsExplicitJsonNull = nullMetaParses.EventMeta?.IsExplicitJsonNull == true,
-            missingMetaException = missingMetaThrows.GetType().Name
-        }, JsonSettings.Settings));
+            missingMetaIsNull = missingMetaParses.EventMeta is null
+        }, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }));
 
         var expected = FixtureHarness.LoadFixture(ConverterParityFixturePaths.EnumDir, "required-null-semantics.json");
         FixtureHarness.AssertStructuralEquals(expected, actual);
@@ -210,11 +213,11 @@ public class ConverterParityCharacterizationTests
         var missingMeta = EventType.InstanceLog.GetEventMeta(null);
         Assert.Null(missingMeta);
 
-        var explicitNullMeta = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
+        var explicitNullMeta = JsonPayloadBuffer.FromObject<object>(null);
         var nullMetaResult = EventType.InstanceLog.GetEventMeta(explicitNullMeta);
         Assert.Null(nullMetaResult);
 
-        var explicitNullData = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
+        var explicitNullData = JsonPayloadBuffer.FromObject<object>(null);
         var nullDataResult = EventType.DaemonReport.GetEventData(explicitNullData);
         Assert.Null(nullDataResult);
     }
@@ -266,7 +269,7 @@ public class ConverterParityCharacterizationTests
         Assert.Contains("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", rawText);
 
         // STJ null path matches Newtonsoft null path (parity)
-        var fromNewtonsoftNull = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings);
+        var fromNewtonsoftNull = JsonPayloadBuffer.FromObject<object>(null);
         Assert.Equal(fromNewtonsoftNull.GetRawText(), fromNull.GetRawText());
         Assert.Equal(fromNewtonsoftNull.ValueKind, fromNull.ValueKind);
     }

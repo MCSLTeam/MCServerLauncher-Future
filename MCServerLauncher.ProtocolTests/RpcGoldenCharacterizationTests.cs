@@ -6,7 +6,7 @@ using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using System.Text.Json;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -29,7 +29,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            JsonSerializer.Serialize(request, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionRequestDir,
             "ping-empty-params.json");
     }
@@ -50,7 +50,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            JsonSerializer.Serialize(request, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionRequestDir,
             "subscribe-event-null-meta.json");
     }
@@ -74,7 +74,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            JsonSerializer.Serialize(request, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionRequestDir,
             "subscribe-event-concrete-meta.json");
     }
@@ -127,7 +127,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(request, JsonSettings.Settings),
+            JsonSerializer.Serialize(request, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionRequestDir,
             "save-event-rules-nested-parameter.json");
     }
@@ -146,7 +146,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(response, JsonSettings.Settings),
+            JsonSerializer.Serialize(response, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionResponseDir,
             "success-typed-data.json");
     }
@@ -165,7 +165,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(response, JsonSettings.Settings),
+            JsonSerializer.Serialize(response, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionResponseDir,
             "success-empty-object-data.json");
     }
@@ -184,7 +184,7 @@ public class RpcGoldenCharacterizationTests
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(response, JsonSettings.Settings),
+            JsonSerializer.Serialize(response, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.ActionResponseDir,
             "error-null-data-message-retcode-shape.json");
     }
@@ -199,16 +199,16 @@ public class RpcGoldenCharacterizationTests
             EventMeta = JsonPayloadBuffer.FromObject(new InstanceLogEventMeta
             {
                 InstanceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-            }, JsonSettings.Settings),
+            }),
             EventData = JsonPayloadBuffer.FromObject(new InstanceLogEventData
             {
                 Log = "[12:00:00] [Server thread/INFO]: Hello"
-            }, JsonSettings.Settings),
+            }),
             Timestamp = 1717171717000
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(packet, JsonSettings.Settings),
+            JsonSerializer.Serialize(packet, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.EventPacketDir,
             "with-meta-and-data.json");
     }
@@ -220,7 +220,7 @@ public class RpcGoldenCharacterizationTests
         var packet = new EventPacket
         {
             EventType = EventType.DaemonReport,
-            EventMeta = JsonPayloadBuffer.FromObject(null, JsonSettings.Settings),
+            EventMeta = JsonPayloadBuffer.FromObject<object>(null),
             EventData = JsonPayloadBuffer.FromObject(new DaemonReportEventData
             {
                 Report = new DaemonReport(
@@ -229,12 +229,12 @@ public class RpcGoldenCharacterizationTests
                     new MemInfo(1024UL * 1024UL, 512UL * 1024UL),
                     new DriveInformation("NTFS", 1_000_000_000UL, 500_000_000UL),
                     1717171717000)
-            }, JsonSettings.Settings),
+            }),
             Timestamp = 1717171717999
         };
 
         AssertMatchesFixture(
-            JsonConvert.SerializeObject(packet, JsonSettings.Settings),
+            JsonSerializer.Serialize(packet, StjResolver.CreateDefaultOptions()),
             RpcFixturePaths.EventPacketDir,
             "null-meta-structured-data.json");
     }
@@ -248,7 +248,7 @@ public class RpcGoldenCharacterizationTests
 
     private static JsonElement ParseViaNewtonsoft(object payload)
     {
-        var json = JsonConvert.SerializeObject(payload, JsonSettings.Settings);
+        var json = JsonSerializer.Serialize(payload, StjResolver.CreateDefaultOptions());
         return ParseJsonElement(json);
     }
 

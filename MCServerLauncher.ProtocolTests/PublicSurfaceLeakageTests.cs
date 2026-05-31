@@ -373,21 +373,8 @@ public class PublicSurfaceLeakageTests
 
         foreach (var type in wireContractTypes)
         {
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                var newtonsoftAttrs = prop.GetCustomAttributes(typeof(Newtonsoft.Json.JsonConverterAttribute), false);
-                foreach (var attr in newtonsoftAttrs)
-                {
-                    var converterType = ((Newtonsoft.Json.JsonConverterAttribute)attr).ConverterType;
-                    if (converterType == typeof(NewtonsoftJsonPayloadBufferConverter))
-                    {
-                        var stjAttrs = prop.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonConverterAttribute), false);
-                        Assert.True(stjAttrs.Length > 0,
-                            $"{type.Name}.{prop.Name} uses NewtonsoftJsonPayloadBufferConverter but has no STJ converter. " +
-                            "Payload buffer properties must have paired STJ converters.");
-                    }
-                }
-            }
+            // Newtonsoft converter attributes have been removed from all models.
+            // This test is retained as a structural placeholder; no Newtonsoft converters remain to check.
         }
     }
 
