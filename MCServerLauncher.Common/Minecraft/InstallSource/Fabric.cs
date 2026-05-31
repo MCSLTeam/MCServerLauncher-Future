@@ -1,8 +1,6 @@
 using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.Minecraft.InstallSource
@@ -19,12 +17,17 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         public static async Task<List<FabricUniversalVersion>?> GetMinecraftVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/game", true);
-            var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return allSupportedVersionsList!.Select(mcVersion => new FabricUniversalVersion
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<FabricUniversalVersion>();
+            foreach (var item in doc.RootElement.EnumerateArray())
             {
-                Version = mcVersion.SelectToken("version")!.ToString(),
-                IsStable = mcVersion.SelectToken("stable")!.ToObject<bool>()
-            }).ToList();
+                results.Add(new FabricUniversalVersion
+                {
+                    Version = item.GetProperty("version").GetString(),
+                    IsStable = item.GetProperty("stable").GetBoolean()
+                });
+            }
+            return results;
         }
 
         /// <summary>
@@ -34,12 +37,19 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         public static async Task<List<FabricUniversalVersion>?> GetFabricVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/loader");
-            var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return apiData!.Select(mcVersion => new FabricUniversalVersion
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<FabricUniversalVersion>();
+            foreach (var item in doc.RootElement.EnumerateArray())
             {
-                Version = mcVersion.SelectToken("version")!.ToString(),
-                IsStable = mcVersion.SelectToken("stable")!.ToObject<bool>()
-            }).Where(fabricVersion => fabricVersion.Version != "0.12.0").ToList();
+                var version = new FabricUniversalVersion
+                {
+                    Version = item.GetProperty("version").GetString(),
+                    IsStable = item.GetProperty("stable").GetBoolean()
+                };
+                if (version.Version != "0.12.0")
+                    results.Add(version);
+            }
+            return results;
         }
 
         private static string GetEndPoint(bool useMirror)

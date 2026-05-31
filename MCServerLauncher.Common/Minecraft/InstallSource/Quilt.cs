@@ -1,8 +1,6 @@
 using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.Minecraft.InstallSource
@@ -19,12 +17,17 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         public static async Task<List<QuiltMinecraftVersion>?> GetMinecraftVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/game", true);
-            var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return allSupportedVersionsList!.Select(mcVersion => new QuiltMinecraftVersion
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<QuiltMinecraftVersion>();
+            foreach (var item in doc.RootElement.EnumerateArray())
             {
-                MinecraftVersion = mcVersion.SelectToken("version")!.ToString(),
-                IsStable = mcVersion.SelectToken("stable")!.ToObject<bool>()
-            }).ToList();
+                results.Add(new QuiltMinecraftVersion
+                {
+                    MinecraftVersion = item.GetProperty("version").GetString(),
+                    IsStable = item.GetProperty("stable").GetBoolean()
+                });
+            }
+            return results;
         }
 
         /// <summary>
@@ -34,8 +37,11 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         public static async Task<List<string>?> GetQuiltVersions(bool useMirror)
         {
             var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/loader");
-            var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return apiData!.Select(version => version.SelectToken("version")!.ToString()).ToList();
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<string>();
+            foreach (var item in doc.RootElement.EnumerateArray())
+                results.Add(item.GetProperty("version").GetString()!);
+            return results;
         }
 
         private static string GetEndPoint(bool useMirror)

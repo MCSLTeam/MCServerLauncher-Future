@@ -1,7 +1,6 @@
 ﻿using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
@@ -18,8 +17,10 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/query/available_server_types");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    ?.SelectToken("data")!.SelectToken("types")!.ToObject<List<string>>();
+            {
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                return JsonSerializer.Deserialize<List<string>>(doc.RootElement.GetProperty("data").GetProperty("types").GetRawText());
+            }
             return null;
         }
 
@@ -32,8 +33,10 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/query/servers_description/{Core}");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    ?.SelectToken("data")!.SelectToken("description")!.ToString();
+            {
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                return doc.RootElement.GetProperty("data").GetProperty("description").GetString();
+            }
             return null;
         }
 
@@ -45,10 +48,9 @@ namespace MCServerLauncher.Common.DownloadProvider
         public static async Task<List<string>?> GetMinecraftVersions(string? core)
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/query/available_versions/{core}");
-            return response.IsSuccessStatusCode
-                ? JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())?.SelectToken("data")!
-                    .SelectToken("versionList")!.ToObject<List<string>>()
-                : null;
+            if (!response.IsSuccessStatusCode) return null;
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return JsonSerializer.Deserialize<List<string>>(doc.RootElement.GetProperty("data").GetProperty("versionList").GetRawText());
         }
 
         /// <summary>
@@ -61,8 +63,10 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/download/server/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    ?.SelectToken("data")!.SelectToken("url")!.ToString();
+            {
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                return doc.RootElement.GetProperty("data").GetProperty("url").GetString();
+            }
             return null;
         }
 

@@ -1,8 +1,6 @@
 ﻿using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
@@ -22,14 +20,19 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{host}{_fileListApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
-            var remoteFileList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                ?.SelectToken("data")!.SelectToken("content");
-            return remoteFileList!.Select(file => new AListFileStructure
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var content = doc.RootElement.GetProperty("data").GetProperty("content");
+            var results = new List<AListFileStructure>();
+            foreach (var file in content.EnumerateArray())
             {
-                FileName = file.SelectToken("name")!.ToString(),
-                FileSize = file.SelectToken("size")!.ToString(),
-                IsDirectory = file.SelectToken("is_dir")!.ToObject<bool>()
-            }).ToList();
+                results.Add(new AListFileStructure
+                {
+                    FileName = file.GetProperty("name").GetString(),
+                    FileSize = file.GetProperty("size").GetRawText(),
+                    IsDirectory = file.GetProperty("is_dir").GetBoolean()
+                });
+            }
+            return results;
         }
 
         /// <summary>
@@ -42,9 +45,8 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{host}{_fileUrlApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
-            var remoteFileDetail = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                ?.SelectToken("data");
-            return remoteFileDetail!.SelectToken("raw_url")!.ToString();
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return doc.RootElement.GetProperty("data").GetProperty("raw_url").GetString();
         }
 
         public class AListFileStructure

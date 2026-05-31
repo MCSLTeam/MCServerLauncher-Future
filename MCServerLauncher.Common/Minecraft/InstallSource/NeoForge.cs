@@ -1,9 +1,8 @@
 using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.Minecraft.InstallSource
@@ -30,10 +29,11 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
             var legacyMavenResponse =
                 await HttpHelper.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", true);
+            using var legacyDoc = JsonDocument.Parse(await legacyMavenResponse.Content.ReadAsStringAsync());
             var neoForgeVersions =
-                (JsonConvert.DeserializeObject<JToken>(await legacyMavenResponse.Content.ReadAsStringAsync())
-                    ?.SelectToken("versions")!.ToObject<List<string>>() ?? throw new InvalidOperationException())
-                    .Select(version => version.ToString().Replace("1.20.1-", "")).ToList();
+                (JsonSerializer.Deserialize<List<string>>(legacyDoc.RootElement.GetProperty("versions").GetRawText())
+                 ?? throw new InvalidOperationException())
+                .Select(version => version.Replace("1.20.1-", "")).ToList();
             // Bad version 47.1.82 should be removed
             neoForgeVersions.Remove("47.1.82");
             List<string>? minecraftVersions = null;
@@ -41,9 +41,8 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
             var response =
                 await HttpHelper.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", true);
-            var mavenData =
-                JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                    ?.SelectToken("versions")!.ToObject<List<string>>();
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var mavenData = JsonSerializer.Deserialize<List<string>>(doc.RootElement.GetProperty("versions").GetRawText());
             if (mavenData != null)
             {
                 neoForgeVersions.AddRange(mavenData);
@@ -65,17 +64,26 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
             // Legacy version (1.20.1)
             var legacyMavenResponse = await HttpHelper.SendGetRequest(
                 "https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/forge", true);
-            var neoForgeVersions =
-                JObject.Parse(await legacyMavenResponse.Content.ReadAsStringAsync()).SelectToken("files")!
-                    .Select(version => version.SelectToken("name")!.ToString().Replace("1.20.1-", "")).ToList();
-            neoForgeVersions.RemoveAll(version => version.Contains("maven-metadata"));
+            using var legacyDoc = JsonDocument.Parse(await legacyMavenResponse.Content.ReadAsStringAsync());
+            var neoForgeVersions = new List<string>();
+            foreach (var file in legacyDoc.RootElement.GetProperty("files").EnumerateArray())
+            {
+                var name = file.GetProperty("name").GetString()!.Replace("1.20.1-", "");
+                if (!name.Contains("maven-metadata"))
+                    neoForgeVersions.Add(name);
+            }
             // NeoForge
             var response = await HttpHelper.SendGetRequest(
                 "https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/neoforge",
                 true);
-            var mavenData = JObject.Parse(await response.Content.ReadAsStringAsync()).SelectToken("files")!
-                .Select(version => version.SelectToken("name")!.ToString()).ToList();
-            mavenData.RemoveAll(version => version.Contains("maven-metadata"));
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var mavenData = new List<string>();
+            foreach (var file in doc.RootElement.GetProperty("files").EnumerateArray())
+            {
+                var name = file.GetProperty("name").GetString()!;
+                if (!name.Contains("maven-metadata"))
+                    mavenData.Add(name);
+            }
             neoForgeVersions.AddRange(mavenData);
             // "1." + the first four digits of mavenData = list of Minecraft versions.
             var minecraftVersions = mavenData.Select(version => "1." + version.Substring(0, 4)).Distinct().ToList();

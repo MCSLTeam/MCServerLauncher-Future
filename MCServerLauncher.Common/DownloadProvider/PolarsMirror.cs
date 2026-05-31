@@ -1,9 +1,7 @@
 ﻿using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
@@ -30,15 +28,19 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core");
             if (!response.IsSuccessStatusCode) return null;
-            var remotePolarsCoreInfoList =
-                JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return (remotePolarsCoreInfoList ?? throw new InvalidOperationException()).Select(polarsCoreInfo => new PolarsMirrorCoreInfo
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<PolarsMirrorCoreInfo>();
+            foreach (var item in doc.RootElement.EnumerateArray())
             {
-                Name = polarsCoreInfo.SelectToken("name")?.ToString(),
-                Id = polarsCoreInfo.SelectToken("id")!.ToObject<int>(),
-                Description = polarsCoreInfo.SelectToken("description")?.ToString(),
-                IconUrl = polarsCoreInfo.SelectToken("icon")?.ToString()
-            }).ToList();
+                results.Add(new PolarsMirrorCoreInfo
+                {
+                    Name = item.GetProperty("name").GetString(),
+                    Id = item.GetProperty("id").GetInt32(),
+                    Description = item.GetProperty("description").GetString(),
+                    IconUrl = item.GetProperty("icon").GetString()
+                });
+            }
+            return results;
         }
 
         /// <summary>
@@ -50,13 +52,17 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{coreId}");
             if (!response.IsSuccessStatusCode) return null;
-            var remotePolarsCoreDetailList =
-                JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return (remotePolarsCoreDetailList ?? throw new InvalidOperationException()).Select(polarsCoreDetail => new PolarsMirrorCoreDetail
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<PolarsMirrorCoreDetail>();
+            foreach (var item in doc.RootElement.EnumerateArray())
             {
-                FileName = polarsCoreDetail.SelectToken("name")?.ToString(),
-                DownloadUrl = polarsCoreDetail.SelectToken("downloadUrl")?.ToString()
-            }).ToList();
+                results.Add(new PolarsMirrorCoreDetail
+                {
+                    FileName = item.GetProperty("name").GetString(),
+                    DownloadUrl = item.GetProperty("downloadUrl").GetString()
+                });
+            }
+            return results;
         }
 
         public class PolarsMirrorCoreInfo

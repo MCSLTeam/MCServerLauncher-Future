@@ -1,9 +1,8 @@
 using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -54,7 +53,7 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         private static async Task<List<string>?> FetchMinecraftVersionsByBmclapi()
         {
             var response = await HttpHelper.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
-            return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
+            return JsonSerializer.Deserialize<List<string>>(await response.Content.ReadAsStringAsync());
         }
 
         private static async Task<List<ForgeBuild>?> FetchForgeVersionsByOfficial(string mcVersion)
@@ -132,18 +131,28 @@ namespace MCServerLauncher.Common.Minecraft.InstallSource
         {
             var response =
                 await HttpHelper.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
-            var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
-            return apiData!.Select(forgeBuild => new ForgeBuild
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var results = new List<ForgeBuild>();
+            foreach (var item in doc.RootElement.EnumerateArray())
             {
-                MinecraftVersion = forgeBuild.SelectToken("mcversion")!.ToString(),
-                ForgeVersion = forgeBuild.SelectToken("version")!.ToString(),
-                Attachments = forgeBuild.SelectToken("files")!.Select(forgeAttachment => new ForgeAttachment
+                var attachments = new List<ForgeAttachment>();
+                foreach (var file in item.GetProperty("files").EnumerateArray())
                 {
-                    Format = forgeAttachment.SelectToken("format")!.ToString(),
-                    Category = forgeAttachment.SelectToken("category")!.ToString(),
-                    Hash = forgeAttachment.SelectToken("hash")!.ToString()
-                }).ToList()
-            }).ToList();
+                    attachments.Add(new ForgeAttachment
+                    {
+                        Format = file.GetProperty("format").GetString(),
+                        Category = file.GetProperty("category").GetString(),
+                        Hash = file.GetProperty("hash").GetString()
+                    });
+                }
+                results.Add(new ForgeBuild
+                {
+                    MinecraftVersion = item.GetProperty("mcversion").GetString(),
+                    ForgeVersion = item.GetProperty("version").GetString(),
+                    Attachments = attachments
+                });
+            }
+            return results;
         }
 
         /// <summary>

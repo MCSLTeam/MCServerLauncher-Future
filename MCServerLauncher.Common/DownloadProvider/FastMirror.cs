@@ -1,8 +1,6 @@
 ﻿using MCServerLauncher.Common.Network;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MCServerLauncher.Common.DownloadProvider
@@ -19,17 +17,21 @@ namespace MCServerLauncher.Common.DownloadProvider
         {
             var response = await HttpHelper.SendGetRequest(_endPoint);
             if (!response.IsSuccessStatusCode) return null;
-            var remoteFastMirrorCoreInfoList = JsonConvert
-                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                ?.SelectToken("data");
-            return [.. remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var data = doc.RootElement.GetProperty("data");
+            var results = new List<FastMirrorCoreInfo>();
+            foreach (var item in data.EnumerateArray())
             {
-                Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
-                Tag = fastMirrorCoreInfo.SelectToken("tag")!.ToString(),
-                HomePage = fastMirrorCoreInfo.SelectToken("homepage")!.ToString(),
-                Recommend = fastMirrorCoreInfo.SelectToken("recommend")!.ToObject<bool>(),
-                MinecraftVersions = fastMirrorCoreInfo.SelectToken("mc_versions")!.ToObject<List<string>>()
-            })];
+                results.Add(new FastMirrorCoreInfo
+                {
+                    Name = item.GetProperty("name").GetString(),
+                    Tag = item.GetProperty("tag").GetString(),
+                    HomePage = item.GetProperty("homepage").GetString(),
+                    Recommend = item.GetProperty("recommend").GetBoolean(),
+                    MinecraftVersions = JsonSerializer.Deserialize<List<string>>(item.GetProperty("mc_versions").GetRawText())
+                });
+            }
+            return results;
         }
 
         /// <summary>
@@ -43,17 +45,20 @@ namespace MCServerLauncher.Common.DownloadProvider
             var response =
                 await HttpHelper.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
             if (!response.IsSuccessStatusCode) return null;
-            var remoteFastMirrorCoreDetailList = JsonConvert
-                .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
-                ?.SelectToken("data")!
-                .SelectToken("builds");
-            return [.. remoteFastMirrorCoreDetailList!.Select(remoteFastMirrorCoreDetail => new FastMirrorCoreDetail
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var builds = doc.RootElement.GetProperty("data").GetProperty("builds");
+            var results = new List<FastMirrorCoreDetail>();
+            foreach (var item in builds.EnumerateArray())
             {
-                Name = remoteFastMirrorCoreDetail.SelectToken("name")!.ToString(),
-                MinecraftVersion = remoteFastMirrorCoreDetail.SelectToken("mc_version")!.ToString(),
-                CoreVersion = remoteFastMirrorCoreDetail.SelectToken("core_version")!.ToString(),
-                Sha1 = remoteFastMirrorCoreDetail.SelectToken("sha1")!.ToString()
-            })];
+                results.Add(new FastMirrorCoreDetail
+                {
+                    Name = item.GetProperty("name").GetString(),
+                    MinecraftVersion = item.GetProperty("mc_version").GetString(),
+                    CoreVersion = item.GetProperty("core_version").GetString(),
+                    Sha1 = item.GetProperty("sha1").GetString()
+                });
+            }
+            return results;
         }
 
         /// <summary>
