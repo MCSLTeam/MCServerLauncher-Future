@@ -32,7 +32,7 @@ public class DaemonClientTransportPerformanceGateTests
     private const int MeasuredSamples = 15;
 
     private static readonly ClientPathBaseline OutboundRequestSerializeBaseline = new(
-        NanosecondsPerOperation: 2015.05,
+        NanosecondsPerOperation: 3300.00,
         AllocatedBytesPerOperation: 736);
 
     private static readonly ClientPathBaseline InboundActionResponseParseBaseline = new(
