@@ -1,12 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using MCServerLauncher.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.DownloadProvider
+namespace MCServerLauncher.Utils.DownloadProvider
 {
-    internal class AList
+    public class AList
     {
         private readonly string _fileListApi = "/api/fs/list";
         private readonly string _fileUrlApi = "/api/fs/get";

@@ -1,5 +1,5 @@
 ﻿using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.Utils.DownloadProvider;
 using System;
 using System.Linq;
 using System.Windows;

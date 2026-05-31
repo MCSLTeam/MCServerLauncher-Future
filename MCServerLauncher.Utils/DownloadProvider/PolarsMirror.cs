@@ -1,13 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using MCServerLauncher.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.DownloadProvider
+namespace MCServerLauncher.Utils.DownloadProvider
 {
-    internal class PolarsMirror
+    public class PolarsMirror
     {
         private readonly string _endPoint = "https://mirror.polars.cc/api/query/minecraft";
 

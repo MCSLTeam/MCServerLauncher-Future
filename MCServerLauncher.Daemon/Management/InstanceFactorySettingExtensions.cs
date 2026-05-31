@@ -81,7 +81,7 @@ public static class InstanceFactorySettingExtensions
     /// <returns></returns>
     public static Task<Result<InstanceConfig, Error>> ApplyInstanceFactory(this InstanceFactorySetting setting)
     {
-        var reconciledSetting = InstanceVersionDetector.Reconcile(setting);
+  var reconciledSetting = InstanceVersionDetector.Reconcile(setting, source => FileManager.ResolveAndValidatePath(source));
         var instanceFactory = InstanceFactoryRegistry.GetInstanceFactory(reconciledSetting);
         Log.Information("[InstanceManager] Running InstanceFactory for instance '{0}' as {1}", reconciledSetting.Name, reconciledSetting.InstanceType);
         return instanceFactory.Invoke(reconciledSetting);
@@ -104,7 +104,7 @@ public static class InstanceFactorySettingExtensions
                 return ResultExt.Err<Unit>($"source not found at {setting.Source}");
         }
 
-        var reconciledSetting = InstanceVersionDetector.Reconcile(setting);
+  var reconciledSetting = InstanceVersionDetector.Reconcile(setting, source => FileManager.ResolveAndValidatePath(source));
         return reconciledSetting.ValidateConfig();
     }
 }

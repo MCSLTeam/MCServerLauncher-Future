@@ -1,6 +1,6 @@
 using iNKORE.UI.WPF.Helpers;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.Utils.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using MCServerLauncher.WPF.View.Pages;
 using Serilog;
@@ -55,7 +55,15 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
                     foreach (var coreItem in fastMirrorInfo.Select(result => new FastMirrorResCoreItem
                     {
                         CoreName = result.Name,
-                        CoreTag = result.Tag,
+                        CoreTag = result.Tag switch
+                        {
+                            "proxy" => Lang.Tr["DownloadModule_FastMirrorProxyType"],
+                            "vanilla" => Lang.Tr["DownloadModule_FastMirrorVanillaType"],
+                            "pure" => Lang.Tr["DownloadModule_FastMirrorPureType"],
+                            "mod" => Lang.Tr["DownloadModule_FastMirrorModType"],
+                            "bedrock" => Lang.Tr["DownloadModule_FastMirrorBedrockType"],
+                            _ => result.Tag
+                        },
                         Recommend = result.Recommend,
                         HomePage = result.HomePage,
                         MinecraftVersions = DownloadManager.SequenceMinecraftVersion(result.MinecraftVersions)

@@ -1,11 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using MCServerLauncher.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.DownloadProvider
+namespace MCServerLauncher.Utils.DownloadProvider
 {
-    internal class MSLAPI
+    public class MSLAPI
     {
         private readonly string _endPoint = "https://api.mslmc.cn/v3";
 
@@ -33,7 +34,7 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     ?.SelectToken("data")!.SelectToken("description")!.ToString();
-            return Lang.Tr["DownloadModule_MSLAPIGetCoreDescriptionFailed"];
+            return null;
         }
 
         /// <summary>

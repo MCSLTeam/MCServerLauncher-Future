@@ -1,11 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using MCServerLauncher.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.DownloadProvider
+namespace MCServerLauncher.Utils.DownloadProvider
 {
-    internal class MCSLSync
+    public class MCSLSync
     {
         private readonly string _endPoint = "https://sync.mcsl.com.cn/api";
 

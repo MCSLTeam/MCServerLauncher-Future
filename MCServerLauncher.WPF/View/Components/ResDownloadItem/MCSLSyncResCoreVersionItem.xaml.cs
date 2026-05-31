@@ -1,5 +1,5 @@
 ﻿using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.Modules.DownloadProvider;
+using MCServerLauncher.Utils.DownloadProvider;
 using System.Threading.Tasks;
 using System.Windows;
 

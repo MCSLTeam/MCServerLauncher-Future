@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Daemon.Management.Minecraft;
+using MCServerLauncher.Daemon.Management.Minecraft;
 
 namespace MCServerLauncher.Daemon.Management;
 
@@ -17,7 +17,7 @@ public static class McVersionExtensions
     /// <returns></returns>
     public static bool In(this McVersion version, string pattern)
     {
-        var parts = pattern.Trim().Split('.');
+    var parts = pattern.Trim().Split('.');
         return Is(version.Major, parts[0]) && Is(version.Minor, parts[1]) && Is(version.Patch, parts[2]);
     }
 

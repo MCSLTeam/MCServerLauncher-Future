@@ -99,7 +99,8 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
+ <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
+    <ProjectReference Include="..\MCServerLauncher.Utils\MCServerLauncher.Utils.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="InstanceConsole\Modules\" />

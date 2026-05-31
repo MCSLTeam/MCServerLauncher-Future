@@ -1,32 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using MCServerLauncher.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.WPF.Modules.DownloadProvider
+namespace MCServerLauncher.Utils.DownloadProvider
 {
-    internal class FastMirror
+    public class FastMirror
     {
         private readonly string _endPoint = "https://download.fastmirror.net/api/v3";
-
-        /// <summary>
-        ///    Prettier tag for FastMirror core.
-        /// </summary>
-        /// <param name="originalTag"></param>
-        /// <returns></returns>
-        private static string FormatFastMirrorCoreTag(string originalTag)
-        {
-            return originalTag switch
-            {
-                "proxy" => Lang.Tr["DownloadModule_FastMirrorProxyType"],
-                "vanilla" => Lang.Tr["DownloadModule_FastMirrorVanillaType"],
-                "pure" => Lang.Tr["DownloadModule_FastMirrorPureType"],
-                "mod" => Lang.Tr["DownloadModule_FastMirrorModType"],
-                "bedrock" => Lang.Tr["DownloadModule_FastMirrorBedrockType"],
-                _ => originalTag
-            };
-        }
 
         /// <summary>
         ///    Get FastMirror core info.
@@ -42,7 +25,7 @@ namespace MCServerLauncher.WPF.Modules.DownloadProvider
             return remoteFastMirrorCoreInfoList!.Select(fastMirrorCoreInfo => new FastMirrorCoreInfo
             {
                 Name = fastMirrorCoreInfo.SelectToken("name")!.ToString(),
-                Tag = FormatFastMirrorCoreTag(fastMirrorCoreInfo.SelectToken("tag")!.ToString()),
+                Tag = fastMirrorCoreInfo.SelectToken("tag")!.ToString(),
                 HomePage = fastMirrorCoreInfo.SelectToken("homepage")!.ToString(),
                 Recommend = fastMirrorCoreInfo.SelectToken("recommend")!.ToObject<bool>(),
                 MinecraftVersions = fastMirrorCoreInfo.SelectToken("mc_versions")!.ToObject<List<string>>()

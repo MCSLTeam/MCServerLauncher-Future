@@ -4,12 +4,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Storage;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Detection;
 
-internal static partial class InstanceVersionDetector
+public static partial class InstanceVersionDetector
 {
     private static readonly Regex VersionLikeRegex = VersionRegex();
     private static readonly Regex MetaInfVersionRegex = MetaInfVersionFileRegex();
@@ -72,9 +71,9 @@ internal static partial class InstanceVersionDetector
         };
     }
 
-    public static InstanceFactorySetting Reconcile(InstanceFactorySetting setting)
+    public static InstanceFactorySetting Reconcile(InstanceFactorySetting setting, Func<string, string>? resolveSource = null)
     {
-        var detection = Detect(setting);
+        var detection = Detect(setting, resolveSource);
         if (!detection.IsMatched)
             return setting;
 
@@ -108,11 +107,12 @@ internal static partial class InstanceVersionDetector
         }
     }
 
-    public static InstanceVersionDetectionResult Detect(InstanceFactorySetting setting)
+    public static InstanceVersionDetectionResult Detect(InstanceFactorySetting setting, Func<string, string>? resolveSource = null)
     {
+        resolveSource ??= Path.GetFullPath;
         try
         {
-            if (!TryResolveSourcePath(setting.Source, out var sourcePath))
+            if (!TryResolveSourcePath(setting.Source, resolveSource, out var sourcePath))
                 return InstanceVersionDetectionResult.NoMatch(setting.InstanceType, "Source path unavailable for detection");
 
             var workingDirectory = Path.GetDirectoryName(sourcePath) ?? string.Empty;
@@ -685,7 +685,7 @@ internal static partial class InstanceVersionDetector
         return files;
     }
 
-    private static bool TryResolveSourcePath(string source, out string sourcePath)
+    private static bool TryResolveSourcePath(string source, Func<string, string> resolveSource, out string sourcePath)
     {
         sourcePath = string.Empty;
 
@@ -698,7 +698,7 @@ internal static partial class InstanceVersionDetector
             return File.Exists(sourcePath);
         }
 
-        sourcePath = FileManager.ResolveAndValidatePath(source);
+        sourcePath = resolveSource(source);
         return File.Exists(sourcePath);
     }
 

@@ -18,19 +18,19 @@ public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch
     {
         return left.Major > right.Major ||
                (left.Major == right.Major && left.Minor > right.Minor) ||
-               (left.Major == right.Major && left.Minor == right.Minor && left.Patch > right.Patch);
+   (left.Major == right.Major && left.Minor == right.Minor && left.Patch > right.Patch);
     }
 
     // 重载 >= 运算符
     public static bool operator >=(McVersion left, McVersion right)
     {
-        return left > right || left == right;
+   return left > right || left == right;
     }
 
     // 重载 < 运算符
     public static bool operator <(McVersion left, McVersion right)
     {
-        return !(left >= right);
+  return !(left >= right);
     }
 
     // 重载 <= 运算符
@@ -41,28 +41,28 @@ public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch
 
     public static McVersion Of(string version)
     {
-        if (string.IsNullOrWhiteSpace(version))
+  if (string.IsNullOrWhiteSpace(version))
         {
-            throw new ArgumentException("Version string cannot be null or empty", nameof(version));
-        }
+          throw new ArgumentException("Version string cannot be null or empty", nameof(version));
+}
 
         var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries)
-            .Select(part =>
+   .Select(part =>
             {
-                if (!ushort.TryParse(part, out var value))
-                {
-                    throw new ArgumentException($"Invalid version component '{part}' in version '{version}'", nameof(version));
-                }
-                return value;
-            })
+    if (!ushort.TryParse(part, out var value))
+  {
+          throw new ArgumentException($"Invalid version component '{part}' in version '{version}'", nameof(version));
+          }
+   return value;
+ })
             .ToArray();
 
         return parts.Length switch
         {
-            1 => new McVersion(parts[0], 0, 0),
-            2 => new McVersion(parts[0], parts[1], 0),
+          1 => new McVersion(parts[0], 0, 0),
+         2 => new McVersion(parts[0], parts[1], 0),
             3 => new McVersion(parts[0], parts[1], parts[2]),
-            _ => throw new ArgumentException($"Invalid minecraft version format '{version}'. Expected 1-3 numeric components separated by dots.", nameof(version))
+    _ => throw new ArgumentException($"Invalid minecraft version format '{version}'. Expected 1-3 numeric components separated by dots.", nameof(version))
         };
     }
 }
