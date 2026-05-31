@@ -1,11 +1,11 @@
-using MCServerLauncher.Utils;
+using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.Minecraft.InstallSource
+namespace MCServerLauncher.Common.Minecraft.InstallSource
 {
     /// <summary>
     ///    Fetch + parse Quilt Minecraft/loader versions from Official or BMCLAPI.
@@ -18,7 +18,7 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
         public async Task<List<QuiltMinecraftVersion>?> GetMinecraftVersions(bool useMirror)
         {
-            var response = await Network.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/game", true);
+            var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/game", true);
             var allSupportedVersionsList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             return allSupportedVersionsList!.Select(mcVersion => new QuiltMinecraftVersion
             {
@@ -33,7 +33,7 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
         /// <param name="useMirror">Use BMCLAPI mirror instead of the official source.</param>
         public async Task<List<string>?> GetQuiltVersions(bool useMirror)
         {
-            var response = await Network.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/loader");
+            var response = await HttpHelper.SendGetRequest($"{GetEndPoint(useMirror)}/v3/versions/loader");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             return apiData!.Select(version => version.SelectToken("version")!.ToString()).ToList();
         }

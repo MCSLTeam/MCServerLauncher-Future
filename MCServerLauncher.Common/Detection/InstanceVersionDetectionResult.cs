@@ -1,6 +1,6 @@
 using MCServerLauncher.Common.ProtoType.Instance;
 
-namespace MCServerLauncher.Daemon.Management.Detection;
+namespace MCServerLauncher.Common.Detection;
 
 public enum InstanceVersionDetectionSource
 {

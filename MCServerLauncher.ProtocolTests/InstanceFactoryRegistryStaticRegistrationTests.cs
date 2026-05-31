@@ -1,6 +1,6 @@
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Factory;
-using MCServerLauncher.Daemon.Management.Minecraft;
+using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Xunit;

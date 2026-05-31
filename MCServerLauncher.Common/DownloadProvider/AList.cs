@@ -1,11 +1,11 @@
-﻿using MCServerLauncher.Utils;
+﻿using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.DownloadProvider
+namespace MCServerLauncher.Common.DownloadProvider
 {
     public class AList
     {
@@ -20,7 +20,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns></returns>
         public async Task<List<AListFileStructure>?> GetFileList(string host, string path)
         {
-            var response = await Network.SendGetRequest($"{host}{_fileListApi}?path={path}");
+            var response = await HttpHelper.SendGetRequest($"{host}{_fileListApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFileList = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                 ?.SelectToken("data")!.SelectToken("content");
@@ -40,7 +40,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns></returns>
         public async Task<string?> GetFileUrl(string host, string path)
         {
-            var response = await Network.SendGetRequest($"{host}{_fileUrlApi}?path={path}");
+            var response = await HttpHelper.SendGetRequest($"{host}{_fileUrlApi}?path={path}");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFileDetail = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                 ?.SelectToken("data");

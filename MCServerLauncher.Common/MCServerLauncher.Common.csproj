@@ -1,17 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="PublishTrimmed;RuntimeIdentifier;SelfContained;PublishSingleFile;PublishReadyToRun;JsonSerializerIsReflectionEnabledByDefault">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
         <LangVersion>14</LangVersion>
-        <PublishTrimmed Condition="'$(PublishTrimmed)' == 'true'">false</PublishTrimmed>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="Serilog" Version="4.2.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+      <PackageReference Include="Serilog" Version="4.3.0" />
       <PackageReference Include="System.Text.Json" Version="10.0.0" />
     </ItemGroup>
 

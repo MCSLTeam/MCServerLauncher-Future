@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using MCServerLauncher.Common.ProtoType.Instance;
 using Serilog;
 
-namespace MCServerLauncher.Daemon.Management.Detection;
+namespace MCServerLauncher.Common.Detection;
 
 public static partial class InstanceVersionDetector
 {

@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;

@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Utils;
+﻿using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.DownloadProvider
+namespace MCServerLauncher.Common.DownloadProvider
 {
     public class PolarsMirror
     {
@@ -28,7 +28,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns>List of core name.</returns>
         public async Task<List<PolarsMirrorCoreInfo>?> GetCoreInfo()
         {
-            var response = await Network.SendGetRequest($"{_endPoint}/core");
+            var response = await HttpHelper.SendGetRequest($"{_endPoint}/core");
             if (!response.IsSuccessStatusCode) return null;
             var remotePolarsCoreInfoList =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
@@ -48,7 +48,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns>List of core.</returns>
         public async Task<List<PolarsMirrorCoreDetail>?> GetCoreDetail(int coreId)
         {
-            var response = await Network.SendGetRequest($"{_endPoint}/core/{coreId}");
+            var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{coreId}");
             if (!response.IsSuccessStatusCode) return null;
             var remotePolarsCoreDetailList =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());

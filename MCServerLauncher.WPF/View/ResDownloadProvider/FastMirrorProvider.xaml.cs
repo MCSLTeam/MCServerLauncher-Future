@@ -1,6 +1,6 @@
 using iNKORE.UI.WPF.Helpers;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.Utils.DownloadProvider;
+using MCServerLauncher.Common.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using MCServerLauncher.WPF.View.Pages;
 using Serilog;

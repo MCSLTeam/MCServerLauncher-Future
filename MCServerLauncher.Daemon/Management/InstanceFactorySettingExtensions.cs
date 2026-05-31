@@ -1,6 +1,6 @@
 using Downloader;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management.Detection;
+using MCServerLauncher.Common.Detection;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;

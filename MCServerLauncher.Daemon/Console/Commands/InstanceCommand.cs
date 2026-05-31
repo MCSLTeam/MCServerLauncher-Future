@@ -4,6 +4,7 @@ using Brigadier.NET.Builder;
 using Brigadier.NET.Tree;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils.Status;
 

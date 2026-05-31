@@ -1,11 +1,11 @@
-﻿using MCServerLauncher.Utils;
+﻿using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.DownloadProvider
+namespace MCServerLauncher.Common.DownloadProvider
 {
     public class FastMirror
     {
@@ -17,7 +17,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns>List of core name.</returns>
         public async Task<List<FastMirrorCoreInfo>?> GetCoreInfo()
         {
-            var response = await Network.SendGetRequest(_endPoint);
+            var response = await HttpHelper.SendGetRequest(_endPoint);
             if (!response.IsSuccessStatusCode) return null;
             var remoteFastMirrorCoreInfoList = JsonConvert
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
@@ -41,7 +41,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         public async Task<List<FastMirrorCoreDetail>?> GetCoreDetail(string? core, string minecraftVersion)
         {
             var response =
-                await Network.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
+                await HttpHelper.SendGetRequest($"{_endPoint}/{core}/{minecraftVersion}?offset=0&limit=25");
             if (!response.IsSuccessStatusCode) return null;
             var remoteFastMirrorCoreDetailList = JsonConvert
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())

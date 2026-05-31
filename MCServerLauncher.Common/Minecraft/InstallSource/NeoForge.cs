@@ -1,4 +1,4 @@
-using MCServerLauncher.Utils;
+using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.Minecraft.InstallSource
+namespace MCServerLauncher.Common.Minecraft.InstallSource
 {
     /// <summary>
     ///    Fetch + parse NeoForge data from Official or BMCLAPI.
@@ -28,7 +28,7 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
         {
             // Legacy version (1.20.1)
             var legacyMavenResponse =
-                await Network.SendGetRequest(
+                await HttpHelper.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", true);
             var neoForgeVersions =
                 (JsonConvert.DeserializeObject<JToken>(await legacyMavenResponse.Content.ReadAsStringAsync())
@@ -39,7 +39,7 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
             List<string>? minecraftVersions = null;
             // NeoForge
             var response =
-                await Network.SendGetRequest(
+                await HttpHelper.SendGetRequest(
                     "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", true);
             var mavenData =
                 JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
@@ -63,14 +63,14 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
         private static async Task<NeoForgeData> FetchNeoForgeDataByBmclapi()
         {
             // Legacy version (1.20.1)
-            var legacyMavenResponse = await Network.SendGetRequest(
+            var legacyMavenResponse = await HttpHelper.SendGetRequest(
                 "https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/forge", true);
             var neoForgeVersions =
                 JObject.Parse(await legacyMavenResponse.Content.ReadAsStringAsync()).SelectToken("files")!
                     .Select(version => version.SelectToken("name")!.ToString().Replace("1.20.1-", "")).ToList();
             neoForgeVersions.RemoveAll(version => version.Contains("maven-metadata"));
             // NeoForge
-            var response = await Network.SendGetRequest(
+            var response = await HttpHelper.SendGetRequest(
                 "https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/neoforge",
                 true);
             var mavenData = JObject.Parse(await response.Content.ReadAsStringAsync()).SelectToken("files")!

@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management.Minecraft;
+using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Serilog;

@@ -1,4 +1,4 @@
-using MCServerLauncher.Utils;
+using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.Minecraft.InstallSource
+namespace MCServerLauncher.Common.Minecraft.InstallSource
 {
     /// <summary>
     ///    Fetch + parse Forge Minecraft/loader versions from Official or BMCLAPI.
@@ -40,7 +40,7 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
         private static async Task<List<string>?> FetchMinecraftVersionsByOfficial()
         {
             var response =
-                await Network.SendGetRequest(
+                await HttpHelper.SendGetRequest(
                     "https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_1.2.4.html", true);
             var minecraftVersions = Regex.Matches(await response.Content.ReadAsStringAsync(),
                     "(?<=a href=\"index_)[0-9.]+(_pre[0-9]?)?(?=.html)")
@@ -53,14 +53,14 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
 
         private static async Task<List<string>?> FetchMinecraftVersionsByBmclapi()
         {
-            var response = await Network.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
+            var response = await HttpHelper.SendGetRequest("https://bmclapi2.bangbang93.com/forge/minecraft");
             return JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
         }
 
         private static async Task<List<ForgeBuild>?> FetchForgeVersionsByOfficial(string mcVersion)
         {
             var results = new List<ForgeBuild>();
-            var response = await Network.SendGetRequest(
+            var response = await HttpHelper.SendGetRequest(
                 $"https://files.minecraftforge.net/maven/net/minecraftforge/forge/index_{mcVersion.Replace("-", "_")}.html",
                 true);
             var html = await response.Content.ReadAsStringAsync();
@@ -131,7 +131,7 @@ namespace MCServerLauncher.Utils.Minecraft.InstallSource
         private static async Task<List<ForgeBuild>?> FetchForgeVersionsByBmclapi(string mcVersion)
         {
             var response =
-                await Network.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
+                await HttpHelper.SendGetRequest($"https://bmclapi2.bangbang93.com/forge/minecraft/{mcVersion}");
             var apiData = JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync());
             return apiData!.Select(forgeBuild => new ForgeBuild
             {

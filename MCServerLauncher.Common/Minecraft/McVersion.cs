@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace MCServerLauncher.Daemon.Management.Minecraft;
+namespace MCServerLauncher.Common.Minecraft;
 
 public readonly record struct McVersion(ushort Major, ushort Minor, ushort Patch)
 {

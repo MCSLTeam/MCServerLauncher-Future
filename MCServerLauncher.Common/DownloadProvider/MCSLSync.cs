@@ -1,10 +1,10 @@
-﻿using MCServerLauncher.Utils;
+﻿using MCServerLauncher.Common.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils.DownloadProvider
+namespace MCServerLauncher.Common.DownloadProvider
 {
     public class MCSLSync
     {
@@ -16,7 +16,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns>List of core name.</returns>
         public async Task<List<string>?> GetCoreInfo()
         {
-            var response = await Network.SendGetRequest($"{_endPoint}/core");
+            var response = await HttpHelper.SendGetRequest($"{_endPoint}/core");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     ?.SelectToken("data")!.ToObject<List<string>>();
@@ -30,7 +30,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns></returns>
         public async Task<List<string>?> GetMinecraftVersions(string core)
         {
-            var response = await Network.SendGetRequest($"{_endPoint}/core/{core}");
+            var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{core}");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     ?.SelectToken("data")!.SelectToken("versions")!.ToObject<List<string>>();
@@ -45,7 +45,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         /// <returns></returns>
         public async Task<List<string>?> GetCoreVersions(string core, string minecraftVersion)
         {
-            var response = await Network.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}");
+            var response = await HttpHelper.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}");
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())
                     ?.SelectToken("data")!.SelectToken("builds")!.ToObject<List<string>>();
@@ -62,7 +62,7 @@ namespace MCServerLauncher.Utils.DownloadProvider
         public async Task<MCSLSyncCoreDetail?> GetCoreDetail(string? core, string minecraftVersion, string coreVersion)
         {
             var response =
-                await Network.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}/{coreVersion}");
+                await HttpHelper.SendGetRequest($"{_endPoint}/core/{core}/{minecraftVersion}/{coreVersion}");
             if (!response.IsSuccessStatusCode) return null;
             var remoteMCSLSyncCoreDetail = JsonConvert
                 .DeserializeObject<JToken>(await response.Content.ReadAsStringAsync())!.SelectToken("data")!

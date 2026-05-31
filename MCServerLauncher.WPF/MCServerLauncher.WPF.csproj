@@ -100,7 +100,7 @@
   </ItemGroup>
   <ItemGroup>
  <ProjectReference Include="..\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
-    <ProjectReference Include="..\MCServerLauncher.Utils\MCServerLauncher.Utils.csproj" />
+    <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="InstanceConsole\Modules\" />

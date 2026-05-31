@@ -5,12 +5,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MCServerLauncher.Utils;
+namespace MCServerLauncher.Common.Network;
 
 /// <summary>
 ///     下载 provider 使用的轻量 HTTP 辅助。User-Agent 默认取本库版本，宿主可覆盖。
 /// </summary>
-public static class Network
+public static class HttpHelper
 {
     private static readonly HttpClient Client = new();
 
@@ -67,7 +67,7 @@ public static class Network
          return await Client.SendAsync(request, cancellationToken);
 
 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(System.TimeSpan.FromSeconds(timeoutSeconds.Value));
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds.Value));
      return await Client.SendAsync(request, timeoutCts.Token);
     }
 }

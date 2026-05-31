@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace MCServerLauncher.Utils.Minecraft;
+namespace MCServerLauncher.Common.Minecraft;
 
 /// <summary>
 ///     Minecraft 版本排序工具：把发行版/快照/特殊代号统一映射成可比较的元组后降序排列。
