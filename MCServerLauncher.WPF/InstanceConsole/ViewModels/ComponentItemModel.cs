@@ -11,7 +11,19 @@ public partial class ComponentItemModel : ObservableObject
     [ObservableProperty] private bool _isEnabled;
     [ObservableProperty] private long _fileSize;
     [ObservableProperty] private ComponentKind _kind;
-    [ObservableProperty] private bool _isClientSideOnly;
+
+    private bool _isClientSideOnly;
+    public bool IsClientSideOnly
+    {
+        get => _isClientSideOnly;
+        set
+        {
+            if (SetProperty(ref _isClientSideOnly, value))
+            {
+                OnPropertyChanged(nameof(BadgeText));
+            }
+        }
+    }
 
     public string Description => string.IsNullOrEmpty(Version)
         ? FileName
@@ -27,7 +39,6 @@ public partial class ComponentItemModel : ObservableObject
     }
     partial void OnDisplayNameChanged(string value) => OnPropertyChanged(nameof(Title));
     partial void OnVersionChanged(string value) => OnPropertyChanged(nameof(Description));
-    partial void OnIsClientSideOnlyChanged(bool value) => OnPropertyChanged(nameof(BadgeText));
 }
 
 public enum ComponentKind
