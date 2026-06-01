@@ -1,6 +1,7 @@
 using MCServerLauncher.Common.Extensibility;
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components.CreateInstance;
 using MCServerLauncher.WPF.View.Pages;
@@ -9,6 +10,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using static MCServerLauncher.WPF.Modules.Constants;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
@@ -104,9 +107,122 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             }
         }
 
-        //private void FinishSetup(object sender, RoutedEventArgs e)
-        //{
-        //}
+        private async void FinishSetup(object sender, RoutedEventArgs e)
+        {
+            FinishButton.IsEnabled = false;
 
+            try
+            {
+                var loaderData = LoaderSet.ActualData;
+                var jvmData = Jvm.ActualData;
+                var jvmArgumentData = JvmArgument.ActualData;
+                var instanceNameData = InstanceName.ActualData;
+
+                var loaderVersion = (MinecraftLoaderVersion)loaderData.Data!;
+                string mcVersion = loaderVersion.MCVersion;
+                string neoForgeVersion = loaderVersion.LoaderVersion;
+                string javaPath = jvmData.Data as string ?? string.Empty;
+                string[] arguments = jvmArgumentData.Data as string[] ?? [];
+                string instanceName = instanceNameData.Data as string ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(neoForgeVersion) ||
+                    string.IsNullOrWhiteSpace(javaPath) || string.IsNullOrWhiteSpace(instanceName))
+                {
+                    Notification.Push(Lang.Tr["Error"], Lang.Tr["CreateInstanceMissingDataError"],
+                        true, InfoBarSeverity.Error, InfoBarPosition.Top, 5000, false);
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
+                bool useMirror = SettingsManager.Get?.InstanceCreation?.UseMirrorForMinecraftNeoForgeInstall ?? false;
+
+                // NeoForge legacy (1.20.1) uses net.neoforged:forge, newer uses net.neoforged:neoforge
+                bool isLegacy = mcVersion == "1.20.1";
+                string installerUrl;
+                string installerFileName;
+                if (isLegacy)
+                {
+                    installerFileName = $"forge-1.20.1-{neoForgeVersion}-installer.jar";
+                    installerUrl = useMirror
+                        ? $"https://bmclapi2.bangbang93.com/maven/net/neoforged/forge/1.20.1-{neoForgeVersion}/{installerFileName}"
+                        : $"https://maven.neoforged.net/releases/net/neoforged/forge/1.20.1-{neoForgeVersion}/{installerFileName}";
+                }
+                else
+                {
+                    installerFileName = $"neoforge-{neoForgeVersion}-installer.jar";
+                    installerUrl = useMirror
+                        ? $"https://bmclapi2.bangbang93.com/maven/net/neoforged/neoforge/{neoForgeVersion}/{installerFileName}"
+                        : $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoForgeVersion}/{installerFileName}";
+                }
+
+                var confirmationMessage = Lang.Tr["CreateInstanceConfirmationMessage"] +
+                                          $"{Lang.Tr["InstanceName"]}: {instanceName}\n" +
+                                          $"{Lang.Tr["InstanceType"]}: {Lang.Tr["InstanceType_MCNeoForge"]}\n" +
+                                          $"{Lang.Tr["MinecraftVersionLabel"]}: {mcVersion}\n" +
+                                          $"{Lang.Tr["NeoForgeVersionLabel"]}: {neoForgeVersion}\n" +
+                                          $"{Lang.Tr["JavaPath"]}: {javaPath}\n" +
+                                          $"{Lang.Tr["JvmArguments"]}: {(arguments.Length > 0 ? string.Join(" ", arguments) : Lang.Tr["None"])}";
+
+                ContentDialog confirmDialog = new()
+                {
+                    Title = Lang.Tr["CreateInstanceConfirmationTitle"],
+                    Content = new TextBlock { Text = confirmationMessage, TextWrapping = TextWrapping.Wrap, MaxWidth = 500 },
+                    PrimaryButtonText = Lang.Tr["Continue"],
+                    SecondaryButtonText = Lang.Tr["Cancel"],
+                    DefaultButton = ContentDialogButton.Secondary,
+                    FullSizeDesired = false
+                };
+
+                var confirmResult = await confirmDialog.ShowAsync();
+                if (confirmResult != ContentDialogResult.Primary)
+                {
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
+                var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
+                var daemon = await DaemonsWsManager.Get(daemonConfig);
+
+                if (daemon == null)
+                {
+                    Notification.Push(Lang.Tr["Error"], Lang.Tr["DaemonConnectionError"],
+                        true, InfoBarSeverity.Error, InfoBarPosition.Top, 5000, false);
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
+                var setting = new InstanceFactorySetting
+                {
+                    Name = instanceName,
+                    Source = installerUrl,
+                    SourceType = SourceType.Core,
+                    Target = installerFileName,
+                    TargetType = TargetType,
+                    InstanceType = InstanceType,
+                    JavaPath = javaPath,
+                    Arguments = arguments,
+                    Version = mcVersion,
+                    Mirror = useMirror ? InstanceFactoryMirror.BmclApi : InstanceFactoryMirror.None,
+                    UsePostProcess = false
+                };
+
+                Notification.Push(Lang.Tr["PleaseWait"], Lang.Tr["CreatingInstance"],
+                    false, InfoBarSeverity.Informational, InfoBarPosition.Top, 5000, false);
+
+                await daemon.AddInstanceAsync(setting);
+
+                Notification.Push(Lang.Tr["Success"], Lang.Tr["InstanceCreatedSuccess"],
+                    true, InfoBarSeverity.Success, InfoBarPosition.Top, 3000, false);
+
+                var parent = this.TryFindParent<CreateInstancePage>();
+                parent?.CurrentCreateInstance.GoBack();
+            }
+            catch (Exception ex)
+            {
+                Notification.Push(Lang.Tr["Error"], ex.Message,
+                    true, InfoBarSeverity.Error, InfoBarPosition.Top, 5000, false);
+                FinishButton.IsEnabled = true;
+            }
+        }
     }
 }

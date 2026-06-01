@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Daemon.Management.Installer;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -63,7 +64,9 @@ public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
         setting = setting with { TargetType = TargetType.Jar };
 
         var copyAndRenameTarget = await setting.CopyAndRenameTarget();
-        var fixEula = await copyAndRenameTarget.MapAsync(_ => setting.FixEula());
+        var installer = InstanceInstallerResolver.Resolve(setting, Path.Combine(setting.GetWorkingDirectory(), setting.Target));
+        var install = await copyAndRenameTarget.MapAsync(_ => installer.Run(setting));
+        var fixEula = await install.MapAsync(_ => setting.FixEula());
 
         return fixEula.Map(_ => setting.GetInstanceConfig());
     }

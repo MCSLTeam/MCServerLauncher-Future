@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Management.Installer;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Storage;
@@ -25,15 +26,10 @@ public class MCForgeFactory : ICoreInstanceFactory
 
         var mcVersion = McVersion.Of(setting.McVersion); // 可以直接转换因为已经检查过了
 
-
-        ForgeInstallerBase? forgeInstaller = null;
-        if (mcVersion.Between("1.5.2", "1.12.1"))
-            forgeInstaller = ForgeInstallerV1.Create(installerPath, setting.JavaPath, setting.Mirror);
-        else if (mcVersion.Between(McVersion.Of("1.12.2"), McVersion.Max))
-            forgeInstaller = ForgeInstallerV2.Create(installerPath, setting.JavaPath, setting.Mirror);
-        if (forgeInstaller is null)
+        var installer = InstanceInstallerResolver.Resolve(setting, installerPath);
+        if (installer is not ForgeInstallerBase forgeInstaller)
             return ResultExt.Err<InstanceConfig>(
-                $"Forge factory failed to create forge installer (mc version not supported: {setting.McVersion})");
+                $"Forge factory failed to resolve forge installer for {setting.InstanceType} {setting.McVersion}");
 
         var result = await forgeInstaller.Run(setting);
         if (result.IsErr(out error))

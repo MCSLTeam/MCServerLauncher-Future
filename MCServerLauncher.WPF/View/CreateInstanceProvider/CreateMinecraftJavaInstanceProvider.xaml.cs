@@ -164,7 +164,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 var mainWindow = this.TryFindParent<MainWindow>();
                 if (mainWindow?.DebugItem?.Visibility == Visibility.Visible)
                 {
-                    confirmDialog.CloseButtonText = "Debug: Copy Config";
+                    confirmDialog.CloseButtonText = Lang.Tr["DebugCopyConfig"];
                     confirmDialog.CloseButtonClick += (s, args) =>
                     {
                         var previewSetting = new InstanceFactorySetting
@@ -187,7 +187,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                         Modules.Clipboard.SetText(json);
                         Notification.Push(
                             Lang.Tr["Success"],
-                            "InstanceConfig copied to clipboard",
+                            Lang.Tr["InstanceConfigCopied"],
                             true,
                             InfoBarSeverity.Success,
                             InfoBarPosition.Top,
