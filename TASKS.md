@@ -42,37 +42,39 @@ _All high priority items completed!_
   - Feature: Check local cache first, verify SHA1, download from mirror if needed
   - Benefit: Faster installation, reduced bandwidth
 
-- [ ] **BMCLAPI acceleration for NeoForge**
+- [ ] **Clean up stale NeoForge BMCLAPI TODOs**
   - Location: `MCServerLauncher.Daemon/Management/Factory/MCForgeFactory.cs`
-  - Feature: Add BMCLAPI mirror support for NeoForge downloads (1.20.2+)
-  - Benefit: Faster downloads for Chinese users
+  - Current: NeoForge BMCLAPI mirror flow is already wired from WPF create-instance providers, but daemon still carries stale TODO comments
+  - Target: Remove stale comments and document the current mirror path clearly
 
 - [ ] **Relay packet support**
   - Location: `MCServerLauncher.DaemonClient/WebSocketPlugin/WsReceivedPlugin.cs`
   - Feature: Support for relay/proxy packets in WebSocket protocol
   - Status: Not yet implemented
 
-- [ ] **Event notification to WebSocket clients**
+- [ ] **Event-trigger notification push to WebSocket clients**
   - Location: `MCServerLauncher.Daemon/Remote/Event/EventTriggerService.cs`
-  - Feature: Send notifications to connected clients via WebSocket
-  - Status: Placeholder TODO comment
+  - Feature: Implement `SendNotificationAction` so event rules can push notifications to connected clients via WebSocket
+  - Status: General event delivery exists; notification action path is still TODO
 
 ### Architecture Improvements
 
-- [ ] **Convert file operations to Result type**
+- [ ] **Convert remaining file operations to Result type**
   - Location: `MCServerLauncher.Daemon/Management/InstanceConfigExtensions.cs`
-  - Refactor: Use `Result<T>` pattern for all file operations
+  - Current: Partially migrated; some factory/file helpers already use `Result<T>`
+  - Target: Finish converting remaining raw file operations to `Result<T>` pattern
   - Benefit: Better error handling, functional approach
 
-- [ ] **Add CancellationToken to async methods**
+- [ ] **Add CancellationToken to remaining async manager methods**
   - Location: `MCServerLauncher.Daemon/Management/IInstanceManager.cs`
-  - Refactor: Add `CancellationToken` parameter to all async methods
+  - Current: Cancellation support is partial (`StopAllInstances` already supports it)
+  - Target: Add `CancellationToken` parameter to remaining async manager methods
   - Benefit: Proper cancellation support, better resource cleanup
 
-- [ ] **Change input to Span<byte> for deserialization**
+- [ ] **Complete UTF-8 span-based deserialization migration**
   - Location: `MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs`
-  - Current: String-based deserialization
-  - Target: Span<byte> with System.Text.Json
+  - Current: `ReadOnlySpan<byte>` / `ReadOnlyMemory<byte>` overloads exist, but the main interface still exposes string input
+  - Target: Move the main action-executor boundary fully to UTF-8 span/memory input
   - Benefit: Zero-copy deserialization, reduced allocations
 
 ### Error Handling
@@ -96,46 +98,44 @@ _All high priority items completed!_
 
 ### WPF Improvements
 
-- [x] **Complete create instance functionality** (current)
-  - Implemented FinishSetup method in CreateMinecraftJavaInstanceProvider
-  - Collects data from all steps (Core, Jvm, JvmArgument, InstanceName)
-  - Builds InstanceFactorySetting with proper SourceType.Core and TargetType.Jar
-  - Calls daemon.AddInstanceAsync to create the instance
-  - Provides user feedback via notifications for success/error states
-  - Wired up FinishButton Click event in XAML
-  - Added necessary using statements (DaemonClient, Constants)
-  - Note: Other provider classes (Bedrock, Terraria, etc.) still need implementation
+- [x] **Complete Java / Forge / Fabric / NeoForge create instance flows** (current)
+  - Implemented FinishSetup in `CreateMinecraftJavaInstanceProvider`
+  - Implemented FinishSetup in `CreateMinecraftForgeInstanceProvider`
+  - Implemented FinishSetup in `CreateMinecraftFabricInstanceProvider`
+  - Implemented FinishSetup in `CreateMinecraftNeoForgeInstanceProvider`
+  - Loader-based providers now build the proper core / installer URL and call `daemon.AddInstanceAsync(setting)`
+  - Daemon now routes Forge-family installers through a shared installer resolver
+  - Remaining stubbed providers still include: Bedrock, Terraria, OtherExecutable, Quilt
 
-- [ ] **Fix nullable reference type warnings in WPF project**
+- [ ] **Re-audit nullable reference hotspots in WPF project**
   - Location: `MCServerLauncher.WPF/` (multiple files)
-  - Current: 190 warnings (CS8604, CS8602, CS8618, CS8622)
-  - Target: Add proper null checks, required modifiers, and nullable annotations
-  - Files affected:
-    - `View/Pages/DebugPage.xaml.cs`
+  - Current: Project builds clean, but nullable suppressions / null-forgiving hotspots still exist in several WPF files
+  - Target: Remove remaining unsafe null-forgiving usage, add proper null checks, and reduce warning-prone patterns
+  - Files worth reviewing first:
+    - `Modules/Download.cs`
     - `View/Components/Generic/DownloadProgressItem.xaml.cs`
     - `View/Components/CreateInstance/ForgeLoaderSet.xaml.cs`
     - `View/Components/CreateInstance/NeoForgeLoaderSet.xaml.cs`
     - `View/Components/CreateInstance/QuiltLoaderSet.xaml.cs`
     - `View/Components/ResDownloadItem/MCSLSyncResCoreVersionItem.xaml.cs`
-  - Benefit: Improved code safety, better null handling
 
-- [ ] **Improve error handling in download components**
+- [ ] **Harden download component error handling**
   - Location: `MCServerLauncher.WPF/View/Components/Generic/DownloadProgressItem.xaml.cs`
-  - Current: Event handlers may not properly handle null references
-  - Target: Add proper null checks and error handling for download operations
+  - Current: Basic failure notifications exist, but cancellation cleanup and null-safety are still fragile
+  - Target: Improve cancellation/error cleanup and remove null-sensitive call paths in download UI
   - Benefit: More robust download UI, better user experience
 
 - [ ] **Refactor loader set components**
   - Location: `MCServerLauncher.WPF/View/Components/CreateInstance/`
-  - Current: ForgeLoaderSet, NeoForgeLoaderSet, QuiltLoaderSet have similar patterns
+  - Current: ForgeLoaderSet, FabricLoaderSet, NeoForgeLoaderSet, QuiltLoaderSet still share a lot of duplicated step logic
   - Target: Extract common functionality, reduce code duplication
   - Benefit: Easier maintenance, consistent behavior across loaders
 
-- [ ] **Add input validation for user-facing forms**
+- [ ] **Expand input validation for user-facing create-instance forms**
   - Location: `MCServerLauncher.WPF/View/Components/CreateInstance/`
-  - Current: Potential null reference issues when processing user input
-  - Target: Add proper validation before processing form data
-  - Benefit: Better user experience, prevent crashes from invalid input
+  - Current: Providers now guard against missing values, but validation is still mostly non-empty checks
+  - Target: Validate paths, selected values, and instance naming rules before submission
+  - Benefit: Better user experience, prevent invalid submissions
 
 ---
 
@@ -232,10 +232,10 @@ _All high priority items completed!_
 
 ### Technical Debt Score
 
-- **High Priority Items**: 4
-- **Medium Priority Items**: 13
+- **High Priority Items**: 0
+- **Medium Priority Items**: 11
 - **Low Priority Items**: 2
-- **Total TODO Comments**: 20+
+- **Total TODO Comments**: 19
 
 ---
 
@@ -244,24 +244,24 @@ _All high priority items completed!_
 ### Q2 2026 Priorities
 
 1. **Code Quality Sprint**
-   - Fix all nullable reference type warnings
-   - Address critical TODOs (deadlock, graceful shutdown)
-   - Target: Zero build warnings
+   - Re-audit WPF nullable hotspots and remove fragile suppressions
+   - Harden download component error handling
+   - Keep clean build status while reducing risky null-sensitive paths
 
-2. **Performance Optimization**
-   - Implement event batching for WebSocket
-   - Complete Span<byte> migration for deserialization
-   - Measure impact with benchmarks
+2. **Runtime Protocol & Eventing**
+   - Complete UTF-8 span/memory migration at the action-executor boundary
+   - Implement relay packet support
+   - Implement WebSocket push for `SendNotificationAction`
 
-3. **Feature Completion**
-   - Library local cache for Forge installer
-   - BMCLAPI acceleration for NeoForge
-   - Relay packet support
+3. **Instance Creation & Installer UX**
+   - Add Forge installer library local cache
+   - Clean up stale NeoForge BMCLAPI TODOs / comments
+   - Finish remaining stubbed create-instance providers (Quilt, Bedrock, Terraria, OtherExecutable)
 
-4. **Architecture Modernization**
-   - Migrate to System.Text.Json throughout
-   - Add CancellationToken support
-   - Convert file operations to Result pattern
+4. **WPF Maintainability**
+   - Refactor duplicated loader set components
+   - Expand create-instance form validation
+   - Consolidate repeated provider finish/setup logic where practical
 
 ---
 
