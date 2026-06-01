@@ -16,8 +16,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         public InstanceManagerPage()
         {
-            InitializeComponent();
             _viewModel = App.ViewModelLocator.InstanceManager;
+            InitializeComponent();
             DataContext = _viewModel;
 
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -121,6 +121,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void RunningStatusFilterChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_viewModel == null) return;
             if (RunningStatusFilter.SelectedItem is ComboBoxItem selectedItem)
             {
                 _viewModel.SelectedStatusFilter = selectedItem.Tag?.ToString() ?? "All";
