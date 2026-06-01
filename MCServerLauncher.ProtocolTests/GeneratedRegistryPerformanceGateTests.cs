@@ -20,11 +20,12 @@ public class GeneratedRegistryPerformanceGateTests
     private static readonly Guid PingRequestId = Guid.Parse("77777777-7777-7777-7777-777777777777");
     private static readonly Guid GetSystemInfoRequestId = Guid.Parse("88888888-8888-8888-8888-888888888888");
 
-    private const int WarmupSamples = 4;
-    private const int MeasuredSamples = 9;
+    private const int WarmupSamples = 8;
+    private const int MeasuredSamples = 15;
     private const double StartupTimeRatioThreshold = 0.80;
     private const double StartupAllocationRatioThreshold = 0.25;
-    // CI-measured ratio 1.302 after STJ enum converter addition. 1.35 gives margin for runner variance
+    // Ping is a very short sync path, so CI jitter shows up more easily here. Keep the threshold unchanged
+    // first, but use a larger median window to make the gate more stable across runners.
     private const double DispatchTimeRatioThreshold = 1.35;
     private const double DispatchAllocationOverheadThreshold = 32;
 
