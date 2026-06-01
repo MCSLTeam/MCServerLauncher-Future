@@ -44,22 +44,22 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <MenuItem Header="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" Click="StartInstance_Click">
+                        <MenuItem Header="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" Command="{Binding StartInstanceCommand}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" Click="StopInstance_Click">
+                        <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" Command="{Binding StopInstanceCommand}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.PowerButton}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}" Click="KillInstance_Click">
+                        <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}" Command="{Binding KillInstanceCommand}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}" Click="RestartInstance_Click" IsEnabled="False">
+                        <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}" Command="{Binding RestartInstanceCommand}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" FontSize="16" />
                             </MenuItem.Icon>
@@ -91,12 +91,13 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" 
+            <TextBox Grid.Column="0"
                      x:Name="CommandInputTextBox"
-                     ui:ControlHelper.PlaceholderText="{Binding [ConsoleCommand_EnterCommandTip], Source={x:Static i18n:Lang.Tr}}" 
-                     Height="32" 
+                     Text="{Binding CommandText, UpdateSourceTrigger=PropertyChanged}"
+                     ui:ControlHelper.PlaceholderText="{Binding [ConsoleCommand_EnterCommandTip], Source={x:Static i18n:Lang.Tr}}"
+                     Height="32"
                      KeyDown="CommandInputTextBox_KeyDown" />
-            <Button Grid.Column="1" Height="32" Margin="10,0,0,0" Click="SendCommand_Click">
+            <Button Grid.Column="1" Height="32" Margin="10,0,0,0" Command="{Binding SendCommandCommand}">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Send}" FontSize="16" />
                 </Button.Content>

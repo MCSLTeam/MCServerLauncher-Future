@@ -64,6 +64,8 @@
     <EmbeddedResource Include="Resources\SyntaxHighlighting\*.xshd" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="Downloader">
       <Version>4.0.3</Version>

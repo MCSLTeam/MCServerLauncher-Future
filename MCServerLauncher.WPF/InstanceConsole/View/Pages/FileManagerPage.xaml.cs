@@ -24,26 +24,32 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         public FileManagerPage()
         {
             InitializeComponent();
-            _viewModel = new FileManagerViewModel(this);
+            _viewModel = new FileManagerViewModel();
             DataContext = _viewModel;
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             Loaded += FileManagerPage_Loaded;
         }
 
-        public void ShowError(string title, string message)
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            StopTipLayer.Symbol = "❌";
-            StopTipLayer.StopTip = title;
-            StopTipLayer.StopDescription = message;
-            StopTipLayer.ButtonIcon = iNKORE.UI.WPF.Modern.Common.IconKeys.SegoeFluentIcons.Refresh;
-            StopTipLayer.ButtonText = Lang.Tr["Refresh"];
-            StopTipLayer.Visibility = Visibility.Visible;
-            MainContentGrid.Visibility = Visibility.Collapsed;
-        }
-
-        public void HideError()
-        {
-            StopTipLayer.Visibility = Visibility.Collapsed;
-            MainContentGrid.Visibility = Visibility.Visible;
+            if (e.PropertyName == nameof(FileManagerViewModel.HasError))
+            {
+                if (_viewModel.HasError)
+                {
+                    StopTipLayer.Symbol = "❌";
+                    StopTipLayer.StopTip = _viewModel.ErrorTitle;
+                    StopTipLayer.StopDescription = _viewModel.ErrorMessage;
+                    StopTipLayer.ButtonIcon = iNKORE.UI.WPF.Modern.Common.IconKeys.SegoeFluentIcons.Refresh;
+                    StopTipLayer.ButtonText = Lang.Tr["Refresh"];
+                    StopTipLayer.Visibility = Visibility.Visible;
+                    MainContentGrid.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    StopTipLayer.Visibility = Visibility.Collapsed;
+                    MainContentGrid.Visibility = Visibility.Visible;
+                }
+            }
         }
 
         private async void FileManagerPage_Loaded(object sender, RoutedEventArgs e)
@@ -223,7 +229,6 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
     public class FileManagerViewModel : INotifyPropertyChanged
     {
-        private readonly FileManagerPage _page;
         private IDaemon? _daemon;
         private string _rootPath = "";
         private string _currentPath = "";
@@ -234,6 +239,27 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         private int _historyIndex = -1;
         private bool _isNavigating = false;
         private bool _isSyncingTree = false;
+        private bool _hasError;
+        private string _errorTitle = "";
+        private string _errorMessage = "";
+
+        public bool HasError
+        {
+            get => _hasError;
+            set { _hasError = value; OnPropertyChanged(); }
+        }
+
+        public string ErrorTitle
+        {
+            get => _errorTitle;
+            set { _errorTitle = value; OnPropertyChanged(); }
+        }
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set { _errorMessage = value; OnPropertyChanged(); }
+        }
 
         public ObservableCollection<FileItem> Items
         {
@@ -271,9 +297,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         public ICommand ForwardCommand { get; }
         public ICommand NavigateCommand { get; }
 
-        public FileManagerViewModel(FileManagerPage page)
+        public FileManagerViewModel()
         {
-            _page = page;
             OpenCommand = new RelayCommand(async _ => await OpenItemAsync(), _ => SelectedItem != null);
             DownloadCommand = new RelayCommand(async _ => await DownloadItemAsync(), _ => SelectedItem != null && !SelectedItem.IsDirectory);
             UploadFileCommand = new RelayCommand(async _ => await UploadFileAsync());
@@ -349,7 +374,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 if (_daemon == null)
                 {
                     Log.Error("[FileManager] Failed to get daemon connection");
-                    _page.ShowError("连接失败", "无法获取 Daemon 连接");
+                    ShowError("连接失败", "无法获取 Daemon 连接");
                     return;
                 }
                 
@@ -371,7 +396,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             catch (Exception ex)
             {
                 Log.Error(ex, "[FileManager] Failed to initialize");
-                _page.ShowError("初始化失败", ex.Message);
+                ShowError("初始化失败", ex.Message);
             }
         }
 
@@ -471,7 +496,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
             try
             {
-                _page.HideError();
+                HasError = false;
                 
                 var virtualPath = path;
                 if (!virtualPath.StartsWith("/")) virtualPath = "/" + virtualPath;
@@ -538,7 +563,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             catch (Exception ex)
             {
                 Log.Error(ex, "[FileManager] Failed to load directory {0}", path);
-                _page.ShowError("加载目录失败", ex.Message);
+                ShowError("加载目录失败", ex.Message);
             }
         }
 
@@ -769,6 +794,13 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     current.Children.Add(child);
                 }
             });
+        }
+
+        private void ShowError(string title, string message)
+        {
+            ErrorTitle = title;
+            ErrorMessage = message;
+            HasError = true;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -1,145 +1,44 @@
-﻿using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
-using MCServerLauncher.WPF.InstanceConsole.Modules;
+using MCServerLauncher.WPF.InstanceConsole.View.Dialogs;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 {
-    /// <summary>
-    ///    EventTriggerPage.xaml 的交互逻辑
-    /// </summary>
     public partial class EventTriggerPage
     {
-        public ObservableCollection<EventRule> Rules { get; set; } = new();
+        private readonly EventTriggerViewModel _viewModel;
 
         public EventTriggerPage()
         {
             InitializeComponent();
-            DataContext = this;
+            _viewModel = App.Services.GetRequiredService<EventTriggerViewModel>();
+            DataContext = _viewModel;
             Loaded += EventTriggerPage_Loaded;
         }
 
         private async void EventTriggerPage_Loaded(object sender, RoutedEventArgs e)
         {
-            if (SettingsManager.Get?.App?.HideTips != null && 
+            if (SettingsManager.Get?.App?.HideTips != null &&
                 SettingsManager.Get.App.HideTips.TryGetValue("EventTriggerMultiSelect", out var hide) && hide)
             {
                 MultiSelectTipBar.IsOpen = false;
             }
-            await LoadRulesAsync();
+            await _viewModel.LoadRulesCommand.ExecuteAsync(null);
         }
 
         private void MultiSelectTipBar_DoNotShowAgain_Click(iNKORE.UI.WPF.Modern.Controls.InfoBar sender, object args)
         {
             if (SettingsManager.Get?.App != null)
             {
-                if (SettingsManager.Get.App.HideTips == null)
-                {
-                    SettingsManager.Get.App.HideTips = new System.Collections.Generic.Dictionary<string, bool>();
-                }
+                SettingsManager.Get.App.HideTips ??= new Dictionary<string, bool>();
                 SettingsManager.Get.App.HideTips["EventTriggerMultiSelect"] = true;
                 SettingsManager.SaveSetting("App.HideTips", SettingsManager.Get.App.HideTips);
-            }
-        }
-
-        private async System.Threading.Tasks.Task LoadRulesAsync()
-        {
-            try
-            {
-                if (!InstanceDataManager.Instance.IsConnected)
-                {
-                    Notification.Push(Lang.Tr["Error"], Lang.Tr["FuncDisabledReason_NoDaemon"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-                    return;
-                }
-
-                var rules = await InstanceDataManager.Instance.GetEventRulesAsync();
-                Rules.Clear();
-                foreach (var rule in rules)
-                {
-                    Rules.Add(rule);
-                }
-            }
-            catch (Exception ex)
-            {
-                Notification.Push(Lang.Tr["Error"], string.Format(Lang.Tr["EventTrigger_LoadRulesFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-            }
-        }
-
-        private void AddRule_Click(object sender, RoutedEventArgs e)
-        {
-            var newRule = new EventRule
-            {
-                Name = Lang.Tr["EventTrigger_NewRuleName"],
-                Description = Lang.Tr["EventTrigger_NewRuleDescription"]
-            };
-            Rules.Add(newRule);
-        }
-
-        private async void Save_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (!InstanceDataManager.Instance.IsConnected)
-                {
-                    Notification.Push(Lang.Tr["Error"], Lang.Tr["FuncDisabledReason_NoDaemon"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-                    return;
-                }
-
-                await InstanceDataManager.Instance.SaveEventRulesAsync(Rules.ToList());
-                Notification.Push(Lang.Tr["Success"], Lang.Tr["EventTrigger_SaveRulesSuccess"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
-            }
-            catch (Exception ex)
-            {
-                Notification.Push(Lang.Tr["Error"], string.Format(Lang.Tr["EventTrigger_SaveRulesFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-            }
-        }
-
-        private async void Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            await LoadRulesAsync();
-        }
-
-        private void DeleteRule_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is EventRule rule)
-            {
-                Rules.Remove(rule);
-            }
-        }
-
-        private void CopyRule_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is EventRule rule)
-            {
-                var json = System.Text.Json.JsonSerializer.Serialize(rule, Common.ProtoType.Serialization.StjResolver.CreateDefaultOptions());
-                var newRule = System.Text.Json.JsonSerializer.Deserialize<EventRule>(json, Common.ProtoType.Serialization.StjResolver.CreateDefaultOptions());
-                if (newRule != null)
-                {
-                    newRule.Id = Guid.NewGuid();
-                    
-                    var baseName = rule.Name;
-                    var copySuffix = " - Copy";
-                    var newName = baseName + copySuffix;
-                    var copyCount = 1;
-
-                    while (Rules.Any(r => r.Name == newName))
-                    {
-                        copyCount++;
-                        newName = $"{baseName}{copySuffix} ({copyCount})";
-                    }
-                    
-                    newRule.Name = newName;
-                    
-                    foreach (var trigger in newRule.Triggers) trigger.Id = Guid.NewGuid();
-                    foreach (var ruleset in newRule.Rulesets) ruleset.Id = Guid.NewGuid();
-                    foreach (var action in newRule.Actions) action.Id = Guid.NewGuid();
-                    
-                    Rules.Add(newRule);
-                }
             }
         }
 
@@ -147,73 +46,17 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             if (sender is Button button && button.Tag is EventRule rule)
             {
-                var dialog = new Dialogs.EventRuleEditorDialog(rule);
+                var dialog = new EventRuleEditorDialog(rule);
                 dialog.ShowDialog();
-            }
-        }
-
-        private void Import_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
-                Title = Lang.Tr["Import"]
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    var json = System.IO.File.ReadAllText(dialog.FileName);
-                    var rules = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<EventRule>>(json, Common.ProtoType.Serialization.StjResolver.CreateDefaultOptions());
-                    if (rules != null)
-                    {
-                        foreach (var rule in rules)
-                        {
-                            // Generate new IDs to avoid conflicts
-                            rule.Id = Guid.NewGuid();
-                            foreach (var trigger in rule.Triggers) trigger.Id = Guid.NewGuid();
-                            foreach (var ruleset in rule.Rulesets) ruleset.Id = Guid.NewGuid();
-                            foreach (var action in rule.Actions) action.Id = Guid.NewGuid();
-                            
-                            Rules.Add(rule);
-                        }
-                        Notification.Push(Lang.Tr["Success"], Lang.Tr["Success"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Notification.Push(Lang.Tr["Error"], string.Format(Lang.Tr["EventTrigger_LoadRulesFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-                }
             }
         }
 
         private void Export_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
-                Title = Lang.Tr["Export"],
-                FileName = "EventRules.json"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                try
-                {
-                    var rulesToExport = RulesListView.SelectedItems.Count > 0 
-                        ? RulesListView.SelectedItems.Cast<EventRule>().ToList() 
-                        : Rules.ToList();
-
-                    var json = System.Text.Json.JsonSerializer.Serialize(rulesToExport, new System.Text.Json.JsonSerializerOptions(Common.ProtoType.Serialization.StjResolver.CreateDefaultOptions()) { WriteIndented = true });
-                    System.IO.File.WriteAllText(dialog.FileName, json);
-                    Notification.Push(Lang.Tr["Success"], Lang.Tr["Success"], true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Success);
-                }
-                catch (Exception ex)
-                {
-                    Notification.Push(Lang.Tr["Error"], string.Format(Lang.Tr["EventTrigger_SaveRulesFailed"], ex.Message), true, iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error);
-                }
-            }
+            IEnumerable<EventRule>? selected = RulesListView.SelectedItems.Count > 0
+                ? RulesListView.SelectedItems.Cast<EventRule>()
+                : null;
+            _viewModel.ExportRules(selected);
         }
     }
 }

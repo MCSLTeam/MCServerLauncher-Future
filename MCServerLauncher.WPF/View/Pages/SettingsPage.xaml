@@ -122,12 +122,12 @@
                 <sc:RangeSettingCard Icon="{x:Static ui:SegoeFluentIcons.SpeedHigh}" Title="{Binding [Settings_DownloadThreadCnt_Title], Source={x:Static i18n:Lang.Tr}}"
                                      x:Name="ResDownload_DownloadThreadCnt"
                                      Description="{Binding [Settings_DownloadThreadCnt_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadValue}"
+                                     MinValue="1" MaxValue="256" SliderValue="{Binding Path=DownloadThreadCount}"
                                      ShowSliderTick="False" />
                 <sc:ComboSettingCard x:Name="ResDownload_ActionWhenDownloadError"
                                      Icon="{x:Static ui:SegoeFluentIcons.WifiError4}" Title="{Binding [Settings_ActionWhenDownloadError_Title], Source={x:Static i18n:Lang.Tr}}"
                                      Description="{Binding [Settings_ActionWhenDownloadError_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     ComboBoxItems="{Binding Path=ActionWhenDownloadError}" />
+                                     ComboBoxItems="{Binding Path=ActionWhenDownloadErrorItems}" />
 
                 <TextBlock Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:Lang.Tr}}" FontSize="18" Margin="0,10,0,0" />
                 <sc:RangeSettingCard x:Name="Instance_AutoRefreshInterval"
@@ -140,13 +140,13 @@
                                      Icon="{x:Static ui:SegoeFluentIcons.TouchPointer}"
                                      Title="{Binding [Settings_Instance_ActionOnDoubleClick], Source={x:Static i18n:Lang.Tr}}"
                                      Description="{Binding [Settings_Instance_ActionOnDoubleClick_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     ComboBoxItems="{Binding Path=ActionOnDoubleClick}" />
+                                     ComboBoxItems="{Binding Path=ActionOnDoubleClickItems}" />
 
                 <TextBlock Text="{Binding [More], Source={x:Static i18n:Lang.Tr}}" FontSize="18" Margin="0,10,0,0" />
                 <sc:ComboSettingCard x:Name="More_LauncherTheme"
                                      Icon="{x:Static ui:SegoeFluentIcons.Color}" Title="{Binding [Settings_AppTheme_Title], Source={x:Static i18n:Lang.Tr}}"
                                      Description="{Binding [Settings_AppTheme_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     ComboBoxItems="{Binding Path=ThemeForApp}" />
+                                     ComboBoxItems="{Binding Path=ThemeItems}" />
                 <sc:ComboSettingCard x:Name="More_LauncherLanguage"
                                      Icon="{x:Static ui:SegoeFluentIcons.TimeLanguage}" Title="{Binding [FirstSetup_TimeLanguageMenu], Source={x:Static i18n:Lang.Tr}}"
                                      Description="{Binding [Settings_AppLanguage_Description], Source={x:Static i18n:Lang.Tr}}"

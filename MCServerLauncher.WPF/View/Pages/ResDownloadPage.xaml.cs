@@ -34,22 +34,29 @@ namespace MCServerLauncher.WPF.View.Pages
         public async void Refresh(object sender, RoutedEventArgs e)
         {
             ShowLoadingLayer();
-            if (CurrentResDownloadProvider.Content is IResDownloadProvider provider)
+            try
             {
-                if (SettingsManager.Get?.Download?.DownloadSource != provider.ResProviderName)
+                if (CurrentResDownloadProvider.Content is IResDownloadProvider provider)
+                {
+                    if (SettingsManager.Get?.Download?.DownloadSource != provider.ResProviderName)
+                    {
+                        IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
+                        await currentResDownloadProvider.Refresh();
+                    }
+                    else
+                    {
+                        await provider.Refresh();
+                    }
+                }
+                else
                 {
                     IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
                     await currentResDownloadProvider.Refresh();
                 }
-                else
-                {
-                    await provider.Refresh();
-                }
             }
-            else
+            finally
             {
-                IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
-                await currentResDownloadProvider.Refresh();
+                HideLoadingLayer();
             }
         }
 

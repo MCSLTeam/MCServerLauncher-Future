@@ -1,26 +1,25 @@
-﻿using iNKORE.UI.WPF.Controls;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.Generic;
 using MCServerLauncher.WPF.View.CreateInstanceProvider;
-using System.Linq;
+using MCServerLauncher.WPF.ViewModels;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
-    /// <summary>
-    ///    CreateInstancePage.xaml 的交互逻辑
-    /// </summary>
     public partial class CreateInstancePage
     {
         public readonly PreCreateInstance PreCreateInstance = new();
+        private readonly CreateInstanceViewModel _viewModel;
 
         public CreateInstancePage()
         {
             InitializeComponent();
+            _viewModel = App.ViewModelLocator.CreateInstance;
+            DataContext = _viewModel;
             CurrentCreateInstance.Content = PreCreateInstance;
             IsVisibleChanged += (s, e) =>
             {
@@ -30,7 +29,8 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void ValidateFuncAvailable()
         {
-            if (!(DaemonsListManager.Get!.Count > 0))
+            _viewModel.CheckDaemonAvailabilityCommand.Execute(null);
+            if (!_viewModel.IsDaemonAvailable)
             {
                 ShowNoDaemonLayer();
                 return;
@@ -38,6 +38,7 @@ namespace MCServerLauncher.WPF.View.Pages
             StopTipLayer.Visibility = Visibility.Collapsed;
             CurrentCreateInstance.Visibility = Visibility.Visible;
         }
+
         private void ShowNoDaemonLayer()
         {
             CurrentCreateInstance.Visibility = Visibility.Collapsed;
@@ -49,115 +50,24 @@ namespace MCServerLauncher.WPF.View.Pages
             StopTipLayer.ButtonText = Lang.Tr["ConnectDaemon"];
             StopTipLayer.Visibility = Visibility.Visible;
         }
-        #region Creeate Instance Pages
 
-        public UserControl NewPreMinecraftInstancePage()
-        {
-            return new PreCreateMinecraftInstance();
-        }
+        #region Create Instance Pages
 
-        /// <summary>
-        ///    Spawn a new Minecraft Java instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewMinecraftJavaServerPage()
-        {
-            return new CreateMinecraftJavaInstanceProvider();
-        }
+        public UserControl NewPreMinecraftInstancePage() => new PreCreateMinecraftInstance();
+        public UserControl NewMinecraftJavaServerPage() => new CreateMinecraftJavaInstanceProvider();
+        public UserControl NewMinecraftForgeServerPage() => new CreateMinecraftForgeInstanceProvider();
+        public UserControl NewMinecraftNeoForgeServerPage() => new CreateMinecraftNeoForgeInstanceProvider();
+        public UserControl NewMinecraftFabricServerPage() => new CreateMinecraftFabricInstanceProvider();
+        public UserControl NewMinecraftQuiltServerPage() => new CreateMinecraftQuiltInstanceProvider();
+        public UserControl NewMinecraftBedrockServerPage() => new CreateMinecraftBedrockInstanceProvider();
+        public UserControl NewTerrariaServerPage() => new CreateTerrariaInstanceProvider();
+        public UserControl NewOtherExecutablePage() => new CreateOtherExecutableInstanceProvider();
 
-        /// <summary>
-        ///    Spawn a new Minecraft Forge instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewMinecraftForgeServerPage()
-        {
-            return new CreateMinecraftForgeInstanceProvider();
-        }
-
-        /// <summary>
-        ///    Spawn a new Minecraft NeoForge instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewMinecraftNeoForgeServerPage()
-        {
-            return new CreateMinecraftNeoForgeInstanceProvider();
-        }
-
-        /// <summary>
-        ///    Spawn a new Minecraft Fabric instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewMinecraftFabricServerPage()
-        {
-            return new CreateMinecraftFabricInstanceProvider();
-        }
-
-        /// <summary>
-        ///    Spawn a new Minecraft Quilt instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewMinecraftQuiltServerPage()
-        {
-            return new CreateMinecraftQuiltInstanceProvider();
-        }
-
-        /// <summary>
-        ///    Spawn a new Minecraft Bedrock instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewMinecraftBedrockServerPage()
-        {
-            return new CreateMinecraftBedrockInstanceProvider();
-        }
-
-
-        /// <summary>
-        ///    Spawn a new Terraria Server instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewTerrariaServerPage()
-        {
-            return new CreateTerrariaInstanceProvider();
-        }
-
-        /// <summary>
-        ///    Spawn a new other executable instance creation page.
-        /// </summary>
-        /// <returns>The user control.</returns>
-        public UserControl NewOtherExecutablePage()
-        {
-            return new CreateOtherExecutableInstanceProvider();
-        }
         #endregion
 
-        public async Task<(ContentDialogResult, ListView)> SelectDaemon()
+        public async Task<(ContentDialogResult, System.Windows.Controls.ListView)> SelectDaemon()
         {
-            var daemonDisplayNames = DaemonsListManager.Get!
-                .Select(daemon => $"{daemon.FriendlyName} [{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}]");
-            ScrollViewerEx scroll = new()
-            {
-                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto
-            };
-            SimpleStackPanel panel = new();
-            ListView listView = new()
-            {
-                ItemsSource = daemonDisplayNames,
-                SelectedIndex = 0,
-                Margin = new Thickness(0, 0, 0, 12)
-            };
-            panel.Children.Add(listView);
-            scroll.Content = panel;
-            ContentDialog dialog = new()
-            {
-                Title = Lang.Tr["PleaseSelectDaemon"],
-                PrimaryButtonText = Lang.Tr["Continue"],
-                SecondaryButtonText = Lang.Tr["Cancel"],
-                DefaultButton = ContentDialogButton.Primary,
-                FullSizeDesired = false,
-                Content = panel
-            };
-            var result = await dialog.ShowAsync();
-            return (result, listView);
+            return await _viewModel.SelectDaemonAsync();
         }
     }
 }

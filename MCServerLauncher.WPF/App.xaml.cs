@@ -1,4 +1,7 @@
 ﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
+using MCServerLauncher.WPF.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
 using System.Threading;
@@ -19,11 +22,34 @@ namespace MCServerLauncher.WPF
         // Prevent over-opening
         private Mutex? _mutex;
 
+        public static IServiceProvider Services { get; private set; } = null!;
+        public static ViewModelLocator ViewModelLocator { get; private set; } = null!;
+
         public App()
         {
             DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
+            Services = serviceCollection.BuildServiceProvider();
+            ViewModelLocator = new ViewModelLocator(Services);
+        }
+
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSingleton<IDaemonConnectionService, DaemonConnectionService>();
+            services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<IDialogService, DialogService>();
+
+            services.AddTransient<DaemonManagerViewModel>();
+            services.AddTransient<InstanceManagerViewModel>();
+            services.AddTransient<SettingsViewModel>();
+            services.AddTransient<CreateInstanceViewModel>();
+            services.AddTransient<EventTriggerViewModel>();
+            services.AddTransient<CommandPageViewModel>();
         }
 
 #pragma warning disable CS8603 // 可能返回 null 引用。

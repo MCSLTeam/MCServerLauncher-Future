@@ -1,581 +1,92 @@
-﻿using iNKORE.UI.WPF.Modern;
 using MCServerLauncher.WPF.Modules;
-using MCServerLauncher.WPF.View.Components.SettingCard;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
+using MCServerLauncher.WPF.ViewModels;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-
-// ReSharper disable UseNameofForDependencyProperty
-#pragma warning disable CS8602 // 解引用可能出现空引用。
 
 namespace MCServerLauncher.WPF.View.Pages
 {
-    /// <summary>
-    ///    SettingsPage.xaml 的交互逻辑
-    /// </summary>
     public partial class SettingsPage
     {
-        private int _debugClickCount = 0;
+        private readonly SettingsViewModel _viewModel;
+        private int _debugClickCount;
+
         public SettingsPage()
         {
-            ActionOnDoubleClick = new List<string>
-            {
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Console"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Start"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Stop"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Restart"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Kill"]
-            };
-
             InitializeComponent();
-            DataContext = this;
+            _viewModel = App.ViewModelLocator.Settings;
+            DataContext = _viewModel;
 
-            # region Initialize nums
+            InitializeControls();
+            BindEventHandlers();
+        }
+
+        private void InitializeControls()
+        {
             InitDownloadSourceSelection();
-            ResDownload_DownloadThreadCnt.SettingSlider.Value = SettingsManager.Get.Download.ThreadCnt;
-            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex =
-                _actionWhenDownloadErrorList.IndexOf(SettingsManager.Get.Download.ActionWhenDownloadError);
-            Instance_AutoRefreshInterval.SettingSlider.Value = SettingsManager.Get.Instance.AutoRefreshInterval;
-            Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex =
-                _actionOnDoubleClickList.IndexOf(SettingsManager.Get.Instance.ActionOnDoubleClick);
-            More_LauncherTheme.SettingComboBox.SelectedIndex = _themeList.IndexOf(SettingsManager.Get.App.Theme);
-            More_LauncherLanguage.SettingComboBox.SelectedIndex = Lang.LanguageList.IndexOf(SettingsManager.Get.App.Language);
+            ResDownload_DownloadThreadCnt.SettingSlider.Value = _viewModel.DownloadThreadCount;
+            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _viewModel.ActionWhenDownloadErrorIndex;
+            Instance_AutoRefreshInterval.SettingSlider.Value = _viewModel.AutoRefreshInterval;
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex = _viewModel.ActionOnDoubleClickIndex;
+            More_LauncherTheme.SettingComboBox.SelectedIndex = _viewModel.LauncherThemeIndex;
+            More_LauncherLanguage.SettingComboBox.SelectedIndex = _viewModel.LauncherLanguageIndex;
 
-            #endregion
-
-            # region Event handler binding
-
-            InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.Toggled += OnMinecraftJavaAutoAcceptEulaChanged;
-            InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.Toggled +=
-                OnMinecraftJavaAutoSwitchOnlineModeChanged;
-            InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.Toggled +=
-                OnMinecraftBedrockAutoSwitchOnlineModeChanged;
-            InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.Toggled +=
-                OnUseMirrorForMinecraftForgeInstallChanged;
-            InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.Toggled +=
-                OnUseMirrorForMinecraftNeoForgeInstallChanged;
-            InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.Toggled +=
-                OnUseMirrorForMinecraftFabricInstallChanged;
-            InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.Toggled +=
-                OnUseMirrorForMinecraftQuiltInstallChanged;
-
-            ResDownload_DownloadThreadCnt.SettingSlider.ValueChanged += OnDownloadThreadValueChanged;
-            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged +=
-                OnActionWhenDownloadErrorSelectionChanged;
-
-            Instance_AutoRefreshInterval.SettingSlider.ValueChanged += OnAutoRefreshIntervalValueChanged;
-            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged += OnActionOnDoubleClickSelectionChanged;
-
-            More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
-            More_LauncherLanguage.SettingComboBox.SelectionChanged += OnLauncherLanguageIndexSelectionChanged;
-            More_FollowStartupForLauncher.SettingSwitch.Toggled += OnFollowStartupForLauncherChanged;
-            More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += OnAutoCheckUpdateForLauncherChanged;
-
-            #endregion
-            // 读取并处理构建信息
-            var buildInfo = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("MCServerLauncher.WPF.Resources.BuildInfo");
-            if (buildInfo != null)
-            {
-                using var reader = new System.IO.StreamReader(buildInfo);
-                var buildInfoJson = reader.ReadToEnd();
-                try
-                {
-                    var buildInfoObj = System.Text.Json.JsonSerializer.Deserialize<BuildInfoModel>(buildInfoJson);
-                    if (buildInfoObj != null)
-                    {
-                        BuildInfoReplacer.Text = $"Build Time: {buildInfoObj.BuildTime}\nBuild Info: {buildInfoObj.Branch}-{Assembly.GetExecutingAssembly().GetName().Version}-{buildInfoObj.CommitHash}";
-                    }
-                }
-                catch
-                {
-                    BuildInfoReplacer.Text = buildInfoJson;
-                }
-            }
-
-            AboutVersionReplacer.Text = $"v{Assembly.GetExecutingAssembly().GetName().Version}-REL";
-#if DEBUG
-            AboutVersionReplacer.Text = $"v{Assembly.GetExecutingAssembly().GetName().Version}-DBG";
-#endif
+            BuildInfoReplacer.Text = _viewModel.BuildInfoText;
+            AboutVersionReplacer.Text = _viewModel.VersionText;
         }
 
-        # region MinecraftJavaAutoAcceptEula
-
-        public bool MinecraftJavaAutoAcceptEula
+        private void BindEventHandlers()
         {
-            get => (bool)GetValue(MinecraftJavaAutoAcceptEulaProperty);
-            set => SetValue(MinecraftJavaAutoAcceptEulaProperty, value);
+            InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.MinecraftJavaAutoAcceptEula = InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.IsOn;
+            InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.MinecraftJavaAutoSwitchOnlineMode = InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.IsOn;
+            InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.MinecraftBedrockAutoSwitchOnlineMode = InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.IsOn;
+            InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.UseMirrorForMinecraftForgeInstall = InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.IsOn;
+            InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.UseMirrorForMinecraftNeoForgeInstall = InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.IsOn;
+            InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.UseMirrorForMinecraftFabricInstall = InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.IsOn;
+            InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.UseMirrorForMinecraftQuiltInstall = InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.IsOn;
+
+            ResDownload_DownloadThreadCnt.SettingSlider.ValueChanged += (s, e) =>
+                _viewModel.DownloadThreadCount = (int)ResDownload_DownloadThreadCnt.SettingSlider.Value;
+            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged += (s, e) =>
+                _viewModel.ActionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
+
+            Instance_AutoRefreshInterval.SettingSlider.ValueChanged += (s, e) =>
+                _viewModel.AutoRefreshInterval = (int)Instance_AutoRefreshInterval.SettingSlider.Value;
+            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged += (s, e) =>
+                _viewModel.ActionOnDoubleClickIndex = Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex;
+
+            More_LauncherTheme.SettingComboBox.SelectionChanged += (s, e) =>
+                _viewModel.LauncherThemeIndex = More_LauncherTheme.SettingComboBox.SelectedIndex;
+            More_LauncherLanguage.SettingComboBox.SelectionChanged += (s, e) =>
+                _viewModel.LauncherLanguageIndex = More_LauncherLanguage.SettingComboBox.SelectedIndex;
+            More_FollowStartupForLauncher.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.FollowStartup = More_FollowStartupForLauncher.SettingSwitch.IsOn;
+            More_AutoCheckUpdateForLauncher.SettingSwitch.Toggled += (s, e) =>
+                _viewModel.AutoCheckUpdate = More_AutoCheckUpdateForLauncher.SettingSwitch.IsOn;
         }
-
-        public static readonly DependencyProperty MinecraftJavaAutoAcceptEulaProperty =
-            DependencyProperty.Register(
-                "MinecraftJavaAutoAcceptEula",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.MinecraftJavaAutoAcceptEula)
-            );
-
-        private void OnMinecraftJavaAutoAcceptEulaChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.MinecraftJavaAutoAcceptEula",
-                InstanceCreation_MinecraftJavaAutoAgreeEula.SettingSwitch.IsOn);
-        }
-
-        # endregion
-
-        # region MinecraftJavaAutoSwitchOnlineMode
-
-        public bool MinecraftJavaAutoSwitchOnlineMode
-        {
-            get => (bool)GetValue(MinecraftJavaAutoSwitchOnlineModeProperty);
-            set => SetValue(MinecraftJavaAutoSwitchOnlineModeProperty, value);
-        }
-
-        public static readonly DependencyProperty MinecraftJavaAutoSwitchOnlineModeProperty =
-            DependencyProperty.Register(
-                "MinecraftJavaAutoSwitchOnlineMode",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.MinecraftJavaAutoSwitchOnlineMode)
-            );
-
-        private void OnMinecraftJavaAutoSwitchOnlineModeChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.MinecraftJavaAutoSwitchOnlineMode",
-                InstanceCreation_MinecraftJavaAutoDisableOnlineMode.SettingSwitch.IsOn);
-        }
-
-        # endregion
-
-        # region MinecraftBedrockAutoSwitchOnlineMode
-
-        public bool MinecraftBedrockAutoSwitchOnlineMode
-        {
-            get => (bool)GetValue(MinecraftBedrockAutoSwitchOnlineModeProperty);
-            set => SetValue(MinecraftBedrockAutoSwitchOnlineModeProperty, value);
-        }
-
-        public static readonly DependencyProperty MinecraftBedrockAutoSwitchOnlineModeProperty =
-            DependencyProperty.Register(
-                "MinecraftBedrockAutoSwitchOnlineMode",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode)
-            );
-
-        private void OnMinecraftBedrockAutoSwitchOnlineModeChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode",
-                InstanceCreation_MinecraftBedrockAutoDisableOnlineMode.SettingSwitch.IsOn);
-        }
-
-        #endregion
-
-        #region UseMirrorForMinecraftForgeInstall
-
-        public bool UseMirrorForMinecraftForgeInstall
-        {
-            get => (bool)GetValue(UseMirrorForMinecraftForgeInstallProperty);
-            set => SetValue(UseMirrorForMinecraftForgeInstallProperty, value);
-        }
-
-        public static readonly DependencyProperty UseMirrorForMinecraftForgeInstallProperty =
-            DependencyProperty.Register(
-                "UseMirrorForMinecraftForgeInstall",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftForgeInstall)
-            );
-
-        private void OnUseMirrorForMinecraftForgeInstallChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftForgeInstall",
-                InstanceCreation_UseMirrorForMinecraftForgeInstall.SettingSwitch.IsOn);
-        }
-
-        # endregion
-
-        #region UseMirrorForMinecraftNeoForgeInstall
-
-        public bool UseMirrorForMinecraftNeoForgeInstall
-        {
-            get => (bool)GetValue(UseMirrorForMinecraftNeoForgeInstallProperty);
-            set => SetValue(UseMirrorForMinecraftNeoForgeInstallProperty, value);
-        }
-
-        public static readonly DependencyProperty UseMirrorForMinecraftNeoForgeInstallProperty =
-            DependencyProperty.Register(
-                "UseMirrorForMinecraftNeoForgeInstall",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall)
-            );
-
-        private void OnUseMirrorForMinecraftNeoForgeInstallChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftNeoForgeInstall",
-                InstanceCreation_UseMirrorForMinecraftNeoForgeInstall.SettingSwitch.IsOn);
-        }
-
-        # endregion
-
-        #region UseMirrorForMinecraftFabricInstall
-
-        public bool UseMirrorForMinecraftFabricInstall
-        {
-            get => (bool)GetValue(UseMirrorForMinecraftFabricInstallProperty);
-            set => SetValue(UseMirrorForMinecraftFabricInstallProperty, value);
-        }
-
-        public static readonly DependencyProperty UseMirrorForMinecraftFabricInstallProperty =
-            DependencyProperty.Register(
-                "UseMirrorForMinecraftFabricInstall",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftFabricInstall)
-            );
-
-        private void OnUseMirrorForMinecraftFabricInstallChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftFabricInstall",
-                InstanceCreation_UseMirrorForMinecraftFabricInstall.SettingSwitch.IsOn);
-        }
-
-        # endregion
-
-        #region UseMirrorForMinecraftQuiltInstall
-
-        public bool UseMirrorForMinecraftQuiltInstall
-        {
-            get => (bool)GetValue(UseMirrorForMinecraftQuiltInstallProperty);
-            set => SetValue(UseMirrorForMinecraftQuiltInstallProperty, value);
-        }
-
-        public static readonly DependencyProperty UseMirrorForMinecraftQuiltInstallProperty =
-            DependencyProperty.Register(
-                "UseMirrorForMinecraftQuiltInstall",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftQuiltInstall)
-            );
-
-        private void OnUseMirrorForMinecraftQuiltInstallChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("InstanceCreation.UseMirrorForMinecraftQuiltInstall",
-                InstanceCreation_UseMirrorForMinecraftQuiltInstall.SettingSwitch.IsOn);
-        }
-
-        # endregion
-
-        # region ResDownloadSource
 
         private void InitDownloadSourceSelection()
         {
-            FastMirrorSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "FastMirror";
-            PolarsMirrorSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "PolarsMirror";
-            RainYunSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "RainYun";
-            MSLAPISrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "MSLAPI";
-            MCSLSyncSrc.IsChecked = SettingsManager.Get.Download.DownloadSource == "MCSLSync";
+            FastMirrorSrc.IsChecked = _viewModel.DownloadSource == "FastMirror";
+            PolarsMirrorSrc.IsChecked = _viewModel.DownloadSource == "PolarsMirror";
+            RainYunSrc.IsChecked = _viewModel.DownloadSource == "RainYun";
+            MSLAPISrc.IsChecked = _viewModel.DownloadSource == "MSLAPI";
+            MCSLSyncSrc.IsChecked = _viewModel.DownloadSource == "MCSLSync";
         }
 
         private void OnResDownloadSourceSelectionChanged(object sender, RoutedEventArgs e)
         {
-            try
+            if (sender is System.Windows.Controls.RadioButton rb)
             {
-                SettingsManager.SaveSetting("ResDownload.DownloadSource",
-                    ((RadioButton)sender).GetType().GetProperty("Name")?.GetValue(sender).ToString()
-                    .Replace("Src", ""));
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // ignored due to mtfk error
+                _viewModel.DownloadSource = rb.Name.Replace("Src", "");
             }
         }
-
-        # endregion
-
-        #region DownloadThreadValue
-
-        public int DownloadThreadValue
-        {
-            get => (int)GetValue(DownloadThreadValueProperty);
-            set => SetValue(DownloadThreadValueProperty, value);
-        }
-
-        public static readonly DependencyProperty DownloadThreadValueProperty =
-            DependencyProperty.Register(
-                "DownloadThreadValue",
-                typeof(int),
-                typeof(RangeSettingCard),
-                new PropertyMetadata(SettingsManager.Get.Download.ThreadCnt)
-            );
-
-        private void OnDownloadThreadValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            SettingsManager.SaveSetting("ResDownload.ThreadCnt", (int)ResDownload_DownloadThreadCnt.SettingSlider.Value);
-        }
-
-        #endregion
-
-        #region AutoRefreshInterval
-
-        public int AutoRefreshInterval
-        {
-            get => (int)GetValue(AutoRefreshIntervalProperty);
-            set => SetValue(AutoRefreshIntervalProperty, value);
-        }
-
-        public static readonly DependencyProperty AutoRefreshIntervalProperty =
-            DependencyProperty.Register(
-                "AutoRefreshInterval",
-                typeof(int),
-                typeof(RangeSettingCard),
-                new PropertyMetadata(SettingsManager.Get.Instance.AutoRefreshInterval)
-            );
-
-        private void OnAutoRefreshIntervalValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            SettingsManager.SaveSetting("Instance.AutoRefreshInterval", (int)Instance_AutoRefreshInterval.SettingSlider.Value);
-        }
-
-        #endregion
-
-        #region ActionOnDoubleClick
-
-        private static readonly List<string?> _actionOnDoubleClickList = new() { "Console", "Start", "Stop", "Restart", "Kill" };
-
-        public static IEnumerable<string> ActionOnDoubleClick { get; set; } = new List<string>();
-
-        public int ActionOnDoubleClickIndex
-        {
-            get => (int)GetValue(ActionOnDoubleClickIndexProperty);
-            set => SetValue(ActionOnDoubleClickIndexProperty, value);
-        }
-
-        public static readonly DependencyProperty ActionOnDoubleClickIndexProperty =
-            DependencyProperty.Register(
-                "ActionOnDoubleClickIndex",
-                typeof(int),
-                typeof(ComboSettingCard),
-                new PropertyMetadata(
-                    _actionOnDoubleClickList.IndexOf(SettingsManager.Get.Instance.ActionOnDoubleClick))
-            );
-
-        private void OnActionOnDoubleClickSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            try
-            {
-                SettingsManager.SaveSetting("Instance.ActionOnDoubleClick",
-                    _actionOnDoubleClickList[Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex]);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // ignored due to mtfk error
-            }
-        }
-
-        #endregion
-
-        #region ActionWhenDownloadErrorIndex
-
-        private static readonly List<string?> _actionWhenDownloadErrorList = new() { "stop", "retry1", "retry3" };
-
-        public static IEnumerable<string> ActionWhenDownloadError { get; set; } = new List<string>
-        {
-            Lang.Tr["Settings_ActionWhenDownloadError_Stop"],
-            Lang.Tr["Settings_ActionWhenDownloadError_Retry1"],
-            Lang.Tr["Settings_ActionWhenDownloadError_Retry3"]
-        };
-
-        public int ActionWhenDownloadErrorIndex
-        {
-            get => (int)GetValue(ActionWhenDownloadErrorIndexProperty);
-            set => SetValue(ActionWhenDownloadErrorIndexProperty, value);
-        }
-
-        public static readonly DependencyProperty ActionWhenDownloadErrorIndexProperty =
-            DependencyProperty.Register(
-                "ActionWhenDownloadErrorIndex",
-                typeof(int),
-                typeof(ComboSettingCard),
-                new PropertyMetadata(
-                    _actionWhenDownloadErrorList.IndexOf(SettingsManager.Get.Download.ActionWhenDownloadError))
-            );
-
-        private void OnActionWhenDownloadErrorSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            try
-            {
-                SettingsManager.SaveSetting("ResDownload.ActionWhenDownloadError",
-                    _actionWhenDownloadErrorList[ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex]);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // ignored due to mtfk error
-            }
-        }
-
-        #endregion
-
-        #region LauncherTheme
-
-        public static IEnumerable<string> ThemeForApp { get; set; } = new List<string>
-        {
-            Lang.Tr["Settings_AppTheme_Auto"],
-            Lang.Tr["Settings_AppTheme_Light"],
-            Lang.Tr["Settings_AppTheme_Dark"]
-        };
-
-        private static readonly List<string?> _themeList = new() { "auto", "light", "dark" };
-
-        public int LauncherThemeIndex
-        {
-            get => (int)GetValue(LauncherThemeIndexProperty);
-            set => SetValue(LauncherThemeIndexProperty, value);
-        }
-
-        public static readonly DependencyProperty LauncherThemeIndexProperty =
-            DependencyProperty.Register(
-                "LauncherThemeIndex",
-                typeof(int),
-                typeof(ComboSettingCard),
-                new PropertyMetadata(_themeList.IndexOf(SettingsManager.Get.App.Theme))
-            );
-
-        private void OnLauncherThemeIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            try
-            {
-                SettingsManager.SaveSetting("App.Theme", _themeList[More_LauncherTheme.SettingComboBox.SelectedIndex]);
-                ThemeManager.Current.ApplicationTheme = More_LauncherTheme.SettingComboBox.SelectedIndex switch
-                {
-                    0 => null,
-                    1 => ApplicationTheme.Light,
-                    2 => ApplicationTheme.Dark,
-                    _ => ThemeManager.Current.ApplicationTheme
-                };
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // ignored due to mtfk error
-            }
-        }
-
-        #endregion
-
-        #region LauncherLanguage
-
-        /// <summary>
-        ///     Handle language combo box changes.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void OnLauncherLanguageIndexSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!SettingsManager.Get.App.IsFirstSetupFinished) return;
-            Lang.Tr.ChangeLanguage(new CultureInfo(Lang.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex)));
-            OnLanguageChanged();
-            SettingsManager.SaveSetting("App.Language", Lang.LanguageList.ElementAt(More_LauncherLanguage.SettingComboBox.SelectedIndex));
-        }
-        /// <summary>
-        /// Update language for ComboBox due to failure of TwoWay binding mode.
-        /// </summary>
-        public void OnLanguageChanged()
-        {
-            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged -= OnActionOnDoubleClickSelectionChanged;
-            var actionOnDoubleClickIndex = Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex;
-            ActionOnDoubleClick = new List<string>
-            {
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Console"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Start"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Stop"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Restart"],
-                Lang.Tr["Settings_Instance_ActionOnDoubleClick_Kill"]
-            };
-            Instance_ActionOnDoubleClick.SettingComboBox.ItemsSource = ActionOnDoubleClick;
-            Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex = actionOnDoubleClickIndex;
-            Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged += OnActionOnDoubleClickSelectionChanged;
-
-            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged -=
-                OnActionWhenDownloadErrorSelectionChanged;
-            var actionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
-            ActionWhenDownloadError = new List<string>
-            {
-                Lang.Tr["Settings_ActionWhenDownloadError_Stop"],
-                Lang.Tr["Settings_ActionWhenDownloadError_Retry1"],
-                Lang.Tr["Settings_ActionWhenDownloadError_Retry3"]
-            };
-            ResDownload_ActionWhenDownloadError.SettingComboBox.ItemsSource = ActionWhenDownloadError;
-            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = actionWhenDownloadErrorIndex;
-            ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged +=
-                OnActionWhenDownloadErrorSelectionChanged;
-
-            More_LauncherTheme.SettingComboBox.SelectionChanged -= OnLauncherThemeIndexSelectionChanged;
-            var themeForAppIndex = More_LauncherTheme.SettingComboBox.SelectedIndex;
-            ThemeForApp = new List<string>
-            {
-                Lang.Tr["Settings_AppTheme_Auto"],
-                Lang.Tr["Settings_AppTheme_Light"],
-                Lang.Tr["Settings_AppTheme_Dark"]
-            };
-            More_LauncherTheme.SettingComboBox.ItemsSource = ThemeForApp;
-            More_LauncherTheme.SettingComboBox.SelectedIndex = themeForAppIndex;
-            More_LauncherTheme.SettingComboBox.SelectionChanged += OnLauncherThemeIndexSelectionChanged;
-        }
-
-        #endregion
-
-        # region FollowStartupForLauncher
-
-        public bool FollowStartupForLauncher
-        {
-            get => (bool)GetValue(FollowStartupForLauncherProperty);
-            set => SetValue(FollowStartupForLauncherProperty, value);
-        }
-
-        public static readonly DependencyProperty FollowStartupForLauncherProperty =
-            DependencyProperty.Register(
-                "FollowStartupForLauncher",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.App.FollowStartup)
-            );
-
-        private void OnFollowStartupForLauncherChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("App.FollowStartup", More_FollowStartupForLauncher.SettingSwitch.IsOn);
-        }
-
-        #endregion
-
-        #region AutoCheckUpdateForLauncher
-
-        public bool AutoCheckUpdateForLauncher
-        {
-            get => (bool)GetValue(AutoCheckUpdateForLauncherProperty);
-            set => SetValue(AutoCheckUpdateForLauncherProperty, value);
-        }
-
-        public static readonly DependencyProperty AutoCheckUpdateForLauncherProperty =
-            DependencyProperty.Register(
-                "AutoCheckUpdateForLauncher",
-                typeof(bool),
-                typeof(SwitchSettingCard),
-                new PropertyMetadata(SettingsManager.Get.App.AutoCheckUpdate)
-            );
-
-        private void OnAutoCheckUpdateForLauncherChanged(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.SaveSetting("App.AutoCheckUpdate", More_AutoCheckUpdateForLauncher.SettingSwitch.IsOn);
-        }
-
-        #endregion
-
 
         private void CheckDebugMode(object sender, MouseButtonEventArgs e)
         {
@@ -583,20 +94,8 @@ namespace MCServerLauncher.WPF.View.Pages
             if (_debugClickCount >= 5)
             {
                 var parent = this.TryFindParent<MainWindow>();
-                parent.DebugItem.Visibility = Visibility.Visible;
+                if (parent != null) parent.DebugItem.Visibility = Visibility.Visible;
             }
-        }
-
-        private class BuildInfoModel
-        {
-            [System.Text.Json.Serialization.JsonPropertyName("buildTime")]
-            public string? BuildTime { get; set; }
-
-            [System.Text.Json.Serialization.JsonPropertyName("commitHash")]
-            public string? CommitHash { get; set; }
-
-            [System.Text.Json.Serialization.JsonPropertyName("branch")]
-            public string? Branch { get; set; }
         }
     }
 }

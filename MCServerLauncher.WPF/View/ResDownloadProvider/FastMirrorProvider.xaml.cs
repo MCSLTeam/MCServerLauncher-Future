@@ -2,14 +2,13 @@ using iNKORE.UI.WPF.Helpers;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.Common.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
-using MCServerLauncher.WPF.View.Pages;
+
 using Serilog;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
@@ -89,8 +88,6 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
             {
                 _isDataLoading = false;
                 _isDataLoaded = false;
-                var parent = this.TryFindParent<ResDownloadPage>();
-                parent?.HideLoadingLayer();
             }
         }
 
