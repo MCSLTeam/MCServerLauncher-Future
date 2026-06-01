@@ -68,6 +68,7 @@ namespace MCServerLauncher.WPF
             services.AddTransient<CreateInstanceViewModel>();
             services.AddTransient<EventTriggerViewModel>();
             services.AddTransient<CommandPageViewModel>();
+            services.AddTransient<InstanceConsole.ViewModels.ComponentManagerViewModel>();
         }
 
 #pragma warning disable CS8603 // 可能返回 null 引用。
