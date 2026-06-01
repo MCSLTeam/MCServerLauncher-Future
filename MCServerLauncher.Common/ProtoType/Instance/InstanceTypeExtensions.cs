@@ -1,80 +1,39 @@
+using System.Collections.Concurrent;
+using System.Reflection;
+
 namespace MCServerLauncher.Common.ProtoType.Instance;
 
 public static class InstanceTypeExtensions
 {
-    public static bool IsMinecraftJavaRuntimeType(this InstanceType type)
+    private static readonly ConcurrentDictionary<InstanceType, InstanceTypeMetadataAttribute> MetadataCache = new();
+
+    private static InstanceTypeMetadataAttribute GetMetadata(this InstanceType type)
     {
-        return type is
-            InstanceType.MCJava or
-            InstanceType.MCFabric or
-            InstanceType.MCForge or
-            InstanceType.MCNeoForge or
-            InstanceType.MCQuilt or
-            InstanceType.MCCleanroom or
-            InstanceType.MCSpongeVanilla or
-            InstanceType.MCSpongeForge or
-            InstanceType.MCSpongeNeo or
-            InstanceType.MCVanilla or
-            InstanceType.MCCraftBukkit or
-            InstanceType.MCSpigot or
-            InstanceType.MCPaper or
-            InstanceType.MCLeaf or
-            InstanceType.MCLeaves or
-            InstanceType.MCFolia or
-            InstanceType.MCCanvas or
-            InstanceType.MCPufferfish or
-            InstanceType.MCPurpur or
-            InstanceType.MCMohist or
-            InstanceType.MCBanner or
-            InstanceType.MCYouer or
-            InstanceType.MCThermos or
-            InstanceType.MCCrucible or
-            InstanceType.MCTaiyitist or
-            InstanceType.MCCatServer or
-            InstanceType.MCArclight;
+        return MetadataCache.GetOrAdd(type, t =>
+        {
+            var field = typeof(InstanceType).GetField(t.ToString());
+            return field?.GetCustomAttribute<InstanceTypeMetadataAttribute>()
+                   ?? new InstanceTypeMetadataAttribute();
+        });
     }
 
-    public static bool SupportsMinecraftBoardWidgets(this InstanceType type)
-    {
-        return type.IsMinecraftJavaRuntimeType();
-    }
+    public static InstanceCategory GetCategory(this InstanceType type) => type.GetMetadata().Category;
 
-    public static bool RequiresNumericMinecraftVersion(this InstanceType type)
-    {
-        return type is
-            InstanceType.MCFabric or
-            InstanceType.MCForge or
-            InstanceType.MCNeoForge or
-            InstanceType.MCQuilt or
-            InstanceType.MCCleanroom or
-            InstanceType.MCVanilla or
-            InstanceType.MCCraftBukkit or
-            InstanceType.MCSpigot or
-            InstanceType.MCPaper or
-            InstanceType.MCLeaf or
-            InstanceType.MCLeaves or
-            InstanceType.MCFolia or
-            InstanceType.MCCanvas or
-            InstanceType.MCPufferfish or
-            InstanceType.MCPurpur or
-            InstanceType.MCMohist or
-            InstanceType.MCBanner or
-            InstanceType.MCYouer or
-            InstanceType.MCThermos or
-            InstanceType.MCCrucible or
-            InstanceType.MCTaiyitist or
-            InstanceType.MCCatServer or
-            InstanceType.MCArclight;
-    }
+    public static bool IsMinecraftJavaRuntimeType(this InstanceType type) =>
+        type.GetMetadata().Category.HasFlag(InstanceCategory.MinecraftJava)
+        && !type.GetMetadata().Category.HasFlag(InstanceCategory.Proxy)
+        && !type.GetMetadata().Category.HasFlag(InstanceCategory.Utility);
 
-    public static bool IsMinecraftLikeType(this InstanceType type)
-    {
-        return type is not InstanceType.Universal and not InstanceType.SteamServer and not InstanceType.Terraria and
-               not InstanceType.TShock and not InstanceType.TDSM;
-    }
+    public static bool SupportsMinecraftBoardWidgets(this InstanceType type) =>
+        type.GetMetadata().SupportsMinecraftBoardWidgets;
 
-    public static bool IsGenericFallbackType(this InstanceType type)
-    {
-        return type is InstanceType.Universal or InstanceType.MCJava or InstanceType.MCBedrock or InstanceType.Terraria;
-    }
+    public static bool RequiresNumericMinecraftVersion(this InstanceType type) =>
+        type.GetMetadata().RequiresNumericVersion;
+
+    public static bool IsMinecraftLikeType(this InstanceType type) =>
+        type.GetMetadata().Category.HasFlag(InstanceCategory.MinecraftJava)
+        || type.GetMetadata().Category.HasFlag(InstanceCategory.MinecraftBedrock);
+
+    public static bool IsGenericFallbackType(this InstanceType type) =>
+        type.GetMetadata().IsGenericFallback;
 }

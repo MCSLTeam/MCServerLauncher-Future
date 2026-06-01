@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.Common.Extensibility;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.Common.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
 using Serilog;
@@ -9,12 +10,11 @@ using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
-    /// <summary>
-    ///    RainYunProvider.xaml 的交互逻辑
-    /// </summary>
     public partial class RainYunProvider : IResDownloadProvider
     {
-        public string ResProviderName => Lang.Tr["ResDownloadPage_ProviderName_RainYun"];
+        public string Id => "RainYun";
+        public string DisplayName => Lang.Tr["ResDownloadPage_ProviderName_RainYun"];
+        public string ResProviderName => DisplayName;
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
@@ -27,7 +27,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         ///    Refresh core list.
         /// </summary>
         /// <returns>Status, true or false.</returns>
-        public async Task<bool> Refresh()
+        public async Task<bool> RefreshAsync()
         {
             if (_isDataLoading || _isDataLoaded) return true;
             try

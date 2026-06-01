@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Extensibility;
 ﻿using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.WPF.Modules;

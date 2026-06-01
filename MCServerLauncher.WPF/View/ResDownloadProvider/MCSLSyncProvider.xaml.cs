@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Extensibility;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.Common.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;
@@ -10,12 +11,11 @@ using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.ResDownloadProvider
 {
-    /// <summary>
-    ///    MCSLSyncProvider.xaml 的交互逻辑
-    /// </summary>
     public partial class MCSLSyncProvider : IResDownloadProvider
     {
-        public string ResProviderName => Lang.Tr["ResDownloadPage_ProviderName_MCSLSync"];
+        public string Id => "MCSLSync";
+        public string DisplayName => Lang.Tr["ResDownloadPage_ProviderName_MCSLSync"];
+        public string ResProviderName => DisplayName;
         private bool _isDataLoaded;
         private bool _isDataLoading;
 
@@ -28,7 +28,7 @@ namespace MCServerLauncher.WPF.View.ResDownloadProvider
         ///    Refresh core list.
         /// </summary>
         /// <returns>Status, true or false.</returns>
-        public async Task<bool> Refresh()
+        public async Task<bool> RefreshAsync()
         {
             if (_isDataLoading || _isDataLoaded) return true;
             try

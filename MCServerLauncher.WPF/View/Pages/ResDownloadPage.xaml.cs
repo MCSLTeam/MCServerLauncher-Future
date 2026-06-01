@@ -1,4 +1,5 @@
-﻿using MCServerLauncher.WPF.Modules;
+﻿using MCServerLauncher.Common.Extensibility;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.ResDownloadProvider;
 using System;
 using System.Windows;
@@ -38,20 +39,20 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 if (CurrentResDownloadProvider.Content is IResDownloadProvider provider)
                 {
-                    if (SettingsManager.Get?.Download?.DownloadSource != provider.ResProviderName)
+                    if (SettingsManager.Get?.Download?.DownloadSource != provider.DisplayName)
                     {
                         IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
-                        await currentResDownloadProvider.Refresh();
+                        await currentResDownloadProvider.RefreshAsync();
                     }
                     else
                     {
-                        await provider.Refresh();
+                        await provider.RefreshAsync();
                     }
                 }
                 else
                 {
                     IResDownloadProvider currentResDownloadProvider = ToggleResDownloadProvider();
-                    await currentResDownloadProvider.Refresh();
+                    await currentResDownloadProvider.RefreshAsync();
                 }
             }
             finally
@@ -71,7 +72,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 "MCSLSync" => MCSLSync,
                 _ => null
             };
-            Subtitle.Text = $"{Lang.Tr["ResDownloadTipPrefix"]} {currentResDownloadProvider!.ResProviderName} {Lang.Tr["ResDownloadTipSuffix"]}";
+            Subtitle.Text = $"{Lang.Tr["ResDownloadTipPrefix"]} {currentResDownloadProvider!.DisplayName} {Lang.Tr["ResDownloadTipSuffix"]}";
             CurrentResDownloadProvider.Content = currentResDownloadProvider;
             return currentResDownloadProvider;
         }

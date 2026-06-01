@@ -43,6 +43,24 @@ namespace MCServerLauncher.WPF
             services.AddSingleton<IDaemonConnectionService, DaemonConnectionService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IDialogService, DialogService>();
+            services.AddSingleton<IThemeService, ThemeService>();
+            services.AddSingleton<IPageRegistry>(sp =>
+            {
+                var registry = new PageRegistry();
+                registry.Register("home", typeof(View.Pages.HomePage), Common.Extensibility.PageTarget.MainWindow, 0);
+                registry.Register("createInstance", typeof(View.Pages.CreateInstancePage), Common.Extensibility.PageTarget.MainWindow, 1);
+                registry.Register("daemonManager", typeof(View.Pages.DaemonManagerPage), Common.Extensibility.PageTarget.MainWindow, 2);
+                registry.Register("instanceManager", typeof(View.Pages.InstanceManagerPage), Common.Extensibility.PageTarget.MainWindow, 3);
+                registry.Register("resDownload", typeof(View.Pages.ResDownloadPage), Common.Extensibility.PageTarget.MainWindow, 4);
+                registry.Register("help", typeof(View.Pages.HelpPage), Common.Extensibility.PageTarget.MainWindow, 5);
+                registry.Register("settings", typeof(View.Pages.SettingsPage), Common.Extensibility.PageTarget.MainWindow, 6);
+                registry.Register("board", typeof(InstanceConsole.View.Pages.BoardPage), Common.Extensibility.PageTarget.InstanceConsole, 0);
+                registry.Register("command", typeof(InstanceConsole.View.Pages.CommandPage), Common.Extensibility.PageTarget.InstanceConsole, 1);
+                registry.Register("fileManager", typeof(InstanceConsole.View.Pages.FileManagerPage), Common.Extensibility.PageTarget.InstanceConsole, 2);
+                registry.Register("eventTrigger", typeof(InstanceConsole.View.Pages.EventTriggerPage), Common.Extensibility.PageTarget.InstanceConsole, 3);
+                registry.Register("componentManager", typeof(InstanceConsole.View.Pages.ComponentManagerPage), Common.Extensibility.PageTarget.InstanceConsole, 4);
+                return registry;
+            });
 
             services.AddTransient<DaemonManagerViewModel>();
             services.AddTransient<InstanceManagerViewModel>();
