@@ -150,6 +150,7 @@ public partial class ComponentManagerViewModel : ObservableObject
             {
                 item.DisplayName = metadata.DisplayName;
                 item.Version = metadata.Version;
+                item.IsClientSideOnly = metadata.IsClientSideOnly;
             }
 
             result.Add(item);
@@ -327,6 +328,16 @@ public partial class ComponentManagerViewModel : ObservableObject
             {
                 try
                 {
+                    if (kind == ComponentKind.Mod && JarMetadataParser.IsClientSideMod(local))
+                    {
+                        _notification.Push(
+                            Lang.Tr["Warning"],
+                            string.Format(Lang.Tr["ComponentManager_ClientSideModBlocked"], Path.GetFileName(local)),
+                            true,
+                            InfoBarSeverity.Warning);
+                        continue;
+                    }
+
                     var fileName = Path.GetFileName(local);
                     var target = $"{_instanceRoot}/{folder}/{fileName}";
                     var ctx = await _daemon.UploadFileAsync(local, target, 1024 * 1024);

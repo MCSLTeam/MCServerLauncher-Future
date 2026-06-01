@@ -11,12 +11,14 @@ public partial class ComponentItemModel : ObservableObject
     [ObservableProperty] private bool _isEnabled;
     [ObservableProperty] private long _fileSize;
     [ObservableProperty] private ComponentKind _kind;
+    [ObservableProperty] private bool _isClientSideOnly;
 
     public string Description => string.IsNullOrEmpty(Version)
         ? FileName
         : $"{FileName} | v{Version}";
 
     public string Title => string.IsNullOrEmpty(DisplayName) ? FileName : DisplayName;
+    public string BadgeText => IsClientSideOnly ? "Client" : string.Empty;
 
     partial void OnFileNameChanged(string value)
     {
@@ -25,6 +27,7 @@ public partial class ComponentItemModel : ObservableObject
     }
     partial void OnDisplayNameChanged(string value) => OnPropertyChanged(nameof(Title));
     partial void OnVersionChanged(string value) => OnPropertyChanged(nameof(Description));
+    partial void OnIsClientSideOnlyChanged(bool value) => OnPropertyChanged(nameof(BadgeText));
 }
 
 public enum ComponentKind

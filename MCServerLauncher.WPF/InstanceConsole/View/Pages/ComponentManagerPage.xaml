@@ -74,8 +74,15 @@
 
                                 <!-- Title + Description -->
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="8"
+                                                Background="#FFD83B01"
+                                                Visibility="{Binding IsClientSideOnly, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding [ComponentManager_ClientSideBadge], Source={x:Static i18n:Lang.Tr}}" FontSize="10" Foreground="White" FontWeight="SemiBold" />
+                                        </Border>
+                                    </StackPanel>
                                     <TextBlock Text="{Binding Description}" FontSize="11"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                TextTrimming="CharacterEllipsis" />
@@ -159,8 +166,15 @@
                                 </Ellipse>
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="8"
+                                                Background="#FFD83B01"
+                                                Visibility="{Binding IsClientSideOnly, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding [ComponentManager_ClientSideBadge], Source={x:Static i18n:Lang.Tr}}" FontSize="10" Foreground="White" FontWeight="SemiBold" />
+                                        </Border>
+                                    </StackPanel>
                                     <TextBlock Text="{Binding Description}" FontSize="11"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                TextTrimming="CharacterEllipsis" />

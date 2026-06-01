@@ -7,7 +7,7 @@ using Serilog;
 
 namespace MCServerLauncher.WPF.InstanceConsole.Modules;
 
-public record JarMetadata(string DisplayName, string Version);
+public record JarMetadata(string DisplayName, string Version, bool IsClientSideOnly = false);
 
 public static class JarMetadataParser
 {
@@ -63,7 +63,8 @@ public static class JarMetadataParser
                           ?? TryGetString(root, "id")
                           ?? string.Empty;
             string version = TryGetString(root, "version") ?? string.Empty;
-            return new JarMetadata(name, version);
+            bool isClientSideOnly = IsFabricClientSideOnly(root);
+            return new JarMetadata(name, version, isClientSideOnly);
         }
         catch (Exception ex)
         {
@@ -96,7 +97,8 @@ public static class JarMetadataParser
                     name = TryGetString(loader, "id") ?? string.Empty;
                 }
             }
-            return new JarMetadata(name, version);
+            bool isClientSideOnly = IsFabricClientSideOnly(root);
+            return new JarMetadata(name, version, isClientSideOnly);
         }
         catch (Exception ex)
         {
@@ -125,9 +127,10 @@ public static class JarMetadataParser
                           ?? ExtractTomlString(blockBody, "modId")
                           ?? string.Empty;
             string version = ExtractTomlString(blockBody, "version") ?? string.Empty;
+            bool isClientSideOnly = IsForgeFamilyClientSideOnly(content);
 
             // version may contain ${file.jarVersion} placeholder; leave as-is.
-            return new JarMetadata(name, version);
+            return new JarMetadata(name, version, isClientSideOnly);
         }
         catch (Exception ex)
         {
@@ -184,5 +187,109 @@ public static class JarMetadataParser
             value = value[1..^1];
         }
         return value;
+    }
+
+    public static bool IsClientSideMod(string filePath)
+    {
+        try
+        {
+            using var archive = ZipFile.OpenRead(filePath);
+
+            var fabricEntry = archive.GetEntry("fabric.mod.json") ?? archive.GetEntry("quilt.mod.json");
+            if (fabricEntry != null)
+            {
+                using var stream = fabricEntry.Open();
+                using var doc = JsonDocument.Parse(stream);
+                if (IsFabricClientSideOnly(doc.RootElement))
+                {
+                    return true;
+                }
+            }
+
+            var tomlEntry = archive.GetEntry("META-INF/mods.toml") ?? archive.GetEntry("META-INF/neoforge.mods.toml");
+            if (tomlEntry != null)
+            {
+                using var stream = tomlEntry.Open();
+                using var reader = new StreamReader(stream);
+                string content = reader.ReadToEnd();
+                if (IsForgeFamilyClientSideOnly(content))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsFabricClientSideOnly(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        if (root.TryGetProperty("environment", out var envElement)
+            && envElement.ValueKind == JsonValueKind.String)
+        {
+            var env = envElement.GetString();
+            if (string.Equals(env, "client", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        if (root.TryGetProperty("quilt_loader", out var loader)
+            && loader.ValueKind == JsonValueKind.Object
+            && loader.TryGetProperty("metadata", out var meta)
+            && meta.ValueKind == JsonValueKind.Object
+            && meta.TryGetProperty("environment", out var quiltEnv)
+            && quiltEnv.ValueKind == JsonValueKind.String)
+        {
+            var env = quiltEnv.GetString();
+            if (string.Equals(env, "client", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsForgeFamilyClientSideOnly(string content)
+    {
+        var blocks = Regex.Matches(content, @"(?ms)^\[\[.*?\]\](.*?)(?=^\[\[|\z)");
+
+        string? minecraftSide = null;
+        string? firstFoundSide = null;
+
+        foreach (Match block in blocks)
+        {
+            string blockBody = block.Groups[1].Value;
+
+            var modIdMatch = Regex.Match(blockBody, "^\\s*modId\\s*=\\s*[\"'](.*?)[\"']", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            var sideMatch = Regex.Match(blockBody, "^\\s*side\\s*=\\s*[\"'](.*?)[\"']", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+            if (!sideMatch.Success)
+            {
+                continue;
+            }
+
+            string currentSide = sideMatch.Groups[1].Value;
+            firstFoundSide ??= currentSide;
+
+            if (modIdMatch.Success && string.Equals(modIdMatch.Groups[1].Value, "minecraft", StringComparison.OrdinalIgnoreCase))
+            {
+                minecraftSide = currentSide;
+                break;
+            }
+        }
+
+        string? finalSide = minecraftSide ?? firstFoundSide;
+        return finalSide != null && string.Equals(finalSide, "CLIENT", StringComparison.OrdinalIgnoreCase);
     }
 }
