@@ -81,6 +81,26 @@ public class RpcGoldenCharacterizationTests
 
     [Fact]
     [Trait("Category", "RpcGolden")]
+    public void ActionRequest_GetInstanceSettingsParameter_SchemaLockedFixture_MatchesBaseline()
+    {
+        var request = new ActionRequest
+        {
+            ActionType = ActionType.GetInstanceSettings,
+            Parameter = ParseToElement(new GetInstanceSettingsParameter
+            {
+                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+            }),
+            Id = FixedRequestId
+        };
+
+        AssertMatchesFixture(
+            JsonSerializer.Serialize(request, StjResolver.CreateDefaultOptions()),
+            RpcFixturePaths.ActionRequestDir,
+            "get-instance-settings-parameter.json");
+    }
+
+    [Fact]
+    [Trait("Category", "RpcGolden")]
     public void ActionRequest_SaveEventRulesNestedParameter_SchemaLockedFixture_MatchesBaseline()
     {
         var request = new ActionRequest

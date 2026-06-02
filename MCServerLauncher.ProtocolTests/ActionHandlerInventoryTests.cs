@@ -101,6 +101,8 @@ public class ActionHandlerInventoryTests
         Assert.Equal(
             Order([
                 ActionType.GetInstanceLogHistory,
+                ActionType.GetInstanceSettings,
+                ActionType.UpdateInstanceSettings,
                 ActionType.GetEventRules,
                 ActionType.SaveEventRules
             ]),

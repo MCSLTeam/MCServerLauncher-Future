@@ -44,6 +44,8 @@ public class ActionRegistryCharacterizationTests
         ActionType.GetInstanceReport,
         ActionType.GetAllReports,
         ActionType.GetInstanceLogHistory,
+        ActionType.GetInstanceSettings,
+        ActionType.UpdateInstanceSettings,
         ActionType.GetEventRules,
         ActionType.SaveEventRules
     ];
@@ -58,7 +60,8 @@ public class ActionRegistryCharacterizationTests
         ActionType.AddInstance,
         ActionType.StartInstance,
         ActionType.GetInstanceReport,
-        ActionType.GetAllReports
+        ActionType.GetAllReports,
+        ActionType.UpdateInstanceSettings
     ];
 
     [Fact]

@@ -127,6 +127,34 @@ public class DaemonDaemonClientTransportConvergenceTests
     [Trait("Category", "T18")]
     [Trait("Category", "CompatibilityConvergence")]
     [Trait("Category", "EndToEndIntegration")]
+    public void ClientOutboundToDaemonInbound_GetInstanceSettingsParameter_RoundTripsThroughRealSeams()
+    {
+        var request = new ActionRequest
+        {
+            ActionType = ActionType.GetInstanceSettings,
+            Parameter = ParseJsonElement(
+                """
+                {
+                  "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+                }
+                """),
+            Id = FixedRequestId
+        };
+
+        var wireJson = SerializeAtClientSendSeam(request);
+        AssertMatchesFixture(wireJson, RpcFixturePaths.ActionRequestDir, "get-instance-settings-parameter.json");
+
+        var parsedRequest = ParseAtDaemonInboundSeam(wireJson);
+        var parameter = MaterializeDaemonParameter<GetInstanceSettingsParameter>(parsedRequest.Parameter);
+
+        Assert.Equal(ActionType.GetInstanceSettings, parsedRequest.ActionType);
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), parameter.Id);
+    }
+
+    [Fact]
+    [Trait("Category", "T18")]
+    [Trait("Category", "CompatibilityConvergence")]
+    [Trait("Category", "EndToEndIntegration")]
     public void ClientOutboundToDaemonInbound_SaveEventRulesNestedParameter_RoundTripsThroughRealSeams()
     {
         var request = new ActionRequest
