@@ -21,6 +21,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
         private readonly Page _componentManager = new ComponentManagerPage();
         private readonly Page _eventTrigger = new EventTriggerPage();
         private readonly Page _fileManager = new FileManagerPage();
+        private readonly Page _instanceSettings = new InstanceSettingsPage();
 
         private Constants.DaemonConfigModel? _daemonConfig;
         private Guid _instanceId;
@@ -149,6 +150,10 @@ namespace MCServerLauncher.WPF.InstanceConsole
                     CurrentPage.Navigate(_componentManager,
                         new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(navPageType) });
                     break;
+                case not null when navPageType == typeof(InstanceSettingsPage):
+                    CurrentPage.Navigate(_instanceSettings,
+                        new SlideNavigationTransitionInfo { Effect = DetermineSlideDirection(navPageType) });
+                    break;
             }
         }
 
@@ -163,7 +168,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
             var pages = new List<Type>
             {
                 typeof(BoardPage), typeof(CommandPage), typeof(FileManagerPage), typeof(EventTriggerPage),
-                typeof(ComponentManagerPage)
+                typeof(ComponentManagerPage), typeof(InstanceSettingsPage)
             };
             return pages.IndexOf(current.GetType()) < pages.IndexOf(navPageType)
                 ? SlideNavigationTransitionEffect.FromRight

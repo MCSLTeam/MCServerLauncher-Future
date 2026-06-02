@@ -70,7 +70,8 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{Binding [Console_OthersNavMenu], Source={x:Static i18n:Lang.Tr}}"
-                                       Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.OthersPage">
+                                       Tag="MCServerLauncher.WPF.InstanceConsole.View.Pages.OthersPage"
+                                       Visibility="Collapsed">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
