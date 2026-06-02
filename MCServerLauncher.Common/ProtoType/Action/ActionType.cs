@@ -43,6 +43,8 @@ public enum ActionType
     GetInstanceReport,
     GetAllReports,
     GetInstanceLogHistory,
+    GetInstanceSettings,
+    UpdateInstanceSettings,
 
     // Event Triggers
     GetEventRules,

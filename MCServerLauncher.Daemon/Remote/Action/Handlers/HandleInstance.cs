@@ -160,3 +160,29 @@ internal class HandleGetInstanceLogHistory : IActionHandler<GetInstanceLogHistor
         });
     }
 }
+
+[ActionHandler(ActionType.GetInstanceSettings, "*")]
+internal class HandleGetInstanceSettings : IActionHandler<GetInstanceSettingsParameter, GetInstanceSettingsResult>
+{
+    public Result<GetInstanceSettingsResult, ActionError> Handle(GetInstanceSettingsParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
+    {
+        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+        return instanceManager.GetInstanceSettings(param.Id)
+            .GetAwaiter()
+            .GetResult()
+            .MapErr(err => new ActionError(ActionRetcode.BadRequest.WithMessage(err.ToString())));
+    }
+}
+
+[ActionHandler(ActionType.UpdateInstanceSettings, "*")]
+internal class HandleUpdateInstanceSettings : IAsyncActionHandler<UpdateInstanceSettingsParameter, UpdateInstanceSettingsResult>
+{
+    public async Task<Result<UpdateInstanceSettingsResult, ActionError>> HandleAsync(UpdateInstanceSettingsParameter param,
+        WsContext ctx, IResolver resolver, CancellationToken ct)
+    {
+        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+        return (await instanceManager.UpdateInstanceSettings(param))
+            .MapErr(err => new ActionError(ActionRetcode.InstallationError.WithMessage(err.ToString())));
+    }
+}

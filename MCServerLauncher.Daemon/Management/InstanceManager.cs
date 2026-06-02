@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Detection;
 using MCServerLauncher.Daemon.Storage;
@@ -12,8 +13,14 @@ namespace MCServerLauncher.Daemon.Management;
 public class InstanceManager : IInstanceManager
 {
     private Func<IEnumerable<Guid>> InstanceKeysSupplier => () => Instances.Keys;
+    private readonly InstanceUpdateCoordinator _instanceUpdateCoordinator;
     public ConcurrentDictionary<Guid, IInstance> Instances { get; } = new();
     public ConcurrentDictionary<Guid, IInstance> RunningInstances { get; } = new();
+
+    public InstanceManager()
+    {
+        _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this);
+    }
 
     public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting)
     {
@@ -173,6 +180,16 @@ public class InstanceManager : IInstanceManager
         return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
     }
 
+    public Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(Guid instanceId)
+    {
+        return Task.FromResult(_instanceUpdateCoordinator.GetInstanceSettings(instanceId));
+    }
+
+    public Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(UpdateInstanceSettingsParameter request)
+    {
+        return _instanceUpdateCoordinator.UpdateInstanceSettings(request);
+    }
+
     public Task StopAllInstances(CancellationToken ct = default)
     {
         foreach (var instance in RunningInstances.Values) instance.Process?.WriteLine("stop");
@@ -180,6 +197,20 @@ public class InstanceManager : IInstanceManager
         var tasks = RunningInstances.Values.Select(instance =>
             instance.Process?.WaitForExitAsync(ct) ?? Task.CompletedTask);
         return Task.WhenAll(tasks);
+    }
+
+    internal void ReplaceInstance(Guid instanceId, IInstance replacement)
+    {
+        if (Instances.TryGetValue(instanceId, out var existing))
+        {
+            replacement.OnStatusChanged += OnInstanceStatusChangedHandler;
+            Instances[instanceId] = replacement;
+            existing.Dispose();
+            return;
+        }
+
+        replacement.OnStatusChanged += OnInstanceStatusChangedHandler;
+        Instances[instanceId] = replacement;
     }
 
     private void OnInstanceStatusChangedHandler(Guid instanceId, InstanceStatus status)

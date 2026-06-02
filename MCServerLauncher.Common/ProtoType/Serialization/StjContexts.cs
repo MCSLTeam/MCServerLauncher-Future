@@ -60,6 +60,8 @@ public partial class RpcEnvelopeContext : JsonSerializerContext
 [JsonSerializable(typeof(KillInstanceParameter))]
 [JsonSerializable(typeof(GetInstanceReportParameter))]
 [JsonSerializable(typeof(GetInstanceLogHistoryParameter))]
+[JsonSerializable(typeof(GetInstanceSettingsParameter))]
+[JsonSerializable(typeof(UpdateInstanceSettingsParameter))]
 [JsonSerializable(typeof(GetEventRulesParameter))]
 [JsonSerializable(typeof(SaveEventRulesParameter))]
 public partial class ActionParametersContext : JsonSerializerContext
@@ -85,6 +87,8 @@ public partial class ActionParametersContext : JsonSerializerContext
 [JsonSerializable(typeof(AddInstanceResult))]
 [JsonSerializable(typeof(GetInstanceReportResult))]
 [JsonSerializable(typeof(GetInstanceLogHistoryResult))]
+[JsonSerializable(typeof(GetInstanceSettingsResult))]
+[JsonSerializable(typeof(UpdateInstanceSettingsResult))]
 [JsonSerializable(typeof(GetAllReportsResult))]
 [JsonSerializable(typeof(GetSystemInfoResult))]
 [JsonSerializable(typeof(GetEventRulesResult))]
@@ -115,6 +119,7 @@ public partial class EventDataContext : JsonSerializerContext
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 [JsonSerializable(typeof(InstanceConfig))]
 [JsonSerializable(typeof(InstanceFactorySetting))]
+[JsonSerializable(typeof(InstanceInstallMetadata))]
 public partial class PersistenceContext : JsonSerializerContext
 {
 }

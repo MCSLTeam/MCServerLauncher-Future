@@ -68,7 +68,19 @@ public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
         var install = await copyAndRenameTarget.MapAsync(_ => installer.Run(setting));
         var fixEula = await install.MapAsync(_ => setting.FixEula());
 
-        return fixEula.Map(_ => setting.GetInstanceConfig());
+        return fixEula.Map(_ =>
+        {
+            var config = setting.GetInstanceConfig();
+            InstanceInstallMetadataStore.Write(setting.GetWorkingDirectory(), new Common.ProtoType.Action.InstanceInstallMetadata
+            {
+                InstallerKind = setting.InstanceType.ToString(),
+                InstallerSourcePath = setting.Source,
+                GeneratedPaths = Array.Empty<string>(),
+                ResolvedLaunchTarget = config.Target,
+                InstalledAt = DateTimeOffset.UtcNow
+            });
+            return config;
+        });
     }
 
     public Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()

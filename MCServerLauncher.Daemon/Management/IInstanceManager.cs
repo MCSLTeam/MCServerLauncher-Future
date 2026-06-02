@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -66,6 +67,10 @@ public interface IInstanceManager
     /// </summary>
     /// <returns></returns>
     Task<Dictionary<Guid, InstanceReport>> GetAllReports();
+
+    Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(Guid instanceId);
+
+    Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(UpdateInstanceSettingsParameter request);
 
     Task StopAllInstances(CancellationToken ct = default);
 }

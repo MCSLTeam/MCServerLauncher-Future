@@ -54,23 +54,42 @@ public class MCForgeFactory : ICoreInstanceFactory
                 );
             });
             return extractResult.MapErr(Error.FromException).Map(_ =>
-                config with
+            {
+                var updatedConfig = config with
                 {
                     TargetType = TargetType.Jar,
                     Target = ContainedFiles.NeoForgeServerLauncher
-                }
-            );
+                };
+                InstanceInstallMetadataStore.Write(setting.GetWorkingDirectory(), new Common.ProtoType.Action.InstanceInstallMetadata
+                {
+                    InstallerKind = setting.InstanceType.ToString(),
+                    InstallerSourcePath = installerPath,
+                    GeneratedPaths = new[] { "libraries", "server.jar" },
+                    ResolvedLaunchTarget = updatedConfig.Target,
+                    InstalledAt = DateTimeOffset.UtcNow
+                });
+                return updatedConfig;
+            });
         }
 
         // 确定最低支持版本(1.5.2)：再低就没Forge Installer了！
         if (mcVersion.Between(McVersion.Of("1.5.2"), McVersion.Of("1.16.5")))
         {
             var profile = forgeInstaller.Install; // 不为空,应为已经安装过了且无问题
-            return ResultExt.Ok(config with
+            var updatedConfig = config with
             {
                 TargetType = TargetType.Jar,
                 Target = forgeInstaller is ForgeInstallerV2 ? profile.Path!.Filename : profile.FilePath!
+            };
+            InstanceInstallMetadataStore.Write(setting.GetWorkingDirectory(), new Common.ProtoType.Action.InstanceInstallMetadata
+            {
+                InstallerKind = setting.InstanceType.ToString(),
+                InstallerSourcePath = installerPath,
+                GeneratedPaths = new[] { "libraries" },
+                ResolvedLaunchTarget = updatedConfig.Target,
+                InstalledAt = DateTimeOffset.UtcNow
             });
+            return ResultExt.Ok(updatedConfig);
         }
 
         return ResultExt.Err<InstanceConfig>("Forge factory's unreachable code here");

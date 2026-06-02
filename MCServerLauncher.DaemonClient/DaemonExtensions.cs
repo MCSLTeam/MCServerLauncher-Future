@@ -687,6 +687,27 @@ public static class DaemonExtensions
         return resp.Logs;
     }
 
+    public static async Task<GetInstanceSettingsResult> GetInstanceSettingsAsync(this IDaemon daemon, Guid id, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        return await daemon.RequestAsync<GetInstanceSettingsResult>(
+            ActionType.GetInstanceSettings,
+            new GetInstanceSettingsParameter
+            {
+                Id = id
+            }, timeout, ct);
+    }
+
+    public static async Task<UpdateInstanceSettingsResult> UpdateInstanceSettingsAsync(this IDaemon daemon, UpdateInstanceSettingsParameter parameter, int timeout = -1,
+        CancellationToken ct = default)
+    {
+        return await daemon.RequestAsync<UpdateInstanceSettingsResult>(
+            ActionType.UpdateInstanceSettings,
+            parameter,
+            timeout,
+            ct);
+    }
+
     #endregion
 
     #region Event Triggers

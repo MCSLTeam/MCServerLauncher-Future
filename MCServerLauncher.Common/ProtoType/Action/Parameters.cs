@@ -219,3 +219,41 @@ public sealed record GetInstanceLogHistoryParameter : IActionParameter
     [SysTextJsonRequired]
     public Guid Id { get; init; }
 }
+
+public sealed record GetInstanceSettingsParameter : IActionParameter
+{
+    [SysTextJsonRequired]
+    public Guid Id { get; init; }
+}
+
+public sealed record InstanceCoreReplacementRequest
+{
+    [SysTextJsonRequired]
+    public string UploadedSourcePath { get; init; } = null!;
+
+    public string? PreferredTargetName { get; init; }
+}
+
+public sealed record UpdateInstanceSettingsParameter : IActionParameter
+{
+    [SysTextJsonRequired]
+    public Guid Id { get; init; }
+
+    [SysTextJsonRequired]
+    public string Name { get; init; } = null!;
+
+    [SysTextJsonRequired]
+    public InstanceType InstanceType { get; init; }
+
+    public string? JavaPath { get; init; }
+
+    [SysTextJsonRequired]
+    public string[] Arguments { get; init; } = [];
+
+    public string? Version { get; init; }
+
+    public InstanceCoreReplacementRequest? ReplacementCore { get; init; }
+
+    [SysTextJsonRequired]
+    public bool ForceRerunInstaller { get; init; }
+}

@@ -1,3 +1,4 @@
+using System;
 using MCServerLauncher.Common.ProtoType.Files;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Status;
@@ -96,6 +97,58 @@ public sealed record GetInstanceLogHistoryResult : IActionResult
 {
     [SysTextJsonRequired]
     public string[] Logs { get; init; } = null!;
+}
+
+public sealed record InstanceInstallMetadata
+{
+    [SysTextJsonRequired]
+    public string InstallerKind { get; init; } = null!;
+
+    public string? InstallerSourcePath { get; init; }
+
+    [SysTextJsonRequired]
+    public string[] GeneratedPaths { get; init; } = [];
+
+    public string? ResolvedLaunchTarget { get; init; }
+
+    public DateTimeOffset InstalledAt { get; init; }
+}
+
+public sealed record GetInstanceSettingsResult : IActionResult
+{
+    [SysTextJsonRequired]
+    public InstanceConfig Config { get; init; } = null!;
+
+    [SysTextJsonRequired]
+    public string WorkingDirectory { get; init; } = null!;
+
+    [SysTextJsonRequired]
+    public bool CurrentTargetExists { get; init; }
+
+    [SysTextJsonRequired]
+    public bool CanEdit { get; init; }
+
+    public string? EditBlockedReason { get; init; }
+
+    public InstanceInstallMetadata? InstallMetadata { get; init; }
+}
+
+public sealed record UpdateInstanceSettingsResult : IActionResult
+{
+    [SysTextJsonRequired]
+    public InstanceConfig Config { get; init; } = null!;
+
+    [SysTextJsonRequired]
+    public bool RequiresRestart { get; init; }
+
+    [SysTextJsonRequired]
+    public bool Reinstalled { get; init; }
+
+    [SysTextJsonRequired]
+    public string[] DeletedGeneratedPaths { get; init; } = [];
+
+    [SysTextJsonRequired]
+    public string[] PreservedOriginalPaths { get; init; } = [];
 }
 
 public sealed record GetAllReportsResult : IActionResult
