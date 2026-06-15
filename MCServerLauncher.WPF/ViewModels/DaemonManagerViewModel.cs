@@ -77,11 +77,11 @@ public partial class DaemonManagerViewModel : ObservableObject
     {
         var originalConfig = daemon.Config;
         (ContentDialog dialog, NewDaemonConnectionInput input) = await View.Components.Utils.ConstructConnectDaemonDialog(
-            originalConfig.EndPoint,
+            originalConfig.EndPoint ?? string.Empty,
             originalConfig.Port.ToString(),
             originalConfig.IsSecure,
-            originalConfig.Token,
-            originalConfig.FriendlyName,
+            originalConfig.Token ?? string.Empty,
+            originalConfig.FriendlyName ?? string.Empty,
             isRetrying: false,
             isEditing: true
         );

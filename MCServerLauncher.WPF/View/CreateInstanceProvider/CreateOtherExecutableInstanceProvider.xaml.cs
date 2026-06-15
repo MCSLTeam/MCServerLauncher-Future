@@ -37,7 +37,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             UpdateFinishButtonState();
         }
 
-        private void OnStepFinishedChanged(object sender, EventArgs e)
+        private void OnStepFinishedChanged(object? sender, EventArgs e)
         {
             UpdateFinishButtonState();
         }

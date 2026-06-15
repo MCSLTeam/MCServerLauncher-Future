@@ -143,12 +143,12 @@ internal class AnotherActionExecutor : IActionExecutor
     /// <summary>
     ///     处理请求，返回响应（如果是异步handler, 不立即返回响应）
     /// </summary>
-    /// <param name="text"></param>
+    /// <param name="utf8Json"></param>
     /// <param name="ctx"></param>
     /// <returns></returns>
-    public ActionResponse? ProcessAction(string text, WsContext ctx)
+    public ActionResponse? ProcessAction(ReadOnlyMemory<byte> utf8Json, WsContext ctx)
     {
-        return this.ProcessParsedRequest(this.ParseRequest(text), ctx);
+        return this.ProcessParsedRequest(this.ParseRequest(utf8Json), ctx);
     }
 
     public async Task ShutdownAsync()

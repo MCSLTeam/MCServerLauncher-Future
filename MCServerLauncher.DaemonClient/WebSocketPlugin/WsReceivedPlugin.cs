@@ -82,15 +82,15 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         foreach (var inbound in inbounds)
         {
             if (inbound.EnvelopeType == InboundEnvelopeType.Event)
-                DispatchEvent(inbound.EventPacket!);
+                await DispatchEventAsync(inbound.EventPacket!);
             else if (inbound.EnvelopeType == InboundEnvelopeType.Action)
-                DispatchAction(inbound.ActionResponse!);
+                await DispatchActionAsync(inbound.ActionResponse!);
             else if (inbound.EnvelopeType == InboundEnvelopeType.BinaryUpload)
-                DispatchBinaryUpload(inbound.BinaryUploadResponse!.Value);
+                await DispatchBinaryUploadAsync(inbound.BinaryUploadResponse!.Value);
             else if (inbound.EnvelopeType == InboundEnvelopeType.Notification)
-                DispatchNotification(inbound.NotificationPacket!);
+                await DispatchNotificationAsync(inbound.NotificationPacket!);
             else if (inbound.EnvelopeType == InboundEnvelopeType.Relay)
-                DispatchRelay(inbound.RelayPacket!);
+                await DispatchRelayAsync(inbound.RelayPacket!);
         }
 
         await e.InvokeNext();
@@ -101,6 +101,11 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     public event Action<BinaryUploadResponse>? OnBinaryUploadResponseReceived;
     public event Action<NotificationPacket>? OnNotificationReceived;
     public event Action<RelayPacket>? OnRelayReceived;
+    public event Func<EventType, long, IEventMeta?, IEventData?, Task>? OnEventReceivedAsync;
+    public event Func<ActionResponse, Task>? OnActionResponseReceivedAsync;
+    public event Func<BinaryUploadResponse, Task>? OnBinaryUploadResponseReceivedAsync;
+    public event Func<NotificationPacket, Task>? OnNotificationReceivedAsync;
+    public event Func<RelayPacket, Task>? OnRelayReceivedAsync;
 
     internal static InboundEnvelopeType DetectEnvelopeType(string received)
     {
@@ -390,20 +395,27 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
             : packet;
     }
 
-    private void DispatchEvent(EventPacket packet)
+    private async Task DispatchEventAsync(EventPacket packet)
     {
         var eventType = packet.EventType;
+        var meta = MaterializeEventMeta(eventType, packet.EventMeta);
+        var data = MaterializeEventData(eventType, packet.EventData);
 
-        // TODO 改为异步? BeginInvoke?
         OnEventReceived?.Invoke(
             eventType,
             packet.Timestamp,
-            MaterializeEventMeta(eventType, packet.EventMeta),
-            MaterializeEventData(eventType, packet.EventData)
+            meta,
+            data
         );
+
+        if (OnEventReceivedAsync is { } handlers)
+        {
+            foreach (Func<EventType, long, IEventMeta?, IEventData?, Task> handler in handlers.GetInvocationList())
+                await handler(eventType, packet.Timestamp, meta, data);
+        }
     }
 
-    private void DispatchAction(ActionResponse response)
+    private async Task DispatchActionAsync(ActionResponse response)
     {
         if (response.Id == Guid.Empty)
         {
@@ -412,25 +424,37 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         }
 
         OnActionResponseReceived?.Invoke(response);
+        await InvokeAsync(OnActionResponseReceivedAsync, response);
     }
 
-    private void DispatchBinaryUpload(BinaryUploadResponse response)
+    private async Task DispatchBinaryUploadAsync(BinaryUploadResponse response)
     {
         OnBinaryUploadResponseReceived?.Invoke(response);
+        await InvokeAsync(OnBinaryUploadResponseReceivedAsync, response);
     }
 
-    private void DispatchNotification(NotificationPacket packet)
+    private async Task DispatchNotificationAsync(NotificationPacket packet)
     {
         OnNotificationReceived?.Invoke(packet);
+        await InvokeAsync(OnNotificationReceivedAsync, packet);
     }
 
-    private void DispatchRelay(RelayPacket packet)
+    private async Task DispatchRelayAsync(RelayPacket packet)
     {
         OnRelayReceived?.Invoke(packet);
+        await InvokeAsync(OnRelayReceivedAsync, packet);
     }
 
     private void DispatchAction(string received)
     {
-        DispatchAction(ParseActionResponse(received));
+        DispatchActionAsync(ParseActionResponse(received)).GetAwaiter().GetResult();
+    }
+
+    private static async Task InvokeAsync<T>(Func<T, Task>? handlers, T arg)
+    {
+        if (handlers == null) return;
+
+        foreach (Func<T, Task> handler in handlers.GetInvocationList())
+            await handler(arg);
     }
 }

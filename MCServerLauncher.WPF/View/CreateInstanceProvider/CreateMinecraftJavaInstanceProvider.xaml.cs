@@ -1,5 +1,5 @@
 using MCServerLauncher.Common.Extensibility;
-﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
@@ -41,7 +41,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             UpdateFinishButtonState();
         }
 
-        private void OnStepFinishedChanged(object sender, EventArgs e)
+        private void OnStepFinishedChanged(object? sender, EventArgs e)
         {
             UpdateFinishButtonState();
         }
@@ -118,22 +118,16 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 var jvmArgumentData = JvmArgument.ActualData;
                 var instanceNameData = InstanceName.ActualData;
 
-                string corePath = coreData.Data as string ?? string.Empty;
-                string javaPath = jvmData.Data as string ?? string.Empty;
+                string corePath = CreateInstanceValidation.NormalizeString(coreData.Data);
+                string javaPath = CreateInstanceValidation.NormalizeString(jvmData.Data);
                 string[] arguments = jvmArgumentData.Data as string[] ?? [];
-                string instanceName = instanceNameData.Data as string ?? string.Empty;
+                string instanceName = CreateInstanceValidation.NormalizeString(instanceNameData.Data);
 
-                if (string.IsNullOrWhiteSpace(corePath) || string.IsNullOrWhiteSpace(javaPath) || string.IsNullOrWhiteSpace(instanceName))
+                if (!CreateInstanceValidation.TryValidateLocalJarPath(corePath, out var validationError)
+                    || !CreateInstanceValidation.TryValidateJavaPath(javaPath, out validationError)
+                    || !CreateInstanceValidation.TryValidateInstanceName(instanceName, out validationError))
                 {
-                    Notification.Push(
-                        Lang.Tr["Error"],
-                        Lang.Tr["CreateInstanceMissingDataError"],
-                        true,
-                        InfoBarSeverity.Error,
-                        InfoBarPosition.Top,
-                        5000,
-                        false
-                    );
+                    CreateInstanceValidation.PushError(validationError);
                     FinishButton.IsEnabled = true;
                     return;
                 }
@@ -241,7 +235,10 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     );
 
                     var uploadContext = await daemon.UploadFileAsync(corePath, daemonUploadPath, 1024 * 1024);
-                    await uploadContext.NetworkLoadTask;
+                    if (uploadContext.NetworkLoadTask != null)
+                    {
+                        await uploadContext.NetworkLoadTask;
+                    }
 
                     if (!uploadContext.Done)
                     {
@@ -301,7 +298,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 var parent = this.TryFindParent<CreateInstancePage>();
                 parent?.CurrentCreateInstance.GoBack();
             }
-            catch (Exception ex)
+            catch
             {
                 FinishButton.IsEnabled = true;
                 throw;

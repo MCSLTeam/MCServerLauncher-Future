@@ -606,7 +606,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     var realPath = GetRealPath(SelectedItem.Path);
                     var context = await _daemon.DownloadFileAsync(realPath, dialog.FileName, 1024 * 1024); // 1MB chunks
                     // TODO: Show progress UI
-                    await context.NetworkLoadTask;
+                    if (context.NetworkLoadTask != null)
+                    {
+                        await context.NetworkLoadTask;
+                    }
                     MessageBox.Show("下载完成！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
@@ -637,7 +640,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     
                     var context = await _daemon.UploadFileAsync(dialog.FileName, realTargetPath, 1024 * 1024); // 1MB chunks
                     // TODO: Show progress UI
-                    await context.NetworkLoadTask;
+                    if (context.NetworkLoadTask != null)
+                    {
+                        await context.NetworkLoadTask;
+                    }
                     
                     await LoadDirectoryAsync(CurrentPath);
                     MessageBox.Show("上传完成！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);

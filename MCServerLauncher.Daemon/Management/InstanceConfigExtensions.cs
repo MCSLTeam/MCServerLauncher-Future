@@ -44,15 +44,32 @@ public static class InstanceConfigExtensions
                 return ResultExt.Err<Unit>("Could not parse mc_version");
             }
 
-        if (
-            config.TargetType is TargetType.Jar
-            && config.JavaPath.ToLower() != "java"
-            && !File.Exists(config.JavaPath)
-        ) return ResultExt.Err<Unit>("Could not found java in java_path");
+        var javaPathValidation = config.ValidateJavaPathExists();
+        if (javaPathValidation.IsErr(out var javaPathError) && javaPathError is not null)
+            return ResultExt.Err<Unit>(javaPathError);
 
         if (config.Uuid == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
 
         return ResultExt.Ok(Unit.Default);
+    }
+
+    private static Result<Unit, Error> ValidateJavaPathExists(this InstanceConfig config)
+    {
+        if (
+            config.TargetType is not TargetType.Jar
+            || config.JavaPath.Equals("java", StringComparison.OrdinalIgnoreCase)
+        ) return ResultExt.Ok(Unit.Default);
+
+        try
+        {
+            return File.Exists(config.JavaPath)
+                ? ResultExt.Ok(Unit.Default)
+                : ResultExt.Err<Unit>("Could not found java in java_path");
+        }
+        catch (Exception ex)
+        {
+            return ResultExt.Err<Unit>(new Error("Failed to inspect java_path").CauseBy(ex));
+        }
     }
 
     public static bool IsMinecraftJavaInstance(InstanceType type)
@@ -172,14 +189,35 @@ public static class InstanceConfigExtensions
     public static async Task<Result<Unit, Error>> FixEula(this InstanceConfig config)
     {
         var eulaPath = Path.Combine(config.GetWorkingDirectory(), "eula.txt");
-        return await ResultExt.TryAsync(async Task () =>
+
+        var eula = await ReadOrGenerateEula(eulaPath);
+        if (eula.IsErr(out var readError) && readError is not null) return ResultExt.Err<Unit>(readError);
+
+        return await WriteEula(eulaPath, eula.Unwrap());
+    }
+
+    private static async Task<Result<string[], Error>> ReadOrGenerateEula(string eulaPath)
+    {
+        var result = await ResultExt.TryAsync(async path =>
         {
-            var text = File.Exists(eulaPath)
-                ? (await File.ReadAllLinesAsync(eulaPath))
+            return File.Exists(path)
+                ? (await File.ReadAllLinesAsync(path))
                 .Select(x => x.Trim().StartsWith("eula") ? "eula=true" : x)
                 .ToArray()
                 : GenerateEula();
-            await File.WriteAllLinesAsync(eulaPath, text, Encoding.UTF8);
-        }).MapTask(result => result.MapErr(ex => new Error().CauseBy(ex)));
+        }, eulaPath);
+
+        return result.MapErr(ex => new Error("Failed to read EULA").CauseBy(ex));
+    }
+
+    private static async Task<Result<Unit, Error>> WriteEula(string eulaPath, string[] text)
+    {
+        var result = await ResultExt.TryAsync(async state =>
+        {
+            var (path, lines) = state;
+            await File.WriteAllLinesAsync(path, lines, Encoding.UTF8);
+        }, (eulaPath, text));
+
+        return result.MapErr(ex => new Error("Failed to write EULA").CauseBy(ex));
     }
 }

@@ -77,12 +77,12 @@ public class InstanceSettingsCoordinatorTests
         public event Action<Guid, string>? OnLog;
         public event Action<Guid, InstanceStatus>? OnStatusChanged;
 
-        public Task<InstanceReport> GetReportAsync()
+        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
         {
             return Task.FromResult(new InstanceReport(Status, Config, new Dictionary<string, string>(), [], default));
         }
 
-        public Task<bool> StartAsync(int delayToCheck = 500)
+        public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
         {
             return Task.FromResult(false);
         }

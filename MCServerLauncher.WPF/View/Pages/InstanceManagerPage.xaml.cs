@@ -96,7 +96,7 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void StartAutoRefresh()
         {
-            var interval = SettingsManager.Get.Instance.AutoRefreshInterval;
+            var interval = SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 0;
             if (interval <= 0) { StopAutoRefresh(); return; }
 
             if (_refreshTimer == null)

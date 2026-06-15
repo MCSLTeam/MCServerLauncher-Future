@@ -23,18 +23,18 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 if (IsVisible)
                 {
-                    if (DaemonsListManager.Get.Count > 0)
+                    if (DaemonsListManager.Get is { Count: > 0 } daemons)
                     {
                         if (SettingsManager.Get?.App != null && SettingsManager.Get.App.IsFirstSetupFinished) return;
                         DaemonListView.Items.Clear();
-                        foreach (var daemon in DaemonsListManager.Get)
+                        foreach (var daemon in daemons)
                         {
                             TryConnectDaemon(
-                                daemon.EndPoint,
+                                daemon.EndPoint ?? string.Empty,
                                 daemon.Port.ToString(),
-                                daemon.Token,
+                                daemon.Token ?? string.Empty,
                                 daemon.IsSecure,
-                                daemon.FriendlyName
+                                daemon.FriendlyName ?? string.Empty
                             );
                         }
                     }

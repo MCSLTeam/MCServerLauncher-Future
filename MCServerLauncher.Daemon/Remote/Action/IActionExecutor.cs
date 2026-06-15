@@ -4,6 +4,7 @@ using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Serilog;
+using System.Text;
 using System.Text.Json;
 using TouchSocket.Core;
 using JsonElement = System.Text.Json.JsonElement;
@@ -23,31 +24,15 @@ public interface IActionExecutor
             Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
         AsyncHandlers { get; }
 
-    ActionResponse? ProcessAction(string text, WsContext ctx);
+    ActionResponse? ProcessAction(ReadOnlyMemory<byte> utf8Json, WsContext ctx);
     Task ShutdownAsync();
 }
 
 public static class ActionExecutorExtensions
 {
-    // TODO 后续换成输入Span<byte>（System.Text.Json的反序列化）
     public static Result<ActionRequest, ActionResponse> ParseRequest(this IActionExecutor _, string text)
     {
-        try
-        {
-            var request = JsonElementHotPathAdapters.Deserialize(
-                text,
-                DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo);
-            if (request is null)
-                return Result.Err<ActionRequest, ActionResponse>(
-                    ResponseUtils.Err(ActionRetcode.BadRequest.WithMessage("Received null action request envelope"), null));
-            Log.Verbose("[Remote] Received message:{0}", request);
-            return Result.Ok<ActionRequest, ActionResponse>(request);
-        }
-        catch (Exception exception) when (exception is JsonException or NullReferenceException)
-        {
-            return Result.Err<ActionRequest, ActionResponse>(
-                ResponseUtils.Err(ActionRetcode.BadRequest.WithMessage("Could not parse action json"), null));
-        }
+        return _.ParseRequest(Encoding.UTF8.GetBytes(text));
     }
 
     public static Result<ActionRequest, ActionResponse> ParseRequest(this IActionExecutor _, ReadOnlySpan<byte> utf8Json)
@@ -80,9 +65,9 @@ public static class ActionExecutorExtensions
         return executor.ProcessParsedRequest(executor.ParseRequest(utf8Json), ctx);
     }
 
-    public static ActionResponse? ProcessAction(this IActionExecutor executor, ReadOnlyMemory<byte> utf8Json, WsContext ctx)
+    public static ActionResponse? ProcessAction(this IActionExecutor executor, string text, WsContext ctx)
     {
-        return executor.ProcessParsedRequest(executor.ParseRequest(utf8Json), ctx);
+        return executor.ProcessAction(Encoding.UTF8.GetBytes(text), ctx);
     }
 
     public static ActionResponse? ProcessParsedRequest(this IActionExecutor executor,

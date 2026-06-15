@@ -1,5 +1,5 @@
 using MCServerLauncher.Common.Extensibility;
-﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
@@ -40,7 +40,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             UpdateFinishButtonState();
         }
 
-        private void OnStepFinishedChanged(object sender, EventArgs e)
+        private void OnStepFinishedChanged(object? sender, EventArgs e)
         {
             UpdateFinishButtonState();
         }
@@ -118,18 +118,23 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 var jvmArgumentData = JvmArgument.ActualData;
                 var instanceNameData = InstanceName.ActualData;
 
-                var loaderVersion = (MinecraftLoaderVersion)loaderData.Data!;
+                if (!CreateInstanceValidation.TryGetLoaderVersion(loaderData, out MinecraftLoaderVersion loaderVersion, out string validationError))
+                {
+                    CreateInstanceValidation.PushError(validationError);
+                    FinishButton.IsEnabled = true;
+                    return;
+                }
+
                 string mcVersion = loaderVersion.MCVersion;
                 string fabricVersion = loaderVersion.LoaderVersion;
-                string javaPath = jvmData.Data as string ?? string.Empty;
+                string javaPath = CreateInstanceValidation.NormalizeString(jvmData.Data);
                 string[] arguments = jvmArgumentData.Data as string[] ?? [];
-                string instanceName = instanceNameData.Data as string ?? string.Empty;
+                string instanceName = CreateInstanceValidation.NormalizeString(instanceNameData.Data);
 
-                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(fabricVersion) ||
-                    string.IsNullOrWhiteSpace(javaPath) || string.IsNullOrWhiteSpace(instanceName))
+                if (!CreateInstanceValidation.TryValidateJavaPath(javaPath, out validationError)
+                    || !CreateInstanceValidation.TryValidateInstanceName(instanceName, out validationError))
                 {
-                    Notification.Push(Lang.Tr["Error"], Lang.Tr["CreateInstanceMissingDataError"],
-                        true, InfoBarSeverity.Error, InfoBarPosition.Top, 5000, false);
+                    CreateInstanceValidation.PushError(validationError);
                     FinishButton.IsEnabled = true;
                     return;
                 }

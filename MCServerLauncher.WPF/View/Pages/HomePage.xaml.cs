@@ -108,7 +108,13 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void PushSimpleNotification(object sender, RoutedEventArgs e)
         {
-            InfoBarSeverity infoBarSeverity = ((Button)sender).Content.ToString().Split('-')[0] switch
+            var parts = sender is Button button
+                ? button.Content?.ToString()?.Split('-')
+                : null;
+
+            if (parts is not { Length: >= 2 }) return;
+
+            InfoBarSeverity infoBarSeverity = parts[0] switch
             {
                 "Informational" => InfoBarSeverity.Informational,
                 "Success" => InfoBarSeverity.Success,
@@ -117,7 +123,7 @@ namespace MCServerLauncher.WPF.View.Pages
                 _ => InfoBarSeverity.Informational
             };
 
-            Constants.InfoBarPosition infoBarPosition = ((Button)sender).Content.ToString().Split('-')[1] switch
+            Constants.InfoBarPosition infoBarPosition = parts[1] switch
             {
                 "Top" => Constants.InfoBarPosition.Top,
                 "TopRight" => Constants.InfoBarPosition.TopRight,

@@ -83,6 +83,8 @@ namespace MCServerLauncher.WPF.View.Components.Generic
 
         private void ActionButtonTriggered(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(ButtonUrl)) return;
+
             Process.Start(ButtonUrl);
         }
     }

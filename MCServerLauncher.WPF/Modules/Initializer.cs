@@ -145,7 +145,7 @@ namespace MCServerLauncher.WPF.Modules
                 if (!certStream.CanRead) throw new InvalidOperationException("The stream cannot be read");
                 var buffer = new byte[certStream.Length];
                 certStream.ReadExactly(buffer);
-                var certificate = new X509Certificate2(buffer);
+                var certificate = X509CertificateLoader.LoadCertificate(buffer);
                 var store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
                 store.Open(OpenFlags.ReadWrite);
                 try

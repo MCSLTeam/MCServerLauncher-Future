@@ -12,7 +12,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
     public partial class EventRuleEditorDialog : System.Windows.Window
     {
         public EventRule Rule { get; }
-        public ObservableCollection<object> Triggers { get; } = new();
+        public new ObservableCollection<object> Triggers { get; } = new();
         public ObservableCollection<object> Rulesets { get; } = new();
         public ObservableCollection<object> Actions { get; } = new();
 
@@ -162,7 +162,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                 ScheduleTriggerWrapper w => w.Trigger,
                 InstanceStatusTriggerWrapper w => w.Trigger,
                 TriggerDefinition t => t,
-                _ => null
+                _ => throw new InvalidOperationException($"Unsupported trigger wrapper type: {wrapper.GetType().FullName}")
             };
         }
 
@@ -185,7 +185,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                 AlwaysFalseRulesetWrapper w => w.Ruleset,
                 InstanceStatusRulesetWrapper w => w.Ruleset,
                 RulesetDefinition r => r,
-                _ => null
+                _ => throw new InvalidOperationException($"Unsupported ruleset wrapper type: {wrapper.GetType().FullName}")
             };
         }
 
@@ -208,7 +208,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                 ChangeInstanceStatusActionWrapper w => w.Action,
                 SendNotificationActionWrapper w => w.Action,
                 ActionDefinition a => a,
-                _ => null
+                _ => throw new InvalidOperationException($"Unsupported action wrapper type: {wrapper.GetType().FullName}")
             };
         }
     }

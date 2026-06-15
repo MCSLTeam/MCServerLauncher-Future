@@ -6,6 +6,10 @@ using MCServerLauncher.Common.ProtoType.Status;
 
 namespace MCServerLauncher.DaemonClient;
 
+public delegate Task DaemonInstanceLogEventHandler(Guid instanceId, string text);
+
+public delegate Task DaemonReportEventHandler(DaemonReport report, long latency);
+
 /// <summary>
 ///     Daemon Rpc Interface
 /// </summary>
@@ -52,9 +56,19 @@ public interface IDaemon : IDisposable
     event Action<Guid, string>? InstanceLogEvent;
 
     /// <summary>
+    ///     Async Instance Log Event(InstanceId, Text)
+    /// </summary>
+    event DaemonInstanceLogEventHandler? InstanceLogEventAsync;
+
+    /// <summary>
     ///     Daemon Report Event(Report, Latency ms)
     /// </summary>
     event Action<DaemonReport, long>? DaemonReportEvent;
+
+    /// <summary>
+    ///     Async Daemon Report Event(Report, Latency ms)
+    /// </summary>
+    event DaemonReportEventHandler? DaemonReportEventAsync;
 
     Task RequestAsync(
         ActionType actionType,

@@ -263,15 +263,19 @@ public class DaemonInboundTransportPipelineTests
     public void ActionExecutorFile_UsesCachedDaemonRpcTypeInfo_ForRequestParsing()
     {
         AssertFileContains("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
-            "JsonElementHotPathAdapters.Deserialize(");
+            "ActionResponse? ProcessAction(ReadOnlyMemory<byte> utf8Json, WsContext ctx)");
         AssertFileContains("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
             "DaemonRpcTypeInfoCache<ActionRequest>.TypeInfo");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
+            "JsonSerializer.Deserialize(");
         AssertFileContains("MCServerLauncher.Daemon/Remote/WsActionPlugin.cs",
             "e.DataFrame.PayloadData");
         AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/WsActionPlugin.cs",
             "e.DataFrame.ToText()");
         AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
             "Deserialize<ActionRequest>(text, DaemonRpcJsonBoundary.StjOptions)");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs",
+            "ActionResponse? ProcessAction(string text, WsContext ctx)");
     }
 
     [Fact]
@@ -439,7 +443,7 @@ public class DaemonInboundTransportPipelineTests
             AsyncHandlers { get; } =
             new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>();
 
-        public ActionResponse? ProcessAction(string text, WsContext ctx)
+        public ActionResponse? ProcessAction(ReadOnlyMemory<byte> utf8Json, WsContext ctx)
         {
             throw new NotSupportedException();
         }

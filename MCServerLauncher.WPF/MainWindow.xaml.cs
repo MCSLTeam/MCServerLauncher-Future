@@ -90,8 +90,11 @@ namespace MCServerLauncher.WPF
             if (args.IsSettingsInvoked)
                 NavigateTo(typeof(int), args.RecommendedNavigationTransitionInfo);
             else if (args.InvokedItemContainer != null)
-                NavigateTo(Type.GetType(args.InvokedItemContainer.Tag.ToString()),
-                    args.RecommendedNavigationTransitionInfo);
+            {
+                var navPageType = Type.GetType(args.InvokedItemContainer.Tag?.ToString() ?? string.Empty);
+                if (navPageType is not null)
+                    NavigateTo(navPageType, args.RecommendedNavigationTransitionInfo);
+            }
         }
 
         /// <summary>

@@ -66,7 +66,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             }
         }
 
-        private void OnJavaRuntimeDropDownClosed(object sender, EventArgs e)
+        private void OnJavaRuntimeDropDownClosed(object? sender, EventArgs e)
         {
             if (IsDisposed) return;
 

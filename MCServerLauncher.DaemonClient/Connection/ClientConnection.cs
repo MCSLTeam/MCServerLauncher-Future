@@ -35,6 +35,7 @@ internal class ClientConnection : DisposableObject
         Config = config;
 
         _transport.EventReceived += (t, l, m, d) => OnEventReceived?.Invoke(t, l, m, d);
+        _transport.EventReceivedAsync += InvokeEventReceivedAsync;
         _transport.ActionResponseReceived += HandleActionResponse;
         _transport.BinaryUploadResponseReceived += HandleBinaryUploadResponse;
         _transport.Reconnected += async () =>
@@ -76,6 +77,7 @@ internal class ClientConnection : DisposableObject
     public event Action? ConnectionClosed;
 
     public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
+    public event Func<EventType, long, IEventMeta?, IEventData?, Task>? OnEventReceivedAsync;
 
     /// <summary>
     ///     建立连接
@@ -389,6 +391,14 @@ internal class ClientConnection : DisposableObject
                 tcs.TrySetResult((response.Done, response.Received));
             }
         }
+    }
+
+    private async Task InvokeEventReceivedAsync(EventType type, long timestamp, IEventMeta? meta, IEventData? data)
+    {
+        if (OnEventReceivedAsync is not { } handlers) return;
+
+        foreach (Func<EventType, long, IEventMeta?, IEventData?, Task> handler in handlers.GetInvocationList())
+            await handler(type, timestamp, meta, data);
     }
 
     private async Task OnReconnectedEventHandler()

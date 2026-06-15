@@ -33,6 +33,9 @@ internal sealed class TouchSocketClientTransport : DisposableObject
     public event Action<EventType, long, IEventMeta?, IEventData?>? EventReceived;
     public event Action<ActionResponse>? ActionResponseReceived;
     public event Action<WsReceivedPlugin.BinaryUploadResponse>? BinaryUploadResponseReceived;
+    public event Func<EventType, long, IEventMeta?, IEventData?, Task>? EventReceivedAsync;
+    public event Func<ActionResponse, Task>? ActionResponseReceivedAsync;
+    public event Func<WsReceivedPlugin.BinaryUploadResponse, Task>? BinaryUploadResponseReceivedAsync;
 
     public async Task OpenAsync(string address, int port, string token, bool isSecure, CancellationToken cancellationToken = default)
     {
@@ -76,11 +79,30 @@ internal sealed class TouchSocketClientTransport : DisposableObject
                 receivedPlugin.OnEventReceived += (t, l, m, d) => EventReceived?.Invoke(t, l, m, d);
                 receivedPlugin.OnActionResponseReceived += response => ActionResponseReceived?.Invoke(response);
                 receivedPlugin.OnBinaryUploadResponseReceived += response => BinaryUploadResponseReceived?.Invoke(response);
+                receivedPlugin.OnEventReceivedAsync += InvokeEventReceivedAsync;
+                receivedPlugin.OnActionResponseReceivedAsync += response => InvokeAsync(ActionResponseReceivedAsync, response);
+                receivedPlugin.OnBinaryUploadResponseReceivedAsync += response => InvokeAsync(BinaryUploadResponseReceivedAsync, response);
                 a.Add(receivedPlugin);
 
                 a.Add(new WsConnectionLifecyclePlugin(this));
                 a.UseReconnection<WebSocketClient>();
             });
+    }
+
+    private async Task InvokeEventReceivedAsync(EventType type, long timestamp, IEventMeta? meta, IEventData? data)
+    {
+        if (EventReceivedAsync is not { } handlers) return;
+
+        foreach (Func<EventType, long, IEventMeta?, IEventData?, Task> handler in handlers.GetInvocationList())
+            await handler(type, timestamp, meta, data);
+    }
+
+    private static async Task InvokeAsync<T>(Func<T, Task>? handlers, T arg)
+    {
+        if (handlers == null) return;
+
+        foreach (Func<T, Task> handler in handlers.GetInvocationList())
+            await handler(arg);
     }
 
     private static string BuildServerEndpoint(string address, int port, string token, bool isSecure)

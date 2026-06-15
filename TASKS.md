@@ -58,10 +58,11 @@ _All high priority items completed!_
 
 ### Architecture Improvements
 
-- [ ] **Convert remaining file operations to Result type**
+- [x] **Convert remaining file operations to Result type** (current)
   - Location: `MCServerLauncher.Daemon/Management/InstanceConfigExtensions.cs`
-  - Current: Partially migrated; some factory/file helpers already use `Result<T>`
-  - Target: Finish converting remaining raw file operations to `Result<T>` pattern
+  - Split Java path validation and EULA read/write operations into Result-returning helpers
+  - Preserved existing public extension method contracts while making file operation failures explicit
+  - `dotnet build MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`: 0 warnings, 0 errors
   - Benefit: Better error handling, functional approach
 
 - [x] **Add CancellationToken to remaining async manager methods** (b828803)
@@ -69,10 +70,10 @@ _All high priority items completed!_
   - Added `CancellationToken` support to async instance lifecycle/report paths and threaded action-handler cancellation through the manager calls
   - Benefit: Proper cancellation support, better resource cleanup
 
-- [ ] **Complete UTF-8 span-based deserialization migration**
+- [x] **Complete UTF-8 span-based deserialization migration** (current)
   - Location: `MCServerLauncher.Daemon/Remote/Action/IActionExecutor.cs`
-  - Current: `ReadOnlySpan<byte>` / `ReadOnlyMemory<byte>` overloads exist, but the main interface still exposes string input
-  - Target: Move the main action-executor boundary fully to UTF-8 span/memory input
+  - Moved the main action-executor interface boundary to `ReadOnlyMemory<byte>`
+  - Kept string parsing/dispatch as compatibility extension helpers that encode to UTF-8 and reuse the byte path
   - Benefit: Zero-copy deserialization, reduced allocations
 
 ### Error Handling
@@ -105,18 +106,11 @@ _All high priority items completed!_
   - Daemon now routes Forge-family installers through a shared installer resolver
   - Remaining stubbed providers still include: Bedrock, Terraria, OtherExecutable, Quilt
 
-- [ ] **Re-audit nullable reference hotspots in WPF project** (in progress: ab791d8, current staged)
+- [x] **Re-audit nullable reference hotspots in WPF project** (current)
   - Location: `MCServerLauncher.WPF/` (multiple files)
-  - Current: Project builds clean, but nullable suppressions / null-forgiving hotspots still exist in several WPF files
-  - Target: Remove remaining unsafe null-forgiving usage, add proper null checks, and reduce warning-prone patterns
-  - Files worth reviewing first:
-    - `Modules/Download.cs` (current staged path validation / safe filename handling)
-    - `View/Components/Generic/DownloadProgressItem.xaml.cs` (ab791d8 plus current staged cleanup/disposal hardening)
-    - `View/Components/CreateInstance/ForgeLoaderSet.xaml.cs` (current staged refactor removes local nullable toggles / null-forgiving)
-    - `View/Components/CreateInstance/NeoForgeLoaderSet.xaml.cs` (current staged refactor removes local nullable toggles)
-    - `View/Components/CreateInstance/QuiltLoaderSet.xaml.cs` (current staged refactor removes local nullable toggles / null-forgiving)
-    - `View/Components/ResDownloadItem/MCSLSyncResCoreVersionItem.xaml.cs` (current staged null guard)
-    - `View/Components/ResDownloadItem/MSLAPIResCoreVersionItem.xaml.cs` (current staged null guard)
+  - Removed nullable warning hotspots across WPF navigation, setup, dialogs, file transfer UI, create-instance providers, and page view code
+  - Replaced obsolete certificate byte-array constructor with `X509CertificateLoader`
+  - `dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`: 0 warnings, 0 errors
 
 - [x] **Harden download component error handling** (ab791d8)
   - Location: `MCServerLauncher.WPF/View/Components/Generic/DownloadProgressItem.xaml.cs`
@@ -129,10 +123,12 @@ _All high priority items completed!_
   - Forge/Fabric/NeoForge/Quilt loader sets now share common step-state logic with fewer nullable suppressions
   - Benefit: Easier maintenance, consistent behavior across loaders
 
-- [ ] **Expand input validation for user-facing create-instance forms**
+- [x] **Expand input validation for user-facing create-instance forms** (current)
   - Location: `MCServerLauncher.WPF/View/Components/CreateInstance/`
-  - Current: Providers now guard against missing values, but validation is still mostly non-empty checks
-  - Target: Validate paths, selected values, and instance naming rules before submission
+  - Added shared `CreateInstanceValidation` helper for create-instance providers
+  - Java / Fabric / Forge / NeoForge flows now validate instance names, selected loader versions, Java path text, and local Java core jar paths before confirmation/submission
+  - Removed embedded UTF-8 BOM characters from touched create-instance provider source lines
+  - `dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`: 0 warnings, 0 errors
   - Benefit: Better user experience, prevent invalid submissions
 
 ---
@@ -141,18 +137,20 @@ _All high priority items completed!_
 
 ### Code Modernization
 
-- [ ] **Consider async event handlers**
+- [x] **Consider async event handlers** (current)
   - Location: `MCServerLauncher.DaemonClient/Daemon.cs`
   - Location: `MCServerLauncher.DaemonClient/WebSocketPlugin/WsReceivedPlugin.cs`
-  - Current: Synchronous event handlers
-  - Consider: Async event handlers or BeginInvoke pattern
+  - Added async event channels alongside existing synchronous events for inbound daemon events and daemon-client event projections
+  - WebSocket inbound dispatch now awaits async subscribers after preserving existing synchronous event behavior
+  - `dotnet build MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`: 0 warnings, 0 errors
+  - `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`: 316 passed; existing test-project warnings remain
 
 ### Source Generator Improvements
 
-- [ ] **Enable analyzer release tracking**
-  - Warnings: RS2008 for rules MCSLDAG001-005
-  - Location: `MCServerLauncher.Daemon.Generators/DaemonActionRegistryGenerator.cs`
-  - Add release tracking for analyzer diagnostics
+- [x] **Enable analyzer release tracking** (current)
+  - Location: `MCServerLauncher.Daemon.Generators/`
+  - Added analyzer release tracking files for MCSLDAG001-005
+  - `MCServerLauncher.Daemon.Generators` now builds without RS2008 warnings
   - Reference: <https://github.com/dotnet/roslyn-analyzers/blob/main/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md>
 
 ---

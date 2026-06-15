@@ -314,7 +314,7 @@ public class GeneratedRegistryPerformanceGateTests
                 Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>
             AsyncHandlers { get; } = snapshot.AsyncHandlers;
 
-        public ActionResponse? ProcessAction(string text, WsContext ctx)
+        public ActionResponse? ProcessAction(ReadOnlyMemory<byte> utf8Json, WsContext ctx)
         {
             throw new NotSupportedException("Generated registry perf gates only exercise CheckHandler and delegate dispatch.");
         }

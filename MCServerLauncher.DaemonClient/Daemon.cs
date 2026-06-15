@@ -25,6 +25,7 @@ public class Daemon : IDaemon
         _connection = connection;
 
         _connection.OnEventReceived += OnEvent;
+        _connection.OnEventReceivedAsync += OnEventAsync;
         _connection.Reconnected += () => Reconnected?.Invoke();
         _connection.ConnectionLost += () => ConnectionLost?.Invoke();
         _connection.ConnectionClosed += () => ConnectionClosed?.Invoke();
@@ -137,7 +138,6 @@ public class Daemon : IDaemon
         switch (type)
         {
             case EventType.InstanceLog:
-                // TODO 改为异步? 
                 InstanceLogEvent?.Invoke(
                     (meta as InstanceLogEventMeta)!.InstanceId,
                     (data as InstanceLogEventData)!.Log
@@ -148,6 +148,33 @@ public class Daemon : IDaemon
                     (data as DaemonReportEventData)!.Report,
                     DateTime.UtcNow.ToUnixTimeMilliSeconds() - timestamp
                 );
+                break;
+            default:
+                throw new NotImplementedException(type.ToString());
+        }
+    }
+
+    private async Task OnEventAsync(EventType type, long timestamp, IEventMeta? meta, IEventData? data)
+    {
+        switch (type)
+        {
+            case EventType.InstanceLog:
+                if (InstanceLogEventAsync is { } logHandlers)
+                {
+                    var instanceId = (meta as InstanceLogEventMeta)!.InstanceId;
+                    var log = (data as InstanceLogEventData)!.Log;
+                    foreach (DaemonInstanceLogEventHandler handler in logHandlers.GetInvocationList())
+                        await handler(instanceId, log);
+                }
+                break;
+            case EventType.DaemonReport:
+                if (DaemonReportEventAsync is { } reportHandlers)
+                {
+                    var report = (data as DaemonReportEventData)!.Report;
+                    var latency = DateTime.UtcNow.ToUnixTimeMilliSeconds() - timestamp;
+                    foreach (DaemonReportEventHandler handler in reportHandlers.GetInvocationList())
+                        await handler(report, latency);
+                }
                 break;
             default:
                 throw new NotImplementedException(type.ToString());
@@ -312,6 +339,8 @@ public class Daemon : IDaemon
 
     public event Action<Guid, string>? InstanceLogEvent;
     public event Action<DaemonReport, long>? DaemonReportEvent;
+    public event DaemonInstanceLogEventHandler? InstanceLogEventAsync;
+    public event DaemonReportEventHandler? DaemonReportEventAsync;
 
     #endregion
 

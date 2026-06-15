@@ -19,7 +19,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
 
         private void TemplateChanged(object sender, RoutedEventArgs e)
         {
-            templateOption = ((RadioButton)sender).GetType().GetProperty("Name")?.GetValue(sender).ToString()!;
+            if (sender is RadioButton { Name: { Length: > 0 } name })
+            {
+                templateOption = name;
+            }
         }
 
         private string[] MemoryArg()

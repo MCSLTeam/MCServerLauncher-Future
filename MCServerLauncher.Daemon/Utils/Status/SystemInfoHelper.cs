@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.ProtoType.Status;
 
@@ -24,16 +23,7 @@ public static class SystemInfoHelper
 
     public static DriveInformation GetDiskInfo()
     {
-        // 获取程序集路径并验证
-        var assembly = Assembly.GetEntryAssembly()
-                       ?? throw new InvalidOperationException("无法获取入口程序集");
-
-        var location = assembly.Location;
-
-        // 处理单文件发布场景和Linux特殊路径
-        if (string.IsNullOrEmpty(location))
-            location = Process.GetCurrentProcess().MainModule?.FileName ??
-                       throw new InvalidOperationException("无法获取程序路径");
+        var location = AppContext.BaseDirectory;
 
         // 获取根路径并进行跨平台处理
         var rootPath = Path.GetPathRoot(location);

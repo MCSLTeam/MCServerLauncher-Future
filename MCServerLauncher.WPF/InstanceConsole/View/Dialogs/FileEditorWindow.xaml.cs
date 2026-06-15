@@ -543,8 +543,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
     public class ThemeAwareHighlightingBrush : HighlightingBrush
     {
         private readonly Color _originalColor;
-        private Brush _lightBrush;
-        private Brush _darkBrush;
+        private Brush? _lightBrush;
+        private Brush? _darkBrush;
 
         public ThemeAwareHighlightingBrush(Color color)
         {

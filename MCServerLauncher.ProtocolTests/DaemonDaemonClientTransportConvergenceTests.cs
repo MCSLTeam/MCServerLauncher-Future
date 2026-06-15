@@ -908,7 +908,7 @@ public class DaemonDaemonClientTransportConvergenceTests
             AsyncHandlers { get; } =
             new Dictionary<ActionType, Func<JsonElement?, Guid, WsContext, IResolver, CancellationToken, Task<ActionResponse>>>();
 
-        public ActionResponse? ProcessAction(string text, WsContext ctx)
+        public ActionResponse? ProcessAction(ReadOnlyMemory<byte> utf8Json, WsContext ctx)
         {
             throw new NotSupportedException();
         }
