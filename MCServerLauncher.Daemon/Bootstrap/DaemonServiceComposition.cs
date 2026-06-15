@@ -75,13 +75,15 @@ internal static class DaemonServiceComposition
         {
             var eventService = httpService.Resolver.GetRequiredService<IEventService>();
             var cell = httpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
-            var (osInfo, cpuInfo, memInfo, driveInformation) = await cell.Value;
+            var systemInfo = await cell.Value;
             eventService.OnDaemonReport(new DaemonReport(
-                osInfo,
-                cpuInfo,
-                memInfo,
-                driveInformation,
-                Application.StartTime.ToUnixTimeMilliSeconds()
+                systemInfo.Os,
+                systemInfo.Cpu,
+                systemInfo.Mem,
+                systemInfo.Drive,
+                Application.StartTime.ToUnixTimeMilliSeconds(),
+                systemInfo.Drives,
+                systemInfo.DaemonVersion
             ));
         };
         Application.OnStarted += () =>

@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
 using Xunit;
@@ -77,6 +78,28 @@ public class StjFoundationTests
 
         Assert.NotNull(result);
         Assert.True(result!.Reports.ContainsKey(guid));
+    }
+
+    [Fact]
+    public void InstanceConfig_EncodingWebNames_RoundTripAsStableStrings()
+    {
+        var config = new InstanceConfig
+        {
+            Name = "demo",
+            Target = "server.jar",
+            InstanceType = InstanceType.MCJava,
+            TargetType = TargetType.Jar,
+            InputEncoding = System.Text.Encoding.UTF8,
+            OutputEncoding = System.Text.Encoding.Unicode
+        };
+
+        var json = JsonSerializer.Serialize(config, PersistenceContext.Default.InstanceConfig);
+        var parsed = JsonSerializer.Deserialize(json, PersistenceContext.Default.InstanceConfig);
+
+        Assert.Contains("\"input_encoding\":\"utf-8\"", json);
+        Assert.Contains("\"output_encoding\":\"utf-16\"", json);
+        Assert.Equal(System.Text.Encoding.UTF8.WebName, parsed!.InputEncoding.WebName);
+        Assert.Equal(System.Text.Encoding.Unicode.WebName, parsed.OutputEncoding.WebName);
     }
 
     [Fact]

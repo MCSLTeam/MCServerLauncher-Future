@@ -10,6 +10,9 @@ namespace MCServerLauncher.Common.ProtoType.Instance;
 /// </summary>
 public record InstanceConfig
 {
+    private Encoding _inputEncoding = Encoding.UTF8;
+    private Encoding _outputEncoding = Encoding.UTF8;
+
     /// <summary>
     ///     配置的固定文件名
     /// </summary>
@@ -84,12 +87,36 @@ public record InstanceConfig
     /// <summary>
     ///     控制台输入编码
     /// </summary>
-    public Encoding InputEncoding { get; init; } = Encoding.UTF8;
+    [SysTextJsonIgnore]
+    public Encoding InputEncoding
+    {
+        get => _inputEncoding;
+        init => _inputEncoding = value ?? Encoding.UTF8;
+    }
+
+    [SysTextJsonPropertyName("input_encoding")]
+    public string InputEncodingWebName
+    {
+        get => _inputEncoding.WebName;
+        init => _inputEncoding = string.IsNullOrWhiteSpace(value) ? Encoding.UTF8 : Encoding.GetEncoding(value);
+    }
 
     /// <summary>
     ///     控制台输出编码
     /// </summary>
-    public Encoding OutputEncoding { get; init; } = Encoding.UTF8;
+    [SysTextJsonIgnore]
+    public Encoding OutputEncoding
+    {
+        get => _outputEncoding;
+        init => _outputEncoding = value ?? Encoding.UTF8;
+    }
+
+    [SysTextJsonPropertyName("output_encoding")]
+    public string OutputEncodingWebName
+    {
+        get => _outputEncoding.WebName;
+        init => _outputEncoding = string.IsNullOrWhiteSpace(value) ? Encoding.UTF8 : Encoding.GetEncoding(value);
+    }
 
     /// <summary>
     ///     java虚拟机路径, 非MC服务器或<see cref="TargetType" />不为<see cref="TargetType.Jar" />可以缺省

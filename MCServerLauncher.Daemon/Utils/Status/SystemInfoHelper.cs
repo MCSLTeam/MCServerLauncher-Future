@@ -12,7 +12,9 @@ public static class SystemInfoHelper
             GetOsInfo(),
             await CpuInfoHelper.GetCpuInfo(),
             await MemoryInfoHelper.GetMemInfo(),
-            GetDiskInfo()
+            GetDiskInfo(),
+            GetDiskInfos(),
+            Application.AppVersion.ToString()
         );
     }
 
@@ -65,8 +67,23 @@ public static class SystemInfoHelper
         return new DriveInformation(
             drive.DriveFormat,
             (ulong)drive.TotalSize,
-            (ulong)drive.AvailableFreeSpace
+            (ulong)drive.AvailableFreeSpace,
+            drive.Name
         );
+    }
+
+    public static DriveInformation[] GetDiskInfos()
+    {
+        return DriveInfo.GetDrives()
+            .Where(d => d.IsReady)
+            .Where(d => d.TotalSize > 0)
+            .Where(d => d.DriveType is not DriveType.CDRom and not DriveType.NoRootDirectory and not DriveType.Ram)
+            .Select(d => new DriveInformation(
+                d.DriveFormat,
+                (ulong)d.TotalSize,
+                (ulong)d.AvailableFreeSpace,
+                d.Name))
+            .ToArray();
     }
 
     private static string NormalizeDriveName(string path)
