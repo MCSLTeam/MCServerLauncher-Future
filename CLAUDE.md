@@ -16,6 +16,7 @@
 - Keep daemon serialization AOT and trim friendly.
 - Use `Lang.Tr[...]` for WPF user-facing text.
 - Run the smallest relevant build or test, then `git diff --check`.
+- Before every commit, run the full `MCServerLauncher.ProtocolTests` suite and ensure it passes.
 - Commit format: `type(scope): subject`.
 
 ## Touched Areas

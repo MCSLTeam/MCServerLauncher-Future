@@ -148,6 +148,7 @@ MCServerLauncher-Future/
 - Do not revert user or teammate changes without explicit instruction.
 - When the work changes behavior, update docs and tests in the same task.
 - Before finishing, add a changelog entry to the relevant plan when one exists.
+- Before every commit, run `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1` and confirm the full protocol test suite passes.
 - Commit messages use `type(scope): subject`.
 
 ## Naming And Style
@@ -255,6 +256,7 @@ Choose the smallest relevant set:
 - Main branch is `master`.
 - Keep commits concise and conventional: `type(scope): subject`.
 - Check build warnings, especially nullable warnings, for touched projects.
+- Before every commit, ensure the full `MCServerLauncher.ProtocolTests` suite passes.
 - Report known existing warnings separately from warnings introduced by the task.
 - Do not stage or commit unrelated user-owned changes unless explicitly instructed.
 
