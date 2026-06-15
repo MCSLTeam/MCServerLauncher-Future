@@ -107,7 +107,7 @@
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_CpuUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
                         <ui:ProgressBar Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding CpuUsage}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding CpuUsage, StringFormat={}{0:F2}%}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding CpuUsageText}" ToolTip="{Binding CpuUsageText}" TextWrapping="NoWrap" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_MemoryUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
                         <ui:ProgressBar Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding MemoryUsage}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" />

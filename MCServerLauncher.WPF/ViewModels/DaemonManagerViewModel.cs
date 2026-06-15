@@ -276,6 +276,7 @@ public partial class DaemonManagerViewModel : ObservableObject
         target.CpuUsage = source.CpuUsage;
         target.MemoryUsage = source.MemoryUsage;
         target.DriveUsage = source.DriveUsage;
+        target.CpuUsageText = source.CpuUsageText;
         target.MemoryUsageText = source.MemoryUsageText;
         target.DriveUsageText = source.DriveUsageText;
         target.ResourceSummary = source.ResourceSummary;
@@ -298,6 +299,7 @@ public partial class DaemonManagerViewModel : ObservableObject
         var usedDrive = totalDrive > freeDrive ? totalDrive - freeDrive : 0;
 
         model.DriveUsage = CalculateUsagePercentage(totalDrive, freeDrive);
+        model.CpuUsageText = $"{model.CpuUsage:F2}% ({systemInfo.Cpu.CoreCount}C / {systemInfo.Cpu.ThreadCount}T)";
         model.MemoryUsageText = $"{model.MemoryUsage:F2}% ({FormatSize(usedMemory * 1024d)} / {FormatSize(systemInfo.Mem.Total * 1024d)})";
         model.DriveUsageText = $"{model.DriveUsage:F2}% ({FormatSize(usedDrive)} / {FormatSize(totalDrive)})";
         model.DriveUsageTooltip = string.Join(Environment.NewLine, drives.Select(FormatDriveUsage));
@@ -348,7 +350,7 @@ public partial class DaemonManagerViewModel : ObservableObject
             suffixIndex++;
         }
 
-        return $"{value:F1} {suffixes[suffixIndex]}";
+        return $"{value:F2} {suffixes[suffixIndex]}";
     }
 
     private static string FormatDriveUsage(MCServerLauncher.Common.ProtoType.Status.DriveInformation drive)

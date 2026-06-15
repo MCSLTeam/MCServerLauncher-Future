@@ -12,6 +12,7 @@ public partial class DaemonCardModel : ObservableObject
     [ObservableProperty] private double _cpuUsage;
     [ObservableProperty] private double _memoryUsage;
     [ObservableProperty] private double _driveUsage;
+    [ObservableProperty] private string _cpuUsageText = "--";
     [ObservableProperty] private string _memoryUsageText = "--";
     [ObservableProperty] private string _driveUsageText = "--";
     [ObservableProperty] private string _resourceSummary = "--";
