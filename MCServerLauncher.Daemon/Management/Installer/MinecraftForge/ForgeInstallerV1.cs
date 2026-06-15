@@ -76,8 +76,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         // 检查本地是否已经存在正确的文件
         if (File.Exists(target))
         {
-            var fileSha1 = await FileManager.FileSha1(target, ct);
-            if (info.Checksums.Any(sha1 => sha1 == fileSha1)) return true;
+            if (await FileMatchesAnySha1(target, info.Checksums, ct)) return true;
             File.Delete(target);
         }
 
@@ -88,8 +87,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         // 检查forge installer jar文件中是否携带
         if (await ExtractMavenFromInstaller(arti, target, ct))
         {
-            var fileSha1 = await FileManager.FileSha1(target, ct);
-            if (info.Checksums.Any(sha1 => sha1 == fileSha1)) return true;
+            if (await FileMatchesAnySha1(target, info.Checksums, ct)) return true;
             File.Delete(target);
         }
         else
@@ -109,7 +107,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         var arti = info.Name;
         var target = arti.GetLocalPath(root);
 
-        // TODO library本地缓存库,首先从本地缓存库查找,找不到或者sha1对不上再从镜像下载
+        if (await TryCopyLibraryFromCache(arti, target, info.Checksums, ct)) return true;
 
         // 检查url
         var url = info.Url;
@@ -122,21 +120,19 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         url = arti.GetLocalPath(info.Url!.TrimEnd('/')).Replace("\\", "/");
 
         // 如果是minecraft的maven
-        if (url.StartsWith(CF_LIBRARIES_URL)) return await Download(url, target, info.Checksums, ct);
+        if (url.StartsWith(CF_LIBRARIES_URL))
+            return await DownloadLibraryWithCache(arti, url, target, info.Checksums, ct);
 
-        // 如果是forge的maven，首先使用bmclapi进行加速,如果失败则使用原url
+        // 如果是forge的maven，按镜像设置优先使用 BMCLAPI，失败则回退原 URL。
         var bmclApiUrl = url.Replace("https://maven.minecraftforge.net", "https://bmclapi2.bangbang93.com/maven");
-        if (!await Download(bmclApiUrl, target, info.Checksums, ct))
-            if (!await Download(url, target, info.Checksums, ct))
-                return false;
         var success = MirrorType switch
         {
-            InstanceFactoryMirror.BmclApi => await Download(bmclApiUrl, target, info.Checksums, ct),
+            InstanceFactoryMirror.BmclApi => await DownloadLibraryWithCache(arti, bmclApiUrl, target, info.Checksums, ct),
             InstanceFactoryMirror.None => false,
             _ => throw new NotImplementedException()
         };
         if (success) return true;
-        return await Download(url, target, info.Checksums, ct);
+        return await DownloadLibraryWithCache(arti, url, target, info.Checksums, ct);
     }
 
     [RequiresUnreferencedCode(ForgeInstallerTrimMessage)]

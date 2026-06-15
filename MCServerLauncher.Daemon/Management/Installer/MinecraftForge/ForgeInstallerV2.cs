@@ -2,7 +2,6 @@
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
-using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using System.Text.Json;
 using RustyOptions;
@@ -105,11 +104,9 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         var download = library.Downloads?.Artifact ?? new Json_Version.LibraryDownload { Path = arti.Path };
 
         // 检查本地是否已经存在正确的文件
-        if (string.IsNullOrEmpty(download.Sha1) && File.Exists(target))
+        if (File.Exists(target) && await FileMatchesSha1(target, download.Sha1, ct))
         {
-            var fileSha1 = await FileManager.FileSha1(target, ct);
-            if (fileSha1 == download.Sha1) return true;
-            File.Delete(target);
+            return true;
         }
 
         ct.ThrowIfCancellationRequested();
@@ -118,12 +115,12 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         // 检查forge installer jar文件中是否携带
         if (await ExtractMavenFromInstaller(arti, target, ct))
         {
-            if (string.IsNullOrEmpty(download.Sha1))
+            if (await FileMatchesSha1(target, download.Sha1, ct))
             {
-                var fileSha1 = await FileManager.FileSha1(target, ct);
-                if (fileSha1 == download.Sha1) return true;
-                File.Delete(target);
+                return true;
             }
+
+            File.Delete(target);
         }
         else
         {
@@ -140,7 +137,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         var target = arti.GetLocalPath(root);
         var download = library.Downloads?.Artifact ?? new Json_Version.LibraryDownload { Path = arti.Path };
 
-        // TODO library本地缓存库,首先从本地缓存库查找,找不到或者sha1对不上再从镜像下载
+        if (await TryCopyLibraryFromCache(arti, target, download.Sha1, ct)) return true;
 
         // 检查url
         var url = download.Url;
@@ -152,10 +149,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
 
         // 首先使用bmclapi进行加速,如果失败则使用原url
         var bmclApiUrl = url.Replace("https://maven.minecraftforge.net", "https://bmclapi2.bangbang93.com/maven");
-        if (!await Download(bmclApiUrl, target, download.Sha1, ct))
-            if (!await Download(url, target, download.Sha1, ct))
-                return false;
-
-        return true;
+        if (await DownloadLibraryWithCache(arti, bmclApiUrl, target, download.Sha1, ct)) return true;
+        return await DownloadLibraryWithCache(arti, url, target, download.Sha1, ct);
     }
 }

@@ -34,6 +34,7 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
     protected string InstallerPath { get; }
 
     protected InstanceFactoryMirror MirrorType { get; }
+    protected static string LibraryCacheRoot => Path.Combine(FileManager.CacheRoot, "libraries");
     public abstract InstallV1 Install { get; }
     public abstract Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default);
 
@@ -135,10 +136,10 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
         return DownloadCore(url, target, async downloadedFilename =>
         {
             // 检查sha1
-            if (string.IsNullOrEmpty(sha1))
+            if (!string.IsNullOrEmpty(sha1))
             {
                 var fileSha1 = await FileManager.FileSha1(downloadedFilename, ct);
-                if (fileSha1 != sha1)
+                if (!Sha1Equals(fileSha1, sha1))
                 {
                     File.Delete(downloadedFilename);
                     return false;
@@ -158,10 +159,129 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
             var checksumList = checksums.ToArray();
 
             if (checksumList.Length == 0) return true; // 空则跳过校验
-            if (checksumList.Any(checksum => checksum == fileSha1)) return true;
+            if (checksumList.Any(checksum => Sha1Equals(fileSha1, checksum))) return true;
             File.Delete(downloadedFilename);
             return false;
         }, ct);
+    }
+
+    protected static async Task<bool> TryCopyLibraryFromCache(
+        Artifact artifact,
+        string target,
+        string? sha1,
+        CancellationToken ct = default)
+    {
+        var cachePath = artifact.GetLocalPath(LibraryCacheRoot);
+        if (!File.Exists(cachePath)) return false;
+
+        if (!await FileMatchesSha1(cachePath, sha1, ct))
+        {
+            File.Delete(cachePath);
+            return false;
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.Copy(cachePath, target, true);
+        Log.Debug("[ForgeInstaller] Reused library {0} from local cache", artifact);
+        return true;
+    }
+
+    protected static async Task<bool> TryCopyLibraryFromCache(
+        Artifact artifact,
+        string target,
+        IEnumerable<string> checksums,
+        CancellationToken ct = default)
+    {
+        var checksumList = checksums.ToArray();
+        var cachePath = artifact.GetLocalPath(LibraryCacheRoot);
+        if (!File.Exists(cachePath)) return false;
+
+        if (!await FileMatchesAnySha1(cachePath, checksumList, ct))
+        {
+            File.Delete(cachePath);
+            return false;
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.Copy(cachePath, target, true);
+        Log.Debug("[ForgeInstaller] Reused library {0} from local cache", artifact);
+        return true;
+    }
+
+    protected static async Task<bool> DownloadLibraryWithCache(
+        Artifact artifact,
+        string url,
+        string target,
+        string? sha1,
+        CancellationToken ct = default)
+    {
+        if (await TryCopyLibraryFromCache(artifact, target, sha1, ct)) return true;
+        if (!await Download(url, target, sha1, ct)) return false;
+        await StoreLibraryInCache(artifact, target, sha1, ct);
+        return true;
+    }
+
+    protected static async Task<bool> DownloadLibraryWithCache(
+        Artifact artifact,
+        string url,
+        string target,
+        IEnumerable<string> checksums,
+        CancellationToken ct = default)
+    {
+        var checksumList = checksums.ToArray();
+        if (await TryCopyLibraryFromCache(artifact, target, checksumList, ct)) return true;
+        if (!await Download(url, target, checksumList, ct)) return false;
+        await StoreLibraryInCache(artifact, target, checksumList, ct);
+        return true;
+    }
+
+    protected static Task<bool> FileMatchesSha1(string path, string? sha1, CancellationToken ct = default)
+    {
+        return string.IsNullOrEmpty(sha1)
+            ? Task.FromResult(true)
+            : FileMatchesAnySha1(path, new[] { sha1 }, ct);
+    }
+
+    protected static async Task<bool> FileMatchesAnySha1(
+        string path,
+        IReadOnlyCollection<string> checksums,
+        CancellationToken ct = default)
+    {
+        if (checksums.Count == 0) return true;
+
+        var fileSha1 = await FileManager.FileSha1(path, ct);
+        return checksums.Any(checksum => Sha1Equals(fileSha1, checksum));
+    }
+
+    private static async Task StoreLibraryInCache(
+        Artifact artifact,
+        string source,
+        string? sha1,
+        CancellationToken ct = default)
+    {
+        if (!await FileMatchesSha1(source, sha1, ct)) return;
+
+        var cachePath = artifact.GetLocalPath(LibraryCacheRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+        File.Copy(source, cachePath, true);
+    }
+
+    private static async Task StoreLibraryInCache(
+        Artifact artifact,
+        string source,
+        IReadOnlyCollection<string> checksums,
+        CancellationToken ct = default)
+    {
+        if (!await FileMatchesAnySha1(source, checksums, ct)) return;
+
+        var cachePath = artifact.GetLocalPath(LibraryCacheRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+        File.Copy(source, cachePath, true);
+    }
+
+    private static bool Sha1Equals(string actual, string expected)
+    {
+        return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
     }
 
     protected static async Task<bool> DownloadCore(
