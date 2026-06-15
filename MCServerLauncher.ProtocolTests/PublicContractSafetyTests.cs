@@ -8,6 +8,8 @@ using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Notification;
+using MCServerLauncher.Common.ProtoType.Relay;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
@@ -100,6 +102,26 @@ public class PublicContractSafetyTests
     }
 
     [Fact]
+    public void RpcEnvelopeContext_RegistersNotificationPacket()
+    {
+        var context = RpcEnvelopeContext.Default;
+        Assert.NotNull(context);
+
+        var typeInfo = context.GetTypeInfo(typeof(NotificationPacket));
+        Assert.NotNull(typeInfo);
+    }
+
+    [Fact]
+    public void RpcEnvelopeContext_RegistersRelayPacket()
+    {
+        var context = RpcEnvelopeContext.Default;
+        Assert.NotNull(context);
+
+        var typeInfo = context.GetTypeInfo(typeof(RelayPacket));
+        Assert.NotNull(typeInfo);
+    }
+
+    [Fact]
     public void EventDataContext_OwnsInstanceLogEventMeta()
     {
         // InstanceLogEventMeta is a Common-owned event meta type used on the RPC wire path.
@@ -121,7 +143,14 @@ public class PublicContractSafetyTests
         var options = StjResolver.CreateDefaultOptions();
 
         // The combined resolver should be able to handle all envelope types
-        var envelopeTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+        var envelopeTypes = new[]
+        {
+            typeof(ActionRequest),
+            typeof(ActionResponse),
+            typeof(EventPacket),
+            typeof(NotificationPacket),
+            typeof(RelayPacket)
+        };
         foreach (var envelopeType in envelopeTypes)
         {
             var info = resolver.GetTypeInfo(envelopeType, options);
@@ -280,6 +309,22 @@ public class PublicContractSafetyTests
     }
 
     [Fact]
+    public void NotificationPacket_OwnedByCommonAssembly()
+    {
+        var type = typeof(NotificationPacket);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RelayPacket_OwnedByCommonAssembly()
+    {
+        var type = typeof(RelayPacket);
+        Assert.Equal("MCServerLauncher.Common", type.Assembly.GetName().Name,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void RpcEnvelopeContext_OwnedByCommonAssembly()
     {
         var type = typeof(RpcEnvelopeContext);
@@ -305,7 +350,14 @@ public class PublicContractSafetyTests
         var options = DaemonRpcJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
 
         // Wire envelope types must resolve without any reflection fallback
-        var wireTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+        var wireTypes = new[]
+        {
+            typeof(ActionRequest),
+            typeof(ActionResponse),
+            typeof(EventPacket),
+            typeof(NotificationPacket),
+            typeof(RelayPacket)
+        };
         foreach (var wireType in wireTypes)
         {
             var info = options.TypeInfoResolver?.GetTypeInfo(wireType, options);
@@ -318,7 +370,14 @@ public class PublicContractSafetyTests
     {
         var options = DaemonClientRpcJsonBoundary.CreateStjOptions(DaemonClientStjReflectionFallbackPolicy.Disabled);
 
-        var wireTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+        var wireTypes = new[]
+        {
+            typeof(ActionRequest),
+            typeof(ActionResponse),
+            typeof(EventPacket),
+            typeof(NotificationPacket),
+            typeof(RelayPacket)
+        };
         foreach (var wireType in wireTypes)
         {
             var info = options.TypeInfoResolver?.GetTypeInfo(wireType, options);

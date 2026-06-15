@@ -10,6 +10,8 @@ using MCServerLauncher.Common;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Notification;
+using MCServerLauncher.Common.ProtoType.Relay;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Serialization;
@@ -62,7 +64,9 @@ public class PublicSurfaceLeakageTests
     {
         typeof(ActionRequest),
         typeof(ActionResponse),
-        typeof(EventPacket)
+        typeof(EventPacket),
+        typeof(NotificationPacket),
+        typeof(RelayPacket)
     };
 
     private static readonly Type[] AllowedContextTypes =
@@ -118,6 +122,34 @@ public class PublicSurfaceLeakageTests
             Assert.True(
                 IsAllowedContractPropertyType(prop.PropertyType),
                 $"EventPacket.{prop.Name} has disallowed property type: {prop.PropertyType.FullName}");
+        }
+    }
+
+    [Fact]
+    public void NotificationPacket_PublicProperties_HaveAllowedTypes()
+    {
+        var type = typeof(NotificationPacket);
+        var publicProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        foreach (var prop in publicProps)
+        {
+            Assert.True(
+                IsAllowedContractPropertyType(prop.PropertyType),
+                $"NotificationPacket.{prop.Name} has disallowed property type: {prop.PropertyType.FullName}");
+        }
+    }
+
+    [Fact]
+    public void RelayPacket_PublicProperties_HaveAllowedTypes()
+    {
+        var type = typeof(RelayPacket);
+        var publicProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        foreach (var prop in publicProps)
+        {
+            Assert.True(
+                IsAllowedContractPropertyType(prop.PropertyType),
+                $"RelayPacket.{prop.Name} has disallowed property type: {prop.PropertyType.FullName}");
         }
     }
 
@@ -252,7 +284,7 @@ public class PublicSurfaceLeakageTests
     [Fact]
     public void DaemonRpcContext_DoesNotDuplicateCommonEnvelopeTypes()
     {
-        // RpcEnvelopeContext in Common owns ActionRequest, ActionResponse, EventPacket.
+        // RpcEnvelopeContext in Common owns wire-envelope types.
         // DaemonRpcSerializerContext must not re-register these types as daemon-local contracts.
         var commonEnvelopeTypes = GetJsonSerializableTypes(typeof(RpcEnvelopeContext));
         var daemonRpcTypes = GetJsonSerializableTypes(typeof(DaemonRpcSerializerContext));
@@ -283,7 +315,9 @@ public class PublicSurfaceLeakageTests
         {
             typeof(ActionRequest),
             typeof(ActionResponse),
-            typeof(EventPacket)
+            typeof(EventPacket),
+            typeof(NotificationPacket),
+            typeof(RelayPacket)
         };
 
         foreach (var clientType in clientRpcTypes)
@@ -338,7 +372,14 @@ public class PublicSurfaceLeakageTests
     {
         // All wire-contract JsonPayloadBuffer properties must have STJ converters.
         // Legacy converters have been fully removed.
-        var wireContractTypes = new[] { typeof(ActionRequest), typeof(ActionResponse), typeof(EventPacket) };
+        var wireContractTypes = new[]
+        {
+            typeof(ActionRequest),
+            typeof(ActionResponse),
+            typeof(EventPacket),
+            typeof(NotificationPacket),
+            typeof(RelayPacket)
+        };
 
         foreach (var type in wireContractTypes)
         {

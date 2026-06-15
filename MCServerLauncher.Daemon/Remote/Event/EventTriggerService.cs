@@ -2,12 +2,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Notification;
 using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Serialization;
 using Microsoft.Extensions.Logging;
+using TouchSocket.Core;
+using TouchSocket.Http.WebSockets;
 
 namespace MCServerLauncher.Daemon.Remote.Event;
 
@@ -15,12 +20,17 @@ public class EventTriggerService
 {
     private readonly IInstanceManager _instanceManager;
     private readonly ILogger<EventTriggerService> _logger;
+    private readonly WsContextContainer _wsContexts;
     private readonly ConcurrentDictionary<Guid, Timer> _scheduleTimers = new();
 
-    public EventTriggerService(IInstanceManager instanceManager, ILogger<EventTriggerService> logger)
+    public EventTriggerService(
+        IInstanceManager instanceManager,
+        ILogger<EventTriggerService> logger,
+        WsContextContainer wsContexts)
     {
         _instanceManager = instanceManager;
         _logger = logger;
+        _wsContexts = wsContexts;
     }
 
     public void Start()
@@ -213,8 +223,7 @@ public class EventTriggerService
                     }
                     break;
                 case SendNotificationAction sendNotification:
-                    // TODO: Send notification to connected clients via WebSocket
-                    // This requires access to WsContextContainer or similar to broadcast
+                    await SendNotificationAsync(instance, rule, sendNotification);
                     break;
             }
         }
@@ -222,5 +231,31 @@ public class EventTriggerService
         {
             _logger.LogError(ex, "Error executing action '{ActionType}' for rule '{RuleName}'", action.GetType().Name, rule.Name);
         }
+    }
+
+    private async Task SendNotificationAsync(IInstance instance, EventRule rule, SendNotificationAction action)
+    {
+        var packet = new NotificationPacket
+        {
+            Title = action.Title,
+            Message = action.Message,
+            Severity = action.Severity,
+            SourceInstanceId = instance.Config.Uuid,
+            RuleId = rule.Id
+        };
+
+        var payload = JsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcTypeInfoCache<NotificationPacket>.TypeInfo);
+        var sendTasks = _wsContexts.Select(context => SendTextFrameAsync(context.Value.GetWebsocket(), payload));
+        await Task.WhenAll(sendTasks);
+    }
+
+    private static async Task SendTextFrameAsync(IWebSocket webSocket, byte[] utf8Payload)
+    {
+        var frame = new WSDataFrame(utf8Payload)
+        {
+            Opcode = WSDataType.Text,
+            FIN = true
+        };
+        await webSocket.SendAsync(frame);
     }
 }

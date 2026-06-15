@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Notification;
+using MCServerLauncher.Common.ProtoType.Relay;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.DaemonClient.Connection;
 using MCServerLauncher.DaemonClient.Serialization;
@@ -22,23 +24,35 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         InboundEnvelopeType EnvelopeType,
         EventPacket? EventPacket,
         ActionResponse? ActionResponse,
-        BinaryUploadResponse? BinaryUploadResponse)
+        BinaryUploadResponse? BinaryUploadResponse,
+        NotificationPacket? NotificationPacket,
+        RelayPacket? RelayPacket)
     {
-        public static ParsedInboundEnvelope Unknown { get; } = new(InboundEnvelopeType.Unknown, null, null, null);
+        public static ParsedInboundEnvelope Unknown { get; } = new(InboundEnvelopeType.Unknown, null, null, null, null, null);
 
         public static ParsedInboundEnvelope FromEvent(EventPacket packet)
         {
-            return new ParsedInboundEnvelope(InboundEnvelopeType.Event, packet, null, null);
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Event, packet, null, null, null, null);
         }
 
         public static ParsedInboundEnvelope FromAction(ActionResponse response)
         {
-            return new ParsedInboundEnvelope(InboundEnvelopeType.Action, null, response, null);
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Action, null, response, null, null, null);
         }
 
         public static ParsedInboundEnvelope FromBinaryUpload(BinaryUploadResponse response)
         {
-            return new ParsedInboundEnvelope(InboundEnvelopeType.BinaryUpload, null, null, response);
+            return new ParsedInboundEnvelope(InboundEnvelopeType.BinaryUpload, null, null, response, null, null);
+        }
+
+        public static ParsedInboundEnvelope FromNotification(NotificationPacket packet)
+        {
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Notification, null, null, null, packet, null);
+        }
+
+        public static ParsedInboundEnvelope FromRelay(RelayPacket packet)
+        {
+            return new ParsedInboundEnvelope(InboundEnvelopeType.Relay, null, null, null, null, packet);
         }
     }
 
@@ -49,10 +63,11 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         Unknown,
         Event,
         Action,
-        BinaryUpload
+        BinaryUpload,
+        Notification,
+        Relay
     }
 
-    // TODO 中继包支持
     public async Task OnWebSocketReceived(IWebSocket webSocket, WSDataFrameEventArgs e)
     {
         if (!e.DataFrame.IsText)
@@ -72,6 +87,10 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
                 DispatchAction(inbound.ActionResponse!);
             else if (inbound.EnvelopeType == InboundEnvelopeType.BinaryUpload)
                 DispatchBinaryUpload(inbound.BinaryUploadResponse!.Value);
+            else if (inbound.EnvelopeType == InboundEnvelopeType.Notification)
+                DispatchNotification(inbound.NotificationPacket!);
+            else if (inbound.EnvelopeType == InboundEnvelopeType.Relay)
+                DispatchRelay(inbound.RelayPacket!);
         }
 
         await e.InvokeNext();
@@ -80,6 +99,8 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     public event Action<EventType, long, IEventMeta?, IEventData?>? OnEventReceived;
     public event Action<ActionResponse>? OnActionResponseReceived;
     public event Action<BinaryUploadResponse>? OnBinaryUploadResponseReceived;
+    public event Action<NotificationPacket>? OnNotificationReceived;
+    public event Action<RelayPacket>? OnRelayReceived;
 
     internal static InboundEnvelopeType DetectEnvelopeType(string received)
     {
@@ -105,6 +126,8 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         if (root.TryGetProperty("event", out _)) return InboundEnvelopeType.Event;
         if (root.TryGetProperty("status", out _)) return InboundEnvelopeType.Action;
         if (root.TryGetProperty("file_id", out _)) return InboundEnvelopeType.BinaryUpload;
+        if (root.TryGetProperty("notification", out _)) return InboundEnvelopeType.Notification;
+        if (root.TryGetProperty("relay", out _)) return InboundEnvelopeType.Relay;
         return InboundEnvelopeType.Unknown;
     }
 
@@ -137,6 +160,12 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
 
         if (root.TryGetProperty("status", out _))
             return ParsedInboundEnvelope.FromAction(ParseActionResponse(root));
+        if (root.TryGetProperty("file_id", out _))
+            return ParsedInboundEnvelope.FromBinaryUpload(ParseBinaryUploadResponse(root));
+        if (root.TryGetProperty("notification", out _))
+            return ParsedInboundEnvelope.FromNotification(ParseNotificationPacket(root));
+        if (root.TryGetProperty("relay", out _))
+            return ParsedInboundEnvelope.FromRelay(ParseRelayPacket(root));
 
         return ParsedInboundEnvelope.Unknown;
     }
@@ -199,6 +228,18 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         if (root.TryGetProperty("file_id", out _))
         {
             result.Add(ParsedInboundEnvelope.FromBinaryUpload(ParseBinaryUploadResponse(root)));
+            return result;
+        }
+
+        if (root.TryGetProperty("notification", out _))
+        {
+            result.Add(ParsedInboundEnvelope.FromNotification(ParseNotificationPacket(root)));
+            return result;
+        }
+
+        if (root.TryGetProperty("relay", out _))
+        {
+            result.Add(ParsedInboundEnvelope.FromRelay(ParseRelayPacket(root)));
             return result;
         }
 
@@ -333,6 +374,22 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
         return new BinaryUploadResponse(fileId, done, received, error);
     }
 
+    private static NotificationPacket ParseNotificationPacket(JsonElement root)
+    {
+        return root.Deserialize<NotificationPacket>(DaemonClientRpcJsonBoundary.StjOptions)
+               ?? throw new JsonException("Received notification envelope could not be materialized.");
+    }
+
+    private static RelayPacket ParseRelayPacket(JsonElement root)
+    {
+        var packet = root.Deserialize<RelayPacket>(DaemonClientRpcJsonBoundary.StjOptions)
+                     ?? throw new JsonException("Received relay envelope could not be materialized.");
+
+        return packet.Data.HasValue
+            ? packet with { Data = packet.Data.Value.Clone() }
+            : packet;
+    }
+
     private void DispatchEvent(EventPacket packet)
     {
         var eventType = packet.EventType;
@@ -360,6 +417,16 @@ public class WsReceivedPlugin : PluginBase, IWebSocketReceivedPlugin
     private void DispatchBinaryUpload(BinaryUploadResponse response)
     {
         OnBinaryUploadResponseReceived?.Invoke(response);
+    }
+
+    private void DispatchNotification(NotificationPacket packet)
+    {
+        OnNotificationReceived?.Invoke(packet);
+    }
+
+    private void DispatchRelay(RelayPacket packet)
+    {
+        OnRelayReceived?.Invoke(packet);
     }
 
     private void DispatchAction(string received)

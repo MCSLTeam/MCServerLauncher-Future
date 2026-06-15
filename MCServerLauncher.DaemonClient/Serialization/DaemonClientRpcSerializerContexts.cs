@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Notification;
+using MCServerLauncher.Common.ProtoType.Relay;
 using MCServerLauncher.DaemonClient.Connection;
 
 namespace MCServerLauncher.DaemonClient.Serialization;
@@ -14,6 +16,8 @@ namespace MCServerLauncher.DaemonClient.Serialization;
 [JsonSerializable(typeof(ActionResponse))]
 [JsonSerializable(typeof(ActionRequest))]
 [JsonSerializable(typeof(EventPacket))]
+[JsonSerializable(typeof(NotificationPacket))]
+[JsonSerializable(typeof(RelayPacket))]
 [JsonSerializable(typeof(ClientConnectionConfig))]
 internal partial class DaemonClientRpcSerializerContext : JsonSerializerContext
 {

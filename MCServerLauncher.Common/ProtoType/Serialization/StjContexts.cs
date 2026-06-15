@@ -4,6 +4,8 @@ using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Common.ProtoType.Files;
+using MCServerLauncher.Common.ProtoType.Notification;
+using MCServerLauncher.Common.ProtoType.Relay;
 
 namespace MCServerLauncher.Common.ProtoType.Serialization;
 
@@ -22,6 +24,8 @@ namespace MCServerLauncher.Common.ProtoType.Serialization;
 [JsonSerializable(typeof(ActionResponse))]
 [JsonSerializable(typeof(EventPacket))]
 [JsonSerializable(typeof(EventPacket[]))]
+[JsonSerializable(typeof(NotificationPacket))]
+[JsonSerializable(typeof(RelayPacket))]
 public partial class RpcEnvelopeContext : JsonSerializerContext
 {
 }

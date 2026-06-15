@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Notification;
+using MCServerLauncher.Common.ProtoType.Relay;
 using MCServerLauncher.DaemonClient.WebSocketPlugin;
 using TouchSocket.Http.WebSockets;
 
@@ -47,6 +49,44 @@ public class DaemonClientInboundTransportParsingTests
         var detected = WsReceivedPlugin.DetectEnvelopeType(envelope);
 
         Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Action, detected);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void DetectEnvelopeType_NotificationEnvelope_ReturnsNotification()
+    {
+        var envelope =
+            """
+            {
+              "notification": "client",
+              "title": "Server alert",
+              "message": "Done",
+              "severity": "Info"
+            }
+            """;
+
+        var detected = WsReceivedPlugin.DetectEnvelopeType(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Notification, detected);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void DetectEnvelopeType_RelayEnvelope_ReturnsRelay()
+    {
+        var envelope =
+            """
+            {
+              "relay": "plugin-message",
+              "target": "client-a",
+              "data": { "value": 42 },
+              "id": "33333333-3333-3333-3333-333333333333"
+            }
+            """;
+
+        var detected = WsReceivedPlugin.DetectEnvelopeType(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Relay, detected);
     }
 
     [Fact]
@@ -133,6 +173,58 @@ public class DaemonClientInboundTransportParsingTests
         Assert.True(parsedResponse.Data.HasValue);
         Assert.Equal(JsonValueKind.Object, parsedResponse.Data.Value.ValueKind);
         Assert.Equal(wrapperResponse.Data!.Value.GetProperty("time").GetInt64(), parsedResponse.Data.Value.GetProperty("time").GetInt64());
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void ParseInboundEnvelope_NotificationEnvelope_ReturnsNotificationPacket()
+    {
+        var envelope =
+            """
+            {
+              "notification": "client",
+              "title": "Server alert",
+              "message": "Done",
+              "severity": "Success",
+              "source_instance_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              "rule_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              "time": 1717171717000
+            }
+            """;
+
+        var parsed = WsReceivedPlugin.ParseInboundEnvelope(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Notification, parsed.EnvelopeType);
+        var packet = Assert.IsType<NotificationPacket>(parsed.NotificationPacket);
+        Assert.Equal("Server alert", packet.Title);
+        Assert.Equal("Done", packet.Message);
+        Assert.Equal("Success", packet.Severity);
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), packet.SourceInstanceId);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public void ParseInboundEnvelope_RelayEnvelope_ReturnsRelayPacket_AndClonesData()
+    {
+        var envelope =
+            """
+            {
+              "relay": "plugin-message",
+              "target": "client-a",
+              "data": { "value": 42 },
+              "id": "33333333-3333-3333-3333-333333333333",
+              "time": 1717171717000
+            }
+            """;
+
+        var parsed = WsReceivedPlugin.ParseInboundEnvelope(envelope);
+
+        Assert.Equal(WsReceivedPlugin.InboundEnvelopeType.Relay, parsed.EnvelopeType);
+        var packet = Assert.IsType<RelayPacket>(parsed.RelayPacket);
+        Assert.Equal("plugin-message", packet.Relay);
+        Assert.Equal("client-a", packet.Target);
+        Assert.True(packet.Data.HasValue);
+        Assert.Equal(42, packet.Data.Value.GetProperty("value").GetInt32());
     }
 
     [Fact]
@@ -277,6 +369,55 @@ public class DaemonClientInboundTransportParsingTests
 
         Assert.NotNull(receivedData);
         Assert.Equal(longLog, receivedData!.Log);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public async Task OnWebSocketReceived_TextFrame_Notification_DispatchesNotification()
+    {
+        var plugin = new WsReceivedPlugin();
+        NotificationPacket? received = null;
+
+        plugin.OnNotificationReceived += packet => received = packet;
+
+        var frame = new WSDataFrame(Encoding.UTF8.GetBytes(
+            """
+            {"notification":"client","title":"Server alert","message":"Done","severity":"Info"}
+            """))
+        {
+            Opcode = WSDataType.Text,
+            FIN = true
+        };
+
+        await plugin.OnWebSocketReceived(null!, new WSDataFrameEventArgs(frame));
+
+        Assert.NotNull(received);
+        Assert.Equal("Server alert", received!.Title);
+    }
+
+    [Fact]
+    [Trait("Category", "ClientInbound")]
+    public async Task OnWebSocketReceived_TextFrame_Relay_DispatchesRelay()
+    {
+        var plugin = new WsReceivedPlugin();
+        RelayPacket? received = null;
+
+        plugin.OnRelayReceived += packet => received = packet;
+
+        var frame = new WSDataFrame(Encoding.UTF8.GetBytes(
+            """
+            {"relay":"plugin-message","target":"client-a","data":{"value":42},"id":"33333333-3333-3333-3333-333333333333"}
+            """))
+        {
+            Opcode = WSDataType.Text,
+            FIN = true
+        };
+
+        await plugin.OnWebSocketReceived(null!, new WSDataFrameEventArgs(frame));
+
+        Assert.NotNull(received);
+        Assert.Equal("plugin-message", received!.Relay);
+        Assert.Equal(42, received.Data!.Value.GetProperty("value").GetInt32());
     }
 
     [Fact]
