@@ -48,3 +48,5 @@ Complete remote host management in the WPF daemon manager by making edit/delete 
 - Removed `SYSLIB1225` source-generation warnings by keeping runtime `Encoding` properties out of JSON metadata and exposing stable web-name string proxy properties for `input_encoding` and `output_encoding`.
 - Replaced auto-refresh interval number boxes with fixed 5/20/30/45/60 second choices, made switch text explicitly show on/off state, and formatted daemon resource percentages with two decimal places.
 - Renamed the daemon card version label to "node version" in localized resources.
+- Added CPU core/thread counts to daemon system status and daemon cards while keeping the legacy CPU `count` field as the logical processor count.
+- Formatted daemon memory and disk used/total values with two decimal places.

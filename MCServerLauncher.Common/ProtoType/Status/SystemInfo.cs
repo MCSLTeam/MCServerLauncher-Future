@@ -6,7 +6,30 @@ using System.Text.Json.Serialization;
 
 public record OsInfo(string Name, string Arch);
 
-public record CpuInfo(string Vendor, string Name, int Count, double Usage);
+public record CpuInfo(string Vendor, string Name, int Count, double Usage)
+{
+    [JsonConstructor]
+    public CpuInfo(
+        string vendor,
+        string name,
+        int count,
+        double usage,
+        int coreCount,
+        int threadCount)
+        : this(vendor, name, count, usage)
+    {
+        CoreCount = NormalizeProcessorCount(coreCount, count);
+        ThreadCount = NormalizeProcessorCount(threadCount, count);
+    }
+
+    public int CoreCount { get; init; } = Count;
+    public int ThreadCount { get; init; } = Count;
+
+    private static int NormalizeProcessorCount(int value, int fallback)
+    {
+        return value > 0 ? value : Math.Max(1, fallback);
+    }
+}
 
 public record MemInfo(ulong Total, ulong Free); // in KB
 

@@ -14,28 +14,35 @@ public static class CpuInfoHelper
     public static readonly string Vendor;
     public static readonly string Name;
     public static readonly int ProcessorCount = Environment.ProcessorCount;
+    public static readonly int CoreCount;
+    public static readonly int ThreadCount;
 
     static CpuInfoHelper()
     {
-        var (name, vendor) = GetCpuNameAndVendor();
+        var (name, vendor, coreCount, threadCount) = GetCpuInfoSnapshot();
         Name = name;
         Vendor = vendor;
+        CoreCount = coreCount;
+        ThreadCount = threadCount;
     }
 
-    private static (string, string) GetCpuNameAndVendor()
+    private static (string Name, string Vendor, int CoreCount, int ThreadCount) GetCpuInfoSnapshot()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var manufacturer = "Unknown";
             var name = "Unknown";
+            var coreCount = 0;
+            var threadCount = 0;
 
             var instances = Session!.QueryInstances(
                 @"root\cimv2",
                 "WQL",
-                "SELECT Manufacturer, Name, SocketDesignation FROM Win32_Processor"
+                "SELECT Manufacturer, Name, NumberOfCores, NumberOfLogicalProcessors FROM Win32_Processor"
             ).ToArray();
 
             foreach (var instance in instances)
+            {
                 // 只取第一个 CPU 的制造商和名称（通常多路系统型号相同）
                 if (manufacturer == "Unknown")
                 {
@@ -44,17 +51,22 @@ public static class CpuInfoHelper
                     name = instance.CimInstanceProperties["Name"]?.Value?.ToString()?.Trim() ?? "Unknown";
                 }
 
+                coreCount += ReadCimInt(instance, "NumberOfCores");
+                threadCount += ReadCimInt(instance, "NumberOfLogicalProcessors");
+            }
+
             foreach (var instance in instances) instance.Dispose();
 
-            return (name, manufacturer);
+            return (name, manufacturer, NormalizeProcessorCount(coreCount), NormalizeProcessorCount(threadCount));
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             var cpuInfo = File.ReadAllLines("/proc/cpuinfo");
-            var name = cpuInfo[4].Split(':')[1].Trim();
-            var vendor = cpuInfo[1].Split(':')[1].Trim();
-            return (name, vendor);
+            var name = ReadLinuxCpuField(cpuInfo, "model name") ?? "Unknown";
+            var vendor = ReadLinuxCpuField(cpuInfo, "vendor_id") ?? "Unknown";
+            var coreCount = GetLinuxPhysicalCoreCount(cpuInfo);
+            return (name, vendor, coreCount, ProcessorCount);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -63,7 +75,7 @@ public static class CpuInfoHelper
             task.Wait();
             var name = task.Result.Trim();
             var vendor = name.Split(' ')[0];
-            return (name, vendor);
+            return (name, vendor, GetMacOsProcessorCount("hw.physicalcpu"), GetMacOsProcessorCount("hw.logicalcpu"));
         }
 
         throw new NotSupportedException("Unsupported OS");
@@ -72,7 +84,7 @@ public static class CpuInfoHelper
     public static async Task<CpuInfo> GetCpuInfo()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return new CpuInfo(Vendor, Name, ProcessorCount, await GetWinCpuUsage());
+            return CreateCpuInfo(await GetWinCpuUsage());
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
@@ -83,25 +95,104 @@ public static class CpuInfoHelper
 
             var name = await SystemInfoHelper.RunCommandAsync("sysctl", "-n machdep.cpu.brand_string");
             var vendor = name.Split(' ')[0];
-            return new CpuInfo(vendor, name, Environment.ProcessorCount, cpuUsage);
+            return new CpuInfo(
+                vendor,
+                name,
+                ThreadCount,
+                cpuUsage,
+                CoreCount,
+                ThreadCount);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             var usage = await GetLinuxCpuUsage();
-            return new CpuInfo(Vendor, Name, ProcessorCount, usage);
-        }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            var cpuUsage =
-                await SystemInfoHelper.RunCommandAsync("sh",
-                        "-c \"top -l 1 | grep 'CPU usage' | awk '{print $3}' | tr -d '%'\"")
-                    .MapTask(double.Parse);
-            return new CpuInfo(Vendor, Name, ProcessorCount, cpuUsage);
+            return CreateCpuInfo(usage);
         }
 
         throw new NotSupportedException("Unsupported OS");
+    }
+
+    private static CpuInfo CreateCpuInfo(double usage)
+    {
+        return new CpuInfo(Vendor, Name, ThreadCount, usage, CoreCount, ThreadCount);
+    }
+
+    private static int ReadCimInt(CimInstance instance, string propertyName)
+    {
+        var value = instance.CimInstanceProperties[propertyName]?.Value;
+        return value switch
+        {
+            int intValue => intValue,
+            uint uintValue => checked((int)uintValue),
+            ushort ushortValue => ushortValue,
+            _ => int.TryParse(value?.ToString(), out var parsed) ? parsed : 0
+        };
+    }
+
+    private static string? ReadLinuxCpuField(string[] cpuInfo, string fieldName)
+    {
+        var prefix = fieldName + "\t:";
+        return cpuInfo.FirstOrDefault(line => line.StartsWith(prefix, StringComparison.Ordinal))?
+            .Split(':', 2)[1]
+            .Trim();
+    }
+
+    private static int GetLinuxPhysicalCoreCount(string[] cpuInfo)
+    {
+        var physicalCores = new HashSet<string>(StringComparer.Ordinal);
+        var physicalId = string.Empty;
+        var coreId = string.Empty;
+
+        foreach (var line in cpuInfo)
+        {
+            if (line.Length == 0)
+            {
+                AddLinuxCore(physicalCores, physicalId, coreId);
+                physicalId = string.Empty;
+                coreId = string.Empty;
+                continue;
+            }
+
+            if (line.StartsWith("physical id", StringComparison.Ordinal))
+            {
+                physicalId = line.Split(':', 2)[1].Trim();
+            }
+            else if (line.StartsWith("core id", StringComparison.Ordinal))
+            {
+                coreId = line.Split(':', 2)[1].Trim();
+            }
+        }
+
+        AddLinuxCore(physicalCores, physicalId, coreId);
+        return NormalizeProcessorCount(physicalCores.Count);
+    }
+
+    private static void AddLinuxCore(HashSet<string> physicalCores, string physicalId, string coreId)
+    {
+        if (string.IsNullOrWhiteSpace(physicalId) || string.IsNullOrWhiteSpace(coreId)) return;
+        physicalCores.Add($"{physicalId}:{coreId}");
+    }
+
+    private static int GetMacOsProcessorCount(string key)
+    {
+        try
+        {
+            var task = SystemInfoHelper.RunCommandAsync("sysctl", $"-n {key}");
+            task.Wait();
+            return int.TryParse(task.Result.Trim(), out var count)
+                ? NormalizeProcessorCount(count)
+                : ProcessorCount;
+        }
+        catch
+        {
+            return ProcessorCount;
+        }
+    }
+
+    private static int NormalizeProcessorCount(int value)
+    {
+        return value > 0 ? value : Math.Max(1, ProcessorCount);
     }
 
     private static Task<(ulong, ulong)> GetLinuxCpuTime()

@@ -143,6 +143,8 @@ public class ActionRegistryCharacterizationTests
         Assert.Equal(expectedSystemInfo.Cpu.Vendor, payload.Info.Cpu.Vendor);
         Assert.Equal(expectedSystemInfo.Cpu.Name, payload.Info.Cpu.Name);
         Assert.Equal(expectedSystemInfo.Cpu.Count, payload.Info.Cpu.Count);
+        Assert.Equal(expectedSystemInfo.Cpu.CoreCount, payload.Info.Cpu.CoreCount);
+        Assert.Equal(expectedSystemInfo.Cpu.ThreadCount, payload.Info.Cpu.ThreadCount);
         Assert.Equal(expectedSystemInfo.Mem.Total, payload.Info.Mem.Total);
         Assert.Equal(expectedSystemInfo.Mem.Free, payload.Info.Mem.Free);
         Assert.Equal(expectedSystemInfo.Drive.DriveFormat, payload.Info.Drive.DriveFormat);

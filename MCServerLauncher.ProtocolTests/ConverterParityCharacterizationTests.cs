@@ -304,6 +304,8 @@ public class ConverterParityCharacterizationTests
         Assert.Equal(JsonValueKind.Object, fromTyped.ValueKind);
         Assert.Contains("start_time_stamp", fromTyped.GetRawText());
         Assert.Contains("drive_format", fromTyped.GetRawText());
+        Assert.Contains("core_count", fromTyped.GetRawText());
+        Assert.Contains("thread_count", fromTyped.GetRawText());
     }
 
     private static JsonSerializerOptions CreatePermissionJsonSettings()
