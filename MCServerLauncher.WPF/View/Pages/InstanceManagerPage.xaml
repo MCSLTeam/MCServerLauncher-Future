@@ -211,6 +211,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <ComboBox Grid.Column="0" MinWidth="70" MaxWidth="150" Margin="0,0,10,0" x:Name="DaemonFilter"
                       VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="DaemonFilterChanged"
@@ -224,8 +226,17 @@
                 <ComboBoxItem Tag="Stopped" Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}}" />
                 <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
             </ComboBox>
-            <TextBox Grid.Column="3" MaxWidth="400" MinWidth="120" Margin="0,0,10,0" x:Name="SearchTextBox" ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
-            <Button Grid.Column="4" Height="32" x:Name="RefreshButton" Command="{Binding RefreshCommand}">
+            <ui:ToggleSwitch Grid.Column="3" MinWidth="96" Margin="0,0,10,0"
+                             OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
+                             OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
+                             IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
+            <ComboBox Grid.Column="4" Width="90" Margin="0,0,10,0"
+                      ItemsSource="{Binding RefreshIntervalOptions}"
+                      DisplayMemberPath="Display"
+                      SelectedValuePath="Seconds"
+                      SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
+            <TextBox Grid.Column="5" MaxWidth="400" MinWidth="120" Margin="0,0,10,0" x:Name="SearchTextBox" ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
+            <Button Grid.Column="6" Height="32" x:Name="RefreshButton" Command="{Binding RefreshCommand}">
                 <Button.Content>
                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}"
                                     Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />

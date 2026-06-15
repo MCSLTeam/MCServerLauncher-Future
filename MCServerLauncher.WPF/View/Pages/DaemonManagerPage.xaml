@@ -12,11 +12,12 @@
 
     <ui:Page.Resources>
         <DataTemplate DataType="{x:Type models:DaemonCardModel}">
-            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Width="400">
-                <Grid Margin="15,15,15,13">
+            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Width="430">
+                <Grid Margin="16,14,16,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
@@ -44,19 +45,23 @@
                         <TextBlock Grid.Column="1" Text="{Binding FriendlyName}" Style="{StaticResource SubtitleTextBlock}"
                                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,0,15,5" />
                     </Grid>
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="1" Margin="0,4,0,0">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_RemoteUri], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,5,5,5" />
-                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_ConnectionStatus], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,5" />
-                        <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding Address}" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,5,5,5" />
-                        <ContentControl Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,5">
+                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_RemoteUri], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,10,3" />
+                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_ConnectionStatus], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,10,3" />
+                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_SystemVersion], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,10,3" />
+                        <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_DaemonVersion], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,10,3" />
+                        <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding Address}" ToolTip="{Binding Address}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,3,0,3" />
+                        <ContentControl Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,0,3">
                             <ContentControl.Style>
                                 <Style TargetType="ContentControl">
                                     <Style.Triggers>
@@ -85,8 +90,34 @@
                                 </Style>
                             </ContentControl.Style>
                         </ContentControl>
+                        <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding SystemVersion}" ToolTip="{Binding SystemVersion}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Grid.Column="1" Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,3,0,3" />
+                        <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding DaemonVersion}" ToolTip="{Binding DaemonVersion}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Grid.Column="1" Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,3,0,3" />
                     </Grid>
-                    <ui:DropDownButton Grid.Row="2" Margin="20,0,0,0" HorizontalAlignment="Right" ShowChevronArrow="False">
+                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="116" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_CpuUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
+                        <ui:ProgressBar Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding CpuUsage}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding CpuUsage, StringFormat={}{0:F2}%}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_MemoryUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
+                        <ui:ProgressBar Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding MemoryUsage}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding MemoryUsageText}" ToolTip="{Binding MemoryUsageText}" TextWrapping="NoWrap" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_DriveUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
+                        <ui:ProgressBar Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding DriveUsage}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" ToolTip="{Binding DriveUsageTooltip}" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding DriveUsageText}" ToolTip="{Binding DriveUsageTooltip}" TextWrapping="NoWrap" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
+                    </Grid>
+                    <ui:DropDownButton Grid.Row="3" Margin="20,8,0,0" HorizontalAlignment="Right" ShowChevronArrow="False">
                         <ui:DropDownButton.Content>
                             <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}" Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
                         </ui:DropDownButton.Content>
@@ -131,12 +162,27 @@
         <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}"
                    Text="{Binding [DaemonManagerTip], Source={x:Static i18n:Lang.Tr}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0" />
-        <Button Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" VerticalAlignment="Top" Margin="0,0,40,0"
-                Command="{Binding AddConnectionCommand}">
-            <Button.Content>
-                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.ConnectApp}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
-            </Button.Content>
-        </Button>
+        <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,0,40,0">
+            <ui:ToggleSwitch MinWidth="96" Margin="0,0,10,0"
+                             OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
+                             OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
+                             IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
+            <ComboBox Width="90" Margin="0,0,10,0"
+                      ItemsSource="{Binding RefreshIntervalOptions}"
+                      DisplayMemberPath="Display"
+                      SelectedValuePath="Seconds"
+                      SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
+            <Button Margin="0,0,10,0" Command="{Binding RefreshCommand}">
+                <Button.Content>
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}" Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}"/>
+                </Button.Content>
+            </Button>
+            <Button Command="{Binding AddConnectionCommand}">
+                <Button.Content>
+                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.ConnectApp}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
+                </Button.Content>
+            </Button>
+        </StackPanel>
         <ui:ScrollViewerEx Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,35,0">
             <ui:GridView ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Padding="0,0,0,15"
                          ItemsSource="{Binding Daemons}" />

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -23,6 +24,10 @@ public partial class DaemonManagerViewModel : ObservableObject
     private readonly IDialogService _dialog;
 
     public ObservableCollection<DaemonCardModel> Daemons { get; } = [];
+    public IReadOnlyList<RefreshIntervalOption> RefreshIntervalOptions { get; } = RefreshIntervalOptionCatalog.All;
+
+    [ObservableProperty] private bool _autoRefreshEnabled = GetStoredRefreshInterval() > 0;
+    [ObservableProperty] private int _refreshIntervalSeconds = RefreshIntervalOptionCatalog.Normalize(GetStoredRefreshInterval());
 
     public DaemonManagerViewModel(
         IDaemonConnectionService daemonService,
@@ -47,8 +52,8 @@ public partial class DaemonManagerViewModel : ObservableObject
             var model = new DaemonCardModel
             {
                 Config = config,
-                Address = $"{(config.IsSecure ? "wss" : "ws")}://{config.EndPoint}:{config.Port}",
-                FriendlyName = config.FriendlyName ?? Lang.Tr["Main_DaemonManagerNavMenu"],
+                Address = FormatAddress(config),
+                FriendlyName = GetFriendlyName(config),
                 Status = "ing"
             };
             Daemons.Add(model);
@@ -58,16 +63,32 @@ public partial class DaemonManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task AutoRefreshAsync()
+    {
+        if (Daemons.Count == 0) return;
+        await Task.WhenAll(Daemons.Select(ConnectDaemonInternalAsync));
+    }
+
+    [RelayCommand]
     private async Task AddConnectionAsync()
     {
         (ContentDialog dialog, NewDaemonConnectionInput input) = await View.Components.Utils.ConstructConnectDaemonDialog();
-        dialog.PrimaryButtonClick += (o, args) => TryConnectNewDaemon(
-            endPoint: input.wsEdit.Text,
-            port: input.portEdit.Text,
-            isSecure: input.WebSocketScheme.SelectionBoxItem.ToString() == "wss://",
-            token: input.tokenEdit.Password,
-            friendlyName: input.friendlyNameEdit.Text
-        );
+        dialog.PrimaryButtonClick += async (o, args) =>
+        {
+            var deferral = args.GetDeferral();
+            try
+            {
+                if (!await TryConnectNewDaemonAsync(input))
+                {
+                    dialog.Title = Lang.Tr["ConnectDaemonFailedTip"];
+                    args.Cancel = true;
+                }
+            }
+            finally
+            {
+                deferral.Complete();
+            }
+        };
         try { await dialog.ShowAsync(); }
         catch { }
     }
@@ -91,54 +112,31 @@ public partial class DaemonManagerViewModel : ObservableObject
             var deferral = args.GetDeferral();
             try
             {
-                if (!int.TryParse(input.portEdit.Text, out int newPort))
+                if (!TryCreateConfig(input, out var newConfig))
                 {
                     args.Cancel = true;
                     return;
                 }
-
-                string newEndPoint = input.wsEdit.Text;
-                string newToken = input.tokenEdit.Password;
-                bool newIsSecure = input.WebSocketScheme.SelectionBoxItem.ToString() == "wss://";
-                string newFriendlyName = input.friendlyNameEdit.Text;
-
-                if (string.IsNullOrWhiteSpace(newEndPoint) || string.IsNullOrWhiteSpace(newToken))
-                {
-                    args.Cancel = true;
-                    return;
-                }
-
-                await _daemonService.RemoveAsync(originalConfig);
-                DaemonsListManager.RemoveDaemon(originalConfig);
-                Daemons.Remove(daemon);
-
-                var newConfig = new Constants.DaemonConfigModel
-                {
-                    FriendlyName = newFriendlyName,
-                    EndPoint = newEndPoint,
-                    Port = newPort,
-                    Token = newToken,
-                    IsSecure = newIsSecure
-                };
 
                 var newModel = new DaemonCardModel
                 {
                     Config = newConfig,
-                    Address = $"{(newIsSecure ? "wss" : "ws")}://{newEndPoint}:{newPort}",
-                    FriendlyName = newFriendlyName,
+                    Address = FormatAddress(newConfig),
+                    FriendlyName = GetFriendlyName(newConfig),
                     Status = "ing"
                 };
-                Daemons.Add(newModel);
 
+                await _daemonService.RemoveAsync(originalConfig);
                 if (await ConnectDaemonInternalAsync(newModel))
                 {
+                    DaemonsListManager.RemoveDaemon(originalConfig);
                     DaemonsListManager.AddDaemon(newConfig);
+                    ApplyModel(daemon, newModel);
                 }
                 else
                 {
-                    Daemons.Remove(newModel);
                     args.Cancel = true;
-                    await EditDaemonAsync(newModel);
+                    await ConnectDaemonInternalAsync(daemon);
                 }
             }
             finally
@@ -168,32 +166,24 @@ public partial class DaemonManagerViewModel : ObservableObject
             await _daemonService.RemoveAsync(daemon.Config);
             Daemons.Remove(daemon);
             DaemonsListManager.RemoveDaemon(daemon.Config);
+            _notification.Push(Lang.Tr["Status_OK"], Lang.Tr["DaemonDeleted"], false, InfoBarSeverity.Success);
         }
         catch (Exception ex)
         {
             Log.Error($"[Daemon] Error occurred when deleting daemon: {ex}");
+            _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["DaemonDeleteFailed"], ex.Message), true, InfoBarSeverity.Error);
         }
     }
 
-    private async void TryConnectNewDaemon(string endPoint, string port, string token, bool isSecure, string friendlyName)
+    private async Task<bool> TryConnectNewDaemonAsync(NewDaemonConnectionInput input)
     {
-        if (!int.TryParse(port, out int intPort)) return;
-        if (string.IsNullOrWhiteSpace(endPoint) || string.IsNullOrWhiteSpace(port) || string.IsNullOrWhiteSpace(token)) return;
-
-        var config = new Constants.DaemonConfigModel
-        {
-            FriendlyName = friendlyName,
-            EndPoint = endPoint,
-            Port = intPort,
-            Token = token,
-            IsSecure = isSecure
-        };
+        if (!TryCreateConfig(input, out var config)) return false;
 
         var model = new DaemonCardModel
         {
             Config = config,
-            Address = $"{(isSecure ? "wss" : "ws")}://{endPoint}:{intPort}",
-            FriendlyName = friendlyName,
+            Address = FormatAddress(config),
+            FriendlyName = GetFriendlyName(config),
             Status = "ing"
         };
         Daemons.Add(model);
@@ -201,12 +191,11 @@ public partial class DaemonManagerViewModel : ObservableObject
         if (await ConnectDaemonInternalAsync(model))
         {
             DaemonsListManager.AddDaemon(config);
+            return true;
         }
-        else
-        {
-            Daemons.Remove(model);
-            await EditDaemonAsync(model);
-        }
+
+        Daemons.Remove(model);
+        return false;
     }
 
     private async Task<bool> ConnectDaemonInternalAsync(DaemonCardModel model)
@@ -230,6 +219,7 @@ public partial class DaemonManagerViewModel : ObservableObject
                 model.SystemType = cpuVendor.Contains("Apple") ? "Darwin" : "Linux";
             }
 
+            UpdateResourceUsage(model, systemInfo);
             model.Status = "ok";
             return true;
         }
@@ -239,5 +229,138 @@ public partial class DaemonManagerViewModel : ObservableObject
             model.Status = "err";
             return false;
         }
+    }
+
+    private static bool TryCreateConfig(NewDaemonConnectionInput input, out Constants.DaemonConfigModel config)
+    {
+        config = new Constants.DaemonConfigModel();
+
+        if (!int.TryParse(input.portEdit.Text, out var port)) return false;
+
+        var endPoint = input.wsEdit.Text.Trim();
+        var token = input.tokenEdit.Password;
+        var friendlyName = input.friendlyNameEdit.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(endPoint) || string.IsNullOrWhiteSpace(token)) return false;
+
+        config = new Constants.DaemonConfigModel
+        {
+            FriendlyName = friendlyName,
+            EndPoint = endPoint,
+            Port = port,
+            Token = token,
+            IsSecure = input.WebSocketScheme.SelectionBoxItem.ToString() == "wss://"
+        };
+        return true;
+    }
+
+    private static string FormatAddress(Constants.DaemonConfigModel config)
+    {
+        return $"{(config.IsSecure ? "wss" : "ws")}://{config.EndPoint}:{config.Port}";
+    }
+
+    private static string GetFriendlyName(Constants.DaemonConfigModel config)
+    {
+        return string.IsNullOrWhiteSpace(config.FriendlyName)
+            ? Lang.Tr["Main_DaemonManagerNavMenu"]
+            : config.FriendlyName;
+    }
+
+    private static void ApplyModel(DaemonCardModel target, DaemonCardModel source)
+    {
+        target.Config = source.Config;
+        target.Address = source.Address;
+        target.FriendlyName = source.FriendlyName;
+        target.Status = source.Status;
+        target.SystemType = source.SystemType;
+        target.CpuUsage = source.CpuUsage;
+        target.MemoryUsage = source.MemoryUsage;
+        target.DriveUsage = source.DriveUsage;
+        target.MemoryUsageText = source.MemoryUsageText;
+        target.DriveUsageText = source.DriveUsageText;
+        target.ResourceSummary = source.ResourceSummary;
+        target.SystemVersion = source.SystemVersion;
+        target.DaemonVersion = source.DaemonVersion;
+        target.DriveUsageTooltip = source.DriveUsageTooltip;
+    }
+
+    private static void UpdateResourceUsage(DaemonCardModel model, MCServerLauncher.Common.ProtoType.Status.SystemInfo systemInfo)
+    {
+        model.CpuUsage = ClampPercentage(systemInfo.Cpu.Usage);
+        model.MemoryUsage = CalculateUsagePercentage(systemInfo.Mem.Total, systemInfo.Mem.Free);
+        model.SystemVersion = $"{systemInfo.Os.Name} ({systemInfo.Os.Arch})";
+        model.DaemonVersion = string.IsNullOrWhiteSpace(systemInfo.DaemonVersion) ? "--" : systemInfo.DaemonVersion;
+
+        var usedMemory = systemInfo.Mem.Total > systemInfo.Mem.Free ? systemInfo.Mem.Total - systemInfo.Mem.Free : 0;
+        var drives = systemInfo.Drives is { Length: > 0 } ? systemInfo.Drives : [systemInfo.Drive];
+        var totalDrive = drives.Aggregate(0UL, (sum, drive) => sum + drive.Total);
+        var freeDrive = drives.Aggregate(0UL, (sum, drive) => sum + drive.Free);
+        var usedDrive = totalDrive > freeDrive ? totalDrive - freeDrive : 0;
+
+        model.DriveUsage = CalculateUsagePercentage(totalDrive, freeDrive);
+        model.MemoryUsageText = $"{model.MemoryUsage:F2}% ({FormatSize(usedMemory * 1024d)} / {FormatSize(systemInfo.Mem.Total * 1024d)})";
+        model.DriveUsageText = $"{model.DriveUsage:F2}% ({FormatSize(usedDrive)} / {FormatSize(totalDrive)})";
+        model.DriveUsageTooltip = string.Join(Environment.NewLine, drives.Select(FormatDriveUsage));
+        model.ResourceSummary = $"{Lang.Tr["Daemon_CpuUsage"]} {model.CpuUsage:F2}% | {Lang.Tr["Daemon_MemoryUsage"]} {model.MemoryUsage:F2}% | {Lang.Tr["Daemon_DriveUsage"]} {model.DriveUsage:F2}%";
+    }
+
+    partial void OnAutoRefreshEnabledChanged(bool value)
+    {
+        SettingsManager.SaveSetting("Instance.AutoRefreshInterval", value ? RefreshIntervalSeconds : 0);
+    }
+
+    partial void OnRefreshIntervalSecondsChanged(int value)
+    {
+        var normalizedValue = RefreshIntervalOptionCatalog.Normalize(value);
+        if (value != normalizedValue)
+        {
+            RefreshIntervalSeconds = normalizedValue;
+            return;
+        }
+
+        if (AutoRefreshEnabled)
+        {
+            SettingsManager.SaveSetting("Instance.AutoRefreshInterval", RefreshIntervalSeconds);
+        }
+    }
+
+    private static double CalculateUsagePercentage(ulong total, ulong free)
+    {
+        if (total == 0) return 0;
+        var used = total > free ? total - free : 0;
+        return ClampPercentage(used * 100d / total);
+    }
+
+    private static double ClampPercentage(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value)) return 0;
+        return Math.Clamp(value, 0, 100);
+    }
+
+    private static string FormatSize(double bytes)
+    {
+        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
+        var value = Math.Max(0, bytes);
+        var suffixIndex = 0;
+        while (value >= 1024 && suffixIndex < suffixes.Length - 1)
+        {
+            value /= 1024;
+            suffixIndex++;
+        }
+
+        return $"{value:F1} {suffixes[suffixIndex]}";
+    }
+
+    private static string FormatDriveUsage(MCServerLauncher.Common.ProtoType.Status.DriveInformation drive)
+    {
+        var used = drive.Total > drive.Free ? drive.Total - drive.Free : 0;
+        var usage = CalculateUsagePercentage(drive.Total, drive.Free);
+        var name = string.IsNullOrWhiteSpace(drive.Name) ? drive.DriveFormat : drive.Name;
+        return $"{name} {usage:F2}% ({FormatSize(used)} / {FormatSize(drive.Total)})";
+    }
+
+    private static int GetStoredRefreshInterval()
+    {
+        return SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 5;
     }
 }

@@ -25,12 +25,15 @@ public partial class InstanceManagerViewModel : ObservableObject
     public ObservableCollection<InstanceCardModel> AllInstances { get; } = [];
     public ObservableCollection<InstanceCardModel> FilteredInstances { get; } = [];
     public ObservableCollection<string> DaemonFilterItems { get; } = [];
+    public IReadOnlyList<RefreshIntervalOption> RefreshIntervalOptions { get; } = RefreshIntervalOptionCatalog.All;
 
     [ObservableProperty] private int _selectedDaemonIndex;
     [ObservableProperty] private string _selectedStatusFilter = "All";
     [ObservableProperty] private int _selectedCount;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _errorState;
+    [ObservableProperty] private bool _autoRefreshEnabled = GetStoredRefreshInterval() > 0;
+    [ObservableProperty] private int _refreshIntervalSeconds = RefreshIntervalOptionCatalog.Normalize(GetStoredRefreshInterval());
 
     public InstanceManagerViewModel(
         IDaemonConnectionService daemonService,
@@ -82,6 +85,26 @@ public partial class InstanceManagerViewModel : ObservableObject
         if (DaemonsListManager.Get is not { Count: > 0 }) return;
         await LoadDaemonInstancesAsync(isAutoRefresh: true);
         ApplyFilters();
+    }
+
+    partial void OnAutoRefreshEnabledChanged(bool value)
+    {
+        SettingsManager.SaveSetting("Instance.AutoRefreshInterval", value ? RefreshIntervalSeconds : 0);
+    }
+
+    partial void OnRefreshIntervalSecondsChanged(int value)
+    {
+        var normalizedValue = RefreshIntervalOptionCatalog.Normalize(value);
+        if (value != normalizedValue)
+        {
+            RefreshIntervalSeconds = normalizedValue;
+            return;
+        }
+
+        if (AutoRefreshEnabled)
+        {
+            SettingsManager.SaveSetting("Instance.AutoRefreshInterval", RefreshIntervalSeconds);
+        }
     }
 
     private async Task LoadDaemonInstancesAsync(bool isAutoRefresh = false)
@@ -457,5 +480,10 @@ public partial class InstanceManagerViewModel : ObservableObject
         CancelSelection();
         await Task.Delay(1000);
         await RefreshAsync();
+    }
+
+    private static int GetStoredRefreshInterval()
+    {
+        return SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 5;
     }
 }

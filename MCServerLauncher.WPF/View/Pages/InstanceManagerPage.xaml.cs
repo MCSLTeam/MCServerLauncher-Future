@@ -52,6 +52,10 @@ namespace MCServerLauncher.WPF.View.Pages
                     SelectedCountTextBlock.Text = string.Format(Lang.Tr["SelectedCount"], _viewModel.SelectedCount);
                     BatchOperationBar.Visibility = _viewModel.SelectedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
                     break;
+                case nameof(InstanceManagerViewModel.AutoRefreshEnabled):
+                case nameof(InstanceManagerViewModel.RefreshIntervalSeconds):
+                    StartAutoRefresh();
+                    break;
             }
         }
 
@@ -96,15 +100,18 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void StartAutoRefresh()
         {
-            var interval = SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 0;
-            if (interval <= 0) { StopAutoRefresh(); return; }
+            if (!IsVisible || !_viewModel.AutoRefreshEnabled)
+            {
+                StopAutoRefresh();
+                return;
+            }
 
             if (_refreshTimer == null)
             {
                 _refreshTimer = new System.Windows.Threading.DispatcherTimer();
                 _refreshTimer.Tick += async (s, e) => await _viewModel.AutoRefreshCommand.ExecuteAsync(null);
             }
-            _refreshTimer.Interval = TimeSpan.FromSeconds(interval);
+            _refreshTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, _viewModel.RefreshIntervalSeconds));
             _refreshTimer.Start();
         }
 
