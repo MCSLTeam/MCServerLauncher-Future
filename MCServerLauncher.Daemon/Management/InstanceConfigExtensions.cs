@@ -12,7 +12,6 @@ using Serilog;
 
 namespace MCServerLauncher.Daemon.Management;
 
-// TODO 文件操作全部转换为Result
 public static class InstanceConfigExtensions
 {
     /// <summary>
@@ -130,6 +129,12 @@ public static class InstanceConfigExtensions
         return startInfo;
     }
 
+    public static Result<ProcessStartInfo, Error> TryGetStartInfo(this InstanceConfig config)
+    {
+        return ResultExt.Try(static cfg => cfg.GetStartInfo(), config)
+            .MapErr(ex => new Error("Failed to build instance start info").CauseBy(ex));
+    }
+
     private static (string File, string ArgumentString) GetLaunchScript(this InstanceConfig config)
     {
         var fullPath = Path.GetFullPath(Path.Combine(config.GetWorkingDirectory(), config.Target));
@@ -171,7 +176,7 @@ public static class InstanceConfigExtensions
         {
             var text = File.Exists(eulaPath)
                 ? (await File.ReadAllLinesAsync(eulaPath))
-                .Select(x => eulaPath.Trim().StartsWith("eula") ? "eula=true" : x)
+                .Select(x => x.Trim().StartsWith("eula") ? "eula=true" : x)
                 .ToArray()
                 : GenerateEula();
             await File.WriteAllLinesAsync(eulaPath, text, Encoding.UTF8);

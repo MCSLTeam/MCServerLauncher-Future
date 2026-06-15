@@ -22,8 +22,9 @@ public class InstanceManager : IInstanceManager
         _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this);
     }
 
-    public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting)
+    public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (Instances.ContainsKey(setting.Uuid))
             Log.Warning(
                 "[InstanceManager] Add new instance failed: Instance '{0}' already exists, we will allocate a new uuid for it",
@@ -44,6 +45,8 @@ public class InstanceManager : IInstanceManager
             .Flatten()
             .MapErr(err => new Error("Instance manager failed to run instance factory").WithInner(err));
 
+        ct.ThrowIfCancellationRequested();
+
         var saveInstanceResult = appliedFactoryResult.Map(static (state, config) =>
             {
                 var (root, keysSupplier, manager) = state;
@@ -55,7 +58,7 @@ public class InstanceManager : IInstanceManager
                     var (innerRoot, innerConfig, innerManager) = innerState;
                     var validation = innerConfig.ValidateConfig();
                     if (validation.IsErr(out var validationError))
-                        throw new InvalidOperationException(validationError.ToString());
+                        throw new InvalidOperationException(validationError?.ToString() ?? "Invalid instance config");
 
                     FileManager.WriteJsonAndBackup(
                         Path.Combine(innerRoot, InstanceConfig.FileName),
@@ -101,8 +104,9 @@ public class InstanceManager : IInstanceManager
         }
     }
 
-    public async Task<IInstance?> TryStartInstance(Guid instanceId)
+    public async Task<IInstance?> TryStartInstance(Guid instanceId, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (RunningInstances.ContainsKey(instanceId)) return null;
 
         var target = Instances.GetValueOrDefault(instanceId);
@@ -120,7 +124,7 @@ public class InstanceManager : IInstanceManager
                     Remote.Event.EventTriggerService;
             eventTriggerService?.HookInstance(target);
 
-            if (await target.StartAsync())
+            if (await target.StartAsync(ct: ct))
 
             {
                 if (!RunningInstances.TryAdd(instanceId, target))
@@ -164,18 +168,20 @@ public class InstanceManager : IInstanceManager
         if (RunningInstances.TryGetValue(instanceId, out var instance)) instance.Process!.KillProcess();
     }
 
-    public async Task<InstanceReport?> GetInstanceReport(Guid instanceId)
+    public async Task<InstanceReport?> GetInstanceReport(Guid instanceId, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (!Instances.TryGetValue(instanceId, out var instance))
             return null;
 
         instance = ReconcileLoadedInstance(instance);
-        return await instance.GetReportAsync();
+        return await instance.GetReportAsync(ct);
     }
 
-    public async Task<Dictionary<Guid, InstanceReport>> GetAllReports()
+    public async Task<Dictionary<Guid, InstanceReport>> GetAllReports(CancellationToken ct = default)
     {
-        var tasks = Instances.ToDictionary(kv => kv.Key, kv => ReconcileLoadedInstance(kv.Value).GetReportAsync());
+        ct.ThrowIfCancellationRequested();
+        var tasks = Instances.ToDictionary(kv => kv.Key, kv => ReconcileLoadedInstance(kv.Value).GetReportAsync(ct));
         await Task.WhenAll(tasks.Values);
         return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
     }
@@ -266,7 +272,19 @@ public class InstanceManager : IInstanceManager
                 if (!ReferenceEquals(reconciledConfig, config) &&
                     (reconciledConfig.InstanceType != config.InstanceType || reconciledConfig.Version != config.Version))
                 {
-                    FileManager.WriteJsonAndBackup(serverConfig.FullName, reconciledConfig);
+                    var persist = ResultExt.Try(static state =>
+                    {
+                        var (path, cfg) = state;
+                        FileManager.WriteJsonAndBackup(path, cfg);
+                    }, (serverConfig.FullName, reconciledConfig));
+
+                    if (persist.IsErr(out var persistError))
+                    {
+                        Log.Debug(
+                            "[InstanceManager] Failed to persist reconciled config at '{0}', ignored: {1}",
+                            serverConfig.FullName,
+                            persistError?.Message ?? "unknown error");
+                    }
                 }
 
                 instanceManager.Instances.TryAdd(reconciledConfig.Uuid, reconciledConfig.CreateInstance());

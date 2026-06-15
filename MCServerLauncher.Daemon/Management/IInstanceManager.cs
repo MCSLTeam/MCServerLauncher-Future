@@ -6,7 +6,6 @@ using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Management;
 
-// TODO 异步方法添加 cancellationToken
 public interface IInstanceManager
 {
     public ConcurrentDictionary<Guid, IInstance> Instances { get; }
@@ -17,7 +16,7 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="setting"></param>
     /// <returns></returns>
-    Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting);
+    Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting, CancellationToken ct = default);
 
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。
@@ -32,7 +31,7 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    public Task<IInstance?> TryStartInstance(Guid instanceId);
+    public Task<IInstance?> TryStartInstance(Guid instanceId, CancellationToken ct = default);
 
     /// <summary>
     ///     尝试停止一个服务器实例, 如果服务器不在运行，返回false
@@ -59,14 +58,14 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    Task<InstanceReport?> GetInstanceReport(Guid instanceId);
+    Task<InstanceReport?> GetInstanceReport(Guid instanceId, CancellationToken ct = default);
 
 
     /// <summary>
     ///     获取所有服务器实例状态
     /// </summary>
     /// <returns></returns>
-    Task<Dictionary<Guid, InstanceReport>> GetAllReports();
+    Task<Dictionary<Guid, InstanceReport>> GetAllReports(CancellationToken ct = default);
 
     Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(Guid instanceId);
 

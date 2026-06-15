@@ -13,9 +13,9 @@ public interface IInstance : IDisposable
     event Action<Guid, string>? OnLog;
     event Action<Guid, InstanceStatus>? OnStatusChanged;
 
-    Task<InstanceReport> GetReportAsync();
+    Task<InstanceReport> GetReportAsync(CancellationToken ct = default);
 
-    Task<bool> StartAsync(int delayToCheck = 500);
+    Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default);
 
     void Stop();
 

@@ -16,7 +16,7 @@ internal class HandleStartInstance : IAsyncActionHandler<StartInstanceParameter,
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         var eventService = resolver.GetRequiredService<IEventService>();
-        var instance = await instanceManager.TryStartInstance(param.Id);
+        var instance = await instanceManager.TryStartInstance(param.Id, ct);
 
         if (instance is null)
             return this.Err(instanceManager.Instances.ContainsKey(param.Id)
@@ -69,7 +69,7 @@ internal class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, G
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
         return this.Ok(new GetAllReportsResult
         {
-            Reports = await instanceManager.GetAllReports()
+            Reports = await instanceManager.GetAllReports(ct)
         });
     }
 }
@@ -89,7 +89,7 @@ internal class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, Add
         var addInstanceResult =
             (await validateSettingResult.MapAsTaskAsync(async _ =>
             {
-                var tryAddInstance = await instanceManager.TryAddInstance(param.Setting);
+                var tryAddInstance = await instanceManager.TryAddInstance(param.Setting, ct);
                 return tryAddInstance.MapErr(err =>
                     new ActionError(ActionRetcode.InstallationError).WithInner(err));
             })).Flatten();
@@ -135,7 +135,7 @@ internal class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportPa
         WsContext ctx, IResolver resolver, CancellationToken ct)
     {
         var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        var report = await instanceManager.GetInstanceReport(param.Id);
+        var report = await instanceManager.GetInstanceReport(param.Id, ct);
         return report is not null
             ? this.Ok(new GetInstanceReportResult { Report = report })
             : this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.Id));

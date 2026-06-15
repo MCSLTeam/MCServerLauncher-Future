@@ -61,8 +61,9 @@ public abstract class InstanceBase : DisposableObject, IInstance
     public event Action<Guid, string>? OnLog;
     public event Action<Guid, InstanceStatus>? OnStatusChanged;
 
-    public virtual async Task<InstanceReport> GetReportAsync()
+    public virtual async Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         return new InstanceReport(
             Status,
             Config,
@@ -72,8 +73,9 @@ public abstract class InstanceBase : DisposableObject, IInstance
         );
     }
 
-    public async Task<bool> StartAsync(int delayToCheck = 500)
+    public async Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (Process is not null)
         {
             if (!Process.HasExit) return false;
@@ -83,10 +85,19 @@ public abstract class InstanceBase : DisposableObject, IInstance
 
         RequestReloadConfig();
 
-        Process = new InstanceProcess(Config.GetStartInfo(), Config.CanSafeCastTo<MinecraftInstance>());
+        var startInfoResult = Config.TryGetStartInfo();
+        if (startInfoResult.IsErr(out var error))
+        {
+            Log.Error("[Instance] Failed to build start info for instance '{0}': {1}", Config.Uuid, error);
+            return false;
+        }
+
+        var startInfo = startInfoResult.Unwrap();
+        Process = new InstanceProcess(startInfo, Config.CanSafeCastTo<MinecraftInstance>());
         Process.OnStatusChanged += st => { OnStatusChanged?.Invoke(Config.Uuid, st); };
         Process.OnLog += message => OnLog?.Invoke(Config.Uuid, message);
 
+        ct.ThrowIfCancellationRequested();
         return await Process.StartAsync();
     }
 

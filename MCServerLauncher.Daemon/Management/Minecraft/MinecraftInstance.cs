@@ -29,14 +29,16 @@ public class MinecraftInstance : InstanceBase
 
     public int Port { get; private set; } = -1;
 
-    private async Task<Player[]> GetServerPlayersAsync()
+    private async Task<Player[]> GetServerPlayersAsync(CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (!Config.InstanceType.RequiresNumericMinecraftVersion() || string.IsNullOrWhiteSpace(Config.McVersion))
             return [];
 
         if (McVersion.Of(Config.McVersion) >= McVersion.Of("1.7") && Status == InstanceStatus.Running)
             try
             {
+                ct.ThrowIfCancellationRequested();
                 var status = await SlpClient.GetStatusModern("127.0.0.1", Port);
                 if (status != null)
                     return status.Payload.Players.Sample.Select(player => new Player(player.Name, player.Id)).ToArray();
@@ -49,13 +51,14 @@ public class MinecraftInstance : InstanceBase
         return [];
     }
 
-    public override async Task<InstanceReport> GetReportAsync()
+    public override async Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         return new InstanceReport(
             Status,
             Config,
             Properties,
-            await GetServerPlayersAsync(),
+            await GetServerPlayersAsync(ct),
             Process is null ? default : await Process!.Monitor.GetMonitorData()
         );
     }
