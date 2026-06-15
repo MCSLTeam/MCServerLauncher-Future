@@ -18,6 +18,11 @@ namespace MCServerLauncher.WPF.Modules
 
         public async Task TriggerPreDownloadFile(string downloadUrl, string defaultFileName)
         {
+            if (string.IsNullOrWhiteSpace(downloadUrl))
+                throw new ArgumentException("Download URL is empty.", nameof(downloadUrl));
+            if (string.IsNullOrWhiteSpace(defaultFileName))
+                throw new ArgumentException("Download file name is empty.", nameof(defaultFileName));
+
             var saveFileDialog = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "All Files (*.*)|*.*",
@@ -26,8 +31,11 @@ namespace MCServerLauncher.WPF.Modules
             if (saveFileDialog.ShowDialog() != true || string.IsNullOrWhiteSpace(saveFileDialog.FileName))
                 return;
 
-            var saveFileName = saveFileDialog.FileName.Split('\\').Last();
-            var savePath = saveFileDialog.FileName.Substring(0, saveFileDialog.FileName.Length - saveFileName.Length);
+            var saveFileName = Path.GetFileName(saveFileDialog.FileName);
+            var savePath = Path.GetDirectoryName(saveFileDialog.FileName);
+            if (string.IsNullOrWhiteSpace(saveFileName) || string.IsNullOrWhiteSpace(savePath))
+                return;
+
             await PreDownloadFile(url: downloadUrl, savePath, saveFileName);
         }
         /// <summary>

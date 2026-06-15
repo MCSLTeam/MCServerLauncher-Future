@@ -1,7 +1,6 @@
 ﻿using iNKORE.UI.WPF.DragDrop.Utilities;
 using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -19,77 +18,29 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         public ForgeLoaderSet()
         {
             InitializeComponent();
-            void initialHandler1(object sender, SelectionChangedEventArgs args)
-            {
-                if (!IsDisposed1)
-                {
-                    SetValue(IsFinished1Property, !(MinecraftVersionComboBox.SelectedIndex == -1));
-                }
-            }
-            void initialHandler2(object sender, SelectionChangedEventArgs args)
-            {
-                if (!IsDisposed2)
-                {
-                    SetValue(IsFinished2Property, !(ForgeVersionComboBox.SelectedIndex == -1));
-                }
-            }
-
-            MinecraftVersionComboBox.SelectionChanged += initialHandler1;
-            ForgeVersionComboBox.SelectionChanged += initialHandler2;
-
-            // As you can see, we have to trigger it manually
-            VisualTreeHelper.InitStepState(MinecraftVersionComboBox);
-            VisualTreeHelper.InitStepState(ForgeVersionComboBox);
+            LoaderSetStepHelper.BindSelectionStatus(this, MinecraftVersionComboBox, IsFinished1Property);
+            LoaderSetStepHelper.BindSelectionStatus(this, ForgeVersionComboBox, IsFinished2Property);
 
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
 
         }
-#nullable enable
+
         private List<Forge.ForgeBuild>? CurrentForgeBuilds { get; set; }
 
-
-        private bool IsDisposed1 { get; set; } = false;
-        private bool IsDisposed2 { get; set; } = false;
-
-        ~ForgeLoaderSet()
-        {
-            IsDisposed1 = true;
-            IsDisposed2 = true;
-        }
 
         public static readonly DependencyProperty IsFinished1Property = DependencyProperty.Register(
             nameof(IsFinished1),
             typeof(bool),
             typeof(ForgeLoaderSet),
-            new PropertyMetadata(false, OnStatus1Changed));
-
-        private static void OnStatus1Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not ForgeLoaderSet control) return;
-            if (e.NewValue is not bool status) return;
-            control.StatusShow1.Visibility = status switch
-            {
-                true => Visibility.Visible,
-                false => Visibility.Hidden,
-            };
-        }
+            new PropertyMetadata(false,
+                LoaderSetStepHelper.CreateStatusVisibilityCallback<ForgeLoaderSet>(control => control.StatusShow1)));
 
         public static readonly DependencyProperty IsFinished2Property = DependencyProperty.Register(
             nameof(IsFinished2),
             typeof(bool),
             typeof(ForgeLoaderSet),
-            new PropertyMetadata(false, OnStatus2Changed));
-
-        private static void OnStatus2Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not ForgeLoaderSet control) return;
-            if (e.NewValue is not bool status) return;
-            control.StatusShow2.Visibility = status switch
-            {
-                true => Visibility.Visible,
-                false => Visibility.Hidden,
-            };
-        }
+            new PropertyMetadata(false,
+                LoaderSetStepHelper.CreateStatusVisibilityCallback<ForgeLoaderSet>(control => control.StatusShow2)));
 
         public bool IsFinished1
         {
@@ -113,20 +64,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             get
             {
-                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
-                var loaderVersion = ForgeVersionComboBox.SelectedItem?.ToString();
-                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
-                    throw new InvalidOperationException("Minecraft and Forge versions must be selected.");
-
-                return new CreateInstanceData
-                {
-                    Type = CreateInstanceDataType.Struct,
-                    Data = new MinecraftLoaderVersion
-                    {
-                        MCVersion = mcVersion,
-                        LoaderVersion = loaderVersion,
-                    }
-                };
+                return LoaderSetStepHelper.CreateLoaderVersionData(
+                    MinecraftVersionComboBox,
+                    ForgeVersionComboBox,
+                    "Forge");
             }
         }
 
@@ -186,12 +127,12 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                 await Forge.GetForgeVersions(selectedMinecraftVersion, UseMirror());
             if (CurrentForgeBuilds != null)
                 ForgeVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
-                    CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion).ToList()!
+                    LoaderSetStepHelper.NonEmptyStrings(
+                        CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion))
                 );
             ForgeVersionComboBox.IsEnabled = true;
             FetchForgeVersionButton.IsEnabled = true;
             MinecraftVersionComboBox.IsEnabled = true;
         }
-#nullable disable
     }
 }

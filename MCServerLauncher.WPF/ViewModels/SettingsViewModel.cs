@@ -13,9 +13,19 @@ namespace MCServerLauncher.WPF.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
-    private static readonly List<string?> ActionOnDoubleClickKeys = ["Console", "Start", "Stop", "Restart", "Kill"];
-    private static readonly List<string?> ActionWhenDownloadErrorKeys = ["stop", "retry1", "retry3"];
-    private static readonly List<string?> ThemeKeys = ["auto", "light", "dark"];
+    private const string DefaultDownloadSource = "FastMirror";
+    private const string DefaultActionWhenDownloadError = "stop";
+    private const string DefaultActionOnDoubleClick = "Console";
+    private const string DefaultTheme = "auto";
+    private const string DefaultLanguage = "zh-CN";
+
+    private static readonly List<string> ActionOnDoubleClickKeys = ["Console", "Start", "Stop", "Restart", "Kill"];
+    private static readonly List<string> ActionWhenDownloadErrorKeys = ["stop", "retry1", "retry3"];
+    private static readonly List<string> ThemeKeys = ["auto", "light", "dark"];
+    private static readonly List<string> LanguageKeys = Lang.LanguageList
+        .Where(language => !string.IsNullOrWhiteSpace(language))
+        .Select(language => language!)
+        .ToList();
 
     public SettingsViewModel()
     {
@@ -23,28 +33,28 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     // Instance Creation settings
-    [ObservableProperty] private bool _minecraftJavaAutoAcceptEula = SettingsManager.Get.InstanceCreation.MinecraftJavaAutoAcceptEula;
-    [ObservableProperty] private bool _minecraftJavaAutoSwitchOnlineMode = SettingsManager.Get.InstanceCreation.MinecraftJavaAutoSwitchOnlineMode;
-    [ObservableProperty] private bool _minecraftBedrockAutoSwitchOnlineMode = SettingsManager.Get.InstanceCreation.MinecraftBedrockAutoSwitchOnlineMode;
-    [ObservableProperty] private bool _useMirrorForMinecraftForgeInstall = SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftForgeInstall;
-    [ObservableProperty] private bool _useMirrorForMinecraftNeoForgeInstall = SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftNeoForgeInstall;
-    [ObservableProperty] private bool _useMirrorForMinecraftFabricInstall = SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftFabricInstall;
-    [ObservableProperty] private bool _useMirrorForMinecraftQuiltInstall = SettingsManager.Get.InstanceCreation.UseMirrorForMinecraftQuiltInstall;
+    [ObservableProperty] private bool _minecraftJavaAutoAcceptEula = InstanceCreationSettings.MinecraftJavaAutoAcceptEula;
+    [ObservableProperty] private bool _minecraftJavaAutoSwitchOnlineMode = InstanceCreationSettings.MinecraftJavaAutoSwitchOnlineMode;
+    [ObservableProperty] private bool _minecraftBedrockAutoSwitchOnlineMode = InstanceCreationSettings.MinecraftBedrockAutoSwitchOnlineMode;
+    [ObservableProperty] private bool _useMirrorForMinecraftForgeInstall = InstanceCreationSettings.UseMirrorForMinecraftForgeInstall;
+    [ObservableProperty] private bool _useMirrorForMinecraftNeoForgeInstall = InstanceCreationSettings.UseMirrorForMinecraftNeoForgeInstall;
+    [ObservableProperty] private bool _useMirrorForMinecraftFabricInstall = InstanceCreationSettings.UseMirrorForMinecraftFabricInstall;
+    [ObservableProperty] private bool _useMirrorForMinecraftQuiltInstall = InstanceCreationSettings.UseMirrorForMinecraftQuiltInstall;
 
     // Download settings
-    [ObservableProperty] private string _downloadSource = SettingsManager.Get.Download.DownloadSource;
-    [ObservableProperty] private int _downloadThreadCount = SettingsManager.Get.Download.ThreadCnt;
-    [ObservableProperty] private int _actionWhenDownloadErrorIndex = ActionWhenDownloadErrorKeys.IndexOf(SettingsManager.Get.Download.ActionWhenDownloadError);
+    [ObservableProperty] private string _downloadSource = DownloadSettings.DownloadSource ?? DefaultDownloadSource;
+    [ObservableProperty] private int _downloadThreadCount = DownloadSettings.ThreadCnt;
+    [ObservableProperty] private int _actionWhenDownloadErrorIndex = GetSelectedIndex(ActionWhenDownloadErrorKeys, DownloadSettings.ActionWhenDownloadError, DefaultActionWhenDownloadError);
 
     // Instance settings
-    [ObservableProperty] private int _autoRefreshInterval = SettingsManager.Get.Instance.AutoRefreshInterval;
-    [ObservableProperty] private int _actionOnDoubleClickIndex = ActionOnDoubleClickKeys.IndexOf(SettingsManager.Get.Instance.ActionOnDoubleClick);
+    [ObservableProperty] private int _autoRefreshInterval = InstanceSettings.AutoRefreshInterval;
+    [ObservableProperty] private int _actionOnDoubleClickIndex = GetSelectedIndex(ActionOnDoubleClickKeys, InstanceSettings.ActionOnDoubleClick, DefaultActionOnDoubleClick);
 
     // App settings
-    [ObservableProperty] private int _launcherThemeIndex = ThemeKeys.IndexOf(SettingsManager.Get.App.Theme);
-    [ObservableProperty] private int _launcherLanguageIndex = Lang.LanguageList.IndexOf(SettingsManager.Get.App.Language);
-    [ObservableProperty] private bool _followStartup = SettingsManager.Get.App.FollowStartup;
-    [ObservableProperty] private bool _autoCheckUpdate = SettingsManager.Get.App.AutoCheckUpdate;
+    [ObservableProperty] private int _launcherThemeIndex = GetSelectedIndex(ThemeKeys, AppSettings.Theme, DefaultTheme);
+    [ObservableProperty] private int _launcherLanguageIndex = GetSelectedIndex(LanguageKeys, AppSettings.Language, DefaultLanguage);
+    [ObservableProperty] private bool _followStartup = AppSettings.FollowStartup;
+    [ObservableProperty] private bool _autoCheckUpdate = AppSettings.AutoCheckUpdate;
 
     // Display info
     [ObservableProperty] private string _buildInfoText = string.Empty;
@@ -74,7 +84,7 @@ public partial class SettingsViewModel : ObservableObject
         Lang.Tr["Settings_AppTheme_Dark"]
     ];
 
-    public IEnumerable<string> LanguageItems => Lang.LanguageList;
+    public IEnumerable<string> LanguageItems => LanguageKeys;
 
     // Partial property change handlers for auto-save
     partial void OnMinecraftJavaAutoAcceptEulaChanged(bool value) =>
@@ -136,8 +146,10 @@ public partial class SettingsViewModel : ObservableObject
 
     partial void OnLauncherLanguageIndexChanged(int value)
     {
-        if (!SettingsManager.Get.App.IsFirstSetupFinished) return;
-        var lang = Lang.LanguageList.ElementAt(value);
+        if (!AppSettings.IsFirstSetupFinished) return;
+        if (value < 0 || value >= LanguageKeys.Count) return;
+
+        var lang = LanguageKeys[value];
         Lang.Tr.ChangeLanguage(new CultureInfo(lang));
         SettingsManager.SaveSetting("App.Language", lang);
         RefreshLocalizedItems();
@@ -203,6 +215,80 @@ public partial class SettingsViewModel : ObservableObject
                 BuildInfoText = buildInfoJson;
             }
         }
+    }
+
+    private static SettingsManager.Settings EnsureSettings()
+    {
+        var settings = SettingsManager.Get ??= new SettingsManager.Settings();
+        return settings;
+    }
+
+    private static SettingsManager.InstanceCreationSettingsModel InstanceCreationSettings =>
+        EnsureSettings().InstanceCreation ??= CreateDefaultInstanceCreationSettings();
+
+    private static SettingsManager.ResDownloadSettingsModel DownloadSettings =>
+        EnsureSettings().Download ??= CreateDefaultDownloadSettings();
+
+    private static SettingsManager.InstanceSettingsModel InstanceSettings =>
+        EnsureSettings().Instance ??= new SettingsManager.InstanceSettingsModel();
+
+    private static SettingsManager.AppSettingsModel AppSettings =>
+        EnsureSettings().App ??= CreateDefaultAppSettings();
+
+    private static int GetSelectedIndex(IReadOnlyList<string> values, string? selectedValue, string defaultValue)
+    {
+        var index = selectedValue is null ? -1 : IndexOf(values, selectedValue);
+        return index >= 0 ? index : IndexOf(values, defaultValue);
+    }
+
+    private static int IndexOf(IReadOnlyList<string> values, string value)
+    {
+        for (var i = 0; i < values.Count; i++)
+        {
+            if (string.Equals(values[i], value, StringComparison.Ordinal))
+                return i;
+        }
+
+        return -1;
+    }
+
+    private static SettingsManager.InstanceCreationSettingsModel CreateDefaultInstanceCreationSettings()
+    {
+        return new SettingsManager.InstanceCreationSettingsModel
+        {
+            MinecraftJavaAutoAcceptEula = false,
+            MinecraftJavaAutoSwitchOnlineMode = false,
+            MinecraftBedrockAutoSwitchOnlineMode = false,
+            UseMirrorForMinecraftForgeInstall = true,
+            UseMirrorForMinecraftNeoForgeInstall = true,
+            UseMirrorForMinecraftFabricInstall = true,
+            UseMirrorForMinecraftQuiltInstall = true
+        };
+    }
+
+    private static SettingsManager.ResDownloadSettingsModel CreateDefaultDownloadSettings()
+    {
+        return new SettingsManager.ResDownloadSettingsModel
+        {
+            DownloadSource = DefaultDownloadSource,
+            ThreadCnt = 16,
+            ActionWhenDownloadError = DefaultActionWhenDownloadError
+        };
+    }
+
+    private static SettingsManager.AppSettingsModel CreateDefaultAppSettings()
+    {
+        return new SettingsManager.AppSettingsModel
+        {
+            Theme = DefaultTheme,
+            Language = DefaultLanguage,
+            FollowStartup = false,
+            AutoCheckUpdate = true,
+            IsCertImported = false,
+            IsFontInstalled = false,
+            IsAppEulaAccepted = false,
+            IsFirstSetupFinished = false
+        };
     }
 
     private sealed class BuildInfoModel

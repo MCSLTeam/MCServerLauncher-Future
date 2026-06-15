@@ -36,26 +36,25 @@ _All high priority items completed!_
 
 ### Feature Development
 
-- [ ] **Library local cache for Forge installer**
+- [x] **Library local cache for Forge installer** (31ab9c8)
   - Location: `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/ForgeInstallerV1.cs`
   - Location: `MCServerLauncher.Daemon/Management/Installer/MinecraftForge/ForgeInstallerV2.cs`
-  - Feature: Check local cache first, verify SHA1, download from mirror if needed
+  - Implemented shared `LibraryCacheRoot` and SHA1-verified cache reuse in `ForgeInstallerBase`
+  - V1 / V2 installers now check the local cache first, verify SHA1/checksums, download if needed, and backfill the cache
   - Benefit: Faster installation, reduced bandwidth
 
-- [ ] **Clean up stale NeoForge BMCLAPI TODOs**
+- [x] **Clean up stale NeoForge BMCLAPI TODOs** (31ab9c8)
   - Location: `MCServerLauncher.Daemon/Management/Factory/MCForgeFactory.cs`
-  - Current: NeoForge BMCLAPI mirror flow is already wired from WPF create-instance providers, but daemon still carries stale TODO comments
-  - Target: Remove stale comments and document the current mirror path clearly
+  - Removed stale daemon-side TODOs
+  - Current mirror path: WPF create-instance providers build the official/BMCLAPI installer URL and pass `InstanceFactoryMirror`; daemon consumes the downloaded installer and uses the mirror setting for installer-managed library downloads
 
-- [ ] **Relay packet support**
+- [x] **Relay packet support** (33eb828)
   - Location: `MCServerLauncher.DaemonClient/WebSocketPlugin/WsReceivedPlugin.cs`
-  - Feature: Support for relay/proxy packets in WebSocket protocol
-  - Status: Not yet implemented
+  - Added `RelayPacket` protocol type, source-generated JSON coverage, inbound detection/parsing, and `OnRelayReceived`
 
-- [ ] **Event-trigger notification push to WebSocket clients**
+- [x] **Event-trigger notification push to WebSocket clients** (33eb828)
   - Location: `MCServerLauncher.Daemon/Remote/Event/EventTriggerService.cs`
-  - Feature: Implement `SendNotificationAction` so event rules can push notifications to connected clients via WebSocket
-  - Status: General event delivery exists; notification action path is still TODO
+  - Implemented `SendNotificationAction` by serializing `NotificationPacket` and broadcasting text frames to connected WebSocket clients
 
 ### Architecture Improvements
 
@@ -65,10 +64,9 @@ _All high priority items completed!_
   - Target: Finish converting remaining raw file operations to `Result<T>` pattern
   - Benefit: Better error handling, functional approach
 
-- [ ] **Add CancellationToken to remaining async manager methods**
+- [x] **Add CancellationToken to remaining async manager methods** (b828803)
   - Location: `MCServerLauncher.Daemon/Management/IInstanceManager.cs`
-  - Current: Cancellation support is partial (`StopAllInstances` already supports it)
-  - Target: Add `CancellationToken` parameter to remaining async manager methods
+  - Added `CancellationToken` support to async instance lifecycle/report paths and threaded action-handler cancellation through the manager calls
   - Benefit: Proper cancellation support, better resource cleanup
 
 - [ ] **Complete UTF-8 span-based deserialization migration**
@@ -107,28 +105,28 @@ _All high priority items completed!_
   - Daemon now routes Forge-family installers through a shared installer resolver
   - Remaining stubbed providers still include: Bedrock, Terraria, OtherExecutable, Quilt
 
-- [ ] **Re-audit nullable reference hotspots in WPF project**
+- [ ] **Re-audit nullable reference hotspots in WPF project** (in progress: ab791d8, current staged)
   - Location: `MCServerLauncher.WPF/` (multiple files)
   - Current: Project builds clean, but nullable suppressions / null-forgiving hotspots still exist in several WPF files
   - Target: Remove remaining unsafe null-forgiving usage, add proper null checks, and reduce warning-prone patterns
   - Files worth reviewing first:
-    - `Modules/Download.cs`
-    - `View/Components/Generic/DownloadProgressItem.xaml.cs`
-    - `View/Components/CreateInstance/ForgeLoaderSet.xaml.cs`
-    - `View/Components/CreateInstance/NeoForgeLoaderSet.xaml.cs`
-    - `View/Components/CreateInstance/QuiltLoaderSet.xaml.cs`
-    - `View/Components/ResDownloadItem/MCSLSyncResCoreVersionItem.xaml.cs`
+    - `Modules/Download.cs` (current staged path validation / safe filename handling)
+    - `View/Components/Generic/DownloadProgressItem.xaml.cs` (ab791d8 plus current staged cleanup/disposal hardening)
+    - `View/Components/CreateInstance/ForgeLoaderSet.xaml.cs` (current staged refactor removes local nullable toggles / null-forgiving)
+    - `View/Components/CreateInstance/NeoForgeLoaderSet.xaml.cs` (current staged refactor removes local nullable toggles)
+    - `View/Components/CreateInstance/QuiltLoaderSet.xaml.cs` (current staged refactor removes local nullable toggles / null-forgiving)
+    - `View/Components/ResDownloadItem/MCSLSyncResCoreVersionItem.xaml.cs` (current staged null guard)
+    - `View/Components/ResDownloadItem/MSLAPIResCoreVersionItem.xaml.cs` (current staged null guard)
 
-- [ ] **Harden download component error handling**
+- [x] **Harden download component error handling** (ab791d8)
   - Location: `MCServerLauncher.WPF/View/Components/Generic/DownloadProgressItem.xaml.cs`
-  - Current: Basic failure notifications exist, but cancellation cleanup and null-safety are still fragile
-  - Target: Improve cancellation/error cleanup and remove null-sensitive call paths in download UI
+  - Improved cancellation/error cleanup and reduced null-sensitive call paths in the download UI
   - Benefit: More robust download UI, better user experience
 
-- [ ] **Refactor loader set components**
+- [x] **Refactor loader set components** (current staged)
   - Location: `MCServerLauncher.WPF/View/Components/CreateInstance/`
-  - Current: ForgeLoaderSet, FabricLoaderSet, NeoForgeLoaderSet, QuiltLoaderSet still share a lot of duplicated step logic
-  - Target: Extract common functionality, reduce code duplication
+  - Added `LoaderSetStepHelper` for selection status binding, status icon visibility callbacks, loader-version data creation, and non-empty version list filtering
+  - Forge/Fabric/NeoForge/Quilt loader sets now share common step-state logic with fewer nullable suppressions
   - Benefit: Easier maintenance, consistent behavior across loaders
 
 - [ ] **Expand input validation for user-facing create-instance forms**

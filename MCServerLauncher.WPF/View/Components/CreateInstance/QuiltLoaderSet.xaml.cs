@@ -1,6 +1,5 @@
 ﻿using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -18,27 +17,8 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         public QuiltLoaderSet()
         {
             InitializeComponent();
-            void initialHandler1(object sender, SelectionChangedEventArgs args)
-            {
-                if (!IsDisposed1)
-                {
-                    SetValue(IsFinished1Property, !(MinecraftVersionComboBox.SelectedIndex == -1));
-                }
-            }
-            void initialHandler2(object sender, SelectionChangedEventArgs args)
-            {
-                if (!IsDisposed2)
-                {
-                    SetValue(IsFinished2Property, !(QuiltVersionComboBox.SelectedIndex == -1));
-                }
-            }
-
-            MinecraftVersionComboBox.SelectionChanged += initialHandler1;
-            QuiltVersionComboBox.SelectionChanged += initialHandler2;
-
-            // As you can see, we have to trigger it manually
-            VisualTreeHelper.InitStepState(MinecraftVersionComboBox);
-            VisualTreeHelper.InitStepState(QuiltVersionComboBox);
+            LoaderSetStepHelper.BindSelectionStatus(this, MinecraftVersionComboBox, IsFinished1Property);
+            LoaderSetStepHelper.BindSelectionStatus(this, QuiltVersionComboBox, IsFinished2Property);
 
             ToggleStableMinecraftVersionCheckBox.Checked += ToggleStableMinecraftVersion;
             ToggleStableMinecraftVersionCheckBox.Unchecked += ToggleStableMinecraftVersion;
@@ -47,53 +27,22 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             FetchQuiltVersionButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
-#nullable enable
-
         private List<Quilt.QuiltMinecraftVersion>? SupportedAllMinecraftVersions { get; set; }
         private List<string>? QuiltLoaderVersions { get; set; }
-
-        private bool IsDisposed1 { get; set; } = false;
-        private bool IsDisposed2 { get; set; } = false;
-
-        ~QuiltLoaderSet()
-        {
-            IsDisposed1 = true;
-            IsDisposed2 = true;
-        }
 
         public static readonly DependencyProperty IsFinished1Property = DependencyProperty.Register(
             nameof(IsFinished1),
             typeof(bool),
             typeof(QuiltLoaderSet),
-            new PropertyMetadata(false, OnStatus1Changed));
-
-        private static void OnStatus1Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not QuiltLoaderSet control) return;
-            if (e.NewValue is not bool status) return;
-            control.StatusShow1.Visibility = status switch
-            {
-                true => Visibility.Visible,
-                false => Visibility.Hidden,
-            };
-        }
+            new PropertyMetadata(false,
+                LoaderSetStepHelper.CreateStatusVisibilityCallback<QuiltLoaderSet>(control => control.StatusShow1)));
 
         public static readonly DependencyProperty IsFinished2Property = DependencyProperty.Register(
             nameof(IsFinished2),
             typeof(bool),
             typeof(QuiltLoaderSet),
-            new PropertyMetadata(false, OnStatus2Changed));
-
-        private static void OnStatus2Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not QuiltLoaderSet control) return;
-            if (e.NewValue is not bool status) return;
-            control.StatusShow2.Visibility = status switch
-            {
-                true => Visibility.Visible,
-                false => Visibility.Hidden,
-            };
-        }
+            new PropertyMetadata(false,
+                LoaderSetStepHelper.CreateStatusVisibilityCallback<QuiltLoaderSet>(control => control.StatusShow2)));
 
         public bool IsFinished1
         {
@@ -117,20 +66,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             get
             {
-                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
-                var loaderVersion = QuiltVersionComboBox.SelectedItem?.ToString();
-                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
-                    throw new InvalidOperationException("Minecraft and Quilt versions must be selected.");
-
-                return new CreateInstanceData
-                {
-                    Type = CreateInstanceDataType.Struct,
-                    Data = new MinecraftLoaderVersion
-                    {
-                        MCVersion = mcVersion,
-                        LoaderVersion = loaderVersion,
-                    }
-                };
+                return LoaderSetStepHelper.CreateLoaderVersionData(
+                    MinecraftVersionComboBox,
+                    QuiltVersionComboBox,
+                    "Quilt");
             }
         }
 
@@ -169,13 +108,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             MinecraftVersionComboBox.IsEnabled = false;
             if (SupportedAllMinecraftVersions != null)
                 MinecraftVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
-                    (ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
+                    LoaderSetStepHelper.NonEmptyStrings(ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
                         ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList()
-                            .Select(mcVersion => mcVersion.MinecraftVersion).ToList()
-                        : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.MinecraftVersion).ToList())
-                    .Where(version => !string.IsNullOrWhiteSpace(version))
-                    .Select(version => version!)
-                    .ToList()
+                            .Select(mcVersion => mcVersion.MinecraftVersion)
+                        : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.MinecraftVersion))
                 );
             MinecraftVersionComboBox.IsEnabled = true;
             ToggleStableMinecraftVersionCheckBox.IsEnabled = true;
@@ -195,6 +131,5 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             QuiltVersionComboBox.IsEnabled = true;
             FetchQuiltVersionButton.IsEnabled = true;
         }
-#nullable disable
     }
 }

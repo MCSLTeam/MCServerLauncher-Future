@@ -43,6 +43,7 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// </summary>
         public async Task<string?> GetDownloadUrl()
         {
+            if (string.IsNullOrWhiteSpace(Core)) return null;
             var coreDetail = await MCSLSync.GetCoreDetail(Core, MinecraftVersion, CoreVersion);
             return coreDetail?.DownloadUrl;
         }
@@ -59,15 +60,22 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
             {
                 Notification.Push(
                     title: Lang.Tr["DownloadFailed"],
-                    message: $"{Core}-{MinecraftVersion}-{CoreVersion}.jar {Lang.Tr["DownloadFailed"]}",
+                    message: $"{GetDisplayFileName()} {Lang.Tr["DownloadFailed"]}",
                     isClosable: true,
                     severity: iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
                 );
                 return;
             }
 
-            string defaultFileName = $"{Core}-{MinecraftVersion}-{CoreVersion}.jar";
+            string defaultFileName = GetDisplayFileName();
             await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
+        }
+
+        private string GetDisplayFileName()
+        {
+            return string.IsNullOrWhiteSpace(Core)
+                ? $"{MinecraftVersion}-{CoreVersion}.jar"
+                : $"{Core}-{MinecraftVersion}-{CoreVersion}.jar";
         }
     }
 }

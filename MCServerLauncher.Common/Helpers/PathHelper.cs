@@ -47,7 +47,9 @@ public static class PathHelper
         {
             var root1 = Path.GetPathRoot(path1);
             var root2 = Path.GetPathRoot(path2);
-            return root1.Equals(root2, GetComparisonType());
+            return root1 is not null &&
+                   root2 is not null &&
+                   string.Equals(root1, root2, GetComparisonType());
         }
 
         return true; // Unix 系统始终共享根

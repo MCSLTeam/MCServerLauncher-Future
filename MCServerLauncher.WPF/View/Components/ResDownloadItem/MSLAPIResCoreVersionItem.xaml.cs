@@ -1,5 +1,6 @@
-﻿using MCServerLauncher.WPF.Modules;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.DownloadProvider;
+using MCServerLauncher.WPF.Modules;
 using System.Windows;
 
 namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
@@ -35,9 +36,38 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         /// <param name="e"></param>
         private async void Download(object sender, RoutedEventArgs e)
         {
+            var defaultFileName = GetDisplayFileName();
+            if (string.IsNullOrWhiteSpace(ApiActualName))
+            {
+                NotifyDownloadFailed(defaultFileName);
+                return;
+            }
+
             var downloadUrl = await MSLAPI.GetDownloadUrl(ApiActualName, MinecraftVersion);
-            string defaultFileName = $"{ApiActualName}-{MinecraftVersion}.jar";
+            if (string.IsNullOrWhiteSpace(downloadUrl))
+            {
+                NotifyDownloadFailed(defaultFileName);
+                return;
+            }
+
             await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
+        }
+
+        private string GetDisplayFileName()
+        {
+            return string.IsNullOrWhiteSpace(ApiActualName)
+                ? $"{MinecraftVersion}.jar"
+                : $"{ApiActualName}-{MinecraftVersion}.jar";
+        }
+
+        private static void NotifyDownloadFailed(string fileName)
+        {
+            Notification.Push(
+                title: Lang.Tr["DownloadFailed"],
+                message: $"{fileName} {Lang.Tr["DownloadFailed"]}",
+                isClosable: true,
+                severity: InfoBarSeverity.Error
+            );
         }
     }
 }

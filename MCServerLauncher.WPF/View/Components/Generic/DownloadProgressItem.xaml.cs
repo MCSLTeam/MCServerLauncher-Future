@@ -18,6 +18,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
     public partial class DownloadProgressItem
     {
         private DispatcherTimer? UpdateUITimer;
+        private bool _isServiceDisposed;
 
         private long ReceivedBytes;
         private long TotalBytesToReceive;
@@ -80,7 +81,24 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             DownloadFileName.Text = FileName;
             PauseIconAndText.Visibility = Visibility.Visible;
             ContinueIconAndText.Visibility = Visibility.Hidden;
-            await DownloadServiceInstance.DownloadFileTaskAsync(Url, Path.Combine(SavePath, FileName));
+            try
+            {
+                await DownloadServiceInstance.DownloadFileTaskAsync(Url, Path.Combine(SavePath, FileName));
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    RemoveFromDownloadHistory();
+                    Notification.Push(
+                        title: Lang.Tr["DownloadFailed"],
+                        message: $"{FileName} {Lang.Tr["DownloadFailed"]}\n{exception.Message}",
+                        isClosable: true,
+                        severity: InfoBarSeverity.Error
+                    );
+                });
+                CleanupDownloadService();
+            }
         }
 
         /// <summary>
@@ -149,51 +167,48 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// <param name="e"></param>
         private void OnDownloadFileCompleted(object? sender, AsyncCompletedEventArgs e)
         {
-            Dispatcher.Invoke(() =>
-            {
-                if (UpdateUITimer is null) return;
-                UpdateUITimer.Stop();
-                UpdateUITimer.Tick -= UpdateUITick;
-                UpdateUITimer = null;
-            });
+            StopUiTimer();
             if (e.Cancelled)
             {
-                Dispatcher.Invoke((Delegate)(() =>
+                Dispatcher.Invoke(() =>
                 {
-                    DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
+                    RemoveFromDownloadHistory();
                     Notification.Push(
                         title: Lang.Tr["DownloadCancelled"],
                         message: $"{FileName} {Lang.Tr["DownloadCancelled"]}",
                         isClosable: true,
                         severity: InfoBarSeverity.Warning
                     );
-                }));
+                });
+                CleanupDownloadService();
                 return;
             }
             if (e.Error is not null)
             {
-                Dispatcher.Invoke((Delegate)(() =>
+                Dispatcher.Invoke(() =>
                 {
-                    DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
+                    RemoveFromDownloadHistory();
                     Notification.Push(
                         title: Lang.Tr["DownloadFailed"],
                         message: $"{FileName} {Lang.Tr["DownloadFailed"]}\n{e.Error}",
                         isClosable: true,
                         severity: InfoBarSeverity.Error
                     );
-                }));
+                });
+                CleanupDownloadService();
                 return;
             }
-            Dispatcher.Invoke((Delegate)(() =>
+            Dispatcher.Invoke(() =>
             {
-                DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
+                RemoveFromDownloadHistory();
                 Notification.Push(
                     title: Lang.Tr["DownloadFinished"],
                     message: $"{FileName} {Lang.Tr["DownloadFinished"]}",
                     isClosable: true,
                     severity: InfoBarSeverity.Success
                 );
-            }));
+            });
+            CleanupDownloadService();
         }
 
         /// <summary>
@@ -244,6 +259,32 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             catch (UnauthorizedAccessException)
             {
             }
+        }
+
+        private void StopUiTimer()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (UpdateUITimer is null) return;
+                UpdateUITimer.Stop();
+                UpdateUITimer.Tick -= UpdateUITick;
+                UpdateUITimer = null;
+            });
+        }
+
+        private void RemoveFromDownloadHistory()
+        {
+            DownloadHistoryFlyoutContent.Instance.DownloadsContainer.Children.Remove(this);
+        }
+
+        private void CleanupDownloadService()
+        {
+            if (_isServiceDisposed) return;
+            DownloadServiceInstance.DownloadStarted -= DownloadStartedHandler;
+            DownloadServiceInstance.DownloadProgressChanged -= OnDownloadProgressChanged;
+            DownloadServiceInstance.DownloadFileCompleted -= OnDownloadFileCompleted;
+            DownloadServiceInstance.Dispose();
+            _isServiceDisposed = true;
         }
     }
 }

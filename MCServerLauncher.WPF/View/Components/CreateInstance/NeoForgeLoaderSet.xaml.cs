@@ -1,6 +1,5 @@
 ﻿using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -18,77 +17,28 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         public NeoForgeLoaderSet()
         {
             InitializeComponent();
-            void initialHandler1(object sender, SelectionChangedEventArgs args)
-            {
-                if (!IsDisposed1)
-                {
-                    SetValue(IsFinished1Property, !(MinecraftVersionComboBox.SelectedIndex == -1));
-                }
-            }
-            void initialHandler2(object sender, SelectionChangedEventArgs args)
-            {
-                if (!IsDisposed2)
-                {
-                    SetValue(IsFinished2Property, !(NeoForgeVersionComboBox.SelectedIndex == -1));
-                }
-            }
-
-            MinecraftVersionComboBox.SelectionChanged += initialHandler1;
-            NeoForgeVersionComboBox.SelectionChanged += initialHandler2;
-
-            // As you can see, we have to trigger it manually
-            VisualTreeHelper.InitStepState(MinecraftVersionComboBox);
-            VisualTreeHelper.InitStepState(NeoForgeVersionComboBox);
+            LoaderSetStepHelper.BindSelectionStatus(this, MinecraftVersionComboBox, IsFinished1Property);
+            LoaderSetStepHelper.BindSelectionStatus(this, NeoForgeVersionComboBox, IsFinished2Property);
 
             FetchMinecraftVersionsButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
-#nullable enable
         private List<string>? NeoForgeVersions { get; set; }
         private List<string>? MinecraftVersions { get; set; }
-
-        private bool IsDisposed1 { get; set; } = false;
-        private bool IsDisposed2 { get; set; } = false;
-
-        ~NeoForgeLoaderSet()
-        {
-            IsDisposed1 = true;
-            IsDisposed2 = true;
-        }
 
         public static readonly DependencyProperty IsFinished1Property = DependencyProperty.Register(
             nameof(IsFinished1),
             typeof(bool),
             typeof(NeoForgeLoaderSet),
-            new PropertyMetadata(false, OnStatus1Changed));
-
-        private static void OnStatus1Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not NeoForgeLoaderSet control) return;
-            if (e.NewValue is not bool status) return;
-            control.StatusShow1.Visibility = status switch
-            {
-                true => Visibility.Visible,
-                false => Visibility.Hidden,
-            };
-        }
+            new PropertyMetadata(false,
+                LoaderSetStepHelper.CreateStatusVisibilityCallback<NeoForgeLoaderSet>(control => control.StatusShow1)));
 
         public static readonly DependencyProperty IsFinished2Property = DependencyProperty.Register(
             nameof(IsFinished2),
             typeof(bool),
             typeof(NeoForgeLoaderSet),
-            new PropertyMetadata(false, OnStatus2Changed));
-
-        private static void OnStatus2Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not NeoForgeLoaderSet control) return;
-            if (e.NewValue is not bool status) return;
-            control.StatusShow2.Visibility = status switch
-            {
-                true => Visibility.Visible,
-                false => Visibility.Hidden,
-            };
-        }
+            new PropertyMetadata(false,
+                LoaderSetStepHelper.CreateStatusVisibilityCallback<NeoForgeLoaderSet>(control => control.StatusShow2)));
 
         public bool IsFinished1
         {
@@ -112,20 +62,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             get
             {
-                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
-                var loaderVersion = NeoForgeVersionComboBox.SelectedItem?.ToString();
-                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
-                    throw new InvalidOperationException("Minecraft and NeoForge versions must be selected.");
-
-                return new CreateInstanceData
-                {
-                    Type = CreateInstanceDataType.Struct,
-                    Data = new MinecraftLoaderVersion
-                    {
-                        MCVersion = mcVersion,
-                        LoaderVersion = loaderVersion,
-                    }
-                };
+                return LoaderSetStepHelper.CreateLoaderVersionData(
+                    MinecraftVersionComboBox,
+                    NeoForgeVersionComboBox,
+                    "NeoForge");
             }
         }
 
@@ -176,6 +116,5 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                     .ToList());
             NeoForgeVersionComboBox.IsEnabled = true;
         }
-#nullable disable
     }
 }
