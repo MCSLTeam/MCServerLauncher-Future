@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Action;
 
 namespace MCServerLauncher.Daemon.Remote.Action;
 

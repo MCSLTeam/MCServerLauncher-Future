@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Utils;

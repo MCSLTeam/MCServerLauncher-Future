@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.Network;
+using MCServerLauncher.Common.Network;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;

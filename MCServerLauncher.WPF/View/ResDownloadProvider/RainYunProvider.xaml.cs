@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.Extensibility;
+using MCServerLauncher.Common.Extensibility;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.Common.DownloadProvider;
 using MCServerLauncher.WPF.View.Components.ResDownloadItem;

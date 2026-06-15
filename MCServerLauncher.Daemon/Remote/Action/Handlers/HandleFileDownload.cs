@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Storage;

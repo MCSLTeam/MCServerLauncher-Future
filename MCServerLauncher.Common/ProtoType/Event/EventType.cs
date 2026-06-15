@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Common.ProtoType.Event;
+namespace MCServerLauncher.Common.ProtoType.Event;
 
 public enum EventType
 {

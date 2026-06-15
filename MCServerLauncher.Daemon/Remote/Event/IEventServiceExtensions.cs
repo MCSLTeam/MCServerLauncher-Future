@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Status;
 
 namespace MCServerLauncher.Daemon.Remote.Event;

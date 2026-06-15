@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using Serilog;
 using System;

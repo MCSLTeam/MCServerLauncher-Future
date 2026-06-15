@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Status;

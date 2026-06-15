@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.ViewModels;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Common.ProtoType.Instance;
+namespace MCServerLauncher.Common.ProtoType.Instance;
 
 public enum InstanceFactoryMirror
 {

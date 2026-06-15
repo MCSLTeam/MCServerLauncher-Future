@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using System.Text.Json;

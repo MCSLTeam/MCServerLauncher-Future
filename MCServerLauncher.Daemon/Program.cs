@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon;
+namespace MCServerLauncher.Daemon;
 
 public static class Program
 {

@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.View.Components.DaemonManager;
 using System;
 using System.Collections;

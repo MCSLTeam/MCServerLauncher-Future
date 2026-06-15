@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Instance;
 
 namespace MCServerLauncher.Daemon.Management.Factory;
 

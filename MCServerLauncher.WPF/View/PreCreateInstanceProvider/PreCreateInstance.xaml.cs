@@ -10,7 +10,7 @@ using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
     /// <summary>
-    ///    PreCreateInstance.xaml µÄ½»»¥Âß¼­
+    ///    PreCreateInstance.xaml ï¿½Ä½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
     /// </summary>
     public partial class PreCreateInstance
     {

@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Common.ProtoType.Status;
 using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
 
 namespace MCServerLauncher.Common.ProtoType.Event;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MCServerLauncher.Common.ProtoType.Action;
 
 namespace MCServerLauncher.DaemonClient;

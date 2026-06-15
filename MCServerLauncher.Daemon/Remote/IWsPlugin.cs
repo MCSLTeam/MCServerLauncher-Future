@@ -1,4 +1,4 @@
-﻿using TouchSocket.Http;
+using TouchSocket.Http;
 
 namespace MCServerLauncher.Daemon.Remote;
 

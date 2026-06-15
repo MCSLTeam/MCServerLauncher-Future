@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Common.ProtoType.Action;
+namespace MCServerLauncher.Common.ProtoType.Action;
 
 public enum ExecutionMethod
 {

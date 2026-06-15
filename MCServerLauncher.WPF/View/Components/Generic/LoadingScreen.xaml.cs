@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View.Components.Generic
+namespace MCServerLauncher.WPF.View.Components.Generic
 {
     public partial class LoadingScreen
     {

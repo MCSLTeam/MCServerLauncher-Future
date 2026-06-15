@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Serilog;
 using System;
 using System.Collections.Concurrent;

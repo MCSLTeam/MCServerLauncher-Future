@@ -1,4 +1,4 @@
-﻿/* ---------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------
    MCServerLauncher Future Java Scanner
    Original Author: LxHTT & AresConnor & Tigercrl
    You can only use this file if you are permitted to do so,

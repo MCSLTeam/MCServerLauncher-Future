@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules;
 using System;
 using System.Diagnostics;
 using System.Globalization;

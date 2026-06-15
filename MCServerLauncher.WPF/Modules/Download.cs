@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.WPF.View.Components.Generic;
 using Serilog;
 using System;

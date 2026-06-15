@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.WPF.InstanceConsole;
+using MCServerLauncher.WPF.InstanceConsole;
 using Serilog;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.Minecraft.InstallSource;
+using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
 using System.Collections.Generic;
 using System.Linq;

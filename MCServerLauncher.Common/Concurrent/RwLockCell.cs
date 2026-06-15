@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Common.Concurrent;
+namespace MCServerLauncher.Common.Concurrent;
 
 public class RwLockCell<T>
 {

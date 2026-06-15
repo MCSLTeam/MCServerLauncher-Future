@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.DownloadProvider;
 using System;
 using System.Linq;

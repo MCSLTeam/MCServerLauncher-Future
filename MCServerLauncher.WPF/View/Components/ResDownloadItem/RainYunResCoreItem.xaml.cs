@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
+namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
 {
     /// <summary>
     ///    RainYunResCoreItem.xaml 的交互逻辑

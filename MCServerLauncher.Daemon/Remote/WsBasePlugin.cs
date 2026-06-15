@@ -1,4 +1,4 @@
-﻿using System.Net.WebSockets;
+using System.Net.WebSockets;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using Serilog;
 using TouchSocket.Core;

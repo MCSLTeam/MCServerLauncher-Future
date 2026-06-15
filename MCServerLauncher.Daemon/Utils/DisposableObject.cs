@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Utils;
+namespace MCServerLauncher.Daemon.Utils;
 
 public abstract class DisposableObject : IDisposable
 {

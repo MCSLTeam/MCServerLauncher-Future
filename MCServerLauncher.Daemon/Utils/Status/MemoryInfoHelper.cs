@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Status;
 using Microsoft.Management.Infrastructure;

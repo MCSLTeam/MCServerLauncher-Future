@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.WPF.InstanceConsole.Modules;
+using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.Modules;
 using Serilog;
 using System;

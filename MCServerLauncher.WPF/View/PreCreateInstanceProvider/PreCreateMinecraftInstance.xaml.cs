@@ -8,7 +8,7 @@ using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
     /// <summary>
-    ///    PreCreateMinecraftInstance.xaml µÄ½»»¥Âß¼­
+    ///    PreCreateMinecraftInstance.xaml ï¿½Ä½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
     /// </summary>
     public partial class PreCreateMinecraftInstance
     {

@@ -1,4 +1,4 @@
-﻿using static MCServerLauncher.WPF.Modules.Constants;
+using static MCServerLauncher.WPF.Modules.Constants;
 
 namespace MCServerLauncher.WPF.View.Components.CreateInstance
 {

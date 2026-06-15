@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Brigadier.NET;
 using Brigadier.NET.Builder;
 using Brigadier.NET.Tree;

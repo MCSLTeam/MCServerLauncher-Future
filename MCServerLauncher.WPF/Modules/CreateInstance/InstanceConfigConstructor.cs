@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.Modules.CreateInstance
+namespace MCServerLauncher.WPF.Modules.CreateInstance
 {
     class InstanceConfigConstructor
     {

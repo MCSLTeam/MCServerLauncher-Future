@@ -1,4 +1,4 @@
-﻿using Brigadier.NET;
+using Brigadier.NET;
 using Brigadier.NET.Tree;
 using MCServerLauncher.Daemon.Console.Commands;
 

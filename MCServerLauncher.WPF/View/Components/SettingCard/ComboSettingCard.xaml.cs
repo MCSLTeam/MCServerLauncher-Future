@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using System.Collections.Generic;
 using System.Windows;
 

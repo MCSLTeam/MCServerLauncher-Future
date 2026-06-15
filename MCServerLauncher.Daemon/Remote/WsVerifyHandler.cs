@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using Serilog;
 using TouchSocket.Http;
 

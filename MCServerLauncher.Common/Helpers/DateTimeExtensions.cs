@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Common.Helpers;
+namespace MCServerLauncher.Common.Helpers;
 
 public static class DateTimeExtensions
 {

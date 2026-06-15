@@ -1,4 +1,4 @@
-﻿using Brigadier.NET;
+using Brigadier.NET;
 using Brigadier.NET.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;

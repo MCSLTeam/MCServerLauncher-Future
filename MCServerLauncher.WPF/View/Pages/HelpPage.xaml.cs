@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.WPF.View.Pages
+namespace MCServerLauncher.WPF.View.Pages
 
 {
     /// <summary>

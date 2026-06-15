@@ -1,4 +1,4 @@
-﻿<Window x:Class="MCServerLauncher.WPF.ExceptionDialog.Window"
+<Window x:Class="MCServerLauncher.WPF.ExceptionDialog.Window"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"

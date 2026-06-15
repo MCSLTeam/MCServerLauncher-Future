@@ -1,4 +1,4 @@
-﻿using Downloader;
+using Downloader;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;

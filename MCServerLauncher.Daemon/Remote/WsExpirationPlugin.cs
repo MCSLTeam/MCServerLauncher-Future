@@ -1,4 +1,4 @@
-﻿using System.Net.WebSockets;
+using System.Net.WebSockets;
 using MCServerLauncher.Common.Concurrent;
 using MCServerLauncher.Common.Helpers;
 using Serilog;

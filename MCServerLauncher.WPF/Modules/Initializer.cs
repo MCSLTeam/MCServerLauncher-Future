@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Serilog;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
+FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
 USER $APP_UID
 WORKDIR /app
 

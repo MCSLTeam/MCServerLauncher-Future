@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.Helpers;
+using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;

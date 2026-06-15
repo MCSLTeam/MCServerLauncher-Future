@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.DragDrop.Utilities;
+using iNKORE.UI.WPF.DragDrop.Utilities;
 using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
 using System.Collections.Generic;

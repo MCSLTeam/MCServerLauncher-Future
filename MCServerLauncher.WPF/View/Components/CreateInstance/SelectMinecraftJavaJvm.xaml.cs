@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Controls;
+using iNKORE.UI.WPF.Controls;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.DaemonClient;

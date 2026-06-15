@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Status;
 using MCServerLauncher.Daemon.Utils.LazyCell;

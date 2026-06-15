@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.InstanceConsole.View.Dialogs;
 using MCServerLauncher.WPF.Modules;
 using System;

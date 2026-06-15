@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Common.Concurrent;
+using MCServerLauncher.Common.Concurrent;
 
 namespace MCServerLauncher.Daemon.Utils.LazyCell;
 

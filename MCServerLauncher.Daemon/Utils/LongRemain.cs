@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Utils;
+namespace MCServerLauncher.Daemon.Utils;
 
 /// <summary>
 ///     -2^63 ~ 2^63 - 1内的整数区间(只支持减去某一子区间)，用于上传文件数据的记录

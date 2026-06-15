@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.Daemon.Utils;
 using Serilog;
 using TouchSocket.Core;
 

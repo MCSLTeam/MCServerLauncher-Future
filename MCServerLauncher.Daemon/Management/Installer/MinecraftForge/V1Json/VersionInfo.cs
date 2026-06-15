@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
+namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
 
 public class VersionInfo
 {

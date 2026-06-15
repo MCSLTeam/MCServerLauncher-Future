@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
+namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 
 public class Mirror
 {

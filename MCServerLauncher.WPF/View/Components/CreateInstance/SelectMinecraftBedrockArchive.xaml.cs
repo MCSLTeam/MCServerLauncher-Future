@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using static MCServerLauncher.WPF.Modules.Constants;
 using System.Threading.Tasks;
 using System.Windows.Controls;

@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using TouchSocket.Http.WebSockets;

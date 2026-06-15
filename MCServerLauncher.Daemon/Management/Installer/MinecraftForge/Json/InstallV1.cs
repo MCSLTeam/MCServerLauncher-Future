@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
+namespace MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 
 public class InstallV1 : Install
 {

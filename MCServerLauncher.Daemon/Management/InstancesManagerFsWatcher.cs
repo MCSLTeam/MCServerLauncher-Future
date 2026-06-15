@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using Serilog;
 

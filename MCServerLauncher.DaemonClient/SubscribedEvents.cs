@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using MCServerLauncher.Common.ProtoType.Event;
 
 namespace MCServerLauncher.DaemonClient;

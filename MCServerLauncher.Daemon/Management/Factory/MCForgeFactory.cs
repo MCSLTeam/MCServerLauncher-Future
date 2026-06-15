@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge;

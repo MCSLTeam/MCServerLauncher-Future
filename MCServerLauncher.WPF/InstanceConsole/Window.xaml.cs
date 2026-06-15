@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.InstanceConsole.View.Pages;

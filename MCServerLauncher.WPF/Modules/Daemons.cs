@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.DaemonClient;
+using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection;
 using System.Text.Json;
 using Serilog;

@@ -1,4 +1,4 @@
-﻿namespace MCServerLauncher.Daemon.Remote.Authentication;
+namespace MCServerLauncher.Daemon.Remote.Authentication;
 
 public interface IMatchable
 {

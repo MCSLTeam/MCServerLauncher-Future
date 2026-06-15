@@ -1,4 +1,4 @@
-﻿using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.Common.DownloadProvider;
 using System;
 using System.Windows;

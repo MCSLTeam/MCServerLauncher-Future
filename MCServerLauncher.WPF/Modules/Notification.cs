@@ -1,4 +1,4 @@
-﻿using iNKORE.UI.WPF.Modern;
+using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.View.Components.Generic;
 using Microsoft.Toolkit.Uwp.Notifications;

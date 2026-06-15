@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using ListView = iNKORE.UI.WPF.Modern.Controls.ListView;
 
 namespace MCServerLauncher.WPF.View.Components.CreateInstance
