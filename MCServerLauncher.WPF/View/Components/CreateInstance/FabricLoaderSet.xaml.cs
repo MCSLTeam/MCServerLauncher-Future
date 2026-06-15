@@ -1,6 +1,7 @@
 ﻿using iNKORE.UI.WPF.DragDrop.Utilities;
 using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -113,15 +114,26 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             //private set => SetValue(IsFinished1Property, value);
         }
 
-        public CreateInstanceData ActualData => new()
+        public CreateInstanceData ActualData
         {
-            Type = CreateInstanceDataType.Struct,
-            Data = new MinecraftLoaderVersion
+            get
             {
-                MCVersion = MinecraftVersionComboBox.SelectedItem!.ToString(),
-                LoaderVersion = FabricVersionComboBox.SelectedItem!.ToString(),
+                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
+                var loaderVersion = FabricVersionComboBox.SelectedItem?.ToString();
+                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
+                    throw new InvalidOperationException("Minecraft and Fabric versions must be selected.");
+
+                return new CreateInstanceData
+                {
+                    Type = CreateInstanceDataType.Struct,
+                    Data = new MinecraftLoaderVersion
+                    {
+                        MCVersion = mcVersion,
+                        LoaderVersion = loaderVersion,
+                    }
+                };
             }
-        };
+        }
 
         /// <summary>
         ///    Determine whether to use the mirror endpoint.
@@ -163,9 +175,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             ToggleStableMinecraftVersionCheckBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
+            var versions = SupportedAllMinecraftVersions ?? [];
             MinecraftVersionComboBox.ItemsSource = ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
-                    ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList().Select(mcVersion => mcVersion.Version).ToList()
-                    : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.Version).ToList();
+                    ? versions.Where(mcVersion => mcVersion.IsStable).Select(mcVersion => mcVersion.Version).ToList()
+                    : versions.Select(mcVersion => mcVersion.Version).ToList();
             MinecraftVersionComboBox.IsEnabled = true;
             ToggleStableMinecraftVersionCheckBox.IsEnabled = true;
         }
@@ -195,9 +208,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         {
             ToggleStableFabricVersionCheckBox.IsEnabled = false;
             FabricVersionComboBox.IsEnabled = false;
+            var versions = SupportedAllFabricVersions ?? [];
             FabricVersionComboBox.ItemsSource = ToggleStableFabricVersionCheckBox.IsChecked.GetValueOrDefault(true)
-                ? SupportedAllFabricVersions.Where(fabricVersion => fabricVersion.IsStable).ToList().Select(mcVersion => mcVersion.Version).ToList()
-                : SupportedAllFabricVersions.Select(fabricVersion => fabricVersion.Version).ToList();
+                ? versions.Where(fabricVersion => fabricVersion.IsStable).Select(mcVersion => mcVersion.Version).ToList()
+                : versions.Select(fabricVersion => fabricVersion.Version).ToList();
             FabricVersionComboBox.IsEnabled = true;
             ToggleStableFabricVersionCheckBox.IsEnabled = true;
         }

@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -112,15 +113,26 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             //private set => SetValue(IsFinished1Property, value);
         }
 
-        public CreateInstanceData ActualData => new()
+        public CreateInstanceData ActualData
         {
-            Type = CreateInstanceDataType.Struct,
-            Data = new MinecraftLoaderVersion
+            get
             {
-                MCVersion = MinecraftVersionComboBox.SelectedItem!.ToString(),
-                LoaderVersion = QuiltVersionComboBox.SelectedItem!.ToString(),
+                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
+                var loaderVersion = QuiltVersionComboBox.SelectedItem?.ToString();
+                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
+                    throw new InvalidOperationException("Minecraft and Quilt versions must be selected.");
+
+                return new CreateInstanceData
+                {
+                    Type = CreateInstanceDataType.Struct,
+                    Data = new MinecraftLoaderVersion
+                    {
+                        MCVersion = mcVersion,
+                        LoaderVersion = loaderVersion,
+                    }
+                };
             }
-        };
+        }
 
         /// <summary>
         ///    Determine whether to use the mirror endpoint.
@@ -160,7 +172,10 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                     (ToggleStableMinecraftVersionCheckBox.IsChecked.GetValueOrDefault(true)
                         ? SupportedAllMinecraftVersions.Where(mcVersion => mcVersion.IsStable).ToList()
                             .Select(mcVersion => mcVersion.MinecraftVersion).ToList()
-                        : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.MinecraftVersion).ToList())!
+                        : SupportedAllMinecraftVersions.Select(mcVersion => mcVersion.MinecraftVersion).ToList())
+                    .Where(version => !string.IsNullOrWhiteSpace(version))
+                    .Select(version => version!)
+                    .ToList()
                 );
             MinecraftVersionComboBox.IsEnabled = true;
             ToggleStableMinecraftVersionCheckBox.IsEnabled = true;

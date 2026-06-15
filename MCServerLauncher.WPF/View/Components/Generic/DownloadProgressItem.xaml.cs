@@ -5,7 +5,6 @@ using MCServerLauncher.WPF.Modules;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -18,7 +17,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
     /// </summary>
     public partial class DownloadProgressItem
     {
-        private DispatcherTimer UpdateUITimer;
+        private DispatcherTimer? UpdateUITimer;
 
         private long ReceivedBytes;
         private long TotalBytesToReceive;
@@ -28,11 +27,12 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         public DownloadProgressItem()
         {
             InitializeComponent();
+            var downloadSettings = SettingsManager.Get?.Download;
 
             DownloadConfig = new DownloadConfiguration
             {
                 Timeout = 5000,
-                ChunkCount = SettingsManager.Get.Download.ThreadCnt,
+                ChunkCount = downloadSettings?.ThreadCnt ?? 4,
                 ParallelDownload = true,
                 RequestConfiguration =
                 {
@@ -48,17 +48,17 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// <summary>
         ///    Where to save the file.
         /// </summary>
-        public string SavePath { get; set; }
+        public string SavePath { get; set; } = string.Empty;
 
         /// <summary>
         ///    Downloading file name.
         /// </summary>
-        public string FileName { get; set; }
+        public string FileName { get; set; } = string.Empty;
 
         /// <summary>
         ///    Download url.
         /// </summary>
-        public string Url { get; set; }
+        public string Url { get; set; } = string.Empty;
 
         /// <summary>
         ///     Download instances.
@@ -73,11 +73,14 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// <exception cref="ArgumentNullException"></exception>
         public async Task StartDownload()
         {
-            if (DownloadConfig is null) throw new ArgumentNullException();
+            if (string.IsNullOrWhiteSpace(Url)) throw new InvalidOperationException("Download URL is empty.");
+            if (string.IsNullOrWhiteSpace(FileName)) throw new InvalidOperationException("Download file name is empty.");
+            if (string.IsNullOrWhiteSpace(SavePath)) throw new InvalidOperationException("Download save path is empty.");
+
             DownloadFileName.Text = FileName;
             PauseIconAndText.Visibility = Visibility.Visible;
             ContinueIconAndText.Visibility = Visibility.Hidden;
-            await DownloadServiceInstance.DownloadFileTaskAsync(Url, SavePath + "\\" + FileName);
+            await DownloadServiceInstance.DownloadFileTaskAsync(Url, Path.Combine(SavePath, FileName));
         }
 
         /// <summary>
@@ -85,7 +88,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DownloadStartedHandler(object sender, DownloadStartedEventArgs e)
+        private void DownloadStartedHandler(object? sender, DownloadStartedEventArgs e)
 
         {
             Dispatcher.Invoke(() =>
@@ -105,7 +108,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void UpdateUITick(object sender, EventArgs e)
+        private void UpdateUITick(object? sender, EventArgs e)
         {
             if (DownloadProgressBar is not null)
             {
@@ -130,7 +133,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        private void OnDownloadProgressChanged(object? sender, DownloadProgressChangedEventArgs e)
         {
             ReceivedBytes = e.ReceivedBytesSize;
             TotalBytesToReceive = e.TotalBytesToReceive;
@@ -144,13 +147,15 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        private void OnDownloadFileCompleted(object? sender, AsyncCompletedEventArgs e)
         {
-            try
+            Dispatcher.Invoke(() =>
             {
-                UpdateUITimer?.Stop();
-            }
-            catch { Console.WriteLine("Stop UITimer Failed"); }
+                if (UpdateUITimer is null) return;
+                UpdateUITimer.Stop();
+                UpdateUITimer.Tick -= UpdateUITick;
+                UpdateUITimer = null;
+            });
             if (e.Cancelled)
             {
                 Dispatcher.Invoke((Delegate)(() =>
@@ -229,12 +234,16 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         private void CancelDownload(object sender, RoutedEventArgs e)
         {
             DownloadServiceInstance.CancelAsync();
-            Thread.Sleep(1000);
             try
             {
-                File.Delete(SavePath + "\\" + FileName);
+                File.Delete(Path.Combine(SavePath, FileName));
             }
-            catch { }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
     }
 }

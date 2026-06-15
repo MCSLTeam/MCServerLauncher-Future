@@ -1,5 +1,6 @@
 ﻿using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -107,15 +108,26 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             //private set => SetValue(IsFinished1Property, value);
         }
 
-        public CreateInstanceData ActualData => new()
+        public CreateInstanceData ActualData
         {
-            Type = CreateInstanceDataType.Struct,
-            Data = new MinecraftLoaderVersion
+            get
             {
-                MCVersion = MinecraftVersionComboBox.SelectedItem!.ToString(),
-                LoaderVersion = NeoForgeVersionComboBox.SelectedItem!.ToString(),
+                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
+                var loaderVersion = NeoForgeVersionComboBox.SelectedItem?.ToString();
+                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
+                    throw new InvalidOperationException("Minecraft and NeoForge versions must be selected.");
+
+                return new CreateInstanceData
+                {
+                    Type = CreateInstanceDataType.Struct,
+                    Data = new MinecraftLoaderVersion
+                    {
+                        MCVersion = mcVersion,
+                        LoaderVersion = loaderVersion,
+                    }
+                };
             }
-        };
+        }
 
         /// <summary>
         ///    Get NeoForge info, including Minecraft versions and NeoForge versions.
@@ -147,8 +159,9 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
         /// <param name="e"></param>
         private void MinecraftVersionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (MinecraftVersionComboBox.SelectedItem == null) return;
-            if (MinecraftVersionComboBox.SelectedItem.ToString() == "1.20.1")
+            var selectedMinecraftVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedMinecraftVersion)) return;
+            if (selectedMinecraftVersion == "1.20.1")
             {
                 if (NeoForgeVersions != null)
                     NeoForgeVersionComboBox.ItemsSource =
@@ -159,7 +172,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             }
             if (NeoForgeVersions != null)
                 NeoForgeVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(NeoForgeVersions
-                    .Where(version => version.StartsWith(MinecraftVersionComboBox.SelectedItem.ToString().Substring(2)))
+                    .Where(version => version.StartsWith(selectedMinecraftVersion.Substring(2)))
                     .ToList());
             NeoForgeVersionComboBox.IsEnabled = true;
         }

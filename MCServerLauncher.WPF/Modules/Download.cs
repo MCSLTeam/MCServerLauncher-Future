@@ -7,8 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-
 namespace MCServerLauncher.WPF.Modules
 {
     public class DownloadManager
@@ -25,7 +23,8 @@ namespace MCServerLauncher.WPF.Modules
                 Filter = "All Files (*.*)|*.*",
                 FileName = defaultFileName
             };
-            saveFileDialog.ShowDialog();
+            if (saveFileDialog.ShowDialog() != true || string.IsNullOrWhiteSpace(saveFileDialog.FileName))
+                return;
 
             var saveFileName = saveFileDialog.FileName.Split('\\').Last();
             var savePath = saveFileDialog.FileName.Substring(0, saveFileDialog.FileName.Length - saveFileName.Length);

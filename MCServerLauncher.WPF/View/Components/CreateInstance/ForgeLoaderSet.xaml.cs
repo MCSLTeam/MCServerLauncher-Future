@@ -1,6 +1,7 @@
 ﻿using iNKORE.UI.WPF.DragDrop.Utilities;
 using MCServerLauncher.Common.Minecraft.InstallSource;
 using MCServerLauncher.WPF.Modules;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -108,15 +109,26 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             //private set => SetValue(IsFinished1Property, value);
         }
 
-        public CreateInstanceData ActualData => new()
+        public CreateInstanceData ActualData
         {
-            Type = CreateInstanceDataType.Struct,
-            Data = new MinecraftLoaderVersion
+            get
             {
-                MCVersion = MinecraftVersionComboBox.SelectedItem!.ToString(),
-                LoaderVersion = ForgeVersionComboBox.SelectedItem!.ToString(),
+                var mcVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
+                var loaderVersion = ForgeVersionComboBox.SelectedItem?.ToString();
+                if (string.IsNullOrWhiteSpace(mcVersion) || string.IsNullOrWhiteSpace(loaderVersion))
+                    throw new InvalidOperationException("Minecraft and Forge versions must be selected.");
+
+                return new CreateInstanceData
+                {
+                    Type = CreateInstanceDataType.Struct,
+                    Data = new MinecraftLoaderVersion
+                    {
+                        MCVersion = mcVersion,
+                        LoaderVersion = loaderVersion,
+                    }
+                };
             }
-        };
+        }
 
         /// <summary>
         ///    Determine whether to use the mirror endpoint.
@@ -161,8 +173,17 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             ForgeVersionComboBox.IsEnabled = false;
             MinecraftVersionComboBox.IsEnabled = false;
             ForgeVersionComboBox.ClearSelectedItems();
+            var selectedMinecraftVersion = MinecraftVersionComboBox.SelectedItem?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedMinecraftVersion))
+            {
+                ForgeVersionComboBox.IsEnabled = true;
+                FetchForgeVersionButton.IsEnabled = true;
+                MinecraftVersionComboBox.IsEnabled = true;
+                return;
+            }
+
             CurrentForgeBuilds =
-                await Forge.GetForgeVersions(MinecraftVersionComboBox.SelectedItem.ToString(), UseMirror());
+                await Forge.GetForgeVersions(selectedMinecraftVersion, UseMirror());
             if (CurrentForgeBuilds != null)
                 ForgeVersionComboBox.ItemsSource = DownloadManager.SequenceMinecraftVersion(
                     CurrentForgeBuilds.Select(forgeBuild => forgeBuild.ForgeVersion).ToList()!

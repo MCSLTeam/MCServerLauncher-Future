@@ -55,6 +55,17 @@ namespace MCServerLauncher.WPF.View.Components.ResDownloadItem
         private async void Download(object sender, RoutedEventArgs e)
         {
             var downloadUrl = await GetDownloadUrl();
+            if (string.IsNullOrWhiteSpace(downloadUrl))
+            {
+                Notification.Push(
+                    title: Lang.Tr["DownloadFailed"],
+                    message: $"{Core}-{MinecraftVersion}-{CoreVersion}.jar {Lang.Tr["DownloadFailed"]}",
+                    isClosable: true,
+                    severity: iNKORE.UI.WPF.Modern.Controls.InfoBarSeverity.Error
+                );
+                return;
+            }
+
             string defaultFileName = $"{Core}-{MinecraftVersion}-{CoreVersion}.jar";
             await new DownloadManager().TriggerPreDownloadFile(downloadUrl, defaultFileName);
         }
