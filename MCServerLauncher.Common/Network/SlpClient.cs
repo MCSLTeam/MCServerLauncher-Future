@@ -168,7 +168,7 @@ public class SlpClient
             Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             var json = ReadString(received, jsonLength, ref offset);
-            return JsonSerializer.Deserialize<PingPayload>(json, SlpJsonOptions.Instance);
+            return JsonSerializer.Deserialize(json, SlpJsonContext.Default.PingPayload);
         }
         catch (Exception e)
         {
@@ -360,12 +360,10 @@ public record PingPayload
     public string Icon { get; set; } = string.Empty;
 }
 
-internal static class SlpJsonOptions
+[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(PingPayload))]
+public partial class SlpJsonContext : JsonSerializerContext
 {
-    public static readonly JsonSerializerOptions Instance = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 }
 
 /// <summary>

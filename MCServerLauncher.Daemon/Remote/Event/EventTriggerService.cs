@@ -163,6 +163,13 @@ public class EventTriggerService
                         return false;
                     }
                     break;
+                default:
+                    _logger.LogWarning(
+                        "Unsupported ruleset type '{RulesetType}' for rule '{RuleName}' on instance '{InstanceId}'",
+                        ruleset?.GetType().Name ?? "<null>",
+                        rule.Name,
+                        instance.Config.Uuid);
+                    return false;
             }
         }
 
@@ -173,7 +180,7 @@ public class EventTriggerService
     {
         if (!EvaluateRulesets(instance, rule))
         {
-            _logger.LogInformation("Rulesets evaluation failed for rule '{RuleName}' on instance '{InstanceId}'", rule.Name, instance.Config.Uuid);
+            _logger.LogDebug("Rulesets did not match for rule '{RuleName}' on instance '{InstanceId}'", rule.Name, instance.Config.Uuid);
             return;
         }
 

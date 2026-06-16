@@ -4,6 +4,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Common.Network;
 using MCServerLauncher.DaemonClient.Serialization;
 using Xunit;
 
@@ -109,5 +110,88 @@ public class StjFoundationTests
         var options = StjResolver.CreateDefaultOptions();
         var json = JsonSerializer.Serialize(phs, options);
         Assert.Contains("{test}", json);
+    }
+
+    [Theory]
+    [InlineData(-1, -1, 0, 0)]
+    [InlineData(0, 0, 0, 0)]
+    [InlineData(50.25, 1024, 50.25, 1024)]
+    [InlineData(120, 2048, 100, 2048)]
+    [InlineData(double.NaN, 4096, 0, 4096)]
+    [InlineData(double.PositiveInfinity, 8192, 0, 8192)]
+    [InlineData(double.NegativeInfinity, 16384, 0, 16384)]
+    public void InstancePerformanceCounter_NormalizesInvalidCpuAndMemory(
+        double cpu,
+        long memory,
+        double expectedCpu,
+        long expectedMemory)
+    {
+        var counter = new InstancePerformanceCounter(cpu, memory);
+
+        Assert.Equal(expectedCpu, counter.Cpu);
+        Assert.Equal(expectedMemory, counter.Memory);
+    }
+
+    [Fact]
+    public void InstancePerformanceCounter_SourceGeneratedJson_NormalizesInvalidValues()
+    {
+        const string json = """{"cpu":-5,"memory":-1024}""";
+
+        var counter = JsonSerializer.Deserialize(json, ActionResultsContext.Default.InstancePerformanceCounter);
+
+        Assert.Equal(0, counter.Cpu);
+        Assert.Equal(0, counter.Memory);
+    }
+
+    [Fact]
+    public void SlpPayload_ReflectionDisabled_DeserializesWithSourceGeneratedMetadata()
+    {
+        const string key = "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault";
+        var hadPrevious = AppContext.TryGetSwitch(key, out var previous);
+
+        try
+        {
+            AppContext.SetSwitch(key, false);
+
+            const string json = """
+                {
+                  "version": {
+                    "name": "1.20.4",
+                    "protocol": 765
+                  },
+                  "players": {
+                    "max": 20,
+                    "online": 1,
+                    "sample": [
+                      {
+                        "name": "Steve",
+                        "id": "8667ba71-b85a-4004-af54-457a9734eed7"
+                      }
+                    ]
+                  },
+                  "description": {
+                    "text": "A Minecraft Server"
+                  },
+                  "favicon": "data:image/png;base64,abc"
+                }
+                """;
+
+            var payload = JsonSerializer.Deserialize(json, SlpJsonContext.Default.PingPayload);
+
+            Assert.NotNull(payload);
+            Assert.Equal("1.20.4", payload!.Version.Name);
+            Assert.Equal(765, payload.Version.Protocol);
+            Assert.Equal(1, payload.Players.Online);
+            Assert.Equal("Steve", Assert.Single(payload.Players.Sample).Name);
+            Assert.Equal("A Minecraft Server", payload.Description);
+            Assert.Equal("data:image/png;base64,abc", payload.Icon);
+        }
+        finally
+        {
+            if (hadPrevious)
+                AppContext.SetSwitch(key, previous);
+            else
+                AppContext.SetData(key, null);
+        }
     }
 }
