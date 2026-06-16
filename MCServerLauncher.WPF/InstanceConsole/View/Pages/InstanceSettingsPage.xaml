@@ -10,155 +10,430 @@
       d:DesignHeight="450" d:DesignWidth="800">
 
     <Page.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <Style x:Key="InstanceSettingsCardStyle" TargetType="Border" BasedOn="{StaticResource StyledBorder}">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="20,16,20,18" />
+        </Style>
+
+        <Style x:Key="InstanceSettingsFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource MinititleTextBlock}">
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="InstanceSettingsCardDescriptionStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlock}">
+            <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
     </Page.Resources>
 
-    <Grid Margin="35,0,35,0">
-        <ui:ScrollViewerEx>
-            <ikw:SimpleStackPanel Spacing="10">
-                <Border Style="{StaticResource StyledBorder}" Margin="0,15,0,0">
-                    <Grid Margin="20,15,20,20">
+    <Grid Margin="35,35,35,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Style="{StaticResource TitleTextBlock}"
+                           Text="{Binding [Console_InstanceSettingsNavMenu], Source={x:Static i18n:Lang.Tr}}"
+                           HorizontalAlignment="Left" />
+                <TextBlock Margin="0,8,20,0" Style="{StaticResource BodyTextBlock}"
+                           Text="{Binding InstanceIdText}"
+                           TextTrimming="CharacterEllipsis"
+                           TextWrapping="NoWrap"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Button Command="{Binding RefreshCommand}" Margin="0,0,10,0">
+                    <Button.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}"
+                                        Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button.Content>
+                </Button>
+                <Button Command="{Binding SaveCommand}" IsEnabled="{Binding Settings.CanEdit}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasUnsavedChanges}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <Button.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Save}"
+                                        Content="{Binding [Save], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button.Content>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <ui:ScrollViewerEx Grid.Row="1" Margin="0,0,0,35">
+            <ikw:SimpleStackPanel Spacing="0">
+                <Border Style="{StaticResource InstanceSettingsCardStyle}">
+                    <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource SubtitleTextBlock}"
-                                   Text="{Binding [Console_InstanceSettingsNavMenu], Source={x:Static i18n:Lang.Tr}}" />
-                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,8,0,0" Style="{StaticResource BodyTextBlock}"
-                                   Text="{Binding Settings.WorkingDirectory}" TextWrapping="Wrap" />
-
-                        <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Right">
-                            <Button Command="{Binding RefreshCommand}" Margin="0,0,0,8">
-                                <Button.Content>
-                                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}"
-                                                    Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
-                                </Button.Content>
-                            </Button>
-                            <Button Style="{StaticResource AccentButtonStyle}" Command="{Binding SaveCommand}" IsEnabled="{Binding Settings.CanEdit}">
-                                <Button.Content>
-                                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Save}"
-                                                    Content="{Binding [Save], Source={x:Static i18n:Lang.Tr}}" />
-                                </Button.Content>
-                            </Button>
+                        <StackPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock Style="{StaticResource InstanceSettingsFieldLabelStyle}"
+                                       Text="{Binding [InstanceName], Source={x:Static i18n:Lang.Tr}}" />
+                            <TextBox Text="{Binding Settings.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding Settings.CanEdit}" />
                         </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock Style="{StaticResource InstanceSettingsFieldLabelStyle}"
+                                       Text="{Binding [InstanceType], Source={x:Static i18n:Lang.Tr}}" />
+                            <ComboBox ItemsSource="{Binding Settings.EditableInstanceTypes}"
+                                      SelectedItem="{Binding Settings.InstanceType, Mode=TwoWay}"
+                                      IsEnabled="{Binding Settings.CanEdit}" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="3"
+                                   Text="{Binding Settings.EditBlockedReason}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource InstanceSettingsCardDescriptionStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.CanEdit}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Grid>
                 </Border>
 
-                <Border Style="{StaticResource StyledBorder}">
-                    <Grid Margin="20,15,20,20">
+                <Border Style="{StaticResource InstanceSettingsCardStyle}">
+                    <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
-                                   Text="{Binding [InstanceName], Source={x:Static i18n:Lang.Tr}}" />
-                        <TextBox Grid.Row="1" Margin="0,12,0,0" Text="{Binding Settings.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Row="2" Margin="0,10,0,0" Style="{StaticResource BodyTextBlock}"
-                                   Visibility="{Binding Settings.CanEdit, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=False}"
-                                   Text="{Binding Settings.EditBlockedReason}" />
-                    </Grid>
-                </Border>
 
-                <Border Style="{StaticResource StyledBorder}">
-                    <Grid Margin="20,15,20,20">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
-                                   Text="{Binding [InstanceType], Source={x:Static i18n:Lang.Tr}}" />
-                        <ComboBox Grid.Row="1" Margin="0,12,0,0"
-                                  ItemsSource="{Binding Settings.EditableInstanceTypes}"
-                                  SelectedItem="{Binding Settings.InstanceType, Mode=TwoWay}" />
-                        <TextBlock Grid.Row="2" Margin="0,16,0,0" Style="{StaticResource SubtitleTextBlock}"
+                        <TextBlock Grid.Row="0" Style="{StaticResource InstanceSettingsFieldLabelStyle}"
                                    Text="{Binding [Version], Source={x:Static i18n:Lang.Tr}}" />
-                        <TextBox Grid.Row="3" Margin="0,12,0,0" Text="{Binding Settings.Version, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="1"
+                                 Text="{Binding Settings.Version, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding Settings.CanEdit}" />
                     </Grid>
                 </Border>
 
-                <Border Style="{StaticResource StyledBorder}"
-                        Visibility="{Binding Settings.SupportsAdvancedEditing, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=False}">
-                    <Grid Margin="20,15,20,20">
-                        <TextBlock Style="{StaticResource BodyTextBlock}"
-                                   Text="{Binding [InstanceSettingsBasicModeNotice], Source={x:Static i18n:Lang.Tr}}"
-                                   TextWrapping="Wrap" />
+                <Border IsEnabled="{Binding CanEditJavaRuntime}">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource InstanceSettingsCardStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.SupportsAdvancedEditing}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Style="{StaticResource BodyTextBlock}"
+                               Text="{Binding [InstanceSettingsBasicModeNotice], Source={x:Static i18n:Lang.Tr}}"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Border>
+
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource InstanceSettingsCardStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.SupportsAdvancedEditing}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,0,0"
+                                   Style="{StaticResource SubtitleTextBlock}"
+                                   Text="{Binding [CreateInstance_MinecraftJavaJvm_Title], Source={x:Static i18n:Lang.Tr}}"
+                                   VerticalAlignment="Top"
+                                   HorizontalAlignment="Left" />
+                        <ui:FontIcon Grid.Row="0" Grid.Column="1" Margin="5,5,0,0"
+                                     Icon="{x:Static ui:SegoeFluentIcons.Accept}" FontSize="16"
+                                     VerticalAlignment="Top" HorizontalAlignment="Left">
+                            <ui:FontIcon.Style>
+                                <Style TargetType="ui:FontIcon">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.JavaPath}" Value="">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:FontIcon.Style>
+                        </ui:FontIcon>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,8,20,0" Grid.ColumnSpan="3"
+                                   Style="{StaticResource BodyTextBlock}"
+                                   Text="{Binding [CreateInstance_MinecraftJavaJvm_Description], Source={x:Static i18n:Lang.Tr}}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <ComboBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                  IsEditable="True" MaxDropDownHeight="200"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ItemsSource="{Binding JavaRuntimeOptions}"
+                                  SelectedItem="{Binding SelectedJavaRuntime, Mode=TwoWay}"
+                                  Text="{Binding JavaRuntimeDisplayText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Margin="0,15,10,0"
+                                  HorizontalAlignment="Stretch"
+                                  ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_MinecraftJavaJvm_Title], Source={x:Static i18n:Lang.Tr}}" />
+                        <ui:DropDownButton Grid.Row="2" Grid.Column="2"
+                                           ShowChevronArrow="False" Height="32" Margin="0,15,0,0"
+                                           VerticalAlignment="Top" HorizontalAlignment="Right" Panel.ZIndex="1"
+                                           IsEnabled="{Binding CanEditJavaRuntime}">
+                            <ui:DropDownButton.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}"
+                                                Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
+                            </ui:DropDownButton.Content>
+                            <ui:DropDownButton.Flyout>
+                                <ui:MenuFlyout Placement="Bottom">
+                                    <MenuItem Header="{Binding [Install], Source={x:Static i18n:Lang.Tr}}">
+                                        <MenuItem.Icon>
+                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.AllApps}" FontSize="16" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{Binding [ScanJavaAtDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                              Command="{Binding ScanJavaCommand}">
+                                        <MenuItem.Icon>
+                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SearchAndApps}" FontSize="16" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </ui:MenuFlyout>
+                            </ui:DropDownButton.Flyout>
+                        </ui:DropDownButton>
+                        <ui:DropDownButton Grid.Row="0" Grid.Column="2" ShowChevronArrow="False"
+                                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,0,0">
+                            <ui:DropDownButton.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Help}"
+                                                Content="{Binding [Tip], Source={x:Static i18n:Lang.Tr}}" />
+                            </ui:DropDownButton.Content>
+                            <ui:DropDownButton.Flyout>
+                                <ui:Flyout Placement="TopEdgeAlignedRight">
+                                    <TextBlock TextWrapping="Wrap"
+                                               Text="{Binding [MinecraftJavaRequirementTip], Source={x:Static i18n:Lang.Tr}}" />
+                                </ui:Flyout>
+                            </ui:DropDownButton.Flyout>
+                        </ui:DropDownButton>
                     </Grid>
                 </Border>
 
-                <Border Style="{StaticResource StyledBorder}"
-                        Visibility="{Binding Settings.SupportsAdvancedEditing, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Grid Margin="20,15,20,20">
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource InstanceSettingsCardStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.SupportsAdvancedEditing}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,0,0"
+                                   Style="{StaticResource SubtitleTextBlock}"
+                                   Text="{Binding [CreateInstance_MinecraftJavaJvmArgument_Title], Source={x:Static i18n:Lang.Tr}}"
+                                   VerticalAlignment="Top"
+                                   HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,8,0,0"
+                                   Style="{StaticResource BodyTextBlock}"
+                                   Text="{Binding [CreateInstance_MinecraftJavaJvmArgument_Description], Source={x:Static i18n:Lang.Tr}}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <Button Command="{Binding AddJvmArgumentCommand}" Grid.Row="2" Grid.Column="0"
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,15,0,0"
+                                IsEnabled="{Binding Settings.CanEdit}">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.AddTo}"
+                                                Content="{Binding [CreateInstance_MinecraftJavaJvmArgument_AddArgument], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                        <ui:InfoBar Height="50" Margin="0,15,0,0" IsClosable="False" IsOpen="True"
+                                    Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Severity="Warning"
+                                    Title="{Binding [Warning], Source={x:Static i18n:Lang.Tr}}"
+                                    Message="{Binding [NoJarFileJvmArgument], Source={x:Static i18n:Lang.Tr}}" />
+                        <ui:ListView ItemsSource="{Binding JvmArguments}"
+                                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                     IsSelectionEnabled="False" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                                     Margin="0,15,0,0">
+                            <ui:ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="-10,5,-5,5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                 Grid.Column="0" TextWrapping="Wrap"
+                                                 Text="{Binding Argument, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsEnabled="{Binding DataContext.Settings.CanEdit, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                 ui:ControlHelper.PlaceholderText="{Binding [CreateInstance_MinecraftJavaJvmArgument_Title], Source={x:Static i18n:Lang.Tr}}"
+                                                 Margin="0,0,5,0" />
+                                        <Button Grid.Column="1" Height="32"
+                                                Command="{Binding DataContext.RemoveJvmArgumentCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding DataContext.Settings.CanEdit, RelativeSource={RelativeSource AncestorType=Page}}">
+                                            <Button.Content>
+                                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Delete}"
+                                                                Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                                            </Button.Content>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ui:ListView.ItemTemplate>
+                        </ui:ListView>
+                        <Button Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Margin="0,0,0,0" ToolTip="{Binding [JvmArgHelper], Source={x:Static i18n:Lang.Tr}}"
+                                Command="{Binding ShowJvmArgumentHelperCommand}"
+                                IsEnabled="{Binding Settings.CanEdit}">
+                            <Button.Content>
+                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.DeveloperTools}"
+                                                Content="{Binding [JvmArgHelper], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button.Content>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource InstanceSettingsCardStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.SupportsAdvancedEditing}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
-                                   Text="{Binding [JavaPath], Source={x:Static i18n:Lang.Tr}}" />
-                        <TextBox Grid.Row="1" Margin="0,12,0,0" Text="{Binding Settings.JavaPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Row="2" Margin="0,16,0,0" Style="{StaticResource SubtitleTextBlock}"
-                                   Text="{Binding [JvmArguments], Source={x:Static i18n:Lang.Tr}}" />
-                        <TextBox Grid.Row="3" Margin="0,12,0,0" Text="{Binding Settings.ArgumentsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    </Grid>
-                </Border>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                <Border Style="{StaticResource StyledBorder}"
-                        Visibility="{Binding Settings.SupportsAdvancedEditing, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Grid Margin="20,15,20,20">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
+                                   Style="{StaticResource InstanceSettingsFieldLabelStyle}"
                                    Text="{Binding [CorePath], Source={x:Static i18n:Lang.Tr}, FallbackValue=Core}" />
-                        <TextBlock Grid.Row="1" Margin="0,10,0,0" Style="{StaticResource BodyTextBlock}"
-                                   Text="{Binding Settings.Target}" TextWrapping="Wrap" />
-                        <StackPanel Grid.Row="2" Margin="0,14,0,0" Orientation="Horizontal">
-                            <Button Command="{Binding SelectReplacementCoreCommand}" Margin="0,0,10,0">
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                                   Style="{StaticResource BodyTextBlock}"
+                                   Text="{Binding Settings.Target}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,14,0,0" Orientation="Horizontal">
+                            <Button Command="{Binding SelectReplacementCoreCommand}" Margin="0,0,10,0"
+                                    IsEnabled="{Binding Settings.CanEdit}">
                                 <Button.Content>
                                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.OpenFile}"
                                                     Content="{Binding [Replace], Source={x:Static i18n:Lang.Tr}, FallbackValue=Replace}" />
                                 </Button.Content>
                             </Button>
-                            <Button Command="{Binding ClearReplacementCoreCommand}">
+                            <Button Command="{Binding ClearReplacementCoreCommand}"
+                                    IsEnabled="{Binding Settings.HasReplacementCore}">
                                 <Button.Content>
                                     <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}"
                                                     Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}}" />
                                 </Button.Content>
                             </Button>
                         </StackPanel>
-                        <TextBlock Grid.Row="3" Margin="0,10,0,0" Style="{StaticResource BodyTextBlock}"
-                                   Text="{Binding Settings.ReplacementCorePath}" TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                                   Text="{Binding Settings.ReplacementCorePath}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlock}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.HasReplacementCore}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Grid>
                 </Border>
 
-                <Border Style="{StaticResource StyledBorder}"
-                        Visibility="{Binding Settings.IsInstallerBased, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Grid Margin="20,15,20,20">
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource InstanceSettingsCardStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.IsInstallerBased}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
+
+                        <TextBlock Grid.Row="0" Style="{StaticResource InstanceSettingsFieldLabelStyle}"
                                    Text="{Binding [Installer], Source={x:Static i18n:Lang.Tr}}" />
-                        <CheckBox Grid.Row="1" Margin="0,12,0,0"
+                        <CheckBox Grid.Row="1" Margin="0,8,0,0"
                                   IsChecked="{Binding Settings.ForceRerunInstaller, Mode=TwoWay}"
+                                  IsEnabled="{Binding Settings.CanEdit}"
                                   Content="{Binding [ForceRerunInstaller], Source={x:Static i18n:Lang.Tr}}" />
-                        <TextBlock Grid.Row="2" Margin="0,10,0,0" Style="{StaticResource BodyTextBlock}"
-                                   Text="{Binding [InstanceSettingsInstallerNotice], Source={x:Static i18n:Lang.Tr}}"
-                                   TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="2"
+                                   Style="{StaticResource InstanceSettingsCardDescriptionStyle}"
+                                   Text="{Binding [InstanceSettingsInstallerNotice], Source={x:Static i18n:Lang.Tr}}" />
                     </Grid>
                 </Border>
             </ikw:SimpleStackPanel>
