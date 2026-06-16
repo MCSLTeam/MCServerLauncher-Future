@@ -187,6 +187,13 @@ Subagent-driven execution is preferred by `RULES.md`, but the available multi-ag
 - [x] Skip invalid statuses in batch start and batch stop instead of sending daemon calls blindly.
 - [x] Run WPF Release build and `git diff --check`.
 
+### Task 19: Responsive Manager Card Widths
+
+- [x] Add a shared WPF card-width converter that divides available grid width across cards using minimum width as the wrap threshold.
+- [x] Apply the converter to daemon manager cards.
+- [x] Apply the converter to instance manager cards.
+- [x] Run WPF Release build, `git diff --check`, and protocol tests before commit.
+
 ## Changelog
 
 - Moved HomePage debug-only controls and handlers into DebugPage.
@@ -208,3 +215,4 @@ Subagent-driven execution is preferred by `RULES.md`, but the available multi-ag
 - Localized instance status badge text and restored daemon-card-style CPU/memory progress bars on instance cards.
 - Fixed instance-card CPU/memory progress bar bindings by setting read-only computed value bindings to `Mode=OneWay`.
 - Aligned WPF instance action guards with daemon active-state semantics for `Starting` and `Running`.
+- Made daemon and instance manager cards stretch together to fill available rows, using minimum width as the only sizing threshold.
