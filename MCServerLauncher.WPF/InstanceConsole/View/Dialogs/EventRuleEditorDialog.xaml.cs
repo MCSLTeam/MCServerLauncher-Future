@@ -6,6 +6,7 @@ using System.Windows.Data;
 using System.Globalization;
 using System;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
 {
@@ -284,9 +285,11 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
         {
             if (value is string mode)
             {
-                return mode.Equals("Parallel", StringComparison.OrdinalIgnoreCase) ? "同时" : "然后";
+                return mode.Equals("Parallel", StringComparison.OrdinalIgnoreCase)
+                    ? Lang.Tr["ConsoleCommand_EventTrigger_ParallelSeparator"]
+                    : Lang.Tr["ConsoleCommand_EventTrigger_SequentialSeparator"];
             }
-            return "然后";
+            return Lang.Tr["ConsoleCommand_EventTrigger_SequentialSeparator"];
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

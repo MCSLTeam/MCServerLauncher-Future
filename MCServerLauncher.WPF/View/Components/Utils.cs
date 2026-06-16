@@ -22,13 +22,10 @@ namespace MCServerLauncher.WPF.View.Components
             newDaemonConnectionInput.tokenEdit.Password = token;
             newDaemonConnectionInput.friendlyNameEdit.Text = name;
             
-            string title = isEditing ? "EditDaemon" : (isRetrying ? "ConnectDaemonFailedTip" : "ConnectDaemon");
-            string primaryButtonText = isEditing ? "Save" : "Connect";
-            
             ContentDialog dialog = new()
             {
-                Title = Lang.Tr[title],
-                PrimaryButtonText = Lang.Tr[primaryButtonText],
+                Title = isEditing ? Lang.Tr["EditDaemon"] : (isRetrying ? Lang.Tr["ConnectDaemonFailedTip"] : Lang.Tr["ConnectDaemon"]),
+                PrimaryButtonText = isEditing ? Lang.Tr["Save"] : Lang.Tr["Connect"],
                 SecondaryButtonText = Lang.Tr["Cancel"],
                 DefaultButton = ContentDialogButton.Primary,
                 FullSizeDesired = false,

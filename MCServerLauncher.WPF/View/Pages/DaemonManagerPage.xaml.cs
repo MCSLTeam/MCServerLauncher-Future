@@ -1,5 +1,8 @@
 using MCServerLauncher.WPF.ViewModels;
+using MCServerLauncher.WPF.ViewModels.Models;
 using System;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -60,6 +63,22 @@ namespace MCServerLauncher.WPF.View.Pages
         private void StopAutoRefresh()
         {
             _refreshTimer?.Stop();
+        }
+
+        private async void EditDaemonMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem { Tag: DaemonCardModel daemon })
+            {
+                await _viewModel.EditDaemonCommand.ExecuteAsync(daemon);
+            }
+        }
+
+        private async void DeleteDaemonMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem { Tag: DaemonCardModel daemon })
+            {
+                await _viewModel.DeleteDaemonCommand.ExecuteAsync(daemon);
+            }
         }
     }
 }

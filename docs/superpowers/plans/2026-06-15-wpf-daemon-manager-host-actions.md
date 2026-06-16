@@ -50,3 +50,4 @@ Complete remote host management in the WPF daemon manager by making edit/delete 
 - Renamed the daemon card version label to "node version" in localized resources.
 - Added CPU core/thread counts to daemon system status and daemon cards while keeping the legacy CPU `count` field as the logical processor count.
 - Formatted daemon memory and disk used/total values with two decimal places.
+- Fixed daemon card edit/delete flyout actions by forwarding menu clicks to the daemon manager view-model commands without cross-namescope `x:Reference` bindings, and removed a stray debug console write from the daemon connection input control.

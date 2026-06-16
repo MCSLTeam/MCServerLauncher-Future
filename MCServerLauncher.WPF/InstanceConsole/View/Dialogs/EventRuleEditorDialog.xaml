@@ -96,23 +96,23 @@
         <!-- AlwaysTrueRuleset Template -->
         <DataTemplate DataType="{x:Type local:AlwaysTrueRulesetWrapper}">
             <StackPanel>
-                <TextBlock Text="总是为真" FontWeight="SemiBold" Margin="0,0,0,5" />
-                <TextBlock Text="无论在什么情况下，该规则都会返回真。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_AlwaysTrueRuleset], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_AlwaysTrueRulesetDescription], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
             </StackPanel>
         </DataTemplate>
 
         <!-- AlwaysFalseRuleset Template -->
         <DataTemplate DataType="{x:Type local:AlwaysFalseRulesetWrapper}">
             <StackPanel>
-                <TextBlock Text="总是为假" FontWeight="SemiBold" Margin="0,0,0,5" />
-                <TextBlock Text="无论在什么情况下，该规则都会返回假。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_AlwaysFalseRuleset], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_AlwaysFalseRulesetDescription], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
             </StackPanel>
         </DataTemplate>
 
         <!-- InstanceStatusRuleset Template -->
         <DataTemplate DataType="{x:Type local:InstanceStatusRulesetWrapper}">
             <StackPanel>
-                <TextBlock Text="实例状态" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_InstanceStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
                 <ComboBox SelectedValue="{Binding TargetStatus}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_TargetStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
                     <ComboBoxItem Content="{Binding [Status_Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
                     <ComboBoxItem Content="{Binding [Status_Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
@@ -204,15 +204,15 @@
                     <Expander.Header>
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="规则集" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <TextBlock Text="满足以下条件时执行行动" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_Ruleset], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_RulesetConditionHint], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                 
                                 <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">
                                     <ui:DropDownButton.Flyout>
                                         <ui:MenuFlyout Placement="Bottom">
-                                            <MenuItem Header="总是为真" Click="AddAlwaysTrueRuleset_Click" />
-                                            <MenuItem Header="总是为假" Click="AddAlwaysFalseRuleset_Click" />
-                                            <MenuItem Header="实例状态" Click="AddInstanceStatusRuleset_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_AlwaysTrueRuleset], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddAlwaysTrueRuleset_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_AlwaysFalseRuleset], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddAlwaysFalseRuleset_Click" />
+                                            <MenuItem Header="{Binding [ConsoleCommand_EventTrigger_InstanceStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Click="AddInstanceStatusRuleset_Click" />
                                         </ui:MenuFlyout>
                                     </ui:DropDownButton.Flyout>
                                 </ui:DropDownButton>
@@ -247,10 +247,10 @@
                         <Grid VerticalAlignment="Center" Margin="0,10,-10,10">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_Event], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <TextBlock Text="执行方式" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_ActionExecutionMode], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" VerticalAlignment="Center" Margin="0,0,10,0" />
                                 <ComboBox SelectedValue="{Binding Rule.ActionExecutionMode}" SelectedValuePath="Tag" Width="120">
-                                    <ComboBoxItem Content="顺序" Tag="Sequential" />
-                                    <ComboBoxItem Content="并行" Tag="Parallel" />
+                                    <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_Sequential], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Sequential" />
+                                    <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_Parallel], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Parallel" />
                                 </ComboBox>
 
                                 <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">

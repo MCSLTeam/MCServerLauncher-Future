@@ -38,19 +38,19 @@
                     <ikw:SimpleStackPanel Spacing="10">
                         <Button IsEnabled="False" x:Name="FastReverseProxyClient" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="{Binding [CreateUniversalFastReverseProxyClientInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
+                        Content="{Binding [CreateUniversalFastReverseProxyClientInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                         <Button IsEnabled="False" x:Name="MEFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="ME Frp" ToolTip="没做完呢，别急" />
+                        Content="ME Frp" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                         <Button IsEnabled="False" x:Name="LoCyanFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="LoCyanFrp" ToolTip="没做完呢，别急" />
+                        Content="LoCyanFrp" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                         <Button IsEnabled="False" x:Name="OpenFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="OpenFrp" ToolTip="没做完呢，别急" />
+                        Content="OpenFrp" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                         <Button IsEnabled="False" x:Name="MossFrp" Padding="20,13,0,13"
                         Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Content="MossFrp" ToolTip="没做完呢，别急" />
+                        Content="MossFrp" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                     </ikw:SimpleStackPanel>
                 </Expander>
                 <Button x:Name="TerrariaGameServer" Padding="20,13,0,13" Click="GoCreateNewInstance"
@@ -59,7 +59,7 @@
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateOtherExecutableInstance], Source={x:Static i18n:Lang.Tr}}" />
                 <Button IsEnabled="False" x:Name="ImportInstance" Padding="20,13,0,13" Click="GoCreateNewInstance"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [ImportExistsInstance], Source={x:Static i18n:Lang.Tr}}"
-                        ToolTip="没做完呢，别急" />
+                        ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
 
             </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>

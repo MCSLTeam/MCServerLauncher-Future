@@ -45,19 +45,19 @@
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Content="{Binding [CreateMinecraftBedrockInstance], Source={x:Static i18n:Lang.Tr}}" />
                     <Button IsEnabled="False" x:Name="MinecraftGeyserStandalone" Padding="20,13,0,13"
                                 Click="GoCreateNewInstance" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftGeyserStandaloneInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftGeyserStandaloneInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                     <Button IsEnabled="False" x:Name="MinecraftBungeeCord" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftBungeeCordInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftBungeeCordInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                     <Button IsEnabled="False" x:Name="MinecraftWaterfall" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftWaterfallInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftWaterfallInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                     <Button IsEnabled="False" x:Name="MinecraftVelocity" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftVelocityInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftVelocityInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                     <Button IsEnabled="False" x:Name="MinecraftTravertine" Padding="20,13,0,13" Click="GoCreateNewInstance"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Content="{Binding [CreateMinecraftTravertineInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="没做完呢，别急" />
+                                Content="{Binding [CreateMinecraftTravertineInstance], Source={x:Static i18n:Lang.Tr}}" ToolTip="{Binding [FeatureNotReadyTip], Source={x:Static i18n:Lang.Tr}}" />
                 </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>

@@ -6,7 +6,12 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 
 ## Global Rules
 
-- Use concise Conventional Commits: `type(scope): subject`.
+- Every AI programming task must have a plan under `docs/superpowers/plans`.
+- Agents must use `superpowers:writing-plans` before implementation.
+- Agents must execute implementation plans with `superpowers:subagent-driven-development` unless the user explicitly chooses a different mode.
+- Agents must write a changelog section in the plan before finishing.
+- Git commit messages must use concise Conventional Commits: `type(scope): subject`.
+- Commit message titles must not contain long explanations.
 - Do not revert user or teammate changes without explicit instruction.
 - Keep nullable reference types warning-clean in changed C# projects.
 - Prefer existing patterns, helpers, project boundaries, and naming.
