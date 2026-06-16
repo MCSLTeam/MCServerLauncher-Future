@@ -125,6 +125,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             if (_isPageLoaded)
             {
                 InstanceDataManager.Instance.LogReceived -= OnLogReceived;
+                _viewModel.Dispose();
                 _isPageLoaded = false;
             }
             return Task.CompletedTask;

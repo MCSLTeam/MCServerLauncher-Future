@@ -51,11 +51,11 @@
 - Modify: `MCServerLauncher.WPF/ViewModels/DaemonManagerViewModel.cs`
 - Modify: `MCServerLauncher.WPF/View/Pages/InstanceManagerPage.xaml.cs`
 
-- [ ] Align instance manager filters, search, auto-refresh, interval, and refresh button to the right side of the toolbar row.
-- [ ] Bind instance manager search text to the view model and include name, type, version, id, status, and daemon text in filtering.
-- [ ] Add daemon manager search box next to refresh controls.
-- [ ] Bind daemon manager card list to a filtered collection, searching friendly name, address, versions, system type, and connection status.
-- [ ] Preserve existing refresh and add-connection commands.
+- [x] Align instance manager filters, search, auto-refresh, interval, and refresh button to the right side of the toolbar row.
+- [x] Bind instance manager search text to the view model and include name, type, version, id, status, and daemon text in filtering.
+- [x] Add daemon manager search box next to refresh controls.
+- [x] Bind daemon manager card list to a filtered collection, searching friendly name, address, versions, system type, and connection status.
+- [x] Preserve existing refresh and add-connection commands.
 
 ### Task 5: Guard Instance Console Terminal Commands
 
@@ -64,13 +64,13 @@
 - Modify: `MCServerLauncher.WPF/ViewModels/CommandPageViewModel.cs`
 - Modify: `MCServerLauncher.WPF/InstanceConsole/Modules/InstanceDataManager.cs`
 
-- [ ] Subscribe command page view model to `InstanceDataManager.ReportUpdated`.
-- [ ] Expose `CanStart`, `CanStop`, `CanRestart`, `CanKill`, and `CanSendCommand` based on the current `InstanceStatus`.
-- [ ] Add menu separators so lifecycle actions are grouped consistently with instance cards.
-- [ ] Add confirmation before start, stop, and restart.
-- [ ] Add countdown confirmation before kill.
-- [ ] Reject unavailable lifecycle actions with warning notifications instead of sending daemon actions.
-- [ ] Reject command send when the instance is not running or starting.
+- [x] Subscribe command page view model to `InstanceDataManager.ReportUpdated`.
+- [x] Expose `CanStart`, `CanStop`, `CanRestart`, `CanKill`, and `CanSendCommand` based on the current `InstanceStatus`.
+- [x] Add menu separators so lifecycle actions are grouped consistently with instance cards.
+- [x] Add confirmation before start, stop, and restart.
+- [x] Add countdown confirmation before kill.
+- [x] Reject unavailable lifecycle actions with warning notifications instead of sending daemon actions.
+- [x] Reject command send when the instance is not running or starting.
 
 ### Task 6: Verification
 
@@ -89,3 +89,5 @@
 - Fixed daemon-side startup registration so instances are treated as active while `StartAsync` is still completing.
 - Moved the daemon manager toolbar below the title/subtitle to match the instance manager page layout.
 - Added follow-up tasks for right-aligned manager toolbars, daemon search, and instance console lifecycle command guards.
+- Right-aligned instance and daemon manager toolbars, added daemon search, and wired instance manager search filtering.
+- Added instance console terminal lifecycle state guards, grouped command menu entries, confirmation prompts, and kill countdown confirmation.

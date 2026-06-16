@@ -44,24 +44,34 @@
                 </ui:DropDownButton.Content>
                 <ui:DropDownButton.Flyout>
                     <ui:MenuFlyout Placement="Bottom">
-                        <MenuItem Header="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" Command="{Binding StartInstanceCommand}">
+                        <MenuItem Header="{Binding [Start], Source={x:Static i18n:Lang.Tr}}"
+                                  Command="{Binding StartInstanceCommand}"
+                                  IsEnabled="{Binding CanStart}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" Command="{Binding StopInstanceCommand}">
+                        <Separator />
+                        <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}"
+                                  Command="{Binding StopInstanceCommand}"
+                                  IsEnabled="{Binding CanStop}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.PowerButton}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}" Command="{Binding KillInstanceCommand}">
-                            <MenuItem.Icon>
-                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" FontSize="16" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}" Command="{Binding RestartInstanceCommand}">
+                        <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}"
+                                  Command="{Binding RestartInstanceCommand}"
+                                  IsEnabled="{Binding CanRestart}">
                             <MenuItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" FontSize="16" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}"
+                                  Command="{Binding KillInstanceCommand}"
+                                  IsEnabled="{Binding CanKill}">
+                            <MenuItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" FontSize="16" />
                             </MenuItem.Icon>
                         </MenuItem>
                     </ui:MenuFlyout>
@@ -97,7 +107,7 @@
                      ui:ControlHelper.PlaceholderText="{Binding [ConsoleCommand_EnterCommandTip], Source={x:Static i18n:Lang.Tr}}"
                      Height="32"
                      KeyDown="CommandInputTextBox_KeyDown" />
-            <Button Grid.Column="1" Height="32" Margin="10,0,0,0" Command="{Binding SendCommandCommand}">
+            <Button Grid.Column="1" Height="32" Margin="10,0,0,0" Command="{Binding SendCommandCommand}" IsEnabled="{Binding CanSendCommand}">
                 <Button.Content>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Send}" FontSize="16" />
                 </Button.Content>
