@@ -19,7 +19,11 @@ namespace MCServerLauncher.WPF.ExceptionDialog
 
         private void Feedback(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new",
+                UseShellExecute = true
+            });
         }
 
         private void CloseWindow(object sender, RoutedEventArgs e)

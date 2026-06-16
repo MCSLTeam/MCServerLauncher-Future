@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
 using ExceptionWindow = MCServerLauncher.WPF.ExceptionDialog.Window;
-using MessageBox = iNKORE.UI.WPF.Modern.Controls.MessageBox;
 
 namespace MCServerLauncher.WPF
 {

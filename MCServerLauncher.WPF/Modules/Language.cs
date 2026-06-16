@@ -46,14 +46,14 @@ namespace MCServerLauncher.WPF.Modules
             "zh-TW",
         };
 
-        public static readonly List<string> LanguageNameList = new()
-        {
+        public static readonly List<string> LanguageNameList =
+        [
             "English (US)",
             "日本語",
             "Русский",
             "简体中文 (中国)",
             "繁體中文 (中国香港)",
             "正體中文 (中国台湾)",
-        };
+        ];
     }
 }

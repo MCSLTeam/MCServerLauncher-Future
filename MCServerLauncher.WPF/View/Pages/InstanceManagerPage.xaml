@@ -13,9 +13,10 @@
 
     <ui:Page.Resources>
         <DataTemplate DataType="{x:Type models:InstanceCardModel}">
-            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="210" Width="400">
+            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="220" Width="400">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -48,7 +49,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                            <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
                         </Border>
                     </StackPanel>
 
@@ -73,7 +74,27 @@
                                    FontSize="14" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,20,5" />
                     </Grid>
 
-                    <Grid Grid.Row="2" HorizontalAlignment="Right" Margin="0,10,0,0">
+                    <Grid Grid.Row="2" Margin="20,8,20,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="116" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_CpuUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
+                        <ui:ProgressBar Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding CpuUsageProgress, Mode=OneWay}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding CpuUsageText}" ToolTip="{Binding CpuUsageText}" TextWrapping="NoWrap" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource CaptionTextBlock}" Text="{Binding [Daemon_MemoryUsage], Source={x:Static i18n:Lang.Tr}}" VerticalAlignment="Center" Margin="0,2,8,2" />
+                        <ui:ProgressBar Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding MemoryUsageProgress, Mode=OneWay}" VerticalAlignment="Center" Height="6" Margin="0,2,8,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource CaptionTextBlock}" Text="{Binding MemoryUsageText}" ToolTip="{Binding MemoryUsageText}" TextWrapping="NoWrap" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,0,2" />
+                    </Grid>
+
+                    <Grid Grid.Row="3" HorizontalAlignment="Right" Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -94,37 +115,41 @@
                             <ui:DropDownButton.Flyout>
                                 <ui:MenuFlyout Placement="Bottom">
                                     <MenuItem Header="{Binding [Start], Source={x:Static i18n:Lang.Tr}}"
-                                              Command="{Binding DataContext.StartInstanceCommand, RelativeSource={RelativeSource AncestorType=ui:Page}}"
-                                              CommandParameter="{Binding}">
+                                              Command="{Binding StartCommand}"
+                                              CommandParameter="{Binding}"
+                                              IsEnabled="{Binding CanStart}">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}"
-                                              Command="{Binding DataContext.StopInstanceCommand, RelativeSource={RelativeSource AncestorType=ui:Page}}"
-                                              CommandParameter="{Binding}">
+                                              Command="{Binding StopCommand}"
+                                              CommandParameter="{Binding}"
+                                              IsEnabled="{Binding CanStop}">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Stop}" FontSize="16" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="{Binding [Restart], Source={x:Static i18n:Lang.Tr}}"
-                                              Command="{Binding DataContext.RestartInstanceCommand, RelativeSource={RelativeSource AncestorType=ui:Page}}"
-                                              CommandParameter="{Binding}">
+                                              Command="{Binding RestartCommand}"
+                                              CommandParameter="{Binding}"
+                                              IsEnabled="{Binding CanRestart}">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" FontSize="16" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator />
                                     <MenuItem Header="{Binding [Kill], Source={x:Static i18n:Lang.Tr}}"
-                                              Command="{Binding DataContext.KillInstanceCommand, RelativeSource={RelativeSource AncestorType=ui:Page}}"
-                                              CommandParameter="{Binding}">
+                                              Command="{Binding KillCommand}"
+                                              CommandParameter="{Binding}"
+                                              IsEnabled="{Binding CanKill}">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" FontSize="16" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator />
                                     <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}"
-                                              Command="{Binding DataContext.DeleteInstanceCommand, RelativeSource={RelativeSource AncestorType=ui:Page}}"
+                                              Command="{Binding DeleteCommand}"
                                               CommandParameter="{Binding}">
                                         <MenuItem.Icon>
                                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />

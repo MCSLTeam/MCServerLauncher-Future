@@ -123,6 +123,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         {
             var daemon = await _daemonService.GetAsync(daemonConfig)
                 ?? throw new Exception("Daemon is offline or unreachable.");
+            var memoryTotalBytes = await TryGetDaemonMemoryTotalBytesAsync(daemon, daemonConfig);
             var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon);
 
             if (instanceReports == null || instanceReports.Count == 0)
@@ -136,13 +137,13 @@ public partial class InstanceManagerViewModel : ObservableObject
 
             if (isAutoRefresh)
             {
-                UpdateExistingCards(instanceReports, daemonConfig);
+                UpdateExistingCards(instanceReports, daemonConfig, memoryTotalBytes);
             }
             else
             {
                 foreach (var kvp in instanceReports)
                 {
-                    AllInstances.Add(CreateInstanceCard(kvp.Key, kvp.Value, daemonConfig));
+                    AllInstances.Add(CreateInstanceCard(kvp.Key, kvp.Value, daemonConfig, memoryTotalBytes));
                 }
             }
         }
@@ -153,7 +154,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         }
     }
 
-    private void UpdateExistingCards(Dictionary<Guid, InstanceReport> reports, Constants.DaemonConfigModel daemonConfig)
+    private void UpdateExistingCards(Dictionary<Guid, InstanceReport> reports, Constants.DaemonConfigModel daemonConfig, ulong memoryTotalBytes)
     {
         var existingIds = AllInstances.Select(c => c.InstanceId).ToList();
         var newIds = reports.Keys.ToList();
@@ -173,27 +174,48 @@ public partial class InstanceManagerViewModel : ObservableObject
                 existing.Status = kvp.Value.Status;
                 existing.CpuUsage = kvp.Value.PerformanceCounter.Cpu;
                 existing.MemoryUsage = kvp.Value.PerformanceCounter.Memory;
+                existing.MemoryTotalBytes = memoryTotalBytes;
             }
             else
             {
-                AllInstances.Add(CreateInstanceCard(kvp.Key, kvp.Value, daemonConfig));
+                AllInstances.Add(CreateInstanceCard(kvp.Key, kvp.Value, daemonConfig, memoryTotalBytes));
             }
         }
     }
 
-    private static InstanceCardModel CreateInstanceCard(Guid id, InstanceReport report, Constants.DaemonConfigModel config)
+    private InstanceCardModel CreateInstanceCard(Guid id, InstanceReport report, Constants.DaemonConfigModel config, ulong memoryTotalBytes)
     {
         return new InstanceCardModel
         {
             DaemonConfig = config,
+            StartCommand = StartInstanceCommand,
+            StopCommand = StopInstanceCommand,
+            RestartCommand = RestartInstanceCommand,
+            KillCommand = KillInstanceCommand,
+            DeleteCommand = DeleteInstanceCommand,
             InstanceId = id,
             InstanceName = report.Config.Name,
             InstanceType = report.Config.InstanceType.ToString(),
             Version = report.Config.Version ?? "",
             Status = report.Status,
             CpuUsage = report.PerformanceCounter.Cpu,
-            MemoryUsage = report.PerformanceCounter.Memory
+            MemoryUsage = report.PerformanceCounter.Memory,
+            MemoryTotalBytes = memoryTotalBytes
         };
+    }
+
+    private static async Task<ulong> TryGetDaemonMemoryTotalBytesAsync(IDaemon daemon, Constants.DaemonConfigModel daemonConfig)
+    {
+        try
+        {
+            var systemInfo = await daemon.GetSystemInfoAsync();
+            return systemInfo.Mem.Total * 1024UL;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "[InstanceManager] Failed to get system info for daemon {Daemon}", daemonConfig.FriendlyName);
+            return 0;
+        }
     }
 
     public void ApplyFilters()
@@ -222,6 +244,18 @@ public partial class InstanceManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task StartInstanceAsync(InstanceCardModel instance)
     {
+        if (!instance.CanStart)
+        {
+            PushActionUnavailable("InstanceCard_StartUnavailable", instance);
+            return;
+        }
+
+        var result = await _dialog.ShowConfirmAsync(
+            Lang.Tr["InstanceCard_StartConfirmTitle"],
+            string.Format(Lang.Tr["InstanceCard_StartConfirmContent"], instance.InstanceName),
+            Lang.Tr["Start"], Lang.Tr["Cancel"]);
+        if (result != ContentDialogResult.Primary) return;
+
         try
         {
             var daemon = await _daemonService.GetAsync(instance.DaemonConfig);
@@ -245,6 +279,12 @@ public partial class InstanceManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task StopInstanceAsync(InstanceCardModel instance)
     {
+        if (!instance.CanStop)
+        {
+            PushActionUnavailable("InstanceCard_StopUnavailable", instance);
+            return;
+        }
+
         var result = await _dialog.ShowConfirmAsync(
             Lang.Tr["InstanceCard_StopConfirmTitle"],
             string.Format(Lang.Tr["InstanceCard_StopConfirmContent"], instance.InstanceName),
@@ -273,6 +313,12 @@ public partial class InstanceManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task RestartInstanceAsync(InstanceCardModel instance)
     {
+        if (!instance.CanRestart)
+        {
+            PushActionUnavailable("InstanceCard_RestartUnavailable", instance);
+            return;
+        }
+
         var result = await _dialog.ShowConfirmAsync(
             Lang.Tr["InstanceCard_RestartConfirmTitle"],
             string.Format(Lang.Tr["InstanceCard_RestartConfirmContent"], instance.InstanceName),
@@ -301,7 +347,13 @@ public partial class InstanceManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task KillInstanceAsync(InstanceCardModel instance)
     {
-        var result = await _dialog.ShowConfirmAsync(
+        if (!instance.CanKill)
+        {
+            PushActionUnavailable("InstanceCard_KillUnavailable", instance);
+            return;
+        }
+
+        var result = await _dialog.ShowCountdownConfirmAsync(
             Lang.Tr["InstanceCard_KillConfirmTitle"],
             string.Format(Lang.Tr["InstanceCard_KillConfirmContent"], instance.InstanceName),
             Lang.Tr["Kill"], Lang.Tr["Cancel"]);
@@ -329,7 +381,13 @@ public partial class InstanceManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteInstanceAsync(InstanceCardModel instance)
     {
-        var result = await _dialog.ShowCountdownConfirmAsync(
+        if (!instance.CanDelete)
+        {
+            PushActionUnavailable("InstanceCard_DeleteUnavailable", instance);
+            return;
+        }
+
+        var result = await _dialog.ShowConfirmAsync(
             Lang.Tr["InstanceCard_DeleteConfirmTitle"],
             string.Format(Lang.Tr["InstanceCard_DeleteConfirmContent"], instance.InstanceName),
             Lang.Tr["Delete"], Lang.Tr["Cancel"]);
@@ -403,6 +461,12 @@ public partial class InstanceManagerViewModel : ObservableObject
         {
             try
             {
+                if (!card.CanStart)
+                {
+                    fail++;
+                    continue;
+                }
+
                 var daemon = await _daemonService.GetAsync(card.DaemonConfig);
                 if (daemon != null) { await daemon.StartInstanceAsync(card.InstanceId); success++; }
                 else fail++;
@@ -435,6 +499,12 @@ public partial class InstanceManagerViewModel : ObservableObject
         {
             try
             {
+                if (!card.CanStop)
+                {
+                    fail++;
+                    continue;
+                }
+
                 var daemon = await _daemonService.GetAsync(card.DaemonConfig);
                 if (daemon != null) { await daemon.StopInstanceAsync(card.InstanceId); success++; }
                 else fail++;
@@ -456,7 +526,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         var selected = AllInstances.Where(c => c.IsSelected).ToList();
         if (selected.Count == 0) return;
 
-        var result = await _dialog.ShowCountdownConfirmAsync(
+        var result = await _dialog.ShowConfirmAsync(
             Lang.Tr["BatchDeleteConfirmTitle"],
             string.Format(Lang.Tr["BatchDeleteConfirmContent"], selected.Count),
             Lang.Tr["Delete"], Lang.Tr["Cancel"]);
@@ -467,6 +537,12 @@ public partial class InstanceManagerViewModel : ObservableObject
         {
             try
             {
+                if (!card.CanDelete)
+                {
+                    fail++;
+                    continue;
+                }
+
                 var daemon = await _daemonService.GetAsync(card.DaemonConfig);
                 if (daemon != null) { await daemon.RemoveInstanceAsync(card.InstanceId); success++; }
                 else fail++;
@@ -485,5 +561,14 @@ public partial class InstanceManagerViewModel : ObservableObject
     private static int GetStoredRefreshInterval()
     {
         return SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 5;
+    }
+
+    private void PushActionUnavailable(string resourceKey, InstanceCardModel instance)
+    {
+        _notification.Push(
+            Lang.Tr["Warning"],
+            string.Format(Lang.Tr[resourceKey], instance.InstanceName),
+            false,
+            InfoBarSeverity.Warning);
     }
 }

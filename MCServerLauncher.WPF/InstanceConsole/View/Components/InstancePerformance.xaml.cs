@@ -71,23 +71,25 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
                 var perfCounter = report.PerformanceCounter;
 
                 // Update memory
-                var memoryMB = perfCounter.Memory / 1024.0 / 1024.0;
+                var memoryBytes = Math.Max(0, perfCounter.Memory);
+                var memoryMB = memoryBytes / 1024.0 / 1024.0;
+                var memoryProgress = Math.Clamp(memoryMB / 10, 0, 100);
                 
                 Dispatcher.Invoke(() =>
                 {
                     // For memory, we show current usage
                     MemoryStatusTextBlock.Text = $"{memoryMB:F2} MB";
                     // Progress bar shows relative usage (we don't have max memory info, so just show the value)
-                    MemoryStatusProgressBar.Value = Math.Min(memoryMB / 10, 100); // Rough estimate
+                    MemoryStatusProgressBar.Value = memoryProgress; // Rough estimate
                 });
 
                 // Update CPU
-                var cpuPercent = perfCounter.Cpu;
+                var cpuPercent = NormalizeCpu(perfCounter.Cpu);
                 
                 Dispatcher.Invoke(() =>
                 {
                     CPUStatusTextBlock.Text = $"{cpuPercent:F2} %";
-                    CPUStatusProgressBar.Value = Math.Min(cpuPercent, 100);
+                    CPUStatusProgressBar.Value = cpuPercent;
                 });
 
                 await Task.CompletedTask;
@@ -102,6 +104,16 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
         private async void OnReportUpdated(object? sender, Common.ProtoType.Instance.InstanceReport? report)
         {
             await RefreshAsync();
+        }
+
+        private static double NormalizeCpu(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return 0;
+            }
+
+            return Math.Clamp(value, 0, 100);
         }
     }
 }

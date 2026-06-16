@@ -1,9 +1,13 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.DownloadProvider;
+using MCServerLauncher.WPF.InstanceConsole.View.Dialogs;
+using MCServerLauncher.WPF.Modules;
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ConsoleWindow = MCServerLauncher.WPF.InstanceConsole.Window;
 
 namespace MCServerLauncher.WPF.View.Pages
 {
@@ -18,10 +22,90 @@ namespace MCServerLauncher.WPF.View.Pages
         }
 
 
-        //private void TestNotification(object sender, RoutedEventArgs e)
-        //{
-        //    PushNotification("Test", "Test", true, InfoBarSeverity.Success);
-        //}
+        private void ShowConsoleWindow(object sender, RoutedEventArgs e)
+        {
+            new ConsoleWindow().Show();
+        }
+
+        private void OpenFileEditor_Log(object sender, RoutedEventArgs e) => OpenFileEditor("test.log");
+        private void OpenFileEditor_Ini(object sender, RoutedEventArgs e) => OpenFileEditor("test.ini");
+        private void OpenFileEditor_Yaml(object sender, RoutedEventArgs e) => OpenFileEditor("test.yaml");
+        private void OpenFileEditor_Toml(object sender, RoutedEventArgs e) => OpenFileEditor("test.toml");
+        private void OpenFileEditor_Bat(object sender, RoutedEventArgs e) => OpenFileEditor("test.bat");
+        private void OpenFileEditor_Shell(object sender, RoutedEventArgs e) => OpenFileEditor("test.sh");
+        private void OpenFileEditor_Csv(object sender, RoutedEventArgs e) => OpenFileEditor("test.csv");
+
+        private void OpenFileEditor(string filename)
+        {
+            var tempPath = Path.Combine(Path.GetTempPath(), filename);
+            if (!File.Exists(tempPath))
+            {
+                File.WriteAllText(tempPath, GetSampleContent(filename));
+            }
+
+            var window = new FileEditorWindow();
+            var viewModel = new FileEditorViewModel(null!, tempPath, filename, 0, window)
+            {
+                IsLoading = false,
+                StatusText = "Ready (Debug Mode)"
+            };
+            viewModel.Document.Text = File.ReadAllText(tempPath);
+
+            window.DataContext = viewModel;
+            window.Show();
+        }
+
+        private static string GetSampleContent(string filename)
+        {
+            var ext = Path.GetExtension(filename).ToLowerInvariant();
+            return ext switch
+            {
+                ".log" => "[12:34:56] [main/INFO]: This is an info message\n[12:34:57] [main/WARN]: This is a warning\n[12:34:58] [main/ERROR]: This is an error\n\tat com.example.Main.main(Main.java:10)",
+                ".ini" => "[Section]\nKey=Value\n# Comment\nNum=123",
+                ".yaml" => "name: Test\nversion: 1.0\ndependencies:\n  - lib1\n  - lib2",
+                ".toml" => "[package]\nname = \"test\"\nversion = \"0.1.0\"\n\n[dependencies]\nserde = \"1.0\"",
+                ".bat" => "@echo off\nREM This is a batch file\nset VAR=Hello\necho %VAR%\nif \"%VAR%\"==\"Hello\" echo World",
+                ".sh" => "#!/bin/bash\n# This is a shell script\nVAR=\"Hello\"\necho $VAR\nif [ \"$VAR\" == \"Hello\" ]; then\n  echo \"World\"\nfi",
+                ".csv" => "Name,Age,City\nAlice,30,New York\nBob,25,Los Angeles\nCharlie,35,Chicago",
+                _ => "Sample text"
+            };
+        }
+
+        private void ShowExceptionWindow(object sender, RoutedEventArgs e)
+        {
+            throw new Exception("Test Exception");
+        }
+
+        private void PushSimpleNotification(object sender, RoutedEventArgs e)
+        {
+            var parts = sender is Button button
+                ? button.Content?.ToString()?.Split('-')
+                : null;
+
+            if (parts is not { Length: >= 2 }) return;
+
+            InfoBarSeverity infoBarSeverity = parts[0] switch
+            {
+                "Informational" => InfoBarSeverity.Informational,
+                "Success" => InfoBarSeverity.Success,
+                "Warning" => InfoBarSeverity.Warning,
+                "Error" => InfoBarSeverity.Error,
+                _ => InfoBarSeverity.Informational
+            };
+
+            Constants.InfoBarPosition infoBarPosition = parts[1] switch
+            {
+                "Top" => Constants.InfoBarPosition.Top,
+                "TopRight" => Constants.InfoBarPosition.TopRight,
+                "Bottom" => Constants.InfoBarPosition.Bottom,
+                "BottomRight" => Constants.InfoBarPosition.BottomRight,
+                _ => Constants.InfoBarPosition.Top
+            };
+
+            var random = new Random();
+            var randomNumber = random.Next(100000, 999999).ToString();
+            Notification.Push("Title", $"Message{randomNumber} - {infoBarPosition}", false, infoBarSeverity, infoBarPosition, 3000);
+        }
 
         /// <summary>
         ///    Show debug dialog.

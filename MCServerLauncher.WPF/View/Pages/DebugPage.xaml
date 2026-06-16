@@ -4,6 +4,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+      xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="TestPage">
@@ -18,20 +19,46 @@
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,15" />
 
         <ui:ScrollViewerEx Grid.Row="1" Margin="0,0,0,35">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <ikw:SimpleStackPanel>
+                <Grid Margin="0,0,0,20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Margin="0,0,0,10" Style="{StaticResource SubtitleTextBlock}"
+                               Text="Window and Notification Tests" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                    <WrapPanel Grid.Row="1">
+                        <Button Margin="0,0,10,10" Content="Show Console Window" Click="ShowConsoleWindow" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Margin="0,0,10,10" Content="Show Exception Window" Click="ShowExceptionWindow" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Margin="0,0,10,10" Content="Informational-Top" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Margin="0,0,10,10" Content="Warning-TopRight" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Margin="0,0,10,10" Content="Error-Bottom" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Margin="0,0,10,10" Content="Success-BottomRight" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
+                    </WrapPanel>
+                </Grid>
+
+                <Grid Margin="0,0,0,20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Margin="0,0,0,10" Style="{StaticResource SubtitleTextBlock}"
+                               Text="File Editor Tests" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                    <WrapPanel Grid.Row="1">
+                        <Button Content="Log" Click="OpenFileEditor_Log" Margin="0,0,10,10" />
+                        <Button Content="Ini" Click="OpenFileEditor_Ini" Margin="0,0,10,10" />
+                        <Button Content="Yaml" Click="OpenFileEditor_Yaml" Margin="0,0,10,10" />
+                        <Button Content="Toml" Click="OpenFileEditor_Toml" Margin="0,0,10,10" />
+                        <Button Content="Bat" Click="OpenFileEditor_Bat" Margin="0,0,10,10" />
+                        <Button Content="Shell" Click="OpenFileEditor_Shell" Margin="0,0,10,10" />
+                        <Button Content="CSV" Click="OpenFileEditor_Csv" Margin="0,0,10,10" />
+                    </WrapPanel>
+                </Grid>
                 
-                <TextBlock Grid.Row="0" Margin="0,0,0,15" Style="{StaticResource SubtitleTextBlock}"
+                <TextBlock Margin="0,0,0,15" Style="{StaticResource SubtitleTextBlock}"
                            Text="Download API Tests" VerticalAlignment="Top" HorizontalAlignment="Left" />
                 
-                <Grid Grid.Row="1" Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -44,7 +71,7 @@
                     </WrapPanel>
                 </Grid>
 
-                <Grid Grid.Row="2" Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -57,7 +84,7 @@
                     </WrapPanel>
                 </Grid>
 
-                <Grid Grid.Row="3" Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -70,7 +97,7 @@
                     </WrapPanel>
                 </Grid>
 
-                <Grid Grid.Row="4" Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -84,7 +111,7 @@
                     </WrapPanel>
                 </Grid>
 
-                <Grid Grid.Row="5" Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -98,7 +125,7 @@
                         <Button Margin="0,0,10,10" Content="Test MCSLSync Core Detail" Click="TestMCSLSyncCoreDetail" />
                     </WrapPanel>
                 </Grid>
-            </Grid>
+            </ikw:SimpleStackPanel>
         </ui:ScrollViewerEx>
     </Grid>
 </ui:Page>

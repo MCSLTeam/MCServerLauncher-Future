@@ -18,6 +18,7 @@ using MCServerLauncher.WPF.InstanceConsole.ViewModels.Models;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.View.Components;
+using MCServerLauncher.WPF.View.CreateInstanceProvider;
 using Microsoft.Win32;
 using Serilog;
 using System.Windows;
@@ -195,6 +196,10 @@ public partial class InstanceSettingsViewModel : ObservableObject
         try
         {
             Settings.Arguments = GetJvmArguments();
+            if (!ValidateBeforeSave())
+            {
+                return;
+            }
 
             InstanceCoreReplacementRequest? replacement = null;
             if (!string.IsNullOrWhiteSpace(Settings.ReplacementCorePath))
@@ -235,6 +240,35 @@ public partial class InstanceSettingsViewModel : ObservableObject
         {
             IsSaving = false;
         }
+    }
+
+    private bool ValidateBeforeSave()
+    {
+        if (!CreateInstanceValidation.TryValidateInstanceName(Settings.Name, out var nameError))
+        {
+            PushValidationError(nameError);
+            return false;
+        }
+
+        if (!CreateInstanceValidation.TryValidateJavaPath(Settings.JavaPath, out var javaPathError))
+        {
+            PushValidationError(javaPathError);
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Settings.ReplacementCorePath)
+            && !CreateInstanceValidation.TryValidateLocalJarPath(Settings.ReplacementCorePath, out var corePathError))
+        {
+            PushValidationError(corePathError);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void PushValidationError(string message)
+    {
+        _notification.Push(Lang.Tr["Error"], message, true, InfoBarSeverity.Error);
     }
 
     partial void OnSettingsChanging(InstanceSettingsModel value)
