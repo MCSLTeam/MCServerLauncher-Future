@@ -1,11 +1,13 @@
 using iNKORE.UI.WPF.Modern.Controls;
 using iNKORE.UI.WPF.Modern.Media.Animation;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
+using MCServerLauncher.WPF.InstanceConsole.ViewModels;
 using MCServerLauncher.WPF.InstanceConsole.View.Pages;
 using MCServerLauncher.WPF.Modules;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Page = System.Windows.Controls.Page;
 
@@ -41,8 +43,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
             _daemonConfig = daemonConfig;
             _instanceId = instanceId;
 
-            // Update window title
-            Title = $"Instance Console - {instanceId}";
+            UpdateWindowTitle();
         }
 
         private async void Window_Loaded(object sender, System.Windows.RoutedEventArgs e)
@@ -63,9 +64,12 @@ namespace MCServerLauncher.WPF.InstanceConsole
             {
                 // Initialize data manager
                 await InstanceDataManager.Instance.InitializeAsync(_daemonConfig, _instanceId);
+                InstanceDataManager.Instance.ReportUpdated += OnInstanceReportUpdated;
+                UpdateWindowTitle();
 
                 // Navigate to board page
                 CurrentPage.Navigate(_board);
+                await WarnAboutClientSideModsAsync();
 
                 Log.Information("[InstanceConsole] Window loaded successfully for instance {0}", _instanceId);
             }
@@ -81,6 +85,106 @@ namespace MCServerLauncher.WPF.InstanceConsole
             }
         }
 
+        private void OnInstanceReportUpdated(object? sender, Common.ProtoType.Instance.InstanceReport? e)
+        {
+            Dispatcher.Invoke(UpdateWindowTitle);
+        }
+
+        private void UpdateWindowTitle()
+        {
+            var instanceName = GetInstanceTitleName();
+            var nodeName = GetNodeTitleName();
+            Title = BuildSystemWindowTitle(instanceName, nodeName);
+            InstanceTitleText.Text = instanceName;
+            NodeTitleText.Text = nodeName;
+        }
+
+        private string GetInstanceTitleName()
+        {
+            var instanceName = InstanceDataManager.Instance.CurrentReport?.Config.Name;
+            if (string.IsNullOrWhiteSpace(instanceName))
+            {
+                instanceName = _instanceId == Guid.Empty ? string.Empty : _instanceId.ToString();
+            }
+
+            return instanceName;
+        }
+
+        private string GetNodeTitleName()
+        {
+            var daemonHost = _daemonConfig?.FriendlyName;
+            if (string.IsNullOrWhiteSpace(daemonHost))
+            {
+                daemonHost = Lang.Tr["Main_DaemonManagerNavMenu"];
+            }
+
+            return daemonHost;
+        }
+
+        private static string BuildSystemWindowTitle(string instanceName, string nodeName)
+        {
+            var instanceText = string.Format(Lang.Tr["InstanceConsole_InstanceTitlePart"], instanceName);
+            var nodeText = string.Format(Lang.Tr["InstanceConsole_NodeTitlePart"], nodeName);
+            return $"{Lang.Tr["ConsoleTitle"]} - {instanceText} - {nodeText}";
+        }
+
+        private async Task WarnAboutClientSideModsAsync()
+        {
+            var daemon = InstanceDataManager.Instance.CurrentDaemon;
+            if (daemon == null) return;
+
+            try
+            {
+                var scanResult = await ComponentScanner.ScanAsync(daemon, _instanceId);
+                var clientSideMods = scanResult.Mods
+                    .Where(item => item.IsEnabled && item.IsClientSideOnly)
+                    .ToArray();
+                if (clientSideMods.Length == 0) return;
+
+                var listView = new iNKORE.UI.WPF.Modern.Controls.ListView
+                {
+                    ItemsSource = clientSideMods.Select(item => item.Title),
+                    MaxHeight = 240,
+                    Margin = new System.Windows.Thickness(0, 12, 0, 0)
+                };
+
+                var panel = new System.Windows.Controls.StackPanel();
+                panel.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = string.Format(Lang.Tr["ComponentManager_ClientSideModsWarning"], clientSideMods.Length),
+                    TextWrapping = System.Windows.TextWrapping.Wrap
+                });
+                panel.Children.Add(listView);
+
+                var dialog = new ContentDialog
+                {
+                    Title = Lang.Tr["ComponentManager_ClientSideModsFound"],
+                    Content = panel,
+                    PrimaryButtonText = Lang.Tr["ComponentManager_DisableClientSideMods"],
+                    SecondaryButtonText = Lang.Tr["Ignore"],
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                var result = await dialog.ShowAsync();
+                if (result != ContentDialogResult.Primary) return;
+
+                foreach (var item in clientSideMods)
+                {
+                    await ComponentScanner.DisableAsync(daemon, item);
+                }
+
+                Notification.Push(
+                    Lang.Tr["Success"],
+                    string.Format(Lang.Tr["ComponentManager_DisabledClientSideMods"], clientSideMods.Length),
+                    false,
+                    InfoBarSeverity.Success);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[InstanceConsole] Failed to scan client-side mods");
+            }
+        }
+
         private async void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             try
@@ -93,6 +197,8 @@ namespace MCServerLauncher.WPF.InstanceConsole
                 {
                     await commandPage.DisposeAsync();
                 }
+
+                InstanceDataManager.Instance.ReportUpdated -= OnInstanceReportUpdated;
                 
                 await InstanceDataManager.Instance.DisposeAsync();
                 Log.Information("[InstanceConsole] Window closed");

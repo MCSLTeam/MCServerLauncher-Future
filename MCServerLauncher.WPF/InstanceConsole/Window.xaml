@@ -29,7 +29,27 @@
             </Grid.ColumnDefinitions>
             <Image Margin="5,7,-5,-10" Grid.Column="0" RenderOptions.BitmapScalingMode="HighQuality"
                    Source="../Resources/MCServerLauncherFutureConsole.ico" Width="20" Height="20" />
-            <TextBlock Margin="15,17,0,0" FontWeight="Medium" Grid.Column="1" Text="{Binding [ConsoleTitle], Source={x:Static i18n:Lang.Tr}}" HorizontalAlignment="Left" />
+            <StackPanel Grid.Column="1"
+                        Margin="15,17,0,0"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Left">
+                <TextBlock FontWeight="Medium"
+                           Text="{Binding [ConsoleTitle], Source={x:Static i18n:Lang.Tr}}" />
+                <ui:FontIcon Margin="18,1,6,0"
+                             Icon="{x:Static ui:SegoeFluentIcons.Package}"
+                             FontSize="15" />
+                <TextBlock x:Name="InstanceTitleText"
+                           FontWeight="Medium"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="260" />
+                <ui:FontIcon Margin="18,1,6,0"
+                             Icon="{x:Static ui:SegoeFluentIcons.ThisPC}"
+                             FontSize="15" />
+                <TextBlock x:Name="NodeTitleText"
+                           FontWeight="Medium"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="260" />
+            </StackPanel>
         </Grid>
         <ui:NavigationView x:Name="NavView"
                            IsPaneOpen="False"
