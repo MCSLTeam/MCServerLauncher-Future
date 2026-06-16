@@ -48,6 +48,27 @@ public class InstanceSettingsCoordinatorTests
         Assert.Contains("must be stopped", error!.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task TryStartInstance_RegistersInstanceBeforeStartCompletes()
+    {
+        var manager = new InstanceManager();
+        var config = CreateConfig(InstanceType.MCJava);
+        var startGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var instance = new FakeInstance(config, InstanceStatus.Starting, startGate);
+        manager.Instances[config.Uuid] = instance;
+
+        var startTask = manager.TryStartInstance(config.Uuid);
+        await instance.StartEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+
+        Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
+
+        startGate.SetResult(true);
+        var started = await startTask;
+
+        Assert.Same(instance, started);
+        Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
+    }
+
     private static InstanceConfig CreateConfig(InstanceType type)
     {
         return new InstanceConfig
@@ -64,16 +85,25 @@ public class InstanceSettingsCoordinatorTests
 
     private sealed class FakeInstance : IInstance
     {
-        public FakeInstance(InstanceConfig config, InstanceStatus status)
+        private readonly TaskCompletionSource<bool>? _startGate;
+
+        public FakeInstance(
+            InstanceConfig config,
+            InstanceStatus status,
+            TaskCompletionSource<bool>? startGate = null)
         {
             Config = config;
             Status = status;
+            _startGate = startGate;
         }
 
         public InstanceConfig Config { get; }
         public InstanceProcess? Process => null;
         public InstanceStatus Status { get; }
         public int ServerProcessId => -1;
+        public TaskCompletionSource<bool> StartEntered { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public event Action<Guid, string>? OnLog;
         public event Action<Guid, InstanceStatus>? OnStatusChanged;
 
@@ -84,7 +114,8 @@ public class InstanceSettingsCoordinatorTests
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
         {
-            return Task.FromResult(false);
+            StartEntered.TrySetResult(true);
+            return _startGate?.Task ?? Task.FromResult(false);
         }
 
         public void Stop()

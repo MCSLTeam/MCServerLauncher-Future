@@ -12,7 +12,7 @@
       Title="DaemonManagerPage">
 
     <ui:Page.Resources>
-        <converters:CardWidthConverter x:Key="DaemonCardWidthConverter" MinWidth="390" HorizontalGap="8" ReservedWidth="20" />
+        <converters:CardWidthConverter x:Key="DaemonCardWidthConverter" MinWidth="390" HorizontalGap="8" />
         <DataTemplate DataType="{x:Type models:DaemonCardModel}">
             <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top"
                     MinWidth="390"
@@ -158,7 +158,6 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource TitleTextBlock}"
                    Text="{Binding [Main_DaemonManagerNavMenu], Source={x:Static i18n:Lang.Tr}}"
@@ -166,30 +165,39 @@
         <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}"
                    Text="{Binding [DaemonManagerTip], Source={x:Static i18n:Lang.Tr}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0" />
-        <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,0,40,0">
-            <ui:ToggleSwitch MinWidth="96" Margin="0,0,10,0"
-                             OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
-                             OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
-                             IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
-            <ComboBox Width="90" Margin="0,0,10,0"
-                      ItemsSource="{Binding RefreshIntervalOptions}"
-                      DisplayMemberPath="Display"
-                      SelectedValuePath="Seconds"
-                      SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
-            <Button Margin="0,0,10,0" Command="{Binding RefreshCommand}">
-                <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}" Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}"/>
-                </Button.Content>
-            </Button>
-            <Button Command="{Binding AddConnectionCommand}">
-                <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.ConnectApp}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
-                </Button.Content>
-            </Button>
-        </StackPanel>
-        <ui:ScrollViewerEx Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,35,0">
+        <Grid Grid.Row="2" Margin="0,12,35,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <ui:ToggleSwitch MinWidth="96" Margin="0,0,10,8"
+                                 OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
+                                 OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
+                                 IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
+                <ComboBox Width="90" Margin="0,0,10,8"
+                          ItemsSource="{Binding RefreshIntervalOptions}"
+                          DisplayMemberPath="Display"
+                          SelectedValuePath="Seconds"
+                          SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
+                <TextBox Width="220" MaxWidth="400" MinWidth="120" Margin="0,0,10,8"
+                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
+                <Button Margin="0,0,10,8" Command="{Binding RefreshCommand}">
+                    <Button.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}" Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}"/>
+                    </Button.Content>
+                </Button>
+                <Button Margin="0,0,0,8" Command="{Binding AddConnectionCommand}">
+                    <Button.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.ConnectApp}" Content="{Binding [ConnectDaemon], Source={x:Static i18n:Lang.Tr}}"/>
+                    </Button.Content>
+                </Button>
+            </WrapPanel>
+        </Grid>
+        <ui:ScrollViewerEx Grid.Row="3" Grid.Column="0" Margin="0,10,35,0">
             <ui:GridView x:Name="DaemonCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Padding="0,0,0,15"
-                         ItemsSource="{Binding Daemons}" />
+                         ItemsSource="{Binding FilteredDaemons}" />
         </ui:ScrollViewerEx>
     </Grid>
 </ui:Page>

@@ -124,24 +124,23 @@ public class InstanceManager : IInstanceManager
                     Remote.Event.EventTriggerService;
             eventTriggerService?.HookInstance(target);
 
-            if (await target.StartAsync(ct: ct))
-
+            if (!RunningInstances.TryAdd(instanceId, target))
             {
-                if (!RunningInstances.TryAdd(instanceId, target))
-                {
-                    Log.Warning("[InstanceManager] Cannot start a already running instance(Uuid={0})",
-                        target.Config.Uuid);
-                    return null;
-                }
-
-                return target;
+                Log.Warning("[InstanceManager] Cannot start a already running instance(Uuid={0})",
+                    target.Config.Uuid);
+                return null;
             }
 
+            if (await target.StartAsync(ct: ct))
+                return target;
+
+            RunningInstances.TryRemove(instanceId, out _);
             target.OnStatusChanged -= OnInstanceStatusChangedHandler;
             return null;
         }
         catch (Exception e)
         {
+            RunningInstances.TryRemove(instanceId, out _);
             target.Process?.KillProcess();
             Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
             return null;

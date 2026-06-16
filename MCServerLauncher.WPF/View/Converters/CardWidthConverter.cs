@@ -19,14 +19,15 @@ public sealed class CardWidthConverter : IValueConverter
             return MinWidth;
         }
 
-        var usableWidth = Math.Max(0, availableWidth - ReservedWidth);
+        var usableWidth = Math.Floor(Math.Max(0, availableWidth - ReservedWidth));
         if (usableWidth <= MinWidth)
         {
             return MinWidth;
         }
 
         var columns = Math.Max(1, (int)Math.Floor((usableWidth + HorizontalGap) / (MinWidth + HorizontalGap)));
-        return Math.Max(MinWidth, (usableWidth - (columns - 1) * HorizontalGap) / columns);
+        var rowGapWidth = (columns - 1) * HorizontalGap;
+        return Math.Max(MinWidth, Math.Floor((usableWidth - rowGapWidth) / columns));
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

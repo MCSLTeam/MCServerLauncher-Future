@@ -29,6 +29,7 @@ public partial class InstanceManagerViewModel : ObservableObject
 
     [ObservableProperty] private int _selectedDaemonIndex;
     [ObservableProperty] private string _selectedStatusFilter = "All";
+    [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private int _selectedCount;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _errorState;
@@ -105,6 +106,11 @@ public partial class InstanceManagerViewModel : ObservableObject
         {
             SettingsManager.SaveSetting("Instance.AutoRefreshInterval", RefreshIntervalSeconds);
         }
+    }
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilters();
     }
 
     private async Task LoadDaemonInstancesAsync(bool isAutoRefresh = false)
@@ -231,6 +237,12 @@ public partial class InstanceManagerViewModel : ObservableObject
             "Crashed" => filtered.Where(c => c.Status == InstanceStatus.Crashed),
             _ => filtered
         };
+
+        var searchText = SearchText.Trim();
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            filtered = filtered.Where(card => MatchesSearch(card, searchText));
+        }
 
         var filteredList = filtered.ToList();
 
@@ -561,6 +573,23 @@ public partial class InstanceManagerViewModel : ObservableObject
     private static int GetStoredRefreshInterval()
     {
         return SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 5;
+    }
+
+    private static bool MatchesSearch(InstanceCardModel card, string searchText)
+    {
+        return Contains(card.InstanceName, searchText)
+               || Contains(card.InstanceType, searchText)
+               || Contains(card.Version, searchText)
+               || Contains(card.StatusText, searchText)
+               || Contains(card.Status.ToString(), searchText)
+               || Contains(card.InstanceId.ToString(), searchText)
+               || Contains(card.DaemonConfig.FriendlyName, searchText)
+               || Contains(card.DaemonConfig.EndPoint, searchText);
+    }
+
+    private static bool Contains(string? value, string searchText)
+    {
+        return value?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private void PushActionUnavailable(string resourceKey, InstanceCardModel instance)

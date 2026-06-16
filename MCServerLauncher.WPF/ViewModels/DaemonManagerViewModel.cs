@@ -24,8 +24,10 @@ public partial class DaemonManagerViewModel : ObservableObject
     private readonly IDialogService _dialog;
 
     public ObservableCollection<DaemonCardModel> Daemons { get; } = [];
+    public ObservableCollection<DaemonCardModel> FilteredDaemons { get; } = [];
     public IReadOnlyList<RefreshIntervalOption> RefreshIntervalOptions { get; } = RefreshIntervalOptionCatalog.All;
 
+    [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private bool _autoRefreshEnabled = GetStoredRefreshInterval() > 0;
     [ObservableProperty] private int _refreshIntervalSeconds = RefreshIntervalOptionCatalog.Normalize(GetStoredRefreshInterval());
 
@@ -43,6 +45,7 @@ public partial class DaemonManagerViewModel : ObservableObject
     private async Task RefreshAsync()
     {
         Daemons.Clear();
+        FilteredDaemons.Clear();
 
         if (DaemonsListManager.Get is not { Count: > 0 }) return;
 
@@ -60,6 +63,7 @@ public partial class DaemonManagerViewModel : ObservableObject
             connectionTasks.Add(ConnectDaemonInternalAsync(model));
         }
         await Task.WhenAll(connectionTasks);
+        ApplyFilters();
     }
 
     [RelayCommand]
@@ -67,6 +71,7 @@ public partial class DaemonManagerViewModel : ObservableObject
     {
         if (Daemons.Count == 0) return;
         await Task.WhenAll(Daemons.Select(ConnectDaemonInternalAsync));
+        ApplyFilters();
     }
 
     [RelayCommand]
@@ -132,6 +137,7 @@ public partial class DaemonManagerViewModel : ObservableObject
                     DaemonsListManager.RemoveDaemon(originalConfig);
                     DaemonsListManager.AddDaemon(newConfig);
                     ApplyModel(daemon, newModel);
+                    ApplyFilters();
                 }
                 else
                 {
@@ -165,6 +171,7 @@ public partial class DaemonManagerViewModel : ObservableObject
         {
             await _daemonService.RemoveAsync(daemon.Config);
             Daemons.Remove(daemon);
+            ApplyFilters();
             DaemonsListManager.RemoveDaemon(daemon.Config);
             _notification.Push(Lang.Tr["Status_OK"], Lang.Tr["DaemonDeleted"], false, InfoBarSeverity.Success);
         }
@@ -187,14 +194,17 @@ public partial class DaemonManagerViewModel : ObservableObject
             Status = "ing"
         };
         Daemons.Add(model);
+        ApplyFilters();
 
         if (await ConnectDaemonInternalAsync(model))
         {
+            ApplyFilters();
             DaemonsListManager.AddDaemon(config);
             return true;
         }
 
         Daemons.Remove(model);
+        ApplyFilters();
         return false;
     }
 
@@ -221,12 +231,14 @@ public partial class DaemonManagerViewModel : ObservableObject
 
             UpdateResourceUsage(model, systemInfo);
             model.Status = "ok";
+            ApplyFilters();
             return true;
         }
         catch (Exception e)
         {
             Log.Error($"[Daemon] Error connecting to daemon({model.Address}): {e}");
             model.Status = "err";
+            ApplyFilters();
             return false;
         }
     }
@@ -324,6 +336,45 @@ public partial class DaemonManagerViewModel : ObservableObject
         {
             SettingsManager.SaveSetting("Instance.AutoRefreshInterval", RefreshIntervalSeconds);
         }
+    }
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var searchText = SearchText.Trim();
+        var filtered = Daemons.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            filtered = filtered.Where(model => MatchesSearch(model, searchText));
+        }
+
+        FilteredDaemons.Clear();
+        foreach (var model in filtered)
+        {
+            FilteredDaemons.Add(model);
+        }
+    }
+
+    private static bool MatchesSearch(DaemonCardModel model, string searchText)
+    {
+        return Contains(model.FriendlyName, searchText)
+               || Contains(model.Address, searchText)
+               || Contains(model.Status, searchText)
+               || Contains(model.SystemType, searchText)
+               || Contains(model.SystemVersion, searchText)
+               || Contains(model.DaemonVersion, searchText)
+               || Contains(model.Config.FriendlyName, searchText)
+               || Contains(model.Config.EndPoint, searchText)
+               || Contains(model.Config.Port.ToString(), searchText);
+    }
+
+    private static bool Contains(string? value, string searchText)
+    {
+        return value?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private static double CalculateUsagePercentage(ulong total, ulong free)

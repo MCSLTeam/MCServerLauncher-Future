@@ -13,7 +13,7 @@
       Title="InstanceManagerPage">
 
     <ui:Page.Resources>
-        <converters:CardWidthConverter x:Key="InstanceCardWidthConverter" MinWidth="360" HorizontalGap="8" ReservedWidth="20" />
+        <converters:CardWidthConverter x:Key="InstanceCardWidthConverter" MinWidth="360" HorizontalGap="8" />
         <DataTemplate DataType="{x:Type models:InstanceCardModel}">
             <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="220"
                     MinWidth="360"
@@ -197,7 +197,7 @@
                         <TextBlock x:Name="SelectedCountTextBlock"
                                    Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <WrapPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Margin="0,0,10,0" Command="{Binding SelectAllCommand}">
                             <Button.Content>
                                 <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.SelectAll}"
@@ -228,49 +228,48 @@
                                                 Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}}" />
                             </Button.Content>
                         </Button>
-                    </StackPanel>
+                    </WrapPanel>
                 </Grid>
             </Border>
         </Grid>
 
         <Grid Grid.Row="3" Margin="0,10,0,0" x:Name="FilterBar">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <ComboBox Grid.Column="0" MinWidth="70" MaxWidth="150" Margin="0,0,10,0" x:Name="DaemonFilter"
-                      VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="DaemonFilterChanged"
-                      ItemsSource="{Binding DaemonFilterItems}" SelectedIndex="{Binding SelectedDaemonIndex, Mode=TwoWay}"/>
-            <ComboBox Grid.Column="1" Width="120" x:Name="RunningStatusFilter"
-                      VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="RunningStatusFilterChanged">
-                <ComboBoxItem Tag="All" IsSelected="True" Content="{Binding [AllRunningStatus], Source={x:Static i18n:Lang.Tr}}" />
-                <ComboBoxItem Tag="Starting" Content="{Binding [Starting], Source={x:Static i18n:Lang.Tr}}" />
-                <ComboBoxItem Tag="Running" Content="{Binding [Running], Source={x:Static i18n:Lang.Tr}}" />
-                <ComboBoxItem Tag="Stopping" Content="{Binding [Stopping], Source={x:Static i18n:Lang.Tr}}" />
-                <ComboBoxItem Tag="Stopped" Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}}" />
-                <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
-            </ComboBox>
-            <ui:ToggleSwitch Grid.Column="3" MinWidth="96" Margin="0,0,10,0"
-                             OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
-                             OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
-                             IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
-            <ComboBox Grid.Column="4" Width="90" Margin="0,0,10,0"
-                      ItemsSource="{Binding RefreshIntervalOptions}"
-                      DisplayMemberPath="Display"
-                      SelectedValuePath="Seconds"
-                      SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
-            <TextBox Grid.Column="5" MaxWidth="400" MinWidth="120" Margin="0,0,10,0" x:Name="SearchTextBox" ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
-            <Button Grid.Column="6" Height="32" x:Name="RefreshButton" Command="{Binding RefreshCommand}">
-                <Button.Content>
-                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}"
-                                    Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
-                </Button.Content>
-            </Button>
+            <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <ComboBox MinWidth="70" MaxWidth="150" Margin="0,0,10,8" x:Name="DaemonFilter"
+                          VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="DaemonFilterChanged"
+                          ItemsSource="{Binding DaemonFilterItems}" SelectedIndex="{Binding SelectedDaemonIndex, Mode=TwoWay}"/>
+                <ComboBox Width="120" Margin="0,0,10,8" x:Name="RunningStatusFilter"
+                          VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="RunningStatusFilterChanged">
+                    <ComboBoxItem Tag="All" IsSelected="True" Content="{Binding [AllRunningStatus], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Starting" Content="{Binding [Starting], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Running" Content="{Binding [Running], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Stopping" Content="{Binding [Stopping], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Stopped" Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
+                </ComboBox>
+                <ui:ToggleSwitch MinWidth="96" Margin="0,0,10,8"
+                                 OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
+                                 OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
+                                 IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
+                <ComboBox Width="90" Margin="0,0,10,8"
+                          ItemsSource="{Binding RefreshIntervalOptions}"
+                          DisplayMemberPath="Display"
+                          SelectedValuePath="Seconds"
+                          SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
+                <TextBox Width="220" MaxWidth="400" MinWidth="120" Margin="0,0,10,8" x:Name="SearchTextBox"
+                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
+                <Button Height="32" Margin="0,0,0,8" x:Name="RefreshButton" Command="{Binding RefreshCommand}">
+                    <Button.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Sync}"
+                                        Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button.Content>
+                </Button>
+            </WrapPanel>
         </Grid>
         <ui:ScrollViewerEx Grid.Row="4" Margin="0,15,0,0">
             <Grid>
