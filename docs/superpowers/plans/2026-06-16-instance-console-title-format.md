@@ -24,6 +24,7 @@
 - [x] Subscribe to report updates so the title follows later instance name changes.
 - [x] Verify with WPF build and `git diff --check`.
 - [x] Render the in-window title as `ConsoleTitle  [instance icon] instance name  [node icon] node name`.
+- [x] Set the in-window title icons and dynamic instance/node names to `Opacity="0.615"`.
 
 ## Changelog
 
@@ -31,5 +32,6 @@
 - The title format is `ConsoleTitle - instance name - daemon friendly name [ws(s)://host:port]`; in Chinese this displays as `控制台 - 实例名称 - 宿主机 [地址]`.
 - The title format was revised to `ConsoleTitle - Instance [instance name] - Node [node name]`; in Chinese this displays as `控制台 - 实例 [实例名称] - 节点 [节点名称]`.
 - The in-window title was revised to `ConsoleTitle  [Package icon] instance name  [ThisPC icon] node name`, matching the main navigation icons for instance management and remote node management.
+- The in-window title icons and dynamic instance/node names now use `Opacity="0.615"` so the console label keeps the primary visual weight.
 - The title is refreshed after initial instance data loading and whenever the instance report updates, so later instance name changes can be reflected.
 - Verified with WPF build using an isolated output directory and `git diff --check`.

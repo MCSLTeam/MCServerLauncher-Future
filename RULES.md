@@ -16,7 +16,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 - Keep nullable reference types warning-clean in changed C# projects.
 - Prefer existing patterns, helpers, project boundaries, and naming.
 - Keep edits scoped to the task and update docs when behavior or vocabulary changes.
-- Before every commit, run the full protocol test suite and ensure `MCServerLauncher.ProtocolTests` passes.
+- Before every commit, run `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build` and ensure `MCServerLauncher.ProtocolTests` passes.
 - Run `git diff --check` before finishing.
 
 ## Domain Rules
@@ -68,7 +68,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 ## Tests And Benchmarks
 
 - Protocol behavior changes need protocol tests.
-- Every commit requires the full `MCServerLauncher.ProtocolTests` suite to pass, even when the task only changes non-protocol code.
+- Every commit requires `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build` to pass, even when the task only changes non-protocol code.
 - Performance-sensitive serialization or transport work needs a benchmark update or a clear reason why existing coverage is sufficient.
 - Existing known test warnings may be reported, but new warnings should be fixed in touched code.
 

@@ -37,18 +37,22 @@
                            Text="{Binding [ConsoleTitle], Source={x:Static i18n:Lang.Tr}}" />
                 <ui:FontIcon Margin="18,1,6,0"
                              Icon="{x:Static ui:SegoeFluentIcons.Package}"
-                             FontSize="15" />
+                             FontSize="15"
+                             Opacity="0.615" />
                 <TextBlock x:Name="InstanceTitleText"
                            FontWeight="Medium"
                            TextTrimming="CharacterEllipsis"
-                           MaxWidth="260" />
+                           MaxWidth="260"
+                           Opacity="0.615" />
                 <ui:FontIcon Margin="18,1,6,0"
                              Icon="{x:Static ui:SegoeFluentIcons.ThisPC}"
-                             FontSize="15" />
+                             FontSize="15"
+                             Opacity="0.615" />
                 <TextBlock x:Name="NodeTitleText"
                            FontWeight="Medium"
                            TextTrimming="CharacterEllipsis"
-                           MaxWidth="260" />
+                           MaxWidth="260"
+                           Opacity="0.615" />
             </StackPanel>
         </Grid>
         <ui:NavigationView x:Name="NavView"
