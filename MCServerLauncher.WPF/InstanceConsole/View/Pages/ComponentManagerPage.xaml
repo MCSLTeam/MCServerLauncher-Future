@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
       xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
+      xmlns:ge="clr-namespace:MCServerLauncher.WPF.View.Components.Generic"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="ComponentManagerPage"
@@ -24,11 +25,34 @@
 
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SupportsComponents}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
             <Button Command="{Binding AddComponentCommand}" Margin="0,0,8,0">
                 <StackPanel Orientation="Horizontal">
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}" FontSize="14" Margin="0,0,6,0" />
-                    <TextBlock Text="{Binding [ComponentManager_Add], Source={x:Static i18n:Lang.Tr}}" />
+                    <TextBlock Text="{Binding AddComponentText}" />
                 </StackPanel>
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                        <Setter Property="IsEnabled" Value="True" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SupportsComponents}" Value="False">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsCurrentTabSupported}" Value="False">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
             </Button>
             <Button Command="{Binding RefreshCommand}" Margin="0,0,8,0">
                 <StackPanel Orientation="Horizontal">
@@ -41,13 +65,33 @@
         <!-- Tab Control -->
         <TabControl Grid.Row="1"
                     FontSize="24"
-                    Style="{StaticResource TabControlPivotStyle}"
                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+            <TabControl.Style>
+                <Style TargetType="TabControl" BasedOn="{StaticResource TabControlPivotStyle}">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SupportsComponents}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TabControl.Style>
             <!-- Mods Tab -->
             <TabItem Header="{Binding [Mods], Source={x:Static i18n:Lang.Tr}}"
                      IsEnabled="{Binding HasMods}">
+                <Grid>
                 <ui:ListView Margin="0,15,0,0"
                              ItemsSource="{Binding Mods}">
+                    <ui:ListView.Style>
+                        <Style TargetType="ui:ListView">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCurrentTabEmpty}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:ListView.Style>
                     <ui:ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Height="40" Margin="0,2">
@@ -135,13 +179,42 @@
                         </DataTemplate>
                     </ui:ListView.ItemTemplate>
                 </ui:ListView>
+                <ge:StopTipLayer Symbol="📦"
+                                 StopTip="{Binding [NothingHere], Source={x:Static i18n:Lang.Tr}}"
+                                 StopDescription="{Binding [ComponentManager_EmptyMods], Source={x:Static i18n:Lang.Tr}}"
+                                 ButtonText="{Binding [ComponentManager_AddMod], Source={x:Static i18n:Lang.Tr}}"
+                                 ButtonIcon="{x:Static ui:SegoeFluentIcons.AddTo}"
+                                 ButtonCommand="{Binding AddComponentCommand}">
+                    <ge:StopTipLayer.Style>
+                        <Style TargetType="ge:StopTipLayer">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCurrentTabEmpty}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ge:StopTipLayer.Style>
+                </ge:StopTipLayer>
+                </Grid>
             </TabItem>
 
             <!-- Plugins Tab -->
             <TabItem Header="{Binding [Plugins], Source={x:Static i18n:Lang.Tr}}"
                      IsEnabled="{Binding HasPlugins}">
+                <Grid>
                 <ui:ListView Margin="0,15,0,0"
                              ItemsSource="{Binding Plugins}">
+                    <ui:ListView.Style>
+                        <Style TargetType="ui:ListView">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCurrentTabEmpty}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:ListView.Style>
                     <ui:ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Height="40" Margin="0,2">
@@ -226,8 +299,45 @@
                         </DataTemplate>
                     </ui:ListView.ItemTemplate>
                 </ui:ListView>
+                <ge:StopTipLayer Symbol="🧩"
+                                 StopTip="{Binding [NothingHere], Source={x:Static i18n:Lang.Tr}}"
+                                 StopDescription="{Binding [ComponentManager_EmptyPlugins], Source={x:Static i18n:Lang.Tr}}"
+                                 ButtonText="{Binding [ComponentManager_AddPlugin], Source={x:Static i18n:Lang.Tr}}"
+                                 ButtonIcon="{x:Static ui:SegoeFluentIcons.AddTo}"
+                                 ButtonCommand="{Binding AddComponentCommand}">
+                    <ge:StopTipLayer.Style>
+                        <Style TargetType="ge:StopTipLayer">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCurrentTabEmpty}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ge:StopTipLayer.Style>
+                </ge:StopTipLayer>
+                </Grid>
             </TabItem>
         </TabControl>
+
+        <ge:StopTipLayer Grid.Row="1"
+                         Symbol="🧰"
+                         StopTip="{Binding [FuncDisabled], Source={x:Static i18n:Lang.Tr}}"
+                         StopDescription="{Binding [ComponentManager_Unsupported], Source={x:Static i18n:Lang.Tr}}"
+                         ButtonText="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}"
+                         ButtonIcon="{x:Static ui:SegoeFluentIcons.Refresh}"
+                         ButtonCommand="{Binding RefreshCommand}">
+            <ge:StopTipLayer.Style>
+                <Style TargetType="ge:StopTipLayer">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SupportsComponents}" Value="False">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ge:StopTipLayer.Style>
+        </ge:StopTipLayer>
 
         <!-- Loading overlay -->
         <Grid Grid.Row="0" Grid.RowSpan="2"

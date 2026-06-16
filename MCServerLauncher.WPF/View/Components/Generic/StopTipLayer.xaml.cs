@@ -1,5 +1,6 @@
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using iNKORE.UI.WPF.Modern.Controls;
+using System.Windows.Input;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -61,6 +62,24 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         {
             get => (FontIconData)GetValue(ButtonIconProperty);
             set => SetValue(ButtonIconProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonCommandProperty =
+            DependencyProperty.Register(nameof(ButtonCommand), typeof(ICommand), typeof(StopTipLayer), new PropertyMetadata(default(ICommand)));
+
+        public ICommand ButtonCommand
+        {
+            get => (ICommand)GetValue(ButtonCommandProperty);
+            set => SetValue(ButtonCommandProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonCommandParameterProperty =
+            DependencyProperty.Register(nameof(ButtonCommandParameter), typeof(object), typeof(StopTipLayer), new PropertyMetadata(default(object)));
+
+        public object ButtonCommandParameter
+        {
+            get => GetValue(ButtonCommandParameterProperty);
+            set => SetValue(ButtonCommandParameterProperty, value);
         }
 
         private static void OnButtonContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

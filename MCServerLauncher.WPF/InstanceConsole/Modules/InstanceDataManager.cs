@@ -60,6 +60,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// Check if daemon is connected
         /// </summary>
         public bool IsConnected => _daemon != null && _daemon.Online;
+        public IDaemon? CurrentDaemon => _daemon;
 
         /// <summary>
         /// Check if current instance is a Minecraft server

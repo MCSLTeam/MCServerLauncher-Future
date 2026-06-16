@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -30,11 +30,21 @@ public partial class ComponentManagerViewModel : ObservableObject
     [ObservableProperty] private bool _hasPlugins;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private int _selectedTabIndex;
+    [ObservableProperty] private bool _supportsComponents;
 
     public ComponentManagerViewModel(INotificationService notification)
     {
         _notification = notification;
+        Mods.CollectionChanged += OnComponentCollectionChanged;
+        Plugins.CollectionChanged += OnComponentCollectionChanged;
     }
+
+    public bool IsCurrentTabEmpty => SupportsComponents && IsCurrentTabSupported && CurrentItems.Count == 0;
+    public bool IsCurrentTabSupported => SelectedTabIndex == 0 ? HasMods : HasPlugins;
+    public string AddComponentText => SelectedTabIndex == 1
+        ? Lang.Tr["ComponentManager_AddPlugin"]
+        : Lang.Tr["ComponentManager_AddMod"];
+    public ObservableCollection<ComponentItemModel> CurrentItems => SelectedTabIndex == 1 ? Plugins : Mods;
 
     public async Task InitializeAsync()
     {
@@ -72,27 +82,22 @@ public partial class ComponentManagerViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            HasMods = await DirectoryExistsAsync($"{_instanceRoot}/mods");
-            HasPlugins = await DirectoryExistsAsync($"{_instanceRoot}/plugins");
+            var result = await ComponentScanner.ScanAsync(_daemon, InstanceDataManager.Instance.InstanceId);
+            HasMods = result.HasMods;
+            HasPlugins = result.HasPlugins;
+            SupportsComponents = result.SupportsComponents;
 
             Mods.Clear();
             Plugins.Clear();
 
-            if (HasMods)
-            {
-                var items = await LoadComponentsAsync("mods", ComponentKind.Mod);
-                foreach (var item in items) Mods.Add(item);
-            }
-
-            if (HasPlugins)
-            {
-                var items = await LoadComponentsAsync("plugins", ComponentKind.Plugin);
-                foreach (var item in items) Plugins.Add(item);
-            }
+            foreach (var item in result.Mods) Mods.Add(item);
+            foreach (var item in result.Plugins) Plugins.Add(item);
 
             // Auto-select first available tab
             if (HasMods) SelectedTabIndex = 0;
             else if (HasPlugins) SelectedTabIndex = 1;
+            else SelectedTabIndex = 0;
+            OnTabStateChanged();
         }
         catch (Exception ex)
         {
@@ -105,100 +110,14 @@ public partial class ComponentManagerViewModel : ObservableObject
         }
     }
 
-    private async Task<bool> DirectoryExistsAsync(string path)
-    {
-        if (_daemon == null) return false;
-        try
-        {
-            await _daemon.GetDirectoryInfoAsync(path);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private async Task<List<ComponentItemModel>> LoadComponentsAsync(string folder, ComponentKind kind)
-    {
-        var result = new List<ComponentItemModel>();
-        if (_daemon == null) return result;
-
-        var folderPath = $"{_instanceRoot}/{folder}";
-        var (_, files, _) = await _daemon.GetDirectoryInfoAsync(folderPath);
-
-        foreach (var file in files)
-        {
-            var name = file.Name;
-            var lower = name.ToLowerInvariant();
-            bool isJar = lower.EndsWith(".jar") || lower.EndsWith(".jar.disabled");
-            if (!isJar) continue;
-
-            bool isEnabled = !lower.EndsWith(".disabled");
-            var item = new ComponentItemModel
-            {
-                FileName = name,
-                VirtualPath = $"{folderPath}/{name}",
-                IsEnabled = isEnabled,
-                Kind = kind,
-                FileSize = file.Meta.Size
-            };
-
-            // Try parse metadata for enabled jars (disabled also try by stripping suffix)
-            var metadata = await TryDownloadAndParseAsync(item.VirtualPath, name);
-            if (metadata != null)
-            {
-                item.DisplayName = metadata.DisplayName;
-                item.Version = metadata.Version;
-                item.IsClientSideOnly = metadata.IsClientSideOnly;
-            }
-
-            result.Add(item);
-        }
-
-        return result;
-    }
-
-    private async Task<JarMetadata?> TryDownloadAndParseAsync(string virtualPath, string fileName)
-    {
-        if (_daemon == null) return null;
-
-        var tempPath = Path.Combine(Path.GetTempPath(), $"mcsl_jar_{Guid.NewGuid():N}_{fileName}");
-        try
-        {
-            var ctx = await _daemon.DownloadFileAsync(virtualPath, tempPath, 1024 * 1024);
-            if (ctx.NetworkLoadTask != null) await ctx.NetworkLoadTask;
-            return JarMetadataParser.Parse(tempPath);
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "[ComponentManager] Failed to download/parse {0}", virtualPath);
-            return null;
-        }
-        finally
-        {
-            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { /* ignore */ }
-        }
-    }
-
     [RelayCommand]
     private async Task ToggleEnabledAsync(ComponentItemModel? item)
     {
         if (item == null || _daemon == null) return;
         try
         {
-            string newName = item.IsEnabled
-                ? item.FileName + ".disabled"
-                : item.FileName.EndsWith(".disabled")
-                    ? item.FileName.Substring(0, item.FileName.Length - ".disabled".Length)
-                    : item.FileName;
-
-            await _daemon.RenameFileAsync(item.VirtualPath, newName);
-
-            var folderPath = item.VirtualPath.Substring(0, item.VirtualPath.LastIndexOf('/'));
-            item.FileName = newName;
-            item.VirtualPath = $"{folderPath}/{newName}";
-            item.IsEnabled = !item.IsEnabled;
+            if (item.IsEnabled) await ComponentScanner.DisableAsync(_daemon, item);
+            else await ComponentScanner.EnableAsync(_daemon, item);
 
             _notification.Push(Lang.Tr["Success"],
                 item.IsEnabled ? Lang.Tr["ComponentManager_Enabled"] : Lang.Tr["ComponentManager_Disabled"],
@@ -249,6 +168,7 @@ public partial class ComponentManagerViewModel : ObservableObject
             await _daemon.DeleteFileAsync(item.VirtualPath);
             if (item.Kind == ComponentKind.Mod) Mods.Remove(item);
             else Plugins.Remove(item);
+            OnTabStateChanged();
 
             _notification.Push(Lang.Tr["Success"], Lang.Tr["ComponentManager_Deleted"],
                 false, InfoBarSeverity.Success);
@@ -315,6 +235,39 @@ public partial class ComponentManagerViewModel : ObservableObject
         if (HasMods) return ("mods", ComponentKind.Mod);
         if (HasPlugins) return ("plugins", ComponentKind.Plugin);
         return (null, ComponentKind.Mod);
+    }
+
+    partial void OnSelectedTabIndexChanged(int value)
+    {
+        OnTabStateChanged();
+    }
+
+    partial void OnHasModsChanged(bool value)
+    {
+        OnTabStateChanged();
+    }
+
+    partial void OnHasPluginsChanged(bool value)
+    {
+        OnTabStateChanged();
+    }
+
+    partial void OnSupportsComponentsChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsCurrentTabEmpty));
+    }
+
+    private void OnTabStateChanged()
+    {
+        OnPropertyChanged(nameof(IsCurrentTabEmpty));
+        OnPropertyChanged(nameof(IsCurrentTabSupported));
+        OnPropertyChanged(nameof(AddComponentText));
+        OnPropertyChanged(nameof(CurrentItems));
+    }
+
+    private void OnComponentCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnTabStateChanged();
     }
 
     private async Task UploadFilesAsync(string[] localPaths, string folder, ComponentKind kind)
