@@ -4,6 +4,7 @@ using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.InstanceConsole.ViewModels;
 using MCServerLauncher.WPF.InstanceConsole.View.Pages;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.View.Components.Generic;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
         private readonly Page _eventTrigger = new EventTriggerPage();
         private readonly Page _fileManager = new FileManagerPage();
         private readonly Page _instanceSettings = new InstanceSettingsPage();
+        private readonly NotificationContainer _notificationContainer = new();
 
         private Constants.DaemonConfigModel? _daemonConfig;
         private Guid _instanceId;
@@ -31,6 +33,9 @@ namespace MCServerLauncher.WPF.InstanceConsole
         public Window()
         {
             InitializeComponent();
+            NotificationContainer.Register(this, _notificationContainer);
+            RootGrid.Children.Add(_notificationContainer);
+            System.Windows.Controls.Grid.SetRow(_notificationContainer, 1);
             Loaded += Window_Loaded;
             Closing += Window_Closing;
         }
@@ -199,6 +204,7 @@ namespace MCServerLauncher.WPF.InstanceConsole
                 }
 
                 InstanceDataManager.Instance.ReportUpdated -= OnInstanceReportUpdated;
+                NotificationContainer.Unregister(this);
                 
                 await InstanceDataManager.Instance.DisposeAsync();
                 Log.Information("[InstanceConsole] Window closed");

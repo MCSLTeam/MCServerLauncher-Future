@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using System.Collections.Generic;
+using System.Linq;
 using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.Components.Generic
@@ -18,9 +19,10 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         private static NotificationContainer? _instance;
         private const int notificationMargin = 5;
         private const int animationDuration = 200;
+        private static readonly Dictionary<Window, NotificationContainer> RegisteredContainers = new();
         
         // 为每个位置创建单独的面板集合
-        private Dictionary<Constants.InfoBarPosition, SimpleStackPanel> _positionPanels = new Dictionary<Constants.InfoBarPosition, SimpleStackPanel>();
+        private readonly Dictionary<Constants.InfoBarPosition, SimpleStackPanel> _positionPanels = new();
 
         public static NotificationContainer Instance
         {
@@ -31,10 +33,50 @@ namespace MCServerLauncher.WPF.View.Components.Generic
             }
         }
 
-        private NotificationContainer()
+        public NotificationContainer()
         {
             InitializeComponent();
             InitializePanels();
+        }
+
+        public static void Register(Window owner, NotificationContainer container)
+        {
+            RegisteredContainers[owner] = container;
+            owner.Closed -= OnRegisteredOwnerClosed;
+            owner.Closed += OnRegisteredOwnerClosed;
+        }
+
+        public static void Unregister(Window owner)
+        {
+            RegisteredContainers.Remove(owner);
+            owner.Closed -= OnRegisteredOwnerClosed;
+        }
+
+        public static NotificationContainer ResolveForActiveWindow()
+        {
+            var activeWindow = Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(window => window.IsActive);
+            if (activeWindow != null && RegisteredContainers.TryGetValue(activeWindow, out var activeContainer))
+            {
+                return activeContainer;
+            }
+
+            var mainWindow = Application.Current?.MainWindow;
+            if (mainWindow != null && RegisteredContainers.TryGetValue(mainWindow, out var mainContainer))
+            {
+                return mainContainer;
+            }
+
+            return Instance;
+        }
+
+        private static void OnRegisteredOwnerClosed(object? sender, EventArgs e)
+        {
+            if (sender is Window window)
+            {
+                Unregister(window);
+            }
         }
         
         private void InitializePanels()

@@ -25,6 +25,7 @@ namespace MCServerLauncher.WPF
         private Page? _resDownload;
         private Page? _help;
         private Page? _settings;
+        private readonly NotificationContainer _notificationContainer = NotificationContainer.Instance;
 
         public MainWindow()
         {
@@ -53,8 +54,9 @@ namespace MCServerLauncher.WPF
             _settings = new SettingsPage();
 
             DownloadHistoryFlyout.Content = DownloadHistoryFlyoutContent.Instance;
-            GlobalGrid.Children.Add(NotificationContainer.Instance);
-            Grid.SetRow(NotificationContainer.Instance, 1);
+            NotificationContainer.Register(this, _notificationContainer);
+            GlobalGrid.Children.Add(_notificationContainer);
+            Grid.SetRow(_notificationContainer, 1);
             SetupView.Visibility = Visibility.Hidden;
             CurrentPage.Navigate(_home, new DrillInNavigationTransitionInfo());
             await Task.Delay(1500);

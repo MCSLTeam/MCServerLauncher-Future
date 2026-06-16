@@ -37,6 +37,7 @@ namespace MCServerLauncher.WPF.Modules
         {
             #region InfoBarBase
             if (string.IsNullOrEmpty(title)) title = Lang.Tr["Tip"];
+            var targetContainer = NotificationContainer.ResolveForActiveWindow();
             InfoBar infoBar = new()
             {
                 Title = title,
@@ -90,13 +91,13 @@ namespace MCServerLauncher.WPF.Modules
                 {
                     button.Click += (s, e) =>
                     {
-                        NotificationContainer.Instance.RemoveNotification(infoBar);
+                        targetContainer.RemoveNotification(infoBar);
                     };
                 }
             }
             #endregion
 
-            NotificationContainer.Instance.AddNotification(infoBar, position, durationMs);
+            targetContainer.AddNotification(infoBar, position, durationMs);
             if (systemNotify)
             {
                 ShowSystemNotification(title, message, severity);

@@ -17,7 +17,7 @@
         MinWidth="330"
         Height="700"
         Width="1000">
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
