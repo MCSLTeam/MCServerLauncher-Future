@@ -26,14 +26,27 @@ public class SlpClient
     {
         if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port));
 
-        var client = new SlpClient();
-        if (!await client.HandShakeAsync(host, (ushort)port, cancellationToken)) return null;
+        try
+        {
+            var client = new SlpClient();
+            if (!await client.HandShakeAsync(host, (ushort)port, cancellationToken)) return null;
 
-        var payload = await client.GetSlpAsync(cancellationToken);
-        var latency = await client.GetLatencyAsync(cancellationToken);
+            var payload = await client.GetSlpAsync(cancellationToken);
+            if (payload is null) return null;
 
-        if (payload != null && latency != null) return new SlpStatus(payload, latency.Value);
-        return null;
+            var latency = await client.GetLatencyAsync(cancellationToken);
+
+            return latency != null ? new SlpStatus(payload, latency.Value) : null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e) when (e is SocketException or IOException)
+        {
+            Log.Debug(e, "[SlpClient] Modern server ping failed for {Host}:{Port}", host, port);
+            return null;
+        }
     }
 
     /// <summary>

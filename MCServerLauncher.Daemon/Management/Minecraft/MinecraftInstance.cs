@@ -1,7 +1,7 @@
-using System.Net.Sockets;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Common.Network;
 using MCServerLauncher.Common.ProtoType.Instance;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Minecraft;
 
@@ -43,8 +43,13 @@ public class MinecraftInstance : InstanceBase
                 if (status != null)
                     return status.Payload.Players.Sample.Select(player => new Player(player.Name, player.Id)).ToArray();
             }
-            catch (Exception e)when (e is SocketException or ArgumentOutOfRangeException or ArgumentException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
+                throw;
+            }
+            catch (Exception e)
+            {
+                Log.Debug(e, "[MinecraftInstance] Failed to query server player list for instance {InstanceId}", Config.Uuid);
                 return [];
             }
 
