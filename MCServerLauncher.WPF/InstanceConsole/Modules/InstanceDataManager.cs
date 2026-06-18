@@ -296,14 +296,14 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             try
             {
                 if (_isDisposed || _daemon == null || !_daemon.Online)
-                    return new();
+                    throw new InvalidOperationException("Daemon is offline or unavailable.");
 
                 return await _daemon.GetEventRulesAsync(_instanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to get event rules");
-                return new();
+                throw;
             }
         }
 
