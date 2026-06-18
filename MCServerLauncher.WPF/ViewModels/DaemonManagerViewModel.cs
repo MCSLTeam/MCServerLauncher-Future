@@ -216,7 +216,7 @@ public partial class DaemonManagerViewModel : ObservableObject
             if (daemon == null)
             {
                 model.Status = "err";
-                model.MarkResourceLoadFailed();
+                model.MarkResourceLoadFailed(Lang.Tr["ConnectDaemonFailedSubTip"]);
                 return false;
             }
 
@@ -231,6 +231,7 @@ public partial class DaemonManagerViewModel : ObservableObject
             }
 
             UpdateResourceUsage(model, systemInfo);
+            model.LastErrorMessage = string.Empty;
             model.Status = "ok";
             ApplyFilters();
             return true;
@@ -239,7 +240,7 @@ public partial class DaemonManagerViewModel : ObservableObject
         {
             Log.Error($"[Daemon] Error connecting to daemon({model.Address}): {e}");
             model.Status = "err";
-            model.MarkResourceLoadFailed();
+            model.MarkResourceLoadFailed(e.Message);
             ApplyFilters();
             return false;
         }

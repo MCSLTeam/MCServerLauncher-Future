@@ -65,9 +65,17 @@
                         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_SystemVersion], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,10,3" />
                         <TextBlock Style="{StaticResource MinititleTextBlock}" Text="{Binding [Daemon_DaemonVersion], Source={x:Static i18n:Lang.Tr}}" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,10,3" />
                         <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding Address}" ToolTip="{Binding Address}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,3,0,3" />
-                        <ContentControl Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,0,3">
-                            <ContentControl.Style>
-                                <Style TargetType="ContentControl">
+                        <Button Grid.Column="1" Grid.Row="1" Tag="{Binding}" Click="ShowDaemonErrorButton_Click"
+                                HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,3,0,3"
+                                Padding="0" Background="Transparent" BorderThickness="0" IsEnabled="False">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.HangUp}" Content="{Binding [Connecting], Source={x:Static i18n:Lang.Tr}}" IsTabStop="False" VerticalAlignment="Top" />
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="IsEnabled" Value="False" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Status}" Value="ok">
                                             <Setter Property="Content">
@@ -77,6 +85,7 @@
                                             </Setter>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding Status}" Value="err">
+                                            <Setter Property="IsEnabled" Value="True" />
                                             <Setter Property="Content">
                                                 <Setter.Value>
                                                     <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Error}" Content="{Binding [Status_Error], Source={x:Static i18n:Lang.Tr}}" IsTabStop="False" VerticalAlignment="Top" />
@@ -92,8 +101,8 @@
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </ContentControl.Style>
-                        </ContentControl>
+                            </Button.Style>
+                        </Button>
                         <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding SystemVersion}" ToolTip="{Binding SystemVersion}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Grid.Column="1" Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,3,0,3" />
                         <TextBlock Style="{StaticResource BodyTextBlock}" Text="{Binding DaemonVersion}" ToolTip="{Binding DaemonVersion}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Grid.Column="1" Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,3,0,3" />
                     </Grid>

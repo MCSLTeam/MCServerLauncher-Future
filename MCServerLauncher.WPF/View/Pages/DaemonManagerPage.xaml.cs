@@ -1,5 +1,6 @@
 using MCServerLauncher.WPF.ViewModels;
 using MCServerLauncher.WPF.ViewModels.Models;
+using iNKORE.UI.WPF.Modern.Controls;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -80,6 +81,24 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 await _viewModel.DeleteDaemonCommand.ExecuteAsync(daemon);
             }
+        }
+
+        private async void ShowDaemonErrorButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button { Tag: DaemonCardModel daemon }) return;
+
+            var dialog = new ContentDialog
+            {
+                Title = Modules.Lang.Tr["ConnectDaemonFailedTip"],
+                Content = string.IsNullOrWhiteSpace(daemon.LastErrorMessage)
+                    ? Modules.Lang.Tr["ConnectDaemonFailedSubTip"]
+                    : daemon.LastErrorMessage,
+                CloseButtonText = Modules.Lang.Tr["OK"],
+                DefaultButton = ContentDialogButton.Close
+            };
+
+            try { await dialog.ShowAsync(); }
+            catch { }
         }
 
         public Task OpenAddConnectionAsync()

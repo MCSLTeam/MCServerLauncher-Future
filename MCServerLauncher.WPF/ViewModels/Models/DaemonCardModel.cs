@@ -19,11 +19,13 @@ public partial class DaemonCardModel : ObservableObject
     [ObservableProperty] private string _systemVersion = Lang.Tr["Status_NotLoaded"];
     [ObservableProperty] private string _daemonVersion = Lang.Tr["Status_NotLoaded"];
     [ObservableProperty] private string _driveUsageTooltip = Lang.Tr["Status_NotLoaded"];
+    [ObservableProperty] private string _lastErrorMessage = string.Empty;
 
     public required Constants.DaemonConfigModel Config { get; set; }
 
-    public void MarkResourceLoadFailed()
+    public void MarkResourceLoadFailed(string errorMessage)
     {
+        LastErrorMessage = errorMessage;
         CpuUsage = 0;
         MemoryUsage = 0;
         DriveUsage = 0;
