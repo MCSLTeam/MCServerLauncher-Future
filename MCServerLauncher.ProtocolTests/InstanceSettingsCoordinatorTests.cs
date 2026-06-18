@@ -54,7 +54,7 @@ public class InstanceSettingsCoordinatorTests
         var manager = new InstanceManager();
         var config = CreateConfig(InstanceType.MCJava);
         var startGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var instance = new FakeInstance(config, InstanceStatus.Starting, startGate);
+        var instance = new FakeInstance(config, InstanceStatus.Running, startGate);
         manager.Instances[config.Uuid] = instance;
 
         var startTask = manager.TryStartInstance(config.Uuid);
@@ -67,6 +67,18 @@ public class InstanceSettingsCoordinatorTests
 
         Assert.Same(instance, started);
         Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
+    }
+
+    [Fact]
+    public void InstanceStatus_ContainsOnlyStableLifecycleStates()
+    {
+        var names = Enum.GetNames<InstanceStatus>();
+
+        Assert.DoesNotContain("Starting", names);
+        Assert.DoesNotContain("Stopping", names);
+        Assert.Contains("Running", names);
+        Assert.Contains("Stopped", names);
+        Assert.Contains("Crashed", names);
     }
 
     private static InstanceConfig CreateConfig(InstanceType type)

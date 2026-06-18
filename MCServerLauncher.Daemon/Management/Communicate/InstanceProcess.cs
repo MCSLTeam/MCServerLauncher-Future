@@ -58,8 +58,6 @@ public class InstanceProcess : DisposableObject
 
     public async Task<bool> StartAsync(int delayToCheck = 500)
     {
-        ChangeStatus(InstanceStatus.Starting);
-
         var fileName = _process.StartInfo.FileName;
         _process.Start();
         _process.BeginOutputReadLine();
@@ -140,7 +138,7 @@ public class InstanceProcess : DisposableObject
         {
             _monitor = new AsyncTimedLazyCell<(long Memory, double Cpu)>(() =>
             {
-                if (process.Status is InstanceStatus.Running or InstanceStatus.Starting)
+                if (process.Status == InstanceStatus.Running)
                 {
                     if (process.ServerProcessId != -1 && !process.HasExit)
                         return ProcessInfo.GetProcessUsageAsync(process.ServerProcessId);
@@ -159,8 +157,6 @@ public class InstanceProcess : DisposableObject
 
                     if (DonePattern.IsMatch(msg.TrimEnd()))
                         process.ChangeStatus(InstanceStatus.Running);
-                    else if (msg.Contains("Stopping the server"))
-                        process.ChangeStatus(InstanceStatus.Stopping);
                     else if (msg.Contains("Minecraft has crashed")) process.ChangeStatus(InstanceStatus.Crashed);
                 };
             else

@@ -32,7 +32,7 @@ public static class InstanceCommand
                     async (id, ct) =>
                     {
                         if (manager.Instances.TryGetValue(id, out var inst))
-                            if (inst.Status is InstanceStatus.Running or InstanceStatus.Starting)
+                            if (inst.Status == InstanceStatus.Running)
                                 infos.TryAdd(id, await ProcessInfo.GetProcessUsageAsync(inst.ServerProcessId));
                     }).Wait();
 
@@ -64,7 +64,7 @@ public static class InstanceCommand
         source.SendFeedback(" - {0} ({1})", instance.Config.Name, instance.Config.Uuid);
         source.SendFeedback("   - 状态: {0}", instance.Status.ToString());
 
-        if (showInfo && instance.Status is InstanceStatus.Running or InstanceStatus.Starting)
+        if (showInfo && instance.Status == InstanceStatus.Running)
         {
             source.SendFeedback("   - PID: {0}", instance.ServerProcessId);
             if (instance.TryCastTo<MinecraftInstance>(out var mcInstance))
