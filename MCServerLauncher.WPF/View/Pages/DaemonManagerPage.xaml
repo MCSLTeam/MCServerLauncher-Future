@@ -16,7 +16,7 @@
         <DataTemplate DataType="{x:Type models:DaemonCardModel}">
             <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top"
                     MinWidth="390"
-                    Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ui:GridView}}, Converter={StaticResource DaemonCardWidthConverter}}">
+                    Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}, Converter={StaticResource DaemonCardWidthConverter}}">
                 <Grid Margin="16,14,16,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -196,8 +196,15 @@
             </WrapPanel>
         </Grid>
         <ui:ScrollViewerEx Grid.Row="3" Grid.Column="0" Margin="0,10,35,0">
-            <ui:GridView x:Name="DaemonCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsSelectionEnabled="False" Padding="0,0,0,15"
-                         ItemsSource="{Binding FilteredDaemons}" />
+            <ItemsControl x:Name="DaemonCardItemsControl"
+                          ItemsSource="{Binding FilteredDaemons}"
+                          Margin="0,0,0,15">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
         </ui:ScrollViewerEx>
     </Grid>
 </ui:Page>

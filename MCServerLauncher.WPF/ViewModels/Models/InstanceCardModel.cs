@@ -16,7 +16,6 @@ public partial class InstanceCardModel : ObservableObject
     [ObservableProperty] private double _cpuUsage;
     [ObservableProperty] private long _memoryUsage;
     [ObservableProperty] private ulong _memoryTotalBytes;
-    [ObservableProperty] private bool _isSelected;
 
     public required Constants.DaemonConfigModel DaemonConfig { get; init; }
     public required ICommand StartCommand { get; init; }

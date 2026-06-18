@@ -1,4 +1,5 @@
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using CommunityToolkit.Mvvm.Input;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.ViewModels;
 using System;
@@ -19,6 +20,7 @@ namespace MCServerLauncher.WPF.View.Pages
             _viewModel = App.ViewModelLocator.InstanceManager;
             InitializeComponent();
             DataContext = _viewModel;
+            StopTipLayer.ButtonCommand = new AsyncRelayCommand(OpenDaemonManagerConnectionAsync);
 
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.LoadDaemonFilterItems();
@@ -48,10 +50,6 @@ namespace MCServerLauncher.WPF.View.Pages
                 case nameof(InstanceManagerViewModel.ErrorState):
                     UpdateErrorState();
                     break;
-                case nameof(InstanceManagerViewModel.SelectedCount):
-                    SelectedCountTextBlock.Text = string.Format(Lang.Tr["SelectedCount"], _viewModel.SelectedCount);
-                    BatchOperationBar.Visibility = _viewModel.SelectedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-                    break;
                 case nameof(InstanceManagerViewModel.AutoRefreshEnabled):
                 case nameof(InstanceManagerViewModel.RefreshIntervalSeconds):
                     StartAutoRefresh();
@@ -61,7 +59,10 @@ namespace MCServerLauncher.WPF.View.Pages
 
         private void UpdateErrorState()
         {
+            LoadingLayer.BeginAnimation(OpacityProperty, null);
+            LoadingLayer.Visibility = Visibility.Collapsed;
             StopTipLayer.Visibility = Visibility.Collapsed;
+            StopTipLayer.ButtonCommand = null;
             InstanceCardGrid.Visibility = Visibility.Visible;
             FilterBar.Visibility = Visibility.Visible;
 
@@ -75,6 +76,7 @@ namespace MCServerLauncher.WPF.View.Pages
                     StopTipLayer.StopDescription = Lang.Tr["FuncDisabledReason_NoDaemon"];
                     StopTipLayer.ButtonIcon = SegoeFluentIcons.ConnectApp;
                     StopTipLayer.ButtonText = Lang.Tr["ConnectDaemon"];
+                    StopTipLayer.ButtonCommand = new AsyncRelayCommand(OpenDaemonManagerConnectionAsync);
                     StopTipLayer.Visibility = Visibility.Visible;
                     break;
                 case "no_instance":
@@ -150,6 +152,11 @@ namespace MCServerLauncher.WPF.View.Pages
             var fadeOut = new DoubleAnimation(1.0, 0.0, new Duration(TimeSpan.FromSeconds(0.4))) { FillBehavior = FillBehavior.HoldEnd };
             fadeOut.Completed += (s, e) => LoadingLayer.Visibility = Visibility.Collapsed;
             LoadingLayer.BeginAnimation(OpacityProperty, fadeOut);
+        }
+
+        private async System.Threading.Tasks.Task OpenDaemonManagerConnectionAsync()
+        {
+            await VisualTreeHelper.NavigateToDaemonManagerAndOpenConnectionAsync();
         }
     }
 }

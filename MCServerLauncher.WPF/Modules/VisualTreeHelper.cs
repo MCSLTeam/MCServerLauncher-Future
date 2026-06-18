@@ -1,8 +1,10 @@
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.WPF.View.Pages;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
 using Frame = iNKORE.UI.WPF.Modern.Controls.Frame;
 
 namespace MCServerLauncher.WPF.Modules
@@ -73,6 +75,21 @@ namespace MCServerLauncher.WPF.Modules
                 }
             }
         }
+
+        public static async Task NavigateToDaemonManagerAndOpenConnectionAsync()
+        {
+            Navigate("MCServerLauncher.WPF.View.Pages.DaemonManagerPage", "_daemonManager");
+
+            await Task.Yield();
+
+            if (Application.Current.MainWindow is MainWindow mainWindow &&
+                mainWindow.FindName("CurrentPage") is Frame currentPage &&
+                currentPage.Content is DaemonManagerPage daemonManagerPage)
+            {
+                await daemonManagerPage.OpenAddConnectionAsync();
+            }
+        }
+
         public static void ToggleNavBarVisibility()
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)

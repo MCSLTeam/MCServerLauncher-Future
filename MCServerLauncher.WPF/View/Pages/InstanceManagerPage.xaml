@@ -17,7 +17,7 @@
         <DataTemplate DataType="{x:Type models:InstanceCardModel}">
             <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="220"
                     MinWidth="360"
-                    Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ui:GridView}}, Converter={StaticResource InstanceCardWidthConverter}}">
+                    Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}, Converter={StaticResource InstanceCardWidthConverter}}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -26,10 +26,7 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <CheckBox Grid.Row="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top" HorizontalAlignment="Right"
-                              Margin="0,15,15,0" MinWidth="0" MinHeight="0" Width="24" Height="24" Padding="0"/>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,15,50,0">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,15,20,0">
                         <TextBlock Text="{Binding InstanceName}" Style="{StaticResource SubtitleTextBlock}" VerticalAlignment="Center" />
                         <Border CornerRadius="10" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="StatusBadge">
                             <Border.Style>
@@ -173,7 +170,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Style="{StaticResource TitleTextBlock}"
@@ -183,57 +179,7 @@
                    Text="{Binding [InstanceManagerTip], Source={x:Static i18n:Lang.Tr}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
 
-        <!-- 批量操作栏 -->
-        <Grid Grid.Row="2" Margin="0,10,0,0" x:Name="BatchOperationBar" Visibility="Collapsed">
-            <Border Background="{DynamicResource SystemControlBackgroundAccentBrush}"
-                    CornerRadius="4" Padding="15,10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="SelectedCountTextBlock"
-                                   Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <WrapPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Margin="0,0,10,0" Command="{Binding SelectAllCommand}">
-                            <Button.Content>
-                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.SelectAll}"
-                                                Content="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
-                            </Button.Content>
-                        </Button>
-                        <Button Margin="0,0,10,0" Command="{Binding BatchStartCommand}">
-                            <Button.Content>
-                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Play}"
-                                                Content="{Binding [Start], Source={x:Static i18n:Lang.Tr}}" />
-                            </Button.Content>
-                        </Button>
-                        <Button Margin="0,0,10,0" Command="{Binding BatchStopCommand}">
-                            <Button.Content>
-                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Stop}"
-                                                Content="{Binding [Stop], Source={x:Static i18n:Lang.Tr}}" />
-                            </Button.Content>
-                        </Button>
-                        <Button Margin="0,0,10,0" Command="{Binding BatchDeleteCommand}">
-                            <Button.Content>
-                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Delete}"
-                                                Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
-                            </Button.Content>
-                        </Button>
-                        <Button Command="{Binding CancelSelectionCommand}">
-                            <Button.Content>
-                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}"
-                                                Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}}" />
-                            </Button.Content>
-                        </Button>
-                    </WrapPanel>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <Grid Grid.Row="3" Margin="0,10,0,0" x:Name="FilterBar">
+        <Grid Grid.Row="2" Margin="0,10,0,0" x:Name="FilterBar">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -271,7 +217,7 @@
                 </Button>
             </WrapPanel>
         </Grid>
-        <ui:ScrollViewerEx Grid.Row="4" Margin="0,15,0,0">
+        <ui:ScrollViewerEx Grid.Row="3" Margin="0,15,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -281,9 +227,15 @@
                 </Grid.RowDefinitions>
                 <ge:LoadingLayer Grid.Row="0" Grid.Column="0" x:Name="LoadingLayer" />
                 <ge:StopTipLayer Grid.Row="0" Grid.Column="0" x:Name="StopTipLayer" Visibility="Collapsed" />
-                <ui:GridView Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid" ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                             IsSelectionEnabled="False" Width="Auto" Padding="0,0,0,15"
-                             ItemsSource="{Binding FilteredInstances}" />
+                <ItemsControl Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid"
+                              ItemsSource="{Binding FilteredInstances}"
+                              Margin="0,0,0,15">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
             </Grid>
         </ui:ScrollViewerEx>
     </Grid>

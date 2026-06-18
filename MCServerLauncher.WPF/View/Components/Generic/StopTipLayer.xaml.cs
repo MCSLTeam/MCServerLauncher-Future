@@ -67,9 +67,9 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         public static readonly DependencyProperty ButtonCommandProperty =
             DependencyProperty.Register(nameof(ButtonCommand), typeof(ICommand), typeof(StopTipLayer), new PropertyMetadata(default(ICommand)));
 
-        public ICommand ButtonCommand
+        public ICommand? ButtonCommand
         {
-            get => (ICommand)GetValue(ButtonCommandProperty);
+            get => (ICommand?)GetValue(ButtonCommandProperty);
             set => SetValue(ButtonCommandProperty, value);
         }
 

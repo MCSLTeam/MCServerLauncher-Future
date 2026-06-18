@@ -1,4 +1,5 @@
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
+using CommunityToolkit.Mvvm.Input;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.CreateInstanceProvider;
@@ -20,6 +21,7 @@ namespace MCServerLauncher.WPF.View.Pages
             InitializeComponent();
             _viewModel = App.ViewModelLocator.CreateInstance;
             DataContext = _viewModel;
+            StopTipLayer.ButtonCommand = new AsyncRelayCommand(OpenDaemonManagerConnectionAsync);
             CurrentCreateInstance.Content = PreCreateInstance;
             IsVisibleChanged += (s, e) =>
             {
@@ -48,6 +50,7 @@ namespace MCServerLauncher.WPF.View.Pages
             StopTipLayer.StopDescription = Lang.Tr["FuncDisabledReason_NoDaemon"];
             StopTipLayer.ButtonIcon = SegoeFluentIcons.ConnectApp;
             StopTipLayer.ButtonText = Lang.Tr["ConnectDaemon"];
+            StopTipLayer.ButtonCommand = new AsyncRelayCommand(OpenDaemonManagerConnectionAsync);
             StopTipLayer.Visibility = Visibility.Visible;
         }
 
@@ -68,6 +71,11 @@ namespace MCServerLauncher.WPF.View.Pages
         public async Task<(ContentDialogResult, System.Windows.Controls.ListView)> SelectDaemon()
         {
             return await _viewModel.SelectDaemonAsync();
+        }
+
+        private async Task OpenDaemonManagerConnectionAsync()
+        {
+            await VisualTreeHelper.NavigateToDaemonManagerAndOpenConnectionAsync();
         }
     }
 }

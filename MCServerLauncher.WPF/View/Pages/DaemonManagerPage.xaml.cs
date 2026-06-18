@@ -1,6 +1,7 @@
 using MCServerLauncher.WPF.ViewModels;
 using MCServerLauncher.WPF.ViewModels.Models;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -79,6 +80,11 @@ namespace MCServerLauncher.WPF.View.Pages
             {
                 await _viewModel.DeleteDaemonCommand.ExecuteAsync(daemon);
             }
+        }
+
+        public Task OpenAddConnectionAsync()
+        {
+            return _viewModel.AddConnectionCommand.ExecuteAsync(null);
         }
     }
 }

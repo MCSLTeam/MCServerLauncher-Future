@@ -81,6 +81,21 @@
 - [ ] Run `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build`.
 - [ ] Run `git diff --check`.
 
+### Task 7: Remove Manager Card Multi-Select
+
+**Files:**
+- Modify: `MCServerLauncher.WPF/View/Pages/DaemonManagerPage.xaml`
+- Modify: `MCServerLauncher.WPF/View/Pages/InstanceManagerPage.xaml`
+- Modify: `MCServerLauncher.WPF/View/Pages/InstanceManagerPage.xaml.cs`
+- Modify: `MCServerLauncher.WPF/ViewModels/InstanceManagerViewModel.cs`
+- Modify: `MCServerLauncher.WPF/ViewModels/Models/InstanceCardModel.cs`
+
+- [x] Render daemon cards with `ItemsControl` and a wrapping items panel instead of selectable `ui:GridView`.
+- [x] Render instance cards with `ItemsControl` and a wrapping items panel instead of selectable `ui:GridView`.
+- [x] Remove instance card checkboxes and the batch operation bar.
+- [x] Remove instance selection state and batch command logic from the instance manager view model.
+- [x] Verify WPF build and whitespace hygiene.
+
 ## Changelog
 
 - Fixed incorrect launcher setting binding paths in SettingsPage.
@@ -91,3 +106,5 @@
 - Added follow-up tasks for right-aligned manager toolbars, daemon search, and instance console lifecycle command guards.
 - Right-aligned instance and daemon manager toolbars, added daemon search, and wired instance manager search filtering.
 - Added instance console terminal lifecycle state guards, grouped command menu entries, confirmation prompts, and kill countdown confirmation.
+- Removed daemon manager card selection by replacing the selectable card host with a plain wrapping `ItemsControl`.
+- Removed instance manager card multi-select by deleting card checkboxes, the batch operation bar, selection state, batch commands, and the selectable card host.
