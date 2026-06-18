@@ -1,45 +1,45 @@
 using iNKORE.UI.WPF.Modern.Controls;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.View.Components;
 using MCServerLauncher.WPF.View.Components.DaemonManager;
 using System;
+using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Page = System.Windows.Controls.Page;
 
 namespace MCServerLauncher.WPF.View.FirstSetupHelper
 {
     /// <summary>
     ///    DaemonSetupPage.xaml 的交互逻辑
     /// </summary>
-    public partial class DaemonSetupPage : Page
+    public partial class DaemonSetupPage : iNKORE.UI.WPF.Modern.Controls.Page
     {
+        private const string LocalDaemonDownloadUrl = "";
+
         public DaemonSetupPage()
         {
             InitializeComponent();
             // Refresh trigger when page is visible
-            IsVisibleChanged += (s, e) =>
+            IsVisibleChanged += async (s, e) =>
             {
-                if (IsVisible)
+                if (IsVisible && RemoteSetupPanel.Visibility == Visibility.Visible)
                 {
-                    if (DaemonsListManager.Get is { Count: > 0 } daemons)
-                    {
-                        if (SettingsManager.Get?.App != null && SettingsManager.Get.App.IsFirstSetupFinished) return;
-                        DaemonListView.Items.Clear();
-                        foreach (var daemon in daemons)
-                        {
-                            TryConnectDaemon(
-                                daemon.EndPoint ?? string.Empty,
-                                daemon.Port.ToString(),
-                                daemon.Token ?? string.Empty,
-                                daemon.IsSecure,
-                                daemon.FriendlyName ?? string.Empty
-                            );
-                        }
-                    }
+                    await LoadExistingDaemonsAsync();
                 }
             };
+        }
+
+        private async void UseLocalDaemon(object sender, RoutedEventArgs e)
+        {
+            await DownloadLocalDaemonAsync();
+        }
+
+        private async void UseRemoteDaemon(object sender, RoutedEventArgs e)
+        {
+            await ShowRemoteSetupAsync();
         }
 
         /// <summary>
@@ -76,17 +76,25 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
 
         private async void AddDaemonConnection(object sender, RoutedEventArgs e)
         {
+            await AddRemoteDaemonConnectionAsync();
+        }
+
+        private async Task AddRemoteDaemonConnectionAsync()
+        {
             (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await Utils.ConstructConnectDaemonDialog();
-            dialog.PrimaryButtonClick += (o, args) => TryConnectDaemon(
-                endPoint: newDaemonConnectionInput.wsEdit.Text,
-                port: newDaemonConnectionInput.portEdit.Text,
-                isSecure: newDaemonConnectionInput.WebSocketScheme.SelectionBoxItem.ToString() == "wss://",
-                token: newDaemonConnectionInput.tokenEdit.Password,
-                friendlyName: newDaemonConnectionInput.friendlyNameEdit.Text
-            );
             try
             {
-                await dialog.ShowAsync();
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.Primary && await TryConnectDaemon(
+                        endPoint: newDaemonConnectionInput.wsEdit.Text,
+                        port: newDaemonConnectionInput.portEdit.Text,
+                        isSecure: newDaemonConnectionInput.WebSocketScheme.SelectionBoxItem.ToString() == "wss://",
+                        token: newDaemonConnectionInput.tokenEdit.Password,
+                        friendlyName: newDaemonConnectionInput.friendlyNameEdit.Text
+                    ))
+                {
+                    await AskAddAnotherHostAsync();
+                }
             }
             catch (Exception)
             {
@@ -94,13 +102,52 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
         }
 
+        private async Task DownloadLocalDaemonAsync()
+        {
+            if (string.IsNullOrWhiteSpace(LocalDaemonDownloadUrl))
+            {
+                ContentDialog unavailableDialog = new()
+                {
+                    Title = Lang.Tr["FirstSetup_DaemonLocalDownload"],
+                    PrimaryButtonText = Lang.Tr["OK"],
+                    DefaultButton = ContentDialogButton.Primary,
+                    FullSizeDesired = false,
+                    Content = new TextBlock
+                    {
+                        TextWrapping = TextWrapping.WrapWithOverflow,
+                        Text = Lang.Tr["FirstSetup_DaemonLocalDownloadUnavailable"]
+                    }
+                };
+
+                try
+                {
+                    await unavailableDialog.ShowAsync();
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+
+                await AskAddRemoteHostAfterLocalAsync();
+                return;
+            }
+
+            var targetPath = Path.Combine(AppContext.BaseDirectory, "daemon.exe");
+            using HttpClient httpClient = new();
+            await using var sourceStream = await httpClient.GetStreamAsync(LocalDaemonDownloadUrl);
+            await using var targetStream = File.Create(targetPath);
+            await sourceStream.CopyToAsync(targetStream);
+            NextButton.IsEnabled = true;
+            await AskAddRemoteHostAfterLocalAsync();
+        }
+
         private async Task<RoutedEventHandler> EditDaemonConnection(object sender, RoutedEventArgs e, string endPoint, int port, bool isSecure, string token, string friendlyName, DaemonSetupCard daemon)
         {
             (ContentDialog dialog, NewDaemonConnectionInput newDaemonConnectionInput) = await Utils.ConstructConnectDaemonDialog(endPoint, port.ToString() ?? "", isSecure, token, friendlyName);
-            dialog.PrimaryButtonClick += (o, args) =>
+            dialog.PrimaryButtonClick += async (o, args) =>
             {
                 DaemonListView.Items.Remove(daemon);
-                TryConnectDaemon(
+                await TryConnectDaemon(
                     endPoint: newDaemonConnectionInput.wsEdit.Text,
                     port: newDaemonConnectionInput.portEdit.Text,
                     isSecure: newDaemonConnectionInput.WebSocketScheme.SelectionBoxItem.ToString() == "wss://" ,
@@ -119,7 +166,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             return (o, args) => { };
         }
 
-        private async void TryConnectDaemon(string endPoint, string port, string token, bool isSecure, string friendlyName)
+        private async Task<bool> TryConnectDaemon(string endPoint, string port, string token, bool isSecure, string friendlyName)
         {
             try
             {
@@ -127,18 +174,143 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             }
             catch (FormatException)
             {
-                return;
+                return false;
             }
             if (string.IsNullOrWhiteSpace(endPoint) || string.IsNullOrWhiteSpace(port) || string.IsNullOrWhiteSpace(token))
             {
-                return;
+                return false;
             }
             DaemonSetupCard daemon = new() { EndPoint = endPoint, Port = int.Parse(port), IsSecure = isSecure, Token = token, Status = "ing", FriendlyName = friendlyName };
             daemon.Address = $"{(daemon.IsSecure ? "wss" : "ws")}://{daemon.EndPoint}:{daemon.Port}";
             DaemonListView.Items.Add(daemon);
             daemon.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) => await EditDaemonConnection(sender, e, daemon.EndPoint, daemon.Port, daemon.IsSecure, daemon.Token, daemon.FriendlyName, daemon));
             NextButton.IsEnabled = DaemonListView.Items.Count > 0;
-            await daemon.ConnectDaemon();
+            return await daemon.ConnectDaemon();
+        }
+
+        private async Task LoadExistingDaemonsAsync()
+        {
+            if (DaemonsListManager.Get is not { Count: > 0 } daemons)
+            {
+                DaemonListView.Items.Clear();
+                NextButton.IsEnabled = false;
+                return;
+            }
+
+            var parent = this.TryFindParent<FirstSetup>();
+            if (SettingsManager.Get?.App != null
+                && SettingsManager.Get.App.IsFirstSetupFinished
+                && parent?.IsDebugSession != true)
+            {
+                return;
+            }
+
+            DaemonListView.Items.Clear();
+            var isDebugSession = parent?.IsDebugSession == true;
+            foreach (var daemonConfig in daemons)
+            {
+                var card = CreateDaemonCard(daemonConfig);
+                DaemonListView.Items.Add(card);
+                var daemon = isDebugSession ? GetExistingDaemon(daemonConfig) : await DaemonsWsManager.Get(daemonConfig);
+                card.Status = daemon?.Online == true ? "ok" : "err";
+            }
+
+            NextButton.IsEnabled = DaemonListView.Items.Count > 0;
+        }
+
+        private DaemonSetupCard CreateDaemonCard(Constants.DaemonConfigModel daemonConfig)
+        {
+            var card = new DaemonSetupCard
+            {
+                EndPoint = daemonConfig.EndPoint ?? string.Empty,
+                Port = daemonConfig.Port,
+                IsSecure = daemonConfig.IsSecure,
+                Token = daemonConfig.Token ?? string.Empty,
+                Status = "ing",
+                FriendlyName = daemonConfig.FriendlyName ?? string.Empty
+            };
+
+            card.Address = $"{(card.IsSecure ? "wss" : "ws")}://{card.EndPoint}:{card.Port}";
+            card.ConnectionEditButton.Click += new RoutedEventHandler(async (sender, e) =>
+                await EditDaemonConnection(sender, e, card.EndPoint, card.Port, card.IsSecure, card.Token, card.FriendlyName, card));
+
+            return card;
+        }
+
+        private static MCServerLauncher.DaemonClient.IDaemon? GetExistingDaemon(Constants.DaemonConfigModel daemonConfig)
+        {
+            var key = $"{daemonConfig.FriendlyName}|{daemonConfig.EndPoint}|{daemonConfig.Port}";
+            return DaemonsWsManager.DaemonConnections.TryGetValue(key, out var daemon) ? daemon : null;
+        }
+
+        private async Task AskAddAnotherHostAsync()
+        {
+            var parent = this.TryFindParent<FirstSetup>();
+            ContentDialog dialog = new()
+            {
+                Title = Lang.Tr["FirstSetup_DaemonAddAnotherHostTitle"],
+                PrimaryButtonText = Lang.Tr["FirstSetup_DaemonAddAnotherHost"],
+                SecondaryButtonText = Lang.Tr["FirstSetup_DaemonFinishAdding"],
+                DefaultButton = ContentDialogButton.Primary,
+                FullSizeDesired = false,
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.WrapWithOverflow,
+                    Text = Lang.Tr["FirstSetup_DaemonAddAnotherHostTip"]
+                }
+            };
+            dialog.SecondaryButtonClick += (o, args) => parent?.GoWelcomeSetup();
+            try
+            {
+                await dialog.ShowAsync();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
+
+        private async Task AskAddRemoteHostAfterLocalAsync()
+        {
+            var parent = this.TryFindParent<FirstSetup>();
+            ContentDialog dialog = new()
+            {
+                Title = Lang.Tr["FirstSetup_DaemonAddAnotherHostTitle"],
+                PrimaryButtonText = Lang.Tr["FirstSetup_DaemonAddAnotherHost"],
+                SecondaryButtonText = Lang.Tr["FirstSetup_DaemonFinishAdding"],
+                DefaultButton = ContentDialogButton.Primary,
+                FullSizeDesired = false,
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.WrapWithOverflow,
+                    Text = Lang.Tr["FirstSetup_DaemonAddAnotherHostTip"]
+                }
+            };
+
+            try
+            {
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    await ShowRemoteSetupAsync();
+                    return;
+                }
+
+                parent?.GoWelcomeSetup();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
+
+        private async Task ShowRemoteSetupAsync()
+        {
+            LocalChoicePanel.Visibility = Visibility.Collapsed;
+            RemoteSetupPanel.Visibility = Visibility.Visible;
+            DaemonActionButtonContent.Icon = SegoeFluentIcons.ConnectApp;
+            DaemonActionButtonContent.Content = Lang.Tr["ConnectDaemon"];
+            await LoadExistingDaemonsAsync();
         }
 
         private void Next(object sender, RoutedEventArgs e)

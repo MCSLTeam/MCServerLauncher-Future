@@ -20,9 +20,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         /// <param name="e"></param>
         private void Next(object sender, RoutedEventArgs e)
         {
-            SettingsManager.SaveSetting("App.IsFirstSetupFinished", true);
             var parent = this.TryFindParent<FirstSetup>();
-            parent?.FinishSetup();
+            parent?.CompleteSetup();
         }
     }
 }

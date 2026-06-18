@@ -30,6 +30,7 @@
                     <WrapPanel Grid.Row="1">
                         <Button Margin="0,0,10,10" Content="Show Console Window" Click="ShowConsoleWindow" Style="{StaticResource AccentButtonStyle}" />
                         <Button Margin="0,0,10,10" Content="Show Exception Window" Click="ShowExceptionWindow" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Margin="0,0,10,10" Content="Show First Setup" Click="ShowFirstSetup" Style="{StaticResource AccentButtonStyle}" />
                         <Button Margin="0,0,10,10" Content="Informational-Top" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
                         <Button Margin="0,0,10,10" Content="Warning-TopRight" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />
                         <Button Margin="0,0,10,10" Content="Error-Bottom" Click="PushSimpleNotification" Style="{StaticResource AccentButtonStyle}" />

@@ -34,6 +34,8 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             CurrentPage.Navigate(_language);
         }
 
+        public bool IsDebugSession { get; private set; }
+
         /// <summary>
         ///    Navigation trigger handler.
         /// </summary>
@@ -99,6 +101,7 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             var fadeOutAnimation = FadeOutAnimation();
             fadeOutAnimation.Completed += (s, e) =>
             {
+                IsDebugSession = false;
                 Visibility = Visibility.Hidden;
             };
 
@@ -119,13 +122,34 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
         }
         public void GoDaemonSetup()
         {
-            SettingsManager.SaveSetting("App.IsAppEulaAccepted", true);
+            if (!IsDebugSession)
+            {
+                SettingsManager.SaveSetting("App.IsAppEulaAccepted", true);
+            }
+
             RefreshNavMenu(2);
         }
 
         public void GoWelcomeSetup()
         {
             RefreshNavMenu(3);
+        }
+
+        public void CompleteSetup()
+        {
+            if (!IsDebugSession)
+            {
+                SettingsManager.SaveSetting("App.IsFirstSetupFinished", true);
+            }
+
+            FinishSetup();
+        }
+
+        public void RestartForDebug()
+        {
+            IsDebugSession = true;
+            Opacity = 1;
+            RefreshNavMenu(0);
         }
 
         /// <summary>

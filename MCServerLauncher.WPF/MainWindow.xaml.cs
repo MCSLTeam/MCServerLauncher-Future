@@ -143,6 +143,14 @@ namespace MCServerLauncher.WPF
             NavView.IsPaneOpen = false;
         }
 
+        public void ShowFirstSetupForDebug()
+        {
+            SetupView.RestartForDebug();
+            SetupView.Visibility = Visibility.Visible;
+            NavView.Visibility = Visibility.Hidden;
+            TitleBarRootBorder.Visibility = Visibility.Hidden;
+        }
+
         private void ShowDownloadHistory(object sender, RoutedEventArgs e)
         {
             DownloadHistoryFlyout.ShowAt(DownloadHistoryButton);

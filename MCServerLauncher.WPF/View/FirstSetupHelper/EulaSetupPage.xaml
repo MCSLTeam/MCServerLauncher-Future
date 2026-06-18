@@ -18,57 +18,25 @@
         </Grid.RowDefinitions>
         <TextBlock Margin="40,40,40,0" Grid.Row="0" Style="{StaticResource TitleTextBlock}" Text="{Binding [FirstSetup_EulaMenu], Source={x:Static i18n:Lang.Tr}}"
                    HorizontalAlignment="Left" />
-        <ui:ScrollViewerEx Grid.Row="1" Margin="40,20,40,0" x:Name="EulaScrollViewer">
-            <ikw:SimpleStackPanel>
+        <Grid Grid.Row="1" Margin="40,20,40,0">
+            <ikw:SimpleStackPanel VerticalAlignment="Center">
                 <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
                            Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula1], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula2], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Text="{Binding [Eula3], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula4], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula5], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula6], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula7], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula8], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula9], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula10], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula11], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula12], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula13], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula14], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula15], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula16], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula17], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource SubtitleTextBlock}" Text="{Binding [Eula18], Source={x:Static i18n:Lang.Tr}}" />
-                <TextBlock Margin="0,10,0,20" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
-                           Style="{StaticResource BodyTextBlock}"
-                           Text="{Binding [Eula19], Source={x:Static i18n:Lang.Tr}}" />
+                           Text="{Binding [FirstSetup_EulaOnlineTip], Source={x:Static i18n:Lang.Tr}}" />
+                <TextBlock Margin="0,12,0,0" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow"
+                           Style="{StaticResource CaptionTextBlock}"
+                           Text="{Binding [FirstSetup_EulaUrlLabel], Source={x:Static i18n:Lang.Tr}}" />
+                <Border Margin="0,12,0,0" Style="{StaticResource StyledBorder}" Padding="16,12">
+                    <TextBlock x:Name="EulaUrlTextBlock" TextWrapping="Wrap" />
+                </Border>
+                <Button Margin="0,12,0,0" HorizontalAlignment="Left" Click="OpenEulaInBrowser">
+                    <Button.Content>
+                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.OpenInNewWindow}"
+                                        Content="{Binding [FirstSetup_EulaOpenInBrowser], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button.Content>
+                </Button>
             </ikw:SimpleStackPanel>
-        </ui:ScrollViewerEx>
+        </Grid>
         <Border Grid.Row="2" Style="{StaticResource StyledBorder}" Height="80">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -80,10 +48,10 @@
                         <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}" Content="{Binding [Disagree], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
-                <Button Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="AcceptEula"
+                <Button x:Name="AcceptButton" Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,40,0" Click="AcceptEula"
                         Style="{StaticResource AccentButtonStyle}">
                     <Button.Content>
-                        <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Accept}" Content="{Binding [Agree], Source={x:Static i18n:Lang.Tr}}" />
+                        <ui:IconAndText x:Name="AcceptButtonContent" IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Accept}" Content="{Binding [Agree], Source={x:Static i18n:Lang.Tr}}" />
                     </Button.Content>
                 </Button>
             </Grid>

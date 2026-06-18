@@ -27,6 +27,14 @@ namespace MCServerLauncher.WPF.View.Pages
             new ConsoleWindow().Show();
         }
 
+        private void ShowFirstSetup(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.ShowFirstSetupForDebug();
+            }
+        }
+
         private void OpenFileEditor_Log(object sender, RoutedEventArgs e) => OpenFileEditor("test.log");
         private void OpenFileEditor_Ini(object sender, RoutedEventArgs e) => OpenFileEditor("test.ini");
         private void OpenFileEditor_Yaml(object sender, RoutedEventArgs e) => OpenFileEditor("test.yaml");
