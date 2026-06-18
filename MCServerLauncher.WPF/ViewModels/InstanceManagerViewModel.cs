@@ -128,7 +128,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         {
             var daemon = await _daemonService.GetAsync(daemonConfig)
                 ?? throw new Exception("Daemon is offline or unreachable.");
-            var memoryTotalBytes = await TryGetDaemonMemoryTotalBytesAsync(daemon, daemonConfig);
+            var memoryTotalBytes = await GetDaemonMemoryTotalBytesOrNullAsync(daemon, daemonConfig);
             var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon);
 
             if (instanceReports == null || instanceReports.Count == 0)
@@ -159,7 +159,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         }
     }
 
-    private void UpdateExistingCards(Dictionary<Guid, InstanceReport> reports, Constants.DaemonConfigModel daemonConfig, ulong memoryTotalBytes)
+    private void UpdateExistingCards(Dictionary<Guid, InstanceReport> reports, Constants.DaemonConfigModel daemonConfig, ulong? memoryTotalBytes)
     {
         var existingIds = AllInstances.Select(c => c.InstanceId).ToList();
         var newIds = reports.Keys.ToList();
@@ -188,7 +188,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         }
     }
 
-    private InstanceCardModel CreateInstanceCard(Guid id, InstanceReport report, Constants.DaemonConfigModel config, ulong memoryTotalBytes)
+    private InstanceCardModel CreateInstanceCard(Guid id, InstanceReport report, Constants.DaemonConfigModel config, ulong? memoryTotalBytes)
     {
         return new InstanceCardModel
         {
@@ -209,7 +209,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         };
     }
 
-    private static async Task<ulong> TryGetDaemonMemoryTotalBytesAsync(IDaemon daemon, Constants.DaemonConfigModel daemonConfig)
+    private static async Task<ulong?> GetDaemonMemoryTotalBytesOrNullAsync(IDaemon daemon, Constants.DaemonConfigModel daemonConfig)
     {
         try
         {
@@ -219,7 +219,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         catch (Exception ex)
         {
             Log.Warning(ex, "[InstanceManager] Failed to get system info for daemon {Daemon}", daemonConfig.FriendlyName);
-            return 0;
+            return null;
         }
     }
 
@@ -229,9 +229,7 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         filtered = SelectedStatusFilter switch
         {
-            "Starting" => filtered.Where(c => c.Status == InstanceStatus.Starting),
             "Running" => filtered.Where(c => c.Status == InstanceStatus.Running),
-            "Stopping" => filtered.Where(c => c.Status == InstanceStatus.Stopping),
             "Stopped" => filtered.Where(c => c.Status == InstanceStatus.Stopped),
             "Crashed" => filtered.Where(c => c.Status == InstanceStatus.Crashed),
             _ => filtered
@@ -243,13 +241,7 @@ public partial class InstanceManagerViewModel : ObservableObject
             filtered = filtered.Where(card => MatchesSearch(card, searchText));
         }
 
-        var filteredList = filtered.ToList();
-
-        FilteredInstances.Clear();
-        foreach (var card in filteredList)
-        {
-            FilteredInstances.Add(card);
-        }
+        SyncFilteredInstances(filtered.ToList());
     }
 
     [RelayCommand]
@@ -275,15 +267,17 @@ public partial class InstanceManagerViewModel : ObservableObject
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
+
             await daemon.StartInstanceAsync(instance.InstanceId);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StartingInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
             Log.Information("[InstanceManager] Started instance {0}", instance.InstanceId);
-            await RefreshAsync();
+            await RefreshCardsInPlaceAsync();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "[InstanceManager] Failed to start instance {0}", instance.InstanceId);
             _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_StartFailed"], ex.Message), true, InfoBarSeverity.Error);
+            await RefreshCardsInPlaceAsync();
         }
     }
 
@@ -310,14 +304,16 @@ public partial class InstanceManagerViewModel : ObservableObject
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
+
             await daemon.StopInstanceAsync(instance.InstanceId);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StoppingInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
-            await RefreshAsync();
+            await RefreshCardsInPlaceAsync();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "[InstanceManager] Failed to stop instance {0}", instance.InstanceId);
             _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_StopFailed"], ex.Message), true, InfoBarSeverity.Error);
+            await RefreshCardsInPlaceAsync();
         }
     }
 
@@ -344,14 +340,16 @@ public partial class InstanceManagerViewModel : ObservableObject
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
+
             await daemon.RestartInstanceAsync(instance.InstanceId);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_RestartingInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
-            await RefreshAsync();
+            await RefreshCardsInPlaceAsync();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "[InstanceManager] Failed to restart instance {0}", instance.InstanceId);
             _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_RestartFailed"], ex.Message), true, InfoBarSeverity.Error);
+            await RefreshCardsInPlaceAsync();
         }
     }
 
@@ -378,14 +376,16 @@ public partial class InstanceManagerViewModel : ObservableObject
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
+
             await daemon.KillInstanceAsync(instance.InstanceId);
             _notification.Push(Lang.Tr["Warning"], string.Format(Lang.Tr["InstanceCard_KillingInstance"], instance.InstanceName), false, InfoBarSeverity.Warning);
-            await RefreshAsync();
+            await RefreshCardsInPlaceAsync();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "[InstanceManager] Failed to kill instance {0}", instance.InstanceId);
             _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_KillFailed"], ex.Message), true, InfoBarSeverity.Error);
+            await RefreshCardsInPlaceAsync();
         }
     }
 
@@ -412,14 +412,17 @@ public partial class InstanceManagerViewModel : ObservableObject
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
+
             await daemon.RemoveInstanceAsync(instance.InstanceId);
+            RemoveInstanceCard(instance);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_DeletedInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
-            await RefreshAsync();
+            await RefreshCardsInPlaceAsync();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "[InstanceManager] Failed to delete instance {0}", instance.InstanceId);
             _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["InstanceCard_DeleteFailed"], ex.Message), true, InfoBarSeverity.Error);
+            await RefreshCardsInPlaceAsync();
         }
     }
 
@@ -454,6 +457,43 @@ public partial class InstanceManagerViewModel : ObservableObject
     private static bool Contains(string? value, string searchText)
     {
         return value?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private async Task RefreshCardsInPlaceAsync()
+    {
+        await AutoRefreshAsync();
+    }
+
+    private void RemoveInstanceCard(InstanceCardModel instance)
+    {
+        AllInstances.Remove(instance);
+        FilteredInstances.Remove(instance);
+        ApplyFilters();
+    }
+
+    private void SyncFilteredInstances(IReadOnlyList<InstanceCardModel> filteredList)
+    {
+        for (var i = FilteredInstances.Count - 1; i >= 0; i--)
+        {
+            if (!filteredList.Contains(FilteredInstances[i]))
+            {
+                FilteredInstances.RemoveAt(i);
+            }
+        }
+
+        for (var i = 0; i < filteredList.Count; i++)
+        {
+            var item = filteredList[i];
+            var currentIndex = FilteredInstances.IndexOf(item);
+            if (currentIndex < 0)
+            {
+                FilteredInstances.Insert(i, item);
+            }
+            else if (currentIndex != i)
+            {
+                FilteredInstances.Move(currentIndex, i);
+            }
+        }
     }
 
     private void PushActionUnavailable(string resourceKey, InstanceCardModel instance)

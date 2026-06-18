@@ -216,6 +216,7 @@ public partial class DaemonManagerViewModel : ObservableObject
             if (daemon == null)
             {
                 model.Status = "err";
+                model.MarkResourceLoadFailed();
                 return false;
             }
 
@@ -238,6 +239,7 @@ public partial class DaemonManagerViewModel : ObservableObject
         {
             Log.Error($"[Daemon] Error connecting to daemon({model.Address}): {e}");
             model.Status = "err";
+            model.MarkResourceLoadFailed();
             ApplyFilters();
             return false;
         }
@@ -302,7 +304,7 @@ public partial class DaemonManagerViewModel : ObservableObject
         model.CpuUsage = ClampPercentage(systemInfo.Cpu.Usage);
         model.MemoryUsage = CalculateUsagePercentage(systemInfo.Mem.Total, systemInfo.Mem.Free);
         model.SystemVersion = $"{systemInfo.Os.Name} ({systemInfo.Os.Arch})";
-        model.DaemonVersion = string.IsNullOrWhiteSpace(systemInfo.DaemonVersion) ? "--" : systemInfo.DaemonVersion;
+        model.DaemonVersion = string.IsNullOrWhiteSpace(systemInfo.DaemonVersion) ? Lang.Tr["Status_LoadFailed"] : systemInfo.DaemonVersion;
 
         var usedMemory = systemInfo.Mem.Total > systemInfo.Mem.Free ? systemInfo.Mem.Total - systemInfo.Mem.Free : 0;
         var drives = systemInfo.Drives is { Length: > 0 } ? systemInfo.Drives : [systemInfo.Drive];
@@ -352,10 +354,31 @@ public partial class DaemonManagerViewModel : ObservableObject
             filtered = filtered.Where(model => MatchesSearch(model, searchText));
         }
 
-        FilteredDaemons.Clear();
-        foreach (var model in filtered)
+        SyncFilteredDaemons(filtered.ToList());
+    }
+
+    private void SyncFilteredDaemons(IReadOnlyList<DaemonCardModel> filteredList)
+    {
+        for (var i = FilteredDaemons.Count - 1; i >= 0; i--)
         {
-            FilteredDaemons.Add(model);
+            if (!filteredList.Contains(FilteredDaemons[i]))
+            {
+                FilteredDaemons.RemoveAt(i);
+            }
+        }
+
+        for (var i = 0; i < filteredList.Count; i++)
+        {
+            var item = filteredList[i];
+            var currentIndex = FilteredDaemons.IndexOf(item);
+            if (currentIndex < 0)
+            {
+                FilteredDaemons.Insert(i, item);
+            }
+            else if (currentIndex != i)
+            {
+                FilteredDaemons.Move(currentIndex, i);
+            }
         }
     }
 

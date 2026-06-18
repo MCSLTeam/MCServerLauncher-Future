@@ -15,7 +15,7 @@ public partial class InstanceCardModel : ObservableObject
     [ObservableProperty] private InstanceStatus _status;
     [ObservableProperty] private double _cpuUsage;
     [ObservableProperty] private long _memoryUsage;
-    [ObservableProperty] private ulong _memoryTotalBytes;
+    [ObservableProperty] private ulong? _memoryTotalBytes;
 
     public required Constants.DaemonConfigModel DaemonConfig { get; init; }
     public required ICommand StartCommand { get; init; }
@@ -25,36 +25,34 @@ public partial class InstanceCardModel : ObservableObject
     public required ICommand DeleteCommand { get; init; }
 
     public double CpuUsageProgress => ClampPercentage(CpuUsage);
-    public double MemoryUsageProgress => MemoryTotalBytes == 0
+    public double MemoryUsageProgress => MemoryTotalBytes is null or 0
         ? 0
-        : Math.Clamp(MemoryUsage / (double)MemoryTotalBytes * 100d, 0d, 100d);
+        : Math.Clamp(MemoryUsage / (double)MemoryTotalBytes.Value * 100d, 0d, 100d);
     public string StatusText => Status switch
     {
-        InstanceStatus.Starting => Lang.Tr["Starting"],
         InstanceStatus.Running => Lang.Tr["Running"],
-        InstanceStatus.Stopping => Lang.Tr["Stopping"],
         InstanceStatus.Stopped => Lang.Tr["Stopped"],
         InstanceStatus.Crashed => Lang.Tr["Crashed"],
         _ => Status.ToString()
     };
     public string CpuUsageText => $"{CpuUsageProgress:F2}%";
-    public string MemoryUsageText => MemoryTotalBytes == 0
-        ? FormatSize(MemoryUsage)
-        : $"{MemoryUsageProgress:F2}% ({FormatSize(MemoryUsage)} / {FormatSize(MemoryTotalBytes)})";
+    public string MemoryUsageText => MemoryTotalBytes is null
+        ? Lang.Tr["Status_LoadFailed"]
+        : MemoryTotalBytes == 0
+            ? FormatSize(MemoryUsage)
+            : $"{MemoryUsageProgress:F2}% ({FormatSize(MemoryUsage)} / {FormatSize(MemoryTotalBytes.Value)})";
 
-    public bool IsActive => Status is InstanceStatus.Starting or InstanceStatus.Running;
-    public bool IsBusy => Status is InstanceStatus.Starting or InstanceStatus.Stopping;
+    public bool IsActive => Status == InstanceStatus.Running;
     public bool CanStart => Status is InstanceStatus.Stopped or InstanceStatus.Crashed;
-    public bool CanStop => IsActive;
+    public bool CanStop => Status == InstanceStatus.Running;
     public bool CanRestart => Status == InstanceStatus.Running;
-    public bool CanKill => IsActive;
+    public bool CanKill => Status == InstanceStatus.Running;
     public bool CanDelete => Status == InstanceStatus.Stopped;
 
     partial void OnStatusChanged(InstanceStatus value)
     {
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(IsActive));
-        OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanStop));
         OnPropertyChanged(nameof(CanRestart));
@@ -87,7 +85,7 @@ public partial class InstanceCardModel : ObservableObject
         OnPropertyChanged(nameof(MemoryUsageText));
     }
 
-    partial void OnMemoryTotalBytesChanged(ulong value)
+    partial void OnMemoryTotalBytesChanged(ulong? value)
     {
         OnPropertyChanged(nameof(MemoryUsageProgress));
         OnPropertyChanged(nameof(MemoryUsageText));

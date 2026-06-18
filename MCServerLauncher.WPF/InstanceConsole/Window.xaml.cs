@@ -223,12 +223,17 @@ namespace MCServerLauncher.WPF.InstanceConsole
         private void NavigationTriggered(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
-                NavigateTo(typeof(int), args.RecommendedNavigationTransitionInfo);
-            else if (args.InvokedItemContainer != null)
+            {
+                return;
+            }
+
+            if (args.InvokedItemContainer != null)
             {
                 var navPageType = Type.GetType(args.InvokedItemContainer.Tag?.ToString() ?? string.Empty);
-                if (navPageType is not null)
+                if (navPageType is not null && typeof(Page).IsAssignableFrom(navPageType))
+                {
                     NavigateTo(navPageType, args.RecommendedNavigationTransitionInfo);
+                }
             }
         }
 
@@ -241,7 +246,12 @@ namespace MCServerLauncher.WPF.InstanceConsole
         private void NavigateTo(Type navPageType, NavigationTransitionInfo _transitionInfo)
 #pragma warning restore IDE0060 // 删除未使用的参数
         {
-            var preNavPageType = CurrentPage.Content.GetType();
+            if (!typeof(Page).IsAssignableFrom(navPageType))
+            {
+                return;
+            }
+
+            var preNavPageType = CurrentPage.Content?.GetType();
             if (navPageType == preNavPageType) return;
             switch (navPageType)
             {
@@ -279,7 +289,11 @@ namespace MCServerLauncher.WPF.InstanceConsole
         /// <returns>Transition info.</returns>
         private SlideNavigationTransitionEffect DetermineSlideDirection(Type navPageType)
         {
-            var current = (Page)CurrentPage.Content;
+            if (CurrentPage.Content is not Page current)
+            {
+                return SlideNavigationTransitionEffect.FromRight;
+            }
+
             var pages = new List<Type>
             {
                 typeof(BoardPage), typeof(CommandPage), typeof(FileManagerPage), typeof(EventTriggerPage),

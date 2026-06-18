@@ -96,6 +96,44 @@
 - [x] Remove instance selection state and batch command logic from the instance manager view model.
 - [x] Verify WPF build and whitespace hygiene.
 
+### Task 8: Reduce Instance Lifecycle Refresh Latency
+
+**Files:**
+- Modify: `MCServerLauncher.WPF/ViewModels/InstanceManagerViewModel.cs`
+
+- [x] Optimistically mark the clicked instance card as running after daemon connectivity is confirmed.
+- [x] Optimistically mark stop and force-close actions as stopped, keep restart displayed as running, and remove deleted cards from the visible list after delete succeeds.
+- [x] Replace full post-command `RefreshAsync()` calls with lightweight in-place refresh so the card list is updated without clearing the page and showing the loading layer.
+- [x] On lifecycle command failure, run the same lightweight refresh to restore the daemon-reported status.
+
+### Task 9: Stabilize Manager Status And Menus
+
+**Files:**
+- Modify: `MCServerLauncher.Common/ProtoType/Instance/InstanceStatus.cs`
+- Modify: `MCServerLauncher.Daemon/Management/Communicate/InstanceProcess.cs`
+- Modify: `MCServerLauncher.Daemon/Console/Commands/InstanceCommand.cs`
+- Modify: `MCServerLauncher.ProtocolTests/InstanceSettingsCoordinatorTests.cs`
+- Modify: `MCServerLauncher.WPF/ViewModels/Models/InstanceCardModel.cs`
+- Modify: `MCServerLauncher.WPF/ViewModels/InstanceManagerViewModel.cs`
+- Modify: `MCServerLauncher.WPF/ViewModels/DaemonManagerViewModel.cs`
+- Modify: `MCServerLauncher.WPF/View/Pages/InstanceManagerPage.xaml`
+- Modify: `MCServerLauncher.WPF/View/Pages/DaemonManagerPage.xaml`
+- Modify: `MCServerLauncher.WPF/InstanceConsole/Window.xaml.cs`
+- Modify: `MCServerLauncher.WPF/ViewModels/CommandPageViewModel.cs`
+- Modify: `MCServerLauncher.WPF/InstanceConsole/View/Pages/CommandPage.xaml`
+- Modify: `MCServerLauncher.WPF/Translations/*.resx`
+
+- [x] Collapse public daemon protocol status values to stable running/stopped/crashed states.
+- [x] Stop daemon process monitoring from emitting startup/shutdown transitional statuses.
+- [x] Add protocol coverage that rejects public `Starting` and `Stopping` status values.
+- [x] Stop exposing start/stop transitional states as filter options.
+- [x] Treat lifecycle commands optimistically in WPF so users see stable running/stopped states while daemon commands settle.
+- [x] Preserve manager filtered collections in place so card refresh does not rebuild opened flyout anchors.
+- [x] Make instance console navigation tolerate null content and non-page navigation items.
+- [x] Rename destructive process kill UI text to close wording in all six languages.
+- [x] Remove WPF optimistic instance status overrides after lifecycle commands.
+- [x] Show daemon/system-info load failures explicitly instead of silently displaying zeroes or placeholder dashes.
+
 ## Changelog
 
 - Fixed incorrect launcher setting binding paths in SettingsPage.
@@ -108,3 +146,6 @@
 - Added instance console terminal lifecycle state guards, grouped command menu entries, confirmation prompts, and kill countdown confirmation.
 - Removed daemon manager card selection by replacing the selectable card host with a plain wrapping `ItemsControl`.
 - Removed instance manager card multi-select by deleting card checkboxes, the batch operation bar, selection state, batch commands, and the selectable card host.
+- Reduced instance lifecycle command refresh latency by updating clicked cards immediately and using lightweight report refresh after start, stop, restart, force-close, and delete requests.
+- Stabilized manager card menus by preserving filtered collections during refresh, collapsed protocol and daemon instance status output to stable states, fixed instance console navigation null handling, and renamed kill-facing UI copy to close wording.
+- Removed WPF-side instance status optimistic overrides and replaced daemon/system-info `0` or `--` fallbacks with explicit not-loaded/load-failed UI text.
