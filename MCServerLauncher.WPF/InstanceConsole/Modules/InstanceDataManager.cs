@@ -253,19 +253,19 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Get daemon latency
         /// </summary>
-        public async Task<long> GetDaemonLatencyAsync()
+        public async Task<long?> GetDaemonLatencyAsync()
         {
             try
             {
                 if (_isDisposed || _daemon == null || !_daemon.Online)
-                    return -1;
+                    return null;
 
                 return await _daemon.PingAsync();
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to get daemon latency");
-                return -1;
+                return null;
             }
         }
 

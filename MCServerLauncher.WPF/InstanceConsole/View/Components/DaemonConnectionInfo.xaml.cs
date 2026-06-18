@@ -1,4 +1,5 @@
 using MCServerLauncher.WPF.InstanceConsole.Modules;
+using MCServerLauncher.WPF.Modules;
 using Serilog;
 using System;
 using System.Threading.Tasks;
@@ -68,13 +69,13 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
                 
                 Dispatcher.Invoke(() =>
                 {
-                    if (latency >= 0)
+                    if (latency.HasValue)
                     {
-                        WebSocketPingStatusTextBlock.Text = $"{latency} ms";
+                        WebSocketPingStatusTextBlock.Text = $"{latency.Value} ms";
                     }
                     else
                     {
-                        WebSocketPingStatusTextBlock.Text = "-- ms";
+                        WebSocketPingStatusTextBlock.Text = Lang.Tr["Status_LoadFailed"];
                     }
                 });
             }
