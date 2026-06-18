@@ -197,6 +197,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             catch (Exception ex)
             {
                 Log.Error(ex, "[FileManager] Failed to load tree children for {0}", VirtualPath);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Children.Clear();
+                    Children.Add(new TreeItem(_viewModel) { Name = Lang.Tr["Status_LoadFailed"] });
+                    IsLoaded = true;
+                });
             }
         }
 
@@ -443,7 +449,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         public async Task<IEnumerable<Common.ProtoType.Files.DirectoryEntry.DirectoryInformation>> GetDirectoriesAsync(string virtualPath)
         {
-            if (_daemon == null) return Array.Empty<Common.ProtoType.Files.DirectoryEntry.DirectoryInformation>();
+            if (_daemon == null) throw new InvalidOperationException("Daemon connection is unavailable.");
             var realPath = GetRealPath(virtualPath);
             var (directories, _, _) = await _daemon.GetDirectoryInfoAsync(realPath);
             return directories;
