@@ -32,7 +32,11 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             var report = InstanceDataManager.Instance.CurrentReport;
             if (report == null)
+            {
+                AddressComponent.Visibility = Visibility.Collapsed;
+                PlayerListComponent.Visibility = Visibility.Collapsed;
                 return;
+            }
 
             var isMinecraftInstance = report.Config.InstanceType.SupportsMinecraftBoardWidgets();
 
