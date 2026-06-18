@@ -165,9 +165,9 @@ public class EventTriggerService
                     break;
                 default:
                     _logger.LogWarning(
-                        "Unsupported ruleset type '{RulesetType}' for rule '{RuleName}' on instance '{InstanceId}'",
+                        "Unsupported ruleset type '{RulesetType}' for rule '{RuleId}' on instance '{InstanceId}'",
                         ruleset?.GetType().Name ?? "<null>",
-                        rule.Name,
+                        rule.Id,
                         instance.Config.Uuid);
                     return false;
             }
@@ -180,11 +180,11 @@ public class EventTriggerService
     {
         if (!EvaluateRulesets(instance, rule))
         {
-            _logger.LogDebug("Rulesets did not match for rule '{RuleName}' on instance '{InstanceId}'", rule.Name, instance.Config.Uuid);
+            _logger.LogDebug("Rulesets did not match for rule '{RuleId}' on instance '{InstanceId}'", rule.Id, instance.Config.Uuid);
             return;
         }
 
-        _logger.LogInformation("Executing rule '{RuleName}' for instance '{InstanceId}' in {Mode} mode", rule.Name, instance.Config.Uuid, rule.ActionExecutionMode);
+        _logger.LogInformation("Executing rule '{RuleId}' for instance '{InstanceId}' in {Mode} mode", rule.Id, instance.Config.Uuid, rule.ActionExecutionMode);
 
         if (string.Equals(rule.ActionExecutionMode, "Parallel", StringComparison.OrdinalIgnoreCase))
         {
@@ -236,7 +236,7 @@ public class EventTriggerService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing action '{ActionType}' for rule '{RuleName}'", action.GetType().Name, rule.Name);
+            _logger.LogError(ex, "Error executing action '{ActionType}' for rule '{RuleId}'", action.GetType().Name, rule.Id);
         }
     }
 
