@@ -70,3 +70,4 @@ Expected: commands exit 0.
 - Added regression coverage for invalid Minecraft SLP status responses closing before latency ping.
 - Updated modern SLP probing to stop after invalid status payloads.
 - Hardened Minecraft instance report enrichment so player-list probe failures do not fail `GetAllReports`.
+- Downgraded invalid SLP payload parse logs from error to debug because report-time Minecraft ping is best-effort.

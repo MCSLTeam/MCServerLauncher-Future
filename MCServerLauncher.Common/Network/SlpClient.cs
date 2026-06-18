@@ -185,7 +185,7 @@ public class SlpClient
         }
         catch (Exception e)
         {
-            Log.Error("[SlpClient] Failed to parse server ping payload: {0}", e);
+            Log.Debug(e, "[SlpClient] Failed to parse server ping payload");
             return null;
         }
     }
@@ -218,7 +218,7 @@ public class SlpClient
         }
         catch (Exception e)
         {
-            Log.Error("[SlpClient] Failed to parse server ping payload: {0}", e);
+            Log.Debug(e, "[SlpClient] Failed to parse server ping payload");
             return null;
         }
     }
