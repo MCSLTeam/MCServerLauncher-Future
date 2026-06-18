@@ -70,6 +70,8 @@ public class InstanceProcess : DisposableObject
                 ServerProcessId = await Task.Run(() => ProcessTreeHelper.FindSubProcessPid(_process.Id, fileName));
             else
                 ServerProcessId = _process.Id;
+
+            ChangeStatus(InstanceStatus.Running);
         }
 
         if (!_process.HasExited) OnProcessStarted?.Invoke();

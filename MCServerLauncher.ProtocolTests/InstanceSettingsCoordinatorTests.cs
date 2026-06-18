@@ -2,6 +2,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
+using System.Diagnostics;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -70,6 +71,35 @@ public class InstanceSettingsCoordinatorTests
     }
 
     [Fact]
+    public async Task TryStartInstance_ReportShowsRunningAfterProcessStartSucceeds()
+    {
+        var manager = new InstanceManager();
+        var config = CreateConfig(InstanceType.MCJava);
+        var instance = new FakeInstance(config, InstanceStatus.Stopped);
+        manager.Instances[config.Uuid] = instance;
+
+        var started = await manager.TryStartInstance(config.Uuid);
+        var report = await manager.GetInstanceReport(config.Uuid);
+
+        Assert.Same(instance, started);
+        Assert.NotNull(report);
+        Assert.Equal(InstanceStatus.Running, report.Status);
+    }
+
+    [Fact]
+    public async Task InstanceProcess_MinecraftProcessIsRunningBeforeDoneLog()
+    {
+        var startInfo = CreateShortLivedProcessStartInfo();
+        using var process = new InstanceProcess(startInfo, isMcServer: true);
+
+        var started = await process.StartAsync(delayToCheck: 100);
+
+        Assert.True(started);
+        Assert.Equal(InstanceStatus.Running, process.Status);
+        process.KillProcess();
+    }
+
+    [Fact]
     public void InstanceStatus_ContainsOnlyStableLifecycleStates()
     {
         var names = Enum.GetNames<InstanceStatus>();
@@ -95,6 +125,33 @@ public class InstanceSettingsCoordinatorTests
         };
     }
 
+    private static ProcessStartInfo CreateShortLivedProcessStartInfo()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c ping -n 6 127.0.0.1 > nul",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                CreateNoWindow = true
+            };
+        }
+
+        return new ProcessStartInfo
+        {
+            FileName = "/bin/sh",
+            Arguments = "-c \"sleep 5\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            RedirectStandardInput = true
+        };
+    }
+
     private sealed class FakeInstance : IInstance
     {
         private readonly TaskCompletionSource<bool>? _startGate;
@@ -111,7 +168,7 @@ public class InstanceSettingsCoordinatorTests
 
         public InstanceConfig Config { get; }
         public InstanceProcess? Process => null;
-        public InstanceStatus Status { get; }
+        public InstanceStatus Status { get; private set; }
         public int ServerProcessId => -1;
         public TaskCompletionSource<bool> StartEntered { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -127,7 +184,9 @@ public class InstanceSettingsCoordinatorTests
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
         {
             StartEntered.TrySetResult(true);
-            return _startGate?.Task ?? Task.FromResult(false);
+            if (_startGate is not null) return _startGate.Task;
+            Status = InstanceStatus.Running;
+            return Task.FromResult(true);
         }
 
         public void Stop()
