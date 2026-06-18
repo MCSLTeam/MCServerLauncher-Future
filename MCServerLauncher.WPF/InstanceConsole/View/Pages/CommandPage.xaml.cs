@@ -116,6 +116,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 catch (Exception ex)
                 {
                     Log.Error(ex, "[CommandPage] Failed to load log history");
+                    ConsoleLogEditor.AppendText($"[ERROR] Failed to load log history: {ex.Message}{Environment.NewLine}");
+                    ConsoleLogEditor.ScrollToEnd();
                 }
             }
         }

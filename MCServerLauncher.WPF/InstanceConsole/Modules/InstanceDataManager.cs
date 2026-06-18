@@ -277,14 +277,14 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             try
             {
                 if (_isDisposed || _daemon == null || !_daemon.Online)
-                    return Array.Empty<string>();
+                    throw new InvalidOperationException("Daemon is offline or unavailable.");
 
                 return await _daemon.GetInstanceLogHistoryAsync(_instanceId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to get instance log history");
-                return Array.Empty<string>();
+                throw;
             }
         }
 
