@@ -93,8 +93,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
                     }
                     else
                     {
-                        // Default to local address
-                        ServerIP = "127.0.0.1";
+                        ServerIP = Lang.Tr["Status_LoadFailed"];
+                        return;
                     }
 
                     // Add port if available
@@ -102,6 +102,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Components
                     {
                         ServerIP = $"{ServerIP}:{serverPort}";
                     }
+                }
+                else
+                {
+                    ServerIP = Lang.Tr["Status_LoadFailed"];
                 }
 
                 await Task.CompletedTask;
