@@ -135,7 +135,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             try
             {
                 if (_daemon == null || _isDisposed || !_daemon.Online)
+                {
+                    CurrentReport = null;
                     return;
+                }
 
                 var report = await _daemon.GetInstanceReportAsync(_instanceId);
                 CurrentReport = report;
@@ -143,6 +146,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to refresh instance data");
+                CurrentReport = null;
             }
         }
 
