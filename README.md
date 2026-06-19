@@ -58,7 +58,7 @@ Email: [services@mcsl.com.cn](mailto:services@mcsl.com.cn)
 
 QQ Group 1: [733951376](https://qm.qq.com/q/WtVCQWSBEe)
 
-QQ Group 2: [819067131](https://qm.qq.com/q/EXBE6a5CF4)
+QQ Group 2: [1025218881](https://qm.qq.com/q/ljxb0XpSEi)
 
 ## Open Source License
 
