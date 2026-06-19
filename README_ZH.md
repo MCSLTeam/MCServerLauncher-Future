@@ -49,7 +49,7 @@ WPF桌面启动器：需要 [.NET Framework 4.6.2+](http://go.microsoft.com/fwli
 
 QQ群1：[733951376](https://qm.qq.com/q/WtVCQWSBEe)
 
-QQ群2：[819067131](https://qm.qq.com/q/EXBE6a5CF4)
+QQ群2：[1025218881](https://qm.qq.com/q/V2blZlJOee)
 
 ## 开源许可证
 
