@@ -78,3 +78,5 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 - Update `RULES.md` when a repeated review comment becomes a project rule.
 - Update `EXECUTE_PLAN.md` when phase status or backlog meaningfully changes.
 - Keep `AGENTS.md` as the full operating guide and `CLAUDE.md` as a compact index.
+- Daemon machine-readable protocol docs are Apifox-only. Keep `MCServerLauncher.Daemon/.Resources/Docs/apifox.json` shaped like a native Apifox project export: WebSocket APIs live under `webSocketCollection` as `root -> folder -> api` items, omit `api.type`, omit `api.method`, store the send payload in `api.requestBody.message`, and place actual query/header/cookie parameters under `api.parameters`.
+- Do not add Postman, Swagger, OpenAPI, or HTTP action bridge artifacts back to daemon docs unless the task explicitly changes the documentation strategy.

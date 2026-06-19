@@ -73,6 +73,10 @@
         </Content>
         <Content Include=".Resources\MCServerLauncherFutureDaemon.ico" />
         <EmbeddedResource Include="Contained\server.jar" />
+        <EmbeddedResource Include=".Resources\Docs\apifox.json"
+                          LogicalName="MCServerLauncher.Daemon.Resources.Docs.apifox.json" />
+        <EmbeddedResource Include=".Resources\Docs\protocol\topics\*.md"
+                          LogicalName="MCServerLauncher.Daemon.Resources.Docs.protocol.topics.%(Filename)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup>

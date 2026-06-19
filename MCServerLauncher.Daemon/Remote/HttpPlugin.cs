@@ -67,8 +67,22 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                                 HttpPluginJsonSerializerContext.Default.InfoResponse))
                             .AnswerAsync();
                         break;
+
+                    default:
+                        if (EmbeddedDocumentation.TryGetResource(request.URL, out var document))
+                        {
+                            await response
+                                .SetStatus(200, "Success")
+                                .AddHeader("Content-type", document.ContentType)
+                                .AddHeader("Access-Control-Allow-Origin", "*")
+                                .SetContent(await EmbeddedDocumentation.ReadContentAsync(document))
+                                .AnswerAsync();
+                        }
+
+                        break;
                 }
             else if (method == HttpMethod.Post)
+            {
                 switch (request.URL.ToLower())
                 {
                     case "/subtoken":
@@ -118,6 +132,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .AnswerAsync();
                         break;
                 }
+            }
             // Others
         }
         catch (Exception ex)
