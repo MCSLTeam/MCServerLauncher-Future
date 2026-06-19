@@ -187,9 +187,9 @@ public class Daemon : IDaemon
         try
         {
             // var client = new HttpClient();
-            // for (var i = 0; i < 3; i++) Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11451/info"));
+            // for (var i = 0; i < 3; i++) Console.WriteLine(await client.GetStringAsync("http://127.0.0.1:11452/info"));
 
-            // var daemon = await OpenAsync("172.23.190.95", 11451, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
+            // var daemon = await OpenAsync("172.23.190.95", 11452, "gUkBnAjxdNUx5wGZ1fgTXkvkppsIdj5D", false,
             var daemon = await OpenAsync(
                 "127.0.0.1",
                 11452,
