@@ -4,8 +4,9 @@ namespace MCServerLauncher.Daemon;
 
 public class GracefulShutdown : IDisposable
 {
-    private readonly SemaphoreSlim _semaphore = new(0);
     private readonly CancellationTokenSource _source = new();
+    private readonly TaskCompletionSource _shutdownSignal =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _isDisposed;
 
     public GracefulShutdown()
@@ -35,18 +36,24 @@ public class GracefulShutdown : IDisposable
 
     public async Task Shutdown()
     {
-        if (_source.IsCancellationRequested)
-            throw new InvalidOperationException("Already shutdown");
+        if (_source.IsCancellationRequested) return;
 
         await _source.CancelAsync();
+        _shutdownSignal.TrySetResult();
         Log.Information("[GracefulShutdown] shutting down...");
         if (OnShutdown is not null) await OnShutdown.Invoke();
-        _semaphore.Release();
     }
 
     public async Task WaitForShutdownAsync(int timeout = -1)
     {
-        await _semaphore.WaitAsync(timeout);
+        var waitTask = _shutdownSignal.Task;
+        if (timeout < 0)
+        {
+            await waitTask;
+            return;
+        }
+
+        await waitTask.WaitAsync(TimeSpan.FromMilliseconds(timeout));
     }
 
     private void Dispose(bool dispose)
