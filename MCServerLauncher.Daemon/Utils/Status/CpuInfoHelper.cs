@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Status;
@@ -91,7 +92,7 @@ public static class CpuInfoHelper
             var cpuUsage =
                 await SystemInfoHelper.RunCommandAsync("sh",
                         "-c \"top -l 1 | grep 'CPU usage' | awk '{print $3}' | tr -d '%'\"")
-                    .MapTask(double.Parse);
+                    .MapTask(ParseMacOsCpuUsage);
 
             var name = await SystemInfoHelper.RunCommandAsync("sysctl", "-n machdep.cpu.brand_string");
             var vendor = name.Split(' ')[0];
@@ -111,6 +112,17 @@ public static class CpuInfoHelper
         }
 
         throw new NotSupportedException("Unsupported OS");
+    }
+
+    internal static double ParseMacOsCpuUsage(string output)
+    {
+        return double.TryParse(
+            output.Trim(),
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var usage)
+            ? usage
+            : 0;
     }
 
     private static CpuInfo CreateCpuInfo(double usage)

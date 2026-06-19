@@ -73,18 +73,25 @@ internal static class DaemonServiceComposition
         daemonReportTimer.AutoReset = true;
         daemonReportTimer.Elapsed += async (sender, args) =>
         {
-            var eventService = httpService.Resolver.GetRequiredService<IEventService>();
-            var cell = httpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
-            var systemInfo = await cell.Value;
-            eventService.OnDaemonReport(new DaemonReport(
-                systemInfo.Os,
-                systemInfo.Cpu,
-                systemInfo.Mem,
-                systemInfo.Drive,
-                Application.StartTime.ToUnixTimeMilliSeconds(),
-                systemInfo.Drives,
-                systemInfo.DaemonVersion
-            ));
+            try
+            {
+                var eventService = httpService.Resolver.GetRequiredService<IEventService>();
+                var cell = httpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
+                var systemInfo = await cell.Value;
+                eventService.OnDaemonReport(new DaemonReport(
+                    systemInfo.Os,
+                    systemInfo.Cpu,
+                    systemInfo.Mem,
+                    systemInfo.Drive,
+                    Application.StartTime.ToUnixTimeMilliSeconds(),
+                    systemInfo.Drives,
+                    systemInfo.DaemonVersion
+                ));
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Debug(ex, "[DaemonReport] Failed to refresh daemon report");
+            }
         };
         Application.OnStarted += () =>
         {
