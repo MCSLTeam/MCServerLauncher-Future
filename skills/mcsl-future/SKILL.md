@@ -16,7 +16,7 @@ description: Guides work that changes or reviews MCServerLauncher Future domain 
 ## Invariants
 
 - Client-daemon communication uses action/event protocol over WebSocket.
-- Shared wire contracts live in `MCServerLauncher.Common`.
+- Shared wire contracts live in `src/MCServerLauncher.Common`.
 - Daemon serialization must stay `System.Text.Json`, source-generation friendly, and AOT/trim compatible.
 - Instance creation remains factory-driven through `IInstanceFactory` and `[InstanceFactory]`.
 - WPF user-facing text uses `Lang.Tr[...]`.
@@ -24,7 +24,7 @@ description: Guides work that changes or reviews MCServerLauncher Future domain 
 
 ## Task Recipes
 
-**Protocol or serialization.** Start in `MCServerLauncher.Common`, then update daemon, daemon client, WPF, protocol tests, and benchmarks as needed.
+**Protocol or serialization.** Start in `src/MCServerLauncher.Common`, then update daemon, daemon client, WPF, protocol tests, and benchmarks as needed.
 
 **Instance lifecycle.** Preserve cancellation support, `Result<T, Error>` failure paths, and daemon-side authority for state changes.
 
@@ -44,9 +44,9 @@ description: Guides work that changes or reviews MCServerLauncher Future domain 
 ## Verification
 
 - Docs: inspect Markdown and run terminology searches.
-- WPF: `dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`
-- Daemon: `dotnet build MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`
-- Protocol: `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`
+- WPF: `dotnet build src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`
+- Daemon: `dotnet build src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`
+- Protocol: `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`
 - Final: `git diff --check`
 
 ## Commits

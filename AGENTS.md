@@ -30,7 +30,7 @@ MCServerLauncher-Future is a C#/.NET application suite for managing Minecraft se
 - `RULES.md`: activation-scoped implementation rules.
 - `EXECUTE_PLAN.md`: phases, exit criteria, cross-phase dependencies, and near-term backlog.
 - `docs/superpowers/plans/`: plans for architecture, rules, or substantial implementation work.
-- `MCServerLauncher.Daemon/.Resources/Docs/`: daemon-facing protocol and manual documentation.
+- `src/MCServerLauncher.Daemon/.Resources/Docs/`: daemon-facing protocol and manual documentation.
 - `README.md` and `README_ZH.md`: public-facing introduction; verify claims against project files before carrying them into governance docs.
 
 ## Essential Commands
@@ -42,37 +42,37 @@ Use `/m:1` for WPF and other build checks when the task does not require full pa
 dotnet build MCServerLauncher.sln /m:1
 
 # Build major projects
-dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1
-dotnet build MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1
-dotnet build MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1
-dotnet build MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1
+dotnet build src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1
+dotnet build src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1
+dotnet build src/MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1
+dotnet build generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1
 
 # Run protocol tests
-dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1
+dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1
 
 # Run benchmarks
-dotnet run --project MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release
+dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release
 
 # Run apps
-dotnet run --project MCServerLauncher.WPF/MCServerLauncher.WPF.csproj
-dotnet run --project MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
+dotnet run --project src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj
+dotnet run --project src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
 
 # Publish
-dotnet publish MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj -c Release -r win-x64 --self-contained
-dotnet publish MCServerLauncher.WPF/MCServerLauncher.WPF.csproj -c Release -r win-x64 --self-contained
+dotnet publish src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj -c Release -r win-x64 --self-contained
+dotnet publish src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj -c Release -r win-x64 --self-contained
 ```
 
 ## Project Structure
 
 ```text
 MCServerLauncher-Future/
-├── MCServerLauncher.Common/            # Shared models, utilities, protocol contracts
-├── MCServerLauncher.Daemon/            # Background daemon managing instances
-├── MCServerLauncher.Daemon.Generators/ # Roslyn generators for RPC and serialization
-├── MCServerLauncher.DaemonClient/      # .NET daemon client library
-├── MCServerLauncher.WPF/               # Windows WPF client
-├── MCServerLauncher.ProtocolTests/     # Protocol and integration tests
-├── MCServerLauncher.Benchmarks/        # BenchmarkDotNet performance baselines
+├── src/MCServerLauncher.Common/            # Shared models, utilities, protocol contracts
+├── src/MCServerLauncher.Daemon/            # Background daemon managing instances
+├── generators/MCServerLauncher.Daemon.Generators/ # Roslyn generators for RPC and serialization
+├── src/MCServerLauncher.DaemonClient/      # .NET daemon client library
+├── src/MCServerLauncher.WPF/               # Windows WPF client
+├── tests/MCServerLauncher.ProtocolTests/     # Protocol and integration tests
+├── benchmarks/MCServerLauncher.Benchmarks/        # BenchmarkDotNet performance baselines
 └── Sign/                               # Code signing utilities
 ```
 
@@ -125,15 +125,15 @@ MCServerLauncher-Future/
 
 ### Tests And Benchmarks
 
-- `MCServerLauncher.ProtocolTests/`: integration and protocol behavior tests.
-- `MCServerLauncher.Benchmarks/`: BenchmarkDotNet baselines for allocation, transport, and serialization-sensitive work.
+- `tests/MCServerLauncher.ProtocolTests/`: integration and protocol behavior tests.
+- `benchmarks/MCServerLauncher.Benchmarks/`: BenchmarkDotNet baselines for allocation, transport, and serialization-sensitive work.
 
 ## Task Routing
 
 - Docs or governance only: use `docs`, `agent-docs`, or `workflow`; inspect Markdown, terminology, `git diff --check`, and `git status --short`.
 - WPF UI or workflow: use `frontend`; check `RULES.md` WPF rules and build with `/m:1`.
 - Daemon behavior: use `backend`; preserve `Result<T, Error>`, cancellation where available, daemon-side authority, and path validation.
-- Wire contracts or serializers: use `protocol` and `serialization`; start in `MCServerLauncher.Common`, then update daemon, daemon client, WPF, tests, and benchmarks as needed.
+- Wire contracts or serializers: use `protocol` and `serialization`; start in `src/MCServerLauncher.Common`, then update daemon, daemon client, WPF, tests, and benchmarks as needed.
 - Installer changes: use `installer` plus `backend` or `storage`; keep mirror behavior explicit and preserve Forge-family installer differences.
 - File/path changes: use `storage`; validate trust boundaries daemon-side.
 - Tests or performance work: use `tests` or `benchmarks`; keep coverage proportional to behavioral risk.
@@ -148,7 +148,7 @@ MCServerLauncher-Future/
 - Do not revert user or teammate changes without explicit instruction.
 - When the work changes behavior, update docs and tests in the same task.
 - Before finishing, add a changelog entry to the relevant plan when one exists.
-- Before every commit, run `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1` and confirm the full protocol test suite passes.
+- Before every commit, run `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1` and confirm the full protocol test suite passes.
 - Commit messages use `type(scope): subject`.
 
 ## Naming And Style
@@ -190,7 +190,7 @@ Avoid replacing `daemon` with generic `backend`, `server`, or `service` when des
 ## Domain Checks
 
 - Client-daemon communication remains action/event protocol over WebSocket.
-- Shared wire contracts live in `MCServerLauncher.Common`.
+- Shared wire contracts live in `src/MCServerLauncher.Common`.
 - Daemon-side validation is authoritative for security, lifecycle, and path safety.
 - Meta-bearing events must preserve documented missing/null metadata semantics.
 - Instance lifecycle paths should preserve cancellation support where the surrounding API exposes it.
@@ -234,19 +234,19 @@ CS8524 warnings indicate enum cases may be missing in switch expressions. Add ex
 Choose the smallest relevant set:
 
 - Docs-only: inspect Markdown, run terminology search when vocabulary changes, then `git diff --check`.
-- WPF: `dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`
-- Daemon: `dotnet build MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`
-- Daemon client: `dotnet build MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`
-- Source generator: `dotnet build MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1`
-- Protocol: `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`
-- Benchmarks: `dotnet run --project MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release`
+- WPF: `dotnet build src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`
+- Daemon: `dotnet build src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`
+- Daemon client: `dotnet build src/MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`
+- Source generator: `dotnet build generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1`
+- Protocol: `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`
+- Benchmarks: `dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release`
 - Full solution: `dotnet build MCServerLauncher.sln /m:1`
 - Final hygiene: `git diff --check` and `git status --short --branch`
 
 ## Documentation And Integrations
 
-- Daemon machine-readable docs live under `MCServerLauncher.Daemon/.Resources/Docs/`, primarily `apifox.json` and embedded `protocol/topics/*.md` resources.
-- WPF docs live under `MCServerLauncher.WPF/.Resources/Docs/`.
+- Daemon machine-readable docs live under `src/MCServerLauncher.Daemon/.Resources/Docs/`, primarily `apifox.json` and embedded `protocol/topics/*.md` resources.
+- WPF docs live under `src/MCServerLauncher.WPF/.Resources/Docs/`.
 - Public READMEs exist in English and Chinese.
 - Internationalization is managed through Weblate.
 - Related projects include the Rust daemon experiment, the cross-platform Tauri launcher, and the browser web panel. Treat those as external unless the task explicitly crosses repo boundaries.
@@ -263,7 +263,7 @@ Choose the smallest relevant set:
 ## Do Not
 
 - Do not restore, delete, or reformat unrelated user-owned changes.
-- Do not move shared protocol types out of `MCServerLauncher.Common`.
+- Do not move shared protocol types out of `src/MCServerLauncher.Common`.
 - Do not make frontend-only checks authoritative for daemon security or path safety.
 - Do not add reflection-heavy daemon paths without considering trimming and AOT.
 - Do not rename protocol vocabulary casually.

@@ -1,6 +1,6 @@
 param(
-    [string]$WpfRoot = "MCServerLauncher.WPF",
-    [string]$TranslationsRoot = "MCServerLauncher.WPF/Translations",
+    [string]$WpfRoot = "src/MCServerLauncher.WPF",
+    [string]$TranslationsRoot = "src/MCServerLauncher.WPF/Translations",
     [string[]]$Cultures = @("en-US", "ja-JP", "ru-RU", "zh-CN", "zh-HK", "zh-TW"),
     [switch]$Json,
     [switch]$Strict

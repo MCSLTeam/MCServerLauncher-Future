@@ -16,7 +16,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 - Keep nullable reference types warning-clean in changed C# projects.
 - Prefer existing patterns, helpers, project boundaries, and naming.
 - Keep edits scoped to the task and update docs when behavior or vocabulary changes.
-- Before every commit, run `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build` and ensure `MCServerLauncher.ProtocolTests` passes.
+- Before every commit, run `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build` and ensure `MCServerLauncher.ProtocolTests` passes.
 - Run `git diff --check` before finishing.
 
 ## Domain Rules
@@ -29,18 +29,18 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 
 ## Architecture Boundaries
 
-- Shared wire types belong in `MCServerLauncher.Common`.
-- Daemon RPC action execution belongs in `MCServerLauncher.Daemon/Remote/Action`.
-- WPF presentation and interaction logic belongs in `MCServerLauncher.WPF`.
-- Daemon connection and transport code belongs in `MCServerLauncher.DaemonClient`.
-- Source-generator diagnostics and registry generation belong in `MCServerLauncher.Daemon.Generators`.
+- Shared wire types belong in `src/MCServerLauncher.Common`.
+- Daemon RPC action execution belongs in `src/MCServerLauncher.Daemon/Remote/Action`.
+- WPF presentation and interaction logic belongs in `src/MCServerLauncher.WPF`.
+- Daemon connection and transport code belongs in `src/MCServerLauncher.DaemonClient`.
+- Source-generator diagnostics and registry generation belong in `generators/MCServerLauncher.Daemon.Generators`.
 
 ## Serialization And Protocol
 
 - Use `System.Text.Json`; do not add Newtonsoft.Json.
 - Prefer source-generated or explicitly owned serializers for daemon and protocol paths.
 - Keep daemon AOT/trimming constraints in mind; avoid reflection-dependent runtime discovery unless a trim boundary is explicit.
-- Protocol changes need tests in `MCServerLauncher.ProtocolTests`.
+- Protocol changes need tests in `tests/MCServerLauncher.ProtocolTests`.
 - Byte-oriented transport changes should avoid needless string conversion.
 
 ## Daemon Rules
@@ -68,7 +68,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 ## Tests And Benchmarks
 
 - Protocol behavior changes need protocol tests.
-- Every commit requires `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build` to pass, even when the task only changes non-protocol code.
+- Every commit requires `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build` to pass, even when the task only changes non-protocol code.
 - Performance-sensitive serialization or transport work needs a benchmark update or a clear reason why existing coverage is sufficient.
 - Existing known test warnings may be reported, but new warnings should be fixed in touched code.
 
@@ -78,5 +78,5 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 - Update `RULES.md` when a repeated review comment becomes a project rule.
 - Update `EXECUTE_PLAN.md` when phase status or backlog meaningfully changes.
 - Keep `AGENTS.md` as the full operating guide and `CLAUDE.md` as a compact index.
-- Daemon machine-readable protocol docs are Apifox-only. Keep `MCServerLauncher.Daemon/.Resources/Docs/apifox.json` shaped like a native Apifox project export: WebSocket APIs live under `webSocketCollection` as `root -> folder -> api` items, omit `api.type`, omit `api.method`, store the send payload in `api.requestBody.message`, and place actual query/header/cookie parameters under `api.parameters`.
+- Daemon machine-readable protocol docs are Apifox-only. Keep `src/MCServerLauncher.Daemon/.Resources/Docs/apifox.json` shaped like a native Apifox project export: WebSocket APIs live under `webSocketCollection` as `root -> folder -> api` items, omit `api.type`, omit `api.method`, store the send payload in `api.requestBody.message`, and place actual query/header/cookie parameters under `api.parameters`.
 - Do not add Postman, Swagger, OpenAPI, or HTTP action bridge artifacts back to daemon docs unless the task explicitly changes the documentation strategy.

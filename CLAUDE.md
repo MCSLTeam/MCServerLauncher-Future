@@ -29,9 +29,9 @@ Use `skills/mcsl-future/SKILL.md` for work that changes daemon protocol behavior
 
 ## Verification Hints
 
-- WPF: `dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`
-- Daemon: `dotnet build MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`
-- DaemonClient: `dotnet build MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`
-- Generator: `dotnet build MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1`
-- Protocol: `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`
+- WPF: `dotnet build src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`
+- Daemon: `dotnet build src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`
+- DaemonClient: `dotnet build src/MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`
+- Generator: `dotnet build generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1`
+- Protocol: `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`
 - Final hygiene: `git diff --check` and `git status --short`

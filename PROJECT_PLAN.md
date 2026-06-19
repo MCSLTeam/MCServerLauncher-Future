@@ -16,7 +16,7 @@ MCServerLauncher Future, codename `mcsl-future`, is a server management suite fo
 - WPF desktop client for daemon connection, instance creation, console management, file management, settings, notifications, and i18n.
 - .NET daemon for instance lifecycle, installer workflows, file transfer, Java scanning, event broadcast, RPC actions, and CLI commands.
 - Daemon client library for WebSocket RPC, event subscriptions, file upload/download, and reconnection handling.
-- Shared protocol/data contracts in `MCServerLauncher.Common`.
+- Shared protocol/data contracts in `src/MCServerLauncher.Common`.
 - Source generators for AOT-compatible daemon action registration and serialization support.
 - Protocol tests and benchmarks for transport, serialization, and performance behavior.
 
@@ -29,18 +29,18 @@ MCServerLauncher Future, codename `mcsl-future`, is a server management suite fo
 
 ## Architecture
 
-- `MCServerLauncher.WPF` is the Windows desktop client targeting `net10.0-windows10.0.18362.0`.
-- `MCServerLauncher.Daemon` is the background service targeting `net10.0`, with trimming/AOT constraints.
-- `MCServerLauncher.DaemonClient` is the .NET client library for daemon WebSocket communication.
-- `MCServerLauncher.Common` owns shared protocol types and cross-project contracts.
-- `MCServerLauncher.Daemon.Generators` owns Roslyn generation for daemon action registration and analyzer diagnostics.
-- `MCServerLauncher.ProtocolTests` verifies protocol and integration behavior.
-- `MCServerLauncher.Benchmarks` tracks performance-sensitive paths.
+- `src/MCServerLauncher.WPF` is the Windows desktop client targeting `net10.0-windows10.0.18362.0`.
+- `src/MCServerLauncher.Daemon` is the background service targeting `net10.0`, with trimming/AOT constraints.
+- `src/MCServerLauncher.DaemonClient` is the .NET client library for daemon WebSocket communication.
+- `src/MCServerLauncher.Common` owns shared protocol types and cross-project contracts.
+- `generators/MCServerLauncher.Daemon.Generators` owns Roslyn generation for daemon action registration and analyzer diagnostics.
+- `tests/MCServerLauncher.ProtocolTests` verifies protocol and integration behavior.
+- `benchmarks/MCServerLauncher.Benchmarks` tracks performance-sensitive paths.
 
 ## Fixed Invariants
 
 - Client-daemon communication uses the action/event protocol over WebSocket.
-- Shared wire contracts live in `MCServerLauncher.Common` and must remain serializer-friendly.
+- Shared wire contracts live in `src/MCServerLauncher.Common` and must remain serializer-friendly.
 - Daemon serialization must remain compatible with trimming and AOT; prefer source-generated `System.Text.Json`.
 - Instance type support is factory-driven through `IInstanceFactory` and `[InstanceFactory]`.
 - WPF user-facing strings must use `Lang.Tr[...]` and resource keys instead of hard-coded UI text.
@@ -59,12 +59,12 @@ MCServerLauncher Future, codename `mcsl-future`, is a server management suite fo
 ## Verification Matrix
 
 - Docs-only: inspect Markdown, run `git diff --check`, and run terminology searches when vocabulary changes.
-- WPF: `dotnet build MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`.
-- Daemon: `dotnet build MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`.
-- Daemon client: `dotnet build MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`.
-- Source generator: `dotnet build MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1`.
-- Protocol behavior: `dotnet test MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`.
-- Performance: `dotnet run --project MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release`.
+- WPF: `dotnet build src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1`.
+- Daemon: `dotnet build src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj /m:1`.
+- Daemon client: `dotnet build src/MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj /m:1`.
+- Source generator: `dotnet build generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj /m:1`.
+- Protocol behavior: `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1`.
+- Performance: `dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release`.
 - Full solution: `dotnet build MCServerLauncher.sln /m:1`.
 
 ## Milestones
