@@ -44,9 +44,10 @@ public static class Application
         gs.OnShutdown += () => OnStopping.Invoke();
 
         await HttpService.StartAsync();
-        var config = AppConfig.Get();
-        Log.Information("[Remote] Ws Server started at ws://0.0.0.0:{0}/api/v1", config.Port);
-        Log.Information("[Remote] Http Server started at http://0.0.0.0:{0}/", config.Port);
+        var remoteAddress = GetBoundRemoteAddress();
+        Log.Information("[Remote] Ws Server started at ws://{RemoteAddress}/api/v1", remoteAddress);
+        Log.Information("[Remote] Http Server started at http://{RemoteAddress}/", remoteAddress);
+        Log.Information("[Remote] Apifox docs available at http://{RemoteAddress}/apifox.json", remoteAddress);
 
         await (OnStarted?.Invoke() ?? Task.CompletedTask);
 
@@ -69,6 +70,24 @@ public static class Application
         Log.Debug("[WsContextContainer] closing websocket connections ...");
         await Task.WhenAll(HttpService.Resolver.GetRequiredService<WsContextContainer>()
             .Select(kv => kv.Value.GetWebsocket().CloseAsync("Daemon exit", cts.Token)));
+    }
+
+    private static string GetBoundRemoteAddress()
+    {
+        var endpoint = HttpService.Monitors
+            .Select(monitor => monitor.Socket.LocalEndPoint)
+            .OfType<System.Net.IPEndPoint>()
+            .FirstOrDefault();
+
+        if (endpoint is null)
+        {
+            return $"0.0.0.0:{AppConfig.Get().Port}";
+        }
+
+        var address = endpoint.Address.ToString();
+        return endpoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
+            ? $"[{address}]:{endpoint.Port}"
+            : $"{address}:{endpoint.Port}";
     }
 
 

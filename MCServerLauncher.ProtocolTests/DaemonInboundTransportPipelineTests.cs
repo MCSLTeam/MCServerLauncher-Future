@@ -348,6 +348,131 @@ public class DaemonInboundTransportPipelineTests
     [Fact]
     [Trait("Category", "Inbound")]
     [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void ApplicationStartupLog_PointsToApifoxDocsOnly()
+    {
+        var source = ReadSourceFile("MCServerLauncher.Daemon/Application.cs");
+
+        Assert.Contains("var remoteAddress = GetBoundRemoteAddress();", source, StringComparison.Ordinal);
+        Assert.Contains("[Remote] Apifox docs available at http://{RemoteAddress}/apifox.json", source,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("[Remote] Apifox docs available at http://0.0.0.0:{0}/apifox.json", source,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("postman_collection.json", source, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void DaemonAssembly_EmbedsApifoxProjectAndProtocolDocsOnly()
+    {
+        var resourceNames = typeof(HttpPlugin).Assembly.GetManifestResourceNames();
+
+        Assert.DoesNotContain("MCServerLauncher.Daemon.Resources.Docs.openapi.json", resourceNames);
+        Assert.DoesNotContain("MCServerLauncher.Daemon.Resources.Docs.postman_collection.json", resourceNames);
+        Assert.Contains("MCServerLauncher.Daemon.Resources.Docs.apifox.json", resourceNames);
+        Assert.DoesNotContain("MCServerLauncher.Daemon.Resources.Docs.swagger.index.html", resourceNames);
+        Assert.DoesNotContain("MCServerLauncher.Daemon.Resources.Docs.swagger.swagger-ui.css", resourceNames);
+        Assert.DoesNotContain("MCServerLauncher.Daemon.Resources.Docs.swagger.swagger-ui-bundle.js", resourceNames);
+        Assert.DoesNotContain("MCServerLauncher.Daemon.Resources.Docs.swagger.swagger-ui-standalone-preset.js", resourceNames);
+        Assert.Contains("MCServerLauncher.Daemon.Resources.Docs.protocol.topics.connection.md", resourceNames);
+        Assert.Contains("MCServerLauncher.Daemon.Resources.Docs.protocol.topics.actions.md", resourceNames);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void HttpPluginFile_ExposesEmbeddedApifoxProjectAndProtocolDocs()
+    {
+        AssertFileContains("MCServerLauncher.Daemon/Remote/HttpPlugin.cs",
+            "EmbeddedDocumentation.TryGetResource(request.URL, out var document)");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/EmbeddedDocumentation.cs",
+            "\"/openapi.json\"");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/EmbeddedDocumentation.cs",
+            "\"/postman_collection.json\"");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/EmbeddedDocumentation.cs",
+            "\"/apifox.json\"");
+        AssertFileContains("MCServerLauncher.Daemon/Remote/EmbeddedDocumentation.cs",
+            "\"/docs/protocol/\"");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/EmbeddedDocumentation.cs",
+            "\"/swagger\"");
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void HttpPluginFile_DoesNotExposeActionHttpBridge()
+    {
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/HttpPlugin.cs",
+            "HttpActionBridge.TryGetActionName(request.URL, out var actionName)");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/HttpPlugin.cs",
+            "HttpActionBridge.HandleAsync");
+        Assert.False(File.Exists(Path.Combine(ResolveRepoRoot(), "MCServerLauncher.Daemon/Remote/HttpActionBridge.cs")));
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void OpenApiArtifacts_AreNotGeneratedOrEmbedded()
+    {
+        var repoRoot = ResolveRepoRoot();
+        Assert.False(File.Exists(Path.Combine(repoRoot, "MCServerLauncher.Daemon/.Resources/Docs/openapi.json")));
+        Assert.False(File.Exists(Path.Combine(repoRoot, "../mcsl-future-protocol/openapi.json")));
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj",
+            ".Resources\\Docs\\openapi.json");
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void PostmanArtifacts_AreNotGeneratedOrEmbedded()
+    {
+        var repoRoot = ResolveRepoRoot();
+
+        Assert.False(File.Exists(Path.Combine(repoRoot, "MCServerLauncher.Daemon/.Resources/Docs/postman_collection.json")));
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj",
+            ".Resources\\Docs\\postman_collection.json");
+        AssertFileDoesNotContain("MCServerLauncher.Daemon/Remote/EmbeddedDocumentation.cs",
+            "postman_collection.json");
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public void EmbeddedApifoxProject_DocumentsWebSocketActionsAsWebSocketApis()
+    {
+        var repoRoot = ResolveRepoRoot();
+        var apifoxPath = Path.Combine(repoRoot, "MCServerLauncher.Daemon/.Resources/Docs/apifox.json");
+        using var apifox = JsonDocument.Parse(File.ReadAllText(apifoxPath));
+        var root = apifox.RootElement;
+
+        Assert.Equal("1.0.0", root.GetProperty("apifoxProject").GetString());
+        Assert.Contains("{{wsUrl}}?token={{token}}", root.GetRawText(), StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/v1/actions/", root.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("protocol/topics/actions.md", root.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("protocol/topics/models.md", root.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("ActionResponse", root.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("SystemInfo", root.GetRawText(), StringComparison.Ordinal);
+        AssertApifoxWebSocketActionsMatchActionType(root);
+        AssertApifoxProjectIncludesMfpSchemasAndDocs(root);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
     public void WsEventPlugin_OnWebSocketClosing_CallsUnsubscribeAllEvents()
     {
         var container = new WsContextContainer();
@@ -408,6 +533,16 @@ public class DaemonInboundTransportPipelineTests
         Assert.DoesNotContain(forbiddenText, source, StringComparison.Ordinal);
     }
 
+    private static void AssertSchemaReferenceExists(JsonElement schemaReference, JsonElement schemas, string context)
+    {
+        var reference = schemaReference.GetProperty("$ref").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(reference), $"{context} schema reference is empty");
+        const string prefix = "#/components/schemas/";
+        Assert.StartsWith(prefix, reference, StringComparison.Ordinal);
+        var schemaName = reference[prefix.Length..];
+        Assert.True(schemas.TryGetProperty(schemaName, out _), $"{context} schema '{schemaName}' is missing");
+    }
+
     private static string ResolveRepoRoot()
     {
         var dir = AppDomain.CurrentDomain.BaseDirectory;
@@ -423,6 +558,102 @@ public class DaemonInboundTransportPipelineTests
     {
         var repoRoot = ResolveRepoRoot();
         return File.ReadAllText(Path.Combine(repoRoot, relativePath));
+    }
+
+    private static void AssertApifoxWebSocketActionsMatchActionType(JsonElement root)
+    {
+        var expected = Enum.GetNames<ActionType>()
+            .Select(JsonNamingPolicy.SnakeCaseLower.ConvertName)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal("根目录", root.GetProperty("webSocketCollection")[0].GetProperty("name").GetString());
+        Assert.Equal("WebSocket actions", root.GetProperty("webSocketCollection")[0]
+            .GetProperty("items")[0]
+            .GetProperty("name")
+            .GetString());
+
+        var webSocketItems = root.GetProperty("webSocketCollection")
+            .EnumerateArray()
+            .SelectMany(EnumerateApifoxApiItems)
+            .ToArray();
+
+        var actions = webSocketItems
+            .Select(item => item.GetProperty("name").GetString())
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expected, actions);
+
+        foreach (var api in webSocketItems.Select(item => item.GetProperty("api")))
+        {
+            Assert.Equal("{{wsUrl}}?token={{token}}", api.GetProperty("path").GetString());
+            Assert.False(api.TryGetProperty("type", out _), "Native Apifox WebSocket APIs omit api.type");
+            Assert.False(api.TryGetProperty("method", out _), "Apifox WebSocket APIs must not masquerade as HTTP requests");
+            Assert.True(api.GetProperty("requestBody").TryGetProperty("message", out var message));
+            Assert.False(string.IsNullOrWhiteSpace(message.GetString()));
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("requestBody").GetProperty("parameters").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("query").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("path").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("cookie").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("header").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("query").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("body").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("cookie").ValueKind);
+            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("header").ValueKind);
+        }
+    }
+
+    private static IEnumerable<JsonElement> EnumerateApifoxApiItems(JsonElement item)
+    {
+        if (item.ValueKind != JsonValueKind.Object)
+        {
+            yield break;
+        }
+
+        if (item.TryGetProperty("api", out _))
+        {
+            yield return item;
+        }
+
+        if (!item.TryGetProperty("items", out var children))
+        {
+            yield break;
+        }
+
+        foreach (var child in children.EnumerateArray())
+        {
+            foreach (var apiItem in EnumerateApifoxApiItems(child))
+            {
+                yield return apiItem;
+            }
+        }
+    }
+
+    private static void AssertApifoxProjectIncludesMfpSchemasAndDocs(JsonElement root)
+    {
+        var schemaNames = root.GetProperty("schemaCollection")
+            .EnumerateArray()
+            .SelectMany(group => group.GetProperty("items").EnumerateArray())
+            .Select(item => item.GetProperty("name").GetString())
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.Contains("ActionRequest", schemaNames);
+        Assert.Contains("ActionResponse", schemaNames);
+        Assert.Contains("EventPacket", schemaNames);
+        Assert.Contains("SystemInfo", schemaNames);
+        Assert.Contains("DaemonReport", schemaNames);
+        Assert.Contains("InstanceConfig", schemaNames);
+
+        var docNames = root.GetProperty("docCollection")
+            .EnumerateArray()
+            .SelectMany(group => group.GetProperty("items").EnumerateArray())
+            .Select(item => item.GetProperty("name").GetString())
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.Contains("MFP actions", docNames);
+        Assert.Contains("MFP models", docNames);
+        Assert.Contains("MFP connection", docNames);
     }
 
     private sealed class FakeExecutor : IActionExecutor
