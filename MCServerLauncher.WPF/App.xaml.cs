@@ -14,7 +14,6 @@ namespace MCServerLauncher.WPF
 {
     /// <summary>
     ///    App.xaml 的交互逻辑
-    ///    (不要删掉冗余的 : Application 继承，否则无法正确使用 docfx 生成文档)
     /// </summary>
     public partial class App : Application
     {

@@ -245,7 +245,7 @@ Choose the smallest relevant set:
 
 ## Documentation And Integrations
 
-- Daemon docs live under `MCServerLauncher.Daemon/.Resources/Docs/`, including `ws-api.md`, `manual.daemon.md`, and serializer migration policy.
+- Daemon machine-readable docs live under `MCServerLauncher.Daemon/.Resources/Docs/`, primarily `apifox.json` and embedded `protocol/topics/*.md` resources.
 - WPF docs live under `MCServerLauncher.WPF/.Resources/Docs/`.
 - Public READMEs exist in English and Chinese.
 - Internationalization is managed through Weblate.
