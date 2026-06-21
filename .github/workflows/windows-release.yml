@@ -1,0 +1,221 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Git tag to publish
+        required: true
+        type: string
+      prerelease:
+        description: Pre-release
+        required: true
+        type: boolean
+        default: false
+      include_pdb:
+        description: Include PDB files in the publish output
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            family: windows
+            architecture: x64
+            include_wpf: true
+            archive_ext: zip
+          - rid: win-x86
+            family: windows
+            architecture: x86
+            include_wpf: true
+            archive_ext: zip
+          - rid: win-arm64
+            family: windows
+            architecture: arm64
+            include_wpf: true
+            archive_ext: zip
+          - rid: linux-x64
+            family: linux
+            architecture: x64
+            include_wpf: false
+            archive_ext: tar.gz
+          - rid: linux-arm64
+            family: linux
+            architecture: arm64
+            include_wpf: false
+            archive_ext: tar.gz
+          - rid: osx-x64
+            family: macos
+            architecture: x64
+            include_wpf: false
+            archive_ext: tar.gz
+          - rid: osx-arm64
+            family: macos
+            architecture: arm64
+            include_wpf: false
+            archive_ext: tar.gz
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore project
+        run: dotnet restore src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
+
+      - name: Restore WPF project
+        if: matrix.include_wpf
+        run: dotnet restore src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj
+
+      - name: Publish packages
+        shell: pwsh
+        run: |
+          $publishRoot = Join-Path $env:GITHUB_WORKSPACE 'artifacts'
+          $includePdb = if ('${{ inputs.include_pdb }}' -eq 'true') { 'true' } else { 'false' }
+          $packageModes = @(
+            @{ name = 'self-contained'; selfContained = 'true'; suffix = 'sc' },
+            @{ name = 'framework-dependent'; selfContained = 'false'; suffix = 'fdd' }
+          )
+
+          foreach ($mode in $packageModes) {
+            $packageBase = "mcsl-future-${{ matrix.rid }}-$($mode.suffix)"
+            $packageDir = Join-Path $publishRoot $packageBase
+            $metadataDir = Join-Path $publishRoot 'metadata'
+            $daemonPublishDir = Join-Path $packageDir 'daemon'
+            $wpfPublishDir = Join-Path $packageDir 'wpf'
+
+            New-Item -ItemType Directory -Force -Path $daemonPublishDir | Out-Null
+            New-Item -ItemType Directory -Force -Path $metadataDir | Out-Null
+
+            $daemonArgs = @(
+              'publish',
+              'src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj',
+              '-c', 'Release',
+              '-r', '${{ matrix.rid }}',
+              '--self-contained', $mode.selfContained,
+              '-o', $daemonPublishDir
+            )
+
+            if ($includePdb -ne 'true') {
+              $daemonArgs += '-p:DebugType=None'
+              $daemonArgs += '-p:DebugSymbols=false'
+            }
+
+            dotnet @daemonArgs
+
+            $contents = @('daemon')
+
+            if ('${{ matrix.include_wpf }}' -eq 'true') {
+              New-Item -ItemType Directory -Force -Path $wpfPublishDir | Out-Null
+
+              $wpfArgs = @(
+                'publish',
+                'src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj',
+                '-c', 'Release',
+                '-r', '${{ matrix.rid }}',
+                '--self-contained', $mode.selfContained,
+                '-o', $wpfPublishDir
+              )
+
+              if ($includePdb -ne 'true') {
+                $wpfArgs += '-p:DebugType=None'
+                $wpfArgs += '-p:DebugSymbols=false'
+              }
+
+              dotnet @wpfArgs
+              $contents += 'wpf'
+            }
+
+            $archiveBase = $packageBase
+            $archivePath = Join-Path $publishRoot "$archiveBase.$('${{ matrix.archive_ext }}')"
+
+            if (Test-Path $archivePath) { Remove-Item $archivePath -Force }
+
+            if ('${{ matrix.archive_ext }}' -eq 'zip') {
+              Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $archivePath -Force
+            }
+            else {
+              tar -czf $archivePath -C $packageDir .
+            }
+
+            $metadata = [ordered]@{
+              rid = '${{ matrix.rid }}'
+              family = '${{ matrix.family }}'
+              architecture = '${{ matrix.architecture }}'
+              mode = $mode.name
+              archiveName = [System.IO.Path]::GetFileName($archivePath)
+              archiveType = '${{ matrix.archive_ext }}'
+              contents = $contents
+            }
+
+            $metadata | ConvertTo-Json -Depth 3 | Set-Content -Path (Join-Path $metadataDir "$archiveBase.json") -Encoding utf8
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
+            artifacts/metadata/*.json
+          if-no-files-found: error
+
+  release:
+    needs: publish
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Build release body
+        shell: pwsh
+        run: |
+          $body = Get-Content Release.md -Raw
+          $body += "`n## Published Packages`n"
+          $body += "`n| RID | Mode | Archive | Contents |`n| --- | --- | --- | --- |`n"
+
+          $metadataFiles = Get-ChildItem -Recurse artifacts -Filter *.json | Sort-Object FullName
+          foreach ($metadataFile in $metadataFiles) {
+            $metadata = Get-Content $metadataFile.FullName -Raw | ConvertFrom-Json
+            $body += "| $($metadata.rid) | $($metadata.mode) | $($metadata.archiveName) | $($metadata.contents -join ', ') |`n"
+          }
+
+          $body += "`n## Build Settings`n"
+          $body += "`n- Release tag: ${{ inputs.tag_name }}`n"
+          $body += "- Pre-release: ${{ inputs.prerelease }}`n"
+          $body += "- Include PDB: ${{ inputs.include_pdb }}`n"
+          $body += "`n## Assets`n"
+          foreach ($metadataFile in $metadataFiles) {
+            $metadata = Get-Content $metadataFile.FullName -Raw | ConvertFrom-Json
+            $body += "- $($metadata.archiveName)`n"
+          }
+          Set-Content -Path release-body.md -Value $body -Encoding utf8
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name }}
+          prerelease: ${{ inputs.prerelease }}
+          body_path: release-body.md
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
