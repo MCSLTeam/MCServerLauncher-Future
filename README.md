@@ -42,8 +42,8 @@ non-Windows users.
 
 ## System Requirements
 
-Requires [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
-
+Daemon Requires [.NET Runtime 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
+WPF Launcher Requires [.NET Desktop Runtime 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 ## Contribute
 
 We are actively working on internationalization through Weblate. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/engage/mcsl-future/> to contribute your efforts.  
