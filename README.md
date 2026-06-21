@@ -26,7 +26,7 @@ of [MCServerLauncher 2](https://github.com/MCSLTeam/MCSL2), offering enhanced co
 ## Components
 
 [.NET Daemon](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon): The core service
-built with .NET C#, delivering robust performance and flexibility.
+built with .NET 10 C#, delivering robust performance and flexibility.
 
 [Rust Daemon](https://github.com/MCSLTeam/mcsl-daemon-rs/): The core service
 built with Rust, experimental!
