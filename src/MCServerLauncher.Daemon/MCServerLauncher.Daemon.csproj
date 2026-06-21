@@ -6,7 +6,7 @@
         <ApplicationIcon>.Resources\MCServerLauncherFutureDaemon.ico</ApplicationIcon>
         <Company>AcmeCloud</Company>
         <Authors>MCSLTeam</Authors>
-        <FileVersion>0.1.0.0</FileVersion>
+        <FileVersion>0.1.0.1</FileVersion>
         <Copyright>Copyright © 2022-2026 MCSLTeam. All rights reserved.</Copyright>
         <Product>MCServerLauncher Future Daemon</Product>
         <Description>Daemon for MCServerLauncher Future</Description>
