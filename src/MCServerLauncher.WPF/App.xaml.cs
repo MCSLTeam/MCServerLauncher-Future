@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Serilog;
 using Clipboard = MCServerLauncher.WPF.Modules.Clipboard;
 using ExceptionWindow = MCServerLauncher.WPF.ExceptionDialog.Window;
 
@@ -100,6 +101,7 @@ namespace MCServerLauncher.WPF
             Clipboard.SetText(e.Exception.ToString());
             new ExceptionWindow(e.Exception.ToString()).ShowDialog();
             e.Handled = true;
+            Log.Error("Unhandled UI Exception", e.Exception);
         }
 
         private void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -133,6 +135,10 @@ namespace MCServerLauncher.WPF
 
                 }
             }
+            finally
+            {
+                Log.Fatal("Unhandled Non-UI Exception", exception);
+            }
         }
         
         private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
@@ -154,6 +160,10 @@ namespace MCServerLauncher.WPF
             catch
             {
 
+            }
+            finally
+            {
+                Log.Error("Unobserved Task Exception", exception);
             }
         }
     }
