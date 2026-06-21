@@ -29,7 +29,7 @@
     <Authors>MCSLTeam</Authors>
     <Copyright>Copyright © 2022-2026 MCSLTeam. All rights reserved.</Copyright>
     <Product>MCServerLauncher Future</Product>
-    <Version>1.0.0.0</Version>
+    <Version>0.1.0.0</Version>
     <SignAssembly>False</SignAssembly>
     <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
   </PropertyGroup>

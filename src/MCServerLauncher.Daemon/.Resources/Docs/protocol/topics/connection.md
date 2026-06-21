@@ -17,7 +17,7 @@
 ```json
 {
   "name": "MCServerLauncher Future Daemon CSharp",
-  "version": "1.0.0.0",
+  "version": "0.1.0.0",
   "api_version": "v1"
 }
 ```
