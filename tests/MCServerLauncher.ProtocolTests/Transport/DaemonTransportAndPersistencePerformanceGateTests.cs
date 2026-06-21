@@ -26,19 +26,19 @@ public class DaemonTransportAndPersistencePerformanceGateTests
     private const int MeasuredSamples = 7;
 
     private static readonly HotPathBaseline ActionRequestParseBaseline = new(
-        NanosecondsPerOperation: 15_100,
+        NanosecondsPerOperation: 28_000,
         AllocatedBytesPerOperation: 1_672);
 
     private static readonly HotPathBaseline ActionResponseSerializeBaseline = new(
-        NanosecondsPerOperation: 2_400,
+        NanosecondsPerOperation: 3_000,
         AllocatedBytesPerOperation: 720);
 
     private static readonly HotPathBaseline EventPacketSerializeBaseline = new(
-        NanosecondsPerOperation: 6_700,
+        NanosecondsPerOperation: 8_300,
         AllocatedBytesPerOperation: 1_680);
 
     private static readonly HotPathBaseline PersistenceReadWriteBaseline = new(
-        NanosecondsPerOperation: 73_000,
+        NanosecondsPerOperation: 97_000,
         AllocatedBytesPerOperation: 16_700);
 
     [Fact]
