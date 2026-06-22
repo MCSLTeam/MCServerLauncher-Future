@@ -2,7 +2,7 @@
 English | [中文](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/README_ZH.md)  
 </br>
 This repository only includes sources of the Daemon and the WPF Desktop Launcher. If you want to know more about the web
-frontend, just click [here](https://github.com/MCSLTeam/MCServerLauncher-Future-Web).
+frontend or Tauri launcher, just click [here](https://github.com/MCSLTeam/MCServerLauncher-Future-Web).
 
 [![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
 ![Platform Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
@@ -42,7 +42,8 @@ non-Windows users.
 
 ## System Requirements
 
-Requires [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
+Daemon Requires [.NET Runtime 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
+WPF Launcher Requires [.NET Desktop Runtime 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 
 ## Contribute
 
