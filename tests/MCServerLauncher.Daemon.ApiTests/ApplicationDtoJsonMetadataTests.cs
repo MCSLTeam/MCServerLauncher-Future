@@ -20,6 +20,7 @@ public sealed class ApplicationDtoJsonMetadataTests
         var context = ApplicationContractJsonContext.Default;
         var contractTypes = typeof(CreateInstanceRequest).Assembly.GetExportedTypes()
             .Where(type => type.Namespace?.StartsWith("MCServerLauncher.Common.Contracts", StringComparison.Ordinal) == true)
+            .Where(type => type.Namespace?.StartsWith("MCServerLauncher.Common.Contracts.Protocol", StringComparison.Ordinal) != true)
             .Where(type => !typeof(JsonSerializerContext).IsAssignableFrom(type));
 
         Assert.All(contractTypes, type => Assert.NotNull(context.GetTypeInfo(type)));

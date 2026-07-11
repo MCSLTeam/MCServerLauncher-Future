@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 
 namespace MCServerLauncher.Common.Contracts.Serialization;
@@ -18,3 +19,21 @@ internal sealed class InstanceFactoryMirrorJsonConverter()
 
 internal sealed class InstanceStatusJsonConverter()
     : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class EventMetaFilterKindJsonConverter()
+    : JsonStringEnumConverter<EventMetaFilterKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class UploadChunkAcknowledgementStatusJsonConverter()
+    : JsonStringEnumConverter<UploadChunkAcknowledgementStatus>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class InstanceCatalogChangeOperationJsonConverter()
+    : JsonStringEnumConverter<InstanceCatalogChangeOperation>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class OpenRpcEventFieldPresenceJsonConverter()
+    : JsonStringEnumConverter<OpenRpcEventFieldPresence>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class BuiltInProtocolInstanceTypeJsonConverter()
+    : JsonStringEnumConverter<InstanceType>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class BuiltInProtocolInstanceStatusJsonConverter()
+    : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
