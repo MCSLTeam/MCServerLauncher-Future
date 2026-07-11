@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Reflection;
 using System.Text.Json;
+using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Serialization;
@@ -101,6 +104,13 @@ internal static class LegacyActionRegistryHarness
         if (systemInfoCell is not null)
         {
             services.AddSingleton(systemInfoCell);
+            var javaRuntimeCell = new AsyncTimedLazyCell<JavaInfo[]>(
+                () => Task.FromResult(Array.Empty<JavaInfo>()),
+                TimeSpan.FromHours(1));
+            services.AddSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(javaRuntimeCell);
+            services.AddSingleton<ISystemApplication>(
+                new LocalSystemApplication(systemInfoCell, javaRuntimeCell));
+            services.AddSingleton<LegacySystemActionAdapter>();
         }
 
         var container = new AspNetCoreContainer(services);

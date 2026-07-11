@@ -1,7 +1,8 @@
+using System.Collections.Immutable;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Daemon.Management;
-using MCServerLauncher.Daemon.Remote.Event;
-using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.ApplicationCore;
 using Microsoft.Extensions.DependencyInjection;
 using RustyOptions;
 using TouchSocket.Core;
@@ -11,65 +12,78 @@ namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 [ActionHandler(ActionType.StartInstance, "*")]
 internal class HandleStartInstance : IAsyncActionHandler<StartInstanceParameter, EmptyActionResult>
 {
-    public async Task<Result<EmptyActionResult, ActionError>> HandleAsync(StartInstanceParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public async Task<Result<EmptyActionResult, ActionError>> HandleAsync(
+        StartInstanceParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        var eventService = resolver.GetRequiredService<IEventService>();
-        var instance = await instanceManager.TryStartInstance(param.Id, ct);
-
-        if (instance is null)
-            return this.Err(instanceManager.Instances.ContainsKey(param.Id)
-                ? ActionRetcode.ProcessError.WithMessage("Cannot start instance process")
-                : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
-
-        instance.OnLog -= eventService.OnInstanceLog;
-        instance.OnLog += eventService.OnInstanceLog;
-
-        return this.Ok(ActionHandlerExtensions.EmptyActionResult);
+        var result = await resolver.GetRequiredService<IInstanceApplication>()
+            .StartInstanceAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct);
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.ProcessError))
+            : this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
 [ActionHandler(ActionType.StopInstance, "*")]
 internal class HandleStopInstance : IActionHandler<StopInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(StopInstanceParameter param, WsContext ctx, IResolver resolver,
+    public Result<EmptyActionResult, ActionError> Handle(
+        StopInstanceParameter param,
+        WsContext ctx,
+        IResolver resolver,
         CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return instanceManager.TryStopInstance(param.Id)
-            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : this.Err(instanceManager.Instances.ContainsKey(param.Id)
-                ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
-                : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
+        var result = resolver.GetRequiredService<IInstanceApplication>()
+            .StopInstanceAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct)
+            .GetAwaiter()
+            .GetResult();
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.BadInstanceState))
+            : this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
 [ActionHandler(ActionType.SendToInstance, "*")]
 internal class HandleSendToInstance : IActionHandler<SendToInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(SendToInstanceParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(
+        SendToInstanceParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return instanceManager.SendToInstance(param.Id, param.Message)
-            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : this.Err(instanceManager.Instances.ContainsKey(param.Id)
-                ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} not running")
-                : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
+        var result = resolver.GetRequiredService<IInstanceApplication>()
+            .SendCommandAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceCommandRequest(param.Id, param.Message), ct)
+            .GetAwaiter()
+            .GetResult();
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.BadInstanceState))
+            : this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
 [ActionHandler(ActionType.GetAllReports, "*")]
 internal class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, GetAllReportsResult>
 {
-    public async Task<Result<GetAllReportsResult, ActionError>> HandleAsync(EmptyActionParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public async Task<Result<GetAllReportsResult, ActionError>> HandleAsync(
+        EmptyActionParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
+        var result = await resolver.GetRequiredService<IInstanceApplication>().ListInstanceReportsAsync(ct);
+        if (result.IsErr(out var error))
+        {
+            return this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstanceActionError));
+        }
+
         return this.Ok(new GetAllReportsResult
         {
-            Reports = await instanceManager.GetAllReports(ct)
+            Reports = result.Unwrap().Reports.ToDictionary(
+                pair => pair.Key,
+                pair => InstanceContractMapper.ToLegacy(pair.Value))
         });
     }
 }
@@ -77,112 +91,144 @@ internal class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, G
 [ActionHandler(ActionType.AddInstance, "*")]
 internal class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, AddInstanceResult>
 {
-    public async Task<Result<AddInstanceResult, ActionError>> HandleAsync(AddInstanceParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public async Task<Result<AddInstanceResult, ActionError>> HandleAsync(
+        AddInstanceParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-
-        var validateSettingResult = param.Setting.ValidateSetting().MapErr(innerErr =>
-            new ActionError(ActionRetcode.InstallationError.WithMessage("Invalid instance factory setting"))
-                .WithInner(innerErr));
-
-        var addInstanceResult =
-            (await validateSettingResult.MapAsTaskAsync(async _ =>
-            {
-                var tryAddInstance = await instanceManager.TryAddInstance(param.Setting, ct);
-                return tryAddInstance.MapErr(err =>
-                    new ActionError(ActionRetcode.InstallationError).WithInner(err));
-            })).Flatten();
-
-        return addInstanceResult.Map(config => new AddInstanceResult
-        {
-            Config = config
-        });
+        var request = new MCServerLauncher.Common.Contracts.Instances.CreateInstanceRequest(
+            new MCServerLauncher.Common.Contracts.Instances.InstanceFactoryConfiguration(
+                InstanceContractMapper.ToContract(param.Setting),
+                param.Setting.Source,
+                param.Setting.SourceType,
+                param.Setting.Mirror,
+                param.Setting.UsePostProcess));
+        var result = await resolver.GetRequiredService<IInstanceApplication>().CreateInstanceAsync(request, ct);
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstallationError))
+            : this.Ok(new AddInstanceResult { Config = InstanceContractMapper.ToLegacy(result.Unwrap().Config) });
     }
 }
 
 [ActionHandler(ActionType.RemoveInstance, "*")]
 internal class HandleRemoveInstance : IActionHandler<RemoveInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(RemoveInstanceParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(
+        RemoveInstanceParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return instanceManager.TryRemoveInstance(param.Id)
-            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : this.Err(instanceManager.RunningInstances.ContainsKey(param.Id)
-                ? ActionRetcode.BadInstanceState.WithMessage($"{param.Id} is running")
-                : ActionRetcode.InstanceNotFound.WithMessage(param.Id));
+        var result = resolver.GetRequiredService<IInstanceApplication>()
+            .RemoveInstanceAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct)
+            .GetAwaiter()
+            .GetResult();
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.BadInstanceState))
+            : this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
 [ActionHandler(ActionType.KillInstance, "*")]
 internal class HandleKillInstance : IActionHandler<KillInstanceParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(KillInstanceParameter param, WsContext ctx, IResolver resolver,
+    public Result<EmptyActionResult, ActionError> Handle(
+        KillInstanceParameter param,
+        WsContext ctx,
+        IResolver resolver,
         CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        instanceManager.KillInstance(param.Id);
-        return this.Ok(ActionHandlerExtensions.EmptyActionResult);
+        var result = resolver.GetRequiredService<IInstanceApplication>()
+            .HaltInstanceAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct)
+            .GetAwaiter()
+            .GetResult();
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.ProcessError))
+            : this.Ok(ActionHandlerExtensions.EmptyActionResult);
     }
 }
 
 [ActionHandler(ActionType.GetInstanceReport, "*")]
 internal class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportParameter, GetInstanceReportResult>
 {
-    public async Task<Result<GetInstanceReportResult, ActionError>> HandleAsync(GetInstanceReportParameter param,
-        WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<GetInstanceReportResult, ActionError>> HandleAsync(
+        GetInstanceReportParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        var report = await instanceManager.GetInstanceReport(param.Id, ct);
-        return report is not null
-            ? this.Ok(new GetInstanceReportResult { Report = report })
-            : this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.Id));
+        var result = await resolver.GetRequiredService<IInstanceApplication>()
+            .GetInstanceReportAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct);
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstanceNotFound))
+            : this.Ok(new GetInstanceReportResult { Report = InstanceContractMapper.ToLegacy(result.Unwrap()) });
     }
 }
 
 [ActionHandler(ActionType.GetInstanceLogHistory, "*")]
 internal class HandleGetInstanceLogHistory : IActionHandler<GetInstanceLogHistoryParameter, GetInstanceLogHistoryResult>
 {
-    public Result<GetInstanceLogHistoryResult, ActionError> Handle(GetInstanceLogHistoryParameter param,
-        WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<GetInstanceLogHistoryResult, ActionError> Handle(
+        GetInstanceLogHistoryParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        if (!instanceManager.Instances.TryGetValue(param.Id, out var instance))
-        {
-            return this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.Id));
-        }
-
-        return this.Ok(new GetInstanceLogHistoryResult
-        {
-            Logs = instance.GetLogHistory().ToArray()
-        });
+        var result = resolver.GetRequiredService<IInstanceApplication>()
+            .GetInstanceLogAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceLogQuery(param.Id), ct)
+            .GetAwaiter()
+            .GetResult();
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstanceNotFound))
+            : this.Ok(new GetInstanceLogHistoryResult { Logs = result.Unwrap().Logs.ToArray() });
     }
 }
 
 [ActionHandler(ActionType.GetInstanceSettings, "*")]
 internal class HandleGetInstanceSettings : IActionHandler<GetInstanceSettingsParameter, GetInstanceSettingsResult>
 {
-    public Result<GetInstanceSettingsResult, ActionError> Handle(GetInstanceSettingsParameter param,
-        WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<GetInstanceSettingsResult, ActionError> Handle(
+        GetInstanceSettingsParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return instanceManager.GetInstanceSettings(param.Id)
+        var result = resolver.GetRequiredService<IInstanceApplication>()
+            .GetInstanceSettingsAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct)
             .GetAwaiter()
-            .GetResult()
-            .MapErr(err => new ActionError(ActionRetcode.BadRequest.WithMessage(err.ToString())));
+            .GetResult();
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.BadRequest))
+            : this.Ok(InstanceContractMapper.ToLegacy(result.Unwrap()));
     }
 }
 
 [ActionHandler(ActionType.UpdateInstanceSettings, "*")]
 internal class HandleUpdateInstanceSettings : IAsyncActionHandler<UpdateInstanceSettingsParameter, UpdateInstanceSettingsResult>
 {
-    public async Task<Result<UpdateInstanceSettingsResult, ActionError>> HandleAsync(UpdateInstanceSettingsParameter param,
-        WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<UpdateInstanceSettingsResult, ActionError>> HandleAsync(
+        UpdateInstanceSettingsParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        return (await instanceManager.UpdateInstanceSettings(param))
-            .MapErr(err => new ActionError(ActionRetcode.InstallationError.WithMessage(err.ToString())));
+        var request = new MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest(
+            param.Id,
+            param.Name,
+            param.InstanceType,
+            param.JavaPath,
+            param.Arguments.ToImmutableArray(),
+            param.Version,
+            param.ReplacementCore is null
+                ? null
+                : new MCServerLauncher.Common.Contracts.Instances.InstanceCoreReplacementRequest(
+                    param.ReplacementCore.UploadedSourcePath,
+                    param.ReplacementCore.PreferredTargetName),
+            param.ForceRerunInstaller);
+        var result = await resolver.GetRequiredService<IInstanceApplication>().UpdateInstanceSettingsAsync(request, ct);
+        return result.IsErr(out var error)
+            ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstallationError))
+            : this.Ok(InstanceContractMapper.ToLegacy(result.Unwrap()));
     }
 }

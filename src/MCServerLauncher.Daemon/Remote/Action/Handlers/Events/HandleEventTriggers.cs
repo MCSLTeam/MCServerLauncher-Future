@@ -1,8 +1,8 @@
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.Json;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.Errors;
 using Microsoft.Extensions.DependencyInjection;
 using RustyOptions;
 using TouchSocket.Core;
@@ -10,41 +10,75 @@ using TouchSocket.Core;
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.GetEventRules, "*")]
-internal class HandleGetEventRules : IActionHandler<GetEventRulesParameter, GetEventRulesResult>
+internal sealed class HandleGetEventRules : IActionHandler<GetEventRulesParameter, GetEventRulesResult>
 {
-    public Result<GetEventRulesResult, ActionError> Handle(GetEventRulesParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<GetEventRulesResult, ActionError> Handle(
+        GetEventRulesParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        if (!instanceManager.Instances.TryGetValue(param.InstanceId, out var instance))
-        {
-            return this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.InstanceId));
-        }
+        var application = resolver.GetRequiredService<IDaemonApplication>();
+        var result = application.EventRules.GetEventRulesAsync(new EventRuleQuery(param.InstanceId), ct)
+            .GetAwaiter()
+            .GetResult();
+        if (result.IsErr(out var error))
+            return this.Err(error is null ? ActionRetcode.UnexpectedError : ToActionRetcode(error));
 
-        return this.Ok(new GetEventRulesResult
+        var ruleSet = result.Unwrap();
+        try
         {
-            Rules = instance.Config.EventRules
-        });
+            var rules = JsonSerializer.Deserialize(ruleSet.Rules, ApplicationCore.Events.EventRuleJsonContext.Default.EventRuleList);
+            return rules is null
+                ? this.Err(ActionRetcode.ParamError.WithMessage("Event rules were null"))
+                : this.Ok(new GetEventRulesResult { Rules = rules });
+        }
+        catch (JsonException)
+        {
+            return this.Err(ActionRetcode.ParamError.WithMessage("Event rules were malformed"));
+        }
+    }
+
+    private static ActionRetcode ToActionRetcode(DaemonError error)
+    {
+        return error.Kind switch
+        {
+            DaemonErrorKind.NotFound => ActionRetcode.InstanceNotFound.WithMessage(error.Message),
+            DaemonErrorKind.Validation => ActionRetcode.ParamError.WithMessage(error.Message),
+            DaemonErrorKind.Storage => ActionRetcode.FileError.WithMessage(error.Message),
+            _ => ActionRetcode.UnexpectedError.WithMessage(error.Message)
+        };
     }
 }
 
 [ActionHandler(ActionType.SaveEventRules, "*")]
-internal class HandleSaveEventRules : IActionHandler<SaveEventRulesParameter, EmptyActionResult>
+internal sealed class HandleSaveEventRules : IActionHandler<SaveEventRulesParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(SaveEventRulesParameter param, WsContext ctx, IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(
+        SaveEventRulesParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var instanceManager = resolver.GetRequiredService<IInstanceManager>();
-        if (!instanceManager.Instances.TryGetValue(param.InstanceId, out var instance))
-        {
-            return this.Err(ActionRetcode.InstanceNotFound.WithMessage(param.InstanceId));
-        }
-
-        instance.Config.EventRules.Clear();
-        instance.Config.EventRules.AddRange(param.Rules);
-        
-        // Save config to file
-        var configPath = System.IO.Path.Combine(instance.Config.GetWorkingDirectory(), InstanceConfig.FileName);
-        MCServerLauncher.Daemon.Storage.FileManager.WriteJsonAndBackup(configPath, instance.Config);
+        var application = resolver.GetRequiredService<IDaemonApplication>();
+        var rules = JsonSerializer.SerializeToElement(param.Rules, ApplicationCore.Events.EventRuleJsonContext.Default.EventRuleList);
+        var result = application.EventRules.UpdateEventRulesAsync(new EventRuleUpdateRequest(param.InstanceId, rules), ct)
+            .GetAwaiter()
+            .GetResult();
+        if (result.IsErr(out var error))
+            return this.Err(error is null ? ActionRetcode.UnexpectedError : ToActionRetcode(error));
 
         return this.Ok(ActionHandlerExtensions.EmptyActionResult);
+    }
+
+    private static ActionRetcode ToActionRetcode(DaemonError error)
+    {
+        return error.Kind switch
+        {
+            DaemonErrorKind.NotFound => ActionRetcode.InstanceNotFound.WithMessage(error.Message),
+            DaemonErrorKind.Validation => ActionRetcode.ParamError.WithMessage(error.Message),
+            DaemonErrorKind.Storage => ActionRetcode.FileError.WithMessage(error.Message),
+            _ => ActionRetcode.UnexpectedError.WithMessage(error.Message)
+        };
     }
 }

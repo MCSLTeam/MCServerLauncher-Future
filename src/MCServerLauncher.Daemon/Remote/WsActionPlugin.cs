@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Collections.Immutable;
 using System.Text.Json;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Remote.Action;
@@ -84,7 +85,15 @@ public class WsActionPlugin(IActionExecutor executor,
 
         try
         {
-            var (done, received) = await Storage.FileManager.FileUploadChunk(fileId, offset, data);
+            var result = await Storage.FileSessionCoordinator.Shared.WriteLegacyUploadChunkAsync(
+                fileId,
+                offset,
+                ImmutableArray.CreateRange(data),
+                CancellationToken.None);
+            if (result.IsErr(out var error))
+                throw new IOException(error?.Message ?? "The legacy upload session rejected the chunk.");
+
+            var (done, received) = result.Unwrap();
 
             Serilog.Log.Debug("[WsActionPlugin] Server wrote chunk: done={Done}, received={Received}", done, received);
 

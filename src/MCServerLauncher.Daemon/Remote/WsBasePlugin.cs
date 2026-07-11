@@ -23,7 +23,7 @@ public class WsBasePlugin(IHttpService httpService, WsContextContainer container
             {
                 try
                 {
-                    Storage.FileManager.FileDownloadClose(fileId);
+                    await Storage.FileSessionCoordinator.Shared.CloseLegacyDownloadAsync(fileId, CancellationToken.None);
                 }
                 catch (Exception)
                 {
@@ -35,7 +35,7 @@ public class WsBasePlugin(IHttpService httpService, WsContextContainer container
             {
                 try
                 {
-                    Storage.FileManager.FileUploadCancel(fileId);
+                    await Storage.FileSessionCoordinator.Shared.CancelUploadAsync(fileId, CancellationToken.None);
                 }
                 catch (Exception)
                 {

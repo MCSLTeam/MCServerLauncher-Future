@@ -1,96 +1,80 @@
-using MCServerLauncher.Common.Helpers;
+using System.Collections.Immutable;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Utils;
-using RustyOptions;
 using TouchSocket.Core;
-using Result = RustyOptions.Result;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 [ActionHandler(ActionType.FileUploadRequest, "mcsl.daemon.file.upload")]
 internal class HandleFileUploadRequest : IActionHandler<FileUploadRequestParameter, FileUploadRequestResult>
 {
-    public Result<FileUploadRequestResult, ActionError> Handle(FileUploadRequestParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public Result<FileUploadRequestResult, ActionError> Handle(
+        FileUploadRequestParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        return Result
-            .Try(() => FileManager.FileUploadRequest(
-                param.Path,
-                param.Size,
-                param.Timeout.Map(t => TimeSpan.FromMilliseconds(t)),
-                param.Sha1
-            ))
-            .MapErr(ex => new ActionError(ActionRetcode.FileError).CauseBy(ex))
-            .AndThen(fileId =>
+        var opened = FileSessionCoordinator.Shared.OpenLegacyUploadAsync(param.Path, param.Size, param.Sha1, ct)
+            .GetAwaiter()
+            .GetResult();
+        return opened.Match(
+            value =>
             {
-                if (fileId != Guid.Empty)
-                {
-                    ctx.RegisterFileUploadSession(fileId);
-                    return this.Ok(new FileUploadRequestResult
-                    {
-                        FileId = fileId
-                    });
-                }
-                else
-                {
-                    return this.Err(
-                        ActionRetcode.DiskFull.WithMessage("Failed to pre-allocate space").ToError()
-                    );
-                }
-            });
+                ctx.RegisterFileUploadSession(value.SessionId);
+                return this.Ok(new FileUploadRequestResult { FileId = value.SessionId });
+            },
+            error => this.Err(LegacyFileActionAdapter.ToActionError(error)));
     }
 }
 
 [ActionHandler(ActionType.FileUploadChunk, "mcsl.daemon.file.upload")]
 internal class HandleFileUploadChunk : IAsyncActionHandler<FileUploadChunkParameter, FileUploadChunkResult>
 {
-    public async Task<Result<FileUploadChunkResult, ActionError>> HandleAsync(FileUploadChunkParameter param,
-        WsContext ctx, IResolver resolver, CancellationToken ct)
+    public async Task<Result<FileUploadChunkResult, ActionError>> HandleAsync(
+        FileUploadChunkParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
         if (param.FileId == Guid.Empty)
-            return this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId)
-                .ToError());
+            return this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId).ToError());
 
-        return await ResultExt.TryAsync(async chunkParameter =>
+        try
         {
-            var (done, received) = await FileManager.FileUploadChunk(
-                chunkParameter.FileId,
-                chunkParameter.Offset,
-                chunkParameter.Data
-            );
-
-            if (done)
-            {
-                ctx.UnregisterFileUploadSession(chunkParameter.FileId);
-            }
-
-            return new FileUploadChunkResult
-            {
-                Done = done,
-                Received = received
-            };
-        }, param).MapTask(result =>
-            result.OrElse(ex =>
-            {
-                Serilog.Log.Error("[HandleFileUploadChunk] File upload chunk failed: {0}", ex);
-                return this.Err(ActionRetcode.FileError.ToError().CauseBy(ex));
-            })
-        );
+            var data = ImmutableArray.CreateRange(Convert.FromBase64String(param.Data));
+            var result = await FileSessionCoordinator.Shared.WriteLegacyUploadChunkAsync(param.FileId, param.Offset, data, ct);
+            return result.Match(
+                value =>
+                {
+                    if (value.Done)
+                        ctx.UnregisterFileUploadSession(param.FileId);
+                    return this.Ok(new FileUploadChunkResult { Done = value.Done, Received = value.Received });
+                },
+                error => this.Err(LegacyFileActionAdapter.ToActionError(error)));
+        }
+        catch (FormatException exception)
+        {
+            return this.Err(ActionRetcode.ParamError.WithMessage(exception.Message).ToError());
+        }
     }
 }
 
 [ActionHandler(ActionType.FileUploadCancel, "mcsl.daemon.file.upload")]
 internal class HandleFileUploadCancel : IActionHandler<FileUploadCancelParameter, EmptyActionResult>
 {
-    public Result<EmptyActionResult, ActionError> Handle(FileUploadCancelParameter param, WsContext ctx,
-        IResolver resolver, CancellationToken ct)
+    public Result<EmptyActionResult, ActionError> Handle(
+        FileUploadCancelParameter param,
+        WsContext ctx,
+        IResolver resolver,
+        CancellationToken ct)
     {
-        var result = FileManager.FileUploadCancel(param.FileId);
+        var result = FileSessionCoordinator.Shared.CancelUploadAsync(param.FileId, ct)
+            .GetAwaiter()
+            .GetResult();
         ctx.UnregisterFileUploadSession(param.FileId);
-        
-        return result
-            ? this.Ok(ActionHandlerExtensions.EmptyActionResult)
-            : this.Err(ActionRetcode.NotUploadingDownloading.WithMessage(param.FileId).ToError());
+        return result.Match(
+            _ => this.Ok(ActionHandlerExtensions.EmptyActionResult),
+            error => this.Err(LegacyFileActionAdapter.ToActionError(error)));
     }
 }
