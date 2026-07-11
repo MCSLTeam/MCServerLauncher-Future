@@ -5,7 +5,9 @@ using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Action.Handlers;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.API.Protocol;
 using RustyOptions;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Runtime.CompilerServices;
@@ -453,22 +455,78 @@ public class DaemonInboundTransportPipelineTests
     [Trait("Category", "DaemonInbound")]
     [Trait("Category", "DaemonInboundStatic")]
     [Trait("Category", "Documentation")]
-    public void EmbeddedApifoxProject_DocumentsWebSocketActionsAsWebSocketApis()
+    public void EmbeddedApifoxProject_MatchesFrozenV2Catalog()
     {
         var repoRoot = ResolveRepoRoot();
         var apifoxPath = Path.Combine(repoRoot, "src/MCServerLauncher.Daemon/.Resources/Docs/apifox.json");
-        using var apifox = JsonDocument.Parse(File.ReadAllText(apifoxPath));
+        var json = File.ReadAllText(apifoxPath);
+        using var apifox = JsonDocument.Parse(json);
         var root = apifox.RootElement;
 
         Assert.Equal("1.0.0", root.GetProperty("apifoxProject").GetString());
         Assert.Contains("{{wsUrl}}?token={{token}}", root.GetRawText(), StringComparison.Ordinal);
-        Assert.DoesNotContain("/api/v1/actions/", root.GetRawText(), StringComparison.Ordinal);
-        Assert.Contains("protocol/topics/actions.md", root.GetRawText(), StringComparison.Ordinal);
-        Assert.Contains("protocol/topics/models.md", root.GetRawText(), StringComparison.Ordinal);
-        Assert.Contains("ActionResponse", root.GetRawText(), StringComparison.Ordinal);
-        Assert.Contains("SystemInfo", root.GetRawText(), StringComparison.Ordinal);
-        AssertApifoxWebSocketActionsMatchActionType(root);
-        AssertApifoxProjectIncludesMfpSchemasAndDocs(root);
+        Assert.DoesNotContain("/api/v1", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("protocol/topics/", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActionType", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("MFP", json, StringComparison.Ordinal);
+        AssertApifoxProjectMatchesFrozenCatalog(root);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    [Trait("Category", "Documentation")]
+    public async Task GeneratedApifoxProject_PassesDeterministicCheckGate()
+    {
+        var repoRoot = ResolveRepoRoot();
+        var dotnetHost = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = string.IsNullOrWhiteSpace(dotnetHost) ? "dotnet" : dotnetHost,
+            WorkingDirectory = repoRoot,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("run");
+        startInfo.ArgumentList.Add("--project");
+        startInfo.ArgumentList.Add(Path.Combine(
+            repoRoot,
+            "tools",
+            "MCServerLauncher.ProtocolDocs",
+            "MCServerLauncher.ProtocolDocs.csproj"));
+        startInfo.ArgumentList.Add("-c");
+        startInfo.ArgumentList.Add("Release");
+        startInfo.ArgumentList.Add("--");
+        startInfo.ArgumentList.Add("--check");
+
+        using var process = Process.Start(startInfo) ??
+                            throw new InvalidOperationException("Failed to start the protocol documentation generator.");
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+
+            throw new TimeoutException("Protocol documentation --check exceeded two minutes.");
+        }
+
+        var output = await standardOutput;
+        var error = await standardError;
+        Assert.True(
+            process.ExitCode == 0,
+            $"Protocol documentation --check failed with exit code {process.ExitCode}.{Environment.NewLine}{output}{Environment.NewLine}{error}");
     }
 
     [Fact]
@@ -534,16 +592,6 @@ public class DaemonInboundTransportPipelineTests
         Assert.DoesNotContain(forbiddenText, source, StringComparison.Ordinal);
     }
 
-    private static void AssertSchemaReferenceExists(JsonElement schemaReference, JsonElement schemas, string context)
-    {
-        var reference = schemaReference.GetProperty("$ref").GetString();
-        Assert.False(string.IsNullOrWhiteSpace(reference), $"{context} schema reference is empty");
-        const string prefix = "#/components/schemas/";
-        Assert.StartsWith(prefix, reference, StringComparison.Ordinal);
-        var schemaName = reference[prefix.Length..];
-        Assert.True(schemas.TryGetProperty(schemaName, out _), $"{context} schema '{schemaName}' is missing");
-    }
-
     private static string ResolveRepoRoot()
     {
         var dir = AppDomain.CurrentDomain.BaseDirectory;
@@ -561,100 +609,174 @@ public class DaemonInboundTransportPipelineTests
         return File.ReadAllText(Path.Combine(repoRoot, relativePath));
     }
 
-    private static void AssertApifoxWebSocketActionsMatchActionType(JsonElement root)
+    private static void AssertApifoxProjectMatchesFrozenCatalog(JsonElement root)
     {
-        var expected = Enum.GetNames<ActionType>()
-            .Select(JsonNamingPolicy.SnakeCaseLower.ConvertName)
+        var expectedMethods = BuiltInProtocolDefinitions.Rpcs
+            .Select(descriptor => descriptor.Method.Value)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var descriptorsByMethod = BuiltInProtocolDefinitions.Rpcs.ToDictionary(
+            descriptor => descriptor.Method.Value,
+            StringComparer.Ordinal);
+        var expectedCategories = BuiltInProtocolDefinitions.Rpcs
+            .Select(descriptor => descriptor.Documentation!.Category)
+            .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal("根目录", root.GetProperty("webSocketCollection")[0].GetProperty("name").GetString());
-        Assert.Equal("WebSocket actions", root.GetProperty("webSocketCollection")[0]
-            .GetProperty("items")[0]
-            .GetProperty("name")
-            .GetString());
+        var roots = root.GetProperty("webSocketCollection").EnumerateArray().ToArray();
+        Assert.Single(roots);
+        Assert.Equal("root", roots[0].GetProperty("name").GetString());
+        Assert.False(roots[0].TryGetProperty("api", out _));
 
-        var webSocketItems = root.GetProperty("webSocketCollection")
-            .EnumerateArray()
-            .SelectMany(EnumerateApifoxApiItems)
-            .ToArray();
-
-        var actions = webSocketItems
-            .Select(item => item.GetProperty("name").GetString())
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-
-        Assert.Equal(expected, actions);
-
-        foreach (var api in webSocketItems.Select(item => item.GetProperty("api")))
+        var folders = roots[0].GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal(expectedCategories, folders.Select(folder => folder.GetProperty("name").GetString()).ToArray());
+        Assert.All(folders, folder =>
         {
+            Assert.False(folder.TryGetProperty("api", out _));
+            Assert.Equal(JsonValueKind.Array, folder.GetProperty("items").ValueKind);
+        });
+
+        var apiItems = folders
+            .SelectMany(folder => folder.GetProperty("items").EnumerateArray())
+            .ToArray();
+        Assert.All(apiItems, item =>
+        {
+            Assert.True(item.TryGetProperty("api", out _));
+            Assert.False(item.TryGetProperty("items", out _));
+        });
+        Assert.Equal(
+            expectedMethods,
+            apiItems.Select(item => item.GetProperty("name").GetString()).Order(StringComparer.Ordinal).ToArray());
+
+        foreach (var item in apiItems)
+        {
+            var method = item.GetProperty("name").GetString()!;
+            var descriptor = descriptorsByMethod[method];
+            var api = item.GetProperty("api");
             Assert.Equal("{{wsUrl}}?token={{token}}", api.GetProperty("path").GetString());
             Assert.False(api.TryGetProperty("type", out _), "Native Apifox WebSocket APIs omit api.type");
             Assert.False(api.TryGetProperty("method", out _), "Apifox WebSocket APIs must not masquerade as HTTP requests");
-            Assert.True(api.GetProperty("requestBody").TryGetProperty("message", out var message));
-            Assert.False(string.IsNullOrWhiteSpace(message.GetString()));
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("requestBody").GetProperty("parameters").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("query").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("path").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("cookie").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("parameters").GetProperty("header").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("query").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("body").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("cookie").ValueKind);
-            Assert.Equal(JsonValueKind.Array, api.GetProperty("commonParameters").GetProperty("header").ValueKind);
-        }
-    }
 
-    private static IEnumerable<JsonElement> EnumerateApifoxApiItems(JsonElement item)
-    {
-        if (item.ValueKind != JsonValueKind.Object)
-        {
-            yield break;
-        }
+            var parameters = api.GetProperty("parameters");
+            var query = parameters.GetProperty("query").EnumerateArray().ToArray();
+            Assert.Single(query);
+            Assert.Equal("token", query[0].GetProperty("name").GetString());
+            Assert.Equal("{{token}}", query[0].GetProperty("defaultValue").GetString());
+            Assert.Equal(JsonValueKind.Array, parameters.GetProperty("path").ValueKind);
+            Assert.Equal(JsonValueKind.Array, parameters.GetProperty("cookie").ValueKind);
+            Assert.Equal(JsonValueKind.Array, parameters.GetProperty("header").ValueKind);
 
-        if (item.TryGetProperty("api", out _))
-        {
-            yield return item;
+            var requestBody = api.GetProperty("requestBody");
+            Assert.Equal(JsonValueKind.Array, requestBody.GetProperty("parameters").ValueKind);
+            using var message = JsonDocument.Parse(requestBody.GetProperty("message").GetString()!);
+            Assert.Equal("2.0", message.RootElement.GetProperty("jsonrpc").GetString());
+            Assert.Equal(method, message.RootElement.GetProperty("method").GetString());
+            Assert.Equal(JsonValueKind.Object, message.RootElement.GetProperty("params").ValueKind);
+            Assert.Equal(JsonValueKind.String, message.RootElement.GetProperty("id").ValueKind);
+
+            var description = api.GetProperty("description").GetString()!;
+            Assert.Contains(descriptor.Documentation!.RequestSchemaId, description, StringComparison.Ordinal);
+            Assert.Contains(descriptor.Documentation.ResultSchemaId, description, StringComparison.Ordinal);
         }
 
-        if (!item.TryGetProperty("items", out var children))
+        var expectedEvents = BuiltInProtocolDefinitions.Events
+            .Select(descriptor => descriptor.Name.Value)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var eventDocs = root.GetProperty("docCollection")
+            .EnumerateArray()
+            .SelectMany(group => group.GetProperty("items").EnumerateArray())
+            .ToArray();
+        Assert.Equal(
+            expectedEvents,
+            eventDocs.Select(item => item.GetProperty("name").GetString()).Order(StringComparer.Ordinal).ToArray());
+        var eventDescriptors = BuiltInProtocolDefinitions.Events.ToDictionary(
+            descriptor => descriptor.Name.Value,
+            StringComparer.Ordinal);
+        foreach (var eventDoc in eventDocs)
         {
-            yield break;
-        }
-
-        foreach (var child in children.EnumerateArray())
-        {
-            foreach (var apiItem in EnumerateApifoxApiItems(child))
+            var descriptor = eventDescriptors[eventDoc.GetProperty("name").GetString()!];
+            var content = eventDoc.GetProperty("content").GetString()!;
+            Assert.Contains(descriptor.Documentation!.DataSchemaId, content, StringComparison.Ordinal);
+            if (descriptor.Documentation.MetaSchemaId is not null)
             {
-                yield return apiItem;
+                Assert.Contains(descriptor.Documentation.MetaSchemaId, content, StringComparison.Ordinal);
             }
         }
+
+        var expectedSchemas = BuiltInProtocolDefinitions.Rpcs
+            .SelectMany(descriptor => new[]
+            {
+                descriptor.Documentation!.RequestSchemaId,
+                descriptor.Documentation.ResultSchemaId
+            })
+            .Concat(BuiltInProtocolDefinitions.Events.Select(descriptor => descriptor.Documentation!.DataSchemaId))
+            .Concat(BuiltInProtocolDefinitions.Events
+                .Select(descriptor => descriptor.Documentation!.MetaSchemaId)
+                .Where(schemaId => schemaId is not null)
+                .Select(schemaId => schemaId!))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var schemaItems = root.GetProperty("schemaCollection")
+            .EnumerateArray()
+            .SelectMany(group => group.GetProperty("items").EnumerateArray())
+            .ToArray();
+        Assert.Equal(
+            expectedSchemas,
+            schemaItems.Select(item => item.GetProperty("name").GetString()).Order(StringComparer.Ordinal).ToArray());
+        foreach (var schemaItem in schemaItems)
+        {
+            var name = schemaItem.GetProperty("name").GetString()!;
+            Assert.Equal($"#/definitions/{name}", schemaItem.GetProperty("id").GetString());
+            Assert.Equal(
+                name,
+                schemaItem.GetProperty("schema").GetProperty("jsonSchema").GetProperty("$id").GetString());
+        }
+
+        var environment = Assert.Single(root.GetProperty("environments").EnumerateArray());
+        Assert.Equal(
+            "ws://127.0.0.1:11452/api/v2",
+            environment.GetProperty("websocketBaseUrls").GetProperty("mcsl-daemon-protocol").GetString());
+        var variables = environment.GetProperty("variables")
+            .EnumerateArray()
+            .ToDictionary(variable => variable.GetProperty("name").GetString()!, StringComparer.Ordinal);
+        Assert.Equal("ws://127.0.0.1:11452/api/v2", variables["wsUrl"].GetProperty("value").GetString());
+        Assert.Equal(string.Empty, variables["token"].GetProperty("value").GetString());
+        Assert.Equal(string.Empty, variables["token"].GetProperty("defaultValue").GetString());
+
+        var ids = EnumerateApifoxEntityIds(root).ToArray();
+        Assert.Equal(ids.Length, ids.Distinct(StringComparer.Ordinal).Count());
     }
 
-    private static void AssertApifoxProjectIncludesMfpSchemasAndDocs(JsonElement root)
+    private static IEnumerable<string> EnumerateApifoxEntityIds(JsonElement element)
     {
-        var schemaNames = root.GetProperty("schemaCollection")
-            .EnumerateArray()
-            .SelectMany(group => group.GetProperty("items").EnumerateArray())
-            .Select(item => item.GetProperty("name").GetString())
-            .ToHashSet(StringComparer.Ordinal);
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            if (element.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+            {
+                yield return id.GetString()!;
+            }
 
-        Assert.Contains("ActionRequest", schemaNames);
-        Assert.Contains("ActionResponse", schemaNames);
-        Assert.Contains("EventPacket", schemaNames);
-        Assert.Contains("SystemInfo", schemaNames);
-        Assert.Contains("DaemonReport", schemaNames);
-        Assert.Contains("InstanceConfig", schemaNames);
-
-        var docNames = root.GetProperty("docCollection")
-            .EnumerateArray()
-            .SelectMany(group => group.GetProperty("items").EnumerateArray())
-            .Select(item => item.GetProperty("name").GetString())
-            .ToHashSet(StringComparer.Ordinal);
-
-        Assert.Contains("MFP actions", docNames);
-        Assert.Contains("MFP models", docNames);
-        Assert.Contains("MFP connection", docNames);
+            foreach (var property in element.EnumerateObject())
+            {
+                foreach (var nestedId in EnumerateApifoxEntityIds(property.Value))
+                {
+                    yield return nestedId;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+            {
+                foreach (var nestedId in EnumerateApifoxEntityIds(item))
+                {
+                    yield return nestedId;
+                }
+            }
+        }
     }
 
     private sealed class FakeExecutor : IActionExecutor
