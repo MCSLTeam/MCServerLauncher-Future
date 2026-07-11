@@ -8,12 +8,14 @@ using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.ProtocolTests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using TouchSocket.Core;
 using TouchSocket.Http;
 
 namespace MCServerLauncher.ProtocolTests;
 
+[Collection(DaemonInstanceStorageIsolationCollection.Name)]
 public class TouchSocketHostingCompositionTests
 {
     [Fact]
