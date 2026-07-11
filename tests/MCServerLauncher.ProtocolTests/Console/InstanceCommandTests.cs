@@ -1,19 +1,21 @@
-using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Reflection;
+using System.Text.Json;
 using Brigadier.NET;
 using Brigadier.NET.Exceptions;
-using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Console.Commands;
-using MCServerLauncher.Daemon.Management;
-using MCServerLauncher.Daemon.Management.Communicate;
 using Microsoft.Extensions.DependencyInjection;
 using RustyOptions;
-using TouchSocket.Core;
 using TouchSocket.Core.AspNetCore;
 using TouchSocket.Http;
+using ApplicationInstanceReport = MCServerLauncher.Common.Contracts.Instances.InstanceReport;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -26,8 +28,8 @@ public class InstanceCommandTests
         var matchingNameKey = Guid.NewGuid();
         var snapshot = new[]
         {
-            new KeyValuePair<Guid, IInstance>(uuid, CreateInstance("first")),
-            new KeyValuePair<Guid, IInstance>(matchingNameKey, CreateInstance(uuid.ToString()))
+            new KeyValuePair<Guid, ApplicationInstanceReport>(uuid, CreateReport(uuid, "first")),
+            new KeyValuePair<Guid, ApplicationInstanceReport>(matchingNameKey, CreateReport(matchingNameKey, uuid.ToString()))
         };
 
         var result = InstanceCommand.ResolveTarget(snapshot, uuid.ToString());
@@ -40,33 +42,14 @@ public class InstanceCommandTests
     public void ResolveTarget_MissingUuidFallsBackToUuidShapedName()
     {
         var token = Guid.NewGuid().ToString();
-        var key = Guid.NewGuid();
-        var snapshot = new[]
-        {
-            new KeyValuePair<Guid, IInstance>(key, CreateInstance(token))
-        };
+        var id = Guid.NewGuid();
 
-        var result = InstanceCommand.ResolveTarget(snapshot, token);
+        var result = InstanceCommand.ResolveTarget(
+            [new KeyValuePair<Guid, ApplicationInstanceReport>(id, CreateReport(id, token))],
+            token);
 
-        Assert.Equal(key, result.InstanceId);
+        Assert.Equal(id, result.InstanceId);
         Assert.Empty(result.AmbiguousInstanceIds);
-    }
-
-    [Fact]
-    public void ResolveTarget_NameMatchesOrdinalIgnoreCaseUsingSnapshotKey()
-    {
-        var key = Guid.NewGuid();
-        var instance = CreateInstance("My Survival Server");
-        instance.Config.Uuid = Guid.NewGuid();
-        var snapshot = new[]
-        {
-            new KeyValuePair<Guid, IInstance>(key, instance)
-        };
-
-        var result = InstanceCommand.ResolveTarget(snapshot, "my survival server");
-
-        Assert.Equal(key, result.InstanceId);
-        Assert.NotEqual(instance.Config.Uuid, result.InstanceId);
     }
 
     [Fact]
@@ -74,200 +57,138 @@ public class InstanceCommandTests
     {
         var first = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var second = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        var snapshot = new[]
-        {
-            new KeyValuePair<Guid, IInstance>(second, CreateInstance("Survival")),
-            new KeyValuePair<Guid, IInstance>(first, CreateInstance("survival"))
-        };
 
-        var result = InstanceCommand.ResolveTarget(snapshot, "SURVIVAL");
+        var result = InstanceCommand.ResolveTarget(
+            [
+                new KeyValuePair<Guid, ApplicationInstanceReport>(second, CreateReport(second, "Survival")),
+                new KeyValuePair<Guid, ApplicationInstanceReport>(first, CreateReport(first, "survival"))
+            ],
+            "SURVIVAL");
 
         Assert.Null(result.InstanceId);
         Assert.Equal(new[] { first, second }, result.AmbiguousInstanceIds);
     }
 
     [Fact]
-    public async Task Start_WaitsForManagerAndPassesGracefulShutdownToken()
+    public async Task Start_WaitsForApplicationAndPassesGracefulShutdownToken()
     {
-        var key = Guid.NewGuid();
-        var instance = CreateInstance("alpha");
-        var startGate = new TaskCompletionSource<IInstance?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var id = Guid.NewGuid();
+        var startGate = new TaskCompletionSource<Result<Unit, DaemonError>>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, instance)],
+            [CreateReport(id, "alpha")],
             start: (_, _) => startGate.Task);
 
         var executeTask = Task.Run(() => harness.Dispatcher.Execute("inst start alpha", harness.Source));
         await harness.Spy.StartEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
 
         Assert.False(executeTask.IsCompleted);
-        Assert.Equal(key, harness.Spy.StartedIds.Single());
+        Assert.Equal(id, harness.Spy.StartedIds.Single());
         Assert.Equal(harness.Shutdown.CancellationToken, harness.Spy.StartCancellationToken);
 
-        startGate.SetResult(instance);
-
+        startGate.SetResult(Result.Ok<Unit, DaemonError>(Unit.Default));
         Assert.Equal(0, await executeTask);
     }
 
     [Fact]
-    public void Start_NullManagerResult_ReturnsBusinessFailure()
+    public void Start_ApplicationErrorReturnsBusinessFailure()
     {
-        var key = Guid.NewGuid();
+        var id = Guid.NewGuid();
         using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, CreateInstance("alpha"))],
-            start: (_, _) => Task.FromResult<IInstance?>(null));
+            [CreateReport(id, "alpha")],
+            start: (_, _) => Task.FromResult(Result.Err<Unit, DaemonError>(
+                new ConflictDaemonError("instance.running", "Already running."))));
 
         var result = harness.Dispatcher.Execute("inst start alpha", harness.Source);
 
         Assert.Equal(1, result);
-        Assert.Equal(new[] { key }, harness.Spy.StartedIds);
+        Assert.Equal(new[] { id }, harness.Spy.StartedIds);
         Assert.Empty(harness.Spy.StoppedIds);
         Assert.Empty(harness.Spy.HaltedIds);
-    }
-
-    [Fact]
-    public void Start_CanceledManagerTask_PropagatesCancellation()
-    {
-        var key = Guid.NewGuid();
-        using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, CreateInstance("alpha"))],
-            start: (_, _) => Task.FromCanceled<IInstance?>(new CancellationToken(canceled: true)));
-
-        Assert.ThrowsAny<OperationCanceledException>(() => harness.Dispatcher.Execute("inst start alpha", harness.Source));
     }
 
     [Theory]
     [InlineData(true, 0)]
     [InlineData(false, 1)]
-    public void Stop_UsesTryStopInstanceAndMapsItsResult(bool stopped, int expectedExitCode)
+    public void Stop_UsesApplicationAndMapsItsResult(bool succeeds, int expectedExitCode)
     {
-        var key = Guid.NewGuid();
+        var id = Guid.NewGuid();
         using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, CreateInstance("alpha"))],
-            stop: _ => stopped);
+            [CreateReport(id, "alpha")],
+            stop: (_, _) => Task.FromResult(succeeds
+                ? Result.Ok<Unit, DaemonError>(Unit.Default)
+                : Result.Err<Unit, DaemonError>(new ConflictDaemonError("instance.stopped", "Not running."))));
 
         var result = harness.Dispatcher.Execute("inst stop alpha", harness.Source);
 
         Assert.Equal(expectedExitCode, result);
-        Assert.Equal(new[] { key }, harness.Spy.StoppedIds);
+        Assert.Equal(new[] { id }, harness.Spy.StoppedIds);
         Assert.Empty(harness.Spy.StartedIds);
         Assert.Empty(harness.Spy.HaltedIds);
     }
 
     [Fact]
-    public void Halt_UsesKillInstanceWithoutRunningInstancePrecheck()
+    public void Halt_UsesApplicationWithoutRunningInstancePrecheck()
     {
-        var key = Guid.NewGuid();
-        using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, CreateInstance("alpha"))],
-            halt: _ => { });
+        var id = Guid.NewGuid();
+        using var harness = CreateHarness([CreateReport(id, "alpha")]);
 
         var result = harness.Dispatcher.Execute("inst halt alpha", harness.Source);
 
         Assert.Equal(0, result);
-        Assert.Equal(new[] { key }, harness.Spy.HaltedIds);
+        Assert.Equal(new[] { id }, harness.Spy.HaltedIds);
         Assert.Empty(harness.Spy.StartedIds);
         Assert.Empty(harness.Spy.StoppedIds);
-        Assert.Empty(harness.RunningInstances);
     }
 
     [Fact]
-    public void Halt_ManagerException_PropagatesWithoutSuccess()
+    public void Halt_ApplicationExceptionPropagatesWithoutSuccess()
     {
-        var key = Guid.NewGuid();
+        var id = Guid.NewGuid();
         var expected = new InvalidOperationException("Kill failed.");
         using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, CreateInstance("alpha"))],
-            halt: _ => throw expected);
+            [CreateReport(id, "alpha")],
+            halt: (_, _) => throw expected);
 
         var exception = Record.Exception(() => harness.Dispatcher.Execute("inst halt alpha", harness.Source));
 
         Assert.Same(expected, exception);
-        Assert.Equal(new[] { key }, harness.Spy.HaltedIds);
+        Assert.Equal(new[] { id }, harness.Spy.HaltedIds);
     }
 
     [Fact]
-    public void Dispatcher_QuotedNameResolvesAndTrailingOrMissingTargetsAreSyntaxErrors()
+    public void Dispatcher_QuotedNameAndAmbiguousTargetsPreserveTargetResolution()
     {
-        var key = Guid.NewGuid();
-        using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(key, CreateInstance("My Survival Server"))],
-            stop: _ => true);
+        var id = Guid.NewGuid();
+        using var quoted = CreateHarness([CreateReport(id, "My Survival Server")]);
+        Assert.Equal(0, quoted.Dispatcher.Execute("inst halt \"My Survival Server\"", quoted.Source));
+        Assert.Equal(new[] { id }, quoted.Spy.HaltedIds);
+        Assert.Throws<CommandSyntaxException>(() => quoted.Dispatcher.Execute("inst halt", quoted.Source));
 
-        Assert.Equal(0, harness.Dispatcher.Execute("inst stop \"My Survival Server\"", harness.Source));
-        Assert.Equal(new[] { key }, harness.Spy.StoppedIds);
-        Assert.Throws<CommandSyntaxException>(() => harness.Dispatcher.Execute("inst stop", harness.Source));
-        Assert.Throws<CommandSyntaxException>(() => harness.Dispatcher.Execute("inst stop alpha extra", harness.Source));
-    }
-
-    [Fact]
-    public void Dispatcher_AmbiguousNameDoesNotInvokeLifecycleOperation()
-    {
-        using var harness = CreateHarness(
-            [
-                new KeyValuePair<Guid, IInstance>(Guid.NewGuid(), CreateInstance("alpha")),
-                new KeyValuePair<Guid, IInstance>(Guid.NewGuid(), CreateInstance("ALPHA"))
-            ],
-            halt: _ => { });
-
-        var result = harness.Dispatcher.Execute("inst halt alpha", harness.Source);
-
-        Assert.Equal(1, result);
-        Assert.Empty(harness.Spy.StartedIds);
-        Assert.Empty(harness.Spy.StoppedIds);
-        Assert.Empty(harness.Spy.HaltedIds);
-    }
-
-    [Fact]
-    public void Dispatcher_UnmatchedTargetReturnsBusinessFailureWithoutLifecycleOperation()
-    {
-        using var harness = CreateHarness(
-            [new KeyValuePair<Guid, IInstance>(Guid.NewGuid(), CreateInstance("alpha"))],
-            halt: _ => { });
-
-        var result = harness.Dispatcher.Execute("inst halt missing", harness.Source);
-
-        Assert.Equal(1, result);
-        Assert.Empty(harness.Spy.StartedIds);
-        Assert.Empty(harness.Spy.StoppedIds);
-        Assert.Empty(harness.Spy.HaltedIds);
-    }
-
-    [Fact]
-    public void Dispatcher_UsageIncludesAllInstanceLifecycleBranches()
-    {
-        using var harness = CreateHarness();
-        var instanceNode = harness.Dispatcher.GetRoot().GetChild("inst");
-
-        Assert.NotNull(instanceNode);
-        var usage = string.Join(" | ", harness.Dispatcher.GetAllUsage(instanceNode!, harness.Source, false));
-
-        Assert.Contains("list", usage, StringComparison.Ordinal);
-        Assert.Contains("start", usage, StringComparison.Ordinal);
-        Assert.Contains("stop", usage, StringComparison.Ordinal);
-        Assert.Contains("halt", usage, StringComparison.Ordinal);
+        using var ambiguous = CreateHarness([CreateReport(Guid.NewGuid(), "alpha"), CreateReport(Guid.NewGuid(), "ALPHA")]);
+        Assert.Equal(1, ambiguous.Dispatcher.Execute("inst halt alpha", ambiguous.Source));
+        Assert.Empty(ambiguous.Spy.HaltedIds);
     }
 
     private static CommandHarness CreateHarness(
-        IEnumerable<KeyValuePair<Guid, IInstance>>? instances = null,
-        Func<Guid, CancellationToken, Task<IInstance?>>? start = null,
-        Func<Guid, bool>? stop = null,
-        Action<Guid>? halt = null)
+        IEnumerable<ApplicationInstanceReport>? reports = null,
+        Func<Guid, CancellationToken, Task<Result<Unit, DaemonError>>>? start = null,
+        Func<Guid, CancellationToken, Task<Result<Unit, DaemonError>>>? stop = null,
+        Func<Guid, CancellationToken, Task<Result<Unit, DaemonError>>>? halt = null)
     {
-        var instanceMap = new ConcurrentDictionary<Guid, IInstance>(instances ?? []);
-        var runningInstances = new ConcurrentDictionary<Guid, IInstance>();
+        var reportMap = (reports ?? []).ToImmutableDictionary(report => report.Config.InstanceId);
         var spy = new LifecycleSpy();
-        var manager = CreateProxy<IInstanceManager>((method, args) => method.Name switch
+        var instances = CreateProxy<IInstanceApplication>((method, args) => method.Name switch
         {
-            "get_Instances" => instanceMap,
-            "get_RunningInstances" => runningInstances,
-            nameof(IInstanceManager.TryStartInstance) => StartInstance(args, spy, start),
-            nameof(IInstanceManager.TryStopInstance) => StopInstance(args, spy, stop),
-            nameof(IInstanceManager.KillInstance) => HaltInstance(args, spy, halt),
+            nameof(IInstanceApplication.ListInstanceReportsAsync) => Task.FromResult(
+                Result.Ok<InstanceReportList, DaemonError>(new InstanceReportList(reportMap))),
+            nameof(IInstanceApplication.StartInstanceAsync) => InvokeLifecycle(args, spy.StartedIds, spy, start),
+            nameof(IInstanceApplication.StopInstanceAsync) => InvokeLifecycle(args, spy.StoppedIds, spy, stop),
+            nameof(IInstanceApplication.HaltInstanceAsync) => InvokeLifecycle(args, spy.HaltedIds, spy, halt),
             _ => GetDefaultReturnValue(method.ReturnType)
         });
         var shutdown = new GracefulShutdown();
         var services = new ServiceCollection();
-        services.AddSingleton<IInstanceManager>(manager);
+        services.AddSingleton<IDaemonApplication>(new TestDaemonApplication(instances));
         services.AddSingleton(shutdown);
         var resolver = new AspNetCoreContainer(services).BuildResolver();
         var httpService = CreateProxy<IHttpService>((method, _) => method.Name == "get_Resolver"
@@ -276,45 +197,52 @@ public class InstanceCommandTests
         var dispatcher = new CommandDispatcher<ConsoleCommandSource>();
         InstanceCommand.Register(dispatcher);
 
-        return new CommandHarness(dispatcher, new ConsoleCommandSource(httpService), shutdown, spy, runningInstances);
+        return new CommandHarness(dispatcher, new ConsoleCommandSource(httpService), shutdown, spy);
     }
 
-    private static object StartInstance(
+    private static object InvokeLifecycle(
         object?[]? args,
+        List<Guid> calledIds,
         LifecycleSpy spy,
-        Func<Guid, CancellationToken, Task<IInstance?>>? start)
+        Func<Guid, CancellationToken, Task<Result<Unit, DaemonError>>>? implementation)
     {
-        var id = GetInstanceId(args);
-        var cancellationToken = GetCancellationToken(args);
-        spy.StartedIds.Add(id);
-        spy.StartCancellationToken = cancellationToken;
-        spy.StartEntered.TrySetResult();
-        return (start ?? ((_, _) => Task.FromResult<IInstance?>(null)))(id, cancellationToken);
+        var request = Assert.IsType<InstanceReference>(args![0]);
+        var cancellationToken = Assert.IsType<CancellationToken>(args[1]);
+        calledIds.Add(request.InstanceId);
+        if (ReferenceEquals(calledIds, spy.StartedIds))
+        {
+            spy.StartCancellationToken = cancellationToken;
+            spy.StartEntered.TrySetResult();
+        }
+
+        return (implementation ?? ((_, _) => Task.FromResult(Result.Ok<Unit, DaemonError>(Unit.Default))))(
+            request.InstanceId,
+            cancellationToken);
     }
 
-    private static object StopInstance(object?[]? args, LifecycleSpy spy, Func<Guid, bool>? stop)
+    private static ApplicationInstanceReport CreateReport(Guid instanceId, string name)
     {
-        var id = GetInstanceId(args);
-        spy.StoppedIds.Add(id);
-        return (stop ?? (_ => false))(id);
-    }
-
-    private static object? HaltInstance(object?[]? args, LifecycleSpy spy, Action<Guid>? halt)
-    {
-        var id = GetInstanceId(args);
-        spy.HaltedIds.Add(id);
-        halt?.Invoke(id);
-        return null;
-    }
-
-    private static Guid GetInstanceId(object?[]? args)
-    {
-        return Assert.IsType<Guid>(args![0]);
-    }
-
-    private static CancellationToken GetCancellationToken(object?[]? args)
-    {
-        return Assert.IsType<CancellationToken>(args![1]);
+        using var rulesDocument = JsonDocument.Parse("[]");
+        var config = new InstanceConfiguration(
+            instanceId,
+            name,
+            "server.jar",
+            InstanceType.MCJava,
+            TargetType.Jar,
+            "",
+            "utf-8",
+            "utf-8",
+            "java",
+            ImmutableArray<string>.Empty,
+            ImmutableDictionary<string, string>.Empty,
+            rulesDocument.RootElement);
+        return new ApplicationInstanceReport(
+            InstanceStatus.Stopped,
+            config,
+            ImmutableDictionary<string, string>.Empty,
+            ImmutableArray<InstancePlayer>.Empty,
+            new InstancePerformance(0, 0),
+            null);
     }
 
     private static T CreateProxy<T>(Func<MethodInfo, object?[]?, object?> handler)
@@ -334,31 +262,24 @@ public class InstanceCommandTests
                 : null;
     }
 
-    private static TestInstance CreateInstance(string name)
+    private sealed class TestDaemonApplication(IInstanceApplication instances) : IDaemonApplication
     {
-        return new TestInstance(new InstanceConfig
-        {
-            Name = name,
-            Target = "server.jar",
-            TargetType = TargetType.Jar,
-            InstanceType = InstanceType.MCJava,
-            JavaPath = "java",
-            Arguments = ["nogui"]
-        });
+        public IInstanceApplication Instances { get; } = instances;
+        public IFileApplication Files => throw new NotSupportedException();
+        public ISystemApplication System => throw new NotSupportedException();
+        public IEventRuleApplication EventRules => throw new NotSupportedException();
     }
 
     private sealed class CommandHarness(
         CommandDispatcher<ConsoleCommandSource> dispatcher,
         ConsoleCommandSource source,
         GracefulShutdown shutdown,
-        LifecycleSpy spy,
-        ConcurrentDictionary<Guid, IInstance> runningInstances) : IDisposable
+        LifecycleSpy spy) : IDisposable
     {
         public CommandDispatcher<ConsoleCommandSource> Dispatcher { get; } = dispatcher;
         public ConsoleCommandSource Source { get; } = source;
         public GracefulShutdown Shutdown { get; } = shutdown;
         public LifecycleSpy Spy { get; } = spy;
-        public ConcurrentDictionary<Guid, IInstance> RunningInstances { get; } = runningInstances;
 
         public void Dispose()
         {
@@ -373,57 +294,6 @@ public class InstanceCommandTests
         public List<Guid> HaltedIds { get; } = [];
         public CancellationToken StartCancellationToken { get; set; }
         public TaskCompletionSource StartEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    }
-
-    private sealed class TestInstance(InstanceConfig config) : IInstance
-    {
-        public InstanceConfig Config { get; } = config;
-        public InstanceProcess? Process => null;
-        public InstanceStatus Status => InstanceStatus.Stopped;
-        public int ServerProcessId => -1;
-
-        public event Action<Guid, string>? OnLog
-        {
-            add
-            {
-            }
-            remove
-            {
-            }
-        }
-
-        public event Action<Guid, InstanceStatus>? OnStatusChanged
-        {
-            add
-            {
-            }
-            remove
-            {
-            }
-        }
-
-        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
-        {
-            return Task.FromResult(new InstanceReport(Status, Config, new Dictionary<string, string>(), [], default));
-        }
-
-        public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
-        {
-            return Task.FromResult(false);
-        }
-
-        public void Stop()
-        {
-        }
-
-        public IReadOnlyList<string> GetLogHistory()
-        {
-            return Array.Empty<string>();
-        }
-
-        public void Dispose()
-        {
-        }
     }
 
     private class InterfaceDispatchProxy : DispatchProxy

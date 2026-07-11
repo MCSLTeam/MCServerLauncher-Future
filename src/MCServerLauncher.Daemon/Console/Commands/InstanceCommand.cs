@@ -1,13 +1,11 @@
-using System.Collections.Concurrent;
 using Brigadier.NET;
 using Brigadier.NET.Builder;
 using Brigadier.NET.Tree;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Daemon.Management;
-using MCServerLauncher.Common.Minecraft;
-using MCServerLauncher.Daemon;
-using MCServerLauncher.Daemon.Management.Minecraft;
-using MCServerLauncher.Daemon.Utils.Status;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.Console;
+using ApplicationInstanceReport = MCServerLauncher.Common.Contracts.Instances.InstanceReport;
 
 namespace MCServerLauncher.Daemon.Console.Commands;
 
@@ -20,49 +18,37 @@ public static class InstanceCommand
             .Then(ctx.Literal("list").Executes(cmd =>
             {
                 var source = cmd.Source;
-                var manager = source.GetRequiredService<IInstanceManager>();
+                var application = source.GetRequiredService<IDaemonApplication>();
+                var shutdown = source.GetRequiredService<GracefulShutdown>();
+                if (!TryGetReports(source, application, shutdown.CancellationToken, out var reports))
+                    return 1;
 
                 source.SendFeedback("正在加载 ...");
-                var infos = new ConcurrentDictionary<Guid, (long, double)>();
-                Parallel.ForEachAsync(
-                    manager.Instances.Keys,
-                    new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = 4
-                    },
-                    async (id, ct) =>
-                    {
-                        if (manager.Instances.TryGetValue(id, out var inst))
-                            if (inst.Status == InstanceStatus.Running)
-                                infos.TryAdd(id, await ProcessInfo.GetProcessUsageAsync(inst.ServerProcessId));
-                    }).Wait();
-
-                foreach (var (id, inst) in manager.Instances)
-                    if (infos.TryGetValue(id, out var rv))
-                        ShowInstanceInformation(source, inst, true, rv.Item1, rv.Item2);
-                    else ShowInstanceInformation(source, inst, false, 0, 0);
+                foreach (var (id, report) in reports.Reports.OrderBy(static report => report.Key))
+                    ShowInstanceInformation(source, id, report);
 
                 source.SendFeedback(
-                    "共 {0} 个实例, 内存占用 {1}, CPU利用率 {2} %",
-                    manager.Instances.Count,
-                    GetMemoryString(infos.Sum(x => x.Value.Item1)),
-                    infos.Sum(x => x.Value.Item2)
-                );
+                    "共 {0} 个实例 内存占用 {1}, CPU利用率 {2} %",
+                    reports.Reports.Count,
+                    GetMemoryString(reports.Reports.Values.Sum(static report => report.PerformanceCounter.MemoryBytes)),
+                    reports.Reports.Values.Sum(static report => report.PerformanceCounter.Cpu));
                 return 0;
             }))
             .Then(ctx.Literal("start")
                 .Then(ctx.Argument("target", Arguments.String()).Executes(cmd =>
                 {
                     var source = cmd.Source;
-                    var manager = source.GetRequiredService<IInstanceManager>();
-                    var target = Arguments.GetString(cmd, "target") ?? string.Empty;
-                    if (!TryResolveTarget(source, manager, target, out var instanceId)) return 1;
-
+                    var application = source.GetRequiredService<IDaemonApplication>();
                     var shutdown = source.GetRequiredService<GracefulShutdown>();
-                    var instance = manager.TryStartInstance(instanceId, shutdown.CancellationToken)
+                    var target = Arguments.GetString(cmd, "target") ?? string.Empty;
+                    if (!TryResolveTarget(source, application, target, shutdown.CancellationToken, out var instanceId)) return 1;
+
+                    var result = application.Instances.StartInstanceAsync(
+                            new InstanceReference(instanceId),
+                            shutdown.CancellationToken)
                         .GetAwaiter()
                         .GetResult();
-                    if (instance is null)
+                    if (result.IsErr(out _))
                     {
                         source.SendError("无法启动实例 '{Instance}'.", target);
                         return 1;
@@ -75,11 +61,17 @@ public static class InstanceCommand
                 .Then(ctx.Argument("target", Arguments.String()).Executes(cmd =>
                 {
                     var source = cmd.Source;
-                    var manager = source.GetRequiredService<IInstanceManager>();
+                    var application = source.GetRequiredService<IDaemonApplication>();
+                    var shutdown = source.GetRequiredService<GracefulShutdown>();
                     var target = Arguments.GetString(cmd, "target") ?? string.Empty;
-                    if (!TryResolveTarget(source, manager, target, out var instanceId)) return 1;
+                    if (!TryResolveTarget(source, application, target, shutdown.CancellationToken, out var instanceId)) return 1;
 
-                    if (!manager.TryStopInstance(instanceId))
+                    var result = application.Instances.StopInstanceAsync(
+                            new InstanceReference(instanceId),
+                            shutdown.CancellationToken)
+                        .GetAwaiter()
+                        .GetResult();
+                    if (result.IsErr(out _))
                     {
                         source.SendError("无法请求停止实例 '{Instance}'.", target);
                         return 1;
@@ -92,18 +84,29 @@ public static class InstanceCommand
                 .Then(ctx.Argument("target", Arguments.String()).Executes(cmd =>
                 {
                     var source = cmd.Source;
-                    var manager = source.GetRequiredService<IInstanceManager>();
+                    var application = source.GetRequiredService<IDaemonApplication>();
+                    var shutdown = source.GetRequiredService<GracefulShutdown>();
                     var target = Arguments.GetString(cmd, "target") ?? string.Empty;
-                    if (!TryResolveTarget(source, manager, target, out var instanceId)) return 1;
+                    if (!TryResolveTarget(source, application, target, shutdown.CancellationToken, out var instanceId)) return 1;
 
-                    manager.KillInstance(instanceId);
-                    source.SendFeedback("已向实例 '{Instance}' 发送强制停止信号.", target);
+                    var result = application.Instances.HaltInstanceAsync(
+                            new InstanceReference(instanceId),
+                            shutdown.CancellationToken)
+                        .GetAwaiter()
+                        .GetResult();
+                    if (result.IsErr(out _))
+                    {
+                        source.SendError("无法发送强制停止信号给实例 '{Instance}'.", target);
+                        return 1;
+                    }
+
+                    source.SendFeedback("已向实例 '{Instance}' 发送强制停止信号", target);
                     return 0;
                 }))));
     }
 
     internal static TargetResolution ResolveTarget(
-        IReadOnlyCollection<KeyValuePair<Guid, IInstance>> snapshot,
+        IReadOnlyCollection<KeyValuePair<Guid, ApplicationInstanceReport>> snapshot,
         string target)
     {
         if (Guid.TryParse(target, out var targetId))
@@ -129,12 +132,19 @@ public static class InstanceCommand
 
     private static bool TryResolveTarget<TSource>(
         TSource source,
-        IInstanceManager manager,
+        IDaemonApplication application,
         string target,
+        CancellationToken cancellationToken,
         out Guid instanceId)
         where TSource : ConsoleCommandSource
     {
-        var resolution = ResolveTarget(manager.Instances.ToArray(), target);
+        if (!TryGetReports(source, application, cancellationToken, out var reports))
+        {
+            instanceId = default;
+            return false;
+        }
+
+        var resolution = ResolveTarget(reports.Reports, target);
         if (resolution.InstanceId is Guid resolvedInstanceId)
         {
             instanceId = resolvedInstanceId;
@@ -157,28 +167,42 @@ public static class InstanceCommand
         return false;
     }
 
+    private static bool TryGetReports<TSource>(
+        TSource source,
+        IDaemonApplication application,
+        CancellationToken cancellationToken,
+        out InstanceReportList reports)
+        where TSource : ConsoleCommandSource
+    {
+        var result = application.Instances.ListInstanceReportsAsync(cancellationToken)
+            .GetAwaiter()
+            .GetResult();
+        if (result.IsOk(out reports!))
+            return true;
+
+        source.SendError("无法读取实例报告.");
+        reports = null!;
+        return false;
+    }
+
     internal sealed record TargetResolution(Guid? InstanceId, Guid[] AmbiguousInstanceIds);
 
     private static void ShowInstanceInformation<TSource>(
         TSource source,
-        IInstance instance,
-        bool showInfo,
-        long mem,
-        double cpu
-    )
+        Guid instanceId,
+        ApplicationInstanceReport report)
         where TSource : ConsoleCommandSource
     {
         source.SendFeedback("");
-        source.SendFeedback(" - {0} ({1})", instance.Config.Name, instance.Config.Uuid);
-        source.SendFeedback("   - 状态: {0}", instance.Status.ToString());
+        source.SendFeedback(" - {0} ({1})", report.Config.Name, instanceId);
+        source.SendFeedback("   - 状态: {0}", report.Status.ToString());
 
-        if (showInfo && instance.Status == InstanceStatus.Running)
+        if (report.Status == InstanceStatus.Running)
         {
-            source.SendFeedback("   - PID: {0}", instance.ServerProcessId);
-            if (instance.TryCastTo<MinecraftInstance>(out var mcInstance))
-                source.SendFeedback("   - 端口: {0}", mcInstance!.Port);
-            source.SendFeedback("   - 内存: {0}", GetMemoryString(mem));
-            source.SendFeedback("   - CPU: {0} %", cpu);
+            if (report.ProcessId is int processId)
+                source.SendFeedback("   - PID: {0}", processId);
+            source.SendFeedback("   - 内存: {0}", GetMemoryString(report.PerformanceCounter.MemoryBytes));
+            source.SendFeedback("   - CPU: {0} %", report.PerformanceCounter.Cpu);
         }
     }
 
@@ -186,13 +210,13 @@ public static class InstanceCommand
     {
         if (bytes < 1024) return $"{bytes} B";
 
-        bytes = bytes / 1024;
+        bytes /= 1024;
         if (bytes < 10240) return $"{bytes:F2} KB";
 
-        bytes = bytes / 1024;
+        bytes /= 1024;
         if (bytes < 10240) return $"{bytes:F2} MB";
 
-        bytes = bytes / 1024;
+        bytes /= 1024;
         return $"{bytes:F2} GB";
     }
 }
