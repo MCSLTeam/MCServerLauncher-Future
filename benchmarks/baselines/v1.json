@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "name": "mcsl-daemon-v1-final",
+  "captured_at_utc": "2026-07-11T09:53:00Z",
+  "source": {
+    "commit": "925666a4",
+    "branch": "daemon-api",
+    "protocol_endpoint": "/api/v1",
+    "protocol_tests": {
+      "passed": 382,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "environment": {
+    "benchmarkdotnet_version": "0.15.8",
+    "dotnet_cli_version": "10.0.201",
+    "runtime_version": ".NET 10.0.5 (10.0.5, 10.0.526.15411)",
+    "os_version": "Windows 11 (10.0.26200.8655/25H2/2025Update/HudsonValley2)",
+    "architecture": "X64",
+    "processor": "AMD Ryzen 9 9900X",
+    "physical_cores": 12,
+    "logical_cores": 24,
+    "configuration": "RELEASE"
+  },
+  "gate": {
+    "maximum_mean_regression_percent": 25.0,
+    "mean_requires_matching_environment": true,
+    "allocation_is_environment_independent": true
+  },
+  "metrics": [
+    {
+      "id": "request.dispatch.ping",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ActionDispatchBenchmarks.DispatchPing",
+      "mean_nanoseconds": 448.64,
+      "allocated_bytes_per_operation": 424
+    },
+    {
+      "id": "request.dispatch.system_info",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ActionDispatchBenchmarks.DispatchGetSystemInfo",
+      "mean_nanoseconds": 7915.50,
+      "allocated_bytes_per_operation": 2584
+    },
+    {
+      "id": "request.parse",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ActionParsingBenchmarks.ParseActionRequest",
+      "mean_nanoseconds": 1769.75,
+      "allocated_bytes_per_operation": 2320
+    },
+    {
+      "id": "response.serialize",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ActionSerializationBenchmarks.SerializeActionResponse",
+      "mean_nanoseconds": 219.51,
+      "allocated_bytes_per_operation": 352
+    },
+    {
+      "id": "daemon.response.serialize.transport",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonOutboundBenchmarks.SerializeActionResponseForTransport",
+      "mean_nanoseconds": 193.82,
+      "allocated_bytes_per_operation": 240
+    },
+    {
+      "id": "event.serialize",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.EventSerializationBenchmarks.SerializeEventPacket",
+      "mean_nanoseconds": 775.53,
+      "allocated_bytes_per_operation": 976
+    },
+    {
+      "id": "daemon.event.serialize.transport",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonOutboundBenchmarks.SerializeEventPacketForTransport",
+      "mean_nanoseconds": 731.70,
+      "allocated_bytes_per_operation": 504
+    },
+    {
+      "id": "client.response.parse",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientInboundBenchmarks.ParseActionResponseEnvelope",
+      "mean_nanoseconds": 1165.86,
+      "allocated_bytes_per_operation": 912
+    },
+    {
+      "id": "client.event.parse_materialize",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientInboundBenchmarks.ParseAndMaterializeInstanceLogEventEnvelope",
+      "mean_nanoseconds": 1022.16,
+      "allocated_bytes_per_operation": 1032
+    },
+    {
+      "id": "client.request.serialize.ping",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientOutboundBenchmarks.SerializePingActionRequestForTransport",
+      "mean_nanoseconds": 131.90,
+      "allocated_bytes_per_operation": 200
+    },
+    {
+      "id": "client.request.serialize.subscription",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientOutboundBenchmarks.SerializeSubscribeEventConcreteMetaActionRequestForTransport",
+      "mean_nanoseconds": 204.40,
+      "allocated_bytes_per_operation": 288
+    },
+    {
+      "id": "client.request.serialize.large",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientOutboundBenchmarks.SerializeSaveEventRulesActionRequestForTransport",
+      "mean_nanoseconds": 690.55,
+      "allocated_bytes_per_operation": 736
+    },
+    {
+      "id": "client.round_trip.request",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientRoundTripBenchmarks.ClientToDaemonToClientActionRoundTrip",
+      "mean_nanoseconds": 2436.25,
+      "allocated_bytes_per_operation": 2256
+    },
+    {
+      "id": "client.round_trip.event",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.DaemonClientRoundTripBenchmarks.DaemonToClientEventRoundTrip",
+      "mean_nanoseconds": 1227.11,
+      "allocated_bytes_per_operation": 1384
+    },
+    {
+      "id": "binary.upload.frame.build.64k",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.LegacyBinaryUploadMigrationBenchmarks.BuildLegacyV1RawBinaryUploadFrameMigrationBaseline",
+      "job": "ShortRun",
+      "mean_nanoseconds": 67781.3578,
+      "allocated_bytes_per_operation": 65656
+    },
+    {
+      "id": "binary.upload.ack.parse",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.LegacyBinaryUploadMigrationBenchmarks.ParseLegacyV1RawBinaryUploadAcknowledgementMigrationBaseline",
+      "job": "ShortRun",
+      "mean_nanoseconds": 269.9451,
+      "allocated_bytes_per_operation": 72
+    },
+    {
+      "id": "registry.startup.generated",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.GeneratedRegistryStartupBenchmarks.BuildGeneratedRegistry",
+      "mean_nanoseconds": 641.45,
+      "allocated_bytes_per_operation": 2704
+    },
+    {
+      "id": "registry.startup.reflection",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.LegacyRegistryStartupBenchmarks.BuildLegacyRegistry",
+      "mean_nanoseconds": 128736.78,
+      "allocated_bytes_per_operation": 61025
+    }
+  ],
+  "known_gaps": [
+    "V1 download is string transport and has no binary benchmark.",
+    "Future V2 binary measurements are new-feature gates rather than direct parity comparisons."
+  ]
+}
