@@ -1,6 +1,9 @@
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType;
-using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote;
@@ -12,6 +15,7 @@ using MCServerLauncher.Daemon.Utils.Status;
 using Microsoft.Extensions.DependencyInjection;
 using TouchSocket.Core;
 using TouchSocket.Http;
+using LegacySystemInfo = MCServerLauncher.Common.ProtoType.Status.SystemInfo;
 using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon.Bootstrap;
@@ -32,26 +36,39 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IActionExecutor, AnotherActionExecutor>();
         a.RegisterSingleton<IEventService, EventService>();
         a.RegisterSingleton<WsContextContainer>();
-        a.RegisterSingleton(InstanceManager.Create());
+
+        var instanceManager = (InstanceManager)InstanceManager.Create();
+        var fileSessionCoordinator = FileSessionCoordinator.Shared;
+        fileSessionCoordinator.ConfigureDownloadSessionLimit(AppConfig.Get().FileDownloadSessions);
+        var systemInfoCell = new AsyncTimedLazyCell<LegacySystemInfo>(
+            SystemInfoHelper.GetSystemInfo,
+            TimeSpan.FromSeconds(2));
+        var javaRuntimeCell = new AsyncTimedLazyCell<JavaInfo[]>(
+            JavaScanner.ScanJavaAsync,
+            TimeSpan.FromSeconds(2));
+
+        a.RegisterSingleton(instanceManager);
+        a.RegisterSingleton<IInstanceManager>(instanceManager);
+        a.RegisterSingleton<IInstanceSnapshotSource>(instanceManager.InstanceSnapshotSource);
+        a.RegisterSingleton(fileSessionCoordinator);
+        a.RegisterSingleton<IAsyncTimedLazyCell<LegacySystemInfo>>(systemInfoCell);
+        a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(javaRuntimeCell);
+
+        a.RegisterSingleton<IDomainEventPort, DomainEventPort>();
+        a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
+        a.RegisterSingleton<IFileApplication, LocalFileApplication>();
+        a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
+        a.RegisterSingleton<LegacySystemActionAdapter>();
+        a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
+        a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
+        a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
+        a.RegisterSingleton<InstanceDomainEventBridge>();
         a.RegisterSingleton<EventTriggerService>();
-        a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(
-            new AsyncTimedLazyCell<SystemInfo>(
-                SystemInfoHelper.GetSystemInfo,
-                TimeSpan.FromSeconds(2)
-            )
-        );
-        a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(
-            new AsyncTimedLazyCell<JavaInfo[]>(
-                JavaScanner.ScanJavaAsync,
-                TimeSpan.FromSeconds(2)
-            )
-        );
+        a.RegisterSingleton<LegacyDomainEventAdapter>();
     }
 
     internal static void ConfigurePlugins(IPluginManager a)
     {
-        a.Add<FileSystemWatcherPlugin>();
-
         a.Add<HttpPlugin>();
         a.UseWebSocket(options =>
         {
@@ -75,18 +92,20 @@ internal static class DaemonServiceComposition
         {
             try
             {
-                var eventService = httpService.Resolver.GetRequiredService<IEventService>();
-                var cell = httpService.Resolver.GetRequiredService<IAsyncTimedLazyCell<SystemInfo>>();
-                var systemInfo = await cell.Value;
-                eventService.OnDaemonReport(new DaemonReport(
-                    systemInfo.Os,
-                    systemInfo.Cpu,
-                    systemInfo.Mem,
-                    systemInfo.Drive,
-                    Application.StartTime.ToUnixTimeMilliSeconds(),
-                    systemInfo.Drives,
-                    systemInfo.DaemonVersion
-                ));
+                var application = httpService.Resolver.GetRequiredService<IDaemonApplication>();
+                var result = await application.System.GetSystemInfoAsync(CancellationToken.None);
+                if (result.IsErr(out var error))
+                {
+                    Serilog.Log.Debug(
+                        "[DaemonReport] Failed to refresh daemon report: {ErrorCode}",
+                        error?.Code ?? "unknown");
+                    return;
+                }
+
+                httpService.Resolver.GetRequiredService<IDomainEventPort>().Publish(
+                    new DaemonReportDomainEvent(
+                        result.Unwrap(),
+                        Application.StartTime.ToUnixTimeMilliSeconds()));
             }
             catch (Exception ex)
             {
@@ -95,6 +114,10 @@ internal static class DaemonServiceComposition
         };
         Application.OnStarted += () =>
         {
+            httpService.Resolver.GetRequiredService<FileSessionCoordinator>().Start();
+            _ = httpService.Resolver.GetRequiredService<EventTriggerService>();
+            _ = httpService.Resolver.GetRequiredService<LegacyDomainEventAdapter>();
+            _ = httpService.Resolver.GetRequiredService<InstanceDomainEventBridge>();
             daemonReportTimer.Start();
             httpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
             return Task.CompletedTask;

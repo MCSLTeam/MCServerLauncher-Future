@@ -1,7 +1,10 @@
 using System.Collections.Concurrent;
+using System.Threading;
+using MCServerLauncher.Common.Detection;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.Common.Detection;
+using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -10,161 +13,300 @@ using Serilog;
 
 namespace MCServerLauncher.Daemon.Management;
 
-public class InstanceManager : IInstanceManager
+internal class InstanceManager : IInstanceManager
 {
-    private Func<IEnumerable<Guid>> InstanceKeysSupplier => () => Instances.Keys;
     private readonly InstanceUpdateCoordinator _instanceUpdateCoordinator;
+    private readonly Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> _applyInstanceFactory;
+    private readonly Func<InstanceConfig, IInstance> _instanceFactory;
+    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _instanceMutationGates = new();
+    private readonly Lock _mutationLock = new();
+    private readonly Dictionary<Guid, InstanceCreationReservation> _creationReservations = [];
+    private AuthoritativeInstanceSnapshotSource _snapshotSource;
+
     public ConcurrentDictionary<Guid, IInstance> Instances { get; } = new();
     public ConcurrentDictionary<Guid, IInstance> RunningInstances { get; } = new();
 
+    /// <summary>
+    /// Raw daemon-internal lifecycle stream for a later domain-event bridge.
+    /// </summary>
+    internal event Action<Guid, string>? InstanceLogReceived;
+
+    /// <summary>
+    /// Raw daemon-internal lifecycle stream for a later domain-event bridge.
+    /// </summary>
+    internal event Action<Guid, InstanceStatus>? InstanceStatusChanged;
+
+    internal IInstanceSnapshotSource InstanceSnapshotSource => _snapshotSource;
+
     public InstanceManager()
+        : this(
+            static config => config.CreateInstance(),
+            static setting => setting.ApplyInstanceFactory())
     {
-        _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this);
+    }
+
+    internal InstanceManager(Func<InstanceConfig, IInstance> instanceFactory)
+        : this(instanceFactory, static setting => setting.ApplyInstanceFactory())
+    {
+    }
+
+    internal InstanceManager(
+        Func<InstanceConfig, IInstance> instanceFactory,
+        Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> applyInstanceFactory)
+    {
+        ArgumentNullException.ThrowIfNull(instanceFactory);
+        ArgumentNullException.ThrowIfNull(applyInstanceFactory);
+        _instanceFactory = instanceFactory;
+        _applyInstanceFactory = applyInstanceFactory;
+        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances);
+        _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this, instanceFactory);
     }
 
     public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        if (Instances.ContainsKey(setting.Uuid))
-            Log.Warning(
-                "[InstanceManager] Add new instance failed: Instance '{0}' already exists, we will allocate a new uuid for it",
-                setting.Uuid);
-
-        var instanceRoot = setting.GetWorkingDirectory();
-
-        var createDirResult = ResultExt.Try(Directory.CreateDirectory, instanceRoot).MapErr(ex =>
-            new Error("Instance manager failed to create instance directory").CauseBy(ex));
-
-        Log.Information(
-            "[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
-            setting.InstanceType.ToString(),
-            setting.Name
-        );
-
-        var appliedFactoryResult = (await createDirResult.MapAsync(_ => setting.ApplyInstanceFactory()))
-            .Flatten()
-            .MapErr(err => new Error("Instance manager failed to run instance factory").WithInner(err));
-
-        ct.ThrowIfCancellationRequested();
-
-        var saveInstanceResult = appliedFactoryResult.Map(static (state, config) =>
-            {
-                var (root, keysSupplier, manager) = state;
-                var reconciledConfig = InstanceVersionDetector.Reconcile(config, root);
-                reconciledConfig.AllocateNewUuid(keysSupplier);
-
-                return ResultExt.Try(static innerState =>
-                {
-                    var (innerRoot, innerConfig, innerManager) = innerState;
-                    var validation = innerConfig.ValidateConfig();
-                    if (validation.IsErr(out var validationError))
-                        throw new InvalidOperationException(validationError?.ToString() ?? "Invalid instance config");
-
-                    FileManager.WriteJsonAndBackup(
-                        Path.Combine(innerRoot, InstanceConfig.FileName),
-                        innerConfig
-                    );
-
-                    innerManager.Instances.TryAdd(innerConfig.Uuid, innerConfig.CreateInstance());
-                    return innerConfig;
-                }, (root, reconciledConfig, manager)).MapErr(Error.FromException);
-            }
-            , (instanceRoot, KeysSupplier: InstanceKeysSupplier, this)).Flatten();
-
-        if (saveInstanceResult.IsErr(out var error))
+        if (!InstanceTargetPathValidator.TryResolveTargetFile(
+                setting.GetWorkingDirectory(),
+                setting.Target,
+                out _,
+                out var targetError))
         {
-            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", setting.Name, error);
-            FileManager.TryRemove(instanceRoot); // rollback
+            return ResultExt.Err<InstanceConfig>(targetError!);
         }
 
-        return saveInstanceResult;
-    }
+        using var reservation = ReserveInstanceCreation(setting.Uuid);
+        var reservedSetting = setting with { Uuid = reservation.InstanceId };
 
-    public bool TryRemoveInstance(Guid instanceId)
-    {
-        if (RunningInstances.ContainsKey(instanceId)) return false;
-
-        if (!Instances.TryRemove(instanceId, out var instance)) return false;
-        instance.Dispose();
-
-        // remove server directory (may already be deleted externally, e.g., by user or FsWatcher)
+        var instanceRoot = reservedSetting.GetWorkingDirectory();
         try
         {
-            var instanceDir = Path.Combine(FileManager.InstancesRoot, instanceId.ToString());
-            if (Directory.Exists(instanceDir))
-                Directory.Delete(instanceDir, true);
-
-            Log.Information("[InstanceManager] Removed instance '{0}'", instanceId);
-            return true;
+            Directory.CreateDirectory(instanceRoot);
         }
         catch (Exception exception)
         {
-            Log.Error("[InstanceManager] Failed to remove instance '{0}': {1}", instanceId, exception);
-            return false;
+            return FailCreate(new Error("Instance manager failed to create instance directory").CauseBy(exception));
         }
+
+        Log.Information(
+            "[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
+            reservedSetting.InstanceType.ToString(),
+            reservedSetting.Name);
+
+        Result<InstanceConfig, Error> appliedFactoryResult;
+        try
+        {
+            appliedFactoryResult = await _applyInstanceFactory(reservedSetting);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            FileManager.TryRemove(instanceRoot);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            return FailCreate(new Error("Instance manager failed to run instance factory").CauseBy(exception));
+        }
+
+        if (appliedFactoryResult.IsErr(out var factoryError))
+            return FailCreate(new Error("Instance manager failed to run instance factory").WithInner(factoryError));
+
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var reconciledConfig = InstanceVersionDetector.Reconcile(appliedFactoryResult.Unwrap(), instanceRoot);
+            reconciledConfig.Uuid = reservation.InstanceId;
+
+            using var mutation = await AcquireInstanceMutationAsync(reconciledConfig.Uuid, ct);
+            ct.ThrowIfCancellationRequested();
+
+            var validation = reconciledConfig.ValidateConfig();
+            if (validation.IsErr(out var validationError))
+                return FailCreate(new Error("Instance manager received an invalid instance config").WithInner(validationError));
+
+            FileManager.WriteJsonAndBackup(
+                Path.Combine(instanceRoot, InstanceConfig.FileName),
+                reconciledConfig);
+
+            var instance = _instanceFactory(reconciledConfig);
+            try
+            {
+                CommitCreatedInstance(reservation, instance);
+            }
+            catch
+            {
+                TryDisposeInstance(instance, reconciledConfig.Uuid, "created");
+                throw;
+            }
+
+            return ResultExt.Ok(reconciledConfig);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            FileManager.TryRemove(instanceRoot);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            return FailCreate(Error.FromException(exception));
+        }
+
+        Result<InstanceConfig, Error> FailCreate(Error error)
+        {
+            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", reservedSetting.Name, error);
+            FileManager.TryRemove(instanceRoot);
+            return ResultExt.Err<InstanceConfig>(error);
+        }
+    }
+
+    public async Task<bool> TryRemoveInstance(Guid instanceId, CancellationToken ct = default)
+    {
+        using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
+        IInstance removedInstance;
+        string? removedDirectory;
+        lock (_mutationLock)
+        {
+            if (RunningInstances.ContainsKey(instanceId))
+                return false;
+
+            if (!Instances.TryGetValue(instanceId, out var instance))
+                return false;
+
+            var instanceDirectory = Path.Combine(FileManager.InstancesRoot, instanceId.ToString());
+            removedDirectory = null;
+            try
+            {
+                if (Directory.Exists(instanceDirectory))
+                {
+                    removedDirectory = instanceDirectory + ".removing-" + Guid.NewGuid().ToString("N");
+                    Directory.Move(instanceDirectory, removedDirectory);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.Error("[InstanceManager] Failed to stage removal for instance '{0}': {1}", instanceId, exception);
+                return false;
+            }
+
+            if (!Instances.TryRemove(instanceId, out var removed))
+            {
+                RestoreStagedDirectory(instanceDirectory, removedDirectory);
+                return false;
+            }
+
+            removedInstance = removed;
+            DetachInstance(removedInstance);
+            _snapshotSource.Remove(instanceId);
+        }
+
+        try
+        {
+            removedInstance.Dispose();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "[InstanceManager] Failed to dispose removed instance '{InstanceId}'", instanceId);
+        }
+
+        if (removedDirectory is not null)
+        {
+            try
+            {
+                Directory.Delete(removedDirectory, true);
+            }
+            catch (Exception exception)
+            {
+                Log.Warning(
+                    exception,
+                    "[InstanceManager] Instance '{InstanceId}' was removed but staged storage cleanup failed at '{RemovalDirectory}'",
+                    instanceId,
+                    removedDirectory);
+            }
+        }
+
+        Log.Information("[InstanceManager] Removed instance '{0}'", instanceId);
+        return true;
     }
 
     public async Task<IInstance?> TryStartInstance(Guid instanceId, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        if (RunningInstances.ContainsKey(instanceId)) return null;
+        using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
+        if (RunningInstances.ContainsKey(instanceId))
+            return null;
 
         var target = Instances.GetValueOrDefault(instanceId);
-        if (target is null) return null;
+        if (target is null)
+            return null;
 
         try
         {
-            target.OnStatusChanged -= OnInstanceStatusChangedHandler;
-            target.OnStatusChanged += OnInstanceStatusChangedHandler;
-
-            // Hook event triggers
-            var eventTriggerService =
-                Application.HttpService?.Resolver.Resolve(
-                        typeof(Remote.Event.EventTriggerService)) as
-                    Remote.Event.EventTriggerService;
-            eventTriggerService?.HookInstance(target);
-
+            AttachInstance(target);
             if (!RunningInstances.TryAdd(instanceId, target))
             {
-                Log.Warning("[InstanceManager] Cannot start a already running instance(Uuid={0})",
-                    target.Config.Uuid);
+                Log.Warning("[InstanceManager] Cannot start a already running instance(Uuid={0})", target.Config.Uuid);
                 return null;
             }
 
             if (await target.StartAsync(ct: ct))
+            {
+                _snapshotSource.Upsert(target);
                 return target;
+            }
 
             RunningInstances.TryRemove(instanceId, out _);
-            target.OnStatusChanged -= OnInstanceStatusChangedHandler;
             return null;
         }
-        catch (Exception e)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            RunningInstances.TryRemove(instanceId, out _);
+            try
+            {
+                target.Process?.KillProcess();
+            }
+            catch (Exception exception)
+            {
+                Log.Warning(
+                    exception,
+                    "[InstanceManager] Failed to clean up canceled start for instance '{0}'",
+                    target.Config.Uuid);
+            }
+
+            throw;
+        }
+        catch (Exception exception)
         {
             RunningInstances.TryRemove(instanceId, out _);
             target.Process?.KillProcess();
-            Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, e);
+            Log.Error("[InstanceManager] Error occurred when starting instance '{0}': {1}", target.Config.Name, exception);
             return null;
         }
     }
 
-    public bool TryStopInstance(Guid instanceId)
+    public async Task<bool> TryStopInstance(Guid instanceId, CancellationToken ct = default)
     {
-        if (!RunningInstances.TryRemove(instanceId, out var instance)) return false;
+        using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
+        if (!RunningInstances.TryRemove(instanceId, out var instance))
+            return false;
+
         instance.Stop();
-        // 不等待服务器退出
+        // Graceful shutdown is intentionally asynchronous and status is updated by the process hook.
         return true;
     }
 
     public bool SendToInstance(Guid instanceId, string message)
     {
-        if (!RunningInstances.TryGetValue(instanceId, out var instance)) return false;
+        if (!RunningInstances.TryGetValue(instanceId, out var instance))
+            return false;
+
         instance.Process!.WriteLine(message);
         return true;
     }
 
     public void KillInstance(Guid instanceId)
     {
-        if (!Instances.TryGetValue(instanceId, out var instance)) return;
+        if (!Instances.TryGetValue(instanceId, out var instance))
+            return;
+
         var process = instance.Process;
         process?.KillProcess();
     }
@@ -175,31 +317,48 @@ public class InstanceManager : IInstanceManager
         if (!Instances.TryGetValue(instanceId, out var instance))
             return null;
 
-        instance = ReconcileLoadedInstance(instance);
         return await instance.GetReportAsync(ct);
     }
 
     public async Task<Dictionary<Guid, InstanceReport>> GetAllReports(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var tasks = Instances.ToDictionary(kv => kv.Key, kv => ReconcileLoadedInstance(kv.Value).GetReportAsync(ct));
+        var tasks = Instances.ToDictionary(pair => pair.Key, pair => pair.Value.GetReportAsync(ct));
         await Task.WhenAll(tasks.Values);
-        return tasks.ToDictionary(kv => kv.Key, kv => kv.Value.Result);
+        return tasks.ToDictionary(pair => pair.Key, pair => pair.Value.Result);
     }
 
-    public Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(Guid instanceId)
+    public bool TryGetInstanceLog(Guid instanceId, out IReadOnlyList<string> logs)
     {
-        return Task.FromResult(_instanceUpdateCoordinator.GetInstanceSettings(instanceId));
+        if (Instances.TryGetValue(instanceId, out var instance))
+        {
+            logs = instance.GetLogHistory();
+            return true;
+        }
+
+        logs = [];
+        return false;
     }
 
-    public Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(UpdateInstanceSettingsParameter request)
+    public async Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(
+        Guid instanceId,
+        CancellationToken ct = default)
     {
-        return _instanceUpdateCoordinator.UpdateInstanceSettings(request);
+        using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
+        return _instanceUpdateCoordinator.GetInstanceSettings(instanceId);
+    }
+
+    public Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
+        UpdateInstanceSettingsParameter request,
+        CancellationToken ct = default)
+    {
+        return _instanceUpdateCoordinator.UpdateInstanceSettings(request, ct);
     }
 
     public Task StopAllInstances(CancellationToken ct = default)
     {
-        foreach (var instance in RunningInstances.Values) instance.Process?.WriteLine("stop");
+        foreach (var instance in RunningInstances.Values)
+            instance.Process?.WriteLine("stop");
 
         var tasks = RunningInstances.Values.Select(instance =>
             instance.Process?.WaitForExitAsync(ct) ?? Task.CompletedTask);
@@ -208,68 +367,299 @@ public class InstanceManager : IInstanceManager
 
     internal void ReplaceInstance(Guid instanceId, IInstance replacement)
     {
-        if (Instances.TryGetValue(instanceId, out var existing))
+        ArgumentNullException.ThrowIfNull(replacement);
+        IInstance? replacedInstance = null;
+
+        lock (_mutationLock)
         {
-            replacement.OnStatusChanged += OnInstanceStatusChangedHandler;
+            var hasExisting = Instances.TryGetValue(instanceId, out var existing);
+            AttachInstance(replacement);
             Instances[instanceId] = replacement;
-            existing.Dispose();
-            return;
+            try
+            {
+                _snapshotSource.Upsert(replacement);
+            }
+            catch
+            {
+                DetachInstance(replacement);
+                if (hasExisting)
+                    Instances[instanceId] = existing!;
+                else
+                    Instances.TryRemove(instanceId, out _);
+
+                throw;
+            }
+
+            if (hasExisting)
+            {
+                DetachInstance(existing!);
+                replacedInstance = existing;
+            }
         }
 
-        replacement.OnStatusChanged += OnInstanceStatusChangedHandler;
-        Instances[instanceId] = replacement;
+        if (replacedInstance is not null)
+            TryDisposeInstance(replacedInstance, instanceId, "replaced");
     }
 
-    private void OnInstanceStatusChangedHandler(Guid instanceId, InstanceStatus status)
+    private void CommitCreatedInstance(InstanceCreationReservation reservation, IInstance instance)
     {
-        Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId,
-            status.ToString());
-        if (status.IsStoppedOrCrashed()) RunningInstances.TryRemove(instanceId, out _);
+        var instanceId = reservation.InstanceId;
+        lock (_mutationLock)
+        {
+            if (!_creationReservations.TryGetValue(instanceId, out var activeReservation) ||
+                !ReferenceEquals(activeReservation, reservation))
+            {
+                throw new InvalidOperationException(
+                    $"Instance '{instanceId}' no longer has an active creation reservation.");
+            }
+
+            if (!Instances.TryAdd(instanceId, instance))
+                throw new InvalidOperationException($"Instance '{instanceId}' already exists.");
+
+            var attached = false;
+            try
+            {
+                AttachInstance(instance);
+                attached = true;
+                _snapshotSource.Upsert(instance);
+            }
+            catch
+            {
+                if (attached)
+                {
+                    try
+                    {
+                        DetachInstance(instance);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Warning(
+                            exception,
+                            "[InstanceManager] Failed to detach uncommitted instance '{InstanceId}'",
+                            instanceId);
+                    }
+                }
+
+                Instances.TryRemove(instanceId, out _);
+                throw;
+            }
+        }
     }
 
-    private IInstance ReconcileLoadedInstance(IInstance instance)
+    /// <summary>
+    /// Reserves an instance identifier before any directory or factory side effects occur. The
+    /// reservation remains active through cleanup so a second create cannot share its storage.
+    /// </summary>
+    private InstanceCreationReservation ReserveInstanceCreation(Guid requestedInstanceId)
     {
-        var currentConfig = instance.Config;
-        var reconciledConfig = InstanceVersionDetector.Reconcile(currentConfig, currentConfig.GetWorkingDirectory());
-        if (reconciledConfig.InstanceType == currentConfig.InstanceType && reconciledConfig.Version == currentConfig.Version)
-            return instance;
+        lock (_mutationLock)
+        {
+            var instanceId = requestedInstanceId;
+            var wasReallocated = false;
+            while (Instances.ContainsKey(instanceId) ||
+                   _creationReservations.ContainsKey(instanceId) ||
+                   IsInstanceStorageOccupied(instanceId))
+            {
+                instanceId = Guid.NewGuid();
+                wasReallocated = true;
+            }
+
+            if (wasReallocated)
+            {
+                Log.Warning(
+                    "[InstanceManager] Instance '{0}' is already committed, being created, or has existing storage; allocating a new uuid",
+                    requestedInstanceId);
+            }
+
+            var reservation = new InstanceCreationReservation(this, instanceId);
+            _creationReservations.Add(instanceId, reservation);
+            return reservation;
+        }
+    }
+
+    private void ReleaseInstanceCreationReservation(InstanceCreationReservation reservation)
+    {
+        lock (_mutationLock)
+        {
+            if (_creationReservations.TryGetValue(reservation.InstanceId, out var activeReservation) &&
+                ReferenceEquals(activeReservation, reservation))
+            {
+                _creationReservations.Remove(reservation.InstanceId);
+            }
+        }
+    }
+
+    private static bool IsInstanceStorageOccupied(Guid instanceId)
+    {
+        var instanceRoot = Path.Combine(FileManager.InstancesRoot, instanceId.ToString());
+        return Directory.Exists(instanceRoot) || File.Exists(instanceRoot);
+    }
+
+    private static void TryDisposeInstance(IInstance instance, Guid instanceId, string operation)
+    {
+        try
+        {
+            instance.Dispose();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(
+                exception,
+                "[InstanceManager] Failed to dispose {Operation} instance '{InstanceId}'",
+                operation,
+                instanceId);
+        }
+    }
+
+    /// <summary>
+    /// Serializes daemon-internal mutations for one instance. Callers must acquire this gate
+    /// before taking <see cref="_mutationLock"/>; no code may wait for this gate while holding
+    /// that lock.
+    /// </summary>
+    public IDisposable AcquireInstanceMutation(Guid instanceId)
+    {
+        var gate = _instanceMutationGates.GetOrAdd(instanceId, static _ => new SemaphoreSlim(1, 1));
+        gate.Wait();
+        return new InstanceMutationLease(gate);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes daemon-internal mutations for one instance.
+    /// </summary>
+    public async ValueTask<IDisposable> AcquireInstanceMutationAsync(
+        Guid instanceId,
+        CancellationToken ct = default)
+    {
+        var gate = _instanceMutationGates.GetOrAdd(instanceId, static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
+        return new InstanceMutationLease(gate);
+    }
+
+    private void AttachInstance(IInstance instance)
+    {
+        instance.OnLog -= OnInstanceLog;
+        instance.OnLog += OnInstanceLog;
+        instance.OnStatusChanged -= OnInstanceStatusChanged;
+        instance.OnStatusChanged += OnInstanceStatusChanged;
+    }
+
+    private void DetachInstance(IInstance instance)
+    {
+        instance.OnLog -= OnInstanceLog;
+        instance.OnStatusChanged -= OnInstanceStatusChanged;
+    }
+
+    private void OnInstanceLog(Guid instanceId, string log)
+    {
+        InstanceLogReceived?.Invoke(instanceId, log);
+    }
+
+    private void OnInstanceStatusChanged(Guid instanceId, InstanceStatus status)
+    {
+        Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId, status.ToString());
+
+        lock (_mutationLock)
+        {
+            if (status.IsStoppedOrCrashed())
+                RunningInstances.TryRemove(instanceId, out _);
+
+            if (Instances.TryGetValue(instanceId, out var instance))
+                _snapshotSource.Upsert(instance);
+        }
+
+        InstanceStatusChanged?.Invoke(instanceId, status);
+    }
+
+    private void ReinitializeSnapshotSource()
+    {
+        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances);
+    }
+
+    private static void RestoreStagedDirectory(string instanceDirectory, string? removedDirectory)
+    {
+        if (removedDirectory is null || !Directory.Exists(removedDirectory))
+            return;
 
         try
         {
-            FileManager.WriteJsonAndBackup(
-                Path.Combine(reconciledConfig.GetWorkingDirectory(), InstanceConfig.FileName),
-                reconciledConfig
-            );
+            Directory.Move(removedDirectory, instanceDirectory);
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Log.Debug(ex, "[InstanceManager] Failed to persist reconciled config for instance {InstanceId}", currentConfig.Uuid);
+            Log.Error(
+                "[InstanceManager] Failed to restore staged instance directory '{0}': {1}",
+                removedDirectory,
+                exception);
         }
-
-        var replacement = reconciledConfig.CreateInstance();
-        replacement.OnStatusChanged += OnInstanceStatusChangedHandler;
-        Instances[currentConfig.Uuid] = replacement;
-        instance.Dispose();
-        return replacement;
     }
 
-    public static IInstanceManager Create()
+    internal sealed class InstanceMutationLease : IDisposable
     {
+        private SemaphoreSlim? _gate;
+
+        internal InstanceMutationLease(SemaphoreSlim gate)
+        {
+            _gate = gate;
+        }
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _gate, null)?.Release();
+        }
+    }
+
+    private sealed class InstanceCreationReservation : IDisposable
+    {
+        private InstanceManager? _owner;
+
+        internal InstanceCreationReservation(InstanceManager owner, Guid instanceId)
+        {
+            _owner = owner;
+            InstanceId = instanceId;
+        }
+
+        internal Guid InstanceId { get; }
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _owner, null)?.ReleaseInstanceCreationReservation(this);
+        }
+    }
+
+    internal static IInstanceManager Create()
+    {
+        return Create(Directory.GetDirectories(FileManager.InstancesRoot, "*", SearchOption.TopDirectoryOnly));
+    }
+
+    internal static IInstanceManager Create(IEnumerable<string> directories)
+    {
+        ArgumentNullException.ThrowIfNull(directories);
         var instanceManager = new InstanceManager();
 
-        // load all instances
-        foreach (var directory in Directory.GetDirectories(FileManager.InstancesRoot, "*",
-                     SearchOption.TopDirectoryOnly))
+        foreach (var directory in directories)
         {
-            var dir = new DirectoryInfo(directory);
-            var serverConfig = dir.GetFiles(InstanceConfig.FileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
-
-            if (serverConfig is null) continue;
-
             try
             {
+                var dir = new DirectoryInfo(directory);
+                var serverConfig = dir.GetFiles(InstanceConfig.FileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
+                if (serverConfig is null)
+                    continue;
+
                 var config = FileManager.ReadJson<InstanceConfig>(serverConfig.FullName)!;
                 var reconciledConfig = InstanceVersionDetector.Reconcile(config, dir.FullName);
+                if (!InstanceTargetPathValidator.TryResolveTargetFile(
+                        reconciledConfig.GetWorkingDirectory(),
+                        reconciledConfig.Target,
+                        out _,
+                        out var targetError))
+                {
+                    Log.Warning(
+                        "[InstanceManager] Ignored instance configuration at '{0}' with an invalid target: {1}",
+                        serverConfig.FullName,
+                        targetError!.Cause);
+                    continue;
+                }
+
                 if (!ReferenceEquals(reconciledConfig, config) &&
                     (reconciledConfig.InstanceType != config.InstanceType || reconciledConfig.Version != config.Version))
                 {
@@ -288,19 +678,28 @@ public class InstanceManager : IInstanceManager
                     }
                 }
 
-                instanceManager.Instances.TryAdd(reconciledConfig.Uuid, reconciledConfig.CreateInstance());
-                Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", reconciledConfig.Name, reconciledConfig.Uuid);
+                var instance = reconciledConfig.CreateInstance();
+                if (instanceManager.Instances.TryAdd(reconciledConfig.Uuid, instance))
+                {
+                    instanceManager.AttachInstance(instance);
+                    Log.Debug("[InstanceManager] Loaded instance '{0}'({1})", reconciledConfig.Name, reconciledConfig.Uuid);
+                }
+                else
+                {
+                    instance.Dispose();
+                    Log.Warning("[InstanceManager] Ignored duplicate instance '{0}'", reconciledConfig.Uuid);
+                }
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
                 Log.Error(
                     "[InstanceManager] Failed to load instance at '{0}', ignored: {1}",
                     Path.Combine(FileManager.InstancesRoot, directory),
-                    e
-                );
+                    exception);
             }
         }
 
+        instanceManager.ReinitializeSnapshotSource();
         Log.Debug("[InstanceManager] Loaded {0} instances.", instanceManager.Instances.Count);
 
         return instanceManager;

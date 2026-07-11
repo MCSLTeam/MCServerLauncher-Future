@@ -2,10 +2,11 @@ using System.Reflection;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Bootstrap;
-using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
+using MCServerLauncher.Daemon.Remote.Event;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Http;
@@ -64,12 +65,14 @@ public static class Application
 
     private static async Task StopAsync(int timeout = -1)
     {
-        var cts = new CancellationTokenSource(timeout);
+        using var cts = new CancellationTokenSource(timeout);
 
-        var manager = HttpService.Resolver.GetRequiredService<IInstanceManager>();
+        HttpService.Resolver.GetRequiredService<EventTriggerService>().Stop();
+        HttpService.Resolver.GetRequiredService<LegacyDomainEventAdapter>().Dispose();
+        HttpService.Resolver.GetRequiredService<InstanceDomainEventBridge>().Dispose();
 
-        Log.Debug("[InstanceManager] stopping instances ...");
-        await manager.StopAllInstances(cts.Token);
+        Log.Debug("[ApplicationCore] stopping local application services ...");
+        await HttpService.Resolver.GetRequiredService<IDaemonRuntimeLifecycle>().StopAsync(cts.Token);
 
         Log.Debug("[WsContextContainer] closing websocket connections ...");
         await Task.WhenAll(HttpService.Resolver.GetRequiredService<WsContextContainer>()

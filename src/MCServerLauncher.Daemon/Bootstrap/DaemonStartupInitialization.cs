@@ -43,7 +43,6 @@ internal static class DaemonStartupInitialization
         Log.Information("MCServerLauncher.Daemon v{0}", Assembly.GetExecutingAssembly().GetName().Version!);
 
         ContainedFiles.ExtractContained();
-        FileManager.StartFileSessionsWatcher();
 
         try
         {

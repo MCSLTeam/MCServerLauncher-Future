@@ -26,7 +26,7 @@ public class InstanceManagerKillTests
             manager.Instances[config.Uuid] = instance;
             manager.RunningInstances[config.Uuid] = instance;
 
-            Assert.True(manager.TryStopInstance(config.Uuid));
+            Assert.True(await manager.TryStopInstance(config.Uuid));
             Assert.False(manager.RunningInstances.ContainsKey(config.Uuid));
             Assert.False(process.HasExit);
 

@@ -288,21 +288,20 @@ public class DaemonInboundTransportPipelineTests
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
 
         // The plugin registration order in ConfigurePlugins must remain exactly:
-        //   1. FileSystemWatcherPlugin
-        //   2. HttpPlugin
-        //   3. UseWebSocket (with /api/v1)
-        //   4. WsBasePlugin
-        //   5. WsActionPlugin
-        //   6. WsEventPlugin
-        //   7. WsExpirationPlugin
-        //   8. UseDefaultHttpServicePlugin
+        //   1. HttpPlugin
+        //   2. UseWebSocket (with /api/v1)
+        //   3. WsBasePlugin
+        //   4. WsActionPlugin
+        //   5. WsEventPlugin
+        //   6. WsExpirationPlugin
+        //   7. UseDefaultHttpServicePlugin
         var configPluginsStart = source.IndexOf("internal static void ConfigurePlugins", StringComparison.Ordinal);
         Assert.True(configPluginsStart >= 0, "ConfigurePlugins method not found");
 
         var configPluginsBody = source[configPluginsStart..];
+        Assert.DoesNotContain("Add<FileSystemWatcherPlugin>", configPluginsBody, StringComparison.Ordinal);
         var order = new[]
         {
-            "Add<FileSystemWatcherPlugin>",
             "Add<HttpPlugin>",
             "UseWebSocket",
             "Add<WsBasePlugin>",

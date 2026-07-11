@@ -18,6 +18,8 @@ public static class InstanceFactorySettingExtensions
     public static async Task<Result<Unit, Error>> CopyAndRenameTarget(this InstanceFactorySetting setting)
     {
         var workingDirectory = setting.GetWorkingDirectory();
+        if (!InstanceTargetPathValidator.TryResolveTargetFile(workingDirectory, setting.Target, out var targetPath, out var targetError))
+            return ResultExt.Err<Unit>(targetError!);
 
         var dstName = Path.GetFileName(setting.Source);
         var dst = Path.Combine(workingDirectory, dstName);
@@ -67,7 +69,7 @@ public static class InstanceFactorySettingExtensions
 
         // rename
         return setting.Target != dst
-            ? ResultExt.Try(() => File.Move(dst, Path.Combine(workingDirectory, setting.Target)))
+            ? ResultExt.Try(() => File.Move(dst, targetPath))
                 .MapErr(ex => new Error().CauseBy(ex))
             : ResultExt.Ok(Unit.Default);
     }
@@ -81,7 +83,16 @@ public static class InstanceFactorySettingExtensions
     /// <returns></returns>
     public static Task<Result<InstanceConfig, Error>> ApplyInstanceFactory(this InstanceFactorySetting setting)
     {
-  var reconciledSetting = InstanceVersionDetector.Reconcile(setting, source => FileManager.ResolveAndValidatePath(source));
+        if (!InstanceTargetPathValidator.TryResolveTargetFile(
+                setting.GetWorkingDirectory(),
+                setting.Target,
+                out _,
+                out var targetError))
+        {
+            return Task.FromResult(ResultExt.Err<InstanceConfig>(targetError!));
+        }
+
+        var reconciledSetting = InstanceVersionDetector.Reconcile(setting, source => FileManager.ResolveAndValidatePath(source));
         var instanceFactory = InstanceFactoryRegistry.GetInstanceFactory(reconciledSetting);
         Log.Information("[InstanceManager] Running InstanceFactory for instance '{0}' as {1}", reconciledSetting.Name, reconciledSetting.InstanceType);
         return instanceFactory.Invoke(reconciledSetting);

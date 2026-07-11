@@ -1,5 +1,16 @@
 using System.Reflection;
 using MCServerLauncher.Daemon;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.Bootstrap;
+using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Remote.Action;
+using MCServerLauncher.Daemon.Remote.Event;
+using MCServerLauncher.Daemon.Storage;
+using Microsoft.Extensions.DependencyInjection;
+using TouchSocket.Core;
+using TouchSocket.Http;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -70,6 +81,18 @@ public class TouchSocketHostingCompositionTests
     [Fact]
     [Trait("Category", "DaemonInbound")]
     [Trait("Category", "DaemonInboundStatic")]
+    public void Application_Shutdown_DelegatesToTheInternalApplicationLifecyclePort()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Application.cs");
+
+        Assert.Contains("GetRequiredService<IDaemonRuntimeLifecycle>()", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetRequiredService<IInstanceManager>()", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetRequiredService<FileSessionCoordinator>()", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
     public void DaemonAssembly_DoesNotExportTransportProfileHelper()
     {
         var exportedTypeNames = typeof(Application).Assembly
@@ -79,6 +102,64 @@ public class TouchSocketHostingCompositionTests
 
         Assert.DoesNotContain(exportedTypeNames, name => name.Contains("DaemonTouchSocketTransportProfile", StringComparison.Ordinal));
         Assert.DoesNotContain(exportedTypeNames, name => name.Contains("TransportProfile", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    public async Task DaemonServiceComposition_ResolvesOneSharedApplicationGraph()
+    {
+        Directory.CreateDirectory(FileManager.InstancesRoot);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var httpService = new HttpService();
+        var selectedRegistry = ActionHandlerRegistryRuntime.CreateSelected(useGeneratedActionRegistry: true);
+        var config = new TouchSocketConfig()
+            .UseAspNetCoreContainer(services)
+            .ConfigureContainer(registrator => DaemonServiceComposition.ConfigureContainer(
+                registrator,
+                services,
+                httpService,
+                selectedRegistry));
+
+        await httpService.SetupAsync(config);
+
+        var resolver = httpService.Resolver;
+        var application = resolver.GetRequiredService<IDaemonApplication>();
+        Assert.Same(resolver.GetRequiredService<IInstanceApplication>(), application.Instances);
+        Assert.Same(resolver.GetRequiredService<IFileApplication>(), application.Files);
+        Assert.Same(resolver.GetRequiredService<ISystemApplication>(), application.System);
+        Assert.Same(resolver.GetRequiredService<IEventRuleApplication>(), application.EventRules);
+        Assert.Same(FileSessionCoordinator.Shared, resolver.GetRequiredService<FileSessionCoordinator>());
+        Assert.NotNull(resolver.GetRequiredService<IDaemonRuntimeLifecycle>());
+
+        var manager = resolver.GetRequiredService<InstanceManager>();
+        Assert.Same(manager.InstanceSnapshotSource, resolver.GetRequiredService<IInstanceSnapshotSource>());
+
+        var trigger = resolver.GetRequiredService<EventTriggerService>();
+        var legacyAdapter = resolver.GetRequiredService<LegacyDomainEventAdapter>();
+        var eventBridge = resolver.GetRequiredService<InstanceDomainEventBridge>();
+        trigger.Stop();
+        legacyAdapter.Stop();
+        eventBridge.Dispose();
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void DaemonServiceComposition_ConfiguresTheSharedFileCoordinatorBeforeStartup()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
+        var acquire = source.IndexOf("var fileSessionCoordinator = FileSessionCoordinator.Shared", StringComparison.Ordinal);
+        var configure = source.IndexOf(
+            "fileSessionCoordinator.ConfigureDownloadSessionLimit(AppConfig.Get().FileDownloadSessions)",
+            StringComparison.Ordinal);
+        var register = source.IndexOf("a.RegisterSingleton(fileSessionCoordinator)", StringComparison.Ordinal);
+        var start = source.IndexOf("GetRequiredService<FileSessionCoordinator>().Start()", StringComparison.Ordinal);
+
+        Assert.True(acquire >= 0);
+        Assert.True(configure > acquire);
+        Assert.True(register > configure);
+        Assert.True(start > register);
     }
 
     private static string ReadSourceFile(string relativePath)

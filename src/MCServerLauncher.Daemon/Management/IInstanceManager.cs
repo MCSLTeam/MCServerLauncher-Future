@@ -6,7 +6,7 @@ using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Management;
 
-public interface IInstanceManager
+internal interface IInstanceManager
 {
     public ConcurrentDictionary<Guid, IInstance> Instances { get; }
     public ConcurrentDictionary<Guid, IInstance> RunningInstances { get; }
@@ -24,7 +24,7 @@ public interface IInstanceManager
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
     /// ƒ
-    bool TryRemoveInstance(Guid instanceId);
+    Task<bool> TryRemoveInstance(Guid instanceId, CancellationToken ct = default);
 
     /// <summary>
     ///     尝试启动一个服务器实例，如果服务器正在运行，返回false
@@ -38,7 +38,7 @@ public interface IInstanceManager
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
     /// <returns></returns>
-    bool TryStopInstance(Guid instanceId);
+    Task<bool> TryStopInstance(Guid instanceId, CancellationToken ct = default);
 
     /// <summary>
     ///     向服务器进程的stdin发送消息
@@ -67,9 +67,19 @@ public interface IInstanceManager
     /// <returns></returns>
     Task<Dictionary<Guid, InstanceReport>> GetAllReports(CancellationToken ct = default);
 
-    Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(Guid instanceId);
+    bool TryGetInstanceLog(Guid instanceId, out IReadOnlyList<string> logs);
 
-    Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(UpdateInstanceSettingsParameter request);
+    Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(
+        Guid instanceId,
+        CancellationToken ct = default);
+
+    Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
+        UpdateInstanceSettingsParameter request,
+        CancellationToken ct = default);
+
+    IDisposable AcquireInstanceMutation(Guid instanceId);
+
+    ValueTask<IDisposable> AcquireInstanceMutationAsync(Guid instanceId, CancellationToken ct = default);
 
     Task StopAllInstances(CancellationToken ct = default);
 }

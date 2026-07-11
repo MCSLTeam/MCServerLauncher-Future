@@ -50,6 +50,15 @@ public static class InstanceConfigExtensions
 
         if (config.Uuid == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
 
+        if (!InstanceTargetPathValidator.TryResolveTargetFile(
+                config.GetWorkingDirectory(),
+                config.Target,
+                out _,
+                out var targetError))
+        {
+            return ResultExt.Err<Unit>(targetError!);
+        }
+
         return ResultExt.Ok(Unit.Default);
     }
 
@@ -154,7 +163,15 @@ public static class InstanceConfigExtensions
 
     private static (string File, string ArgumentString) GetLaunchScript(this InstanceConfig config)
     {
-        var fullPath = Path.GetFullPath(Path.Combine(config.GetWorkingDirectory(), config.Target));
+        if (!InstanceTargetPathValidator.TryResolveTargetFile(
+                config.GetWorkingDirectory(),
+                config.Target,
+                out var fullPath,
+                out var targetError))
+        {
+            throw new ArgumentException(targetError!.Cause, nameof(config));
+        }
+
         var isMcServer = config.CanSafeCastTo<MinecraftInstance>();
         return config.TargetType switch
         {

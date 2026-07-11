@@ -1,59 +1,67 @@
-using MCServerLauncher.Daemon.Utils;
-
 namespace MCServerLauncher.Daemon.Storage;
 
-public class FileSessionInfo(long size, FileStream file, string? sha1, string path, TimeSpan timeout)
+internal abstract class FileSessionInfo(
+    string path,
+    FileStream stream,
+    DateTimeOffset expiresAt) : IAsyncDisposable
 {
-    private DateTime _lastAccessTime = DateTime.Now;
-    private SpinLock _lock;
+    public SemaphoreSlim Gate { get; } = new(1, 1);
 
-    public long Size { get; } = size;
-    public FileStream File { get; } = file;
-    public string? Sha1 { get; } = sha1?.ToLower();
     public string Path { get; } = path;
-    public LongRemain Remain { get; } = new LongRemain(0, size);
-    public long RemainLength => Remain.GetRemain();
 
-    public bool Timeout => IsTimeout();
+    public FileStream Stream { get; } = stream;
 
-    private bool IsTimeout()
+    public DateTimeOffset ExpiresAt { get; } = expiresAt;
+
+    public bool IsClosed { get; set; }
+
+    public virtual async ValueTask DisposeAsync()
     {
-        var locked = false;
-        _lock.Enter(ref locked);
-        try
-        {
-            return DateTime.Now - _lastAccessTime > timeout;
-        }
-        finally
-        {
-            if (locked) _lock.Exit();
-        }
-    }
-
-    public void Touch()
-    {
-        if (IsTimeout()) return;
-
-        var locked = false;
-        _lock.Enter(ref locked);
-        try
-        {
-            _lastAccessTime = DateTime.Now;
-        }
-        finally
-        {
-            if (locked) _lock.Exit();
-        }
-    }
-
-    public void Close()
-    {
-        File.Close();
+        await Stream.DisposeAsync();
+        Gate.Dispose();
     }
 }
 
-public class FileUploadInfo(string path, long size, string? sha1, FileStream file, TimeSpan timeout)
-    : FileSessionInfo(size, file, sha1, path, timeout);
+internal sealed class FileUploadInfo(
+    string path,
+    string stagingPath,
+    long size,
+    string? sha256,
+    string? legacySha1,
+    FileStream stream,
+    DateTimeOffset expiresAt)
+    : FileSessionInfo(path, stream, expiresAt)
+{
+    public string StagingPath { get; } = stagingPath;
 
-public class FileDownloadInfo(long size, string? sha1, FileStream file, string path, TimeSpan timeout)
-    : FileSessionInfo(size, file, sha1, path, timeout);
+    public long Size { get; } = size;
+
+    public string? Sha256 { get; } = sha256;
+
+    public string? LegacySha1 { get; } = legacySha1;
+
+    public long NextExpectedOffset { get; set; }
+
+    public long Received => NextExpectedOffset;
+
+    public bool IsComplete => NextExpectedOffset == Size;
+}
+
+internal sealed class FileDownloadInfo(
+    Guid sessionId,
+    string path,
+    long size,
+    string sha256,
+    string? legacySha1,
+    FileStream stream,
+    DateTimeOffset expiresAt)
+    : FileSessionInfo(path, stream, expiresAt)
+{
+    public Guid SessionId { get; } = sessionId;
+
+    public long Size { get; } = size;
+
+    public string Sha256 { get; } = sha256;
+
+    public string? LegacySha1 { get; } = legacySha1;
+}

@@ -1,8 +1,7 @@
+using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Communicate;
-using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Management.Minecraft;
-using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using Serilog;
 using TouchSocket.Core;
@@ -12,47 +11,14 @@ namespace MCServerLauncher.Daemon.Management;
 
 public abstract class InstanceBase : DisposableObject, IInstance
 {
-    private readonly Action _configReloader;
     protected InstanceConfig ProtectedConfig;
 
     protected InstanceBase(InstanceConfig config)
     {
         ProtectedConfig = config;
-
-        var workingDirectory = config.GetWorkingDirectory();
-        var configPath = Path.Combine(workingDirectory, InstanceConfig.FileName);
-        var configChange = new FileChange(configPath);
-        _configReloader = () =>
-        {
-            if (!configChange.HasChanged()) return;
-
-            try
-            {
-                var newConfig = FileManager.ReadJson<InstanceConfig>(configPath)!;
-                if (ProtectedConfig.Uuid != newConfig.Uuid)
-                {
-                    Log.Debug("[Instance] Uuid changed, ignored");
-                    return;
-                }
-
-                ProtectedConfig = newConfig;
-                ConfigReloaded?.Invoke();
-            }
-            catch (Exception e)
-            {
-                Log.Debug("[Instance] Failed to refresh config at '{0}', ignored: {1}", configPath, e.Message);
-            }
-        };
     }
 
-    public InstanceConfig Config
-    {
-        get
-        {
-            RequestReloadConfig();
-            return ProtectedConfig;
-        }
-    }
+    public InstanceConfig Config => ProtectedConfig;
 
     public InstanceProcess? Process { get; private set; }
     public InstanceStatus Status => Process?.Status ?? InstanceStatus.Stopped;
@@ -69,8 +35,7 @@ public abstract class InstanceBase : DisposableObject, IInstance
             Config,
             new Dictionary<string, string>(),
             [],
-            Process is null ? default : await Process!.Monitor.GetMonitorData()
-        );
+            Process is null ? default : await Process.Monitor.GetMonitorData());
     }
 
     public async Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
@@ -78,12 +43,12 @@ public abstract class InstanceBase : DisposableObject, IInstance
         ct.ThrowIfCancellationRequested();
         if (Process is not null)
         {
-            if (!Process.HasExit) return false;
+            if (!Process.HasExit)
+                return false;
+
             Process.Close();
             Process.Dispose();
         }
-
-        RequestReloadConfig();
 
         var startInfoResult = Config.TryGetStartInfo();
         if (startInfoResult.IsErr(out var error))
@@ -94,7 +59,7 @@ public abstract class InstanceBase : DisposableObject, IInstance
 
         var startInfo = startInfoResult.Unwrap();
         Process = new InstanceProcess(startInfo, Config.CanSafeCastTo<MinecraftInstance>());
-        Process.OnStatusChanged += st => { OnStatusChanged?.Invoke(Config.Uuid, st); };
+        Process.OnStatusChanged += status => OnStatusChanged?.Invoke(Config.Uuid, status);
         Process.OnLog += message => OnLog?.Invoke(Config.Uuid, message);
 
         ct.ThrowIfCancellationRequested();
@@ -109,17 +74,6 @@ public abstract class InstanceBase : DisposableObject, IInstance
     public IReadOnlyList<string> GetLogHistory()
     {
         return Process?.GetLogHistory() ?? [];
-    }
-
-    protected event Action? ConfigReloaded;
-
-    /// <summary>
-    ///     请求重载配置, 这并不会每次都重载, 而是会检查文件是否被修改, 在决定是否重载
-    /// </summary>
-    private void RequestReloadConfig()
-    {
-        if (Status is InstanceStatus.Stopped or InstanceStatus.Crashed)
-            _configReloader.Invoke();
     }
 
     protected override void ProtectedDispose()
