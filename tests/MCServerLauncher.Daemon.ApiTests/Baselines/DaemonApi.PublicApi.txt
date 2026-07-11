@@ -75,12 +75,28 @@ type MCServerLauncher.Daemon.API.Errors.TransportDaemonError | kind=class | visi
 ctor MCServerLauncher.Daemon.API.Errors.TransportDaemonError(System.String code optional=False default=-,System.String message optional=False default=-,System.Nullable<System.Text.Json.JsonElement> details optional=True default=null) | visibility=public
 type MCServerLauncher.Daemon.API.Errors.ValidationDaemonError | kind=class | visibility=public | abstract=False | sealed=True | base=MCServerLauncher.Daemon.API.Errors.DaemonError | interfaces=- | constraints=-
 ctor MCServerLauncher.Daemon.API.Errors.ValidationDaemonError(System.String code optional=False default=-,System.String message optional=False default=-,System.Nullable<System.Text.Json.JsonElement> details optional=True default=null) | visibility=public
-type MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta> | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=- | constraints=TData:[];TMeta:[]
-ctor MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta>(MCServerLauncher.Daemon.API.Protocol.EventName name optional=False default=-,MCServerLauncher.Daemon.API.Protocol.PermissionName permission optional=False default=-,System.Text.Json.Serialization.Metadata.JsonTypeInfo<TData> dataTypeInfo optional=False default=-,System.Text.Json.Serialization.Metadata.JsonTypeInfo<TMeta> metaTypeInfo optional=False default=-) | visibility=public
+type MCServerLauncher.Daemon.API.Protocol.BuiltInProtocolDefinitions | kind=class | visibility=public | abstract=True | sealed=True | base=System.Object | interfaces=- | constraints=-
+property MCServerLauncher.Daemon.API.Protocol.BuiltInProtocolDefinitions.Events[] : System.Collections.Immutable.ImmutableArray<MCServerLauncher.Daemon.API.Protocol.EventDescriptor> | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.BuiltInProtocolDefinitions.Rpcs[] : System.Collections.Immutable.ImmutableArray<MCServerLauncher.Daemon.API.Protocol.RpcDescriptor> | get=public | set=-
+method MCServerLauncher.Daemon.API.Protocol.BuiltInProtocolDefinitions.CreateDocument(System.String daemonVersion optional=False default=-) -> MCServerLauncher.Common.Contracts.Protocol.OpenRpcDocument | visibility=public | static=True | abstract=False | virtual=False | constraints=-
+type MCServerLauncher.Daemon.API.Protocol.EventDescriptor | kind=class | visibility=public | abstract=True | sealed=False | base=System.Object | interfaces=- | constraints=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.DataPresence[] : MCServerLauncher.Common.Contracts.Protocol.OpenRpcEventFieldPresence | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.DataTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.Documentation[] : MCServerLauncher.Daemon.API.Protocol.EventDocumentation | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.MetaPresence[] : MCServerLauncher.Common.Contracts.Protocol.OpenRpcEventFieldPresence | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.MetaTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.Name[] : MCServerLauncher.Daemon.API.Protocol.EventName | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDescriptor.Permission[] : MCServerLauncher.Daemon.API.Protocol.PermissionName | get=public | set=-
+type MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta> | kind=class | visibility=public | abstract=False | sealed=True | base=MCServerLauncher.Daemon.API.Protocol.EventDescriptor | interfaces=- | constraints=TData:[];TMeta:[]
 property MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta>.DataTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<TData> | get=public | set=-
 property MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta>.MetaTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<TMeta> | get=public | set=-
-property MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta>.Name[] : MCServerLauncher.Daemon.API.Protocol.EventName | get=public | set=-
-property MCServerLauncher.Daemon.API.Protocol.EventDescriptor<TData,TMeta>.Permission[] : MCServerLauncher.Daemon.API.Protocol.PermissionName | get=public | set=-
+type MCServerLauncher.Daemon.API.Protocol.EventDocumentation | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=- | constraints=-
+ctor MCServerLauncher.Daemon.API.Protocol.EventDocumentation(System.String category optional=False default=-,System.String summary optional=False default=-,System.String description optional=False default=-,System.String dataSchemaId optional=False default=-,System.String metaSchemaId optional=False default=-) | visibility=public
+property MCServerLauncher.Daemon.API.Protocol.EventDocumentation.Category[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDocumentation.DataSchemaId[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDocumentation.Description[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDocumentation.MetaSchemaId[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.EventDocumentation.Summary[] : System.String | get=public | set=-
 type MCServerLauncher.Daemon.API.Protocol.EventName | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=System.IEquatable<MCServerLauncher.Daemon.API.Protocol.EventName> | constraints=-
 ctor MCServerLauncher.Daemon.API.Protocol.EventName(System.String value optional=False default=-) | visibility=public
 property MCServerLauncher.Daemon.API.Protocol.EventName.Value[] : System.String | get=public | set=-
@@ -114,13 +130,25 @@ method MCServerLauncher.Daemon.API.Protocol.PluginCapability.GetHashCode() -> Sy
 method MCServerLauncher.Daemon.API.Protocol.PluginCapability.ToString() -> System.String | visibility=public | static=False | abstract=False | virtual=True | constraints=-
 method MCServerLauncher.Daemon.API.Protocol.PluginCapability.op_Equality(MCServerLauncher.Daemon.API.Protocol.PluginCapability left optional=False default=-,MCServerLauncher.Daemon.API.Protocol.PluginCapability right optional=False default=-) -> System.Boolean | visibility=public | static=True | abstract=False | virtual=False | constraints=-
 method MCServerLauncher.Daemon.API.Protocol.PluginCapability.op_Inequality(MCServerLauncher.Daemon.API.Protocol.PluginCapability left optional=False default=-,MCServerLauncher.Daemon.API.Protocol.PluginCapability right optional=False default=-) -> System.Boolean | visibility=public | static=True | abstract=False | virtual=False | constraints=-
-type MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult> | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=- | constraints=TRequest:[];TResult:[]
-ctor MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult>(MCServerLauncher.Daemon.API.Protocol.RpcMethod method optional=False default=-,MCServerLauncher.Daemon.API.Protocol.PermissionName permission optional=False default=-,System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest> requestTypeInfo optional=False default=-,System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> resultTypeInfo optional=False default=-,System.Boolean allowNotification optional=True default=false) | visibility=public
-property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult>.AllowNotification[] : System.Boolean | get=public | set=-
-property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult>.Method[] : MCServerLauncher.Daemon.API.Protocol.RpcMethod | get=public | set=-
-property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult>.Permission[] : MCServerLauncher.Daemon.API.Protocol.PermissionName | get=public | set=-
+type MCServerLauncher.Daemon.API.Protocol.ProtocolDocumentBuilder | kind=class | visibility=public | abstract=True | sealed=True | base=System.Object | interfaces=- | constraints=-
+method MCServerLauncher.Daemon.API.Protocol.ProtocolDocumentBuilder.Create(MCServerLauncher.Common.Contracts.Protocol.OpenRpcInfo info optional=False default=-,System.Collections.Immutable.ImmutableArray<MCServerLauncher.Daemon.API.Protocol.RpcDescriptor> rpcs optional=False default=-,System.Collections.Immutable.ImmutableArray<MCServerLauncher.Daemon.API.Protocol.EventDescriptor> events optional=False default=-) -> MCServerLauncher.Common.Contracts.Protocol.OpenRpcDocument | visibility=public | static=True | abstract=False | virtual=False | constraints=-
+type MCServerLauncher.Daemon.API.Protocol.RpcDescriptor | kind=class | visibility=public | abstract=True | sealed=False | base=System.Object | interfaces=- | constraints=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor.AllowNotification[] : System.Boolean | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor.Documentation[] : MCServerLauncher.Daemon.API.Protocol.RpcDocumentation | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor.Method[] : MCServerLauncher.Daemon.API.Protocol.RpcMethod | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor.Permission[] : MCServerLauncher.Daemon.API.Protocol.PermissionName | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor.RequestTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor.ResultTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo | get=public | set=-
+type MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult> | kind=class | visibility=public | abstract=False | sealed=True | base=MCServerLauncher.Daemon.API.Protocol.RpcDescriptor | interfaces=- | constraints=TRequest:[];TResult:[]
 property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult>.RequestTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest> | get=public | set=-
 property MCServerLauncher.Daemon.API.Protocol.RpcDescriptor<TRequest,TResult>.ResultTypeInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> | get=public | set=-
+type MCServerLauncher.Daemon.API.Protocol.RpcDocumentation | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=- | constraints=-
+ctor MCServerLauncher.Daemon.API.Protocol.RpcDocumentation(System.String category optional=False default=-,System.String summary optional=False default=-,System.String description optional=False default=-,System.String requestSchemaId optional=False default=-,System.String resultSchemaId optional=False default=-) | visibility=public
+property MCServerLauncher.Daemon.API.Protocol.RpcDocumentation.Category[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDocumentation.Description[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDocumentation.RequestSchemaId[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDocumentation.ResultSchemaId[] : System.String | get=public | set=-
+property MCServerLauncher.Daemon.API.Protocol.RpcDocumentation.Summary[] : System.String | get=public | set=-
 type MCServerLauncher.Daemon.API.Protocol.RpcMethod | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=System.IEquatable<MCServerLauncher.Daemon.API.Protocol.RpcMethod> | constraints=-
 ctor MCServerLauncher.Daemon.API.Protocol.RpcMethod(System.String value optional=False default=-) | visibility=public
 property MCServerLauncher.Daemon.API.Protocol.RpcMethod.Value[] : System.String | get=public | set=-

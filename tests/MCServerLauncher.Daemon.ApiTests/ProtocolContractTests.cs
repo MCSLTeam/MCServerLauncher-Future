@@ -46,48 +46,26 @@ public sealed class ProtocolContractTests
     }
 
     [Fact]
-    public void DescriptorsPreserveCallerSuppliedJsonTypeInfo()
+    public void DescriptorConstructionIsHostControlledAndCatalogUsesNonGenericBases()
     {
-        var rpc = new RpcDescriptor<SampleRequest, SampleResult>(
-            new RpcMethod("mcsl.sample.get"),
-            new PermissionName("instance.read"),
-            ApiTestJsonContext.Default.SampleRequest,
-            ApiTestJsonContext.Default.SampleResult);
-        var eventDescriptor = new EventDescriptor<SampleResult, SampleMetadata>(
-            new EventName("mcsl.event.sample.changed"),
-            new PermissionName("instance.read"),
-            ApiTestJsonContext.Default.SampleResult,
-            ApiTestJsonContext.Default.SampleMetadata);
-
-        Assert.Same(ApiTestJsonContext.Default.SampleRequest, rpc.RequestTypeInfo);
-        Assert.Same(ApiTestJsonContext.Default.SampleResult, rpc.ResultTypeInfo);
-        Assert.Same(ApiTestJsonContext.Default.SampleResult, eventDescriptor.DataTypeInfo);
-        Assert.Same(ApiTestJsonContext.Default.SampleMetadata, eventDescriptor.MetaTypeInfo);
+        Assert.True(typeof(RpcDescriptor).IsAbstract);
+        Assert.True(typeof(EventDescriptor).IsAbstract);
+        Assert.Empty(typeof(RpcDescriptor<SampleRequest, SampleResult>).GetConstructors());
+        Assert.Empty(typeof(EventDescriptor<SampleResult, SampleMetadata>).GetConstructors());
+        Assert.All(BuiltInProtocolDefinitions.Rpcs, descriptor => Assert.IsAssignableFrom<RpcDescriptor>(descriptor));
+        Assert.All(BuiltInProtocolDefinitions.Events, descriptor => Assert.IsAssignableFrom<EventDescriptor>(descriptor));
     }
 
     [Fact]
-    public void DescriptorsRejectNullIdentifierReferences()
+    public void HostControlledDescriptorBasesDoNotExposePublicOrProtectedConstruction()
     {
-        Assert.Throws<ArgumentNullException>(() => new RpcDescriptor<SampleRequest, SampleResult>(
-            null!,
-            new PermissionName("instance.read"),
-            ApiTestJsonContext.Default.SampleRequest,
-            ApiTestJsonContext.Default.SampleResult));
-        Assert.Throws<ArgumentNullException>(() => new RpcDescriptor<SampleRequest, SampleResult>(
-            new RpcMethod("mcsl.sample.get"),
-            null!,
-            ApiTestJsonContext.Default.SampleRequest,
-            ApiTestJsonContext.Default.SampleResult));
-        Assert.Throws<ArgumentNullException>(() => new EventDescriptor<SampleResult, SampleMetadata>(
-            null!,
-            new PermissionName("instance.read"),
-            ApiTestJsonContext.Default.SampleResult,
-            ApiTestJsonContext.Default.SampleMetadata));
-        Assert.Throws<ArgumentNullException>(() => new EventDescriptor<SampleResult, SampleMetadata>(
-            new EventName("mcsl.event.sample.changed"),
-            null!,
-            ApiTestJsonContext.Default.SampleResult,
-            ApiTestJsonContext.Default.SampleMetadata));
+        var rpcConstructor = Assert.Single(typeof(RpcDescriptor).GetConstructors(
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
+        var eventConstructor = Assert.Single(typeof(EventDescriptor).GetConstructors(
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
+
+        Assert.True(rpcConstructor.IsFamilyAndAssembly);
+        Assert.True(eventConstructor.IsFamilyAndAssembly);
     }
 
     [Fact]
