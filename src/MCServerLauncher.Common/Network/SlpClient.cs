@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Serilog;
 
 namespace MCServerLauncher.Common.Network;
 
@@ -44,7 +43,6 @@ public class SlpClient
         }
         catch (Exception e) when (e is SocketException or IOException)
         {
-            Log.Debug(e, "[SlpClient] Modern server ping failed for {Host}:{Port}", host, port);
             return null;
         }
     }
@@ -81,7 +79,6 @@ public class SlpClient
         // validate response
         if (buffer[0] != 0xFF)
         {
-            Log.Error("[SlpClient] Received invalid packet");
             return null;
         }
 
@@ -146,7 +143,6 @@ public class SlpClient
         await Client.ConnectAsync(host, port);
         if (!Client.Connected)
         {
-            Log.Error("[Slp-Client] Cant connect to {0}:{1}", host, port);
             return false;
         }
 
@@ -175,17 +171,15 @@ public class SlpClient
 
         try
         {
-            var length = ReadVarInt(received, ref offset);
-            var packetId = ReadVarInt(received, ref offset);
+            ReadVarInt(received, ref offset);
+            ReadVarInt(received, ref offset);
             var jsonLength = ReadVarInt(received, ref offset);
-            Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
 
             var json = ReadString(received, jsonLength, ref offset);
             return JsonSerializer.Deserialize(json, SlpJsonContext.Default.PingPayload);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Log.Debug(e, "[SlpClient] Failed to parse server ping payload");
             return null;
         }
     }
@@ -204,21 +198,14 @@ public class SlpClient
         try
         {
             var offset = 0;
-            var length = ReadVarInt(received, ref offset);
-            var packetId = ReadVarInt(received, ref offset);
-            Log.Debug("[SlpClient] Received packetId 0x{0:X2} with a length of {1}", packetId, length);
+            ReadVarInt(received, ref offset);
+            ReadVarInt(received, ref offset);
 
-            // validate pong packet
-            var echo = ReadLong(received, ref offset);
-            if (echo != sendTime)
-                Log.Warning(
-                    "[SlpClient] Received echo time is not equal to send time, are we connected to a official mc server?");
-
+            ReadLong(received, ref offset);
             return TimeSpan.FromMilliseconds(receivedTime - sendTime);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Log.Debug(e, "[SlpClient] Failed to parse server ping payload");
             return null;
         }
     }

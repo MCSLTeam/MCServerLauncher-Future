@@ -101,6 +101,8 @@
     <ItemGroup>
         <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj"
                           GlobalPropertiesToRemove="PublishTrimmed;RuntimeIdentifier;SelfContained;PublishSingleFile;PublishReadyToRun;JsonSerializerIsReflectionEnabledByDefault" />
+        <ProjectReference Include="..\MCServerLauncher.Daemon.API\MCServerLauncher.Daemon.API.csproj"
+                          GlobalPropertiesToRemove="PublishTrimmed;RuntimeIdentifier;SelfContained;PublishSingleFile;PublishReadyToRun;JsonSerializerIsReflectionEnabledByDefault" />
         <ProjectReference Include="..\..\generators\MCServerLauncher.Daemon.Generators\MCServerLauncher.Daemon.Generators.csproj"
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="false"

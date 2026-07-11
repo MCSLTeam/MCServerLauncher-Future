@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Serilog;
 
 namespace MCServerLauncher.Common.ProtoType;
 
@@ -39,9 +38,8 @@ public class PlaceHolderString
 
                 applied = applied.Replace($"{{{key}}}", value);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Log.Debug(e, "[PlaceHolderString] Could not apply pattern={0}: key={1} not found", applied, key);
                 applied = null;
                 return false;
             }

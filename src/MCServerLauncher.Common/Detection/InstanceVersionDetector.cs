@@ -4,7 +4,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MCServerLauncher.Common.ProtoType.Instance;
-using Serilog;
 
 namespace MCServerLauncher.Common.Detection;
 
@@ -102,7 +101,6 @@ public static partial class InstanceVersionDetector
         }
         catch (Exception ex)
         {
-            Log.Debug(ex, "[InstanceVersionDetector] Failed to detect version for instance {Name}", config.Name);
             return InstanceVersionDetectionResult.NoMatch(config.InstanceType, ex.Message);
         }
     }
@@ -121,7 +119,6 @@ public static partial class InstanceVersionDetector
         }
         catch (Exception ex)
         {
-            Log.Debug(ex, "[InstanceVersionDetector] Failed to detect version for source {Source}", setting.Source);
             return InstanceVersionDetectionResult.NoMatch(setting.InstanceType, ex.Message);
         }
     }

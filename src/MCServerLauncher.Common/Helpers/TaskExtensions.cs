@@ -1,5 +1,3 @@
-using Serilog;
-
 namespace MCServerLauncher.Common.Helpers;
 
 public static class TaskExtensions
@@ -10,9 +8,8 @@ public static class TaskExtensions
         {
             return await task.ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Log.Debug(e, "Suppressed Exception");
             return default;
         }
     }
@@ -23,9 +20,8 @@ public static class TaskExtensions
         {
             await task.ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Log.Debug(e, "Suppressed Exception");
         }
     }
 
@@ -39,7 +35,6 @@ public static class TaskExtensions
         {
             if (!exceptionsTypes.Any(t => e.GetType().IsSubclassOf(t)))
                 throw;
-            Log.Debug(e, "Suppressed Exception");
             return default;
         }
     }
@@ -54,7 +49,6 @@ public static class TaskExtensions
         {
             if (!exceptionsTypes.Any(t => e.GetType().IsSubclassOf(t)))
                 throw;
-            Log.Debug(e, "Suppressed Exception");
         }
     }
 

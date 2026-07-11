@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>14</LangVersion>
+    <IsPackable>true</IsPackable>
+    <PackageId>MCServerLauncher.Daemon.API</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RustyOptions" Version="[0.10.1]" />
+    <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
+  </ItemGroup>
+
+  <!--
+    NuGet pack normally emits a project reference's package version as a minimum range.
+    Common is part of the Daemon API ABI and release line, so pin its generated dependency
+    range after the SDK resolves project-reference versions and before it writes the nuspec.
+  -->
+  <Target Name="PinDaemonApiProjectReferenceVersions"
+          AfterTargets="_GetProjectReferenceVersions"
+          BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_ProjectReferencesWithVersions
+          Update="@(_ProjectReferencesWithVersions)"
+          Condition="'%(_ProjectReferencesWithVersions.Filename)' == 'MCServerLauncher.Common'">
+        <ProjectVersion>[%(_ProjectReferencesWithVersions.ProjectVersion)]</ProjectVersion>
+      </_ProjectReferencesWithVersions>
+    </ItemGroup>
+  </Target>
+
+</Project>
