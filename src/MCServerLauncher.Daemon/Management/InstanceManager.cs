@@ -164,7 +164,9 @@ public class InstanceManager : IInstanceManager
 
     public void KillInstance(Guid instanceId)
     {
-        if (RunningInstances.TryGetValue(instanceId, out var instance)) instance.Process!.KillProcess();
+        if (!Instances.TryGetValue(instanceId, out var instance)) return;
+        var process = instance.Process;
+        process?.KillProcess();
     }
 
     public async Task<InstanceReport?> GetInstanceReport(Guid instanceId, CancellationToken ct = default)
