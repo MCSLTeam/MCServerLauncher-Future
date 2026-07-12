@@ -135,6 +135,7 @@ public sealed class V2InboundMessagePipelineTests
             var outcome = await fixture.Pipeline.ReceiveBinaryAsync(
                 Frame(BinaryFrameKind.DownloadChunk, Guid.NewGuid(), 0, []));
             Assert.Equal(V2InboundDisposition.ConnectionAborted, outcome.Disposition);
+            await fixture.Sender.Closed.Task.WaitAsync(Timeout);
             Assert.Equal(V2ConnectionState.Closed, fixture.Owner.State);
         }
     }
@@ -182,6 +183,7 @@ public sealed class V2InboundMessagePipelineTests
             connectionCancellation.Cancel();
             var outcome = await receive.WaitAsync(Timeout);
             Assert.Equal(V2InboundDisposition.ConnectionClosing, outcome.Disposition);
+            await fixture.Sender.Closed.Task.WaitAsync(Timeout);
             Assert.Equal(V2ConnectionState.Closed, fixture.Owner.State);
             Assert.Equal(0, fixture.Sender.SendCount);
             Assert.Equal(1, fixture.Application.UploadCancelCalls);
@@ -194,6 +196,7 @@ public sealed class V2InboundMessagePipelineTests
         var outcome = await fixture.Pipeline.ReceiveBinaryAsync(frame);
         Assert.Equal(V2InboundDisposition.ConnectionAborted, outcome.Disposition);
         Assert.Equal(error, outcome.BinaryRead!.Error);
+        await fixture.Sender.Closed.Task.WaitAsync(Timeout);
         Assert.Equal(V2ConnectionState.Closed, fixture.Owner.State);
     }
 

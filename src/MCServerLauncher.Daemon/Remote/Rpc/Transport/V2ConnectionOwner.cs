@@ -349,7 +349,25 @@ internal sealed class V2ConnectionOwner : IProtocolPermissionView, IAsyncDisposa
 
             try
             {
-                await _sender.CloseAsync(closePlan.Reason, CancellationToken.None);
+                Task closeTask;
+                try
+                {
+                    closeTask = _sender.CloseAsync(closePlan.Reason, CancellationToken.None).AsTask();
+                }
+                catch (Exception exception)
+                {
+                    (failures ??= []).Add(exception);
+                    closeTask = Task.CompletedTask;
+                }
+
+                try
+                {
+                    await closeTask.WaitAsync(FrameSendTimeout, _timeProvider, CancellationToken.None);
+                }
+                catch (TimeoutException)
+                {
+                    ObserveAbandonedSend(closeTask);
+                }
             }
             catch (Exception exception)
             {

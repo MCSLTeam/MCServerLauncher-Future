@@ -84,7 +84,7 @@ internal sealed class V2InboundMessagePipeline
             {
                 _diagnostics.RecordUnexpected(Guid.NewGuid().ToString("N"),
                     new InvalidOperationException("A download attachment could not be encoded."));
-                await _owner.AbortAsync().ConfigureAwait(false);
+                BeginAbort();
                 return new(V2InboundDisposition.ConnectionAborted);
             }
 
@@ -109,14 +109,14 @@ internal sealed class V2InboundMessagePipeline
                 return new(V2InboundDisposition.SessionTerminated, read);
             }
 
-            await _owner.AbortAsync().ConfigureAwait(false);
+            BeginAbort();
             return new(V2InboundDisposition.ConnectionAborted, read);
         }
 
         var header = read.Header!;
         if (header.Kind != BinaryFrameKind.UploadChunk)
         {
-            await _owner.AbortAsync().ConfigureAwait(false);
+            BeginAbort();
             return new(V2InboundDisposition.ConnectionAborted, read);
         }
 
@@ -134,7 +134,7 @@ internal sealed class V2InboundMessagePipeline
         }
         catch (OperationCanceledException) when (_context.ConnectionCancellationToken.IsCancellationRequested)
         {
-            await _owner.AbortAsync().ConfigureAwait(false);
+            BeginAbort();
             return new(V2InboundDisposition.ConnectionClosing, read);
         }
         catch (OperationCanceledException)
@@ -169,6 +169,14 @@ internal sealed class V2InboundMessagePipeline
                 ? V2InboundDisposition.Queued
                 : V2InboundDisposition.Rejected
             : V2InboundDisposition.ConnectionClosing, read, acknowledgement);
+    }
+
+    private void BeginAbort()
+    {
+        var close = _owner.AbortAsync();
+        _ = close.ContinueWith(static task => _ = task.Exception, CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     private UploadChunkAcknowledgement CreateDaemonRejected(BinaryFrameHeader header, DaemonError error) =>

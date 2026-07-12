@@ -640,6 +640,41 @@ public sealed class V2ConnectionOwnerTests
     }
 
     [Fact]
+    public async Task HungSenderClose_IsBoundedByManualClockAndLateFaultIsObserved()
+    {
+        var time = new ManualTimeProvider();
+        var close = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sender = new RecordingSender { CloseHandler = (_, _) => new ValueTask(close.Task) };
+        var owner = new V2ConnectionOwner(sender, timeProvider: time);
+
+        var abort = owner.AbortAsync();
+        await time.TimerCreated.Task.WaitAsync(TestTimeout);
+        Assert.False(abort.IsCompleted);
+        time.Advance(V2ConnectionOwner.FrameSendTimeout);
+        await abort.WaitAsync(TestTimeout);
+
+        Assert.Equal(V2ConnectionState.Closed, owner.State);
+        Assert.Equal(1, sender.CloseCount);
+        close.SetException(new IOException("late close failure"));
+        await Task.Yield();
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task SynchronousSenderCloseFailure_IsReportedAndNotRetried()
+    {
+        var sender = new RecordingSender { CloseHandler = static (_, _) => throw new IOException("sync close failure") };
+        var owner = new V2ConnectionOwner(sender);
+
+        var failure = await Assert.ThrowsAsync<AggregateException>(() => owner.AbortAsync());
+        Assert.Contains(failure.InnerExceptions, static error => error is IOException { Message: "sync close failure" });
+        Assert.Equal(V2ConnectionState.Closed, owner.State);
+        Assert.Equal(1, sender.CloseCount);
+        await Assert.ThrowsAsync<AggregateException>(() => owner.DisposeAsync().AsTask());
+        Assert.Equal(1, sender.CloseCount);
+    }
+
+    [Fact]
     public async Task Permissions_AreNormalizedAndImmutable()
     {
         var input = new List<string> { " Instance.Read ", "instance.read", "FILE.READ" };
