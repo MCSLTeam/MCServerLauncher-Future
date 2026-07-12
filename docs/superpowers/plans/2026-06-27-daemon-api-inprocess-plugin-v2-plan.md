@@ -2,7 +2,7 @@
 
 > **Current authority:** 本文整体取代 2026-06-27 至 2026-06-30 的旧版增量迁移设计。2026-07-10 项目负责人在架构访谈中冻结的决策优先于旧 plan、旧 review 中的兼容性建议。
 >
-> **Plan status:** Architecture approved. Phase 0, Phase 1, and Phase 2 completed and passed independent review; independent Sol review has 0 open P0/P1 findings. Phase 2 acceptance passed the focused fixed-tree suite at 73/73 twice, Daemon.API tests at 42/42, Release protocol tests at 442/442 including the `--no-build` gate, Daemon.API/daemon/full-solution Release builds at 0 warnings / 0 errors, and `git diff --check`, with no update/upload staging residue. Execution is paused before Phase 3 for a runtime restart.
+> **Plan status:** Architecture approved. Phase 0, Phase 1, Phase 2, and Phase 3 are complete and passed independent review; the Phase 3 independent Sol max final review has 0 open P0/P1/P2 findings. Phase 3 acceptance passed Daemon.ApiTests at 56/56 and Release ProtocolTests at 548/548 including the final `--no-build` gate. The recorded acceptance invocations of the Daemon.API, daemon, daemon client, and full-solution Release builds each emitted 0 warnings / 0 errors; this is not a repository-wide warning-free claim. The pre-existing ProtocolTests source `CS0105` duplicate-using warning is visible when that project rebuilds, was not introduced by Phase 3, and remains separately tracked. The ProtocolDocs `--check` output matches catalog hash `51e351a9...`; benchmark project build passed and the seven Phase 3 methods are `LookupHit`, `LookupMiss`, `PublishNormalFanOutAsync`, `PublishHandlerExceptionAsync`, `PublishCancelledDuringFanOutAsync`, `SerializeOnceThenFanOut`, and `SerializePerSubscriberThenFanOut`. A ShortRun was completed during implementation, but is not claimed as a final performance gate. `git diff --check` passed. Phase 4 is pending: resume with the release-atomic `/api/v2` transport, daemon-client/WPF cutover, and V1 deletion.
 >
 > **Touched areas for implementation:** `docs`, `agent-docs`, `backend`, `protocol`, `serialization`, `storage`, `frontend`, `tests`, `benchmarks`, `workflow`, `integrations`.
 
@@ -730,16 +730,16 @@ PluginA.dll
 
 **Create/update:** Daemon.API protocol definitions, daemon catalog binding/local event implementation, `tools/MCServerLauncher.ProtocolDocs/`, embedded docs, benchmarks.
 
-- [ ] 定义完整 built-in RPC/event catalog 与 explicit `JsonTypeInfo`；绑定到 application services。
-- [ ] 实现 startup builder -> immutable/frozen catalog；freeze 后 mutation 失败。
-- [ ] 添加 MessagePipe 1.8.2 仅到 daemon project，按 §10 配置和包装。
-- [ ] 实现 sequential awaited dispatch、per-owner exception boundary 与 subscription ledger。
-- [ ] 用 .NET JSON schema exporter 从同一 type info 生成 OpenRPC schema。
-- [ ] docs tool 从 built-in catalog 生成符合 RULES shape 的 `apifox.json`；加 deterministic `--check` test。
-- [ ] runtime `rpc.discover` 从 final frozen catalog 生成 OpenRPC，包含 plugin/runtime event extensions。
-- [ ] benchmark frozen lookup、built-in event 和 MessagePipe wrapper 的 1/8/32 subscribers、exception path、serialization once fan-out。
+- [x] 定义完整 built-in RPC/event catalog 与 explicit `JsonTypeInfo`；绑定到 application services。
+- [x] 实现 startup builder -> immutable/frozen catalog；freeze 后 mutation 失败。
+- [x] 添加 MessagePipe 1.8.2 仅到 daemon project，按 §10 配置和包装。
+- [x] 实现 sequential awaited dispatch、per-owner exception boundary 与 subscription ledger。
+- [x] 用 .NET JSON schema exporter 从同一 type info 生成 OpenRPC schema。
+- [x] docs tool 从 built-in catalog 生成符合 RULES shape 的 `apifox.json`；加 deterministic `--check` test。
+- [x] runtime `rpc.discover` 从 final frozen catalog 生成 OpenRPC，包含 plugin/runtime event extensions。
+- [x] benchmark frozen lookup、built-in event 和 MessagePipe wrapper 的 1/8/32 subscribers、exception path、serialization once fan-out。
 
-**Exit:** catalog 是 runtime/docs 唯一来源；无 reflection DTO scan；MessagePipe 不进入 API/package graph。
+**Exit:** catalog is the sole source for V2 dispatch-ready bindings/metadata, runtime OpenRPC, and checked-in Apifox; live V1 dispatch remains until the Phase 4 deletion gate. Built-in definitions cover 38 RPCs and 4 events with explicit `JsonTypeInfo` and application bindings; no reflection DTO scan exists; MessagePipe remains daemon-internal and outside the Daemon.API/package graph. Ordered catalog commits use admission/drain ownership without awaiting under mutation locks. The catalog-change schema conditionally requires a snapshot only for upserts. Acceptance passed Daemon.ApiTests 56/56, Release ProtocolTests 548/548 and final Release `--no-build` 548/548; the recorded acceptance invocations of Daemon.API, daemon, daemon client, and full-solution Release builds each emitted 0 warnings / 0 errors, not a repository-wide warning-free claim. ProtocolDocs `--check` matched `51e351a9...`; benchmark project build covered seven new methods. The implementation-time ShortRun is evidence only, not a final performance gate. `git diff --check` passed. Independent Sol max final review found 0 open P0/P1/P2. The pre-existing ProtocolTests source `CS0105` duplicate-using warning is visible on rebuild, was not introduced by Phase 3, and remains separately tracked.
 
 ### Phase 4: V2 transport + DaemonClient/WPF one-shot cutover + V1 deletion
 
@@ -986,3 +986,4 @@ git status --short --branch
 - 2026-07-11: Hardened authoritative published-state version gaps, stale/equal publish rejection, writer-reentrancy rejection, immutable catalog validation, and concurrent-version uniqueness. Acceptance passed 42/42 API tests, a clean Release solution build, Release protocol tests at 382/382 (including `--no-build`), and 0 B/op for both published-state read paths; independent re-review reported no remaining P0/P1.
 - 2026-07-11: Clarified the Phase 2 boundary around one daemon-internal `FileSessionCoordinator`, config side-channel deletion, immutable domain events, and V1 wire-only adapters. Phase 2 has not started; execution is paused for a runtime restart.
 - 2026-07-12: Completed Phase 2 local application core and authoritative instance-state migration with 0 open P0/P1 findings from independent Sol review. Acceptance passed the focused fixed-tree suite at 73/73 twice, Daemon.API tests at 42/42, Release protocol tests and the Release `--no-build` gate at 442/442 each, Daemon.API/daemon/full-solution Release builds at 0 warnings / 0 errors, and `git diff --check`, with no update/upload staging residue. The generated-docs check is not applicable until Phase 3 creates the currently absent `tools/MCServerLauncher.ProtocolDocs`; execution is paused before Phase 3 for a runtime restart.
+- 2026-07-12: Completed Phase 3 across the 14 commits `99c66d21^..a8671c83`: added the 38-RPC/4-event catalog with explicit `JsonTypeInfo` and application bindings; generated frozen catalog/OpenRPC/Apifox outputs; migrated daemon-local events to daemon-internal MessagePipe; added the ordered catalog feed with admission/drain ownership; composed the final runtime catalog and `rpc.discover` including a synthetic plugin definition; added the catalog/event fan-out benchmarks; corrected the conditional catalog-change schema; and removed handwritten catalog count constants. Acceptance passed Daemon.ApiTests 56/56, Release ProtocolTests and final `--no-build` at 548/548, the recorded acceptance invocations of Daemon.API/daemon/daemon-client/full-solution Release builds each at 0 warnings / 0 errors, ProtocolDocs `--check` at catalog hash `51e351a9...`, and `git diff --check`. Independent Sol max final review reported 0 open P0/P1/P2. The pre-existing ProtocolTests source `CS0105` duplicate-using warning is visible on rebuild, was not introduced by Phase 3, and remains separately tracked; Phase 4 is pending.
