@@ -205,7 +205,7 @@ public sealed class ProtocolCatalogBuilderTests
             descriptor.Method,
             new RpcBinding<EmptyRequest, UnitResult>(
                 ProtocolExecutionOwner.BuiltIn,
-                static (_, _, _) => ValueTask.FromResult<UnitResult>(null!)));
+                static (_, _, _) => Task.FromResult(ProtocolRpcExecution<UnitResult>.Ok(new UnitResult()))));
 
         Assert.Throws<ArgumentException>(() => builder.Freeze());
     }
@@ -355,7 +355,6 @@ public sealed class ProtocolCatalogBuilderTests
 
         Assert.DoesNotContain(exposedTypes, IsPhaseFourTransportType);
         Assert.DoesNotContain(catalogTypes.Select(type => type.Name).Concat(members.Select(member => member.Name)), name =>
-            name.Contains("DownloadRead", StringComparison.Ordinal) ||
             name.Contains("UploadAcknowledgement", StringComparison.Ordinal) ||
             name.Contains("ConnectionWriter", StringComparison.Ordinal));
     }
@@ -409,7 +408,8 @@ public sealed class ProtocolCatalogBuilderTests
             descriptor,
             new RpcBinding<EmptyRequest, PermissionsResult>(
                 ProtocolExecutionOwner.BuiltIn,
-                static (_, _, _) => ValueTask.FromResult<PermissionsResult>(null!)));
+                static (_, _, _) => Task.FromResult(
+                    ProtocolRpcExecution<PermissionsResult>.Ok(new PermissionsResult([])))));
     }
 
     private static void AddDaemonReport(ProtocolCatalogBuilder builder)
@@ -421,7 +421,8 @@ public sealed class ProtocolCatalogBuilderTests
     private static RpcBinding<EmptyRequest, PingResult> PingBinding(ProtocolExecutionOwner? owner = null) =>
         new(
             owner ?? ProtocolExecutionOwner.BuiltIn,
-            static (_, _, _) => ValueTask.FromResult<PingResult>(null!));
+            static (_, _, _) => Task.FromResult(
+                ProtocolRpcExecution<PingResult>.Ok(new PingResult(0))));
 
     private static EventBinding<DaemonReportEventData> DaemonReportBinding() =>
         new(ProtocolExecutionOwner.BuiltIn);

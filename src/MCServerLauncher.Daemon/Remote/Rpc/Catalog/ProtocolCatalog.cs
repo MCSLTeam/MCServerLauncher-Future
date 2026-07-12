@@ -3,7 +3,9 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 
@@ -112,18 +114,126 @@ internal enum ProtocolCatalogEntryKind
 }
 
 /// <summary>
-/// Application-neutral RPC invocation context. Phase 4 supplies JSON-RPC and connection details
-/// outside this seam; catalog handlers only receive typed request values and cancellation.
+/// Application-neutral RPC invocation context. Phase 4 supplies narrow per-connection capabilities;
+/// catalog handlers never receive transport, socket, writer, or service-provider state.
 /// </summary>
-internal sealed class ProtocolInvocationContext(ProtocolExecutionOwner executionOwner)
+internal interface IProtocolPermissionView
 {
-    public ProtocolExecutionOwner ExecutionOwner { get; } = executionOwner ?? throw new ArgumentNullException(nameof(executionOwner));
+    ImmutableArray<string> Permissions { get; }
 }
 
-internal delegate ValueTask<TResult> ProtocolRpcHandler<TRequest, TResult>(
+internal interface IProtocolSubscriptionOperations
+{
+    Result<Unit, DaemonError> Subscribe(EventSubscriptionRequest request);
+
+    Result<Unit, DaemonError> Unsubscribe(EventSubscriptionRequest request);
+}
+
+internal sealed class ProtocolInvocationContext(
+    ProtocolExecutionOwner executionOwner,
+    IProtocolPermissionView? permissionView = null,
+    IProtocolSubscriptionOperations? subscriptionOperations = null)
+{
+    public ProtocolExecutionOwner ExecutionOwner { get; } = executionOwner ?? throw new ArgumentNullException(nameof(executionOwner));
+
+    public IProtocolPermissionView? PermissionView { get; } = permissionView;
+
+    public IProtocolSubscriptionOperations? SubscriptionOperations { get; } = subscriptionOperations;
+}
+
+internal sealed class ProtocolDownloadAttachment
+{
+    public ProtocolDownloadAttachment(Guid sessionId, long offset, ImmutableArray<byte> data, bool isFinal)
+    {
+        if (sessionId == Guid.Empty)
+        {
+            throw new ArgumentException("A protocol download attachment session identifier cannot be empty.", nameof(sessionId));
+        }
+
+        if (offset < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(offset), "A protocol download attachment offset cannot be negative.");
+        }
+
+        if (data.IsDefault)
+        {
+            throw new ArgumentException("Protocol download attachment data cannot be default.", nameof(data));
+        }
+
+        SessionId = sessionId;
+        Offset = offset;
+        Data = data;
+        IsFinal = isFinal;
+    }
+
+    public Guid SessionId { get; }
+
+    public long Offset { get; }
+
+    public ImmutableArray<byte> Data { get; }
+
+    public bool IsFinal { get; }
+}
+
+internal sealed class ProtocolRpcExecution<TResult>
+    where TResult : notnull
+{
+    private ProtocolRpcExecution(Result<TResult, DaemonError> result, ProtocolDownloadAttachment? downloadAttachment)
+    {
+        Result = result;
+        DownloadAttachment = downloadAttachment;
+    }
+
+    public Result<TResult, DaemonError> Result { get; }
+
+    public ProtocolDownloadAttachment? DownloadAttachment { get; }
+
+    public static ProtocolRpcExecution<TResult> Ok(TResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (typeof(TResult) == typeof(DownloadReadResult))
+        {
+            throw new InvalidOperationException(
+                $"{nameof(DownloadReadResult)} must use the dedicated download execution factory.");
+        }
+
+        return new ProtocolRpcExecution<TResult>(RustyOptions.Result.Ok<TResult, DaemonError>(result), null);
+    }
+
+    public static ProtocolRpcExecution<TResult> Err(DaemonError error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return new ProtocolRpcExecution<TResult>(RustyOptions.Result.Err<TResult, DaemonError>(error), null);
+    }
+
+    public static ProtocolRpcExecution<DownloadReadResult> DownloadOk(
+        DownloadReadResult result,
+        ProtocolDownloadAttachment attachment)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(attachment);
+
+        if (result.SessionId != attachment.SessionId ||
+            result.Offset != attachment.Offset ||
+            result.Length != attachment.Data.Length ||
+            result.IsFinal != attachment.IsFinal)
+        {
+            throw new ArgumentException(
+                "Download result metadata must exactly match its protocol attachment.",
+                nameof(attachment));
+        }
+
+        return new ProtocolRpcExecution<DownloadReadResult>(
+            RustyOptions.Result.Ok<DownloadReadResult, DaemonError>(result),
+            attachment);
+    }
+}
+
+internal delegate Task<ProtocolRpcExecution<TResult>> ProtocolRpcHandler<TRequest, TResult>(
     ProtocolInvocationContext context,
     TRequest request,
-    CancellationToken cancellationToken);
+    CancellationToken cancellationToken)
+    where TResult : notnull;
 
 internal abstract class RpcBinding
 {
@@ -142,6 +252,7 @@ internal abstract class RpcBinding
 }
 
 internal sealed class RpcBinding<TRequest, TResult> : RpcBinding
+    where TResult : notnull
 {
     public RpcBinding(
         ProtocolExecutionOwner owner,
@@ -683,6 +794,37 @@ internal sealed class FrozenProtocolCatalog(
     {
         ArgumentNullException.ThrowIfNull(name);
         return Events.TryGetValue(name, out binding!);
+    }
+}
+
+internal interface IFrozenProtocolCatalogAccessor
+{
+    bool TryGet(out FrozenProtocolCatalog? catalog);
+
+    FrozenProtocolCatalog GetRequired();
+}
+
+internal sealed class FrozenProtocolCatalogAccessor : IFrozenProtocolCatalogAccessor
+{
+    private FrozenProtocolCatalog? _catalog;
+
+    public bool TryGet(out FrozenProtocolCatalog? catalog)
+    {
+        catalog = Volatile.Read(ref _catalog);
+        return catalog is not null;
+    }
+
+    public FrozenProtocolCatalog GetRequired() =>
+        Volatile.Read(ref _catalog) ??
+        throw new InvalidOperationException("The frozen protocol catalog has not been published.");
+
+    public void Publish(FrozenProtocolCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        if (Interlocked.CompareExchange(ref _catalog, catalog, null) is not null)
+        {
+            throw new InvalidOperationException("The frozen protocol catalog has already been published.");
+        }
     }
 }
 
