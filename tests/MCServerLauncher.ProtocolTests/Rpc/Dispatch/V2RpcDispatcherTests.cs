@@ -14,12 +14,56 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
+using RustyOptions;
 
 namespace MCServerLauncher.ProtocolTests.Rpc.Dispatch;
 
 public sealed class V2RpcDispatcherTests
 {
     private static readonly BuiltInProtocolJsonContext ProtocolJson = BuiltInProtocolJsonContext.Default;
+
+    [Fact]
+    public async Task Dispatch_MapsFileSessionOperationsAndPreservesDownloadAttachment()
+    {
+        var sessionId = Guid.NewGuid();
+        var data = ImmutableArray.Create<byte>(4, 5, 6);
+        var operations = new RecordingFileSessionOperations(
+            new DownloadChunk(7, data, true));
+        var dispatcher = CreateBuiltInDispatcher<DownloadChunkRequest, DownloadReadResult>(
+            "mcsl.file.download.read",
+            async (context, request, token) =>
+            {
+                Assert.Same(operations, context.FileSessionOperations);
+                var chunk = (await context.FileSessionOperations!.ReadDownloadChunkAsync(request, token)).Unwrap();
+                return ProtocolRpcExecution<DownloadReadResult>.DownloadOk(
+                    new DownloadReadResult(request.SessionId, chunk.Offset, chunk.Data.Length, chunk.IsFinal),
+                    new ProtocolDownloadAttachment(request.SessionId, chunk.Offset, chunk.Data, chunk.IsFinal));
+            });
+        using var requestCancellation = new CancellationTokenSource();
+        var connection = new V2RpcConnectionContext(
+            new TestPermissionView(ImmutableArray.Create("mcsl.daemon.file.download")),
+            null,
+            CancellationToken.None,
+            operations);
+
+        var outcome = await dispatcher.DispatchAsync(
+            Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.file.download.read\",\"id\":1,\"params\":{{\"session_id\":\"{sessionId}\",\"offset\":0,\"maximum_length\":8}}}}"),
+            connection,
+            requestCancellation.Token);
+
+        var attachment = Assert.IsType<ProtocolDownloadAttachment>(outcome.DownloadAttachment);
+        Assert.Equal(sessionId, attachment.SessionId);
+        Assert.Equal(7, attachment.Offset);
+        Assert.Equal(data, attachment.Data);
+        Assert.True(attachment.IsFinal);
+        Assert.Equal(requestCancellation.Token, operations.ObservedToken);
+        var response = JsonRpcWireParser.ParseSuccessResponse(outcome.ResponseUtf8.AsSpan());
+        var metadata = Assert.IsType<DownloadReadResult>(response.Result.Deserialize(ProtocolJson.DownloadReadResult));
+        Assert.Equal(sessionId, metadata.SessionId);
+        Assert.Equal(7, metadata.Offset);
+        Assert.Equal(data.Length, metadata.Length);
+        Assert.True(metadata.IsFinal);
+    }
 
     [Theory]
     [InlineData("", -32700)]
@@ -991,6 +1035,23 @@ public sealed class V2RpcDispatcherTests
     }
 
     private sealed record TestPermissionView(ImmutableArray<string> Permissions) : IProtocolPermissionView;
+
+    private sealed class RecordingFileSessionOperations(DownloadChunk chunk) : IProtocolFileSessionOperations
+    {
+        internal CancellationToken ObservedToken { get; private set; }
+
+        public Task<Result<UploadSession, DaemonError>> OpenUploadAsync(UploadOpenRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> CloseUploadAsync(Guid sessionId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> CancelUploadAsync(Guid sessionId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(DownloadOpenRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> CloseDownloadAsync(Guid sessionId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(DownloadChunkRequest request, CancellationToken cancellationToken)
+        {
+            ObservedToken = cancellationToken;
+            return Task.FromResult(Result.Ok<DownloadChunk, DaemonError>(chunk));
+        }
+    }
 
     private sealed class RecordingDiagnosticSink : IV2RpcDiagnosticSink
     {

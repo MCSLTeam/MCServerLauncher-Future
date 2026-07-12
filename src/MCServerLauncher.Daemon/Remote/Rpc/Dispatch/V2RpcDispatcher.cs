@@ -12,11 +12,14 @@ namespace MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 internal sealed class V2RpcConnectionContext(
     IProtocolPermissionView? permissionView,
     IProtocolSubscriptionOperations? subscriptionOperations,
-    CancellationToken connectionCancellationToken)
+    CancellationToken connectionCancellationToken,
+    IProtocolFileSessionOperations? fileSessionOperations = null)
 {
     internal IProtocolPermissionView? PermissionView { get; } = permissionView;
 
     internal IProtocolSubscriptionOperations? SubscriptionOperations { get; } = subscriptionOperations;
+
+    internal IProtocolFileSessionOperations? FileSessionOperations { get; } = fileSessionOperations;
 
     internal CancellationToken ConnectionCancellationToken { get; } = connectionCancellationToken;
 }
@@ -176,7 +179,8 @@ internal sealed class V2RpcDispatcher
             var invocationContext = new ProtocolInvocationContext(
                 entry.Owner,
                 connection.PermissionView,
-                connection.SubscriptionOperations);
+                connection.SubscriptionOperations,
+                connection.FileSessionOperations);
             execution = await entry.Binding
                 .InvokeAsync(invocationContext, typedRequest, invocationCancellationToken)
                 .ConfigureAwait(false);

@@ -243,7 +243,7 @@ public sealed class ProtocolRpcExecutionTests
     public void InvocationContextAndCapabilities_HaveExactSeparatedMemberSets()
     {
         Assert.Equal(
-            [nameof(ProtocolInvocationContext.ExecutionOwner), nameof(ProtocolInvocationContext.PermissionView), nameof(ProtocolInvocationContext.SubscriptionOperations)],
+            [nameof(ProtocolInvocationContext.ExecutionOwner), nameof(ProtocolInvocationContext.FileSessionOperations), nameof(ProtocolInvocationContext.PermissionView), nameof(ProtocolInvocationContext.SubscriptionOperations)],
             typeof(ProtocolInvocationContext)
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Select(property => property.Name)
@@ -251,12 +251,18 @@ public sealed class ProtocolRpcExecutionTests
 
         var permissionMembers = InterfaceMemberNames(typeof(IProtocolPermissionView));
         var subscriptionMembers = InterfaceMemberNames(typeof(IProtocolSubscriptionOperations));
+        var fileSessionMembers = InterfaceMemberNames(typeof(IProtocolFileSessionOperations));
 
         Assert.Equal([nameof(IProtocolPermissionView.Permissions)], permissionMembers);
         Assert.Equal(
             [nameof(IProtocolSubscriptionOperations.Subscribe), nameof(IProtocolSubscriptionOperations.Unsubscribe)],
             subscriptionMembers);
+        Assert.Equal(
+            [nameof(IProtocolFileSessionOperations.CancelUploadAsync), nameof(IProtocolFileSessionOperations.CloseDownloadAsync), nameof(IProtocolFileSessionOperations.CloseUploadAsync), nameof(IProtocolFileSessionOperations.OpenDownloadAsync), nameof(IProtocolFileSessionOperations.OpenUploadAsync), nameof(IProtocolFileSessionOperations.ReadDownloadChunkAsync)],
+            fileSessionMembers);
         Assert.Empty(permissionMembers.Intersect(subscriptionMembers, StringComparer.Ordinal));
+        Assert.Empty(permissionMembers.Intersect(fileSessionMembers, StringComparer.Ordinal));
+        Assert.Empty(subscriptionMembers.Intersect(fileSessionMembers, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -269,6 +275,7 @@ public sealed class ProtocolRpcExecutionTests
             typeof(ProtocolInvocationContext),
             typeof(IProtocolPermissionView),
             typeof(IProtocolSubscriptionOperations),
+            typeof(IProtocolFileSessionOperations),
             typeof(IFrozenProtocolCatalogAccessor),
             typeof(FrozenProtocolCatalogAccessor)
         };

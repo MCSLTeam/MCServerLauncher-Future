@@ -1,8 +1,10 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
 using RustyOptions;
@@ -129,16 +131,29 @@ internal interface IProtocolSubscriptionOperations
     Result<Unit, DaemonError> Unsubscribe(EventSubscriptionRequest request);
 }
 
+internal interface IProtocolFileSessionOperations
+{
+    Task<Result<UploadSession, DaemonError>> OpenUploadAsync(UploadOpenRequest request, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> CloseUploadAsync(Guid sessionId, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> CancelUploadAsync(Guid sessionId, CancellationToken cancellationToken);
+    Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(DownloadOpenRequest request, CancellationToken cancellationToken);
+    Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(DownloadChunkRequest request, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> CloseDownloadAsync(Guid sessionId, CancellationToken cancellationToken);
+}
+
 internal sealed class ProtocolInvocationContext(
     ProtocolExecutionOwner executionOwner,
     IProtocolPermissionView? permissionView = null,
-    IProtocolSubscriptionOperations? subscriptionOperations = null)
+    IProtocolSubscriptionOperations? subscriptionOperations = null,
+    IProtocolFileSessionOperations? fileSessionOperations = null)
 {
     public ProtocolExecutionOwner ExecutionOwner { get; } = executionOwner ?? throw new ArgumentNullException(nameof(executionOwner));
 
     public IProtocolPermissionView? PermissionView { get; } = permissionView;
 
     public IProtocolSubscriptionOperations? SubscriptionOperations { get; } = subscriptionOperations;
+
+    public IProtocolFileSessionOperations? FileSessionOperations { get; } = fileSessionOperations;
 }
 
 internal sealed class ProtocolDownloadAttachment

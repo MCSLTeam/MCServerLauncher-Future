@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
@@ -18,6 +19,7 @@ namespace MCServerLauncher.ProtocolTests;
 
 public sealed class BuiltInFileInstanceEventRuleBindingTests
 {
+    private static readonly ConditionalWeakTable<FrozenProtocolCatalog, IProtocolFileSessionOperations> FileOperations = new();
     private static readonly ImmutableArray<string> FileMethods =
     [
         "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete", "mcsl.directory.info.get",
@@ -324,7 +326,9 @@ public sealed class BuiltInFileInstanceEventRuleBindingTests
     {
         var builder = CreateBuilder();
         BuiltInFileRpcRegistrar.Register(builder, application);
-        return builder.Freeze();
+        var catalog = builder.Freeze();
+        FileOperations.Add(catalog, application);
+        return catalog;
     }
 
     private static FrozenProtocolCatalog FreezeInstance(RecordingInstanceApplication application)
@@ -345,7 +349,11 @@ public sealed class BuiltInFileInstanceEventRuleBindingTests
         where TResult : notnull
     {
         var binding = Assert.IsType<RpcBinding<TRequest, TResult>>(catalog.Rpcs[new RpcMethod(method)].Binding);
-        return await binding.Handler(new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn), request, token);
+        FileOperations.TryGetValue(catalog, out var fileOperations);
+        return await binding.Handler(
+            new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn, fileSessionOperations: fileOperations),
+            request,
+            token);
     }
 
     private static async Task<TResult> InvokeValue<TRequest, TResult>(FrozenProtocolCatalog catalog, string method, TRequest request, CancellationToken token)
@@ -401,7 +409,7 @@ public sealed class BuiltInFileInstanceEventRuleBindingTests
         }
     }
 
-    private sealed class RecordingFileApplication : RecordingApplication, IFileApplication
+    private sealed class RecordingFileApplication : RecordingApplication, IFileApplication, IProtocolFileSessionOperations
     {
         private static readonly DateTimeOffset Now = DateTimeOffset.UnixEpoch;
         public DirectoryDetails DirectoryDetails { get; } = new(null, [], []);
