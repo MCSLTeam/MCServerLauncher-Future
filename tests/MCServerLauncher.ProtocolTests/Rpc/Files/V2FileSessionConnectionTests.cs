@@ -159,6 +159,114 @@ public sealed class V2FileSessionConnectionTests
     }
 
     [Fact]
+    public async Task UploadWrite_RejectsConcurrentCloseUntilWriteCompletes()
+    {
+        var application = new FakeFileApplication { BlockWrite = true };
+        await using var owner = Owner("mcsl.daemon.file.upload");
+        var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
+        var session = (await connection.OpenUploadAsync(
+            new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
+
+        var write = connection.ReceiveUploadChunkAsync(
+            session.SessionId, 0, new byte[] { 1 }, CancellationToken.None);
+        await application.WriteEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var conflict = await connection.CloseUploadAsync(session.SessionId, CancellationToken.None);
+
+        Assert.IsType<ConflictDaemonError>(conflict.UnwrapErr());
+        Assert.Equal("file.upload.chunk_in_flight", conflict.UnwrapErr().Code);
+        Assert.Equal(0, application.UploadCloseCalls);
+
+        application.ReleaseWrite.TrySetResult();
+        Assert.True((await write).IsOk(out _));
+        Assert.True((await connection.CloseUploadAsync(session.SessionId, CancellationToken.None)).IsOk(out _));
+        Assert.Equal(1, application.UploadCloseCalls);
+    }
+
+    [Fact]
+    public async Task UploadWrite_RejectsConcurrentCancelUntilWriteCompletes()
+    {
+        var application = new FakeFileApplication { BlockWrite = true };
+        await using var owner = Owner("mcsl.daemon.file.upload");
+        var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
+        var session = (await connection.OpenUploadAsync(
+            new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
+
+        var write = connection.ReceiveUploadChunkAsync(
+            session.SessionId, 0, new byte[] { 1 }, CancellationToken.None);
+        await application.WriteEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var conflict = await connection.CancelUploadAsync(session.SessionId, CancellationToken.None);
+
+        Assert.IsType<ConflictDaemonError>(conflict.UnwrapErr());
+        Assert.Equal("file.upload.chunk_in_flight", conflict.UnwrapErr().Code);
+        Assert.Equal(0, application.UploadCancelCalls);
+
+        application.ReleaseWrite.TrySetResult();
+        Assert.True((await write).IsOk(out _));
+        Assert.True((await connection.CancelUploadAsync(session.SessionId, CancellationToken.None)).IsOk(out _));
+        Assert.Equal(1, application.UploadCancelCalls);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task OwnerDisconnect_WaitsForBlockedUploadWriteAndCancelsExactlyOnce(
+        bool cancelWrite,
+        bool terminalWrite)
+    {
+        var application = new FakeFileApplication
+        {
+            BlockWrite = true,
+            IgnoreWriteCancellation = true,
+            UploadWriteResult = terminalWrite
+                ? Result.Err<Unit, DaemonError>(
+                    new ValidationDaemonError("file.chunk.offset.invalid", "bad offset"))
+                : Result.Ok<Unit, DaemonError>(Unit.Default)
+        };
+        var owner = Owner("mcsl.daemon.file.upload");
+        application.UploadWriteException = cancelWrite
+            ? new OperationCanceledException(owner.ConnectionToken)
+            : null;
+        var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
+        var session = (await connection.OpenUploadAsync(
+            new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
+        var connectionCancelled = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = owner.ConnectionToken.Register(() => connectionCancelled.TrySetResult());
+
+        var write = connection.ReceiveUploadChunkAsync(
+            session.SessionId, 0, new byte[] { 1 }, owner.ConnectionToken);
+        await application.WriteEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var cleanup = owner.AbortAsync();
+        await connectionCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(write.IsCompleted);
+        Assert.False(cleanup.IsCompleted);
+        Assert.Equal(0, application.UploadCancelCalls);
+
+        application.ReleaseWrite.TrySetResult();
+        if (cancelWrite)
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => write);
+        else
+        {
+            var writeResult = await write;
+            if (terminalWrite)
+                Assert.Equal("file.chunk.offset.invalid", writeResult.UnwrapErr().Code);
+            else
+                Assert.True(writeResult.IsOk(out _));
+        }
+        await cleanup;
+
+        Assert.Equal(1, application.UploadCancelCalls);
+        Assert.Equal(CancellationToken.None, Assert.Single(application.CleanupTokens));
+        Assert.Equal("file.session.not_found",
+            (await connection.CancelUploadAsync(session.SessionId, CancellationToken.None)).UnwrapErr().Code);
+    }
+
+    [Fact]
     public async Task UploadWrite_TerminalErrorCancelsAndDetachesExactlyOnce()
     {
         var application = new FakeFileApplication
@@ -291,6 +399,49 @@ public sealed class V2FileSessionConnectionTests
 
         application.ReleaseDownloadClose.TrySetResult();
         Assert.True((await ending).IsOk(out _));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UploadEndInFlight_RejectsThirdChunkWithoutReplacingCleanupWait(bool cancelUpload)
+    {
+        var application = new FakeFileApplication
+        {
+            BlockUploadClose = !cancelUpload,
+            BlockUploadCancel = cancelUpload
+        };
+        var owner = Owner("mcsl.daemon.file.upload");
+        var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
+        var session = (await connection.OpenUploadAsync(
+            new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
+        var ending = cancelUpload
+            ? connection.CancelUploadAsync(session.SessionId, CancellationToken.None)
+            : connection.CloseUploadAsync(session.SessionId, CancellationToken.None);
+        var endEntered = cancelUpload
+            ? application.UploadCancelEntered.Task
+            : application.UploadCloseEntered.Task;
+        await endEntered.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var thirdChunk = await connection.ReceiveUploadChunkAsync(
+            session.SessionId, 0, new byte[] { 1 }, CancellationToken.None);
+
+        Assert.IsType<ConflictDaemonError>(thirdChunk.UnwrapErr());
+        Assert.Equal("file.session.busy", thirdChunk.UnwrapErr().Code);
+        Assert.Equal(0, application.UploadWriteCalls);
+
+        var cleanup = owner.AbortAsync();
+        Assert.False(cleanup.IsCompleted);
+
+        if (cancelUpload)
+            application.ReleaseUploadCancel.TrySetResult();
+        else
+            application.ReleaseUploadClose.TrySetResult();
+
+        Assert.True((await ending).IsOk(out _));
+        await cleanup;
+        Assert.Equal(cancelUpload ? 0 : 1, application.UploadCloseCalls);
+        Assert.Equal(cancelUpload ? 1 : 0, application.UploadCancelCalls);
     }
 
     [Fact]
@@ -586,11 +737,15 @@ public sealed class V2FileSessionConnectionTests
         internal bool BlockRead { get; set; }
         internal bool BlockOpen { get; set; }
         internal bool BlockDownloadClose { get; set; }
+        internal bool BlockUploadClose { get; set; }
+        internal bool BlockUploadCancel { get; set; }
         internal bool BlockWrite { get; set; }
+        internal bool IgnoreWriteCancellation { get; set; }
         internal Result<Unit, DaemonError> UploadCloseResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
         internal Result<Unit, DaemonError> UploadCancelResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
         internal Result<Unit, DaemonError> DownloadCloseResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
         internal Result<Unit, DaemonError> UploadWriteResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
+        internal Exception? UploadWriteException { get; set; }
         internal Exception? UploadCancelException { get; set; }
         internal Exception? UploadCloseException { get; set; }
         internal Exception? DownloadCloseException { get; set; }
@@ -600,6 +755,10 @@ public sealed class V2FileSessionConnectionTests
         internal TaskCompletionSource ReleaseOpen { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource DownloadCloseEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource ReleaseDownloadClose { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource UploadCloseEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource ReleaseUploadClose { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource UploadCancelEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource ReleaseUploadCancel { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource WriteEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource ReleaseWrite { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal List<CancellationToken> CleanupTokens { get; } = [];
@@ -614,21 +773,27 @@ public sealed class V2FileSessionConnectionTests
             return Result.Ok<UploadSession, DaemonError>(UploadSession);
         }
 
-        public Task<Result<Unit, DaemonError>> CloseUploadAsync(Guid sessionId, CancellationToken cancellationToken)
+        public async Task<Result<Unit, DaemonError>> CloseUploadAsync(Guid sessionId, CancellationToken cancellationToken)
         {
             UploadCloseCalls++;
             if (UploadCloseException is not null)
                 throw UploadCloseException;
-            return Task.FromResult(UploadCloseResult);
+            UploadCloseEntered.TrySetResult();
+            if (BlockUploadClose)
+                await ReleaseUploadClose.Task.WaitAsync(cancellationToken);
+            return UploadCloseResult;
         }
 
-        public Task<Result<Unit, DaemonError>> CancelUploadAsync(Guid sessionId, CancellationToken cancellationToken)
+        public async Task<Result<Unit, DaemonError>> CancelUploadAsync(Guid sessionId, CancellationToken cancellationToken)
         {
             UploadCancelCalls++;
             CleanupTokens.Add(cancellationToken);
             if (UploadCancelException is not null)
                 throw UploadCancelException;
-            return Task.FromResult(UploadCancelResult);
+            UploadCancelEntered.TrySetResult();
+            if (BlockUploadCancel)
+                await ReleaseUploadCancel.Task.WaitAsync(cancellationToken);
+            return UploadCancelResult;
         }
 
         public async Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(DownloadOpenRequest request, CancellationToken cancellationToken)
@@ -683,7 +848,14 @@ public sealed class V2FileSessionConnectionTests
             UploadWriteCalls++;
             WriteEntered.TrySetResult();
             if (BlockWrite)
-                await ReleaseWrite.Task.WaitAsync(cancellationToken);
+            {
+                if (IgnoreWriteCancellation)
+                    await ReleaseWrite.Task;
+                else
+                    await ReleaseWrite.Task.WaitAsync(cancellationToken);
+            }
+            if (UploadWriteException is not null)
+                throw UploadWriteException;
             return UploadWriteResult;
         }
     }

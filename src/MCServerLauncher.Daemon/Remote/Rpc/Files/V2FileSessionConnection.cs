@@ -289,14 +289,18 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         {
             if (_closed || !_leases.TryGetValue(sessionId, out var lease) || lease.Kind != kind || !ReferenceEquals(lease.Owner, _owner))
                 return new(null, NotFound(sessionId), null);
-            if (lease.State is LeaseState.Reading or LeaseState.Ending)
-                return new(null, new ConflictDaemonError(
-                    forRead && lease.State == LeaseState.Reading
-                        ? "file.download.read_in_flight"
-                        : "file.session.busy",
-                    forRead && lease.State == LeaseState.Reading
-                        ? "A download read is already in flight."
-                        : "The file session is busy."), null);
+            if (lease.State != LeaseState.Active)
+            {
+                var conflict = lease.State switch
+                {
+                    LeaseState.Reading when forRead => new ConflictDaemonError(
+                        "file.download.read_in_flight", "A download read is already in flight."),
+                    LeaseState.Writing => new ConflictDaemonError(
+                        "file.upload.chunk_in_flight", "An upload chunk is already in flight."),
+                    _ => new ConflictDaemonError("file.session.busy", "The file session is busy.")
+                };
+                return new(null, conflict, null);
+            }
             if (_timeProvider.GetUtcNow() >= lease.ExpiresAt)
             {
                 _leases.Remove(sessionId);
