@@ -35,7 +35,7 @@ public sealed class BuiltInProtocolDefinitionTests
             "mcsl.event.daemon.report", "mcsl.event.instance.catalog.changed", "mcsl.event.instance.log", "mcsl.event.notification"
         };
 
-        Assert.Equal(38, BuiltInProtocolDefinitions.Rpcs.Length);
+        Assert.Equal(expectedRpcs.Length, BuiltInProtocolDefinitions.Rpcs.Length);
         Assert.Equal(expectedRpcs, BuiltInProtocolDefinitions.Rpcs.Select(descriptor => descriptor.Method.Value));
         Assert.Equal(expectedEvents, BuiltInProtocolDefinitions.Events.Select(descriptor => descriptor.Name.Value));
         Assert.Equal(BuiltInProtocolDefinitions.Rpcs.Length, BuiltInProtocolDefinitions.Rpcs.Select(descriptor => descriptor.Method).Distinct().Count());

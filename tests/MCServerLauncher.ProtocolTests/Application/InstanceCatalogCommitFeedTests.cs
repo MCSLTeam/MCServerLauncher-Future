@@ -275,7 +275,7 @@ public sealed class InstanceCatalogCommitFeedTests
     {
         var inventory = BuiltInProtocolEventSourceInventory.All;
 
-        Assert.Equal(4, inventory.Length);
+        Assert.Equal(BuiltInProtocolDefinitions.Events.Length, inventory.Length);
         Assert.Collection(
             inventory,
             item => AssertSource<InstanceCatalogChangedEventData, AuthoritativeInstanceSnapshotSource, InstanceCatalogChangedDomainEvent>(item),
