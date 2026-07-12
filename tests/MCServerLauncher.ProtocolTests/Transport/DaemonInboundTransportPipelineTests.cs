@@ -480,6 +480,20 @@ public class DaemonInboundTransportPipelineTests
     public async Task GeneratedApifoxProject_PassesDeterministicCheckGate()
     {
         var repoRoot = ResolveRepoRoot();
+        var testOutputDirectory = new DirectoryInfo(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+        var configuration = testOutputDirectory.Parent?.Name ?? "Release";
+        var protocolDocsDll = Path.Combine(
+            repoRoot,
+            "tools",
+            "MCServerLauncher.ProtocolDocs",
+            "bin",
+            configuration,
+            "net10.0",
+            "MCServerLauncher.ProtocolDocs.dll");
+        Assert.True(
+            File.Exists(protocolDocsDll),
+            $"Expected the ProtocolDocs project output at '{protocolDocsDll}'. Build the test project before running with --no-build.");
+
         var dotnetHost = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
         var startInfo = new ProcessStartInfo
         {
@@ -490,16 +504,7 @@ public class DaemonInboundTransportPipelineTests
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        startInfo.ArgumentList.Add("run");
-        startInfo.ArgumentList.Add("--project");
-        startInfo.ArgumentList.Add(Path.Combine(
-            repoRoot,
-            "tools",
-            "MCServerLauncher.ProtocolDocs",
-            "MCServerLauncher.ProtocolDocs.csproj"));
-        startInfo.ArgumentList.Add("-c");
-        startInfo.ArgumentList.Add("Release");
-        startInfo.ArgumentList.Add("--");
+        startInfo.ArgumentList.Add(protocolDocsDll);
         startInfo.ArgumentList.Add("--check");
 
         using var process = Process.Start(startInfo) ??
@@ -507,26 +512,118 @@ public class DaemonInboundTransportPipelineTests
         var standardOutput = process.StandardOutput.ReadToEndAsync();
         var standardError = process.StandardError.ReadToEndAsync();
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-        try
-        {
-            await process.WaitForExitAsync(timeout.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-                await process.WaitForExitAsync();
-            }
+        var (output, error, failures) = await RunDocumentationGateProcessAsync(
+            cancellationToken => process.WaitForExitAsync(cancellationToken),
+            () => process.HasExited,
+            () => process.Kill(entireProcessTree: true),
+            cancellationToken => process.WaitForExitAsync(cancellationToken),
+            standardOutput,
+            standardError,
+            timeout.Token);
 
-            throw new TimeoutException("Protocol documentation --check exceeded two minutes.");
-        }
+        if (failures.Count > 0)
+            throw new AggregateException("Protocol documentation --check or its cleanup failed.", failures);
 
-        var output = await standardOutput;
-        var error = await standardError;
         Assert.True(
             process.ExitCode == 0,
             $"Protocol documentation --check failed with exit code {process.ExitCode}.{Environment.NewLine}{output}{Environment.NewLine}{error}");
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "Documentation")]
+    public async Task DocumentationGateCleanup_KillFailureStillWaitsAndObservesStreams()
+    {
+        var cleanupWaited = false;
+        var killFailure = new InvalidOperationException("kill failed");
+        var outputFailure = new IOException("stdout failed");
+
+        var (_, error, failures) = await RunDocumentationGateProcessAsync(
+            _ => Task.FromException(new OperationCanceledException()),
+            () => false,
+            () => throw killFailure,
+            _ =>
+            {
+                cleanupWaited = true;
+                return Task.CompletedTask;
+            },
+            Task.FromException<string>(outputFailure),
+            Task.FromResult("stderr observed"),
+            CancellationToken.None);
+
+        Assert.True(cleanupWaited);
+        Assert.Equal("stderr observed", error);
+        Assert.Contains(failures, exception => exception is TimeoutException);
+        Assert.Contains(killFailure, failures);
+        Assert.Contains(outputFailure, failures);
+    }
+
+    private static async Task<(string? Output, string? Error, List<Exception> Failures)>
+        RunDocumentationGateProcessAsync(
+            Func<CancellationToken, Task> waitForExitAsync,
+            Func<bool> hasExited,
+            Action killProcessTree,
+            Func<CancellationToken, Task> waitForKilledProcessAsync,
+            Task<string> standardOutput,
+            Task<string> standardError,
+            CancellationToken timeoutToken)
+    {
+        var failures = new List<Exception>();
+        string? output = null;
+        string? error = null;
+        try
+        {
+            await waitForExitAsync(timeoutToken);
+        }
+        catch (OperationCanceledException exception)
+        {
+            failures.Add(new TimeoutException("Protocol documentation --check exceeded two minutes.", exception));
+            try
+            {
+                if (!hasExited())
+                    killProcessTree();
+            }
+            catch (Exception) when (hasExited())
+            {
+            }
+            catch (Exception killException)
+            {
+                failures.Add(killException);
+            }
+
+            try
+            {
+                using var killTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                await waitForKilledProcessAsync(killTimeout.Token);
+            }
+            catch (Exception cleanupException)
+            {
+                failures.Add(cleanupException);
+            }
+        }
+        finally
+        {
+            try
+            {
+                output = await standardOutput.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+            catch (Exception outputException)
+            {
+                failures.Add(outputException);
+            }
+
+            try
+            {
+                error = await standardError.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+            catch (Exception errorException)
+            {
+                failures.Add(errorException);
+            }
+        }
+
+        return (output, error, failures);
     }
 
     [Fact]

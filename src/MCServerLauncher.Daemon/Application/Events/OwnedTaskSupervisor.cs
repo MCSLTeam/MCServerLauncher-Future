@@ -1,0 +1,173 @@
+using Microsoft.Extensions.Logging;
+
+namespace MCServerLauncher.Daemon.ApplicationCore.Events;
+
+internal sealed class OwnedTaskSupervisor(
+    string owner,
+    ILogger logger) : IAsyncDisposable
+{
+    private readonly object _gate = new();
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
+    private readonly HashSet<Task> _tasks = [];
+    private TaskCompletionSource? _stopCompletion;
+    private Task? _stopDriverTask;
+    private int _accepting = 1;
+    private bool _disposed;
+
+    internal int PendingTaskCount
+    {
+        get
+        {
+            lock (_gate)
+            {
+                RemoveCompletedTasks();
+                return _tasks.Count;
+            }
+        }
+    }
+
+    internal void Schedule(
+        string operation,
+        Func<CancellationToken, Task> work,
+        CancellationToken callerCancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operation);
+        ArgumentNullException.ThrowIfNull(work);
+        callerCancellation.ThrowIfCancellationRequested();
+
+        Task task;
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (Volatile.Read(ref _accepting) == 0)
+                return;
+
+            RemoveCompletedTasks();
+            task = ExecuteAsync(operation, work, callerCancellation);
+            if (!task.IsCompleted)
+                _tasks.Add(task);
+        }
+    }
+
+    internal void RequestStop()
+    {
+        _ = EnsureStopTask();
+    }
+
+    internal async Task DrainAsync(CancellationToken cancellationToken = default)
+    {
+        List<Exception>? failures = null;
+        try
+        {
+            await EnsureStopTask().WaitAsync(cancellationToken);
+            var stopDriver = Volatile.Read(ref _stopDriverTask);
+            if (stopDriver is not null)
+                await stopDriver.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            (failures ??= []).Add(exception);
+        }
+
+        while (true)
+        {
+            Task[] pending;
+            lock (_gate)
+            {
+                RemoveCompletedTasks();
+                if (_tasks.Count == 0)
+                    break;
+                pending = [.. _tasks];
+            }
+
+            await Task.WhenAll(pending).WaitAsync(cancellationToken);
+        }
+
+        if (failures is not null)
+            throw new AggregateException($"Stopping owned tasks for '{owner}' failed.", failures);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+        }
+
+        try
+        {
+            await DrainAsync();
+        }
+        finally
+        {
+            _lifetimeCancellation.Dispose();
+        }
+    }
+
+    private Task EnsureStopTask()
+    {
+        Interlocked.Exchange(ref _accepting, 0);
+        var completion = Volatile.Read(ref _stopCompletion);
+        if (completion is not null)
+            return completion.Task;
+
+        var candidate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        completion = Interlocked.CompareExchange(ref _stopCompletion, candidate, null) ?? candidate;
+        if (ReferenceEquals(completion, candidate))
+            Volatile.Write(ref _stopDriverTask, CompleteStopAsync(candidate));
+        return completion.Task;
+    }
+
+    private async Task CompleteStopAsync(TaskCompletionSource completion)
+    {
+        try
+        {
+            await _lifetimeCancellation.CancelAsync();
+            completion.TrySetResult();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Canceling owned tasks for '{Owner}' failed", owner);
+            completion.TrySetException(exception);
+        }
+    }
+
+    private async Task ExecuteAsync(
+        string operation,
+        Func<CancellationToken, Task> work,
+        CancellationToken callerCancellation)
+    {
+        using var linkedCancellation = callerCancellation.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(
+                _lifetimeCancellation.Token,
+                callerCancellation)
+            : CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+        try
+        {
+            await work(linkedCancellation.Token);
+        }
+        catch (OperationCanceledException)
+            when (linkedCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "Owned task '{Operation}' for '{Owner}' failed",
+                operation,
+                owner);
+        }
+    }
+
+    private void RemoveCompletedTasks()
+    {
+        _tasks.RemoveWhere(static task => task.IsCompleted);
+    }
+}

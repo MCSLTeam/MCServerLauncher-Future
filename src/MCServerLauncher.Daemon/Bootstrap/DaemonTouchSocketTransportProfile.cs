@@ -13,10 +13,16 @@ internal static class DaemonTouchSocketTransportProfile
         HttpService httpService,
         ActionHandlerRegistrySnapshot selectedRegistry)
     {
+        var legacyEventQueueControl = new LegacyEventQueueControl();
         return new TouchSocketConfig()
             .SetListenIPHosts(AppConfig.Get().Port)
             .UseAspNetCoreContainer(collection)
-            .ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(a, collection, httpService, selectedRegistry))
-            .ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a));
+            .ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(
+                a,
+                collection,
+                httpService,
+                selectedRegistry,
+                legacyEventQueueControl))
+            .ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a, legacyEventQueueControl));
     }
 }

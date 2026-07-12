@@ -259,7 +259,7 @@ public sealed class LocalInstanceApplicationTests
             new Dictionary<string, string> { ["motd"] = "ready" },
             [new Player("Alex", Guid.NewGuid())],
             new InstancePerformanceCounter(37.5, 512));
-        instance.RaiseLog("player joined");
+        await instance.RaiseLogAsync("player joined");
 
         var reportResult = await application.GetInstanceReportAsync(
             new InstanceReference(config.Uuid),
@@ -666,7 +666,7 @@ public sealed class LocalInstanceApplicationTests
         manager.ReplaceInstance(config.Uuid, instance);
         instance.BlockNextConfigRead();
 
-        var statusTask = Task.Run(() => instance.RaiseStatusChanged(InstanceStatus.Running));
+        var statusTask = Task.Run(() => instance.RaiseStatusChangedAsync(InstanceStatus.Running));
         await instance.ConfigReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
 
         var removeStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -744,13 +744,13 @@ public sealed class LocalInstanceApplicationTests
         public InstanceStatus Status { get; set; } = status;
         public int ServerProcessId => -1;
 
-        public event Action<Guid, string>? OnLog
+        public event Func<Guid, string, CancellationToken, Task>? OnLog
         {
             add { }
             remove { }
         }
 
-        public event Action<Guid, InstanceStatus>? OnStatusChanged
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged
         {
             add { }
             remove { }
@@ -793,8 +793,8 @@ public sealed class LocalInstanceApplicationTests
         public InstanceProcess? Process => null;
         public InstanceStatus Status => InstanceStatus.Stopped;
         public int ServerProcessId => -1;
-        public event Action<Guid, string>? OnLog;
-        public event Action<Guid, InstanceStatus>? OnStatusChanged;
+        public event Func<Guid, string, CancellationToken, Task>? OnLog;
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged;
 
         public void AddLog(string log)
         {
@@ -811,14 +811,14 @@ public sealed class LocalInstanceApplicationTests
             _performance = performance;
         }
 
-        public void RaiseLog(string log)
+        public Task RaiseLogAsync(string log)
         {
-            OnLog?.Invoke(Config.Uuid, log);
+            return OnLog?.Invoke(Config.Uuid, log, CancellationToken.None) ?? Task.CompletedTask;
         }
 
-        public void RaiseStatus(InstanceStatus status)
+        public Task RaiseStatusAsync(InstanceStatus status)
         {
-            OnStatusChanged?.Invoke(Config.Uuid, status);
+            return OnStatusChanged?.Invoke(Config.Uuid, status, CancellationToken.None) ?? Task.CompletedTask;
         }
 
         public Task<LegacyInstanceReport> GetReportAsync(CancellationToken ct = default)
@@ -849,7 +849,7 @@ public sealed class LocalInstanceApplicationTests
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<bool> _releaseConfigRead =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
-        private Action<Guid, InstanceStatus>? _statusChanged;
+        private Func<Guid, InstanceStatus, CancellationToken, Task>? _statusChanged;
         private int _blockConfigRead;
 
         public TaskCompletionSource<bool> ConfigReadStarted => _configReadStarted;
@@ -874,13 +874,13 @@ public sealed class LocalInstanceApplicationTests
 
         public int ServerProcessId => -1;
 
-        public event Action<Guid, string>? OnLog
+        public event Func<Guid, string, CancellationToken, Task>? OnLog
         {
             add { }
             remove { }
         }
 
-        public event Action<Guid, InstanceStatus>? OnStatusChanged
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged
         {
             add => _statusChanged += value;
             remove => _statusChanged -= value;
@@ -891,9 +891,9 @@ public sealed class LocalInstanceApplicationTests
             Volatile.Write(ref _blockConfigRead, 1);
         }
 
-        public void RaiseStatusChanged(InstanceStatus status)
+        public Task RaiseStatusChangedAsync(InstanceStatus status)
         {
-            _statusChanged?.Invoke(config.Uuid, status);
+            return _statusChanged?.Invoke(config.Uuid, status, CancellationToken.None) ?? Task.CompletedTask;
         }
 
         public void ReleaseConfigRead()
@@ -935,13 +935,13 @@ public sealed class LocalInstanceApplicationTests
 
         public int ServerProcessId => -1;
 
-        public event Action<Guid, string>? OnLog
+        public event Func<Guid, string, CancellationToken, Task>? OnLog
         {
             add { }
             remove { }
         }
 
-        public event Action<Guid, InstanceStatus>? OnStatusChanged
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged
         {
             add { }
             remove { }

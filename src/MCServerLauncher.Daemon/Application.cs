@@ -45,7 +45,7 @@ public static class Application
         var gs = HttpService.Resolver.GetRequiredService<GracefulShutdown>();
 
         OnStopping += () => StopAsync();
-        gs.OnShutdown += () => OnStopping.Invoke();
+        gs.OnShutdown += () => InvokeAsync(OnStopping);
 
         await HttpService.StartAsync();
         var endpoints = GetRemoteEndpoints();
@@ -54,7 +54,7 @@ public static class Application
         Log.Information("[Remote] Http Server connect URLs: {ConnectUrls}", string.Join(", ", endpoints.HttpConnectUrls));
         Log.Information("[Remote] Apifox docs connect URLs: {ConnectUrls}", string.Join(", ", endpoints.ApifoxConnectUrls));
 
-        await (OnStarted?.Invoke() ?? Task.CompletedTask);
+        await InvokeAsync(OnStarted);
 
         await gs.WaitForShutdownAsync();
 
@@ -67,16 +67,21 @@ public static class Application
     {
         using var cts = new CancellationTokenSource(timeout);
 
-        HttpService.Resolver.GetRequiredService<EventTriggerService>().Stop();
-        HttpService.Resolver.GetRequiredService<LegacyDomainEventAdapter>().Dispose();
-        HttpService.Resolver.GetRequiredService<InstanceDomainEventBridge>().Dispose();
-
         Log.Debug("[ApplicationCore] stopping local application services ...");
         await HttpService.Resolver.GetRequiredService<IDaemonRuntimeLifecycle>().StopAsync(cts.Token);
 
         Log.Debug("[WsContextContainer] closing websocket connections ...");
         await Task.WhenAll(HttpService.Resolver.GetRequiredService<WsContextContainer>()
             .Select(kv => kv.Value.GetWebsocket().CloseAsync("Daemon exit", cts.Token)));
+    }
+
+    private static async Task InvokeAsync(Func<Task>? handlers)
+    {
+        if (handlers is null)
+            return;
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Func<Task>>())
+            await handler();
     }
 
     private static RemoteEndpoints GetRemoteEndpoints()

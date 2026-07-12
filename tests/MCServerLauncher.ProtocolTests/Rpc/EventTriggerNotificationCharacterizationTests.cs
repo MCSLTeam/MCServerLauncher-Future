@@ -21,6 +21,34 @@ public sealed class EventTriggerNotificationCharacterizationTests
 {
     [Fact]
     [Trait("Category", "EventTriggerNotificationCharacterization")]
+    public void NotificationFanOut_SerializesOnceBeforeEnumeratingConnections()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Remote/Event/LegacyDomainEventAdapter.cs");
+        var methodStart = source.IndexOf(
+            "private async Task FanOutNotificationAsync(",
+            StringComparison.Ordinal);
+        var methodEnd = source.IndexOf(
+            "private static DaemonReport ToLegacyReport(",
+            methodStart,
+            StringComparison.Ordinal);
+
+        Assert.True(methodStart >= 0, "Notification fan-out method was not found.");
+        Assert.True(methodEnd > methodStart, "Notification fan-out method boundary was not found.");
+        var method = source[methodStart..methodEnd];
+        Assert.Equal(1, method.Split("JsonSerializer.SerializeToUtf8Bytes", StringSplitOptions.None).Length - 1);
+
+        var serialization = method.IndexOf("JsonSerializer.SerializeToUtf8Bytes", StringComparison.Ordinal);
+        var connectionEnumeration = method.IndexOf("_wsContexts.Select", StringComparison.Ordinal);
+        Assert.True(serialization >= 0);
+        Assert.True(connectionEnumeration > serialization);
+        Assert.Contains(
+            "SendTextFrameAsync(context.Value.GetWebsocket(), payload, cancellationToken)",
+            method,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "EventTriggerNotificationCharacterization")]
     public async Task SendNotificationProducer_ProducesExpectedTextFramePayload()
     {
         var httpServiceProperty = typeof(DaemonApplication).GetProperty(
@@ -47,8 +75,9 @@ public sealed class EventTriggerNotificationCharacterizationTests
 
             var instanceId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
             var ruleId = Guid.Parse("11111111-2222-3333-4444-555555555555");
-            var port = new DomainEventPort(NullLogger<DomainEventPort>.Instance);
-            using var adapter = new LegacyDomainEventAdapter(
+            using var portHost = DomainEventPortTestHost.Create();
+            var port = portHost.Port;
+            await using var adapter = new LegacyDomainEventAdapter(
                 port,
                 new EventService(),
                 contexts,
@@ -61,7 +90,7 @@ public sealed class EventTriggerNotificationCharacterizationTests
                 ruleId,
                 1_700_000_000_000);
 
-            port.Publish(notification);
+            await port.PublishAsync(notification);
 
             var frame = await capture.ReadFrameAsync();
             Assert.True(frame.Fin);
@@ -137,6 +166,16 @@ public sealed class EventTriggerNotificationCharacterizationTests
         Assert.True((bool)tryAdd.Invoke(clients, [client])!);
 
         return new CapturingClient(clientId, pipe, writeLocker);
+    }
+
+    private static string ReadSourceFile(string relativePath)
+    {
+        var directory = AppDomain.CurrentDomain.BaseDirectory;
+        while (directory is not null && !File.Exists(Path.Combine(directory, "MCServerLauncher.sln")))
+            directory = Directory.GetParent(directory)?.FullName;
+
+        var repositoryRoot = directory ?? throw new DirectoryNotFoundException("Repository root not found.");
+        return File.ReadAllText(Path.Combine(repositoryRoot, relativePath));
     }
 
     private static void RemoveCapturingClient(HttpService httpService, string clientId)

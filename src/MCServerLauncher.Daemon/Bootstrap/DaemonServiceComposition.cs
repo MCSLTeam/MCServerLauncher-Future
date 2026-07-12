@@ -12,11 +12,11 @@ using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using MCServerLauncher.Daemon.Utils.Status;
+using MessagePipe;
 using Microsoft.Extensions.DependencyInjection;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using LegacySystemInfo = MCServerLauncher.Common.ProtoType.Status.SystemInfo;
-using Timer = System.Timers.Timer;
 
 namespace MCServerLauncher.Daemon.Bootstrap;
 
@@ -26,13 +26,23 @@ internal static class DaemonServiceComposition
         IRegistrator a,
         IServiceCollection collection,
         HttpService httpService,
-        ActionHandlerRegistrySnapshot selectedRegistry)
+        ActionHandlerRegistrySnapshot selectedRegistry,
+        LegacyEventQueueControl? legacyEventQueueControl = null)
     {
+        collection.AddMessagePipe(options =>
+        {
+            options.EnableAutoRegistration = false;
+            options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+            options.InstanceLifetime = InstanceLifetime.Singleton;
+            options.EnableCaptureStackTrace = false;
+        });
+
         a.RegisterSingleton(collection);
         a.RegisterSingleton<ConsoleApplication>();
         a.RegisterSingleton<GracefulShutdown>();
         a.RegisterSingleton<IHttpService>(httpService);
         a.RegisterSingleton(selectedRegistry);
+        a.RegisterSingleton(legacyEventQueueControl ?? new LegacyEventQueueControl());
         a.RegisterSingleton<IActionExecutor, AnotherActionExecutor>();
         a.RegisterSingleton<IEventService, EventService>();
         a.RegisterSingleton<WsContextContainer>();
@@ -54,6 +64,7 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IAsyncTimedLazyCell<LegacySystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(javaRuntimeCell);
 
+        a.RegisterSingleton(DomainEventDispatchPolicy.Default);
         a.RegisterSingleton<IDomainEventPort, DomainEventPort>();
         a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
         a.RegisterSingleton<IFileApplication, LocalFileApplication>();
@@ -65,9 +76,12 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<InstanceDomainEventBridge>();
         a.RegisterSingleton<EventTriggerService>();
         a.RegisterSingleton<LegacyDomainEventAdapter>();
+        a.RegisterSingleton<DaemonReportPublisher>();
     }
 
-    internal static void ConfigurePlugins(IPluginManager a)
+    internal static void ConfigurePlugins(
+        IPluginManager a,
+        LegacyEventQueueControl? legacyEventQueueControl = null)
     {
         a.Add<HttpPlugin>();
         a.UseWebSocket(options =>
@@ -79,52 +93,29 @@ internal static class DaemonServiceComposition
 
         a.Add<WsBasePlugin>();
         a.Add<WsActionPlugin>();
-        a.Add<WsEventPlugin>();
+        var wsEventPlugin = a.Add<WsEventPlugin>();
+        (legacyEventQueueControl ?? throw new InvalidOperationException(
+            "Legacy event queue control must be provided when configuring plugins."))
+            .Attach(wsEventPlugin);
         a.Add<WsExpirationPlugin>(); // WsExpirePlugin注册必须在WsBasePlugin之后
         a.UseDefaultHttpServicePlugin();
     }
 
     internal static void AttachDaemonLifecycle(HttpService httpService)
     {
-        var daemonReportTimer = new Timer(3000);
-        daemonReportTimer.AutoReset = true;
-        daemonReportTimer.Elapsed += async (sender, args) =>
-        {
-            try
-            {
-                var application = httpService.Resolver.GetRequiredService<IDaemonApplication>();
-                var result = await application.System.GetSystemInfoAsync(CancellationToken.None);
-                if (result.IsErr(out var error))
-                {
-                    Serilog.Log.Debug(
-                        "[DaemonReport] Failed to refresh daemon report: {ErrorCode}",
-                        error?.Code ?? "unknown");
-                    return;
-                }
-
-                httpService.Resolver.GetRequiredService<IDomainEventPort>().Publish(
-                    new DaemonReportDomainEvent(
-                        result.Unwrap(),
-                        Application.StartTime.ToUnixTimeMilliSeconds()));
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Debug(ex, "[DaemonReport] Failed to refresh daemon report");
-            }
-        };
         Application.OnStarted += () =>
         {
             httpService.Resolver.GetRequiredService<FileSessionCoordinator>().Start();
             _ = httpService.Resolver.GetRequiredService<EventTriggerService>();
             _ = httpService.Resolver.GetRequiredService<LegacyDomainEventAdapter>();
             _ = httpService.Resolver.GetRequiredService<InstanceDomainEventBridge>();
-            daemonReportTimer.Start();
+            httpService.Resolver.GetRequiredService<DaemonReportPublisher>().Start();
             httpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
             return Task.CompletedTask;
         };
         Application.OnStopping += () =>
         {
-            daemonReportTimer.Stop();
+            httpService.Resolver.GetRequiredService<DaemonReportPublisher>().RequestStop();
             return Task.CompletedTask;
         };
     }

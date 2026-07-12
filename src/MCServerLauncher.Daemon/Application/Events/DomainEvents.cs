@@ -1,6 +1,7 @@
-using System.Collections.Immutable;
+using System.Diagnostics;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MessagePipe;
 using Microsoft.Extensions.Logging;
 
 namespace MCServerLauncher.Daemon.ApplicationCore.Events;
@@ -21,91 +22,267 @@ internal sealed record ClientNotificationDomainEvent(
     Guid RuleId,
     long Timestamp) : IDomainEvent;
 
-internal interface IDomainEventPort
+internal sealed class DomainEventOwner
 {
-    IDisposable Subscribe<TEvent>(Action<TEvent> handler)
-        where TEvent : IDomainEvent;
+    private int _disposed;
 
-    void Publish<TEvent>(TEvent domainEvent)
-        where TEvent : IDomainEvent;
+    internal DomainEventOwner(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+    }
+
+    internal string Name { get; }
+    internal bool IsDisposed => Volatile.Read(ref _disposed) != 0;
+
+    internal bool TryDispose()
+    {
+        return Interlocked.Exchange(ref _disposed, 1) == 0;
+    }
 }
 
-internal sealed class DomainEventPort(ILogger<DomainEventPort> logger) : IDomainEventPort
+internal interface IDomainEventPort
 {
-    private readonly object _gate = new();
-    private readonly Dictionary<Type, ImmutableArray<Delegate>> _handlers = [];
+    DomainEventOwner CreateOwner(string name);
 
-    public IDisposable Subscribe<TEvent>(Action<TEvent> handler)
+    void Subscribe<TEvent>(
+        DomainEventOwner owner,
+        Func<TEvent, CancellationToken, ValueTask> handler)
+        where TEvent : IDomainEvent;
+
+    ValueTask PublishAsync<TEvent>(TEvent domainEvent, CancellationToken cancellationToken = default)
+        where TEvent : IDomainEvent;
+
+    void DisposeOwner(DomainEventOwner owner);
+}
+
+internal interface IDomainEventClock
+{
+    long GetTimestamp();
+    TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp);
+}
+
+internal sealed class SystemDomainEventClock : IDomainEventClock
+{
+    internal static readonly SystemDomainEventClock Instance = new();
+
+    private SystemDomainEventClock()
+    {
+    }
+
+    public long GetTimestamp() => Stopwatch.GetTimestamp();
+
+    public TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp)
+    {
+        return Stopwatch.GetElapsedTime(startingTimestamp, endingTimestamp);
+    }
+}
+
+internal sealed record DomainEventDispatchPolicy(
+    TimeSpan SlowHandlerThreshold,
+    IDomainEventClock Clock)
+{
+    internal static readonly DomainEventDispatchPolicy Default = new(
+        TimeSpan.FromSeconds(1),
+        SystemDomainEventClock.Instance);
+}
+
+internal sealed class DomainEventPort : IDomainEventPort, IDisposable
+{
+    private readonly IAsyncPublisher<InstanceLogDomainEvent> _logPublisher;
+    private readonly IAsyncSubscriber<InstanceLogDomainEvent> _logSubscriber;
+    private readonly IAsyncPublisher<InstanceStatusChangedDomainEvent> _statusPublisher;
+    private readonly IAsyncSubscriber<InstanceStatusChangedDomainEvent> _statusSubscriber;
+    private readonly IAsyncPublisher<DaemonReportDomainEvent> _reportPublisher;
+    private readonly IAsyncSubscriber<DaemonReportDomainEvent> _reportSubscriber;
+    private readonly IAsyncPublisher<ClientNotificationDomainEvent> _notificationPublisher;
+    private readonly IAsyncSubscriber<ClientNotificationDomainEvent> _notificationSubscriber;
+    private readonly ILogger<DomainEventPort> _logger;
+    private readonly DomainEventDispatchPolicy _policy;
+    private readonly object _gate = new();
+    private readonly Dictionary<DomainEventOwner, List<IDisposable>> _subscriptions = [];
+    private bool _disposed;
+
+    public DomainEventPort(
+        IAsyncPublisher<InstanceLogDomainEvent> logPublisher,
+        IAsyncSubscriber<InstanceLogDomainEvent> logSubscriber,
+        IAsyncPublisher<InstanceStatusChangedDomainEvent> statusPublisher,
+        IAsyncSubscriber<InstanceStatusChangedDomainEvent> statusSubscriber,
+        IAsyncPublisher<DaemonReportDomainEvent> reportPublisher,
+        IAsyncSubscriber<DaemonReportDomainEvent> reportSubscriber,
+        IAsyncPublisher<ClientNotificationDomainEvent> notificationPublisher,
+        IAsyncSubscriber<ClientNotificationDomainEvent> notificationSubscriber,
+        ILogger<DomainEventPort> logger,
+        DomainEventDispatchPolicy policy)
+    {
+        _logPublisher = logPublisher;
+        _logSubscriber = logSubscriber;
+        _statusPublisher = statusPublisher;
+        _statusSubscriber = statusSubscriber;
+        _reportPublisher = reportPublisher;
+        _reportSubscriber = reportSubscriber;
+        _notificationPublisher = notificationPublisher;
+        _notificationSubscriber = notificationSubscriber;
+        _logger = logger;
+        _policy = policy;
+    }
+
+    internal int ActiveSubscriptionCount
+    {
+        get
+        {
+            lock (_gate)
+                return _subscriptions.Values.Sum(static subscriptions => subscriptions.Count);
+        }
+    }
+
+    public DomainEventOwner CreateOwner(string name)
+    {
+        var owner = new DomainEventOwner(name);
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _subscriptions.Add(owner, []);
+        }
+
+        return owner;
+    }
+
+    public void Subscribe<TEvent>(
+        DomainEventOwner owner,
+        Func<TEvent, CancellationToken, ValueTask> handler)
         where TEvent : IDomainEvent
     {
+        ArgumentNullException.ThrowIfNull(owner);
         ArgumentNullException.ThrowIfNull(handler);
 
         lock (_gate)
         {
-            var eventType = typeof(TEvent);
-            if (!_handlers.TryGetValue(eventType, out var handlers))
-                handlers = ImmutableArray<Delegate>.Empty;
-            _handlers[eventType] = handlers.Add(handler);
-        }
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ObjectDisposedException.ThrowIf(owner.IsDisposed, owner);
+            if (!_subscriptions.TryGetValue(owner, out var subscriptions))
+                throw new InvalidOperationException("The domain-event owner was not created by this port.");
 
-        return new Subscription<TEvent>(this, handler);
+            var guardedHandler = new GuardedAsyncMessageHandler<TEvent>(
+                owner.Name,
+                handler,
+                _logger,
+                _policy);
+            subscriptions.Add(SubscribeCore(guardedHandler));
+        }
     }
 
-    public void Publish<TEvent>(TEvent domainEvent)
+    public ValueTask PublishAsync<TEvent>(TEvent domainEvent, CancellationToken cancellationToken = default)
         where TEvent : IDomainEvent
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
+        cancellationToken.ThrowIfCancellationRequested();
 
-        ImmutableArray<Delegate> handlers;
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed), this);
+        if (domainEvent is InstanceLogDomainEvent logEvent)
+            return _logPublisher.PublishAsync(logEvent, cancellationToken);
+        if (domainEvent is InstanceStatusChangedDomainEvent statusEvent)
+            return _statusPublisher.PublishAsync(statusEvent, cancellationToken);
+        if (domainEvent is DaemonReportDomainEvent reportEvent)
+            return _reportPublisher.PublishAsync(reportEvent, cancellationToken);
+        if (domainEvent is ClientNotificationDomainEvent notificationEvent)
+            return _notificationPublisher.PublishAsync(notificationEvent, cancellationToken);
+
+        throw new NotSupportedException($"Domain event type '{typeof(TEvent).FullName}' is not registered.");
+    }
+
+    public void DisposeOwner(DomainEventOwner owner)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        if (!owner.TryDispose())
+            return;
+
+        List<IDisposable>? subscriptions;
         lock (_gate)
         {
-            if (!_handlers.TryGetValue(typeof(TEvent), out handlers))
+            if (!_subscriptions.Remove(owner, out subscriptions))
                 return;
         }
 
-        foreach (var handler in handlers)
+        foreach (var subscription in subscriptions)
+            subscription.Dispose();
+    }
+
+    public void Dispose()
+    {
+        List<IDisposable> subscriptions;
+        DomainEventOwner[] owners;
+        lock (_gate)
         {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            owners = [.. _subscriptions.Keys];
+            subscriptions = [.. _subscriptions.Values.SelectMany(static value => value)];
+            _subscriptions.Clear();
+        }
+
+        foreach (var owner in owners)
+            owner.TryDispose();
+        foreach (var subscription in subscriptions)
+            subscription.Dispose();
+    }
+
+    private IDisposable SubscribeCore<TEvent>(IAsyncMessageHandler<TEvent> handler)
+        where TEvent : IDomainEvent
+    {
+        if (typeof(TEvent) == typeof(InstanceLogDomainEvent))
+            return _logSubscriber.Subscribe((IAsyncMessageHandler<InstanceLogDomainEvent>)handler);
+        if (typeof(TEvent) == typeof(InstanceStatusChangedDomainEvent))
+            return _statusSubscriber.Subscribe((IAsyncMessageHandler<InstanceStatusChangedDomainEvent>)handler);
+        if (typeof(TEvent) == typeof(DaemonReportDomainEvent))
+            return _reportSubscriber.Subscribe((IAsyncMessageHandler<DaemonReportDomainEvent>)handler);
+        if (typeof(TEvent) == typeof(ClientNotificationDomainEvent))
+            return _notificationSubscriber.Subscribe((IAsyncMessageHandler<ClientNotificationDomainEvent>)handler);
+
+        throw new NotSupportedException($"Domain event type '{typeof(TEvent).FullName}' is not registered.");
+    }
+
+    private sealed class GuardedAsyncMessageHandler<TEvent>(
+        string owner,
+        Func<TEvent, CancellationToken, ValueTask> handler,
+        ILogger logger,
+        DomainEventDispatchPolicy policy) : IAsyncMessageHandler<TEvent>
+        where TEvent : IDomainEvent
+    {
+        public async ValueTask HandleAsync(TEvent message, CancellationToken cancellationToken)
+        {
+            var started = policy.Clock.GetTimestamp();
             try
             {
-                ((Action<TEvent>)handler)(domainEvent);
+                await handler(message, cancellationToken);
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception exception)
             {
                 logger.LogError(
                     exception,
-                    "Domain event subscriber '{Subscriber}' failed while handling '{EventType}'",
-                    handler.Method.DeclaringType?.FullName ?? handler.Method.Name,
+                    "Domain event owner '{Owner}' failed while handling '{EventType}'",
+                    owner,
                     typeof(TEvent).FullName ?? typeof(TEvent).Name);
             }
-        }
-    }
-
-    private void Unsubscribe<TEvent>(Action<TEvent> handler)
-        where TEvent : IDomainEvent
-    {
-        lock (_gate)
-        {
-            var eventType = typeof(TEvent);
-            if (!_handlers.TryGetValue(eventType, out var handlers))
-                return;
-
-            var updatedHandlers = handlers.Remove(handler);
-            if (updatedHandlers.IsEmpty)
-                _handlers.Remove(eventType);
-            else
-                _handlers[eventType] = updatedHandlers;
-        }
-    }
-
-    private sealed class Subscription<TEvent>(DomainEventPort owner, Action<TEvent> handler) : IDisposable
-        where TEvent : IDomainEvent
-    {
-        private DomainEventPort? _owner = owner;
-
-        public void Dispose()
-        {
-            var owner = Interlocked.Exchange(ref _owner, null);
-            owner?.Unsubscribe(handler);
+            finally
+            {
+                var elapsed = policy.Clock.GetElapsedTime(started, policy.Clock.GetTimestamp());
+                if (elapsed >= policy.SlowHandlerThreshold)
+                {
+                    logger.LogWarning(
+                        "Slow domain event owner '{Owner}' handled '{EventType}' in {ElapsedMilliseconds} ms",
+                        owner,
+                        typeof(TEvent).FullName ?? typeof(TEvent).Name,
+                        elapsed.TotalMilliseconds);
+                }
+            }
         }
     }
 }

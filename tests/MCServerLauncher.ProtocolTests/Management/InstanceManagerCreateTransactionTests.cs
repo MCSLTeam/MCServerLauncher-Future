@@ -338,13 +338,13 @@ public sealed class InstanceManagerCreateTransactionTests
 
         public int ServerProcessId => -1;
 
-        public event Action<Guid, string>? OnLog
+        public event Func<Guid, string, CancellationToken, Task>? OnLog
         {
             add { }
             remove { }
         }
 
-        public event Action<Guid, InstanceStatus>? OnStatusChanged
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged
         {
             add { }
             remove { }

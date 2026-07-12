@@ -87,7 +87,7 @@ public class InstanceSettingsCoordinatorTests
     }
 
     [Fact]
-    public async Task InstanceProcess_MinecraftProcessIsRunningBeforeDoneLog()
+    public async Task InstanceProcess_MinecraftProcessStaysStoppedBeforeDoneLog()
     {
         var startInfo = CreateShortLivedProcessStartInfo();
         using var process = new InstanceProcess(startInfo, isMcServer: true);
@@ -95,7 +95,7 @@ public class InstanceSettingsCoordinatorTests
         var started = await process.StartAsync(delayToCheck: 100);
 
         Assert.True(started);
-        Assert.Equal(InstanceStatus.Running, process.Status);
+        Assert.Equal(InstanceStatus.Stopped, process.Status);
         process.KillProcess();
     }
 
@@ -173,8 +173,17 @@ public class InstanceSettingsCoordinatorTests
         public TaskCompletionSource<bool> StartEntered { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public event Action<Guid, string>? OnLog;
-        public event Action<Guid, InstanceStatus>? OnStatusChanged;
+        public event Func<Guid, string, CancellationToken, Task>? OnLog
+        {
+            add { }
+            remove { }
+        }
+
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged
+        {
+            add { }
+            remove { }
+        }
 
         public Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
         {

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -8,42 +9,29 @@ using MCServerLauncher.Daemon.Utils.Status;
 
 namespace MCServerLauncher.Daemon.Management.Communicate;
 
-using System.Collections.Concurrent;
-
 public class InstanceProcess : DisposableObject
 {
     private readonly Process _process;
+    private readonly bool _isMcServer;
     private readonly ConcurrentQueue<string> _logHistory = new();
+    private readonly CancellationTokenSource _pumpCancellation = new();
+    private readonly SemaphoreSlim _statusGate = new(1, 1);
+    private Task? _stdoutPumpTask;
+    private Task? _stderrPumpTask;
+    private Task? _completionTask;
+    private int _processStarted;
+    private int _runningPublished;
+    private int _finalized;
 
     public InstanceProcess(ProcessStartInfo info, bool isMcServer, int monitorFrequency = 2000)
     {
-        var process = new Process
+        _process = new Process
         {
             StartInfo = info,
-            EnableRaisingEvents = true
+            EnableRaisingEvents = false
         };
-        _process = process;
-
-        process.OutputDataReceived += (_, arg) =>
-        {
-            if (arg.Data is not null)
-            {
-                AddLogHistory(arg.Data);
-                OnLog?.Invoke(arg.Data);
-            }
-        };
-
-        process.ErrorDataReceived += (_, arg) =>
-        {
-            if (arg.Data is not null)
-            {
-                var msg = "[STDERR] " + arg.Data;
-                AddLogHistory(msg);
-                OnLog?.Invoke(msg);
-            }
-        };
-
-        Monitor = new ProcessMonitor(this, isMcServer, monitorFrequency);
+        _isMcServer = isMcServer;
+        Monitor = new ProcessMonitor(this, monitorFrequency);
     }
 
     public InstanceStatus Status { get; private set; } = InstanceStatus.Stopped;
@@ -51,52 +39,61 @@ public class InstanceProcess : DisposableObject
     public bool HasExit => _process.HasExited;
     public ProcessMonitor Monitor { get; }
 
-    public event Action<InstanceStatus>? OnStatusChanged;
-    public event Action? OnProcessStarted;
+    public event Func<InstanceStatus, CancellationToken, Task>? OnStatusChanged;
+    public event Func<string, CancellationToken, Task>? OnLog;
 
-    public event Action<string>? OnLog;
+    internal Task Completion => _completionTask ?? Task.CompletedTask;
 
-    public async Task<bool> StartAsync(int delayToCheck = 500)
+    public async Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         var fileName = _process.StartInfo.FileName;
-        _process.Start();
-        _process.BeginOutputReadLine();
-        _process.BeginErrorReadLine();
-        await Task.Delay(delayToCheck);
-
-        if (!_process.HasExited)
+        try
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                ServerProcessId = await Task.Run(() => ProcessTreeHelper.FindSubProcessPid(_process.Id, fileName));
-            else
-                ServerProcessId = _process.Id;
+            if (!_process.Start())
+                return false;
+            Volatile.Write(ref _processStarted, 1);
 
-            ChangeStatus(InstanceStatus.Running);
+            _stdoutPumpTask = PumpAsync(_process.StandardOutput, isStandardError: false);
+            _stderrPumpTask = PumpAsync(_process.StandardError, isStandardError: true);
+            _completionTask = FinalizeProcessAsync(_stdoutPumpTask, _stderrPumpTask);
+
+            await Task.Delay(delayToCheck, ct);
+            if (_process.HasExited)
+            {
+                await _completionTask.WaitAsync(CancellationToken.None);
+                return false;
+            }
+
+            ServerProcessId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? ProcessTreeHelper.FindSubProcessPid(_process.Id, fileName)
+                : _process.Id;
+            if (!_isMcServer)
+                await PublishRunningAsync(ct);
+            return true;
         }
-
-        if (!_process.HasExited) OnProcessStarted?.Invoke();
-
-        return !_process.HasExited;
+        catch
+        {
+            await TerminateAndDrainAsync();
+            throw;
+        }
     }
 
-    public Task WaitForExitAsync(CancellationToken ct = default)
+    public async Task WaitForExitAsync(CancellationToken ct = default)
     {
-        return _process.WaitForExitAsync(ct);
+        var completion = _completionTask;
+        if (completion is null)
+        {
+            await _process.WaitForExitAsync(ct);
+            return;
+        }
+
+        await completion.WaitAsync(ct);
     }
 
     public void Close()
     {
         _process.Close();
-    }
-
-    private void AddLogHistory(string log)
-    {
-        _logHistory.Enqueue(log);
-        var maxLogHistory = 500;
-        while (_logHistory.Count > maxLogHistory)
-        {
-            _logHistory.TryDequeue(out _);
-        }
     }
 
     public IReadOnlyList<string> GetLogHistory()
@@ -108,64 +105,192 @@ public class InstanceProcess : DisposableObject
     {
         _process.Kill();
         _process.WaitForExit();
-        ChangeStatus(InstanceStatus.Stopped);
     }
 
     public void WriteLine(string? message)
     {
-        if (message is null) return;
+        if (message is null)
+            return;
         _process.StandardInput.WriteLine(message);
-    }
-
-
-    private void ChangeStatus(InstanceStatus newStatus)
-    {
-        Status = newStatus;
-        OnStatusChanged?.Invoke(newStatus);
     }
 
     protected override void ProtectedDispose()
     {
+        _pumpCancellation.Cancel();
         _process.Dispose();
+        _pumpCancellation.Dispose();
+        _statusGate.Dispose();
+    }
+
+    private async Task PumpAsync(
+        StreamReader reader,
+        bool isStandardError)
+    {
+        try
+        {
+            while (true)
+            {
+                var line = await reader.ReadLineAsync(CancellationToken.None);
+                if (line is null)
+                    return;
+
+                var message = isStandardError ? "[STDERR] " + line : line;
+                AddLogHistory(message);
+                await InvokeAsync(OnLog, message, CancellationToken.None);
+
+                if (!isStandardError && _isMcServer)
+                {
+                    if (ProcessMonitor.DonePattern.IsMatch(line.TrimEnd()))
+                        await PublishRunningAsync(CancellationToken.None);
+                    else if (line.Contains("Minecraft has crashed", StringComparison.Ordinal))
+                        await PublishStatusAsync(InstanceStatus.Crashed, CancellationToken.None);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (_pumpCancellation.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task FinalizeProcessAsync(Task stdoutPumpTask, Task stderrPumpTask)
+    {
+        Exception? pumpFailure = null;
+        await _process.WaitForExitAsync(CancellationToken.None);
+        try
+        {
+            await Task.WhenAll(stdoutPumpTask, stderrPumpTask);
+        }
+        catch (Exception exception)
+        {
+            pumpFailure = exception;
+        }
+
+        await PublishStoppedAsync();
+        if (pumpFailure is not null)
+            throw pumpFailure;
+    }
+
+    private async Task TerminateAndDrainAsync()
+    {
+        if (Volatile.Read(ref _processStarted) == 0)
+            return;
+
+        try
+        {
+            if (!_process.HasExited)
+                _process.Kill();
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        var completion = _completionTask;
+        if (completion is not null)
+        {
+            try
+            {
+                await completion.WaitAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // The startup failure remains the meaningful error for the caller.
+            }
+        }
+    }
+
+    private void AddLogHistory(string log)
+    {
+        _logHistory.Enqueue(log);
+        const int maxLogHistory = 500;
+        while (_logHistory.Count > maxLogHistory)
+            _logHistory.TryDequeue(out _);
+    }
+
+    private async Task PublishRunningAsync(CancellationToken cancellationToken)
+    {
+        await _statusGate.WaitAsync(CancellationToken.None);
+        try
+        {
+            if (Volatile.Read(ref _finalized) != 0 || _process.HasExited || Interlocked.Exchange(ref _runningPublished, 1) != 0)
+                return;
+
+            await ChangeStatusAsync(InstanceStatus.Running, cancellationToken);
+        }
+        finally
+        {
+            _statusGate.Release();
+        }
+    }
+
+    private async Task PublishStoppedAsync()
+    {
+        await _statusGate.WaitAsync(CancellationToken.None);
+        try
+        {
+            Volatile.Write(ref _finalized, 1);
+            await ChangeStatusAsync(InstanceStatus.Stopped, CancellationToken.None);
+        }
+        finally
+        {
+            _statusGate.Release();
+        }
+    }
+
+    private async Task PublishStatusAsync(InstanceStatus newStatus, CancellationToken cancellationToken)
+    {
+        await _statusGate.WaitAsync(CancellationToken.None);
+        try
+        {
+            if (Volatile.Read(ref _finalized) != 0)
+                return;
+
+            await ChangeStatusAsync(newStatus, cancellationToken);
+        }
+        finally
+        {
+            _statusGate.Release();
+        }
+    }
+
+    private Task ChangeStatusAsync(InstanceStatus newStatus, CancellationToken cancellationToken)
+    {
+        Status = newStatus;
+        return InvokeAsync(OnStatusChanged, newStatus, cancellationToken);
+    }
+
+    private static async Task InvokeAsync<T>(
+        Func<T, CancellationToken, Task>? handlers,
+        T value,
+        CancellationToken cancellationToken)
+    {
+        if (handlers is null)
+            return;
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Func<T, CancellationToken, Task>>())
+            await handler(value, cancellationToken);
     }
 
     public class ProcessMonitor
     {
-        public static readonly Regex DonePattern = new("Done \\(\\d+\\.\\d{1,3}s\\)! For help, type [\"']help[\"']$",
+        public static readonly Regex DonePattern = new(
+            "Done \\(\\d+\\.\\d{1,3}s\\)! For help, type [\"']help[\"']$",
             RegexOptions.Compiled);
 
         private readonly IAsyncLazyCell<(long Memory, double Cpu)> _monitor;
 
-        public ProcessMonitor(InstanceProcess process, bool isMcServer, int freq = 2000)
+        public ProcessMonitor(InstanceProcess process, int freq = 2000)
         {
             _monitor = new AsyncTimedLazyCell<(long Memory, double Cpu)>(() =>
             {
-                if (process.Status == InstanceStatus.Running)
+                if (process.Status == InstanceStatus.Running &&
+                    process.ServerProcessId != -1 &&
+                    !process.HasExit)
                 {
-                    if (process.ServerProcessId != -1 && !process.HasExit)
-                        return ProcessInfo.GetProcessUsageAsync(process.ServerProcessId);
+                    return ProcessInfo.GetProcessUsageAsync(process.ServerProcessId);
                 }
 
                 return Task.FromResult((0L, 0.0));
             }, TimeSpan.FromMilliseconds(freq));
-
-            if (isMcServer)
-                // 如果是mc服务器, 那么监听输出, 更具输出内容判断状态
-                process._process.OutputDataReceived += (_, args) =>
-                {
-                    var msg = args.Data;
-
-                    if (msg is null) return;
-
-                    if (DonePattern.IsMatch(msg.TrimEnd()))
-                        process.ChangeStatus(InstanceStatus.Running);
-                    else if (msg.Contains("Minecraft has crashed")) process.ChangeStatus(InstanceStatus.Crashed);
-                };
-            else
-                // 如果不是mc服务器, 那么直接将状态置为运行
-                process.OnProcessStarted += () => process.ChangeStatus(InstanceStatus.Running);
-
-            process._process.Exited += (_, args) => process.ChangeStatus(InstanceStatus.Stopped);
         }
 
         public async Task<InstancePerformanceCounter> GetMonitorData()

@@ -14,8 +14,8 @@ internal sealed class InstanceDomainEventBridge : IDisposable
     {
         _manager = manager;
         _domainEvents = domainEvents;
-        _manager.InstanceLogReceived += OnInstanceLog;
-        _manager.InstanceStatusChanged += OnInstanceStatusChanged;
+        _manager.InstanceLogReceived += OnInstanceLogAsync;
+        _manager.InstanceStatusChanged += OnInstanceStatusChangedAsync;
     }
 
     public void Dispose()
@@ -23,17 +23,27 @@ internal sealed class InstanceDomainEventBridge : IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
 
-        _manager.InstanceLogReceived -= OnInstanceLog;
-        _manager.InstanceStatusChanged -= OnInstanceStatusChanged;
+        _manager.InstanceLogReceived -= OnInstanceLogAsync;
+        _manager.InstanceStatusChanged -= OnInstanceStatusChangedAsync;
     }
 
-    private void OnInstanceLog(Guid instanceId, string log)
+    private async Task OnInstanceLogAsync(
+        Guid instanceId,
+        string log,
+        CancellationToken cancellationToken)
     {
-        _domainEvents.Publish(new InstanceLogDomainEvent(instanceId, log));
+        await _domainEvents.PublishAsync(
+            new InstanceLogDomainEvent(instanceId, log),
+            cancellationToken);
     }
 
-    private void OnInstanceStatusChanged(Guid instanceId, InstanceStatus status)
+    private async Task OnInstanceStatusChangedAsync(
+        Guid instanceId,
+        InstanceStatus status,
+        CancellationToken cancellationToken)
     {
-        _domainEvents.Publish(new InstanceStatusChangedDomainEvent(instanceId, status));
+        await _domainEvents.PublishAsync(
+            new InstanceStatusChangedDomainEvent(instanceId, status),
+            cancellationToken);
     }
 }

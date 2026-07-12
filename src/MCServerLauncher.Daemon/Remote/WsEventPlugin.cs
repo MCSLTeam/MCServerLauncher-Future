@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Serialization;
 using StjJsonSerializer = System.Text.Json.JsonSerializer;
@@ -14,25 +15,42 @@ using TouchSocket.Sockets;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
+internal delegate Task LegacyWebSocketSendAsync(
+    WsContext context,
+    byte[] utf8Payload,
+    CancellationToken cancellationToken);
+
+public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin, ILegacyEventQueueParticipant
 {
     private readonly IEventService _eventService;
     private readonly Channel<(EventType, IEventMeta?, IEventData?)> _eventChannel;
     private Task? _batchProcessorTask;
-    private readonly CancellationTokenSource _cts;
+    private readonly CancellationTokenSource _sendLifetimeCts = new();
+    private readonly LegacyWebSocketSendAsync _sendAsync;
     private readonly object _startLock = new();
     private volatile bool _started;
+    private int _accepting = 1;
+    private int _disposed;
 
     private readonly record struct PreparedEventPayload(JsonPayloadBuffer? EventMeta, JsonPayloadBuffer? EventData);
     private readonly record struct BatchedEvent(EventType Type, IEventMeta? Meta, IEventData? Data);
 
     public WsEventPlugin(IEventService eventService, WsContextContainer container, IHttpService httpService)
+        : this(eventService, container, httpService, SendFrameToContextAsync)
     {
+    }
+
+    internal WsEventPlugin(
+        IEventService eventService,
+        WsContextContainer container,
+        IHttpService httpService,
+        LegacyWebSocketSendAsync sendAsync)
+    {
+        ArgumentNullException.ThrowIfNull(sendAsync);
         _eventService = eventService;
         Container = container;
         HttpService = httpService;
-        _cts = new CancellationTokenSource();
-
+        _sendAsync = sendAsync;
         _eventChannel = Channel.CreateUnbounded<(EventType, IEventMeta?, IEventData?)>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -44,6 +62,9 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 
     private void OnEventSignal(EventType e, IEventMeta? m, IEventData? d)
     {
+        if (Volatile.Read(ref _accepting) == 0)
+            return;
+
         EnsureStarted();
         _eventChannel.Writer.TryWrite((e, m, d));
     }
@@ -55,7 +76,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         lock (_startLock)
         {
             if (_started) return;
-            _batchProcessorTask = Task.Run(ProcessEventBatchesAsync);
+            _batchProcessorTask = ProcessEventBatchesAsync();
             _started = true;
         }
     }
@@ -67,34 +88,30 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 
         try
         {
-            while (!_cts.Token.IsCancellationRequested)
+            while (await _eventChannel.Reader.WaitToReadAsync())
             {
                 batch.Clear();
 
-                if (await _eventChannel.Reader.WaitToReadAsync(_cts.Token))
+                var deadline = DateTime.UtcNow.AddMilliseconds(batchWindowMs);
+
+                while (_eventChannel.Reader.TryRead(out var evt))
                 {
-                    var deadline = DateTime.UtcNow.AddMilliseconds(batchWindowMs);
+                    batch.Add(new BatchedEvent(evt.Item1, evt.Item2, evt.Item3));
 
-                    while (_eventChannel.Reader.TryRead(out var evt))
-                    {
-                        batch.Add(new BatchedEvent(evt.Item1, evt.Item2, evt.Item3));
-
-                        if (DateTime.UtcNow >= deadline || batch.Count >= 100)
-                            break;
-                    }
-
-                    if (batch.Count > 0)
-                        await SendBatchedEventsAsync(batch);
+                    if (DateTime.UtcNow >= deadline || batch.Count >= 100)
+                        break;
                 }
+
+                if (batch.Count > 0)
+                    await SendBatchedEventsAsync(batch, _sendLifetimeCts.Token);
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (_sendLifetimeCts.IsCancellationRequested)
         {
-            // Expected during shutdown
         }
     }
 
-    private async Task SendBatchedEventsAsync(List<BatchedEvent> batch)
+    private async Task SendBatchedEventsAsync(List<BatchedEvent> batch, CancellationToken cancellationToken)
     {
         var clientEventMap = new Dictionary<WsContext, List<(EventType, JsonPayloadBuffer?, JsonPayloadBuffer?)>>();
 
@@ -144,13 +161,16 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         var sendTasks = new List<Task>(clientEventMap.Count);
         foreach (var (context, events) in clientEventMap)
         {
-            sendTasks.Add(SendEventsToClientAsync(context.GetWebsocket(), events));
+            sendTasks.Add(SendEventsToClientAsync(context, events, cancellationToken));
         }
 
         await Task.WhenAll(sendTasks);
     }
 
-    private static async Task SendEventsToClientAsync(IWebSocket ws, List<(EventType Type, JsonPayloadBuffer? Meta, JsonPayloadBuffer? Data)> events)
+    private async Task SendEventsToClientAsync(
+        WsContext context,
+        List<(EventType Type, JsonPayloadBuffer? Meta, JsonPayloadBuffer? Data)> events,
+        CancellationToken cancellationToken)
     {
         if (events.Count == 0)
             return;
@@ -158,7 +178,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         if (events.Count == 1)
         {
             var (type, meta, data) = events[0];
-            await PrivateSendPreparedEvent(type, meta, data, ws);
+            await _sendAsync(context, BuildWirePayloadUtf8(type, meta, data), cancellationToken);
             return;
         }
 
@@ -176,7 +196,7 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         }
 
         var batchPayload = StjJsonSerializer.SerializeToUtf8Bytes(packets, DaemonRpcTypeInfoCache<EventPacket[]>.TypeInfo);
-        await SendTextFrameAsync(ws, batchPayload);
+        await _sendAsync(context, batchPayload, cancellationToken);
     }
 
     public async Task OnWebSocketClosing(IWebSocket webSocket, ClosingEventArgs e)
@@ -190,23 +210,71 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
 
     public async ValueTask DisposeAsync()
     {
-        _eventService.Signal -= OnEventSignal;
-        _cts.Cancel();
-        _eventChannel.Writer.Complete();
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
 
-        if (_batchProcessorTask is not null)
+        StopAccepting();
+        try
         {
+            await DrainAsync(CancellationToken.None);
+        }
+        finally
+        {
+            _sendLifetimeCts.Dispose();
+        }
+    }
+
+    public void StopAccepting()
+    {
+        if (Interlocked.Exchange(ref _accepting, 0) == 0)
+            return;
+
+        _eventService.Signal -= OnEventSignal;
+        _eventChannel.Writer.TryComplete();
+    }
+
+    public async Task DrainAsync(CancellationToken cancellationToken)
+    {
+        StopAccepting();
+        var processor = _batchProcessorTask;
+        if (processor is null)
+            return;
+
+        try
+        {
+            await processor.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            List<Exception>? failures = null;
             try
             {
-                await _batchProcessorTask.ConfigureAwait(false);
+                await _sendLifetimeCts.CancelAsync();
             }
-            catch (OperationCanceledException)
+            catch (Exception exception)
             {
-                // Expected during shutdown
+                (failures ??= []).Add(exception);
             }
-        }
 
-        _cts.Dispose();
+            try
+            {
+                await processor;
+            }
+            catch (OperationCanceledException) when (_sendLifetimeCts.IsCancellationRequested)
+            {
+            }
+            catch (Exception exception)
+            {
+                (failures ??= []).Add(exception);
+            }
+
+            if (failures is not null)
+                throw new AggregateException(
+                    "The legacy event queue drain cancellation or processor failed.",
+                    failures);
+
+            cancellationToken.ThrowIfCancellationRequested();
+        }
     }
 
     private static IEnumerable<WsContext> EnumerateSubscribedContexts(WsContextContainer container, EventType type, IEventMeta? meta)
@@ -223,16 +291,17 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
     private static async ValueTask PrivateSendEvent(EventType type, IEventMeta? meta, IEventData? data, IWebSocket ws)
     {
         var preparedPayload = PreparePayload(meta, data);
-        await PrivateSendPreparedEvent(type, preparedPayload.EventMeta, preparedPayload.EventData, ws);
+        await PrivateSendPreparedEvent(type, preparedPayload.EventMeta, preparedPayload.EventData, ws, CancellationToken.None);
     }
 
     private static async ValueTask PrivateSendPreparedEvent(
         EventType type,
         JsonPayloadBuffer? eventMeta,
         JsonPayloadBuffer? eventData,
-        IWebSocket ws)
+        IWebSocket ws,
+        CancellationToken cancellationToken)
     {
-        await SendTextFrameAsync(ws, BuildWirePayloadUtf8(type, eventMeta, eventData));
+        await SendTextFrameAsync(ws, BuildWirePayloadUtf8(type, eventMeta, eventData), cancellationToken);
     }
 
     private static PreparedEventPayload PreparePayload(object? meta, object? data)
@@ -251,15 +320,27 @@ public class WsEventPlugin : PluginBase, IWsPlugin, IWebSocketClosingPlugin
         return StjJsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcTypeInfoCache<EventPacket>.TypeInfo);
     }
 
-    private static async ValueTask SendTextFrameAsync(IWebSocket webSocket, byte[] utf8Payload)
+    private static async ValueTask SendTextFrameAsync(
+        IWebSocket webSocket,
+        byte[] utf8Payload,
+        CancellationToken cancellationToken)
     {
         var frame = new WSDataFrame(utf8Payload)
         {
             Opcode = WSDataType.Text,
             FIN = true
         };
-        await webSocket.SendAsync(frame);
+        await webSocket.SendAsync(frame, cancellationToken: cancellationToken);
     }
+
+    private static async Task SendFrameToContextAsync(
+        WsContext context,
+        byte[] utf8Payload,
+        CancellationToken cancellationToken)
+    {
+        await SendTextFrameAsync(context.GetWebsocket(), utf8Payload, cancellationToken);
+    }
+
     private static JsonPayloadBuffer? ToPayloadBuffer(object? payload)
     {
         if (payload is null)

@@ -1,4 +1,7 @@
 using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.Bootstrap;
+using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -12,14 +15,76 @@ internal interface IDaemonRuntimeLifecycle
 internal sealed class LocalDaemonRuntimeLifecycle(
     FileSessionCoordinator fileSessionCoordinator,
     IInstanceManager instanceManager,
+    DaemonReportPublisher reportPublisher,
+    EventTriggerService eventTriggerService,
+    LegacyDomainEventAdapter legacyDomainEventAdapter,
+    InstanceDomainEventBridge instanceDomainEventBridge,
+    LegacyEventQueueControl legacyEventQueueControl,
     ILogger<LocalDaemonRuntimeLifecycle> logger) : IDaemonRuntimeLifecycle
 {
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogDebug("Closing file sessions");
-        await fileSessionCoordinator.StopAsync();
+        // Once shutdown begins, cleanup must outlive a caller that stops waiting for it.
+        _ = cancellationToken;
+        List<Exception> failures = [];
 
-        logger.LogDebug("Stopping instances");
-        await instanceManager.StopAllInstances(cancellationToken);
+        logger.LogDebug("Stopping daemon event producers and rule consumers");
+        reportPublisher.RequestStop();
+        await StopStepAsync(
+            "drain daemon report publisher",
+            () => reportPublisher.StopAsync(CancellationToken.None),
+            failures);
+        await StopStepAsync(
+            "cancel and drain event trigger service",
+            () => eventTriggerService.StopAsync(CancellationToken.None),
+            failures);
+
+        logger.LogDebug("Stopping instances and draining process event pumps");
+        await StopStepAsync(
+            "stop instances and drain process event pumps",
+            () => instanceManager.StopAllInstances(CancellationToken.None),
+            failures);
+        await StopStepAsync(
+            "dispose instance domain-event bridge",
+            () =>
+            {
+                instanceDomainEventBridge.Dispose();
+                return Task.CompletedTask;
+            },
+            failures);
+        await StopStepAsync(
+            "drain and dispose legacy domain-event adapter",
+            () => legacyDomainEventAdapter.DisposeAsync().AsTask(),
+            failures);
+        await StopStepAsync(
+            "stop and drain legacy websocket event queue",
+            async () =>
+            {
+                legacyEventQueueControl.StopAccepting();
+                await legacyEventQueueControl.DrainAsync(CancellationToken.None);
+            },
+            failures);
+
+        logger.LogDebug("Closing file sessions");
+        await StopStepAsync("close file sessions", fileSessionCoordinator.StopAsync, failures);
+
+        if (failures.Count != 0)
+            throw new AggregateException("One or more daemon shutdown cleanup steps failed.", failures);
+    }
+
+    private async Task StopStepAsync(
+        string operation,
+        Func<Task> stopAsync,
+        List<Exception> failures)
+    {
+        try
+        {
+            await stopAsync();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to {Operation} during daemon shutdown", operation);
+            failures.Add(exception);
+        }
     }
 }

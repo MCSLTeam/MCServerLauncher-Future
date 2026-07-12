@@ -10,13 +10,13 @@ using TouchSocket.Http.WebSockets;
 
 namespace MCServerLauncher.Daemon.Remote.Event;
 
-internal sealed class LegacyDomainEventAdapter : IDisposable
+internal sealed class LegacyDomainEventAdapter : IDisposable, IAsyncDisposable
 {
+    private readonly IDomainEventPort _domainEvents;
     private readonly WsContextContainer _wsContexts;
-    private readonly ILogger<LegacyDomainEventAdapter> _logger;
-    private readonly IDisposable _logSubscription;
-    private readonly IDisposable _reportSubscription;
-    private readonly IDisposable _notificationSubscription;
+    private readonly DomainEventOwner _eventOwner;
+    private readonly OwnedTaskSupervisor _supervisor;
+    private int _stopped;
 
     public LegacyDomainEventAdapter(
         IDomainEventPort domainEvents,
@@ -24,13 +24,21 @@ internal sealed class LegacyDomainEventAdapter : IDisposable
         WsContextContainer wsContexts,
         ILogger<LegacyDomainEventAdapter> logger)
     {
+        _domainEvents = domainEvents;
         _wsContexts = wsContexts;
-        _logger = logger;
-        _logSubscription = domainEvents.Subscribe<InstanceLogDomainEvent>(domainEvent =>
-            eventService.OnInstanceLog(domainEvent.InstanceId, domainEvent.Log));
-        _reportSubscription = domainEvents.Subscribe<DaemonReportDomainEvent>(domainEvent =>
-            eventService.OnDaemonReport(ToLegacyReport(domainEvent)));
-        _notificationSubscription = domainEvents.Subscribe<ClientNotificationDomainEvent>(OnClientNotification);
+        _eventOwner = domainEvents.CreateOwner(nameof(LegacyDomainEventAdapter));
+        _supervisor = new OwnedTaskSupervisor(nameof(LegacyDomainEventAdapter), logger);
+        domainEvents.Subscribe<InstanceLogDomainEvent>(_eventOwner, (domainEvent, _) =>
+        {
+            eventService.OnInstanceLog(domainEvent.InstanceId, domainEvent.Log);
+            return ValueTask.CompletedTask;
+        });
+        domainEvents.Subscribe<DaemonReportDomainEvent>(_eventOwner, (domainEvent, _) =>
+        {
+            eventService.OnDaemonReport(ToLegacyReport(domainEvent));
+            return ValueTask.CompletedTask;
+        });
+        domainEvents.Subscribe<ClientNotificationDomainEvent>(_eventOwner, OnClientNotification);
     }
 
     public void Dispose()
@@ -40,36 +48,55 @@ internal sealed class LegacyDomainEventAdapter : IDisposable
 
     public void Stop()
     {
-        _logSubscription.Dispose();
-        _reportSubscription.Dispose();
-        _notificationSubscription.Dispose();
+        if (Interlocked.Exchange(ref _stopped, 1) != 0)
+            return;
+
+        _domainEvents.DisposeOwner(_eventOwner);
+        _supervisor.RequestStop();
     }
 
-    private void OnClientNotification(ClientNotificationDomainEvent domainEvent)
+    internal async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        _ = FanOutNotificationAsync(domainEvent);
+        Stop();
+        await _supervisor.DrainAsync(cancellationToken);
     }
 
-    private async Task FanOutNotificationAsync(ClientNotificationDomainEvent domainEvent)
+    public async ValueTask DisposeAsync()
     {
-        try
+        Stop();
+        await _supervisor.DisposeAsync();
+    }
+
+    private ValueTask OnClientNotification(
+        ClientNotificationDomainEvent domainEvent,
+        CancellationToken cancellationToken)
+    {
+        _supervisor.Schedule(
+            $"notification:{domainEvent.RuleId}",
+            token => FanOutNotificationAsync(domainEvent, token),
+            cancellationToken);
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task FanOutNotificationAsync(
+        ClientNotificationDomainEvent domainEvent,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var packet = new NotificationPacket
         {
-            var packet = new NotificationPacket
-            {
-                Title = domainEvent.Title,
-                Message = domainEvent.Message,
-                Severity = domainEvent.Severity,
-                SourceInstanceId = domainEvent.SourceInstanceId,
-                RuleId = domainEvent.RuleId,
-                Timestamp = domainEvent.Timestamp
-            };
-            var payload = JsonSerializer.SerializeToUtf8Bytes(packet, DaemonRpcTypeInfoCache<NotificationPacket>.TypeInfo);
-            await Task.WhenAll(_wsContexts.Select(context => SendTextFrameAsync(context.Value.GetWebsocket(), payload)));
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to fan out a legacy notification event");
-        }
+            Title = domainEvent.Title,
+            Message = domainEvent.Message,
+            Severity = domainEvent.Severity,
+            SourceInstanceId = domainEvent.SourceInstanceId,
+            RuleId = domainEvent.RuleId,
+            Timestamp = domainEvent.Timestamp
+        };
+        var payload = JsonSerializer.SerializeToUtf8Bytes(
+            packet,
+            DaemonRpcTypeInfoCache<NotificationPacket>.TypeInfo);
+        await Task.WhenAll(_wsContexts.Select(context =>
+            SendTextFrameAsync(context.Value.GetWebsocket(), payload, cancellationToken)));
     }
 
     private static DaemonReport ToLegacyReport(DaemonReportDomainEvent domainEvent)
@@ -90,13 +117,16 @@ internal sealed class LegacyDomainEventAdapter : IDisposable
         return new DriveInformation(drive.DriveFormat, drive.TotalBytes, drive.FreeBytes, drive.Name);
     }
 
-    private static async Task SendTextFrameAsync(IWebSocket webSocket, byte[] utf8Payload)
+    private static async Task SendTextFrameAsync(
+        IWebSocket webSocket,
+        byte[] utf8Payload,
+        CancellationToken cancellationToken)
     {
         var frame = new WSDataFrame(utf8Payload)
         {
             Opcode = WSDataType.Text,
             FIN = true
         };
-        await webSocket.SendAsync(frame);
+        await webSocket.SendAsync(frame, cancellationToken: cancellationToken);
     }
 }

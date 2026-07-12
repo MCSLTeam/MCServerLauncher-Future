@@ -11,7 +11,7 @@ using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Event;
 
-internal sealed class EventTriggerService : IDisposable
+internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
 {
     private static readonly TimeSpan RestartDelay = TimeSpan.FromSeconds(5);
     private const int Stopped = 0;
@@ -21,20 +21,31 @@ internal sealed class EventTriggerService : IDisposable
     private readonly IDaemonApplication _application;
     private readonly IDomainEventPort _domainEvents;
     private readonly ILogger<EventTriggerService> _logger;
+    private readonly TimeSpan _restartDelay;
     private readonly object _lifecycleGate = new();
-    private IDisposable? _logSubscription;
-    private IDisposable? _statusSubscription;
-    private CancellationTokenSource? _runCancellation;
+    private readonly List<OwnedTaskSupervisor> _retiredSupervisors = [];
+    private DomainEventOwner? _eventOwner;
+    private OwnedTaskSupervisor? _supervisor;
     private int _state;
 
     public EventTriggerService(
         IDaemonApplication application,
         IDomainEventPort domainEvents,
         ILogger<EventTriggerService> logger)
+        : this(application, domainEvents, logger, RestartDelay)
+    {
+    }
+
+    internal EventTriggerService(
+        IDaemonApplication application,
+        IDomainEventPort domainEvents,
+        ILogger<EventTriggerService> logger,
+        TimeSpan restartDelay)
     {
         _application = application;
         _domainEvents = domainEvents;
         _logger = logger;
+        _restartDelay = restartDelay;
         Start();
     }
 
@@ -46,88 +57,109 @@ internal sealed class EventTriggerService : IDisposable
                 return;
             ObjectDisposedException.ThrowIf(_state == Disposed, this);
 
-            var runCancellation = new CancellationTokenSource();
-            _runCancellation = runCancellation;
-            _logSubscription = _domainEvents.Subscribe<InstanceLogDomainEvent>(domainEvent =>
-                OnInstanceLog(domainEvent, runCancellation.Token));
-            _statusSubscription = _domainEvents.Subscribe<InstanceStatusChangedDomainEvent>(domainEvent =>
-                OnInstanceStatusChanged(domainEvent, runCancellation.Token));
+            var eventOwner = _domainEvents.CreateOwner(nameof(EventTriggerService));
+            var supervisor = new OwnedTaskSupervisor(nameof(EventTriggerService), _logger);
+            _eventOwner = eventOwner;
+            _supervisor = supervisor;
+            _domainEvents.Subscribe<InstanceLogDomainEvent>(eventOwner, (domainEvent, cancellationToken) =>
+            {
+                supervisor.Schedule(
+                    $"log:{domainEvent.InstanceId}",
+                    token => ExecuteTriggeredRulesAsync(
+                        domainEvent.InstanceId,
+                        rule => MatchesConsoleOutput(rule, domainEvent.Log),
+                        token),
+                    cancellationToken);
+                return ValueTask.CompletedTask;
+            });
+            _domainEvents.Subscribe<InstanceStatusChangedDomainEvent>(eventOwner, (domainEvent, cancellationToken) =>
+            {
+                supervisor.Schedule(
+                    $"status:{domainEvent.InstanceId}",
+                    token => ExecuteTriggeredRulesAsync(
+                        domainEvent.InstanceId,
+                        rule => MatchesStatus(rule, domainEvent.Status.ToString()),
+                        token),
+                    cancellationToken);
+                return ValueTask.CompletedTask;
+            });
             Volatile.Write(ref _state, Started);
         }
     }
 
     public void Stop()
     {
-        IDisposable? logSubscription;
-        IDisposable? statusSubscription;
-        CancellationTokenSource? runCancellation;
+        DomainEventOwner? eventOwner;
+        OwnedTaskSupervisor? supervisor;
         lock (_lifecycleGate)
         {
             if (_state != Started)
                 return;
 
             Volatile.Write(ref _state, Stopped);
-            logSubscription = _logSubscription;
-            statusSubscription = _statusSubscription;
-            runCancellation = _runCancellation;
-            _logSubscription = null;
-            _statusSubscription = null;
-            _runCancellation = null;
+            eventOwner = _eventOwner;
+            supervisor = _supervisor;
+            _eventOwner = null;
+            _supervisor = null;
+            if (supervisor is not null)
+                _retiredSupervisors.Add(supervisor);
         }
 
-        runCancellation?.Cancel();
-        logSubscription?.Dispose();
-        statusSubscription?.Dispose();
-        runCancellation?.Dispose();
+        supervisor?.RequestStop();
+        if (eventOwner is not null)
+            _domainEvents.DisposeOwner(eventOwner);
     }
 
     public void Dispose()
     {
-        IDisposable? logSubscription;
-        IDisposable? statusSubscription;
-        CancellationTokenSource? runCancellation;
+        DomainEventOwner? eventOwner;
+        OwnedTaskSupervisor? supervisor;
         lock (_lifecycleGate)
         {
             if (_state == Disposed)
                 return;
 
             Volatile.Write(ref _state, Disposed);
-            logSubscription = _logSubscription;
-            statusSubscription = _statusSubscription;
-            runCancellation = _runCancellation;
-            _logSubscription = null;
-            _statusSubscription = null;
-            _runCancellation = null;
+            eventOwner = _eventOwner;
+            supervisor = _supervisor;
+            _eventOwner = null;
+            _supervisor = null;
+            if (supervisor is not null)
+                _retiredSupervisors.Add(supervisor);
         }
 
-        runCancellation?.Cancel();
-        logSubscription?.Dispose();
-        statusSubscription?.Dispose();
-        runCancellation?.Dispose();
+        supervisor?.RequestStop();
+        if (eventOwner is not null)
+            _domainEvents.DisposeOwner(eventOwner);
     }
 
-    private void OnInstanceLog(InstanceLogDomainEvent domainEvent, CancellationToken cancellationToken)
+    internal async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        if (cancellationToken.IsCancellationRequested)
-            return;
-
-        _ = ExecuteTriggeredRulesAsync(
-            domainEvent.InstanceId,
-            rule => MatchesConsoleOutput(rule, domainEvent.Log),
-            cancellationToken);
+        Stop();
+        await DrainSupervisorsAsync(cancellationToken);
     }
 
-    private void OnInstanceStatusChanged(
-        InstanceStatusChangedDomainEvent domainEvent,
-        CancellationToken cancellationToken)
+    public async ValueTask DisposeAsync()
     {
-        if (cancellationToken.IsCancellationRequested)
-            return;
+        Dispose();
+        await DrainSupervisorsAsync(CancellationToken.None);
+    }
 
-        _ = ExecuteTriggeredRulesAsync(
-            domainEvent.InstanceId,
-            rule => MatchesStatus(rule, domainEvent.Status.ToString()),
-            cancellationToken);
+    private async Task DrainSupervisorsAsync(CancellationToken cancellationToken)
+    {
+        OwnedTaskSupervisor[] supervisors;
+        lock (_lifecycleGate)
+        {
+            supervisors = [.. _retiredSupervisors];
+        }
+
+        foreach (var supervisor in supervisors)
+        {
+            await supervisor.DrainAsync(cancellationToken);
+            await supervisor.DisposeAsync();
+            lock (_lifecycleGate)
+                _retiredSupervisors.Remove(supervisor);
+        }
     }
 
     private async Task ExecuteTriggeredRulesAsync(
@@ -316,13 +348,15 @@ internal sealed class EventTriggerService : IDisposable
                     await ExecuteStatusActionAsync(instanceId, rule.Id, changeStatus.Action, cancellationToken);
                     break;
                 case SendNotificationAction sendNotification:
-                    _domainEvents.Publish(new ClientNotificationDomainEvent(
-                        sendNotification.Title,
-                        sendNotification.Message,
-                        sendNotification.Severity,
-                        instanceId,
-                        rule.Id,
-                        DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+                    await _domainEvents.PublishAsync(
+                        new ClientNotificationDomainEvent(
+                            sendNotification.Title,
+                            sendNotification.Message,
+                            sendNotification.Severity,
+                            instanceId,
+                            rule.Id,
+                            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
+                        cancellationToken);
                     break;
                 default:
                     _logger.LogWarning(
@@ -374,7 +408,7 @@ internal sealed class EventTriggerService : IDisposable
                     instanceId,
                     ruleId,
                     "restart.stop");
-                await Task.Delay(RestartDelay, cancellationToken);
+                await Task.Delay(_restartDelay, cancellationToken);
                 LogActionFailure(
                     await _application.Instances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken),
                     instanceId,

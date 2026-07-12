@@ -5,6 +5,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -29,12 +30,12 @@ internal class InstanceManager : IInstanceManager
     /// <summary>
     /// Raw daemon-internal lifecycle stream for a later domain-event bridge.
     /// </summary>
-    internal event Action<Guid, string>? InstanceLogReceived;
+    internal event Func<Guid, string, CancellationToken, Task>? InstanceLogReceived;
 
     /// <summary>
     /// Raw daemon-internal lifecycle stream for a later domain-event bridge.
     /// </summary>
-    internal event Action<Guid, InstanceStatus>? InstanceStatusChanged;
+    internal event Func<Guid, InstanceStatus, CancellationToken, Task>? InstanceStatusChanged;
 
     internal IInstanceSnapshotSource InstanceSnapshotSource => _snapshotSource;
 
@@ -355,14 +356,61 @@ internal class InstanceManager : IInstanceManager
         return _instanceUpdateCoordinator.UpdateInstanceSettings(request, ct);
     }
 
-    public Task StopAllInstances(CancellationToken ct = default)
+    public async Task StopAllInstances(CancellationToken ct = default)
     {
-        foreach (var instance in RunningInstances.Values)
-            instance.Process?.WriteLine("stop");
+        _ = ct;
+        var failures = new List<Exception>();
+        var processes = new HashSet<InstanceProcess>();
+        var runningProcesses = new HashSet<InstanceProcess>();
 
-        var tasks = RunningInstances.Values.Select(instance =>
-            instance.Process?.WaitForExitAsync(ct) ?? Task.CompletedTask);
-        return Task.WhenAll(tasks);
+        foreach (var instance in Instances.Values)
+            TryCaptureProcess(instance, processes, failures);
+        foreach (var instance in RunningInstances.Values)
+        {
+            TryCaptureProcess(instance, runningProcesses, failures);
+            TryCaptureProcess(instance, processes, failures);
+        }
+
+        foreach (var process in runningProcesses)
+        {
+            try
+            {
+                process.WriteLine("stop");
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+                Log.Warning(exception, "[InstanceManager] Failed to signal instance process shutdown");
+            }
+        }
+
+        try
+        {
+            await Task.WhenAll(processes.Select(static process => process.WaitForExitAsync(CancellationToken.None)));
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        if (failures.Count != 0)
+            throw new AggregateException("One or more instance shutdown operations failed.", failures);
+    }
+
+    private static void TryCaptureProcess(
+        IInstance instance,
+        ISet<InstanceProcess> processes,
+        ICollection<Exception> failures)
+    {
+        try
+        {
+            if (instance.Process is { } process)
+                processes.Add(process);
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
     }
 
     internal void ReplaceInstance(Guid instanceId, IInstance replacement)
@@ -537,24 +585,27 @@ internal class InstanceManager : IInstanceManager
 
     private void AttachInstance(IInstance instance)
     {
-        instance.OnLog -= OnInstanceLog;
-        instance.OnLog += OnInstanceLog;
-        instance.OnStatusChanged -= OnInstanceStatusChanged;
-        instance.OnStatusChanged += OnInstanceStatusChanged;
+        instance.OnLog -= OnInstanceLogAsync;
+        instance.OnLog += OnInstanceLogAsync;
+        instance.OnStatusChanged -= OnInstanceStatusChangedAsync;
+        instance.OnStatusChanged += OnInstanceStatusChangedAsync;
     }
 
     private void DetachInstance(IInstance instance)
     {
-        instance.OnLog -= OnInstanceLog;
-        instance.OnStatusChanged -= OnInstanceStatusChanged;
+        instance.OnLog -= OnInstanceLogAsync;
+        instance.OnStatusChanged -= OnInstanceStatusChangedAsync;
     }
 
-    private void OnInstanceLog(Guid instanceId, string log)
+    private Task OnInstanceLogAsync(Guid instanceId, string log, CancellationToken cancellationToken)
     {
-        InstanceLogReceived?.Invoke(instanceId, log);
+        return InvokeAsync(InstanceLogReceived, instanceId, log, cancellationToken);
     }
 
-    private void OnInstanceStatusChanged(Guid instanceId, InstanceStatus status)
+    private async Task OnInstanceStatusChangedAsync(
+        Guid instanceId,
+        InstanceStatus status,
+        CancellationToken cancellationToken)
     {
         Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId, status.ToString());
 
@@ -567,7 +618,20 @@ internal class InstanceManager : IInstanceManager
                 _snapshotSource.Upsert(instance);
         }
 
-        InstanceStatusChanged?.Invoke(instanceId, status);
+        await InvokeAsync(InstanceStatusChanged, instanceId, status, cancellationToken);
+    }
+
+    private static async Task InvokeAsync<T>(
+        Func<Guid, T, CancellationToken, Task>? handlers,
+        Guid instanceId,
+        T value,
+        CancellationToken cancellationToken)
+    {
+        if (handlers is null)
+            return;
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Func<Guid, T, CancellationToken, Task>>())
+            await handler(instanceId, value, cancellationToken);
     }
 
     private void ReinitializeSnapshotSource()

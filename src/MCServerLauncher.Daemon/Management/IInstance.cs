@@ -10,8 +10,8 @@ public interface IInstance : IDisposable
     InstanceStatus Status { get; }
     int ServerProcessId { get; }
 
-    event Action<Guid, string>? OnLog;
-    event Action<Guid, InstanceStatus>? OnStatusChanged;
+    event Func<Guid, string, CancellationToken, Task>? OnLog;
+    event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged;
 
     Task<InstanceReport> GetReportAsync(CancellationToken ct = default);
 

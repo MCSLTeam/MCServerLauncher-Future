@@ -3,7 +3,6 @@ using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
-using Microsoft.Extensions.Logging.Abstractions;
 using LegacyInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
 
 namespace MCServerLauncher.ProtocolTests;
@@ -11,25 +10,35 @@ namespace MCServerLauncher.ProtocolTests;
 public sealed class InstanceDomainEventBridgeTests
 {
     [Fact]
-    public void InstanceManagerBridge_PublishesLogAndStatusUntilDisposed()
+    public async Task InstanceManagerBridge_PublishesLogAndStatusUntilDisposed()
     {
         var manager = new InstanceManager();
         var instance = new EventingInstance(CreateConfig());
         manager.ReplaceInstance(instance.Config.Uuid, instance);
-        var port = new DomainEventPort(NullLogger<DomainEventPort>.Instance);
+        using var portHost = DomainEventPortTestHost.Create();
+        var port = portHost.Port;
+        var owner = port.CreateOwner("bridge-test");
         var logs = new List<InstanceLogDomainEvent>();
         var statuses = new List<InstanceStatusChangedDomainEvent>();
-        using var logSubscription = port.Subscribe<InstanceLogDomainEvent>(logs.Add);
-        using var statusSubscription = port.Subscribe<InstanceStatusChangedDomainEvent>(statuses.Add);
+        port.Subscribe<InstanceLogDomainEvent>(owner, (domainEvent, _) =>
+        {
+            logs.Add(domainEvent);
+            return ValueTask.CompletedTask;
+        });
+        port.Subscribe<InstanceStatusChangedDomainEvent>(owner, (domainEvent, _) =>
+        {
+            statuses.Add(domainEvent);
+            return ValueTask.CompletedTask;
+        });
         var bridge = new InstanceDomainEventBridge(manager, port);
 
-        instance.RaiseLog("started");
-        instance.RaiseStatus(InstanceStatus.Running);
+        await instance.RaiseLogAsync("started");
+        await instance.RaiseStatusAsync(InstanceStatus.Running);
 
         bridge.Dispose();
         bridge.Dispose();
-        instance.RaiseLog("ignored");
-        instance.RaiseStatus(InstanceStatus.Stopped);
+        await instance.RaiseLogAsync("ignored");
+        await instance.RaiseStatusAsync(InstanceStatus.Stopped);
 
         var log = Assert.Single(logs);
         Assert.Equal(instance.Config.Uuid, log.InstanceId);
@@ -37,6 +46,33 @@ public sealed class InstanceDomainEventBridgeTests
         var status = Assert.Single(statuses);
         Assert.Equal(instance.Config.Uuid, status.InstanceId);
         Assert.Equal(InstanceStatus.Running, status.Status);
+        port.DisposeOwner(owner);
+    }
+
+    [Fact]
+    public async Task StatusBridge_ObservesAuthoritativeSnapshotCommitBeforePublication()
+    {
+        var manager = new InstanceManager();
+        var instance = new EventingInstance(CreateConfig());
+        manager.ReplaceInstance(instance.Config.Uuid, instance);
+        using var portHost = DomainEventPortTestHost.Create();
+        var port = portHost.Port;
+        var owner = port.CreateOwner("snapshot-order-test");
+        InstanceStatus? publishedSnapshotStatus = null;
+        port.Subscribe<InstanceStatusChangedDomainEvent>(owner, (domainEvent, _) =>
+        {
+            Assert.True(manager.InstanceSnapshotSource.Current.Value.Instances.TryGetValue(
+                domainEvent.InstanceId,
+                out var snapshot));
+            publishedSnapshotStatus = snapshot.Status;
+            return ValueTask.CompletedTask;
+        });
+        using var bridge = new InstanceDomainEventBridge(manager, port);
+
+        await instance.RaiseStatusAsync(InstanceStatus.Running);
+
+        Assert.Equal(InstanceStatus.Running, publishedSnapshotStatus);
+        port.DisposeOwner(owner);
     }
 
     private static InstanceConfig CreateConfig()
@@ -60,18 +96,18 @@ public sealed class InstanceDomainEventBridgeTests
         public InstanceProcess? Process => null;
         public InstanceStatus Status { get; private set; } = InstanceStatus.Stopped;
         public int ServerProcessId => -1;
-        public event Action<Guid, string>? OnLog;
-        public event Action<Guid, InstanceStatus>? OnStatusChanged;
+        public event Func<Guid, string, CancellationToken, Task>? OnLog;
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged;
 
-        public void RaiseLog(string log)
+        public Task RaiseLogAsync(string log)
         {
-            OnLog?.Invoke(Config.Uuid, log);
+            return OnLog?.Invoke(Config.Uuid, log, CancellationToken.None) ?? Task.CompletedTask;
         }
 
-        public void RaiseStatus(InstanceStatus status)
+        public Task RaiseStatusAsync(InstanceStatus status)
         {
             Status = status;
-            OnStatusChanged?.Invoke(Config.Uuid, status);
+            return OnStatusChanged?.Invoke(Config.Uuid, status, CancellationToken.None) ?? Task.CompletedTask;
         }
 
         public Task<LegacyInstanceReport> GetReportAsync(CancellationToken ct = default)

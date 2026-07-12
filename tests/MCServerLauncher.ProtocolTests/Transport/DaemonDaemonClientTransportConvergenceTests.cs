@@ -786,10 +786,15 @@ public class DaemonDaemonClientTransportConvergenceTests
             };
         });
 
-        var privateSendPreparedEvent = typeof(WsEventPlugin).GetMethod("PrivateSendPreparedEvent", BindingFlags.Static | BindingFlags.NonPublic)
+        var privateSendPreparedEvent = typeof(WsEventPlugin).GetMethod(
+                                      "PrivateSendPreparedEvent",
+                                      BindingFlags.Static | BindingFlags.NonPublic,
+                                      binder: null,
+                                      [typeof(EventType), typeof(JsonPayloadBuffer?), typeof(JsonPayloadBuffer?), typeof(IWebSocket), typeof(CancellationToken)],
+                                      modifiers: null)
                                       ?? throw new MissingMethodException(typeof(WsEventPlugin).FullName, "PrivateSendPreparedEvent");
 
-        var invoked = privateSendPreparedEvent.Invoke(null, [eventType, eventMeta, eventData, webSocket]);
+        var invoked = privateSendPreparedEvent.Invoke(null, [eventType, eventMeta, eventData, webSocket, CancellationToken.None]);
         switch (invoked)
         {
             case ValueTask valueTask:

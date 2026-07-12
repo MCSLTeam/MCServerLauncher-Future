@@ -24,8 +24,8 @@ public abstract class InstanceBase : DisposableObject, IInstance
     public InstanceStatus Status => Process?.Status ?? InstanceStatus.Stopped;
     public int ServerProcessId => Process?.ServerProcessId ?? -1;
 
-    public event Action<Guid, string>? OnLog;
-    public event Action<Guid, InstanceStatus>? OnStatusChanged;
+    public event Func<Guid, string, CancellationToken, Task>? OnLog;
+    public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged;
 
     public virtual async Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
     {
@@ -46,8 +46,8 @@ public abstract class InstanceBase : DisposableObject, IInstance
             if (!Process.HasExit)
                 return false;
 
-            Process.Close();
-            Process.Dispose();
+            await Process.WaitForExitAsync(ct);
+            ResetProcess(Process);
         }
 
         var startInfoResult = Config.TryGetStartInfo();
@@ -58,12 +58,24 @@ public abstract class InstanceBase : DisposableObject, IInstance
         }
 
         var startInfo = startInfoResult.Unwrap();
-        Process = new InstanceProcess(startInfo, Config.CanSafeCastTo<MinecraftInstance>());
-        Process.OnStatusChanged += status => OnStatusChanged?.Invoke(Config.Uuid, status);
-        Process.OnLog += message => OnLog?.Invoke(Config.Uuid, message);
+        var process = new InstanceProcess(startInfo, Config.CanSafeCastTo<MinecraftInstance>());
+        Process = process;
+        process.OnStatusChanged += OnProcessStatusChangedAsync;
+        process.OnLog += OnProcessLogAsync;
 
-        ct.ThrowIfCancellationRequested();
-        return await Process.StartAsync();
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+            var started = await process.StartAsync(delayToCheck, ct);
+            if (!started)
+                ResetProcess(process);
+            return started;
+        }
+        catch
+        {
+            ResetProcess(process);
+            throw;
+        }
     }
 
     public virtual void Stop()
@@ -80,5 +92,38 @@ public abstract class InstanceBase : DisposableObject, IInstance
     {
         Process?.SafeDispose();
         Process = null;
+    }
+
+    private Task OnProcessLogAsync(string message, CancellationToken cancellationToken)
+    {
+        return InvokeAsync(OnLog, Config.Uuid, message, cancellationToken);
+    }
+
+    private void ResetProcess(InstanceProcess process)
+    {
+        process.OnStatusChanged -= OnProcessStatusChangedAsync;
+        process.OnLog -= OnProcessLogAsync;
+        process.Close();
+        process.Dispose();
+        if (ReferenceEquals(Process, process))
+            Process = null;
+    }
+
+    private Task OnProcessStatusChangedAsync(InstanceStatus status, CancellationToken cancellationToken)
+    {
+        return InvokeAsync(OnStatusChanged, Config.Uuid, status, cancellationToken);
+    }
+
+    private static async Task InvokeAsync<T>(
+        Func<Guid, T, CancellationToken, Task>? handlers,
+        Guid instanceId,
+        T value,
+        CancellationToken cancellationToken)
+    {
+        if (handlers is null)
+            return;
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Func<Guid, T, CancellationToken, Task>>())
+            await handler(instanceId, value, cancellationToken);
     }
 }

@@ -33,8 +33,8 @@ public class TouchSocketHostingCompositionTests
         {
             "SetListenIPHosts(AppConfig.Get().Port)",
             "UseAspNetCoreContainer(collection)",
-            "ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(a, collection, httpService, selectedRegistry))",
-            "ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a))",
+            "ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(",
+            "ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a, legacyEventQueueControl))",
         };
 
         var positions = expectedOrder
