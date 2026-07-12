@@ -292,12 +292,14 @@ public class DaemonInboundTransportPipelineTests
 
         // The plugin registration order in ConfigurePlugins must remain exactly:
         //   1. HttpPlugin
-        //   2. UseWebSocket (with /api/v1)
-        //   3. WsBasePlugin
-        //   4. WsActionPlugin
-        //   5. WsEventPlugin
-        //   6. WsExpirationPlugin
-        //   7. UseDefaultHttpServicePlugin
+        //   2. UseWebSocket (with exact /api/v2)
+        //   3. UseWebSocket (with branch-migration /api/v1)
+        //   4. TouchSocketV2TransportPlugin
+        //   5. WsBasePlugin
+        //   6. WsActionPlugin
+        //   7. WsEventPlugin
+        //   8. WsExpirationPlugin
+        //   9. UseDefaultHttpServicePlugin
         var configPluginsStart = source.IndexOf("internal static void ConfigurePlugins", StringComparison.Ordinal);
         Assert.True(configPluginsStart >= 0, "ConfigurePlugins method not found");
 
@@ -306,7 +308,9 @@ public class DaemonInboundTransportPipelineTests
         var order = new[]
         {
             "Add<HttpPlugin>",
-            "UseWebSocket",
+            "SetUrl(TouchSocketV2TransportPlugin.Endpoint)",
+            "SetUrl(\"/api/v1\")",
+            "Add<TouchSocketV2TransportPlugin>",
             "Add<WsBasePlugin>",
             "Add<WsActionPlugin>",
             "Add<WsEventPlugin>",
@@ -342,9 +346,36 @@ public class DaemonInboundTransportPipelineTests
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
 
         // The /api/v1 path and verify handler must remain exactly as-is
-        Assert.Contains("options.SetUrl(\"/api/v1\")", source, StringComparison.Ordinal);
-        Assert.Contains("options.SetVerifyConnection(WsVerifyHandler.VerifyHandler)", source, StringComparison.Ordinal);
-        Assert.Contains("options.SetAutoPong(true)", source, StringComparison.Ordinal);
+        Assert.Contains(".SetUrl(\"/api/v1\")", source, StringComparison.Ordinal);
+        Assert.Contains("v1Options.VerifyConnection = WsVerifyHandler.VerifyHandler", source, StringComparison.Ordinal);
+        Assert.Contains(".SetAutoPong(true)", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "Inbound")]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void DaemonServiceComposition_ConfiguresExactApiV2WithoutFallback()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
+        Assert.Contains(".SetUrl(TouchSocketV2TransportPlugin.Endpoint)", source, StringComparison.Ordinal);
+        Assert.Contains("v2Options.VerifyConnection = WsVerifyHandler.VerifyV2Handler", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("fallback", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("compat", source, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void WsVerifyHandler_V2UsesExactPathAndNonLeakingStatuses()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Remote/WsVerifyHandler.cs");
+        Assert.Contains("StringComparer.Ordinal.Equals(context.Request.RelativeURL, \"/api/v2\")", source,
+            StringComparison.Ordinal);
+        Assert.Contains("SetStatus(401, \"Unauthorized\")", source, StringComparison.Ordinal);
+        Assert.Contains("SetStatus(403, \"Daemon rejected\")", source, StringComparison.Ordinal);
+        Assert.Contains("SetStatus(500, \"Internal Server Error\")", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetStatus(500, e.Message)", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -356,7 +387,7 @@ public class DaemonInboundTransportPipelineTests
     {
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Application.cs");
 
-        Assert.Contains("var endpoints = GetRemoteEndpoints();", source, StringComparison.Ordinal);
+        Assert.Contains("var endpoints = GetRemoteEndpoints(host.HttpService);", source, StringComparison.Ordinal);
         Assert.Contains("[Remote] Apifox docs connect URLs: {ConnectUrls}", source,
             StringComparison.Ordinal);
         Assert.DoesNotContain("[Remote] Apifox docs available at http://0.0.0.0:{0}/apifox.json", source,

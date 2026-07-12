@@ -19,8 +19,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 {
     internal const string Endpoint = "/api/v2";
     private readonly IDaemonApplication _application;
-    private readonly FrozenProtocolCatalog _catalog;
-    private readonly V2EventConnectionRegistry _events;
+    private readonly IFrozenProtocolCatalogAccessor _catalogAccessor;
+    private readonly V2TransportRuntime _runtime;
     private readonly IV2RpcDiagnosticSink _rpcDiagnostics;
     private readonly IV2InboundDiagnosticSink _inboundDiagnostics;
     private readonly TimeProvider _timeProvider;
@@ -28,19 +28,42 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
     private readonly ConcurrentDictionary<string, ConnectionState> _connections = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, byte> _v2Connections = new(StringComparer.Ordinal);
     private int _stopping;
+    private int _shutdownExecutionCount;
 
-    internal TouchSocketV2TransportPlugin(IDaemonApplication application, FrozenProtocolCatalog catalog,
-        V2EventConnectionRegistry events, IV2RpcDiagnosticSink rpcDiagnostics,
+    public TouchSocketV2TransportPlugin(
+        IDaemonApplication application,
+        IFrozenProtocolCatalogAccessor catalogAccessor,
+        V2TransportRuntime runtime,
+        IV2RpcDiagnosticSink rpcDiagnostics,
         IV2InboundDiagnosticSink inboundDiagnostics, TimeProvider? timeProvider = null,
         Func<Task>? beforeStartExpiry = null)
     {
         _application = application ?? throw new ArgumentNullException(nameof(application));
-        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-        _events = events ?? throw new ArgumentNullException(nameof(events));
+        _catalogAccessor = catalogAccessor ?? throw new ArgumentNullException(nameof(catalogAccessor));
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _rpcDiagnostics = rpcDiagnostics ?? throw new ArgumentNullException(nameof(rpcDiagnostics));
         _inboundDiagnostics = inboundDiagnostics ?? throw new ArgumentNullException(nameof(inboundDiagnostics));
         _timeProvider = timeProvider ?? TimeProvider.System;
         _beforeStartExpiry = beforeStartExpiry ?? (() => Task.CompletedTask);
+    }
+
+    internal TouchSocketV2TransportPlugin(
+        IDaemonApplication application,
+        FrozenProtocolCatalog catalog,
+        V2EventConnectionRegistry events,
+        IV2RpcDiagnosticSink rpcDiagnostics,
+        IV2InboundDiagnosticSink inboundDiagnostics,
+        TimeProvider? timeProvider = null,
+        Func<Task>? beforeStartExpiry = null)
+        : this(
+            application,
+            PublishedAccessor(catalog),
+            new V2TransportRuntime(PublishedAccessor(catalog), events),
+            rpcDiagnostics,
+            inboundDiagnostics,
+            timeProvider,
+            beforeStartExpiry)
+    {
     }
 
     public async Task OnWebSocketConnected(IWebSocket webSocket, HttpContextEventArgs e)
@@ -108,14 +131,16 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         ConnectionState? state = null;
         try
         {
+            var catalog = _catalogAccessor.GetRequired();
+            var events = _runtime.GetEventConnections(catalog);
             owner = new V2ConnectionOwner(sender, permissions, _timeProvider);
-            if (_events.TryAttach(connectionId, owner, out var eventEntry) != V2EventConnectionAttachResult.Attached)
+            if (events.TryAttach(connectionId, owner, out var eventEntry) != V2EventConnectionAttachResult.Attached)
                 throw new InvalidOperationException("The V2 event connection could not be attached.");
-            var filesResult = V2FileSessionConnection.Attach(_application.Files, _catalog, owner, _timeProvider);
+            var filesResult = V2FileSessionConnection.Attach(_application.Files, catalog, owner, _timeProvider);
             if (filesResult.IsErr(out _)) throw new InvalidOperationException("The V2 file connection could not be attached.");
             var files = filesResult.Unwrap();
             var context = new V2RpcConnectionContext(owner, eventEntry!.Ledger, owner.ConnectionToken, files);
-            var pipeline = new V2InboundMessagePipeline(_catalog, new V2RpcDispatcher(_catalog, _rpcDiagnostics), context, owner, files, _inboundDiagnostics);
+            var pipeline = new V2InboundMessagePipeline(catalog, new V2RpcDispatcher(catalog, _rpcDiagnostics), context, owner, files, _inboundDiagnostics);
             state = new ConnectionState(owner, pipeline);
             if (Volatile.Read(ref _stopping) != 0) throw new InvalidOperationException("The V2 transport is stopping.");
             if (!_connections.TryAdd(connectionId, state)) throw new InvalidOperationException("Duplicate V2 connection identifier.");
@@ -237,6 +262,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 
     internal int ConnectionCount => _connections.Count;
     internal int V2ConnectionMarkerCount => _v2Connections.Count;
+    internal int ShutdownExecutionCount => Volatile.Read(ref _shutdownExecutionCount);
 
     internal static bool TryAuthenticateToken(string token, TimeProvider timeProvider, out V2VerifiedToken verified) =>
         TryAuthenticateToken(token, timeProvider, JwtUtils.ValidateToken, JwtUtils.ReadToken, out verified);
@@ -262,7 +288,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 
     internal async Task ShutdownAsync()
     {
-        Interlocked.Exchange(ref _stopping, 1);
+        if (Interlocked.Exchange(ref _stopping, 1) == 0)
+            Interlocked.Increment(ref _shutdownExecutionCount);
         while (!_connections.IsEmpty)
             await Task.WhenAll(_connections.Keys.Select(id => RemoveAndCloseAsync(id, V2ConnectionCloseReason.Abort))).ConfigureAwait(false);
     }
@@ -379,6 +406,14 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
     private static string ConnectionId(IWebSocket webSocket) =>
         webSocket.Client is IHttpSessionClient client ? client.Id : throw new InvalidOperationException("WebSocket has no HTTP session client.");
 
+    private static FrozenProtocolCatalogAccessor PublishedAccessor(FrozenProtocolCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        var accessor = new FrozenProtocolCatalogAccessor();
+        accessor.Publish(catalog);
+        return accessor;
+    }
+
     private sealed class ConnectionState(V2ConnectionOwner owner, V2InboundMessagePipeline pipeline)
     {
         private readonly object _expiryGate = new();
@@ -454,6 +489,36 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 }
 
 internal readonly record struct V2VerifiedToken(Guid Jti, string Permissions, DateTimeOffset ValidTo);
+
+internal sealed class V2TransportRuntime
+{
+    private readonly object _gate = new();
+    private readonly IFrozenProtocolCatalogAccessor _catalogAccessor;
+    private V2EventConnectionRegistry? _eventConnections;
+
+    internal V2TransportRuntime(IFrozenProtocolCatalogAccessor catalogAccessor)
+        : this(catalogAccessor, null)
+    {
+    }
+
+    internal V2TransportRuntime(
+        IFrozenProtocolCatalogAccessor catalogAccessor,
+        V2EventConnectionRegistry? eventConnections)
+    {
+        _catalogAccessor = catalogAccessor ?? throw new ArgumentNullException(nameof(catalogAccessor));
+        _eventConnections = eventConnections;
+    }
+
+    internal V2EventConnectionRegistry GetEventConnections() =>
+        GetEventConnections(_catalogAccessor.GetRequired());
+
+    internal V2EventConnectionRegistry GetEventConnections(FrozenProtocolCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        lock (_gate)
+            return _eventConnections ??= new V2EventConnectionRegistry(catalog);
+    }
+}
 
 internal sealed class TouchSocketV2MessageAssembler(WebSocketMessageCombinator combinator)
 {

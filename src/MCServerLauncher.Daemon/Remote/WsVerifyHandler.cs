@@ -11,6 +11,17 @@ public static class WsVerifyHandler
     public static async Task<bool> VerifyHandler(IHttpSessionClient client, HttpContext context)
     {
         if (!context.Request.URL.StartsWith("/api/v1")) return false;
+        return await VerifyTokenAsync(context).ConfigureAwait(false);
+    }
+
+    public static async Task<bool> VerifyV2Handler(IHttpSessionClient client, HttpContext context)
+    {
+        if (!StringComparer.Ordinal.Equals(context.Request.RelativeURL, "/api/v2")) return false;
+        return await VerifyTokenAsync(context).ConfigureAwait(false);
+    }
+
+    private static async Task<bool> VerifyTokenAsync(HttpContext context)
+    {
         if (RejectWithNoReason)
         {
             await context.Response.SetStatus(403, "Daemon rejected").AnswerAsync();
@@ -27,7 +38,7 @@ public static class WsVerifyHandler
         catch (Exception e)
         {
             Log.Error(e, "[WsVerifyHandler] Verify failed");
-            await context.Response.SetStatus(500, e.Message).AnswerAsync();
+            await context.Response.SetStatus(500, "Internal Server Error").AnswerAsync();
             return false;
         }
     }
