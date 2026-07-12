@@ -2178,10 +2178,7 @@
                   "format": "uuid"
                 },
                 "snapshot": {
-                  "type": [
-                    "object",
-                    "null"
-                  ],
+                  "type": "object",
                   "properties": {
                     "instance_id": {
                       "type": "string",
@@ -2261,8 +2258,45 @@
               "required": [
                 "version",
                 "operation",
-                "instance_id",
-                "snapshot"
+                "instance_id"
+              ],
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "operation": {
+                        "const": "upsert"
+                      }
+                    },
+                    "required": [
+                      "operation"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "snapshot"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "operation": {
+                        "const": "remove"
+                      }
+                    },
+                    "required": [
+                      "operation"
+                    ]
+                  },
+                  "then": {
+                    "not": {
+                      "required": [
+                        "snapshot"
+                      ]
+                    }
+                  }
+                }
               ],
               "$id": "mcsl.schema.mcsl.event.instance.catalog.changed.data"
             }

@@ -8,6 +8,8 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Protocol;
+using InstanceStatus = MCServerLauncher.Common.ProtoType.Instance.InstanceStatus;
+using InstanceType = MCServerLauncher.Common.ProtoType.Instance.InstanceType;
 
 namespace MCServerLauncher.Daemon.ApiTests;
 
@@ -174,6 +176,38 @@ public sealed class BuiltInProtocolDefinitionTests
         Assert.Equal(OpenRpcEventFieldPresence.Omitted, report.Meta.Presence);
         Assert.Null(report.Meta.Schema);
 
+        var catalogChangeSchema = first.Events
+            .Single(@event => @event.Name == "mcsl.event.instance.catalog.changed")
+            .Data.Schema!.Value;
+        var catalogChangeRequired = catalogChangeSchema.GetProperty("required")
+            .EnumerateArray()
+            .Select(item => item.GetString()!)
+            .ToArray();
+        Assert.Equal(["version", "operation", "instance_id"], catalogChangeRequired);
+        Assert.Equal("object", catalogChangeSchema.GetProperty("properties").GetProperty("snapshot").GetProperty("type").GetString());
+
+        var catalogChangeConditions = catalogChangeSchema.GetProperty("allOf").EnumerateArray().ToArray();
+        Assert.Equal(2, catalogChangeConditions.Length);
+        AssertCatalogChangeCondition(catalogChangeConditions[0], "upsert", snapshotRequired: true);
+        AssertCatalogChangeCondition(catalogChangeConditions[1], "remove", snapshotRequired: false);
+
+        var snapshot = new InstanceCatalogItem(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "first",
+            InstanceType.MCJava,
+            "1.21.5",
+            InstanceStatus.Running);
+        var upsertJson = JsonSerializer.Serialize(
+            new InstanceCatalogChangedEventData(1, InstanceCatalogChangeOperation.Upsert, snapshot.InstanceId, snapshot),
+            BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
+        var removeJson = JsonSerializer.Serialize(
+            new InstanceCatalogChangedEventData(2, InstanceCatalogChangeOperation.Remove, snapshot.InstanceId, null),
+            BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
+        Assert.Contains("\"operation\":\"upsert\"", upsertJson, StringComparison.Ordinal);
+        Assert.Contains("\"snapshot\":", upsertJson, StringComparison.Ordinal);
+        Assert.Contains("\"operation\":\"remove\"", removeJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"snapshot\":", removeJson, StringComparison.Ordinal);
+
         var subscription = first.Methods.Single(method => method.Name == "mcsl.event.subscribe");
         Assert.Equal(["event", "meta"], subscription.Params.Select(parameter => parameter.Name));
         var eventParameter = subscription.Params.Single(parameter => parameter.Name == "event");
@@ -216,5 +250,16 @@ public sealed class BuiltInProtocolDefinitionTests
 
         Assert.Equal(JsonValueKind.Array, type.ValueKind);
         Assert.DoesNotContain("null", type.EnumerateArray().Select(element => element.GetString()));
+    }
+
+    private static void AssertCatalogChangeCondition(JsonElement condition, string operation, bool snapshotRequired)
+    {
+        var ifSchema = condition.GetProperty("if");
+        Assert.Equal(operation, ifSchema.GetProperty("properties").GetProperty("operation").GetProperty("const").GetString());
+        Assert.Equal(["operation"], ifSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()!));
+
+        var thenSchema = condition.GetProperty("then");
+        var requiredSchema = snapshotRequired ? thenSchema : thenSchema.GetProperty("not");
+        Assert.Equal(["snapshot"], requiredSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()!));
     }
 }

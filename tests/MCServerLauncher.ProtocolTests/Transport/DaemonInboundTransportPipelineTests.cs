@@ -10,6 +10,7 @@ using RustyOptions;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Runtime.CompilerServices;
 using TouchSocket.Core;
 using RResult = RustyOptions.Result;
@@ -831,6 +832,23 @@ public class DaemonInboundTransportPipelineTests
                 name,
                 schemaItem.GetProperty("schema").GetProperty("jsonSchema").GetProperty("$id").GetString());
         }
+
+        var catalogChangeDescriptor = BuiltInProtocolDefinitions.Events.Single(
+            descriptor => descriptor.Name.Value == "mcsl.event.instance.catalog.changed");
+        var runtimeCatalogChangeSchema = BuiltInProtocolDefinitions.CreateDocument("2.0.0")
+            .Events.Single(@event => @event.Name == catalogChangeDescriptor.Name.Value)
+            .Data.Schema!.Value;
+        var apifoxCatalogChangeSchema = schemaItems.Single(
+                item => item.GetProperty("name").GetString() == catalogChangeDescriptor.Documentation!.DataSchemaId)
+            .GetProperty("schema")
+            .GetProperty("jsonSchema");
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse(runtimeCatalogChangeSchema.GetRawText()),
+            JsonNode.Parse(apifoxCatalogChangeSchema.GetRawText())));
+        Assert.DoesNotContain(
+            "snapshot",
+            apifoxCatalogChangeSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(2, apifoxCatalogChangeSchema.GetProperty("allOf").GetArrayLength());
 
         var environment = Assert.Single(root.GetProperty("environments").EnumerateArray());
         Assert.Equal(

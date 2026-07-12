@@ -377,8 +377,94 @@ public static class ProtocolDocumentBuilder
             throw new InvalidOperationException($"The schema for '{typeInfo.Type}' must be explicitly modeled.");
         }
 
-        return schema as JsonObject ??
-               throw new InvalidOperationException($"The schema for '{typeInfo.Type}' must be an object schema.");
+        var objectSchema = schema as JsonObject ??
+                           throw new InvalidOperationException($"The schema for '{typeInfo.Type}' must be an object schema.");
+
+        if (typeInfo.Type == typeof(InstanceCatalogChangedEventData))
+        {
+            ApplyInstanceCatalogChangeWireSemantics(objectSchema);
+        }
+
+        return objectSchema;
+    }
+
+    private static void ApplyInstanceCatalogChangeWireSemantics(JsonObject schema)
+    {
+        const string operationPropertyName = "operation";
+        const string snapshotPropertyName = "snapshot";
+
+        var properties = schema["properties"] as JsonObject ??
+                         throw new InvalidOperationException("The instance catalog change schema must define properties.");
+        var snapshotSchema = properties[snapshotPropertyName] as JsonObject ??
+                             throw new InvalidOperationException("The instance catalog change schema must define snapshot.");
+        RemoveNullType(snapshotSchema, snapshotPropertyName);
+
+        var required = schema["required"] as JsonArray ??
+                       throw new InvalidOperationException("The instance catalog change schema must define required properties.");
+        for (var index = required.Count - 1; index >= 0; index--)
+        {
+            if (required[index]?.GetValue<string>() == snapshotPropertyName)
+            {
+                required.RemoveAt(index);
+            }
+        }
+
+        schema["allOf"] = new JsonArray(
+            CreateOperationCondition(
+                operationPropertyName,
+                GetOperationWireValue(InstanceCatalogChangeOperation.Upsert),
+                new JsonObject { ["required"] = new JsonArray(snapshotPropertyName) }),
+            CreateOperationCondition(
+                operationPropertyName,
+                GetOperationWireValue(InstanceCatalogChangeOperation.Remove),
+                new JsonObject
+                {
+                    ["not"] = new JsonObject { ["required"] = new JsonArray(snapshotPropertyName) }
+                }));
+    }
+
+    private static JsonObject CreateOperationCondition(
+        string operationPropertyName,
+        JsonNode operationWireValue,
+        JsonObject thenSchema) =>
+        new()
+        {
+            ["if"] = new JsonObject
+            {
+                ["properties"] = new JsonObject
+                {
+                    [operationPropertyName] = new JsonObject { ["const"] = operationWireValue }
+                },
+                ["required"] = new JsonArray(operationPropertyName)
+            },
+            ["then"] = thenSchema
+        };
+
+    private static JsonNode GetOperationWireValue(InstanceCatalogChangeOperation operation) =>
+        JsonSerializer.SerializeToNode(operation, BuiltInProtocolJsonContext.Default.InstanceCatalogChangeOperation) ??
+        throw new InvalidOperationException($"The wire value for '{operation}' cannot be null.");
+
+    private static void RemoveNullType(JsonObject propertySchema, string propertyName)
+    {
+        if (propertySchema["type"] is not JsonArray types)
+        {
+            throw new InvalidOperationException($"The schema for '{propertyName}' must expose nullable type alternatives.");
+        }
+
+        for (var index = types.Count - 1; index >= 0; index--)
+        {
+            if (types[index]?.GetValue<string>() == "null")
+            {
+                types.RemoveAt(index);
+            }
+        }
+
+        if (types.Count != 1)
+        {
+            throw new InvalidOperationException($"The schema for '{propertyName}' must have one non-null wire type.");
+        }
+
+        propertySchema["type"] = types[0]!.DeepClone();
     }
 
     private static int CompareRpcs(RpcDescriptor? left, RpcDescriptor? right) =>
