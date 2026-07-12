@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
@@ -213,6 +214,12 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
     [Fact]
     public void JsonRpcErrorContractsRequireValidatedErrorData()
     {
+        var errorDataTypeInfo = BuiltInProtocolJsonContext.Default.JsonRpcErrorData;
+        Assert.Equal(JsonTypeInfoKind.Object, errorDataTypeInfo.Kind);
+        Assert.Equal(
+            ["correlation_id", "daemon_error_code", "details", "execution_owner", "origin_plugin"],
+            errorDataTypeInfo.Properties.Select(property => property.Name).Order());
+
         Assert.Throws<ArgumentException>(() => new JsonRpcErrorObject(-32000, " ", new JsonRpcErrorData(null, "correlation", null, null, null)));
         Assert.Throws<ArgumentNullException>(() => new JsonRpcErrorObject(-32000, "failed", null!));
         Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, " ", null, null, null));
@@ -227,10 +234,50 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
             new JsonRpcErrorData(null, "correlation", null, null, null));
         var json = JsonSerializer.Serialize(error, BuiltInProtocolJsonContext.Default.JsonRpcErrorObject);
         Assert.Equal("{\"code\":-32000,\"message\":\"failed\",\"data\":{\"correlation_id\":\"correlation\"}}", json);
+        var roundTrip = JsonSerializer.Deserialize(json, BuiltInProtocolJsonContext.Default.JsonRpcErrorObject)!;
+        Assert.Equal("correlation", roundTrip.Data.CorrelationId);
+        Assert.Null(roundTrip.Data.DaemonErrorCode);
+        Assert.Null(roundTrip.Data.Details);
+        Assert.Null(roundTrip.Data.OriginPlugin);
+        Assert.Null(roundTrip.Data.ExecutionOwner);
+        var directRoundTrip = JsonSerializer.Deserialize(
+            "{\"correlation_id\":\"correlation\"}",
+            BuiltInProtocolJsonContext.Default.JsonRpcErrorData)!;
+        Assert.Equal("correlation", directRoundTrip.CorrelationId);
+        Assert.Null(directRoundTrip.DaemonErrorCode);
+        Assert.Null(directRoundTrip.Details);
+        Assert.Null(directRoundTrip.OriginPlugin);
+        Assert.Null(directRoundTrip.ExecutionOwner);
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"code\":-32000,\"message\":\"failed\",\"data\":{}}",
+            BuiltInProtocolJsonContext.Default.JsonRpcErrorObject));
 
-        Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(
+        var publicConstructor = Assert.Single(typeof(JsonRpcErrorData).GetConstructors());
+        Assert.All(publicConstructor.GetParameters(), parameter =>
+        {
+            Assert.False(parameter.IsOptional);
+            Assert.False(parameter.HasDefaultValue);
+        });
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
             "{\"code\":-32000,\"message\":\"failed\",\"data\":null}",
             BuiltInProtocolJsonContext.Default.JsonRpcErrorObject));
+        foreach (var explicitNullProperty in new[]
+                 {
+                     "\"daemon_error_code\":null",
+                     "\"details\":null",
+                     "\"origin_plugin\":null",
+                     "\"execution_owner\":null"
+                 })
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+                $"{{\"code\":-32000,\"message\":\"failed\",\"data\":{{\"correlation_id\":\"correlation\",{explicitNullProperty}}}}}",
+                BuiltInProtocolJsonContext.Default.JsonRpcErrorObject));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+                $"{{\"correlation_id\":\"correlation\",{explicitNullProperty}}}",
+                BuiltInProtocolJsonContext.Default.JsonRpcErrorData));
+        }
+
         Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
             "{\"code\":-32000,\"message\":\" \",\"data\":{\"correlation_id\":\"correlation\"}}",
             BuiltInProtocolJsonContext.Default.JsonRpcErrorObject));

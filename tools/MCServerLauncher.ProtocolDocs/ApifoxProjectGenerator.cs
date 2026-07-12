@@ -261,7 +261,13 @@ internal static class ApifoxProjectGenerator
 
     private static JsonArray CreateSchemaCollection(OpenRpcDocument document)
     {
-        var schemas = new List<(string Id, JsonObject Schema)>();
+        var errorDataSchema = document.Components.GetProperty("schemas").EnumerateObject().Single();
+        var schemas = new List<(string Id, JsonObject Schema)>
+        {
+            (
+                errorDataSchema.Name,
+                JsonNode.Parse(errorDataSchema.Value.GetRawText())!.AsObject())
+        };
         foreach (var method in document.Methods)
         {
             schemas.Add(($"mcsl.schema.{method.Name}.request", CreateRequestSchema(method)));

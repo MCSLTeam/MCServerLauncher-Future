@@ -78,9 +78,53 @@ public sealed class JsonRpcWireContractTests
                      "{\"jsonrpc\":\"2.0\",\"method\":\"x\",\"method\":\"y\"}"
                  })
         {
-            Assert.Throws<JsonException>(() =>
+            var exception = Assert.Throws<JsonRpcRequestParseException>(() =>
                 JsonRpcWireParser.ParseRequest(System.Text.Encoding.UTF8.GetBytes(invalid)));
+            Assert.Equal(JsonRpcRequestFailureKind.InvalidRequest, exception.FailureKind);
         }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("{")]
+    [InlineData("{\"jsonrpc\":\"2.0\"")]
+    [InlineData("@")]
+    [InlineData("{} {}")]
+    public void RequestParserClassifiesMalformedOrTrailingJsonAsParseError(string json)
+    {
+        var exception = Assert.Throws<JsonRpcRequestParseException>(() =>
+            JsonRpcWireParser.ParseRequest(System.Text.Encoding.UTF8.GetBytes(json)));
+
+        Assert.Equal(JsonRpcRequestFailureKind.ParseError, exception.FailureKind);
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("true")]
+    [InlineData("1")]
+    [InlineData("\"request\"")]
+    [InlineData("{}")]
+    [InlineData("{\"jsonrpc\":\"2.0\",\"method\":\"x\",\"params\":[]}")]
+    public void RequestParserClassifiesValidNonProfileJsonAsInvalidRequest(string json)
+    {
+        var exception = Assert.Throws<JsonRpcRequestParseException>(() =>
+            JsonRpcWireParser.ParseRequest(System.Text.Encoding.UTF8.GetBytes(json)));
+
+        Assert.Equal(JsonRpcRequestFailureKind.InvalidRequest, exception.FailureKind);
+    }
+
+    [Fact]
+    public void ObjectPayloadUsesOnlyCallerSuppliedNonGenericMetadataAndExactTypes()
+    {
+        var payload = JsonRpcWireParser.ParseRequest(System.Text.Encoding.UTF8.GetBytes(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.daemon.ping\",\"id\":1,\"params\":{}}"))
+            .Params!;
+
+        var value = payload.Deserialize(Json.EmptyRequest);
+        Assert.IsType<EmptyRequest>(value);
+        Assert.Throws<JsonException>(() => payload.Deserialize(Json.PingResult));
+        Assert.Throws<ArgumentException>(() => JsonRpcObjectPayload.From(new EmptyRequest(), Json.PingResult));
     }
 
     [Fact]

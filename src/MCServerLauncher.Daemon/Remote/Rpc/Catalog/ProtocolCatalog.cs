@@ -229,6 +229,26 @@ internal sealed class ProtocolRpcExecution<TResult>
     }
 }
 
+internal sealed class ErasedProtocolRpcExecution
+{
+    public ErasedProtocolRpcExecution(
+        Result<object, DaemonError> result,
+        ProtocolDownloadAttachment? downloadAttachment)
+    {
+        if (result.IsErr(out _) && downloadAttachment is not null)
+        {
+            throw new ArgumentException("An RPC error cannot carry a download attachment.", nameof(downloadAttachment));
+        }
+
+        Result = result;
+        DownloadAttachment = downloadAttachment;
+    }
+
+    public Result<object, DaemonError> Result { get; }
+
+    public ProtocolDownloadAttachment? DownloadAttachment { get; }
+}
+
 internal delegate Task<ProtocolRpcExecution<TResult>> ProtocolRpcHandler<TRequest, TResult>(
     ProtocolInvocationContext context,
     TRequest request,
@@ -247,6 +267,11 @@ internal abstract class RpcBinding
     public abstract Type RequestType { get; }
 
     public abstract Type ResultType { get; }
+
+    internal abstract Task<ErasedProtocolRpcExecution> InvokeAsync(
+        ProtocolInvocationContext context,
+        object request,
+        CancellationToken cancellationToken);
 
     internal abstract void ValidateTypes(RpcDescriptor descriptor);
 }
@@ -267,6 +292,27 @@ internal sealed class RpcBinding<TRequest, TResult> : RpcBinding
     public override Type RequestType => typeof(TRequest);
 
     public override Type ResultType => typeof(TResult);
+
+    internal override async Task<ErasedProtocolRpcExecution> InvokeAsync(
+        ProtocolInvocationContext context,
+        object request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.GetType() != typeof(TRequest))
+        {
+            throw new InvalidOperationException(
+                $"RPC binding request type '{request.GetType()}' does not exactly match '{typeof(TRequest)}'.");
+        }
+
+        var execution = await Handler(context, (TRequest)request, cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(execution);
+        var erasedResult = execution.Result.IsOk(out var value)
+            ? RustyOptions.Result.Ok<object, DaemonError>(value)
+            : RustyOptions.Result.Err<object, DaemonError>(execution.Result.UnwrapErr());
+        return new ErasedProtocolRpcExecution(erasedResult, execution.DownloadAttachment);
+    }
 
     internal override void ValidateTypes(RpcDescriptor descriptor)
     {
@@ -590,6 +636,12 @@ internal sealed class ProtocolCatalogBuilder
         ArgumentNullException.ThrowIfNull(descriptor);
         ProtocolCatalogNamePolicy.ValidateOwnedName(owner, descriptor.Method.Value, ProtocolCatalogEntryKind.Rpc);
         ValidateMetadata(descriptor.Permission, descriptor.RequestTypeInfo, descriptor.ResultTypeInfo, descriptor.Documentation);
+        if (descriptor.AllowNotification && descriptor.ResultTypeInfo.Type == typeof(DownloadReadResult))
+        {
+            throw new ArgumentException(
+                $"RPC descriptor '{descriptor.Method.Value}' cannot allow notifications because its success produces a download attachment.",
+                nameof(descriptor));
+        }
     }
 
     private static void ValidateEventDescriptor(ProtocolExecutionOwner owner, EventDescriptor descriptor)

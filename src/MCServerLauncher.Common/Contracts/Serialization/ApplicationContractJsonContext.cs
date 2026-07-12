@@ -10,6 +10,10 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+    AllowDuplicateProperties = false,
+    UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true,
     GenerationMode = JsonSourceGenerationMode.Metadata,
     Converters =
     [

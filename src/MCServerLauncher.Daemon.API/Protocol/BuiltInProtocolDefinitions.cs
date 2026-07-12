@@ -180,6 +180,8 @@ public static class BuiltInProtocolDefinitions
 /// </summary>
 public static class ProtocolDocumentBuilder
 {
+    internal const string JsonRpcErrorDataSchemaId = "mcsl.schema.json-rpc.error.data";
+
     public static OpenRpcDocument Create(
         OpenRpcInfo info,
         ImmutableArray<RpcDescriptor> rpcs,
@@ -208,7 +210,20 @@ public static class ProtocolDocumentBuilder
             documentEvents.Add(CreateEvent(descriptor));
         }
 
-        return new OpenRpcDocument("1.3.2", info, methods.MoveToImmutable(), documentEvents.MoveToImmutable());
+        var errorDataSchema = ExportSchema(
+            BuiltInProtocolJsonContext.Default.JsonRpcErrorData,
+            JsonRpcErrorDataSchemaId);
+        using var componentsDocument = JsonDocument.Parse(new JsonObject
+        {
+            ["schemas"] = new JsonObject
+            {
+                [JsonRpcErrorDataSchemaId] = JsonNode.Parse(errorDataSchema.GetRawText())
+            }
+        }.ToJsonString());
+        return new OpenRpcDocument("1.3.2", info, methods.MoveToImmutable(), documentEvents.MoveToImmutable())
+        {
+            JsonComponents = componentsDocument.RootElement
+        };
     }
 
     private static OpenRpcMethod CreateMethod(RpcDescriptor descriptor)
@@ -370,7 +385,11 @@ public static class ProtocolDocumentBuilder
 
         JsonNode schema = typeInfo.GetJsonSchemaAsNode(new JsonSchemaExporterOptions
         {
-            TreatNullObliviousAsNonNullable = true
+            TreatNullObliviousAsNonNullable = true,
+            TransformSchemaNode = static (context, node) =>
+                context.PropertyInfo is { IsSetNullable: false }
+                    ? ExcludeExplicitNull(node)
+                    : node
         });
         if (schema is JsonValue booleanSchema && booleanSchema.TryGetValue<bool>(out _))
         {
@@ -386,6 +405,37 @@ public static class ProtocolDocumentBuilder
         }
 
         return objectSchema;
+    }
+
+    private static JsonNode ExcludeExplicitNull(JsonNode schema)
+    {
+        if (schema is JsonValue value && value.TryGetValue<bool>(out var allowsAnyValue) && allowsAnyValue)
+        {
+            return new JsonObject
+            {
+                ["not"] = new JsonObject { ["type"] = "null" }
+            };
+        }
+
+        if (schema is not JsonObject schemaObject || schemaObject["type"] is not JsonArray types)
+        {
+            return schema;
+        }
+
+        for (var index = types.Count - 1; index >= 0; index--)
+        {
+            if (types[index]?.GetValue<string>() == "null")
+            {
+                types.RemoveAt(index);
+            }
+        }
+
+        if (types.Count == 1)
+        {
+            schemaObject["type"] = types[0]!.DeepClone();
+        }
+
+        return schemaObject;
     }
 
     private static void ApplyInstanceCatalogChangeWireSemantics(JsonObject schema)

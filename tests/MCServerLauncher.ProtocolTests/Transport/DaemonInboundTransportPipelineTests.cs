@@ -814,6 +814,7 @@ public class DaemonInboundTransportPipelineTests
                 .Select(descriptor => descriptor.Documentation!.MetaSchemaId)
                 .Where(schemaId => schemaId is not null)
                 .Select(schemaId => schemaId!))
+            .Append("mcsl.schema.json-rpc.error.data")
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
             .ToArray();
@@ -832,6 +833,32 @@ public class DaemonInboundTransportPipelineTests
                 name,
                 schemaItem.GetProperty("schema").GetProperty("jsonSchema").GetProperty("$id").GetString());
         }
+
+        var errorDataSchema = schemaItems.Single(
+                item => item.GetProperty("name").GetString() == "mcsl.schema.json-rpc.error.data")
+            .GetProperty("schema")
+            .GetProperty("jsonSchema");
+        var runtimeErrorDataSchema = BuiltInProtocolDefinitions.CreateDocument("v2")
+            .Components
+            .GetProperty("schemas")
+            .GetProperty("mcsl.schema.json-rpc.error.data");
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse(runtimeErrorDataSchema.GetRawText()),
+            JsonNode.Parse(errorDataSchema.GetRawText())));
+        Assert.Equal(
+            ["correlation_id"],
+            errorDataSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
+        Assert.False(errorDataSchema.GetProperty("additionalProperties").GetBoolean());
+        Assert.Equal(
+            ["correlation_id", "daemon_error_code", "details", "execution_owner", "origin_plugin"],
+            errorDataSchema.GetProperty("properties").EnumerateObject().Select(property => property.Name).Order());
+        var errorDataProperties = errorDataSchema.GetProperty("properties");
+        Assert.Equal("string", errorDataProperties.GetProperty("daemon_error_code").GetProperty("type").GetString());
+        Assert.Equal("object", errorDataProperties.GetProperty("origin_plugin").GetProperty("type").GetString());
+        Assert.Equal("object", errorDataProperties.GetProperty("execution_owner").GetProperty("type").GetString());
+        Assert.Equal(
+            "null",
+            errorDataProperties.GetProperty("details").GetProperty("not").GetProperty("type").GetString());
 
         var catalogChangeDescriptor = BuiltInProtocolDefinitions.Events.Single(
             descriptor => descriptor.Name.Value == "mcsl.event.instance.catalog.changed");

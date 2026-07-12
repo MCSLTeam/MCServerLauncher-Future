@@ -186,7 +186,9 @@ internal static class PublicApiText
     private static string FormatProperty(PropertyInfo property)
     {
         var getter = property.GetMethod is null ? "-" : GetVisibility(property.GetMethod);
-        var setter = property.SetMethod is null ? "-" : GetVisibility(property.SetMethod);
+        var setter = property.SetMethod is null || !IsApiVisible(property.SetMethod)
+            ? "-"
+            : GetVisibility(property.SetMethod);
         return $"property {FormatType(property.DeclaringType!)}.{property.Name}[{FormatParameters(property.GetIndexParameters())}] : {FormatType(property.PropertyType)} | get={getter} | set={setter}";
     }
 

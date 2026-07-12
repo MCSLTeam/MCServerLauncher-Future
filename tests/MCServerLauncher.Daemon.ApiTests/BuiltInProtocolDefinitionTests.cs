@@ -217,7 +217,32 @@ public sealed class BuiltInProtocolDefinitionTests
         Assert.False(metaParameter.Required);
         Assert.Contains("null", metaParameter.Schema.GetProperty("anyOf").EnumerateArray().Select(option => option.GetProperty("type").GetString()));
         Assert.Contains("object", metaParameter.Schema.GetProperty("anyOf").EnumerateArray().Select(option => option.GetProperty("type").GetString()));
-        Assert.DoesNotContain("components", firstJson, StringComparison.Ordinal);
+        var errorDataSchema = first.Components
+            .GetProperty("schemas")
+            .GetProperty("mcsl.schema.json-rpc.error.data");
+        Assert.Contains("\"components\"", firstJson, StringComparison.Ordinal);
+        Assert.Equal(
+            ["correlation_id"],
+            errorDataSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
+        Assert.False(errorDataSchema.GetProperty("additionalProperties").GetBoolean());
+        Assert.Equal(
+            BuiltInProtocolJsonContext.Default.JsonRpcErrorData.Properties
+                .Select(property => property.Name)
+                .Order(),
+            errorDataSchema.GetProperty("properties")
+                .EnumerateObject()
+                .Select(property => property.Name)
+                .Order());
+        foreach (var optionalProperty in new[]
+                 {
+                     "daemon_error_code",
+                     "details",
+                     "origin_plugin",
+                     "execution_owner"
+                 })
+        {
+            AssertSchemaRejectsNull(errorDataSchema.GetProperty("properties").GetProperty(optionalProperty));
+        }
     }
 
     [Fact]
@@ -241,7 +266,12 @@ public sealed class BuiltInProtocolDefinitionTests
 
     private static void AssertSchemaRejectsNull(JsonElement schema)
     {
-        var type = schema.GetProperty("type");
+        if (!schema.TryGetProperty("type", out var type))
+        {
+            Assert.Equal("null", schema.GetProperty("not").GetProperty("type").GetString());
+            return;
+        }
+
         if (type.ValueKind == JsonValueKind.String)
         {
             Assert.NotEqual("null", type.GetString());

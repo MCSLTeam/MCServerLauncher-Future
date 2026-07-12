@@ -201,8 +201,93 @@ public sealed class JsonRpcObjectPayload
         return new JsonRpcObjectPayload(bytes, 0, bytes.Length);
     }
 
+    public static JsonRpcObjectPayload From(object value, JsonTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        if (value.GetType() != typeInfo.Type)
+        {
+            throw new ArgumentException(
+                $"JSON metadata for '{typeInfo.Type}' cannot serialize a value of exact type '{value.GetType()}'.",
+                nameof(typeInfo));
+        }
+
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, typeInfo);
+        ValidateSingleObject(bytes);
+        return new JsonRpcObjectPayload(bytes, 0, bytes.Length);
+    }
+
+    public object Deserialize(JsonTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        ValidateMappedObjectProperties(_utf8Json.AsSpan(_offset, _length), typeInfo);
+        var value = JsonSerializer.Deserialize(_utf8Json.AsSpan(_offset, _length), typeInfo);
+        if (value is null || value.GetType() != typeInfo.Type)
+        {
+            throw new JsonException($"JSON object metadata for '{typeInfo.Type}' did not produce its exact declared type.");
+        }
+
+        return value;
+    }
+
+    private static void ValidateMappedObjectProperties(ReadOnlySpan<byte> utf8Json, JsonTypeInfo typeInfo)
+    {
+        if (typeInfo.Kind != JsonTypeInfoKind.Object)
+        {
+            return;
+        }
+
+        var reader = new Utf8JsonReader(utf8Json);
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+        {
+            throw new JsonException("A typed JSON-RPC payload must be an object.");
+        }
+
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName)
+            {
+                throw new JsonException("A typed JSON-RPC payload must contain named properties.");
+            }
+
+            var isMapped = false;
+            foreach (var property in typeInfo.Properties)
+            {
+                if (reader.ValueTextEquals(property.Name))
+                {
+                    isMapped = true;
+                    break;
+                }
+            }
+
+            if (!isMapped)
+            {
+                throw new JsonException("A typed JSON-RPC payload contains an unsupported property.");
+            }
+
+            if (!reader.Read())
+            {
+                throw new JsonException("A typed JSON-RPC payload ended before a property value.");
+            }
+
+            reader.Skip();
+        }
+    }
+
     internal static JsonRpcObjectPayload FromOwnedBuffer(byte[] utf8Json, int offset, int length)
         => new(utf8Json, offset, length);
+
+    internal bool IsEmptyObject
+    {
+        get
+        {
+            var reader = new Utf8JsonReader(_utf8Json.AsSpan(_offset, _length));
+            return reader.Read() &&
+                   reader.TokenType == JsonTokenType.StartObject &&
+                   reader.Read() &&
+                   reader.TokenType == JsonTokenType.EndObject;
+        }
+    }
 
     internal void WriteTo(Utf8JsonWriter writer) =>
         writer.WriteRawValue(_utf8Json.AsSpan(_offset, _length), skipInputValidation: false);
@@ -640,11 +725,75 @@ public sealed class JsonRpcUploadAcknowledgementNotificationJsonConverter
 /// from the caller-owned UTF-8 input into an envelope-owned buffer; concrete DTO interpretation remains
 /// catalog-driven through explicit JsonTypeInfo.
 /// </summary>
+public enum JsonRpcRequestFailureKind
+{
+    ParseError,
+    InvalidRequest
+}
+
+public sealed class JsonRpcRequestParseException : JsonException
+{
+    public JsonRpcRequestParseException(
+        JsonRpcRequestFailureKind failureKind,
+        string message,
+        Exception? innerException = null)
+        : base(message, innerException)
+    {
+        if (!Enum.IsDefined(failureKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(failureKind));
+        }
+
+        FailureKind = failureKind;
+    }
+
+    public JsonRpcRequestFailureKind FailureKind { get; }
+}
+
 public static class JsonRpcWireParser
 {
     public static JsonRpcRequestEnvelope ParseRequest(ReadOnlySpan<byte> utf8Json)
     {
         var ownedJson = utf8Json.ToArray();
+        JsonTokenType rootToken;
+        try
+        {
+            rootToken = ReadSingleRootToken(ownedJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new JsonRpcRequestParseException(
+                JsonRpcRequestFailureKind.ParseError,
+                "The JSON-RPC request is not one complete JSON value.",
+                exception);
+        }
+
+        if (rootToken != JsonTokenType.StartObject)
+        {
+            throw new JsonRpcRequestParseException(
+                JsonRpcRequestFailureKind.InvalidRequest,
+                "A JSON-RPC request must be an object.");
+        }
+
+        try
+        {
+            return ParseValidatedRequest(ownedJson);
+        }
+        catch (JsonRpcRequestParseException)
+        {
+            throw;
+        }
+        catch (JsonException exception)
+        {
+            throw new JsonRpcRequestParseException(
+                JsonRpcRequestFailureKind.InvalidRequest,
+                "The JSON value does not satisfy the JSON-RPC request profile.",
+                exception);
+        }
+    }
+
+    private static JsonRpcRequestEnvelope ParseValidatedRequest(byte[] ownedJson)
+    {
         var reader = StartObject(ownedJson, "A JSON-RPC request must be an object.");
         string? version = null;
         string? method = null;
@@ -683,6 +832,24 @@ public static class JsonRpcWireParser
         RequireVersion(version, hasVersion);
         RequireMethod(method, hasMethod, eventOnly: false);
         return new JsonRpcRequestEnvelope(method!, id, parameters);
+    }
+
+    private static JsonTokenType ReadSingleRootToken(ReadOnlySpan<byte> utf8Json)
+    {
+        var reader = new Utf8JsonReader(utf8Json);
+        if (!reader.Read())
+        {
+            throw new JsonException("A JSON document must contain one value.");
+        }
+
+        var rootToken = reader.TokenType;
+        reader.Skip();
+        if (reader.Read())
+        {
+            throw new JsonException("A JSON document cannot contain trailing values.");
+        }
+
+        return rootToken;
     }
 
     public static JsonRpcSuccessResponseEnvelope ParseSuccessResponse(ReadOnlySpan<byte> utf8Json)

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -72,7 +73,9 @@ public sealed class EventMetaFilter : IEquatable<EventMetaFilter>
 
     public static EventMetaFilter FromObject(ReadOnlySpan<byte> utf8Json)
     {
-        using var document = JsonDocument.Parse(utf8Json.ToArray());
+        using var document = JsonDocument.Parse(
+            utf8Json.ToArray(),
+            new JsonDocumentOptions { AllowDuplicateProperties = false });
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
             throw new ArgumentException("An event subscription metadata filter must be an object.", nameof(utf8Json));
@@ -125,6 +128,12 @@ public sealed class JsonRpcErrorObject
 
 public sealed class JsonRpcErrorData
 {
+    private string? _daemonErrorCode;
+    private string _correlationId = null!;
+    private JsonElement? _details;
+    private ProtocolOwnerIdentity? _originPlugin;
+    private ProtocolOwnerIdentity? _executionOwner;
+
     public JsonRpcErrorData(
         string? daemonErrorCode,
         string correlationId,
@@ -143,26 +152,79 @@ public sealed class JsonRpcErrorData
             JsonRpcErrorContractValidator.ValidateDetails(detailsValue);
         }
 
-        DaemonErrorCode = daemonErrorCode;
-        CorrelationId = correlationId;
-        Details = details?.Clone();
-        OriginPlugin = originPlugin;
-        ExecutionOwner = executionOwner;
+        _daemonErrorCode = daemonErrorCode;
+        _correlationId = correlationId;
+        _details = details?.Clone();
+        _originPlugin = originPlugin;
+        _executionOwner = executionOwner;
     }
 
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? DaemonErrorCode { get; }
+    [JsonConstructor]
+    internal JsonRpcErrorData()
+    {
+    }
 
-    public string CorrelationId { get; }
-
+    [JsonInclude]
+    [JsonPropertyName("daemon_error_code")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public JsonElement? Details { get; }
+    [DisallowNull]
+    public string? DaemonErrorCode
+    {
+        get => _daemonErrorCode;
+        internal set
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            _daemonErrorCode = value;
+        }
+    }
 
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ProtocolOwnerIdentity? OriginPlugin { get; }
+    [JsonInclude]
+    [JsonRequired]
+    [JsonPropertyName("correlation_id")]
+    public string CorrelationId
+    {
+        get => _correlationId;
+        internal set
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            _correlationId = value;
+        }
+    }
 
+    [JsonInclude]
+    [JsonPropertyName("details")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ProtocolOwnerIdentity? ExecutionOwner { get; }
+    [DisallowNull]
+    public JsonElement? Details
+    {
+        get => _details?.Clone();
+        internal set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            JsonRpcErrorContractValidator.ValidateDetails(value.Value);
+            _details = value.Value.Clone();
+        }
+    }
+
+    [JsonInclude]
+    [JsonPropertyName("origin_plugin")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [DisallowNull]
+    public ProtocolOwnerIdentity? OriginPlugin
+    {
+        get => _originPlugin;
+        internal set => _originPlugin = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    [JsonInclude]
+    [JsonPropertyName("execution_owner")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [DisallowNull]
+    public ProtocolOwnerIdentity? ExecutionOwner
+    {
+        get => _executionOwner;
+        internal set => _executionOwner = value ?? throw new ArgumentNullException(nameof(value));
+    }
 }
 
 public sealed class ProtocolOwnerIdentity
@@ -704,6 +766,8 @@ public sealed class OpenRpcEvent
 
 public sealed class OpenRpcDocument
 {
+    private JsonElement _components;
+
     public OpenRpcDocument(
         string openRpc,
         OpenRpcInfo info,
@@ -726,6 +790,8 @@ public sealed class OpenRpcDocument
         Info = info;
         Methods = methods;
         Events = events;
+        using var emptyComponents = JsonDocument.Parse("{\"schemas\":{}}");
+        _components = emptyComponents.RootElement.Clone();
     }
 
     [JsonPropertyName("openrpc")]
@@ -734,6 +800,26 @@ public sealed class OpenRpcDocument
     public OpenRpcInfo Info { get; }
 
     public ImmutableArray<OpenRpcMethod> Methods { get; }
+
+    [JsonIgnore]
+    public JsonElement Components => _components.Clone();
+
+    [JsonInclude]
+    [JsonRequired]
+    [JsonPropertyName("components")]
+    internal JsonElement JsonComponents
+    {
+        get => _components.Clone();
+        init
+        {
+            if (value.ValueKind != JsonValueKind.Object)
+            {
+                throw new ArgumentException("OpenRPC components must be an object.", nameof(value));
+            }
+
+            _components = value.Clone();
+        }
+    }
 
     [JsonPropertyName("x-mcsl-events")]
     public ImmutableArray<OpenRpcEvent> Events { get; }
