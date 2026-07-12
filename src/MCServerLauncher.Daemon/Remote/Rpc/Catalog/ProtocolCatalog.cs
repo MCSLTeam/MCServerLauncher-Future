@@ -721,41 +721,12 @@ internal static class ProtocolCatalogNamePolicy
 
     private static bool IsBuiltInName(string name, ProtocolCatalogEntryKind entryKind) => entryKind switch
     {
-        ProtocolCatalogEntryKind.Rpc => IsBuiltInRpcName(name),
-        ProtocolCatalogEntryKind.Event => IsBuiltInEventName(name),
+        ProtocolCatalogEntryKind.Rpc => BuiltInProtocolDefinitions.Rpcs.Any(
+            descriptor => StringComparer.Ordinal.Equals(descriptor.Method.Value, name)),
+        ProtocolCatalogEntryKind.Event => BuiltInProtocolDefinitions.Events.Any(
+            descriptor => StringComparer.Ordinal.Equals(descriptor.Name.Value, name)),
         _ => false
     };
-
-    private static bool IsBuiltInRpcName(string name)
-    {
-        if (StringComparer.Ordinal.Equals(name, "rpc.discover"))
-        {
-            return true;
-        }
-
-        const string prefix = "mcsl.";
-        if (!name.StartsWith(prefix, StringComparison.Ordinal) || IsBuiltInEventName(name))
-        {
-            return false;
-        }
-
-        var suffix = name.AsSpan(prefix.Length);
-        var separator = suffix.IndexOf('.');
-        return separator > 0 && separator < suffix.Length - 1;
-    }
-
-    private static bool IsBuiltInEventName(string name)
-    {
-        const string prefix = "mcsl.event.";
-        if (!name.StartsWith(prefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var suffix = name.AsSpan(prefix.Length);
-        var separator = suffix.IndexOf('.');
-        return separator > 0 && separator < suffix.Length - 1;
-    }
 }
 
 internal sealed class FrozenProtocolCatalog(

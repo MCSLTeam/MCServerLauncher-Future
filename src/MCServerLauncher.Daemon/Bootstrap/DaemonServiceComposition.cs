@@ -9,6 +9,7 @@ using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
+using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using MCServerLauncher.Daemon.Utils.Status;
@@ -75,6 +76,11 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
+        var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
+        a.RegisterSingleton(protocolCatalogAccessor);
+        a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);
+        a.RegisterSingleton(TimeProvider.System);
+        a.RegisterSingleton<BuiltInProtocolCatalogComposition>();
         a.RegisterSingleton<InstanceDomainEventBridge>();
         a.RegisterSingleton<InstanceCatalogDomainEventBridge>();
         a.RegisterSingleton<EventTriggerService>();
@@ -106,6 +112,10 @@ internal static class DaemonServiceComposition
 
     internal static void AttachDaemonLifecycle(HttpService httpService)
     {
+        // Setup completes before ServeAsync starts the HTTP/WebSocket listener, so resolving here
+        // guarantees the final catalog is frozen and published before any connection is accepted.
+        _ = httpService.Resolver.GetRequiredService<BuiltInProtocolCatalogComposition>();
+
         Application.OnStarted += () =>
         {
             httpService.Resolver.GetRequiredService<FileSessionCoordinator>().Start();

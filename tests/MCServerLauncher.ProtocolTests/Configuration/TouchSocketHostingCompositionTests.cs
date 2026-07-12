@@ -1,12 +1,14 @@
 using System.Reflection;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
+using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.ProtocolTests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -134,6 +136,22 @@ public class TouchSocketHostingCompositionTests
         Assert.Same(FileSessionCoordinator.Shared, resolver.GetRequiredService<FileSessionCoordinator>());
         Assert.NotNull(resolver.GetRequiredService<IDaemonRuntimeLifecycle>());
 
+        var catalogAccessor = resolver.GetRequiredService<IFrozenProtocolCatalogAccessor>();
+        Assert.False(catalogAccessor.TryGet(out _));
+
+        DaemonServiceComposition.AttachDaemonLifecycle(httpService);
+
+        Assert.True(catalogAccessor.TryGet(out var attachedCatalog));
+        var catalogComposition = resolver.GetRequiredService<BuiltInProtocolCatalogComposition>();
+        Assert.Same(catalogComposition, resolver.GetRequiredService<BuiltInProtocolCatalogComposition>());
+        Assert.Same(catalogComposition.Catalog, attachedCatalog);
+        Assert.Same(catalogComposition.Catalog, catalogAccessor.GetRequired());
+        Assert.Same(
+            resolver.GetRequiredService<FrozenProtocolCatalogAccessor>(),
+            catalogAccessor);
+        Assert.Equal(BuiltInProtocolDefinitions.Rpcs.Length, catalogComposition.Catalog.Rpcs.Count);
+        Assert.Equal(BuiltInProtocolDefinitions.Events.Length, catalogComposition.Catalog.Events.Count);
+
         var manager = resolver.GetRequiredService<InstanceManager>();
         Assert.Same(manager.InstanceSnapshotSource, resolver.GetRequiredService<IInstanceSnapshotSource>());
 
@@ -162,6 +180,26 @@ public class TouchSocketHostingCompositionTests
         Assert.True(configure > acquire);
         Assert.True(register > configure);
         Assert.True(start > register);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void Application_AttachesTheFrozenCatalogAfterSetupAndBeforeStartingTheListener()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Application.cs");
+        var setupMethod = source.IndexOf("public static async Task SetupAsync()", StringComparison.Ordinal);
+        var setup = source.IndexOf("await HttpService.SetupAsync(", setupMethod, StringComparison.Ordinal);
+        var attach = source.IndexOf("DaemonServiceComposition.AttachDaemonLifecycle(HttpService)", setupMethod, StringComparison.Ordinal);
+        var serveMethod = source.IndexOf("public static async Task ServeAsync()", StringComparison.Ordinal);
+        var start = source.IndexOf("await HttpService.StartAsync()", serveMethod, StringComparison.Ordinal);
+
+        Assert.True(setupMethod >= 0);
+        Assert.True(setup > setupMethod);
+        Assert.True(attach > setup);
+        Assert.True(serveMethod > attach);
+        Assert.True(start > serveMethod);
+        Assert.Equal(attach, source.LastIndexOf("DaemonServiceComposition.AttachDaemonLifecycle(HttpService)", StringComparison.Ordinal));
     }
 
     private static string ReadSourceFile(string relativePath)
