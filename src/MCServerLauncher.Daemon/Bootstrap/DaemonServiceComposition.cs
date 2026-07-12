@@ -60,6 +60,8 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton(instanceManager);
         a.RegisterSingleton<IInstanceManager>(instanceManager);
         a.RegisterSingleton<IInstanceSnapshotSource>(instanceManager.InstanceSnapshotSource);
+        a.RegisterSingleton(instanceManager.CatalogCommitFeed);
+        a.RegisterSingleton(instanceManager.MutationAdmission);
         a.RegisterSingleton(fileSessionCoordinator);
         a.RegisterSingleton<IAsyncTimedLazyCell<LegacySystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(javaRuntimeCell);
@@ -74,6 +76,7 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
         a.RegisterSingleton<InstanceDomainEventBridge>();
+        a.RegisterSingleton<InstanceCatalogDomainEventBridge>();
         a.RegisterSingleton<EventTriggerService>();
         a.RegisterSingleton<LegacyDomainEventAdapter>();
         a.RegisterSingleton<DaemonReportPublisher>();
@@ -109,6 +112,7 @@ internal static class DaemonServiceComposition
             _ = httpService.Resolver.GetRequiredService<EventTriggerService>();
             _ = httpService.Resolver.GetRequiredService<LegacyDomainEventAdapter>();
             _ = httpService.Resolver.GetRequiredService<InstanceDomainEventBridge>();
+            httpService.Resolver.GetRequiredService<InstanceCatalogDomainEventBridge>().Start();
             httpService.Resolver.GetRequiredService<DaemonReportPublisher>().Start();
             httpService.Resolver.GetRequiredService<ConsoleApplication>().Serve();
             return Task.CompletedTask;

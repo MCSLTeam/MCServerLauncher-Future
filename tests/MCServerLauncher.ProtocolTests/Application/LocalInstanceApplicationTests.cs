@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
@@ -199,7 +200,7 @@ public sealed class LocalInstanceApplicationTests
         var source = new AuthoritativeInstanceSnapshotSource(
         [
             new KeyValuePair<Guid, IInstance>(config.Uuid, instance)
-        ]);
+        ], new InstanceCatalogCommitFeed());
 
         Assert.Equal(0, source.Current.Version);
 
@@ -633,7 +634,7 @@ public sealed class LocalInstanceApplicationTests
         var instances = Enumerable.Range(0, 32)
             .Select(index => new TestInstance(CreateConfig(name: $"concurrent-{index}"), () => null))
             .ToArray();
-        var source = new AuthoritativeInstanceSnapshotSource([]);
+        var source = new AuthoritativeInstanceSnapshotSource([], new InstanceCatalogCommitFeed());
         var failures = new ConcurrentQueue<Exception>();
 
         Parallel.ForEach(instances, instance =>

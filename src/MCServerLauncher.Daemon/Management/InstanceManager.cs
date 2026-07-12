@@ -5,6 +5,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -22,6 +23,8 @@ internal class InstanceManager : IInstanceManager
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _instanceMutationGates = new();
     private readonly Lock _mutationLock = new();
     private readonly Dictionary<Guid, InstanceCreationReservation> _creationReservations = [];
+    private readonly InstanceCatalogCommitFeed _catalogCommitFeed = new();
+    private readonly InstanceMutationAdmissionGate _mutationAdmission = new();
     private AuthoritativeInstanceSnapshotSource _snapshotSource;
 
     public ConcurrentDictionary<Guid, IInstance> Instances { get; } = new();
@@ -38,6 +41,8 @@ internal class InstanceManager : IInstanceManager
     internal event Func<Guid, InstanceStatus, CancellationToken, Task>? InstanceStatusChanged;
 
     internal IInstanceSnapshotSource InstanceSnapshotSource => _snapshotSource;
+    internal InstanceCatalogCommitFeed CatalogCommitFeed => _catalogCommitFeed;
+    internal InstanceMutationAdmissionGate MutationAdmission => _mutationAdmission;
 
     public InstanceManager()
         : this(
@@ -59,12 +64,13 @@ internal class InstanceManager : IInstanceManager
         ArgumentNullException.ThrowIfNull(applyInstanceFactory);
         _instanceFactory = instanceFactory;
         _applyInstanceFactory = applyInstanceFactory;
-        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances);
+        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances, _catalogCommitFeed);
         _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this, instanceFactory);
     }
 
     public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting, CancellationToken ct = default)
     {
+        using var admission = _mutationAdmission.EnterExternal();
         ct.ThrowIfCancellationRequested();
         if (!InstanceTargetPathValidator.TryResolveTargetFile(
                 setting.GetWorkingDirectory(),
@@ -161,6 +167,7 @@ internal class InstanceManager : IInstanceManager
 
     public async Task<bool> TryRemoveInstance(Guid instanceId, CancellationToken ct = default)
     {
+        using var admission = _mutationAdmission.EnterExternal();
         using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
         IInstance removedInstance;
         string? removedDirectory;
@@ -230,6 +237,7 @@ internal class InstanceManager : IInstanceManager
 
     public async Task<IInstance?> TryStartInstance(Guid instanceId, CancellationToken ct = default)
     {
+        using var admission = _mutationAdmission.EnterExternal();
         ct.ThrowIfCancellationRequested();
         using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
         if (RunningInstances.ContainsKey(instanceId))
@@ -285,6 +293,7 @@ internal class InstanceManager : IInstanceManager
 
     public async Task<bool> TryStopInstance(Guid instanceId, CancellationToken ct = default)
     {
+        using var admission = _mutationAdmission.EnterExternal();
         using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
         if (!RunningInstances.TryRemove(instanceId, out var instance))
             return false;
@@ -305,6 +314,7 @@ internal class InstanceManager : IInstanceManager
 
     public void KillInstance(Guid instanceId)
     {
+        using var admission = _mutationAdmission.EnterExternal();
         if (!Instances.TryGetValue(instanceId, out var instance))
             return;
 
@@ -349,11 +359,12 @@ internal class InstanceManager : IInstanceManager
         return _instanceUpdateCoordinator.GetInstanceSettings(instanceId);
     }
 
-    public Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
+    public async Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
         UpdateInstanceSettingsParameter request,
         CancellationToken ct = default)
     {
-        return _instanceUpdateCoordinator.UpdateInstanceSettings(request, ct);
+        using var admission = _mutationAdmission.EnterExternal();
+        return await _instanceUpdateCoordinator.UpdateInstanceSettings(request, ct);
     }
 
     public async Task StopAllInstances(CancellationToken ct = default)
@@ -397,6 +408,15 @@ internal class InstanceManager : IInstanceManager
             throw new AggregateException("One or more instance shutdown operations failed.", failures);
     }
 
+    internal void DetachInstanceEventProducers()
+    {
+        lock (_mutationLock)
+        {
+            foreach (var instance in Instances.Values)
+                DetachInstance(instance);
+        }
+    }
+
     private static void TryCaptureProcess(
         IInstance instance,
         ISet<InstanceProcess> processes,
@@ -414,6 +434,12 @@ internal class InstanceManager : IInstanceManager
     }
 
     internal void ReplaceInstance(Guid instanceId, IInstance replacement)
+    {
+        using var admission = _mutationAdmission.EnterExternal();
+        ReplaceInstanceWithinAdmission(instanceId, replacement);
+    }
+
+    internal void ReplaceInstanceWithinAdmission(Guid instanceId, IInstance replacement)
     {
         ArgumentNullException.ThrowIfNull(replacement);
         IInstance? replacedInstance = null;
@@ -607,18 +633,23 @@ internal class InstanceManager : IInstanceManager
         InstanceStatus status,
         CancellationToken cancellationToken)
     {
-        Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId, status.ToString());
-
-        lock (_mutationLock)
+        if (!_mutationAdmission.TryEnterProducer(out var admission))
+            return;
+        using (admission)
         {
-            if (status.IsStoppedOrCrashed())
-                RunningInstances.TryRemove(instanceId, out _);
+            Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId, status.ToString());
 
-            if (Instances.TryGetValue(instanceId, out var instance))
-                _snapshotSource.Upsert(instance);
+            lock (_mutationLock)
+            {
+                if (status.IsStoppedOrCrashed())
+                    RunningInstances.TryRemove(instanceId, out _);
+
+                if (Instances.TryGetValue(instanceId, out var instance))
+                    _snapshotSource.Upsert(instance);
+            }
+
+            await InvokeAsync(InstanceStatusChanged, instanceId, status, cancellationToken);
         }
-
-        await InvokeAsync(InstanceStatusChanged, instanceId, status, cancellationToken);
     }
 
     private static async Task InvokeAsync<T>(
@@ -636,7 +667,7 @@ internal class InstanceManager : IInstanceManager
 
     private void ReinitializeSnapshotSource()
     {
-        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances);
+        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances, _catalogCommitFeed);
     }
 
     private static void RestoreStagedDirectory(string instanceDirectory, string? removedDirectory)

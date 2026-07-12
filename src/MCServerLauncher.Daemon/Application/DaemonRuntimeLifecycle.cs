@@ -14,11 +14,14 @@ internal interface IDaemonRuntimeLifecycle
 
 internal sealed class LocalDaemonRuntimeLifecycle(
     FileSessionCoordinator fileSessionCoordinator,
-    IInstanceManager instanceManager,
+    InstanceManager instanceManager,
+    InstanceMutationAdmissionGate mutationAdmission,
     DaemonReportPublisher reportPublisher,
     EventTriggerService eventTriggerService,
     LegacyDomainEventAdapter legacyDomainEventAdapter,
     InstanceDomainEventBridge instanceDomainEventBridge,
+    InstanceCatalogCommitFeed instanceCatalogCommitFeed,
+    InstanceCatalogDomainEventBridge instanceCatalogDomainEventBridge,
     LegacyEventQueueControl legacyEventQueueControl,
     ILogger<LocalDaemonRuntimeLifecycle> logger) : IDaemonRuntimeLifecycle
 {
@@ -27,6 +30,12 @@ internal sealed class LocalDaemonRuntimeLifecycle(
         // Once shutdown begins, cleanup must outlive a caller that stops waiting for it.
         _ = cancellationToken;
         List<Exception> failures = [];
+
+        logger.LogDebug("Stopping new authoritative instance mutation admission");
+        await StopStepAsync(
+            "stop and drain external instance mutations",
+            mutationAdmission.StopExternalAdmissionAndDrainAsync,
+            failures);
 
         logger.LogDebug("Stopping daemon event producers and rule consumers");
         reportPublisher.RequestStop();
@@ -45,12 +54,36 @@ internal sealed class LocalDaemonRuntimeLifecycle(
             () => instanceManager.StopAllInstances(CancellationToken.None),
             failures);
         await StopStepAsync(
+            "stop and drain instance status producers",
+            mutationAdmission.StopProducerAdmissionAndDrainAsync,
+            failures);
+        await StopStepAsync(
+            "detach instance process event producers",
+            () =>
+            {
+                instanceManager.DetachInstanceEventProducers();
+                return Task.CompletedTask;
+            },
+            failures);
+        await StopStepAsync(
             "dispose instance domain-event bridge",
             () =>
             {
                 instanceDomainEventBridge.Dispose();
                 return Task.CompletedTask;
             },
+            failures);
+        await StopStepAsync(
+            "stop instance catalog commit production",
+            () =>
+            {
+                instanceCatalogCommitFeed.CompleteProduction();
+                return Task.CompletedTask;
+            },
+            failures);
+        await StopStepAsync(
+            "drain instance catalog domain-event bridge",
+            instanceCatalogDomainEventBridge.DrainAsync,
             failures);
         await StopStepAsync(
             "drain and dispose legacy domain-event adapter",

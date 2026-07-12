@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MessagePipe;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,8 @@ internal interface IDomainEvent;
 internal sealed record InstanceLogDomainEvent(Guid InstanceId, string Log) : IDomainEvent;
 
 internal sealed record InstanceStatusChangedDomainEvent(Guid InstanceId, InstanceStatus Status) : IDomainEvent;
+
+internal sealed record InstanceCatalogChangedDomainEvent(InstanceCatalogChangedEventData Data) : IDomainEvent;
 
 internal sealed record DaemonReportDomainEvent(SystemInfo SystemInfo, long StartTimestamp) : IDomainEvent;
 
@@ -93,6 +96,8 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
     private readonly IAsyncSubscriber<InstanceLogDomainEvent> _logSubscriber;
     private readonly IAsyncPublisher<InstanceStatusChangedDomainEvent> _statusPublisher;
     private readonly IAsyncSubscriber<InstanceStatusChangedDomainEvent> _statusSubscriber;
+    private readonly IAsyncPublisher<InstanceCatalogChangedDomainEvent> _catalogPublisher;
+    private readonly IAsyncSubscriber<InstanceCatalogChangedDomainEvent> _catalogSubscriber;
     private readonly IAsyncPublisher<DaemonReportDomainEvent> _reportPublisher;
     private readonly IAsyncSubscriber<DaemonReportDomainEvent> _reportSubscriber;
     private readonly IAsyncPublisher<ClientNotificationDomainEvent> _notificationPublisher;
@@ -108,6 +113,8 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
         IAsyncSubscriber<InstanceLogDomainEvent> logSubscriber,
         IAsyncPublisher<InstanceStatusChangedDomainEvent> statusPublisher,
         IAsyncSubscriber<InstanceStatusChangedDomainEvent> statusSubscriber,
+        IAsyncPublisher<InstanceCatalogChangedDomainEvent> catalogPublisher,
+        IAsyncSubscriber<InstanceCatalogChangedDomainEvent> catalogSubscriber,
         IAsyncPublisher<DaemonReportDomainEvent> reportPublisher,
         IAsyncSubscriber<DaemonReportDomainEvent> reportSubscriber,
         IAsyncPublisher<ClientNotificationDomainEvent> notificationPublisher,
@@ -119,6 +126,8 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
         _logSubscriber = logSubscriber;
         _statusPublisher = statusPublisher;
         _statusSubscriber = statusSubscriber;
+        _catalogPublisher = catalogPublisher;
+        _catalogSubscriber = catalogSubscriber;
         _reportPublisher = reportPublisher;
         _reportSubscriber = reportSubscriber;
         _notificationPublisher = notificationPublisher;
@@ -183,6 +192,8 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
             return _logPublisher.PublishAsync(logEvent, cancellationToken);
         if (domainEvent is InstanceStatusChangedDomainEvent statusEvent)
             return _statusPublisher.PublishAsync(statusEvent, cancellationToken);
+        if (domainEvent is InstanceCatalogChangedDomainEvent catalogEvent)
+            return _catalogPublisher.PublishAsync(catalogEvent, cancellationToken);
         if (domainEvent is DaemonReportDomainEvent reportEvent)
             return _reportPublisher.PublishAsync(reportEvent, cancellationToken);
         if (domainEvent is ClientNotificationDomainEvent notificationEvent)
@@ -236,6 +247,8 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
             return _logSubscriber.Subscribe((IAsyncMessageHandler<InstanceLogDomainEvent>)handler);
         if (typeof(TEvent) == typeof(InstanceStatusChangedDomainEvent))
             return _statusSubscriber.Subscribe((IAsyncMessageHandler<InstanceStatusChangedDomainEvent>)handler);
+        if (typeof(TEvent) == typeof(InstanceCatalogChangedDomainEvent))
+            return _catalogSubscriber.Subscribe((IAsyncMessageHandler<InstanceCatalogChangedDomainEvent>)handler);
         if (typeof(TEvent) == typeof(DaemonReportDomainEvent))
             return _reportSubscriber.Subscribe((IAsyncMessageHandler<DaemonReportDomainEvent>)handler);
         if (typeof(TEvent) == typeof(ClientNotificationDomainEvent))

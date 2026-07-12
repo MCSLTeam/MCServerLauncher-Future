@@ -314,7 +314,7 @@ internal sealed class InstanceUpdateCoordinator
 
         try
         {
-            _instanceManager.ReplaceInstance(request.Id, replacement);
+            _instanceManager.ReplaceInstanceWithinAdmission(request.Id, replacement);
         }
         catch (Exception exception)
         {
