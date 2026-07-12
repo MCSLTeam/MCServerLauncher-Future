@@ -2,7 +2,7 @@
 
 > **Current authority:** 本文整体取代 2026-06-27 至 2026-06-30 的旧版增量迁移设计。2026-07-10 项目负责人在架构访谈中冻结的决策优先于旧 plan、旧 review 中的兼容性建议。
 >
-> **Plan status:** Architecture approved. Phase 0, Phase 1, Phase 2, and Phase 3 are complete and passed independent review; the Phase 3 independent Sol max final review has 0 open P0/P1/P2 findings. Phase 3 acceptance passed Daemon.ApiTests at 56/56 and Release ProtocolTests at 548/548 including the final `--no-build` gate. The recorded acceptance invocations of the Daemon.API, daemon, daemon client, and full-solution Release builds each emitted 0 warnings / 0 errors; this is not a repository-wide warning-free claim. The pre-existing ProtocolTests source `CS0105` duplicate-using warning is visible when that project rebuilds, was not introduced by Phase 3, and remains separately tracked. The ProtocolDocs `--check` output matches catalog hash `51e351a9...`; benchmark project build passed and the seven Phase 3 methods are `LookupHit`, `LookupMiss`, `PublishNormalFanOutAsync`, `PublishHandlerExceptionAsync`, `PublishCancelledDuringFanOutAsync`, `SerializeOnceThenFanOut`, and `SerializePerSubscriberThenFanOut`. A ShortRun was completed during implementation, but is not claimed as a final performance gate. `git diff --check` passed. Phase 4 is pending: resume with the release-atomic `/api/v2` transport, daemon-client/WPF cutover, and V1 deletion.
+> **Plan status:** Architecture approved. Phase 0 through Phase 3 and Phase 4A daemon V2 are complete and independently reviewed; the Phase 4A independent Sol max final review has 0 open P0/P1/P2 findings. Phase 4B daemon-client/WPF cutover and Phase 4C sole-endpoint switch/V1 deletion remain pending. The `/api/v2` TouchSocket feature is production-composed, but `/api/v1` remains a branch-internal migration path until 4C; therefore Phase 4 is not release-complete or product-complete and the branch is not releasable. Resume with Phase 4B without weakening the release-atomic Phase 4 exit.
 >
 > **Touched areas for implementation:** `docs`, `agent-docs`, `backend`, `protocol`, `serialization`, `storage`, `frontend`, `tests`, `benchmarks`, `workflow`, `integrations`.
 
@@ -754,10 +754,10 @@ PluginA.dll
 - all WPF daemon call sites
 - protocol docs/tests/benchmarks.
 
-- [ ] 实现 §11 JSON-RPC parser/dispatcher/profile/error mapping，byte-oriented hot path + source-gen STJ。
-- [ ] 实现 typed remote event bridge、subscription state、256 bounded queue、slow-consumer disconnect 和 serialization-once fan-out。
+- [x] 实现 §11 JSON-RPC parser/dispatcher/profile/error mapping，byte-oriented hot path + source-gen STJ。
+- [x] 实现 typed remote event bridge、subscription state、256 bounded queue、slow-consumer disconnect 和 serialization-once fan-out。
 - [ ] 实现 §8.3 catalog full snapshot/delta mirror；覆盖 subscribe-before-read race、version gap、duplicate conflict 与 reconnect resync。
-- [ ] 实现 versioned binary header、session ownership/offset/hash/expiry/cleanup。
+- [x] 实现 versioned binary header、session ownership/offset/hash/expiry/cleanup。
 - [ ] DaemonClient 实现 remote `IDaemonApplication`、typed event subscription、binary sessions、reconnect semantics。
 - [ ] WPF 全量切 typed application/event API；error code 映射 i18n。
 - [ ] endpoint 切到 `/api/v2`，移除 `/api/v1`。
@@ -771,9 +771,11 @@ PluginA.dll
 
 Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 release-atomic milestone，任何中间状态都不是可发布产品：
 
-1. **4A daemon V2:** protocol/dispatcher/event queue/binary session 在 transport harness 中通过，不开放兼容 endpoint。
+1. **4A daemon V2（complete）:** protocol/dispatcher/event queue/binary session 在 transport harness 中通过，不开放兼容 endpoint。
 2. **4B client cutover:** DaemonClient remote application implementation 与 WPF typed call sites 全部通过；DaemonClient 使用 `StatePublisher<InstanceCatalogSnapshot>` 维护 remote mirror。
 3. **4C deletion proof:** 切换唯一 endpoint，删除 V1/Common/client/generator 路径并通过 inventory search、full tests 与 build。
+
+**4A sub-exit:** Phase 4A daemon V2 completed across the 11 commits `b394957a^..98f07298`. Final acceptance passed Daemon.ApiTests 56/56, the real TouchSocket host test 1/1, and Release ProtocolTests plus the final Release `--no-build` gate at 782/782. The recorded daemon, full-solution, and benchmark Release builds each emitted 0 warnings / 0 errors; ProtocolDocs `--check` matched catalog hash `74268afdb2bb3dd9be54cc1edf92017f581d305270f6be201f2c033eb2f4b44f`; `git diff --check` passed. Independent Sol max final review reported 0 open P0/P1/P2. The pre-existing ProtocolTests source `CS0105` duplicate-using warning remains separately tracked and is not a Phase 4A regression. Paired V2/V1 performance validation remains a Phase 6 residual. `/api/v2` is production-composed through TouchSocket, while `/api/v1` intentionally remains a branch-internal migration path until 4C; 4B and 4C are pending, so this sub-exit is not a releasable Phase 4 or product completion.
 
 **Exit:** daemon、DaemonClient、WPF 只运行 V2；full solution/build/tests 通过；V1 code deletion manifest 清零。
 
@@ -987,3 +989,4 @@ git status --short --branch
 - 2026-07-11: Clarified the Phase 2 boundary around one daemon-internal `FileSessionCoordinator`, config side-channel deletion, immutable domain events, and V1 wire-only adapters. Phase 2 has not started; execution is paused for a runtime restart.
 - 2026-07-12: Completed Phase 2 local application core and authoritative instance-state migration with 0 open P0/P1 findings from independent Sol review. Acceptance passed the focused fixed-tree suite at 73/73 twice, Daemon.API tests at 42/42, Release protocol tests and the Release `--no-build` gate at 442/442 each, Daemon.API/daemon/full-solution Release builds at 0 warnings / 0 errors, and `git diff --check`, with no update/upload staging residue. The generated-docs check is not applicable until Phase 3 creates the currently absent `tools/MCServerLauncher.ProtocolDocs`; execution is paused before Phase 3 for a runtime restart.
 - 2026-07-12: Completed Phase 3 across the 14 commits `99c66d21^..a8671c83`: added the 38-RPC/4-event catalog with explicit `JsonTypeInfo` and application bindings; generated frozen catalog/OpenRPC/Apifox outputs; migrated daemon-local events to daemon-internal MessagePipe; added the ordered catalog feed with admission/drain ownership; composed the final runtime catalog and `rpc.discover` including a synthetic plugin definition; added the catalog/event fan-out benchmarks; corrected the conditional catalog-change schema; and removed handwritten catalog count constants. Acceptance passed Daemon.ApiTests 56/56, Release ProtocolTests and final `--no-build` at 548/548, the recorded acceptance invocations of Daemon.API/daemon/daemon-client/full-solution Release builds each at 0 warnings / 0 errors, ProtocolDocs `--check` at catalog hash `51e351a9...`, and `git diff --check`. Independent Sol max final review reported 0 open P0/P1/P2. The pre-existing ProtocolTests source `CS0105` duplicate-using warning is visible on rebuild, was not introduced by Phase 3, and remains separately tracked; Phase 4 is pending.
+- 2026-07-13: Completed and independently reviewed Phase 4A daemon V2 across `b394957a^..98f07298` with 0 open P0/P1/P2 findings. Acceptance passed Daemon.ApiTests 56/56, real TouchSocket host 1/1, Release ProtocolTests and final `--no-build` 782/782, daemon/full-solution/benchmark Release builds at 0 warnings / 0 errors, ProtocolDocs `--check` at hash `74268afdb2bb3dd9be54cc1edf92017f581d305270f6be201f2c033eb2f4b44f`, and `git diff --check`. The existing ProtocolTests `CS0105` warning and paired V2/V1 Phase 6 performance gate remain separate; 4B/4C are pending, `/api/v1` remains branch-internal, and Phase 4 is not releasable.
