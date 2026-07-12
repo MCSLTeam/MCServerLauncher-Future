@@ -570,6 +570,33 @@ public sealed class V2ConnectionOwnerTests
     }
 
     [Fact]
+    public async Task CleanupUnregistrationUsesExactIdentityAndCannotRemoveSnapshottedCleanup()
+    {
+        var sender = new RecordingSender();
+        await using var owner = new V2ConnectionOwner(sender);
+        var retained = new DelegateCleanup(static _ => ValueTask.CompletedTask);
+        var removed = new DelegateCleanup(static _ => ValueTask.CompletedTask);
+        var equalButDifferent = new DelegateCleanup(static _ => ValueTask.CompletedTask);
+        Assert.True(owner.TryRegisterCleanup(retained));
+        Assert.True(owner.TryRegisterCleanup(removed));
+        Assert.Equal(2, owner.CleanupRegistrationCount);
+
+        Assert.False(owner.TryUnregisterCleanup(equalButDifferent));
+        Assert.True(owner.TryUnregisterCleanup(removed));
+        Assert.False(owner.TryUnregisterCleanup(removed));
+        Assert.Equal(1, owner.CleanupRegistrationCount);
+
+        var close = owner.AbortAsync();
+        Assert.Equal(0, owner.CleanupRegistrationCount);
+        Assert.False(owner.TryUnregisterCleanup(retained));
+        await close.WaitAsync(TestTimeout);
+
+        Assert.Equal(1, retained.CallCount);
+        Assert.Equal(0, removed.CallCount);
+        Assert.Equal(0, equalButDifferent.CallCount);
+    }
+
+    [Fact]
     public async Task CleanupFailures_AreIsolatedAndAllCleanupsRunOnce()
     {
         var sender = new RecordingSender();

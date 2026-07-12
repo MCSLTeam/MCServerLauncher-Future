@@ -141,6 +141,29 @@ internal sealed class V2ConnectionOwner : IProtocolPermissionView, IAsyncDisposa
         }
     }
 
+    internal bool TryUnregisterCleanup(IV2ConnectionCleanup cleanup)
+    {
+        ArgumentNullException.ThrowIfNull(cleanup);
+        lock (_gate)
+        {
+            var index = _cleanups.FindIndex(candidate => ReferenceEquals(candidate, cleanup));
+            if (index < 0)
+                return false;
+
+            _cleanups.RemoveAt(index);
+            return true;
+        }
+    }
+
+    internal int CleanupRegistrationCount
+    {
+        get
+        {
+            lock (_gate)
+                return _cleanups.Count;
+        }
+    }
+
     internal Task CompleteAsync()
     {
         var runPump = false;
