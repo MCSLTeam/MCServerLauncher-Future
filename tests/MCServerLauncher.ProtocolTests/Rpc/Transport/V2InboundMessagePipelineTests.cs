@@ -135,7 +135,10 @@ public sealed class V2InboundMessagePipelineTests
             var outcome = await fixture.Pipeline.ReceiveBinaryAsync(
                 Frame(BinaryFrameKind.DownloadChunk, Guid.NewGuid(), 0, []));
             Assert.Equal(V2InboundDisposition.ConnectionAborted, outcome.Disposition);
-            await fixture.Sender.Closed.Task.WaitAsync(Timeout);
+            await AssertAndJoinCloseAsync(
+                fixture,
+                V2ConnectionCloseReason.Abort,
+                V2ConnectionStopCause.Abort);
             Assert.Equal(V2ConnectionState.Closed, fixture.Owner.State);
         }
     }
@@ -148,7 +151,10 @@ public sealed class V2InboundMessagePipelineTests
             Assert.True(fixture.Owner.TryEnqueue(V2OutboundMessage.Single(V2OutboundFrame.CopyText([1]))));
 
         var outcome = await fixture.Pipeline.ReceiveTextAsync(Utf8("{"));
-        await fixture.Sender.Closed.Task.WaitAsync(Timeout);
+        await AssertAndJoinCloseAsync(
+            fixture,
+            V2ConnectionCloseReason.SlowConsumer,
+            V2ConnectionStopCause.SlowConsumer);
 
         Assert.Equal(V2InboundDisposition.ConnectionClosing, outcome.Disposition);
         Assert.Equal(0, fixture.Sender.SendCount);
@@ -183,7 +189,10 @@ public sealed class V2InboundMessagePipelineTests
             connectionCancellation.Cancel();
             var outcome = await receive.WaitAsync(Timeout);
             Assert.Equal(V2InboundDisposition.ConnectionClosing, outcome.Disposition);
-            await fixture.Sender.Closed.Task.WaitAsync(Timeout);
+            await AssertAndJoinCloseAsync(
+                fixture,
+                V2ConnectionCloseReason.Abort,
+                V2ConnectionStopCause.Abort);
             Assert.Equal(V2ConnectionState.Closed, fixture.Owner.State);
             Assert.Equal(0, fixture.Sender.SendCount);
             Assert.Equal(1, fixture.Application.UploadCancelCalls);
@@ -196,8 +205,25 @@ public sealed class V2InboundMessagePipelineTests
         var outcome = await fixture.Pipeline.ReceiveBinaryAsync(frame);
         Assert.Equal(V2InboundDisposition.ConnectionAborted, outcome.Disposition);
         Assert.Equal(error, outcome.BinaryRead!.Error);
-        await fixture.Sender.Closed.Task.WaitAsync(Timeout);
+        await AssertAndJoinCloseAsync(
+            fixture,
+            V2ConnectionCloseReason.Abort,
+            V2ConnectionStopCause.Abort);
         Assert.Equal(V2ConnectionState.Closed, fixture.Owner.State);
+    }
+
+    private static async Task AssertAndJoinCloseAsync(
+        Fixture fixture,
+        V2ConnectionCloseReason expectedReason,
+        V2ConnectionStopCause expectedCause)
+    {
+        Assert.Equal(expectedReason, fixture.Owner.CloseReason);
+        Assert.Equal(expectedCause, fixture.Owner.DiagnosticStopCause);
+
+        await fixture.Owner.AbortAsync().WaitAsync(Timeout);
+
+        Assert.Equal(expectedReason, fixture.Owner.CloseReason);
+        Assert.Equal(expectedCause, fixture.Owner.DiagnosticStopCause);
     }
 
     private static byte[] Frame(BinaryFrameKind kind, Guid sessionId, long offset, ReadOnlySpan<byte> payload)
