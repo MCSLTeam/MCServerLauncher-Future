@@ -113,6 +113,7 @@ public sealed class JsonRpcErrorObject
         Code = code;
         Message = message;
         Data = data;
+        JsonRpcErrorContractValidator.Validate(this);
     }
 
     public int Code { get; }
@@ -132,6 +133,15 @@ public sealed class JsonRpcErrorData
         ProtocolOwnerIdentity? executionOwner)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(correlationId);
+        if (daemonErrorCode is not null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(daemonErrorCode);
+        }
+
+        if (details is { } detailsValue)
+        {
+            JsonRpcErrorContractValidator.ValidateDetails(detailsValue);
+        }
 
         DaemonErrorCode = daemonErrorCode;
         CorrelationId = correlationId;
@@ -169,6 +179,90 @@ public sealed class ProtocolOwnerIdentity
     public string Id { get; }
 
     public string Version { get; }
+}
+
+internal static class JsonRpcErrorContractValidator
+{
+    public static void Validate(JsonRpcErrorObject error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        ArgumentException.ThrowIfNullOrWhiteSpace(error.Message);
+        ArgumentNullException.ThrowIfNull(error.Data);
+        ArgumentException.ThrowIfNullOrWhiteSpace(error.Data.CorrelationId);
+
+        if (error.Data.DaemonErrorCode is not null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(error.Data.DaemonErrorCode);
+        }
+
+        if (error.Data.Details is { } details)
+        {
+            ValidateDetails(details);
+        }
+
+        ValidateOwner(error.Data.OriginPlugin);
+        ValidateOwner(error.Data.ExecutionOwner);
+    }
+
+    public static void ValidateDetails(JsonElement details)
+    {
+        if (details.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+        {
+            throw new ArgumentException("JSON-RPC error details must be a non-null JSON value.", nameof(details));
+        }
+
+        ValidateValue(details);
+    }
+
+    private static void ValidateOwner(ProtocolOwnerIdentity? owner)
+    {
+        if (owner is null)
+        {
+            return;
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner.Id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner.Version);
+    }
+
+    private static void ValidateValue(JsonElement value)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var propertyNames = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var property in value.EnumerateObject())
+                {
+                    if (!propertyNames.Add(property.Name))
+                    {
+                        throw new ArgumentException(
+                            $"JSON-RPC error details contain duplicate property '{property.Name}'.",
+                            nameof(value));
+                    }
+
+                    ValidateValue(property.Value);
+                }
+
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in value.EnumerateArray())
+                {
+                    ValidateValue(item);
+                }
+
+                break;
+            case JsonValueKind.Undefined:
+                throw new ArgumentException("JSON-RPC error details contain an undefined JSON value.", nameof(value));
+            case JsonValueKind.String:
+            case JsonValueKind.Number:
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+            case JsonValueKind.Null:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(value), value.ValueKind, "Unknown JSON value kind.");
+        }
+    }
 }
 
 public enum UploadChunkAcknowledgementStatus

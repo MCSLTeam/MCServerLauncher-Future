@@ -41,4 +41,13 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(OpenRpcEventField))]
 [JsonSerializable(typeof(OpenRpcEvent))]
 [JsonSerializable(typeof(OpenRpcDocument))]
+[JsonSerializable(typeof(JsonRpcRequestId))]
+[JsonSerializable(typeof(JsonRpcObjectPayload))]
+[JsonSerializable(typeof(JsonRpcRequestEnvelope))]
+[JsonSerializable(typeof(JsonRpcSuccessResponseEnvelope))]
+[JsonSerializable(typeof(JsonRpcErrorResponseEnvelope))]
+[JsonSerializable(typeof(JsonRpcOptionalPayload))]
+[JsonSerializable(typeof(JsonRpcRemoteEventParameters))]
+[JsonSerializable(typeof(JsonRpcRemoteEventNotification))]
+[JsonSerializable(typeof(JsonRpcUploadAcknowledgementNotification))]
 public partial class BuiltInProtocolJsonContext : JsonSerializerContext;

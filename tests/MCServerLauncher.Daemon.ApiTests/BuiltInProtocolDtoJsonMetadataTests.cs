@@ -39,7 +39,16 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
             typeof(OpenRpcMethod),
             typeof(OpenRpcEventField),
             typeof(OpenRpcEvent),
-            typeof(OpenRpcDocument)
+            typeof(OpenRpcDocument),
+            typeof(JsonRpcRequestId),
+            typeof(JsonRpcObjectPayload),
+            typeof(JsonRpcRequestEnvelope),
+            typeof(JsonRpcSuccessResponseEnvelope),
+            typeof(JsonRpcErrorResponseEnvelope),
+            typeof(JsonRpcOptionalPayload),
+            typeof(JsonRpcRemoteEventParameters),
+            typeof(JsonRpcRemoteEventNotification),
+            typeof(JsonRpcUploadAcknowledgementNotification)
         };
 
         Assert.All(wireTypes, type => Assert.NotNull(context.GetTypeInfo(type)));
@@ -207,6 +216,8 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
         Assert.Throws<ArgumentException>(() => new JsonRpcErrorObject(-32000, " ", new JsonRpcErrorData(null, "correlation", null, null, null)));
         Assert.Throws<ArgumentNullException>(() => new JsonRpcErrorObject(-32000, "failed", null!));
         Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, " ", null, null, null));
+        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(" ", "correlation", null, null, null));
+        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, "correlation", default(JsonElement), null, null));
         Assert.Throws<ArgumentException>(() => new ProtocolOwnerIdentity(" ", "1.0.0"));
         Assert.Throws<ArgumentException>(() => new ProtocolOwnerIdentity("plugin", " "));
 
