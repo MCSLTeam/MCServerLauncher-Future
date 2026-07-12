@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
@@ -93,6 +94,62 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
 
     public Task<Result<Unit, DaemonError>> CancelUploadAsync(Guid sessionId, CancellationToken cancellationToken) =>
         EndAsync(sessionId, SessionKind.Upload, UploadCancelMethod, cancelUpload: true, cancellationToken);
+
+    internal async Task<Result<Unit, DaemonError>> ReceiveUploadChunkAsync(
+        Guid sessionId,
+        long offset,
+        ReadOnlyMemory<byte> payload,
+        CancellationToken cancellationToken)
+    {
+        var acquisition = AcquireUploadWrite(sessionId, payload.Length);
+        if (acquisition.Expired is { } expired)
+            await CleanupExpiredAsync(expired).ConfigureAwait(false);
+        if (acquisition.Error is { } error)
+            return Result.Err<Unit, DaemonError>(error);
+
+        var lease = acquisition.Lease!;
+        try
+        {
+            var owned = payload.ToArray();
+            var request = new UploadChunkRequest(
+                sessionId,
+                offset,
+                ImmutableCollectionsMarshal.AsImmutableArray(owned));
+            var result = await _application.WriteUploadChunkAsync(request, cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out _) && IsUploadWriteTerminal(result.UnwrapErr()))
+                await TerminateClaimedUploadAsync(lease).ConfigureAwait(false);
+            else
+                FinishOperation(lease, terminal: false);
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            FinishOperation(lease, terminal: false);
+            throw;
+        }
+        catch
+        {
+            await TerminateClaimedUploadAsync(lease).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    internal async Task<bool> TerminateUploadAsync(Guid sessionId)
+    {
+        Lease? lease;
+        lock (_gate)
+        {
+            if (_closed || !_leases.TryGetValue(sessionId, out lease) ||
+                lease.Kind != SessionKind.Upload || !ReferenceEquals(lease.Owner, _owner))
+                return false;
+            _leases.Remove(sessionId);
+        }
+
+        if (!await ClaimForCleanupAsync(lease).ConfigureAwait(false))
+            return false;
+        await CleanupDetachedUploadAsync(lease).ConfigureAwait(false);
+        return true;
+    }
 
     public async Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(
         DownloadOpenRequest request,
@@ -254,6 +311,38 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         }
     }
 
+    private Acquisition AcquireUploadWrite(Guid sessionId, int payloadLength)
+    {
+        lock (_gate)
+        {
+            if (_closed || !_leases.TryGetValue(sessionId, out var lease) ||
+                lease.Kind != SessionKind.Upload || !ReferenceEquals(lease.Owner, _owner))
+                return new(null, NotFound(sessionId), null);
+            if (lease.State != LeaseState.Active)
+                return new(null, new ConflictDaemonError(
+                    lease.State == LeaseState.Writing ? "file.upload.chunk_in_flight" : "file.session.busy",
+                    lease.State == LeaseState.Writing ? "An upload chunk is already in flight." : "The file session is busy."), null);
+            if (_timeProvider.GetUtcNow() >= lease.ExpiresAt)
+            {
+                _leases.Remove(sessionId);
+                lease.AuthoritativeOpen = false;
+                return new(null, NotFound(sessionId), lease);
+            }
+            if (!HasPermission(lease.PermissionSnapshot, lease.RequiredPermission))
+                return new(null, PermissionDenied(lease.RequiredPermission), null);
+            if (payloadLength > lease.MaxChunkSize)
+            {
+                _leases.Remove(sessionId);
+                lease.AuthoritativeOpen = false;
+                return new(null, new ValidationDaemonError(
+                    "file.chunk.too_large", "The upload chunk exceeds the session maximum chunk size."), lease);
+            }
+            lease.State = LeaseState.Writing;
+            lease.Idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            return new(lease, null, null);
+        }
+    }
+
     private DaemonError? Admit(Lease lease)
     {
         lock (_gate)
@@ -353,6 +442,32 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         }
     }
 
+    private async Task TerminateClaimedUploadAsync(Lease lease)
+    {
+        lock (_gate)
+        {
+            lease.AuthoritativeOpen = false;
+            if (_leases.TryGetValue(lease.SessionId, out var current) && ReferenceEquals(current, lease))
+                _leases.Remove(lease.SessionId);
+        }
+        await CleanupDetachedUploadAsync(lease).ConfigureAwait(false);
+        FinishOperation(lease, terminal: true);
+    }
+
+    private async Task CleanupDetachedUploadAsync(Lease lease)
+    {
+        try
+        {
+            var cleanup = await _application.CancelUploadAsync(lease.SessionId, CancellationToken.None).ConfigureAwait(false);
+            if (cleanup.IsErr(out _) && !IsExpectedCleanupTerminal(cleanup.UnwrapErr()))
+                Log.Warning("Terminated V2 upload {SessionId} cleanup failed with {ErrorCode}.", lease.SessionId, cleanup.UnwrapErr().Code);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Terminated V2 upload {SessionId} cleanup threw.", lease.SessionId);
+        }
+    }
+
     private DaemonError? PermissionError(string method) => HasPermission(_permissionSnapshot, _permissions[method])
         ? null
         : PermissionDenied(_permissions[method]);
@@ -373,6 +488,11 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
 
     private static bool IsReadTerminal(DaemonError error) =>
         error.Code is "file.session.not_found" or "file.session.expired";
+
+    private static bool IsUploadWriteTerminal(DaemonError error) => error.Code is
+        "file.session.not_found" or "file.session.expired" or "file.chunk.offset.invalid" or
+        "file.chunk.too_large" or "file.upload.size_exceeded" ||
+        error.Kind is DaemonErrorKind.Storage or DaemonErrorKind.Internal;
 
     private static bool IsEndTerminal(SessionKind kind, bool cancelUpload, DaemonError error) =>
         kind == SessionKind.Download || cancelUpload || error.Code != "file.upload.incomplete";
@@ -396,7 +516,7 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
     ];
 
     private enum SessionKind { Upload, Download }
-    private enum LeaseState { Active, Reading, Ending }
+    private enum LeaseState { Active, Reading, Writing, Ending }
 
     private sealed class Lease(
         Guid sessionId,

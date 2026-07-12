@@ -22,6 +22,11 @@ public sealed record BinaryFrameHeader
             throw new ArgumentOutOfRangeException(nameof(offset), "A binary frame offset cannot be negative.");
         }
 
+        if (sessionId == Guid.Empty)
+        {
+            throw new ArgumentException("A binary frame session identifier cannot be empty.", nameof(sessionId));
+        }
+
         Kind = kind;
         SessionId = sessionId;
         Offset = offset;
@@ -46,9 +51,39 @@ public enum BinaryFrameReadError
     UnsupportedVersion,
     UnknownKind,
     ReservedNotZero,
+    EmptySessionId,
     NegativeOffset,
     PayloadLengthMismatch,
     PayloadTooLarge
+}
+
+public readonly record struct BinaryFrameTrustedTarget(BinaryFrameKind Kind, Guid SessionId);
+
+public sealed record BinaryFrameReadResult
+{
+    internal BinaryFrameReadResult(
+        BinaryFrameReadError error,
+        BinaryFrameHeader? header,
+        BinaryFrameTrustedTarget? trustedTarget,
+        long? offset,
+        uint? declaredPayloadLength,
+        uint? actualPayloadLength)
+    {
+        Error = error;
+        Header = header;
+        TrustedTarget = trustedTarget;
+        Offset = offset;
+        DeclaredPayloadLength = declaredPayloadLength;
+        ActualPayloadLength = actualPayloadLength;
+    }
+
+    public BinaryFrameReadError Error { get; }
+    public BinaryFrameHeader? Header { get; }
+    public BinaryFrameTrustedTarget? TrustedTarget { get; }
+    public long? Offset { get; }
+    public uint? DeclaredPayloadLength { get; }
+    public uint? ActualPayloadLength { get; }
+    public bool IsSuccess => Error == BinaryFrameReadError.None;
 }
 
 public enum BinaryFrameWriteError
@@ -71,36 +106,55 @@ public static class BinaryFrameCodec
         out BinaryFrameReadError error,
         uint maximumChunkSize = DefaultMaximumChunkSize)
     {
-        header = null;
+        var success = TryRead(frame, out var result, maximumChunkSize);
+        header = result.Header;
+        error = result.Error;
+        return success;
+    }
+
+    public static bool TryRead(
+        ReadOnlySpan<byte> frame,
+        out BinaryFrameReadResult result,
+        uint maximumChunkSize = DefaultMaximumChunkSize)
+    {
         if (frame.Length < HeaderSize)
         {
-            error = BinaryFrameReadError.FrameTooShort;
+            result = Failure(BinaryFrameReadError.FrameTooShort);
             return false;
         }
 
         if (frame[0] != CurrentVersion)
         {
-            error = BinaryFrameReadError.UnsupportedVersion;
+            result = Failure(BinaryFrameReadError.UnsupportedVersion);
             return false;
         }
 
         var kind = (BinaryFrameKind)frame[1];
         if (!Enum.IsDefined(kind))
         {
-            error = BinaryFrameReadError.UnknownKind;
+            result = Failure(BinaryFrameReadError.UnknownKind);
             return false;
         }
 
         if (frame[2] != 0 || frame[3] != 0)
         {
-            error = BinaryFrameReadError.ReservedNotZero;
+            result = Failure(BinaryFrameReadError.ReservedNotZero);
             return false;
         }
+
+        var sessionId = new Guid(frame.Slice(4, 16), bigEndian: true);
+        if (sessionId == Guid.Empty)
+        {
+            result = Failure(BinaryFrameReadError.EmptySessionId);
+            return false;
+        }
+
+        var target = new BinaryFrameTrustedTarget(kind, sessionId);
 
         var offset = BinaryPrimitives.ReadInt64LittleEndian(frame.Slice(20, sizeof(long)));
         if (offset < 0)
         {
-            error = BinaryFrameReadError.NegativeOffset;
+            result = Failure(BinaryFrameReadError.NegativeOffset, target, offset);
             return false;
         }
 
@@ -108,22 +162,23 @@ public static class BinaryFrameCodec
         var actualPayloadLength = checked((uint)(frame.Length - HeaderSize));
         if (payloadLength != actualPayloadLength)
         {
-            error = BinaryFrameReadError.PayloadLengthMismatch;
+            result = Failure(BinaryFrameReadError.PayloadLengthMismatch, target, offset, payloadLength, actualPayloadLength);
             return false;
         }
 
         if (payloadLength > maximumChunkSize)
         {
-            error = BinaryFrameReadError.PayloadTooLarge;
+            result = Failure(BinaryFrameReadError.PayloadTooLarge, target, offset, payloadLength, actualPayloadLength);
             return false;
         }
 
-        header = new BinaryFrameHeader(
+        var header = new BinaryFrameHeader(
             kind,
-            new Guid(frame.Slice(4, 16), bigEndian: true),
+            sessionId,
             offset,
             payloadLength);
-        error = BinaryFrameReadError.None;
+        result = new BinaryFrameReadResult(
+            BinaryFrameReadError.None, header, target, offset, payloadLength, actualPayloadLength);
         return true;
     }
 
@@ -135,6 +190,8 @@ public static class BinaryFrameCodec
         uint maximumChunkSize = DefaultMaximumChunkSize)
     {
         ArgumentNullException.ThrowIfNull(header);
+        if (header.SessionId == Guid.Empty)
+            throw new ArgumentException("A binary frame session identifier cannot be empty.", nameof(header));
 
         var payloadLength = checked((uint)payload.Length);
         if (header.PayloadLength != payloadLength)
@@ -171,4 +228,12 @@ public static class BinaryFrameCodec
         error = BinaryFrameWriteError.None;
         return true;
     }
+
+    private static BinaryFrameReadResult Failure(
+        BinaryFrameReadError error,
+        BinaryFrameTrustedTarget? target = null,
+        long? offset = null,
+        uint? declaredPayloadLength = null,
+        uint? actualPayloadLength = null) =>
+        new(error, null, target, offset, declaredPayloadLength, actualPayloadLength);
 }

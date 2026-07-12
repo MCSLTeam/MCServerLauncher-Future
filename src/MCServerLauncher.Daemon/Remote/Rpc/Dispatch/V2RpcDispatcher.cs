@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
@@ -242,7 +243,8 @@ internal sealed class V2RpcDispatcher
             var bytes = JsonSerializer.SerializeToUtf8Bytes(
                 envelope,
                 BuiltInProtocolJsonContext.Default.JsonRpcSuccessResponseEnvelope);
-            return V2RpcDispatchOutcome.Response(bytes.ToImmutableArray(), execution.DownloadAttachment);
+            return V2RpcDispatchOutcome.Response(
+                ImmutableCollectionsMarshal.AsImmutableArray(bytes), execution.DownloadAttachment);
         }
         catch (Exception exception)
         {
@@ -368,7 +370,7 @@ internal sealed class V2RpcDispatcher
         var bytes = JsonSerializer.SerializeToUtf8Bytes(
             envelope,
             BuiltInProtocolJsonContext.Default.JsonRpcErrorResponseEnvelope);
-        return V2RpcDispatchOutcome.Response(bytes.ToImmutableArray());
+        return V2RpcDispatchOutcome.Response(ImmutableCollectionsMarshal.AsImmutableArray(bytes));
     }
 
     private ProtocolOwnerIdentity? ResolveExecutionOwner(ProtocolExecutionOwner? owner) => owner?.Kind switch

@@ -68,6 +68,10 @@ public sealed class BinaryFrameCodecTests
         reserved[2] = 1;
         AssertReadError(reserved, BinaryFrameReadError.ReservedNotZero);
 
+        var emptySession = (byte[])valid.Clone();
+        emptySession.AsSpan(4, 16).Clear();
+        AssertReadError(emptySession, BinaryFrameReadError.EmptySessionId);
+
         var negativeOffset = (byte[])valid.Clone();
         BinaryPrimitives.WriteInt64LittleEndian(negativeOffset.AsSpan(20, sizeof(long)), -1);
         AssertReadError(negativeOffset, BinaryFrameReadError.NegativeOffset);
@@ -116,6 +120,46 @@ public sealed class BinaryFrameCodecTests
             new BinaryFrameHeader(BinaryFrameKind.UploadChunk, SessionId, -1, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new BinaryFrameHeader((BinaryFrameKind)byte.MaxValue, SessionId, 0, 0));
+        Assert.Throws<ArgumentException>(() =>
+            new BinaryFrameHeader(BinaryFrameKind.UploadChunk, Guid.Empty, 0, 0));
+    }
+
+    [Fact]
+    public void StructuredReaderExposesTrustedTargetOnlyAfterIdentityIsSafe()
+    {
+        var valid = CreateValidFrame();
+        var noTargetCases = new (Action<byte[]> Mutate, BinaryFrameReadError Error)[]
+        {
+            (frame => frame[0]++, BinaryFrameReadError.UnsupportedVersion),
+            (frame => frame[1] = byte.MaxValue, BinaryFrameReadError.UnknownKind),
+            (frame => frame[2] = 1, BinaryFrameReadError.ReservedNotZero),
+            (frame => frame.AsSpan(4, 16).Clear(), BinaryFrameReadError.EmptySessionId)
+        };
+
+        foreach (var item in noTargetCases)
+        {
+            var frame = (byte[])valid.Clone();
+            item.Mutate(frame);
+            Assert.False(BinaryFrameCodec.TryRead(frame, out BinaryFrameReadResult result));
+            Assert.Equal(item.Error, result.Error);
+            Assert.Null(result.TrustedTarget);
+        }
+
+        var negative = (byte[])valid.Clone();
+        BinaryPrimitives.WriteInt64LittleEndian(negative.AsSpan(20, sizeof(long)), -7);
+        Assert.False(BinaryFrameCodec.TryRead(negative, out BinaryFrameReadResult negativeResult));
+        Assert.Equal(new BinaryFrameTrustedTarget(BinaryFrameKind.UploadChunk, SessionId), negativeResult.TrustedTarget);
+        Assert.Equal(-7, negativeResult.Offset);
+
+        var mismatch = (byte[])valid.Clone();
+        BinaryPrimitives.WriteUInt32LittleEndian(mismatch.AsSpan(28, sizeof(uint)), 99);
+        Assert.False(BinaryFrameCodec.TryRead(mismatch, out BinaryFrameReadResult mismatchResult));
+        Assert.Equal(99u, mismatchResult.DeclaredPayloadLength);
+        Assert.Equal(3u, mismatchResult.ActualPayloadLength);
+
+        Assert.False(BinaryFrameCodec.TryRead(valid, out BinaryFrameReadResult tooLarge, maximumChunkSize: 2));
+        Assert.NotNull(tooLarge.TrustedTarget);
+        Assert.Equal(3u, tooLarge.DeclaredPayloadLength);
     }
 
     private static byte[] CreateValidFrame()
