@@ -668,17 +668,25 @@ public sealed class LocalInstanceApplicationTests
         instance.BlockNextConfigRead();
 
         var statusTask = Task.Run(() => instance.RaiseStatusChangedAsync(InstanceStatus.Running));
-        await instance.ConfigReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
-
-        var removeStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var removeTask = Task.Run(() =>
+        Task<bool> removeTask;
+        try
         {
-            removeStarted.TrySetResult(true);
-            return manager.TryRemoveInstance(config.Uuid).GetAwaiter().GetResult();
-        });
-        await removeStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            await instance.ConfigReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
 
-        instance.ReleaseConfigRead();
+            var removeStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            // Keep the test's remove signal independent of a blocked ThreadPool status callback.
+            removeTask = Task.Factory.StartNew(() =>
+            {
+                removeStarted.TrySetResult(true);
+                return manager.TryRemoveInstance(config.Uuid).GetAwaiter().GetResult();
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            await removeStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        }
+        finally
+        {
+            instance.ReleaseConfigRead();
+        }
+
         await statusTask.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.True(await removeTask.WaitAsync(TimeSpan.FromSeconds(3)));
         Assert.False(manager.InstanceSnapshotSource.TryGet(config.Uuid, out _));
