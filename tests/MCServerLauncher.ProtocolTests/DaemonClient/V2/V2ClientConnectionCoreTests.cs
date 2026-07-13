@@ -288,6 +288,215 @@ public sealed class V2ClientConnectionCoreTests
     }
 
     [Fact]
+    public async Task DownloadJsonMetadataRegistersBeforeBinaryAndUsesOnePendingObject()
+    {
+        var transport = new DownloadTransport();
+        var id = JsonRpcRequestId.FromString("download-read");
+        var core = Core(transport, id);
+        var session = DownloadSession(length: 4, maximumChunkSize: 4);
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+
+        var read = core.ReadDownloadChunkAsync(
+            new DownloadChunkRequest(session.SessionId, 0, 4),
+            CancellationToken.None);
+        Assert.Contains("mcsl.file.download.read", transport.Text, StringComparison.Ordinal);
+        Assert.Equal(1, core.PendingCount);
+        Assert.Equal(1, core.DownloadPendingCount);
+
+        core.RouteText(DownloadMetadata(id, session.SessionId, 0, 4, isFinal: true));
+        Assert.False(read.IsCompleted);
+        Assert.Equal(1, core.PendingCount);
+        core.RouteBinary(DownloadFrame(session.SessionId, 0, 1, 2, 3, 4));
+
+        Assert.True((await read).IsOk(out var chunk));
+        Assert.True(chunk!.Data.AsSpan().SequenceEqual(new byte[] { 1, 2, 3, 4 }));
+        Assert.True(chunk.IsFinal);
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.DownloadPendingCount);
+    }
+
+    [Fact]
+    public async Task DownloadCancellationAfterSendReturnsImmediatelyButDrainsLatePairAndPoisonsSession()
+    {
+        var transport = new DownloadTransport();
+        var id = JsonRpcRequestId.FromString("download-abandoned");
+        var core = Core(transport, id);
+        var session = DownloadSession(length: 1, maximumChunkSize: 1);
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+        using var cancellation = new CancellationTokenSource();
+        var read = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), cancellation.Token);
+
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => read);
+        Assert.Equal(1, core.PendingCount);
+        Assert.Equal(1, core.AbandonedDownloadCount);
+        core.RouteText(DownloadMetadata(id, session.SessionId, 0, 1, isFinal: true));
+        core.RouteBinary(DownloadFrame(session.SessionId, 0, 9));
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.AbandonedDownloadCount);
+
+        var retry = await core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+        Assert.True(retry.IsErr(out var poisoned));
+        Assert.Equal("file.download.session_poisoned", poisoned!.Code);
+    }
+
+    [Fact]
+    public async Task DownloadErrorResponseCompletesWithoutWaitingForBinary()
+    {
+        var transport = new DownloadTransport();
+        var id = JsonRpcRequestId.FromString("download-error");
+        var core = Core(transport, id);
+        var session = DownloadSession();
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+        var read = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+
+        core.RouteText(Utf8("{\"jsonrpc\":\"2.0\",\"id\":\"download-error\",\"error\":{\"code\":-32000,\"message\":\"missing\",\"data\":{\"daemon_error_code\":\"file.session.not_found\",\"daemon_error_kind\":\"not_found\",\"correlation_id\":\"download\"}}}"));
+
+        Assert.True((await read).IsErr(out var error));
+        Assert.IsType<NotFoundDaemonError>(error);
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.DownloadPendingCount);
+    }
+
+    [Fact]
+    public async Task DownloadBinaryBeforeJsonUnknownAndDuplicateAreProtocolFaults()
+    {
+        var diagnostics = new List<V2ClientDiagnostic>();
+        var transport = new DownloadTransport();
+        var id = JsonRpcRequestId.FromString("download-order");
+        var core = Core(transport, id, diagnostics.Add);
+        var session = DownloadSession(length: 1, maximumChunkSize: 1);
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+        var read = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+
+        core.RouteBinary(DownloadFrame(session.SessionId, 0, 1));
+        Assert.True((await read).IsErr(out var error));
+        Assert.Equal("protocol.download_binary_mismatch", error!.Code);
+        core.RouteBinary(DownloadFrame(Guid.NewGuid(), 0, 1));
+
+        Assert.True(diagnostics.Count(value => value.Kind == V2ClientDiagnosticKind.ProtocolFault) >= 2);
+    }
+
+    [Fact]
+    public async Task DownloadCloseDrainsRequestAndSendObserver()
+    {
+        var transport = new BlockingDownloadTransport();
+        var core = Core(transport, JsonRpcRequestId.FromString("download-close"));
+        var session = DownloadSession();
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+        var read = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+
+        core.Close();
+        Assert.True((await read).IsErr(out var error));
+        Assert.Equal("connection.closed", error!.Code);
+        await core.WaitForSendObserversAsync();
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.DownloadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+    }
+
+    [Fact]
+    public async Task DownloadMetadataCanArriveSynchronouslyInsideTextSend()
+    {
+        V2ClientConnectionCore? core = null;
+        var id = JsonRpcRequestId.FromString("download-sync");
+        var session = DownloadSession(length: 1, maximumChunkSize: 1);
+        var transport = new CallbackDownloadTransport(() =>
+            core!.RouteText(DownloadMetadata(id, session.SessionId, 0, 1, isFinal: true)));
+        core = Core(transport, id);
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+
+        var read = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+
+        Assert.False(read.IsCompleted);
+        Assert.Equal(1, core.PendingCount);
+        core.RouteBinary(DownloadFrame(session.SessionId, 0, 4));
+        Assert.True((await read).IsOk(out _));
+        await core.WaitForSendObserversAsync();
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+    }
+
+    [Fact]
+    public async Task DownloadTimeoutRetainsOnePendingUntilLatePairDrains()
+    {
+        var time = new ManualTimeProvider();
+        var id = JsonRpcRequestId.FromString("download-timeout");
+        var core = new V2ClientConnectionCore(
+            new DownloadTransport(),
+            time,
+            TimeSpan.FromSeconds(3),
+            () => id);
+        var session = DownloadSession(length: 1, maximumChunkSize: 1);
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+        var read = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+
+        time.Advance(TimeSpan.FromSeconds(3));
+        Assert.True((await read).IsErr(out var error));
+        Assert.Equal("request.timeout", error!.Code);
+        Assert.Equal(1, core.PendingCount);
+        Assert.Equal(1, core.AbandonedDownloadCount);
+        core.RouteText(DownloadMetadata(id, session.SessionId, 0, 1, isFinal: true));
+        core.RouteBinary(DownloadFrame(session.SessionId, 0, 5));
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.AbandonedDownloadCount);
+    }
+
+    [Fact]
+    public async Task BlockingDownloadTextSendCannotBlockCloseAndCancellationDrainsReservation()
+    {
+        var transport = new SynchronouslyBlockingDownloadTransport();
+        var core = Core(transport, JsonRpcRequestId.FromString("download-blocking-send"));
+        var session = DownloadSession();
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+
+        var invoke = Task.Run(() => core.ReadDownloadChunkAsync(
+            new DownloadChunkRequest(session.SessionId, 0, 1),
+            CancellationToken.None));
+        await transport.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await Task.Run(core.Close).WaitAsync(TimeSpan.FromSeconds(5));
+        await transport.TokenCanceled.WaitAsync(TimeSpan.FromSeconds(5));
+        var read = await invoke.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(read.IsErr(out var error));
+        Assert.Equal("connection.closed", error!.Code);
+        await core.WaitForSendObserversAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.DownloadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+    }
+
+    [Fact]
+    public async Task DownloadRegistrationFailureRollsBackBothMapsAndAllowsSameIdAndSessionRetry()
+    {
+        var time = new ThrowOnceTimerTimeProvider();
+        var transport = new DownloadTransport();
+        var id = JsonRpcRequestId.FromString("download-register-retry");
+        var core = new V2ClientConnectionCore(transport, time, Timeout, () => id);
+        var session = DownloadSession(length: 1, maximumChunkSize: 1);
+        Assert.True(core.TryRegisterDownloadSession(session, out _));
+
+        var failed = await core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+        Assert.True(failed.IsErr(out var registrationError));
+        Assert.Equal("transport.request_registration_failed", registrationError!.Code);
+        Assert.Equal(0, transport.SendCount);
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.DownloadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+
+        var retry = core.ReadDownloadChunkAsync(new(session.SessionId, 0, 1), CancellationToken.None);
+        Assert.Equal(1, transport.SendCount);
+        core.RouteText(DownloadMetadata(id, session.SessionId, 0, 1, isFinal: true));
+        core.RouteBinary(DownloadFrame(session.SessionId, 0, 3));
+        Assert.True((await retry).IsOk(out _));
+        await core.WaitForSendObserversAsync();
+        Assert.Equal(0, core.PendingCount);
+        Assert.Equal(0, core.DownloadPendingCount);
+    }
+
+    [Fact]
     public async Task SendFailureAndCloseReturnTypedTransportErrorsAndDrain()
     {
         var failing = Core(new RecordingTransport(fail: true), JsonRpcRequestId.FromString("send"));
@@ -563,13 +772,36 @@ public sealed class V2ClientConnectionCoreTests
         Assert.IsType<ConflictDaemonError>(poisoned);
     }
 
-    private static V2ClientConnectionCore Core(RecordingTransport transport, JsonRpcRequestId id, Action<V2ClientDiagnostic>? diagnostic = null) =>
+    private static V2ClientConnectionCore Core(IV2ClientWireTransport transport, JsonRpcRequestId id, Action<V2ClientDiagnostic>? diagnostic = null) =>
         new(transport, TimeProvider.System, Timeout, () => id, diagnostic);
 
     private static RpcDescriptor<TRequest, TResult> Descriptor<TRequest, TResult>(string method) =>
         Assert.IsType<RpcDescriptor<TRequest, TResult>>(BuiltInProtocolDefinitions.Rpcs.Single(value => value.Method.Value == method));
 
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
+
+    private static DownloadSession DownloadSession(long length = 8, int maximumChunkSize = 4) =>
+        new(Guid.NewGuid(), length, new string('b', 64), maximumChunkSize, DateTimeOffset.UtcNow.AddMinutes(5));
+
+    private static byte[] DownloadMetadata(
+        JsonRpcRequestId id,
+        Guid sessionId,
+        long offset,
+        int length,
+        bool isFinal) =>
+        Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":\"{id.StringValue}\",\"result\":{{\"session_id\":\"{sessionId:D}\",\"offset\":{offset},\"length\":{length},\"is_final\":{isFinal.ToString().ToLowerInvariant()}}}}}");
+
+    private static byte[] DownloadFrame(Guid sessionId, long offset, params byte[] payload)
+    {
+        var frame = new byte[BinaryFrameCodec.HeaderSize + payload.Length];
+        Assert.True(BinaryFrameCodec.TryWrite(
+            frame,
+            new BinaryFrameHeader(BinaryFrameKind.DownloadChunk, sessionId, offset, checked((uint)payload.Length)),
+            payload,
+            out var error));
+        Assert.Equal(BinaryFrameWriteError.None, error);
+        return frame;
+    }
 
     private sealed class RecordingTransport(bool fail = false) : IV2ClientWireTransport
     {
@@ -585,6 +817,87 @@ public sealed class V2ClientConnectionCoreTests
 
         public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
             ValueTask.CompletedTask;
+    }
+
+    private sealed class DownloadTransport : IV2ClientWireTransport
+    {
+        private ImmutableArray<byte> _text;
+        internal int SendCount { get; private set; }
+        internal string Text => Encoding.UTF8.GetString(_text.AsSpan());
+
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
+        {
+            SendCount++;
+            _text = utf8Json;
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class BlockingDownloadTransport : IV2ClientWireTransport
+    {
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken) =>
+            new(Task.Delay(System.Threading.Timeout.InfiniteTimeSpan, cancellationToken));
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class CallbackDownloadTransport(Action callback) : IV2ClientWireTransport
+    {
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
+        {
+            callback();
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class SynchronouslyBlockingDownloadTransport : IV2ClientWireTransport
+    {
+        private readonly TaskCompletionSource _entered =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _tokenCanceled =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal Task Entered => _entered.Task;
+        internal Task TokenCanceled => _tokenCanceled.Task;
+
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
+        {
+            using var registration = cancellationToken.Register(() => _tokenCanceled.TrySetResult());
+            _entered.TrySetResult();
+            cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new TimeoutException("The download send did not observe connection cancellation.");
+        }
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class ThrowOnceTimerTimeProvider : TimeProvider
+    {
+        private int _createCount;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            if (Interlocked.Increment(ref _createCount) == 1)
+                throw new InvalidOperationException("test-only timer registration failure");
+            return new NoOpTimer();
+        }
+
+        private sealed class NoOpTimer : ITimer
+        {
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+            public void Dispose()
+            {
+            }
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     private sealed class BlockingTransport : IV2ClientWireTransport

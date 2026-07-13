@@ -28,9 +28,10 @@ internal sealed class V2ClientConnectionCore
     private readonly Action<UploadChunkAcknowledgement>? _uploadAcknowledgement;
     private readonly Action _sendLifetimeCreatedCallback;
     private readonly Action _sendLifetimeDisposedCallback;
-    private readonly Func<JsonRpcRequestId, IPendingRequest, bool> _removePendingCallback;
+    private readonly Func<JsonRpcRequestId, IV2ClientPendingRequest, bool> _removePendingCallback;
     private readonly V2ClientUploadCoordinator _uploadCoordinator;
-    private readonly ConcurrentDictionary<JsonRpcRequestId, IPendingRequest> _pending = new();
+    private readonly V2ClientDownloadCoordinator _downloadCoordinator;
+    private readonly ConcurrentDictionary<JsonRpcRequestId, IV2ClientPendingRequest> _pending = new();
     private readonly CancellationTokenSource _connectionCancellation = new();
     private readonly object _admissionLock = new();
     private readonly object _sendObserverLock = new();
@@ -68,10 +69,13 @@ internal sealed class V2ClientConnectionCore
             requestTimeout,
             _sendLifetimeCreatedCallback,
             _sendLifetimeDisposedCallback);
+        _downloadCoordinator = new(timeProvider, requestTimeout, ProtocolFault);
     }
 
     internal int PendingCount => _pending.Count;
     internal int UploadPendingCount => _uploadCoordinator.PendingCount;
+    internal int DownloadPendingCount => _downloadCoordinator.PendingCount;
+    internal int AbandonedDownloadCount => _downloadCoordinator.AbandonedDrainCount;
     internal int SendObserverCount => Volatile.Read(ref _sendObserverCount);
     internal int ActiveSendLifetimeCount => Volatile.Read(ref _activeSendLifetimeCount);
 
@@ -240,6 +244,98 @@ internal sealed class V2ClientConnectionCore
         return pending!.Task;
     }
 
+    internal bool TryRegisterDownloadSession(DownloadSession session, out DaemonError? error) =>
+        _downloadCoordinator.TryRegisterSession(session, out error);
+
+    internal bool TryRemoveDownloadSession(Guid sessionId, out DaemonError? error) =>
+        _downloadCoordinator.TryRemoveSession(sessionId, out error);
+
+    internal Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
+        DownloadChunkRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var id = _idFactory();
+        var bytes = V2RequestWriter.Write(BuiltInProtocolDefinitions.ReadDownload, id, request);
+        V2ClientDownloadCoordinator.PendingDownload? pending;
+        DaemonError? admissionError;
+        ValueTask send;
+        var sendReservation = false;
+
+        lock (_admissionLock)
+        {
+            if (_closing)
+                return Task.FromResult(Result.Err<DownloadChunk, DaemonError>(ClosedError()));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<Result<DownloadChunk, DaemonError>>(cancellationToken);
+            if (!_downloadCoordinator.TryAdmit(
+                    id,
+                    request,
+                    static pending => pending.RemoveFromRequestMap(),
+                    out pending,
+                    out admissionError))
+            {
+                return Task.FromResult(Result.Err<DownloadChunk, DaemonError>(admissionError!));
+            }
+            pending!.SetRequestMapRemoval(_removePendingCallback);
+            if (!_pending.TryAdd(id, pending))
+            {
+                _downloadCoordinator.RejectAdmission(pending);
+                throw new InvalidOperationException("The V2 request id factory produced a duplicate identifier.");
+            }
+            RegisterSendObserver();
+            SendLifetimeCreated();
+            sendReservation = true;
+        }
+
+        try
+        {
+            pending!.Register(cancellationToken, _connectionCancellation.Token);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _downloadCoordinator.FailRegistration(
+                pending!,
+                new TransportDaemonError(
+                    "transport.request_registration_failed",
+                    $"The V2 download request could not register cancellation or timeout tracking: {exception.GetType().Name}."));
+            CompleteDownloadSendReservation(ref sendReservation);
+            return pending!.Task;
+        }
+
+        if (pending!.IsCallerCompleted ||
+            _connectionCancellation.IsCancellationRequested ||
+            !_downloadCoordinator.TryMarkSendStarted(pending))
+        {
+            CompleteDownloadSendReservation(ref sendReservation);
+            return pending.Task;
+        }
+
+        try
+        {
+            send = _transport.SendTextAsync(bytes, _connectionCancellation.Token);
+        }
+        catch (OperationCanceledException) when (_connectionCancellation.IsCancellationRequested)
+        {
+            pending.FailSend(ClosedError());
+            CompleteDownloadSendReservation(ref sendReservation);
+            return pending.Task;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            pending.FailSend(new TransportDaemonError(
+                "transport.send_failed",
+                "The V2 download chunk request could not be sent."));
+            CompleteDownloadSendReservation(ref sendReservation);
+            ProtocolFault("The V2 download chunk request send failed.");
+            return pending.Task;
+        }
+
+        sendReservation = false;
+        _ = ObserveDownloadSendAsync(send, pending);
+        return pending.Task;
+    }
+
     public void RouteText(ReadOnlySpan<byte> utf8Json)
     {
         try
@@ -267,9 +363,20 @@ internal sealed class V2ClientConnectionCore
         }
     }
 
+    public void RouteBinary(ReadOnlySpan<byte> frame)
+    {
+        if (!BinaryFrameCodec.TryRead(frame, out var result))
+        {
+            ProtocolFault($"The V2 binary frame is invalid: {result.Error}.");
+            return;
+        }
+
+        _downloadCoordinator.RouteBinary(result.Header!, frame[BinaryFrameCodec.HeaderSize..]);
+    }
+
     public void Close()
     {
-        KeyValuePair<JsonRpcRequestId, IPendingRequest>[] snapshot;
+        KeyValuePair<JsonRpcRequestId, IV2ClientPendingRequest>[] snapshot;
         lock (_admissionLock)
         {
             if (_closing)
@@ -282,6 +389,7 @@ internal sealed class V2ClientConnectionCore
         }
 
         _uploadCoordinator.Close(ClosedError());
+        _downloadCoordinator.Close(ClosedError());
         try
         {
             _connectionCancellation.Cancel();
@@ -383,7 +491,7 @@ internal sealed class V2ClientConnectionCore
         }
     }
 
-    private async Task ObserveSendAsync(ValueTask send, IPendingRequest pending)
+    private async Task ObserveSendAsync(ValueTask send, IV2ClientPendingRequest pending)
     {
         try
         {
@@ -430,6 +538,41 @@ internal sealed class V2ClientConnectionCore
         }
     }
 
+    private async Task ObserveDownloadSendAsync(
+        ValueTask send,
+        V2ClientDownloadCoordinator.PendingDownload pending)
+    {
+        try
+        {
+            await send.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_connectionCancellation.IsCancellationRequested)
+        {
+            pending.FailSend(ClosedError());
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            pending.FailSend(new TransportDaemonError(
+                "transport.send_failed",
+                "The V2 download chunk request could not be sent."));
+            ProtocolFault("The V2 download chunk request send failed.");
+        }
+        finally
+        {
+            SendLifetimeDisposed();
+            CompleteSendObserver();
+        }
+    }
+
+    private void CompleteDownloadSendReservation(ref bool reservation)
+    {
+        if (!reservation)
+            return;
+        reservation = false;
+        SendLifetimeDisposed();
+        CompleteSendObserver();
+    }
+
     private void RegisterSendObserver()
     {
         lock (_sendObserverLock)
@@ -466,8 +609,8 @@ internal sealed class V2ClientConnectionCore
 
     private void SendLifetimeDisposed() => Interlocked.Decrement(ref _activeSendLifetimeCount);
 
-    private bool RemovePending(JsonRpcRequestId id, IPendingRequest value) =>
-        _pending.TryRemove(new KeyValuePair<JsonRpcRequestId, IPendingRequest>(id, value));
+    private bool RemovePending(JsonRpcRequestId id, IV2ClientPendingRequest value) =>
+        _pending.TryRemove(new KeyValuePair<JsonRpcRequestId, IV2ClientPendingRequest>(id, value));
 
     private void UnknownResponse() =>
         EmitDiagnostic(new(V2ClientDiagnosticKind.UnknownResponse, "The V2 response id has no pending request."));
@@ -581,21 +724,11 @@ internal sealed class V2ClientConnectionCore
 
     private enum EnvelopeShape { Unknown, Success, Error, Notification }
 
-    private interface IPendingRequest
-    {
-        bool IsCompleted { get; }
-        CancellationToken SendCancellationToken { get; }
-        bool TrySuccess(JsonRpcObjectPayload payload);
-        bool TryError(DaemonError error);
-        void DisposeRegistrations();
-        void DisposeSendLifetime();
-    }
-
-    private sealed class PendingRequest<TResult> : IPendingRequest where TResult : notnull
+    private sealed class PendingRequest<TResult> : IV2ClientPendingRequest where TResult : notnull
     {
         private readonly JsonRpcRequestId _id;
         private readonly System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> _resultTypeInfo;
-        private readonly Func<JsonRpcRequestId, IPendingRequest, bool> _remove;
+        private readonly Func<JsonRpcRequestId, IV2ClientPendingRequest, bool> _remove;
         private readonly Action _sendLifetimeCreated;
         private readonly Action _sendLifetimeDisposedCallback;
         private readonly TaskCompletionSource<Result<TResult, DaemonError>> _completion =
@@ -610,7 +743,7 @@ internal sealed class V2ClientConnectionCore
         public PendingRequest(
             JsonRpcRequestId id,
             System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> resultTypeInfo,
-            Func<JsonRpcRequestId, IPendingRequest, bool> remove,
+            Func<JsonRpcRequestId, IV2ClientPendingRequest, bool> remove,
             Action sendLifetimeCreated,
             Action sendLifetimeDisposed)
         {
@@ -732,4 +865,14 @@ internal sealed class V2ClientConnectionCore
             }
         }
     }
+}
+
+internal interface IV2ClientPendingRequest
+{
+    bool IsCompleted { get; }
+    CancellationToken SendCancellationToken { get; }
+    bool TrySuccess(JsonRpcObjectPayload payload);
+    bool TryError(DaemonError error);
+    void DisposeRegistrations();
+    void DisposeSendLifetime();
 }
