@@ -25,6 +25,24 @@ public sealed class RemoteInstanceCatalogMirrorTests
     }
 
     [Fact]
+    public void GenerationCurrencyTracksBeginAndCloseWithoutChangingPublishedState()
+    {
+        var mirror = new RemoteInstanceCatalogMirror();
+        var historical = mirror.Current;
+
+        var first = mirror.BeginReconciliation();
+        Assert.True(mirror.IsCurrentGeneration(first));
+        var second = mirror.BeginReconciliation();
+        Assert.False(mirror.IsCurrentGeneration(first));
+        Assert.True(mirror.IsCurrentGeneration(second));
+        Assert.Same(historical, mirror.Current);
+
+        mirror.Close();
+        Assert.False(mirror.IsCurrentGeneration(second));
+        Assert.Same(historical, mirror.Current);
+    }
+
+    [Fact]
     public void NonEmptyFullVersionZero_ReplacesPublisherWithoutMutatingHistoricalHandle()
     {
         var mirror = new RemoteInstanceCatalogMirror();

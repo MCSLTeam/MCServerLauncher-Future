@@ -63,6 +63,14 @@ internal sealed class RemoteInstanceCatalogMirror : IInstanceSnapshotSource
         }
     }
 
+    internal bool IsCurrentGeneration(long generation)
+    {
+        lock (_gate)
+        {
+            return _mode != MirrorMode.Closed && generation == _generation;
+        }
+    }
+
     internal RemoteInstanceCatalogTransition ReceiveChange(
         long generation,
         InstanceCatalogChangedEventData change)
