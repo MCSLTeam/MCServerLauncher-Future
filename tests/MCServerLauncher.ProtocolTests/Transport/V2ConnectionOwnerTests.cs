@@ -120,6 +120,7 @@ public sealed class V2ConnectionOwnerTests
 
         Assert.False(owner.TryEnqueue(Message(256)));
         await sender.Closed.Task.WaitAsync(TestTimeout);
+        await owner.CompleteAsync().WaitAsync(TestTimeout);
 
         Assert.Equal(V2ConnectionState.Closed, owner.State);
         Assert.Equal(V2ConnectionCloseReason.SlowConsumer, owner.CloseReason);
