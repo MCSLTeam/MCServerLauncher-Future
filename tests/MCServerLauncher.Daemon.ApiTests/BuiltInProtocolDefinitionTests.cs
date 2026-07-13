@@ -16,6 +16,45 @@ namespace MCServerLauncher.Daemon.ApiTests;
 public sealed class BuiltInProtocolDefinitionTests
 {
     [Fact]
+    public void NamedTypedDescriptorsAreTheExactFrozenCatalogInstances()
+    {
+        RpcDescriptor[] namedRpcs =
+        [
+            BuiltInProtocolDefinitions.GetAuthPermissions, BuiltInProtocolDefinitions.PingDaemon,
+            BuiltInProtocolDefinitions.CopyDirectory, BuiltInProtocolDefinitions.CreateDirectory,
+            BuiltInProtocolDefinitions.DeleteDirectory, BuiltInProtocolDefinitions.GetDirectoryInfo,
+            BuiltInProtocolDefinitions.MoveDirectory, BuiltInProtocolDefinitions.RenameDirectory,
+            BuiltInProtocolDefinitions.SubscribeEvent, BuiltInProtocolDefinitions.UnsubscribeEvent,
+            BuiltInProtocolDefinitions.CopyFile, BuiltInProtocolDefinitions.DeleteFile,
+            BuiltInProtocolDefinitions.CloseDownload, BuiltInProtocolDefinitions.OpenDownload,
+            BuiltInProtocolDefinitions.ReadDownload, BuiltInProtocolDefinitions.GetFileInfo,
+            BuiltInProtocolDefinitions.MoveFile, BuiltInProtocolDefinitions.RenameFile,
+            BuiltInProtocolDefinitions.CancelUpload, BuiltInProtocolDefinitions.CloseUpload,
+            BuiltInProtocolDefinitions.OpenUpload, BuiltInProtocolDefinitions.GetInstanceCatalog,
+            BuiltInProtocolDefinitions.SendInstanceCommand, BuiltInProtocolDefinitions.CreateInstance,
+            BuiltInProtocolDefinitions.GetInstanceEventRules, BuiltInProtocolDefinitions.UpdateInstanceEventRules,
+            BuiltInProtocolDefinitions.HaltInstance, BuiltInProtocolDefinitions.GetInstanceLog,
+            BuiltInProtocolDefinitions.RemoveInstance, BuiltInProtocolDefinitions.GetInstanceReport,
+            BuiltInProtocolDefinitions.ListInstanceReports, BuiltInProtocolDefinitions.GetInstanceSettings,
+            BuiltInProtocolDefinitions.UpdateInstanceSettings, BuiltInProtocolDefinitions.StartInstance,
+            BuiltInProtocolDefinitions.StopInstance, BuiltInProtocolDefinitions.ListJavaRuntimes,
+            BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
+        ];
+        EventDescriptor[] namedEvents =
+        [
+            BuiltInProtocolDefinitions.InstanceCatalogChanged, BuiltInProtocolDefinitions.DaemonReport,
+            BuiltInProtocolDefinitions.InstanceLog, BuiltInProtocolDefinitions.Notification
+        ];
+
+        Assert.Equal(BuiltInProtocolDefinitions.Rpcs.Length, namedRpcs.Length);
+        Assert.Equal(BuiltInProtocolDefinitions.Events.Length, namedEvents.Length);
+        Assert.All(namedRpcs, descriptor => Assert.Contains(BuiltInProtocolDefinitions.Rpcs, candidate => ReferenceEquals(candidate, descriptor)));
+        Assert.All(namedEvents, descriptor => Assert.Contains(BuiltInProtocolDefinitions.Events, candidate => ReferenceEquals(candidate, descriptor)));
+        Assert.Equal(namedRpcs.Length, namedRpcs.Distinct(ReferenceEqualityComparer.Instance).Count());
+        Assert.Equal(namedEvents.Length, namedEvents.Distinct(ReferenceEqualityComparer.Instance).Count());
+    }
+
+    [Fact]
     public void BuiltInDefinitionsContainTheExactFrozenRpcAndEventNames()
     {
         var expectedRpcs = new[]
