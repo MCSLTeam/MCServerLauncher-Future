@@ -152,6 +152,7 @@ public sealed class V2ClientConnectionCoreTests
             .ToArray();
 
         core.Close();
+        await core.Closed;
         var results = await Task.WhenAll(requests);
 
         Assert.All(results, result =>
@@ -160,6 +161,7 @@ public sealed class V2ClientConnectionCoreTests
             Assert.Equal("connection.closed", error!.Code);
         });
         Assert.Equal(0, core.PendingCount);
+        Assert.True(core.Closed.IsCompletedSuccessfully);
         transport.Release();
         await core.WaitForSendObserversAsync();
         Assert.Equal(0, core.SendObserverCount);
@@ -745,20 +747,25 @@ public sealed class V2ClientConnectionCoreTests
     }
 
     [Fact]
-    public async Task SynchronousTimeoutDuringRegistrationSkipsBinarySendAndPoisonsSession()
+    public async Task SynchronousTimeoutDuringRegistrationIsAmbiguousWithoutBinarySendAndPoisonsSession()
     {
         var time = new SynchronousTimeoutTimeProvider();
         var transport = new BinaryCountingTransport();
         var core = new V2ClientConnectionCore(transport, time, TimeSpan.FromSeconds(1));
         var session = Guid.NewGuid();
 
-        var result = await core.SendUploadChunkAsync(
+        var upload = core.SendUploadChunkTracked(
             new UploadChunkRequest(session, 0, ImmutableArray.Create<byte>(1)),
             1,
             CancellationToken.None);
+        var disposition = ObserveDispositionAtCompletion(upload);
+        var result = await upload.Completion;
 
         Assert.True(result.IsErr(out var error));
         Assert.Equal("request.timeout", error!.Code);
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            await disposition);
         Assert.Equal(0, transport.BinarySendCount);
         Assert.True(time.TimerDisposed);
         Assert.Equal(0, core.UploadPendingCount);
@@ -772,6 +779,217 @@ public sealed class V2ClientConnectionCoreTests
         Assert.IsType<ConflictDaemonError>(poisoned);
     }
 
+    [Fact]
+    public async Task UploadTimerRegistrationFailureIsAmbiguousWithoutBinarySendAndPoisonsSession()
+    {
+        var time = new ThrowOnceTimerTimeProvider();
+        var transport = new BinaryCountingTransport();
+        var core = new V2ClientConnectionCore(transport, time, Timeout);
+        var session = Guid.NewGuid();
+
+        var upload = core.SendUploadChunkTracked(
+            new UploadChunkRequest(session, 0, ImmutableArray.Create<byte>(1)),
+            1,
+            CancellationToken.None);
+        var disposition = ObserveDispositionAtCompletion(upload);
+        var result = await upload.Completion;
+
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("transport.send_failed", error!.Code);
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            await disposition);
+        Assert.Equal(0, transport.BinarySendCount);
+        Assert.Equal(0, core.UploadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+
+        var retry = await core.SendUploadChunkAsync(
+            new UploadChunkRequest(session, 1, ImmutableArray.Create<byte>(2)),
+            1,
+            CancellationToken.None);
+        Assert.True(retry.IsErr(out var poisoned));
+        Assert.IsType<ConflictDaemonError>(poisoned);
+        Assert.Equal("file.upload.session_poisoned", poisoned!.Code);
+    }
+
+    [Fact]
+    public async Task TrackedJsonResponsesPublishAuthoritativeOutcomeBeforeCompletion()
+    {
+        var successCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-success"));
+        var success = successCore.InvokeTracked(
+            Descriptor<EmptyRequest, PingResult>("mcsl.daemon.ping"),
+            new EmptyRequest());
+        var successDisposition = ObserveDispositionAtCompletion(success);
+        successCore.RouteText(Utf8(
+            "{\"jsonrpc\":\"2.0\",\"id\":\"tracked-success\",\"result\":{\"time\":42}}"));
+
+        Assert.True((await success.Completion).IsOk(out _));
+        Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, await successDisposition);
+
+        var errorCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-error"));
+        var error = errorCore.InvokeTracked(
+            Descriptor<EmptyRequest, PingResult>("mcsl.daemon.ping"),
+            new EmptyRequest());
+        var errorDisposition = ObserveDispositionAtCompletion(error);
+        errorCore.RouteText(Utf8(
+            "{\"jsonrpc\":\"2.0\",\"id\":\"tracked-error\",\"error\":{\"code\":-32000,\"message\":\"Rejected\",\"data\":{\"daemon_error_code\":\"remote.rejected\",\"daemon_error_kind\":\"conflict\",\"correlation_id\":\"tracked-test\"}}}"));
+
+        Assert.True((await error.Completion).IsErr(out _));
+        Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, await errorDisposition);
+
+        var invalidCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-invalid"));
+        var invalid = invalidCore.InvokeTracked(
+            Descriptor<DownloadChunkRequest, DownloadReadResult>("mcsl.file.download.read"),
+            new DownloadChunkRequest(Guid.NewGuid(), 0, 1));
+        invalidCore.RouteText(Utf8(
+            "{\"jsonrpc\":\"2.0\",\"id\":\"tracked-invalid\",\"result\":{\"session_id\":\"00000000-0000-0000-0000-000000000000\",\"offset\":0,\"length\":1,\"is_final\":false}}"));
+
+        Assert.True((await invalid.Completion).IsErr(out var invalidError));
+        Assert.Equal("protocol.result_invalid", invalidError!.Code);
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            invalid.Outcome.Disposition);
+    }
+
+    [Fact]
+    public async Task TrackedJsonLocalTerminalPathsPreserveAdmissionClassification()
+    {
+        var descriptor = Descriptor<EmptyRequest, PingResult>("mcsl.daemon.ping");
+
+        var closedTransport = new CountingTransport();
+        var closedCore = new V2ClientConnectionCore(closedTransport, TimeProvider.System, Timeout);
+        closedCore.Close();
+        var closed = closedCore.InvokeTracked(descriptor, new EmptyRequest());
+        Assert.True((await closed.Completion).IsErr(out _));
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, closed.Outcome.Disposition);
+        Assert.Equal(0, closedTransport.SendCount);
+
+        using var beforeCancellation = new CancellationTokenSource();
+        beforeCancellation.Cancel();
+        var beforeCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-before-cancel"));
+        var before = beforeCore.InvokeTracked(descriptor, new EmptyRequest(), beforeCancellation.Token);
+        var beforeDisposition = ObserveDispositionAtCompletion(before);
+        var beforeException = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => before.Completion);
+        Assert.Equal(beforeCancellation.Token, beforeException.CancellationToken);
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, await beforeDisposition);
+
+        using var afterCancellation = new CancellationTokenSource();
+        var afterCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-after-cancel"));
+        var after = afterCore.InvokeTracked(descriptor, new EmptyRequest(), afterCancellation.Token);
+        var afterDisposition = ObserveDispositionAtCompletion(after);
+        afterCancellation.Cancel();
+        var afterException = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => after.Completion);
+        Assert.Equal(afterCancellation.Token, afterException.CancellationToken);
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            await afterDisposition);
+
+        var time = new ManualTimeProvider();
+        var timeoutCore = new V2ClientConnectionCore(
+            new RecordingTransport(),
+            time,
+            TimeSpan.FromSeconds(1),
+            () => JsonRpcRequestId.FromString("tracked-timeout"));
+        var timedOut = timeoutCore.InvokeTracked(descriptor, new EmptyRequest());
+        time.Advance(TimeSpan.FromSeconds(1));
+        Assert.True((await timedOut.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            timedOut.Outcome.Disposition);
+
+        var syncFailure = Core(
+            new RecordingTransport(fail: true),
+            JsonRpcRequestId.FromString("tracked-sync-failure"))
+            .InvokeTracked(descriptor, new EmptyRequest());
+        Assert.True((await syncFailure.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            syncFailure.Outcome.Disposition);
+
+        var asyncFailureCore = Core(
+            new AsynchronousTextFailureTransport(),
+            JsonRpcRequestId.FromString("tracked-async-failure"));
+        var asyncFailure = asyncFailureCore.InvokeTracked(descriptor, new EmptyRequest());
+        Assert.True((await asyncFailure.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            asyncFailure.Outcome.Disposition);
+        await asyncFailureCore.WaitForSendObserversAsync();
+
+        var closeCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-close"));
+        var close = closeCore.InvokeTracked(descriptor, new EmptyRequest());
+        closeCore.Close();
+        Assert.True((await close.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            close.Outcome.Disposition);
+
+        var duplicateCore = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-duplicate"));
+        var first = duplicateCore.InvokeTracked(descriptor, new EmptyRequest());
+        var duplicate = duplicateCore.InvokeTracked(descriptor, new EmptyRequest());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => duplicate.Completion);
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, duplicate.Outcome.Disposition);
+        duplicateCore.Close();
+        await first.Completion;
+    }
+
+    [Fact]
+    public async Task TrackedUnitMappingRetainsOutcomeThroughMappedCompletion()
+    {
+        var core = Core(new RecordingTransport(), JsonRpcRequestId.FromString("tracked-unit"));
+        var operation = core.InvokeUnitTracked(
+            Descriptor<PathRequest, UnitResult>("mcsl.directory.create"),
+            new PathRequest("world/data"));
+        var outcome = operation.Outcome;
+        var disposition = ObserveDispositionAtCompletion(operation);
+
+        core.RouteText(Utf8("{\"jsonrpc\":\"2.0\",\"id\":\"tracked-unit\",\"result\":{}}"));
+
+        Assert.True((await operation.Completion).IsOk(out _));
+        Assert.Same(outcome, operation.Outcome);
+        Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, await disposition);
+    }
+
+    [Fact]
+    public async Task ClosedCompletesOnlyAfterWinningCloseFinishesReentrantCleanup()
+    {
+        var transport = new ReentrantCloseTransport();
+        var core = Core(transport, JsonRpcRequestId.FromString("reentrant-close"));
+        var operation = core.InvokeTracked(
+            Descriptor<EmptyRequest, PingResult>("mcsl.daemon.ping"),
+            new EmptyRequest());
+        var callbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var releaseCallback = new ManualResetEventSlim();
+        var reentrantSawClosed = true;
+        transport.OnCancellation = () =>
+        {
+            core.Close();
+            reentrantSawClosed = core.Closed.IsCompleted;
+            callbackEntered.TrySetResult();
+            if (!releaseCallback.Wait(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("The reentrant close callback was not released.");
+        };
+
+        var winningClose = Task.Run(core.Close);
+        await callbackEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        core.Close();
+        Assert.False(core.Closed.IsCompleted);
+        Assert.False(reentrantSawClosed);
+
+        releaseCallback.Set();
+        await winningClose.WaitAsync(TimeSpan.FromSeconds(5));
+        await core.Closed.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(core.Closed.IsCompletedSuccessfully);
+        Assert.True((await operation.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            operation.Outcome.Disposition);
+        transport.Release();
+        await core.WaitForSendObserversAsync();
+    }
+
     private static V2ClientConnectionCore Core(IV2ClientWireTransport transport, JsonRpcRequestId id, Action<V2ClientDiagnostic>? diagnostic = null) =>
         new(transport, TimeProvider.System, Timeout, () => id, diagnostic);
 
@@ -779,6 +997,15 @@ public sealed class V2ClientConnectionCoreTests
         Assert.IsType<RpcDescriptor<TRequest, TResult>>(BuiltInProtocolDefinitions.Rpcs.Single(value => value.Method.Value == method));
 
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
+
+    private static Task<V2ClientInvocationDisposition> ObserveDispositionAtCompletion<TResult>(
+        V2ClientInvocationOperation<TResult> operation)
+        where TResult : notnull =>
+        operation.Completion.ContinueWith(
+            _ => operation.Outcome.Disposition,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     private static DownloadSession DownloadSession(long length = 8, int maximumChunkSize = 4) =>
         new(Guid.NewGuid(), length, new string('b', 64), maximumChunkSize, DateTimeOffset.UtcNow.AddMinutes(5));
@@ -817,6 +1044,34 @@ public sealed class V2ClientConnectionCoreTests
 
         public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
             ValueTask.CompletedTask;
+    }
+
+    private sealed class AsynchronousTextFailureTransport : IV2ClientWireTransport
+    {
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken) =>
+            new(Task.FromException(new IOException("test-only asynchronous transport failure")));
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class ReentrantCloseTransport : IV2ClientWireTransport
+    {
+        private readonly TaskCompletionSource _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal Action? OnCancellation { get; set; }
+
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
+        {
+            cancellationToken.Register(() => OnCancellation?.Invoke());
+            return new(_completion.Task);
+        }
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+
+        internal void Release() => _completion.TrySetResult();
     }
 
     private sealed class DownloadTransport : IV2ClientWireTransport

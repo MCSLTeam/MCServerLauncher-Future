@@ -383,6 +383,218 @@ public sealed class V2ClientUploadCoordinatorTests
         Assert.Equal(0, core.ActiveSendLifetimeCount);
     }
 
+    [Fact]
+    public async Task TrackedUploadPreAdmissionPathsPublishNotAdmittedBeforeCompletion()
+    {
+        var validationTransport = new BinaryTransport();
+        var validationCore = Core(validationTransport);
+        var validation = validationCore.SendUploadChunkTracked(
+            new UploadChunkRequest(Guid.NewGuid(), 0, default),
+            1,
+            CancellationToken.None);
+        Assert.True((await validation.Completion).IsErr(out _));
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, validation.Outcome.Disposition);
+        Assert.Equal(0, validationTransport.BinarySendCount);
+
+        var closedTransport = new BinaryTransport();
+        var closedCore = Core(closedTransport);
+        closedCore.Close();
+        var closed = closedCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            CancellationToken.None);
+        Assert.True((await closed.Completion).IsErr(out _));
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, closed.Outcome.Disposition);
+        Assert.Equal(0, closedTransport.BinarySendCount);
+
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var canceledTransport = new BinaryTransport();
+        var canceledCore = Core(canceledTransport);
+        var canceled = canceledCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            cancellation.Token);
+        var canceledDisposition = ObserveDispositionAtCompletion(canceled);
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled.Completion);
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, await canceledDisposition);
+        Assert.Equal(0, canceledTransport.BinarySendCount);
+
+        var conflictTransport = new BinaryTransport();
+        var conflictCore = Core(conflictTransport);
+        var conflictSession = Guid.NewGuid();
+        var first = conflictCore.SendUploadChunkTracked(
+            Chunk(conflictSession, 0, 1),
+            1,
+            CancellationToken.None);
+        var conflict = conflictCore.SendUploadChunkTracked(
+            Chunk(conflictSession, 1, 2),
+            1,
+            CancellationToken.None);
+        Assert.True((await conflict.Completion).IsErr(out _));
+        Assert.Equal(V2ClientInvocationDisposition.NotAdmitted, conflict.Outcome.Disposition);
+        Assert.Equal(1, conflictTransport.BinarySendCount);
+        conflictCore.Close();
+        await first.Completion;
+    }
+
+    [Fact]
+    public async Task TrackedUploadAcknowledgementsDistinguishAuthoritativeResponseFromTupleMismatch()
+    {
+        var acceptedCore = Core(new BinaryTransport());
+        var acceptedSession = Guid.NewGuid();
+        var accepted = acceptedCore.SendUploadChunkTracked(
+            Chunk(acceptedSession, 0, 1),
+            1,
+            CancellationToken.None);
+        var acceptedDisposition = ObserveDispositionAtCompletion(accepted);
+        acceptedCore.RouteText(Accepted(acceptedSession, 0, 1));
+        Assert.True((await accepted.Completion).IsOk(out _));
+        Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, await acceptedDisposition);
+
+        var rejectedCore = Core(new BinaryTransport());
+        var rejectedSession = Guid.NewGuid();
+        var rejected = rejectedCore.SendUploadChunkTracked(
+            Chunk(rejectedSession, 0, 1),
+            1,
+            CancellationToken.None);
+        var rejectedDisposition = ObserveDispositionAtCompletion(rejected);
+        rejectedCore.RouteText(Rejected(rejectedSession, 0, 1, "conflict"));
+        Assert.True((await rejected.Completion).IsErr(out _));
+        Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, await rejectedDisposition);
+
+        var mismatchCore = Core(new BinaryTransport());
+        var mismatchSession = Guid.NewGuid();
+        var mismatch = mismatchCore.SendUploadChunkTracked(
+            Chunk(mismatchSession, 0, 1),
+            1,
+            CancellationToken.None);
+        mismatchCore.RouteText(Accepted(mismatchSession, 1, 1));
+        Assert.True((await mismatch.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            mismatch.Outcome.Disposition);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AdmissionPublicationPrecedesAcknowledgementVisibility(bool tupleMismatch)
+    {
+        using var admissionGate = new V2ClientUploadAdmissionTestGate();
+        var transport = new BinaryTransport();
+        var core = new V2ClientConnectionCore(
+            transport,
+            TimeProvider.System,
+            RequestTimeout,
+            admissionGate);
+        var session = Guid.NewGuid();
+        var invocation = Task.Run(() => core.SendUploadChunkTracked(
+            Chunk(session, 0, 1),
+            1,
+            CancellationToken.None));
+        await admissionGate.PublicationReached.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var acknowledgementOffset = tupleMismatch ? 1 : 0;
+        var route = Task.Run(() => core.RouteText(Accepted(session, acknowledgementOffset, 1)));
+        await admissionGate.RouteAttempted.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(invocation.IsCompleted);
+        Assert.False(route.IsCompleted);
+
+        admissionGate.ReleasePublication();
+        var operation = await invocation.WaitAsync(TimeSpan.FromSeconds(5));
+        await route.WaitAsync(TimeSpan.FromSeconds(5));
+        var legacyResult = await operation.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+
+        if (tupleMismatch)
+        {
+            Assert.True(legacyResult.IsErr(out var error));
+            Assert.Equal("protocol.upload_ack_mismatch", error!.Code);
+            Assert.Equal(
+                V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+                operation.Outcome.Disposition);
+        }
+        else
+        {
+            Assert.True(legacyResult.IsOk(out _));
+            Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, operation.Outcome.Disposition);
+        }
+
+        await core.WaitForSendObserversAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(0, transport.BinarySendCount);
+        Assert.Equal(0, core.UploadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+    }
+
+    [Fact]
+    public async Task TrackedUploadLocalTerminalPathsRemainAmbiguousAfterSend()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var canceledCore = Core(new BinaryTransport());
+        var canceled = canceledCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            cancellation.Token);
+        var canceledDisposition = ObserveDispositionAtCompletion(canceled);
+        cancellation.Cancel();
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled.Completion);
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            await canceledDisposition);
+
+        var time = new ManualTimeProvider();
+        var timeoutCore = new V2ClientConnectionCore(
+            new BinaryTransport(),
+            time,
+            TimeSpan.FromSeconds(1));
+        var timedOut = timeoutCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            CancellationToken.None);
+        time.Advance(TimeSpan.FromSeconds(1));
+        Assert.True((await timedOut.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            timedOut.Outcome.Disposition);
+
+        var syncFailureCore = Core(new BinaryTransport((_, _) =>
+            throw new IOException("test-only synchronous send failure")));
+        var syncFailure = syncFailureCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            CancellationToken.None);
+        Assert.True((await syncFailure.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            syncFailure.Outcome.Disposition);
+
+        var asyncFailureCore = Core(new BinaryTransport((_, _) =>
+            new ValueTask(Task.FromException(new IOException("test-only asynchronous send failure")))));
+        var asyncFailure = asyncFailureCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            CancellationToken.None);
+        Assert.True((await asyncFailure.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            asyncFailure.Outcome.Disposition);
+        await asyncFailureCore.WaitForSendObserversAsync();
+
+        var closeCore = Core(new BinaryTransport());
+        var closed = closeCore.SendUploadChunkTracked(
+            Chunk(Guid.NewGuid(), 0, 1),
+            1,
+            CancellationToken.None);
+        closeCore.Close();
+        Assert.True((await closed.Completion).IsErr(out _));
+        Assert.Equal(
+            V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+            closed.Outcome.Disposition);
+    }
+
     private static V2ClientConnectionCore Core(
         IV2ClientWireTransport transport,
         Action<V2ClientDiagnostic>? diagnostic = null) =>
@@ -398,6 +610,15 @@ public sealed class V2ClientUploadCoordinatorTests
         Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.file.upload.ack\",\"params\":{{\"session_id\":\"{sessionId:D}\",\"offset\":{offset},\"length\":{length},\"status\":\"rejected\",\"error\":{{\"code\":-32000,\"message\":\"Rejected\",\"data\":{{\"daemon_error_code\":\"remote.upload_rejected\",\"daemon_error_kind\":\"{wireKind}\",\"correlation_id\":\"upload-test\"}}}}}}}}");
 
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
+
+    private static Task<V2ClientInvocationDisposition> ObserveDispositionAtCompletion<TResult>(
+        V2ClientInvocationOperation<TResult> operation)
+        where TResult : notnull =>
+        operation.Completion.ContinueWith(
+            _ => operation.Outcome.Disposition,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     private sealed class BinaryTransport(
         Func<ImmutableArray<byte>, CancellationToken, ValueTask>? binarySend = null)

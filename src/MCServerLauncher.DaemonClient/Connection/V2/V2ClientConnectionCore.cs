@@ -33,6 +33,8 @@ internal sealed class V2ClientConnectionCore
     private readonly V2ClientDownloadCoordinator _downloadCoordinator;
     private readonly ConcurrentDictionary<JsonRpcRequestId, IV2ClientPendingRequest> _pending = new();
     private readonly CancellationTokenSource _connectionCancellation = new();
+    private readonly TaskCompletionSource _closed =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _admissionLock = new();
     private readonly object _sendObserverLock = new();
     private TaskCompletionSource _sendObserversDrained = CompletedSignal();
@@ -48,6 +50,45 @@ internal sealed class V2ClientConnectionCore
         Action<V2ClientDiagnostic>? diagnostic = null,
         Action<JsonRpcRemoteEventNotification>? remoteEvent = null,
         Action<UploadChunkAcknowledgement>? uploadAcknowledgement = null)
+        : this(
+            transport,
+            timeProvider,
+            requestTimeout,
+            idFactory,
+            diagnostic,
+            remoteEvent,
+            uploadAcknowledgement,
+            uploadAdmissionTestGate: null)
+    {
+    }
+
+    internal V2ClientConnectionCore(
+        IV2ClientWireTransport transport,
+        TimeProvider timeProvider,
+        TimeSpan requestTimeout,
+        V2ClientUploadAdmissionTestGate uploadAdmissionTestGate)
+        : this(
+            transport,
+            timeProvider,
+            requestTimeout,
+            idFactory: null,
+            diagnostic: null,
+            remoteEvent: null,
+            uploadAcknowledgement: null,
+            uploadAdmissionTestGate: uploadAdmissionTestGate ??
+                throw new ArgumentNullException(nameof(uploadAdmissionTestGate)))
+    {
+    }
+
+    private V2ClientConnectionCore(
+        IV2ClientWireTransport transport,
+        TimeProvider timeProvider,
+        TimeSpan requestTimeout,
+        Func<JsonRpcRequestId>? idFactory,
+        Action<V2ClientDiagnostic>? diagnostic,
+        Action<JsonRpcRemoteEventNotification>? remoteEvent,
+        Action<UploadChunkAcknowledgement>? uploadAcknowledgement,
+        V2ClientUploadAdmissionTestGate? uploadAdmissionTestGate)
     {
         _transport = transport ?? throw new ArgumentNullException(nameof(transport));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
@@ -68,7 +109,8 @@ internal sealed class V2ClientConnectionCore
             timeProvider,
             requestTimeout,
             _sendLifetimeCreatedCallback,
-            _sendLifetimeDisposedCallback);
+            _sendLifetimeDisposedCallback,
+            uploadAdmissionTestGate);
         _downloadCoordinator = new(timeProvider, requestTimeout, ProtocolFault);
     }
 
@@ -78,6 +120,7 @@ internal sealed class V2ClientConnectionCore
     internal int AbandonedDownloadCount => _downloadCoordinator.AbandonedDrainCount;
     internal int SendObserverCount => Volatile.Read(ref _sendObserverCount);
     internal int ActiveSendLifetimeCount => Volatile.Read(ref _activeSendLifetimeCount);
+    internal Task Closed => _closed.Task;
 
     internal Task WaitForSendObserversAsync()
     {
@@ -93,16 +136,40 @@ internal sealed class V2ClientConnectionCore
         CancellationToken cancellationToken = default)
         where TResult : notnull
     {
+        var operation = InvokeTracked(descriptor, request, cancellationToken);
+        return await operation.Completion.ConfigureAwait(false);
+    }
+
+    internal V2ClientInvocationOperation<TResult> InvokeTracked<TRequest, TResult>(
+        RpcDescriptor<TRequest, TResult> descriptor,
+        TRequest request,
+        CancellationToken cancellationToken = default)
+        where TResult : notnull
+    {
         ArgumentNullException.ThrowIfNull(descriptor);
         var id = _idFactory();
+        var outcome = new V2ClientInvocationOutcome();
         var pending = new PendingRequest<TResult>(
             id,
             descriptor.ResultTypeInfo,
+            outcome,
             _removePendingCallback,
             _sendLifetimeCreatedCallback,
             _sendLifetimeDisposedCallback);
-        var bytes = V2RequestWriter.Write(descriptor, id, request);
-        pending.Register(cancellationToken, _connectionCancellation.Token, _requestTimeout, _timeProvider);
+        var operation = new V2ClientInvocationOperation<TResult>(pending.Task, outcome);
+        ImmutableArray<byte> bytes;
+        try
+        {
+            bytes = V2RequestWriter.Write(descriptor, id, request);
+            pending.Register(cancellationToken, _connectionCancellation.Token, _requestTimeout, _timeProvider);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            pending.TryException(exception);
+            pending.DisposeSendLifetime();
+            return operation;
+        }
+
         ValueTask send = default;
         var admitted = false;
 
@@ -116,12 +183,10 @@ internal sealed class V2ClientConnectionCore
             {
                 if (!_pending.TryAdd(id, pending))
                 {
-                    pending.DisposeRegistrations();
-                    pending.DisposeSendLifetime();
-                    throw new InvalidOperationException("The V2 request id factory produced a duplicate identifier.");
+                    pending.TryException(new InvalidOperationException(
+                        "The V2 request id factory produced a duplicate identifier."));
                 }
-
-                if (!pending.IsCompleted)
+                else if (!pending.IsCompleted && pending.TryMarkAdmitted())
                 {
                     try
                     {
@@ -150,7 +215,7 @@ internal sealed class V2ClientConnectionCore
             pending.DisposeSendLifetime();
         }
 
-        return await pending.Task.ConfigureAwait(false);
+        return operation;
     }
 
     public async Task<Result<Unit, DaemonError>> InvokeUnitAsync<TRequest>(
@@ -158,7 +223,23 @@ internal sealed class V2ClientConnectionCore
         TRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await InvokeAsync(descriptor, request, cancellationToken).ConfigureAwait(false);
+        var operation = InvokeUnitTracked(descriptor, request, cancellationToken);
+        return await operation.Completion.ConfigureAwait(false);
+    }
+
+    internal V2ClientInvocationOperation<Unit> InvokeUnitTracked<TRequest>(
+        RpcDescriptor<TRequest, UnitResult> descriptor,
+        TRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var operation = InvokeTracked(descriptor, request, cancellationToken);
+        return new V2ClientInvocationOperation<Unit>(MapUnitAsync(operation.Completion), operation.Outcome);
+    }
+
+    private static async Task<Result<Unit, DaemonError>> MapUnitAsync(
+        Task<Result<UnitResult, DaemonError>> completion)
+    {
+        var result = await completion.ConfigureAwait(false);
         return result.IsOk(out _)
             ? Result.Ok<Unit, DaemonError>(Unit.Default)
             : Result.Err<Unit, DaemonError>(result.UnwrapErr());
@@ -167,12 +248,18 @@ internal sealed class V2ClientConnectionCore
     internal Task<Result<Unit, DaemonError>> SendUploadChunkAsync(
         UploadChunkRequest request,
         int maximumChunkSize,
+        CancellationToken cancellationToken) =>
+        SendUploadChunkTracked(request, maximumChunkSize, cancellationToken).Completion;
+
+    internal V2ClientInvocationOperation<Unit> SendUploadChunkTracked(
+        UploadChunkRequest request,
+        int maximumChunkSize,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         var validationError = ValidateUploadChunk(request, maximumChunkSize);
         if (validationError is not null)
-            return Task.FromResult(Result.Err<Unit, DaemonError>(validationError));
+            return NotAdmitted(Result.Err<Unit, DaemonError>(validationError));
 
         var frameBytes = new byte[BinaryFrameCodec.HeaderSize + request.Data.Length];
         var header = new BinaryFrameHeader(
@@ -198,10 +285,10 @@ internal sealed class V2ClientConnectionCore
         lock (_admissionLock)
         {
             if (_closing)
-                return Task.FromResult(Result.Err<Unit, DaemonError>(ClosedError()));
+                return NotAdmitted(Result.Err<Unit, DaemonError>(ClosedError()));
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<Result<Unit, DaemonError>>(cancellationToken);
+                return NotAdmittedCanceled<Unit>(cancellationToken);
 
             if (!_uploadCoordinator.TryAdmit(
                     request.SessionId,
@@ -210,7 +297,7 @@ internal sealed class V2ClientConnectionCore
                     out pending,
                     out admissionError))
             {
-                return Task.FromResult(Result.Err<Unit, DaemonError>(admissionError!));
+                return NotAdmitted(Result.Err<Unit, DaemonError>(admissionError!));
             }
 
             RegisterSendObserver();
@@ -220,11 +307,12 @@ internal sealed class V2ClientConnectionCore
         try
         {
             pending!.Register(cancellationToken);
-            if (pending.IsCompleted || _connectionCancellation.IsCancellationRequested)
+            if (pending.IsCompleted ||
+                _connectionCancellation.IsCancellationRequested)
             {
                 pending.DisposeSendLifetime();
                 CompleteSendObserver();
-                return pending.Task;
+                return pending.Operation;
             }
 
             send = _transport.SendBinaryAsync(frame, _connectionCancellation.Token);
@@ -237,11 +325,11 @@ internal sealed class V2ClientConnectionCore
             pending!.DisposeSendLifetime();
             CompleteSendObserver();
             ProtocolFault("The V2 upload binary send failed.");
-            return pending.Task;
+            return pending.Operation;
         }
 
         _ = ObserveUploadSendAsync(send, pending!);
-        return pending!.Task;
+        return pending!.Operation;
     }
 
     internal bool TryRegisterDownloadSession(DownloadSession session, out DaemonError? error) =>
@@ -376,7 +464,6 @@ internal sealed class V2ClientConnectionCore
 
     public void Close()
     {
-        KeyValuePair<JsonRpcRequestId, IV2ClientPendingRequest>[] snapshot;
         lock (_admissionLock)
         {
             if (_closing)
@@ -385,24 +472,49 @@ internal sealed class V2ClientConnectionCore
             }
 
             _closing = true;
-            snapshot = _pending.ToArray();
         }
 
-        _uploadCoordinator.Close(ClosedError());
-        _downloadCoordinator.Close(ClosedError());
         try
         {
-            _connectionCancellation.Cancel();
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
+            var snapshot = _pending.ToArray();
+            try
+            {
+                _uploadCoordinator.Close(ClosedError());
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
+            try
+            {
+                _downloadCoordinator.Close(ClosedError());
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
+            try
+            {
+                _connectionCancellation.Cancel();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
+            foreach (var item in snapshot)
+            {
+                try
+                {
+                    item.Value.TryError(ClosedError());
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                }
+            }
         }
         finally
         {
-            foreach (var item in snapshot)
-            {
-                item.Value.TryError(ClosedError());
-            }
+            _closed.TrySetResult();
         }
     }
 
@@ -428,7 +540,11 @@ internal sealed class V2ClientConnectionCore
             return;
         }
 
-        if (!pending.TryError(MapError(response.Error)))
+        var error = MapError(response.Error);
+        var completed = pending is IV2ClientTrackedPendingRequest tracked
+            ? tracked.TryResponseError(error)
+            : pending.TryError(error);
+        if (!completed)
         {
             UnknownResponse();
         }
@@ -632,6 +748,24 @@ internal sealed class V2ClientConnectionCore
     private static TransportDaemonError ClosedError() =>
         new(ClosedCode, "The V2 connection is closed.");
 
+    private static V2ClientInvocationOperation<TResult> NotAdmitted<TResult>(
+        Result<TResult, DaemonError> result)
+        where TResult : notnull
+    {
+        var outcome = new V2ClientInvocationOutcome();
+        outcome.TryComplete(authoritativeResponse: false);
+        return new(Task.FromResult(result), outcome);
+    }
+
+    private static V2ClientInvocationOperation<TResult> NotAdmittedCanceled<TResult>(
+        CancellationToken cancellationToken)
+        where TResult : notnull
+    {
+        var outcome = new V2ClientInvocationOutcome();
+        outcome.TryComplete(authoritativeResponse: false);
+        return new(Task.FromCanceled<Result<TResult, DaemonError>>(cancellationToken), outcome);
+    }
+
     internal static DaemonError MapError(JsonRpcErrorObject error)
     {
         var code = error.Data.DaemonErrorCode ?? $"jsonrpc.{error.Code}";
@@ -724,10 +858,11 @@ internal sealed class V2ClientConnectionCore
 
     private enum EnvelopeShape { Unknown, Success, Error, Notification }
 
-    private sealed class PendingRequest<TResult> : IV2ClientPendingRequest where TResult : notnull
+    private sealed class PendingRequest<TResult> : IV2ClientTrackedPendingRequest where TResult : notnull
     {
         private readonly JsonRpcRequestId _id;
         private readonly System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> _resultTypeInfo;
+        private readonly V2ClientInvocationOutcome _outcome;
         private readonly Func<JsonRpcRequestId, IV2ClientPendingRequest, bool> _remove;
         private readonly Action _sendLifetimeCreated;
         private readonly Action _sendLifetimeDisposedCallback;
@@ -737,30 +872,38 @@ internal sealed class V2ClientConnectionCore
         private CancellationTokenSource? _sendCancellation;
         private ITimer? _timeoutTimer;
         private readonly object _sendLifetimeLock = new();
+        private bool _sendLifetimeActive;
         private bool _sendLifetimeDisposed;
-        private int _won;
 
         public PendingRequest(
             JsonRpcRequestId id,
             System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> resultTypeInfo,
+            V2ClientInvocationOutcome outcome,
             Func<JsonRpcRequestId, IV2ClientPendingRequest, bool> remove,
             Action sendLifetimeCreated,
             Action sendLifetimeDisposed)
         {
             _id = id;
             _resultTypeInfo = resultTypeInfo;
+            _outcome = outcome;
             _remove = remove;
             _sendLifetimeCreated = sendLifetimeCreated;
             _sendLifetimeDisposedCallback = sendLifetimeDisposed;
         }
 
         public Task<Result<TResult, DaemonError>> Task => _completion.Task;
-        public bool IsCompleted => Volatile.Read(ref _won) != 0;
+        public bool IsCompleted => _outcome.IsCompleted;
         public CancellationToken SendCancellationToken => _sendCancellation?.Token ?? CancellationToken.None;
+
+        public bool TryMarkAdmitted() => _outcome.TryMarkAdmitted();
 
         public void Register(CancellationToken callerToken, CancellationToken connectionToken, TimeSpan timeout, TimeProvider timeProvider)
         {
             _sendCancellation = CancellationTokenSource.CreateLinkedTokenSource(callerToken, connectionToken);
+            lock (_sendLifetimeLock)
+            {
+                _sendLifetimeActive = true;
+            }
             _sendLifetimeCreated();
             if (callerToken.CanBeCanceled)
             {
@@ -770,10 +913,15 @@ internal sealed class V2ClientConnectionCore
                     pair.Item1.TryCancel(pair.Item2);
                 }, (this, callerToken));
                 _callerRegistration = registration;
-                if (Volatile.Read(ref _won) != 0)
+                if (_outcome.IsCompleted)
                 {
                     registration.Dispose();
                 }
+            }
+
+            if (_outcome.IsCompleted)
+            {
+                return;
             }
 
             var timer = timeProvider.CreateTimer(static state =>
@@ -784,7 +932,7 @@ internal sealed class V2ClientConnectionCore
             },
                 this, timeout, Timeout.InfiniteTimeSpan);
             _timeoutTimer = timer;
-            if (Volatile.Read(ref _won) != 0)
+            if (_outcome.IsCompleted)
             {
                 timer.Dispose();
             }
@@ -792,20 +940,34 @@ internal sealed class V2ClientConnectionCore
 
         public void DisposeRegistrations()
         {
-            _callerRegistration.Dispose();
-            _timeoutTimer?.Dispose();
+            try
+            {
+                _callerRegistration.Dispose();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
+            try
+            {
+                _timeoutTimer?.Dispose();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
         }
 
         public void DisposeSendLifetime()
         {
             lock (_sendLifetimeLock)
             {
-                if (_sendLifetimeDisposed)
+                if (_sendLifetimeDisposed || !_sendLifetimeActive)
                 {
                     return;
                 }
 
                 _sendLifetimeDisposed = true;
+                _sendLifetimeActive = false;
                 _sendCancellation?.Dispose();
                 _sendLifetimeDisposedCallback();
             }
@@ -823,26 +985,48 @@ internal sealed class V2ClientConnectionCore
                 return TryError(new TransportDaemonError("protocol.result_invalid", "The V2 response result violates its descriptor metadata."));
             }
 
-            return TryComplete(() => _completion.TrySetResult(Result.Ok<TResult, DaemonError>(result)));
+            return TryComplete(
+                authoritativeResponse: true,
+                () => _completion.TrySetResult(Result.Ok<TResult, DaemonError>(result)));
         }
 
         public bool TryError(DaemonError error) =>
-            TryComplete(() => _completion.TrySetResult(Result.Err<TResult, DaemonError>(error)));
+            TryComplete(
+                authoritativeResponse: false,
+                () => _completion.TrySetResult(Result.Err<TResult, DaemonError>(error)));
+
+        public bool TryResponseError(DaemonError error) =>
+            TryComplete(
+                authoritativeResponse: true,
+                () => _completion.TrySetResult(Result.Err<TResult, DaemonError>(error)));
+
+        public bool TryException(Exception exception) =>
+            TryComplete(
+                authoritativeResponse: false,
+                () => _completion.TrySetException(exception));
 
         public bool TryCancel(CancellationToken token) =>
-            TryComplete(() => _completion.TrySetCanceled(token));
+            TryComplete(
+                authoritativeResponse: false,
+                () => _completion.TrySetCanceled(token));
 
-        private bool TryComplete(Func<bool> complete)
+        private bool TryComplete(bool authoritativeResponse, Func<bool> complete)
         {
-            if (Interlocked.CompareExchange(ref _won, 1, 0) != 0)
+            if (!_outcome.TryComplete(authoritativeResponse))
             {
                 return false;
             }
 
-            CancelSend();
-            _remove(_id, this);
-            DisposeRegistrations();
-            complete();
+            try
+            {
+                CancelSend();
+                _remove(_id, this);
+                DisposeRegistrations();
+            }
+            finally
+            {
+                complete();
+            }
             return true;
         }
 
@@ -875,4 +1059,9 @@ internal interface IV2ClientPendingRequest
     bool TryError(DaemonError error);
     void DisposeRegistrations();
     void DisposeSendLifetime();
+}
+
+internal interface IV2ClientTrackedPendingRequest : IV2ClientPendingRequest
+{
+    bool TryResponseError(DaemonError error);
 }

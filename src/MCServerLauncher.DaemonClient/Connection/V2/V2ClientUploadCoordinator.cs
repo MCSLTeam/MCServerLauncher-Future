@@ -16,18 +16,21 @@ internal sealed class V2ClientUploadCoordinator
     private readonly TimeSpan _timeout;
     private readonly Action _sendLifetimeCreated;
     private readonly Action _sendLifetimeDisposed;
+    private readonly V2ClientUploadAdmissionTestGate? _admissionTestGate;
     private bool _closed;
 
     internal V2ClientUploadCoordinator(
         TimeProvider timeProvider,
         TimeSpan timeout,
         Action sendLifetimeCreated,
-        Action sendLifetimeDisposed)
+        Action sendLifetimeDisposed,
+        V2ClientUploadAdmissionTestGate? admissionTestGate = null)
     {
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _timeout = timeout;
         _sendLifetimeCreated = sendLifetimeCreated ?? throw new ArgumentNullException(nameof(sendLifetimeCreated));
         _sendLifetimeDisposed = sendLifetimeDisposed ?? throw new ArgumentNullException(nameof(sendLifetimeDisposed));
+        _admissionTestGate = admissionTestGate;
     }
 
     internal int PendingCount
@@ -86,52 +89,67 @@ internal sealed class V2ClientUploadCoordinator
                 _timeout,
                 _sendLifetimeCreated,
                 _sendLifetimeDisposed);
+            if (!pending.TryMarkAdmitted())
+                throw new InvalidOperationException("A new upload pending operation could not publish admission.");
+
+            // Deterministic internal test seam; production composition always leaves it null.
+            _admissionTestGate?.WaitAtPublicationBoundary();
             _sessions.Add(sessionId, new SessionEntry(pending));
             error = null;
-            return true;
         }
+
+        _admissionTestGate?.WaitForRouteCompletion();
+        return true;
     }
 
     internal UploadAcknowledgementRoute RouteAcknowledgement(UploadChunkAcknowledgement acknowledgement)
     {
-        PendingUpload? pending;
-        Result<Unit, DaemonError> result;
-        UploadAcknowledgementRoute route;
-
-        lock (_gate)
+        _admissionTestGate?.SignalRouteAttempt();
+        try
         {
-            if (_closed ||
-                !_sessions.TryGetValue(acknowledgement.SessionId, out var entry) ||
-                (pending = entry.Pending) is null)
+            PendingUpload? pending;
+            Result<Unit, DaemonError> result;
+            UploadAcknowledgementRoute route;
+
+            lock (_gate)
             {
-                return UploadAcknowledgementRoute.Ignored;
+                if (_closed ||
+                    !_sessions.TryGetValue(acknowledgement.SessionId, out var entry) ||
+                    (pending = entry.Pending) is null)
+                {
+                    return UploadAcknowledgementRoute.Ignored;
+                }
+
+                if (pending.Offset != acknowledgement.Offset || pending.Length != acknowledgement.Length)
+                {
+                    _sessions[acknowledgement.SessionId] = SessionEntry.Poisoned;
+                    result = Result.Err<Unit, DaemonError>(new TransportDaemonError(
+                        "protocol.upload_ack_mismatch",
+                        "The upload acknowledgement does not match the pending chunk."));
+                    route = UploadAcknowledgementRoute.ProtocolFault;
+                }
+                else if (acknowledgement.Status == UploadChunkAcknowledgementStatus.Accepted)
+                {
+                    _sessions.Remove(acknowledgement.SessionId);
+                    result = Result.Ok<Unit, DaemonError>(Unit.Default);
+                    route = UploadAcknowledgementRoute.Completed;
+                }
+                else
+                {
+                    _sessions[acknowledgement.SessionId] = SessionEntry.Poisoned;
+                    result = Result.Err<Unit, DaemonError>(
+                        V2ClientConnectionCore.MapError(acknowledgement.Error!));
+                    route = UploadAcknowledgementRoute.Completed;
+                }
             }
 
-            if (pending.Offset != acknowledgement.Offset || pending.Length != acknowledgement.Length)
-            {
-                _sessions[acknowledgement.SessionId] = SessionEntry.Poisoned;
-                result = Result.Err<Unit, DaemonError>(new TransportDaemonError(
-                    "protocol.upload_ack_mismatch",
-                    "The upload acknowledgement does not match the pending chunk."));
-                route = UploadAcknowledgementRoute.ProtocolFault;
-            }
-            else if (acknowledgement.Status == UploadChunkAcknowledgementStatus.Accepted)
-            {
-                _sessions.Remove(acknowledgement.SessionId);
-                result = Result.Ok<Unit, DaemonError>(Unit.Default);
-                route = UploadAcknowledgementRoute.Completed;
-            }
-            else
-            {
-                _sessions[acknowledgement.SessionId] = SessionEntry.Poisoned;
-                result = Result.Err<Unit, DaemonError>(
-                    V2ClientConnectionCore.MapError(acknowledgement.Error!));
-                route = UploadAcknowledgementRoute.Completed;
-            }
+            pending.TrySetResult(result, authoritativeResponse: route == UploadAcknowledgementRoute.Completed);
+            return route;
         }
-
-        pending.TrySetResult(result);
-        return route;
+        finally
+        {
+            _admissionTestGate?.SignalRouteCompleted();
+        }
     }
 
     internal void FailSend(PendingUpload pending, DaemonError error)
@@ -147,7 +165,7 @@ internal sealed class V2ClientUploadCoordinator
         }
 
         if (complete)
-            pending.TrySetResult(Result.Err<Unit, DaemonError>(error));
+            pending.TrySetResult(Result.Err<Unit, DaemonError>(error), authoritativeResponse: false);
     }
 
     internal void Close(DaemonError error)
@@ -169,7 +187,7 @@ internal sealed class V2ClientUploadCoordinator
 
         var result = Result.Err<Unit, DaemonError>(error);
         foreach (var item in pending)
-            item.TrySetResult(result);
+            item.TrySetResult(result, authoritativeResponse: false);
     }
 
     private void Cancel(PendingUpload pending, CancellationToken token)
@@ -202,9 +220,11 @@ internal sealed class V2ClientUploadCoordinator
 
         if (complete)
         {
-            pending.TrySetResult(Result.Err<Unit, DaemonError>(new TransportDaemonError(
-                "request.timeout",
-                "The V2 upload chunk acknowledgement timed out.")));
+            pending.TrySetResult(
+                Result.Err<Unit, DaemonError>(new TransportDaemonError(
+                    "request.timeout",
+                    "The V2 upload chunk acknowledgement timed out.")),
+                authoritativeResponse: false);
         }
     }
 
@@ -228,12 +248,13 @@ internal sealed class V2ClientUploadCoordinator
         private readonly Action _sendLifetimeCreated;
         private readonly Action _sendLifetimeDisposed;
         private readonly object _resourceGate = new();
+        private readonly V2ClientInvocationOutcome _outcome = new();
         private readonly TaskCompletionSource<Result<Unit, DaemonError>> _completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly V2ClientInvocationOperation<Unit> _operation;
         private CancellationTokenRegistration _callerRegistration;
         private ITimer? _timer;
         private bool _sendLifetimeActive;
-        private int _completed;
 
         internal PendingUpload(
             V2ClientUploadCoordinator owner,
@@ -253,13 +274,17 @@ internal sealed class V2ClientUploadCoordinator
             _timeout = timeout;
             _sendLifetimeCreated = sendLifetimeCreated;
             _sendLifetimeDisposed = sendLifetimeDisposed;
+            _operation = new(_completion.Task, _outcome);
         }
 
         internal Guid SessionId { get; }
         internal long Offset { get; }
         internal int Length { get; }
         internal Task<Result<Unit, DaemonError>> Task => _completion.Task;
-        internal bool IsCompleted => Volatile.Read(ref _completed) != 0;
+        internal V2ClientInvocationOperation<Unit> Operation => _operation;
+        internal bool IsCompleted => _outcome.IsCompleted;
+
+        internal bool TryMarkAdmitted() => _outcome.TryMarkAdmitted();
 
         internal void CreateSendLifetime()
         {
@@ -299,11 +324,11 @@ internal sealed class V2ClientUploadCoordinator
             StoreTimer(timer);
         }
 
-        internal bool TrySetResult(Result<Unit, DaemonError> result) =>
-            TryComplete(() => _completion.TrySetResult(result));
+        internal bool TrySetResult(Result<Unit, DaemonError> result, bool authoritativeResponse) =>
+            TryComplete(authoritativeResponse, () => _completion.TrySetResult(result));
 
         internal bool TrySetCanceled(CancellationToken token) =>
-            TryComplete(() => _completion.TrySetCanceled(token));
+            TryComplete(authoritativeResponse: false, () => _completion.TrySetCanceled(token));
 
         internal void DisposeSendLifetime()
         {
@@ -321,13 +346,19 @@ internal sealed class V2ClientUploadCoordinator
                 _sendLifetimeDisposed();
         }
 
-        private bool TryComplete(Func<bool> complete)
+        private bool TryComplete(bool authoritativeResponse, Func<bool> complete)
         {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) != 0)
+            if (!_outcome.TryComplete(authoritativeResponse))
                 return false;
 
-            DisposeRegistrations();
-            complete();
+            try
+            {
+                DisposeRegistrations();
+            }
+            finally
+            {
+                complete();
+            }
             return true;
         }
 
@@ -336,7 +367,7 @@ internal sealed class V2ClientUploadCoordinator
             var dispose = false;
             lock (_resourceGate)
             {
-                if (Volatile.Read(ref _completed) != 0)
+                if (_outcome.IsCompleted)
                     dispose = true;
                 else
                     _callerRegistration = registration;
@@ -351,7 +382,7 @@ internal sealed class V2ClientUploadCoordinator
             var dispose = false;
             lock (_resourceGate)
             {
-                if (Volatile.Read(ref _completed) != 0)
+                if (_outcome.IsCompleted)
                     dispose = true;
                 else
                     _timer = timer;
@@ -373,9 +404,63 @@ internal sealed class V2ClientUploadCoordinator
                 _timer = null;
             }
 
-            registration.Dispose();
-            timer?.Dispose();
+            try
+            {
+                registration.Dispose();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
+            try
+            {
+                timer?.Dispose();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
         }
+    }
+}
+
+internal sealed class V2ClientUploadAdmissionTestGate : IDisposable
+{
+    private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(10);
+    private readonly TaskCompletionSource _publicationReached =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _routeAttempted =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly ManualResetEventSlim _publicationRelease = new();
+    private readonly ManualResetEventSlim _routeCompleted = new();
+
+    internal Task PublicationReached => _publicationReached.Task;
+    internal Task RouteAttempted => _routeAttempted.Task;
+
+    internal void WaitAtPublicationBoundary()
+    {
+        _publicationReached.TrySetResult();
+        if (!_publicationRelease.Wait(WaitTimeout))
+            throw new TimeoutException("The upload admission publication test gate was not released.");
+    }
+
+    internal void SignalRouteAttempt() => _routeAttempted.TrySetResult();
+
+    internal void WaitForRouteCompletion()
+    {
+        if (!_routeCompleted.Wait(WaitTimeout))
+            throw new TimeoutException("The upload acknowledgement test route did not complete.");
+    }
+
+    internal void SignalRouteCompleted() => _routeCompleted.Set();
+
+    internal void ReleasePublication() => _publicationRelease.Set();
+
+    public void Dispose()
+    {
+        _publicationRelease.Set();
+        _routeCompleted.Set();
+        _publicationRelease.Dispose();
+        _routeCompleted.Dispose();
     }
 }
 
