@@ -147,6 +147,46 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
     }
 
     [Fact]
+    public void CatalogChangeSourceGeneratedDeserializationPreservesOperationSpecificSnapshotRules()
+    {
+        const string instanceId = "11111111-1111-1111-1111-111111111111";
+        var context = BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData;
+
+        var omittedSnapshot = JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}"}""",
+            context);
+        var explicitNullSnapshot = JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}","snapshot":null}""",
+            context);
+
+        Assert.NotNull(omittedSnapshot);
+        Assert.Equal(InstanceCatalogChangeOperation.Remove, omittedSnapshot.Operation);
+        Assert.Null(omittedSnapshot.Snapshot);
+        Assert.NotNull(explicitNullSnapshot);
+        Assert.Equal(InstanceCatalogChangeOperation.Remove, explicitNullSnapshot.Operation);
+        Assert.Null(explicitNullSnapshot.Snapshot);
+
+        Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"upsert","instance_id":"{{{instanceId}}}"}""",
+            context));
+        Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"upsert","instance_id":"{{{instanceId}}}","snapshot":null}""",
+            context));
+        Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"upsert","instance_id":"{{{instanceId}}}","snapshot":{"instance_id":"22222222-2222-2222-2222-222222222222","name":"other","instance_type":"mc_java","version":"1.21.5","status":"running"}}""",
+            context));
+        Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}","snapshot":{"instance_id":"{{{instanceId}}}","name":"first","instance_type":"mc_java","version":"1.21.5","status":"running"}}""",
+            context));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}","unknown":true}""",
+            context));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            $$$"""{"version":1,"operation":"replace","instance_id":"{{{instanceId}}}"}""",
+            context));
+    }
+
+    [Fact]
     public void UploadAndDownloadControlDtosEnforceTheirWireRules()
     {
         var sessionId = Guid.Parse("33333333-3333-3333-3333-333333333333");

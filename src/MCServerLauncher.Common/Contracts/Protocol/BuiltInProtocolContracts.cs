@@ -572,7 +572,7 @@ public sealed class InstanceCatalogChangedEventData
         long version,
         InstanceCatalogChangeOperation operation,
         Guid instanceId,
-        InstanceCatalogItem? snapshot)
+        InstanceCatalogItem? snapshot = null)
     {
         if (version < 0)
         {

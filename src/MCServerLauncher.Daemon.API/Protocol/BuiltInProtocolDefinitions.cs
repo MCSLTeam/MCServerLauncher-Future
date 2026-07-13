@@ -417,6 +417,7 @@ public static class ProtocolDocumentBuilder
         var snapshotSchema = properties[snapshotPropertyName] as JsonObject ??
                              throw new InvalidOperationException("The instance catalog change schema must define snapshot.");
         RemoveNullType(snapshotSchema, snapshotPropertyName);
+        snapshotSchema.Remove("default");
 
         var required = schema["required"] as JsonArray ??
                        throw new InvalidOperationException("The instance catalog change schema must define required properties.");

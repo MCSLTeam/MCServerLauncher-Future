@@ -223,7 +223,9 @@ public sealed class BuiltInProtocolDefinitionTests
             .Select(item => item.GetString()!)
             .ToArray();
         Assert.Equal(["version", "operation", "instance_id"], catalogChangeRequired);
-        Assert.Equal("object", catalogChangeSchema.GetProperty("properties").GetProperty("snapshot").GetProperty("type").GetString());
+        var catalogChangeSnapshot = catalogChangeSchema.GetProperty("properties").GetProperty("snapshot");
+        Assert.Equal("object", catalogChangeSnapshot.GetProperty("type").GetString());
+        Assert.False(catalogChangeSnapshot.TryGetProperty("default", out _));
 
         var catalogChangeConditions = catalogChangeSchema.GetProperty("allOf").EnumerateArray().ToArray();
         Assert.Equal(2, catalogChangeConditions.Length);
