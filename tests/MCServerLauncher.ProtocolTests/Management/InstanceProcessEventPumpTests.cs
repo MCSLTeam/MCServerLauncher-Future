@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
@@ -8,6 +9,8 @@ namespace MCServerLauncher.ProtocolTests;
 
 public sealed class InstanceProcessEventPumpTests
 {
+    private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+
     [Fact]
     public async Task WaitForExitAsync_DrainsStdoutAndStderrBeforeCompleting()
     {
@@ -92,11 +95,14 @@ public sealed class InstanceProcessEventPumpTests
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
-        using var process = new InstanceProcess(CreateStdinStopStartInfo(), isMcServer: false);
+        using var process = new InstanceProcess(CreateReadyStdinStopStartInfo(), isMcServer: false);
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var stoppedLogEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseStoppedLog = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         process.OnLog += async (message, _) =>
         {
+            if (message == "ready")
+                ready.TrySetResult();
             if (message == "stopped")
             {
                 stoppedLogEntered.TrySetResult();
@@ -106,16 +112,85 @@ public sealed class InstanceProcessEventPumpTests
         var instance = new ProcessBackedInstance(config, process);
         manager.Instances[config.Uuid] = instance;
         manager.RunningInstances[config.Uuid] = instance;
+        var started = false;
+        Task? stopTask = null;
+        Exception? testFailure = null;
+        List<Exception> cleanupFailures = [];
 
-        Assert.True(await process.StartAsync(delayToCheck: 20));
-        var stopTask = manager.StopAllInstances();
-        await stoppedLogEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
-        Assert.False(stopTask.IsCompleted);
+        try
+        {
+            started = await process.StartAsync(delayToCheck: 20);
+            Assert.True(started);
+            await ready.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            stopTask = manager.StopAllInstances();
+            ObserveFault(stopTask);
+            await stoppedLogEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.False(stopTask.IsCompleted);
 
-        releaseStoppedLog.SetResult();
-        await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(process.HasExit);
-        Assert.Equal(InstanceStatus.Stopped, process.Status);
+            releaseStoppedLog.SetResult();
+            await stopTask.WaitAsync(TestTimeout);
+            Assert.True(process.HasExit);
+            Assert.Equal(InstanceStatus.Stopped, process.Status);
+        }
+        catch (Exception exception)
+        {
+            testFailure = exception;
+        }
+        finally
+        {
+            releaseStoppedLog.TrySetResult();
+            if (started)
+            {
+                await CaptureCleanupFailureAsync(async () =>
+                {
+                    if (process.HasExit)
+                        return;
+
+                    var killTask = Task.Factory.StartNew(
+                        process.KillProcess,
+                        CancellationToken.None,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default);
+                    ObserveFault(killTask);
+                    try
+                    {
+                        await killTask.WaitAsync(TestTimeout);
+                    }
+                    catch (InvalidOperationException) when (process.HasExit)
+                    {
+                    }
+                }, cleanupFailures);
+            }
+
+            if (stopTask is not null)
+                await CaptureCleanupFailureAsync(() => stopTask.WaitAsync(TestTimeout), cleanupFailures);
+            if (started)
+            {
+                var completionTask = process.WaitForExitAsync();
+                ObserveFault(completionTask);
+                await CaptureCleanupFailureAsync(
+                    () => completionTask.WaitAsync(TestTimeout),
+                    cleanupFailures);
+            }
+        }
+
+        if (testFailure is not null)
+        {
+            if (cleanupFailures.Count > 0)
+            {
+                cleanupFailures.Insert(0, testFailure);
+                throw new AggregateException(
+                    "Process finalizer test and cleanup failed.",
+                    cleanupFailures);
+            }
+
+            ExceptionDispatchInfo.Capture(testFailure).Throw();
+        }
+
+        if (cleanupFailures.Count == 1)
+            ExceptionDispatchInfo.Capture(cleanupFailures[0]).Throw();
+        if (cleanupFailures.Count > 1)
+            throw new AggregateException("Process finalizer test cleanup failed.", cleanupFailures);
     }
 
     [Fact]
@@ -394,6 +469,13 @@ public sealed class InstanceProcessEventPumpTests
             : CreateStartInfo("/bin/sh", "-c", "read line; printf 'stopped\\n'");
     }
 
+    private static ProcessStartInfo CreateReadyStdinStopStartInfo()
+    {
+        return OperatingSystem.IsWindows()
+            ? CreateStartInfo("cmd.exe", "/d", "/c", "echo ready&set /p line=&echo stopped")
+            : CreateStartInfo("/bin/sh", "-c", "printf 'ready\\n'; read line; printf 'stopped\\n'");
+    }
+
     private static ProcessStartInfo CreateMinecraftDoneStartInfo()
     {
         return OperatingSystem.IsWindows()
@@ -422,6 +504,29 @@ public sealed class InstanceProcessEventPumpTests
         foreach (var argument in arguments)
             startInfo.ArgumentList.Add(argument);
         return startInfo;
+    }
+
+    private static async Task CaptureCleanupFailureAsync(
+        Func<Task> cleanup,
+        List<Exception> failures)
+    {
+        try
+        {
+            await cleanup();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+    }
+
+    private static void ObserveFault(Task task)
+    {
+        _ = task.ContinueWith(
+            static completed => _ = completed.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     private static InstanceConfig CreateConfig()
