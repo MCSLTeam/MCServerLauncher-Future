@@ -523,6 +523,36 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
         Assert.Equal(0, transport.SendCount);
     }
 
+    [Fact]
+    public async Task NonCatalogEventsForwardOnlyWhileStartedAndNonTerminal()
+    {
+        var transport = new ScriptedTransport();
+        var forwarded = new List<JsonRpcRemoteEventNotification>();
+        var next = 0;
+        var coordinator = new V2ClientConnectionCoordinator(
+            transport,
+            new RemoteInstanceCatalogMirror(),
+            TimeProvider.System,
+            Timeout,
+            () => JsonRpcRequestId.FromString($"forward-{Interlocked.Increment(ref next)}"),
+            nonCatalogEvent: (_, notification) => forwarded.Add(notification));
+        _ownedCoordinators.Add(coordinator);
+        var notification = Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.daemon.report\",\"params\":{\"sequence\":1,\"timestamp\":2,\"data\":{}}}");
+
+        coordinator.Core.RouteText(notification);
+        Assert.Empty(forwarded);
+        var start = coordinator.StartAsync();
+        await transport.NextAsync();
+        coordinator.Core.RouteText(notification);
+        Assert.Single(forwarded);
+
+        var close = coordinator.CloseAsync();
+        coordinator.Core.RouteText(notification);
+        Assert.Single(forwarded);
+        await close.WaitAsync(Timeout);
+        Assert.True((await start.WaitAsync(Timeout)).IsErr(out _));
+    }
+
     private V2ClientConnectionCoordinator Coordinator(
         IV2ClientWireTransport transport,
         RemoteInstanceCatalogMirror mirror)

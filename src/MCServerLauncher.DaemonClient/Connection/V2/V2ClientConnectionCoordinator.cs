@@ -19,6 +19,7 @@ internal sealed class V2ClientConnectionCoordinator
     private const string SupersededCode = "connection.epoch_superseded";
     private readonly object _gate = new();
     private readonly RemoteInstanceCatalogMirror _mirror;
+    private readonly Action<V2ClientConnectionCoordinator, JsonRpcRemoteEventNotification>? _nonCatalogEvent;
     private readonly Channel<byte> _refetchSignals;
     private readonly TaskCompletionSource<bool> _startSignal =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -40,10 +41,12 @@ internal sealed class V2ClientConnectionCoordinator
         TimeProvider timeProvider,
         TimeSpan requestTimeout,
         Func<JsonRpcRequestId>? idFactory = null,
-        Action<V2ClientDiagnostic>? diagnostic = null)
+        Action<V2ClientDiagnostic>? diagnostic = null,
+        Action<V2ClientConnectionCoordinator, JsonRpcRemoteEventNotification>? nonCatalogEvent = null)
     {
         ArgumentNullException.ThrowIfNull(transport);
         _mirror = mirror ?? throw new ArgumentNullException(nameof(mirror));
+        _nonCatalogEvent = nonCatalogEvent;
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _refetchSignals = Channel.CreateBounded<byte>(new BoundedChannelOptions(1)
@@ -301,6 +304,14 @@ internal sealed class V2ClientConnectionCoordinator
                 notification.Method,
                 V2ClientProtocol.InstanceCatalogChanged.Name.Value))
         {
+            var forward = false;
+            lock (_gate)
+            {
+                forward = _terminalError is null && _started;
+            }
+
+            if (forward)
+                _nonCatalogEvent?.Invoke(this, notification);
             return;
         }
 
