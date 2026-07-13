@@ -521,6 +521,20 @@ public sealed class JsonRpcOptionalPayload
             : new JsonRpcOptionalPayload(JsonRpcOptionalPayloadKind.Value, bytes, 0, bytes.Length);
     }
 
+    public T? Deserialize<T>(JsonTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return Kind switch
+        {
+            JsonRpcOptionalPayloadKind.Missing =>
+                throw new InvalidOperationException("A missing remote event field cannot be deserialized."),
+            JsonRpcOptionalPayloadKind.ExplicitNull => default,
+            JsonRpcOptionalPayloadKind.Value =>
+                JsonSerializer.Deserialize<T>(_utf8Json.AsSpan(_offset, _length), typeInfo),
+            _ => throw new InvalidOperationException("The remote event field has an invalid payload kind.")
+        };
+    }
+
     internal static JsonRpcOptionalPayload FromOwnedBuffer(byte[] utf8Json, int offset, int length) =>
         utf8Json.AsSpan(offset, length).SequenceEqual("null"u8)
             ? ExplicitNull

@@ -378,6 +378,53 @@ public sealed class JsonRpcWireContractTests
     }
 
     [Fact]
+    public void OptionalPayloadDeserializesAllStatesWithExplicitMetadata()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            JsonRpcOptionalPayload.Missing.Deserialize(Json.PingResult));
+        Assert.Null(JsonRpcOptionalPayload.ExplicitNull.Deserialize(Json.PingResult));
+        Assert.Equal(0, JsonRpcOptionalPayload.ExplicitNull.Deserialize(Json.Int32));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize("null"u8, Json.Int32));
+
+        var value = JsonRpcOptionalPayload.From(new PingResult(42), Json.PingResult);
+
+        Assert.Equal(42, value.Deserialize(Json.PingResult)!.Time);
+    }
+
+    [Fact]
+    public void OptionalPayloadDeserializePublishesNullableGenericReturnMetadata()
+    {
+        var method = typeof(JsonRpcOptionalPayload).GetMethod(nameof(JsonRpcOptionalPayload.Deserialize))!;
+        var nullableContext = method.GetCustomAttributesData().Single(attribute =>
+            attribute.AttributeType.FullName == "System.Runtime.CompilerServices.NullableContextAttribute");
+        var state = Assert.Single(nullableContext.ConstructorArguments);
+
+        Assert.Equal((byte)2, Assert.IsType<byte>(state.Value));
+    }
+
+    [Fact]
+    public void ParsedOptionalPayloadOwnsItsInputAndPropagatesTypedJsonErrors()
+    {
+        var source = System.Text.Encoding.UTF8.GetBytes(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.daemon.report\",\"params\":{\"sequence\":1,\"timestamp\":2,\"data\":{\"time\":42}}}");
+        var parsed = JsonRpcWireParser.ParseRemoteEventNotification(source);
+        source.AsSpan().Fill((byte)' ');
+
+        Assert.Equal(42, parsed.Params.Data.Deserialize(Json.PingResult)!.Time);
+
+        var incompatible = JsonRpcWireParser.ParseRemoteEventNotification(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.daemon.report\",\"params\":{\"sequence\":1,\"timestamp\":2,\"data\":{\"time\":\"invalid\"}}}"u8);
+        Assert.Throws<JsonException>(() => incompatible.Params.Data.Deserialize(Json.PingResult));
+    }
+
+    [Fact]
+    public void OptionalPayloadDeserializeRejectsNullMetadataBeforeStateDispatch()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            JsonRpcOptionalPayload.Missing.Deserialize<PingResult>(null!));
+    }
+
+    [Fact]
     public void StrictRemoteEventParserRejectsInvalidOuterAndParamsShapes()
     {
         foreach (var invalid in new[]
