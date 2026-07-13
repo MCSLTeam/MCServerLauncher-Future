@@ -117,14 +117,14 @@ internal static class DaemonServiceComposition
         LegacyEventQueueControl? legacyEventQueueControl = null)
     {
         a.Add<HttpPlugin>();
-        var v2Options = new WebSocketFeatureOptions()
-            .SetUrl(TouchSocketV2TransportPlugin.Endpoint)
-            .SetAutoPong(true);
+        var v2Options = new WebSocketFeatureOptions();
+        v2Options.SetUrl(TouchSocketV2TransportPlugin.Endpoint);
+        v2Options.SetAutoPong(true);
         v2Options.VerifyConnection = WsVerifyHandler.VerifyV2Handler;
         a.Add(new WebSocketFeature(v2Options));
-        var v1Options = new WebSocketFeatureOptions()
-            .SetUrl("/api/v1")
-            .SetAutoPong(true);
+        var v1Options = new WebSocketFeatureOptions();
+        v1Options.SetUrl("/api/v1");
+        v1Options.SetAutoPong(true);
         v1Options.VerifyConnection = WsVerifyHandler.VerifyHandler;
         a.Add(new WebSocketFeature(v1Options));
 

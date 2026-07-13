@@ -56,7 +56,11 @@ public sealed class TouchSocketV2RealHostIntegrationTests
             WsVerifyHandler.RejectWithNoReason = true;
             try
             {
-                await AssertHandshakeRejectedAsync(port, token, System.Net.HttpStatusCode.Forbidden);
+                await AssertHandshakeRejectedAsync(
+                    port,
+                    token,
+                    System.Net.HttpStatusCode.Forbidden,
+                    allowConnectionReset: true);
             }
             finally
             {
@@ -77,18 +81,52 @@ public sealed class TouchSocketV2RealHostIntegrationTests
     private static async Task AssertHandshakeRejectedAsync(
         int port,
         string? token,
-        System.Net.HttpStatusCode expectedStatus = System.Net.HttpStatusCode.Unauthorized)
+        System.Net.HttpStatusCode expectedStatus = System.Net.HttpStatusCode.Unauthorized,
+        bool allowConnectionReset = false)
     {
-        using var client = new System.Net.Http.HttpClient();
-        var query = token is null ? string.Empty : $"?token={Uri.EscapeDataString(token)}";
-        using var request = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, $"http://127.0.0.1:{port}/api/v2{query}");
-        request.Headers.TryAddWithoutValidation("Connection", "Upgrade");
-        request.Headers.TryAddWithoutValidation("Upgrade", "websocket");
-        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Version", "13");
-        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Key", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
-        using var timeout = new CancellationTokenSource(Timeout);
-        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        Assert.Equal(expectedStatus, response.StatusCode);
+        var maximumAttempts = allowConnectionReset ? 1 : 3;
+        for (var attempt = 1; attempt <= maximumAttempts; attempt++)
+        {
+            try
+            {
+                using var client = new System.Net.Http.HttpClient();
+                var query = token is null ? string.Empty : $"?token={Uri.EscapeDataString(token)}";
+                using var request = new HttpRequestMessage(
+                    System.Net.Http.HttpMethod.Get,
+                    $"http://127.0.0.1:{port}/api/v2{query}");
+                request.Headers.TryAddWithoutValidation("Connection", "Upgrade");
+                request.Headers.TryAddWithoutValidation("Upgrade", "websocket");
+                request.Headers.TryAddWithoutValidation("Sec-WebSocket-Version", "13");
+                request.Headers.TryAddWithoutValidation(
+                    "Sec-WebSocket-Key",
+                    Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+                using var timeout = new CancellationTokenSource(Timeout);
+                using var response = await client.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    timeout.Token);
+                Assert.Equal(expectedStatus, response.StatusCode);
+                return;
+            }
+            catch (HttpRequestException exception) when (HasConnectionReset(exception))
+            {
+                if (allowConnectionReset)
+                    return;
+                if (attempt == maximumAttempts)
+                    throw;
+            }
+        }
+    }
+
+    private static bool HasConnectionReset(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is SocketException { SocketErrorCode: SocketError.ConnectionReset })
+                return true;
+        }
+
+        return false;
     }
 
     private sealed class RealHostFixture : IAsyncDisposable

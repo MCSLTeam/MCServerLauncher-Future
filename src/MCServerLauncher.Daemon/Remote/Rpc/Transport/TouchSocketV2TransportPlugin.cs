@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -546,7 +547,10 @@ internal sealed class TouchSocketV2MessageAssembler(WebSocketMessageCombinator c
                 if (!frame.FIN || frame.PayloadData.Length > 125)
                     throw new InvalidDataException("A WebSocket control frame must be final and at most 125 bytes.");
                 var payload = frame.PayloadData.ToArray();
-                message = new WebSocketMessage(frame.Opcode, payload, static () => { });
+                message = new WebSocketMessage(
+                    frame.Opcode,
+                    new ReadOnlySequence<byte>(payload),
+                    static () => { });
                 return true;
             }
 
@@ -589,7 +593,10 @@ internal sealed class TouchSocketV2MessageAssembler(WebSocketMessageCombinator c
                 var payload = message.PayloadData.ToArray();
                 message.Dispose();
                 _combinator.Clear();
-                message = new WebSocketMessage(opcode, payload, static () => { });
+                message = new WebSocketMessage(
+                    opcode,
+                    new ReadOnlySequence<byte>(payload),
+                    static () => { });
             }
             return complete;
         }

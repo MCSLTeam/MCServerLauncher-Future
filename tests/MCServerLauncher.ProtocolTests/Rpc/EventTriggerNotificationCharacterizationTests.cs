@@ -150,12 +150,12 @@ public sealed class EventTriggerNotificationCharacterizationTests
         var constructor = internalWebSocketType.GetConstructor(
                               BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                               binder: null,
-                              [typeof(HttpSessionClient)],
+                              [typeof(HttpSessionClient), typeof(ITransport), typeof(bool)],
                               modifiers: null)
                           ?? throw new MissingMethodException(
                               internalWebSocketType.FullName,
-                              ".ctor(HttpSessionClient)");
-        var webSocket = constructor.Invoke([client]);
+                              ".ctor(HttpSessionClient, ITransport, bool)");
+        var webSocket = constructor.Invoke([client, transport, false]);
         SetPrivateField(typeof(HttpSessionClient), client, "m_webSocket", webSocket);
 
         var clients = httpService.Clients;
