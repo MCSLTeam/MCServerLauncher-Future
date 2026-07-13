@@ -17,6 +17,7 @@ namespace MCServerLauncher.DaemonClient.Connection.V2;
 internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnectionSession, IV2ClientWireTransport
 {
     private const string ClosedCode = "connection.closed";
+    private const long InboundTerminalMask = long.MinValue;
     private readonly object _gate = new();
     private readonly Uri _endpoint;
     private readonly string _token;
@@ -33,6 +34,7 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
     private bool _peerClosedDuringConnect;
     private bool _setupCompleted;
     private bool _disposed;
+    private long _inboundState;
 
     internal TouchSocketV2ClientConnectionSession(
         Uri endpoint,
@@ -133,14 +135,14 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
                     ValidateControlFrame(frame);
                     HandlePeerClosed();
                     break;
-                case WSDataType.Binary:
-                    FailProtocol("protocol.binary_not_supported", "Binary V2 frames are not enabled for this client session.");
-                    break;
                 default:
                     if (_assembler.TryAssemble(frame, out var message))
                     {
                         using (message)
-                            Coordinator.Core.RouteText(message.PayloadData.ToArray());
+                        {
+                            var payload = message.PayloadData.ToArray();
+                            RouteInbound(message.Opcode, payload);
+                        }
                     }
                     break;
             }
@@ -339,19 +341,25 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
 
     private static void ValidateControlFrame(WSDataFrame frame)
     {
-        if (!frame.FIN || frame.PayloadData.Length > 125)
+        if (!frame.FIN || frame.PayloadData.Length > 125 ||
+            (frame.Opcode == WSDataType.Close && frame.PayloadData.Length == 1))
             throw new InvalidDataException("A WebSocket control frame is invalid.");
     }
 
     private void Complete(DaemonError error)
     {
-        if (_completion.TrySetResult(error))
-            _assembler.Clear();
+        if (!TryEnterTerminal())
+            return;
+
+        // The terminal bit blocks callbacks arriving after this point before Core can observe them.
+        Coordinator.Core.Close();
+        _assembler.Clear();
+        _completion.TrySetResult(error);
     }
 
     private bool FinishConnectSuccess()
     {
-        var clear = false;
+        var peerClosed = false;
         lock (_gate)
         {
             if (_phase != SessionPhase.Connecting)
@@ -360,11 +368,11 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
             if (_peerClosedDuringConnect)
             {
                 _peerClosedDuringConnect = false;
-                clear = _completion.TrySetResult(PeerClosedError());
+                peerClosed = true;
             }
         }
-        if (clear)
-            _assembler.Clear();
+        if (peerClosed)
+            Complete(PeerClosedError());
         return true;
     }
 
@@ -372,7 +380,7 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
         DaemonError error,
         bool callerCanceled)
     {
-        var clear = false;
+        DaemonError? terminal = null;
         ConnectFailureResolution resolution;
         lock (_gate)
         {
@@ -390,7 +398,7 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
             {
                 _phase = SessionPhase.ConnectTerminated;
                 _peerClosedDuringConnect = false;
-                clear = _completion.TrySetResult(error);
+                terminal = error;
                 resolution = new(false, error);
             }
             else
@@ -402,8 +410,8 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
                         : ClosedError());
             }
         }
-        if (clear)
-            _assembler.Clear();
+        if (terminal is not null)
+            Complete(terminal);
         return resolution;
     }
 
@@ -420,7 +428,7 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
 
     private void HandlePeerClosed()
     {
-        var clear = false;
+        var peerClosed = false;
         lock (_gate)
         {
             if (_phase == SessionPhase.Connecting)
@@ -430,10 +438,54 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
             }
             if (_phase != SessionPhase.Connected)
                 return;
-            clear = _completion.TrySetResult(PeerClosedError());
+            peerClosed = true;
         }
-        if (clear)
-            _assembler.Clear();
+        if (peerClosed)
+            Complete(PeerClosedError());
+    }
+
+    private void RouteInbound(WSDataType opcode, ReadOnlySpan<byte> payload)
+    {
+        if (!TryEnterInboundRoute())
+            return;
+
+        try
+        {
+            if (opcode == WSDataType.Text)
+                Coordinator.Core.RouteText(payload);
+            else
+                Coordinator.Core.RouteBinary(payload);
+        }
+        finally
+        {
+            ExitInboundRoute();
+        }
+    }
+
+    private bool TryEnterInboundRoute()
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _inboundState);
+            if ((current & InboundTerminalMask) != 0)
+                return false;
+            if (Interlocked.CompareExchange(ref _inboundState, current + 1, current) == current)
+                return true;
+        }
+    }
+
+    private void ExitInboundRoute() => Interlocked.Decrement(ref _inboundState);
+
+    private bool TryEnterTerminal()
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _inboundState);
+            if ((current & InboundTerminalMask) != 0)
+                return false;
+            if (Interlocked.CompareExchange(ref _inboundState, current | InboundTerminalMask, current) == current)
+                return true;
+        }
     }
 
     internal static string BuildAuthenticatedEndpoint(Uri endpoint, string token)
