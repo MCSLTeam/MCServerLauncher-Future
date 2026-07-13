@@ -218,7 +218,11 @@ public sealed class V2RemoteEventBridgeTests
         _ = healthyOwner.Start();
         using var bridge = new V2RemoteEventBridge(host.Port, catalog, registry, TimeProvider.System);
 
-        for (var index = 0; index <= V2ConnectionOwner.OutboundCapacity; index++)
+        await host.Port.PublishAsync(new InstanceLogDomainEvent(Guid.NewGuid(), "warm-up"));
+        var warmup = Assert.Single(await healthySender.TakeAsync(1));
+        Assert.Contains("\"log\":\"warm-up\"", Utf8(warmup), StringComparison.Ordinal);
+
+        for (var index = 0; index < V2ConnectionOwner.OutboundCapacity; index++)
             await host.Port.PublishAsync(new InstanceLogDomainEvent(Guid.NewGuid(), $"line-{index}"));
 
         Assert.Equal(
@@ -228,7 +232,9 @@ public sealed class V2RemoteEventBridgeTests
         Assert.Equal(0, slow.Ledger.Count);
         Assert.Equal(1, slow.CleanupCount);
         Assert.True(registry.TryGet("healthy", out _));
-        Assert.Equal(V2ConnectionOwner.OutboundCapacity + 1, (await healthySender.TakeAsync(257)).Length);
+        Assert.Equal(
+            V2ConnectionOwner.OutboundCapacity + 1,
+            (await healthySender.TakeAsync(V2ConnectionOwner.OutboundCapacity)).Length);
     }
 
     [Fact]
