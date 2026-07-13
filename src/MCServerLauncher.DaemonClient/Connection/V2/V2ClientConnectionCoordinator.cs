@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -18,7 +17,6 @@ internal sealed class V2ClientConnectionCoordinator
 {
     private const string ClosedCode = "connection.closed";
     private const string SupersededCode = "connection.epoch_superseded";
-    private const string InvalidEventCode = "protocol.event_data_invalid";
     private readonly object _gate = new();
     private readonly RemoteInstanceCatalogMirror _mirror;
     private readonly Channel<byte> _refetchSignals;
@@ -324,26 +322,16 @@ internal sealed class V2ClientConnectionCoordinator
             return;
         }
 
-        InstanceCatalogChangedEventData? change;
-        try
+        var materialized = V2ClientEventMaterializer.Materialize(
+            V2ClientProtocol.InstanceCatalogChanged,
+            notification);
+        if (materialized.IsErr(out var materializationError))
         {
-            if (notification.Params.Meta.Kind != JsonRpcOptionalPayloadKind.Missing ||
-                notification.Params.Data.Kind != JsonRpcOptionalPayloadKind.Value)
-            {
-                throw new JsonException("The catalog event fields do not match their descriptor.");
-            }
-
-            change = notification.Params.Data.Deserialize(
-                V2ClientProtocol.InstanceCatalogChanged.DataTypeInfo);
-            if (change is null)
-                throw new JsonException("The catalog event data is required.");
-        }
-        catch (Exception exception) when (exception is JsonException or InvalidOperationException or
-                                           ArgumentException or FormatException or OverflowException or NotSupportedException)
-        {
-            CompleteEpoch(InvalidEventError());
+            CompleteEpoch(materializationError!);
             return;
         }
+
+        var change = materialized.Unwrap().Data.Value;
 
         var refetch = false;
         var superseded = false;
@@ -429,9 +417,6 @@ internal sealed class V2ClientConnectionCoordinator
 
     private static TransportDaemonError SupersededError() =>
         new(SupersededCode, "The V2 connection epoch no longer owns the catalog mirror generation.");
-
-    private static TransportDaemonError InvalidEventError() =>
-        new(InvalidEventCode, "A required V2 catalog event payload violates its descriptor metadata.");
 
     private static TransportDaemonError UnexpectedTransportError(Exception exception) =>
         new("transport.coordinator_failed", $"The V2 connection coordinator failed: {exception.GetType().Name}.");

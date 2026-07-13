@@ -166,6 +166,7 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
     [InlineData("")]
     [InlineData(",\"data\":null")]
     [InlineData(",\"meta\":{},\"data\":{\"version\":2,\"operation\":\"remove\",\"instance_id\":\"11111111-1111-1111-1111-111111111111\"}")]
+    [InlineData(",\"data\":{\"version\":2,\"operation\":\"remove\",\"instance_id\":\"11111111-1111-1111-1111-111111111111\",\"unknown_secret\":true}")]
     public async Task MalformedRequiredCatalogEventFaultsEpochWithoutPublication(string fields)
     {
         var transport = new ScriptedTransport();
@@ -178,7 +179,9 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
 
         Assert.False(coordinator.IsReady);
         Assert.IsType<TransportDaemonError>(coordinator.TerminalError);
-        Assert.Equal("protocol.event_data_invalid", coordinator.TerminalError!.Code);
+        Assert.Equal(V2ClientEventMaterializer.InvalidEventCode, coordinator.TerminalError!.Code);
+        Assert.Equal(V2ClientEventMaterializer.InvalidEventMessage, coordinator.TerminalError.Message);
+        Assert.Null(coordinator.TerminalError.Details);
         Assert.Same(historical, mirror.Current);
         Assert.Equal("one", mirror.Current.Value.Instances[FirstId].Name);
         await coordinator.CloseAsync().WaitAsync(Timeout);
