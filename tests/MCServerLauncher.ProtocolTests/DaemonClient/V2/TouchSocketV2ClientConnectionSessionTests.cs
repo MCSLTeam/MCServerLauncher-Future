@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -302,6 +304,73 @@ public sealed class TouchSocketV2ClientConnectionSessionTests
         Assert.False(session.Completion.IsCompleted);
     }
 
+    [Fact]
+    public async Task SendBinaryAsync_RejectsDefaultFrame()
+    {
+        await using var session = CreateSession();
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            session.SendBinaryAsync(default, CancellationToken.None));
+
+        Assert.Equal("frame", exception.ParamName);
+    }
+
+    [Fact]
+    public async Task SendBinaryAsync_SendsExactFinalBinaryFramesIncludingEmpty()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var endpoint = new Uri($"ws://127.0.0.1:{LocalPort(listener)}/api/v2");
+        await using var session = CreateSession(endpoint);
+        var connecting = session.ConnectAsync(CancellationToken.None);
+        using var accepted = await listener.AcceptTcpClientAsync().WaitAsync(Timeout);
+        var headers = await ReadHandshakeAsync(accepted);
+        await CompleteHandshakeAsync(accepted, headers);
+        Assert.True((await connecting.WaitAsync(Timeout)).IsOk(out _));
+        var payload = ImmutableArray.Create<byte>(0x00, 0x7f, 0x80, 0xff);
+
+        await session.SendBinaryAsync(payload, CancellationToken.None);
+        var populated = await ReadClientFrameAsync(accepted);
+        await session.SendBinaryAsync(ImmutableArray<byte>.Empty, CancellationToken.None);
+        var empty = await ReadClientFrameAsync(accepted);
+
+        Assert.True(populated.Final);
+        Assert.Equal(WSDataType.Binary, populated.Opcode);
+        Assert.Equal(payload.AsSpan().ToArray(), populated.Payload);
+        Assert.True(empty.Final);
+        Assert.Equal(WSDataType.Binary, empty.Opcode);
+        Assert.Empty(empty.Payload);
+    }
+
+    [Fact]
+    public async Task SendBinaryAsync_CallerCancellationPreservesTokenWithoutCompletingSession()
+    {
+        await using var session = CreateSession();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await session.SendBinaryAsync(ImmutableArray<byte>.Empty, cancellation.Token));
+
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.False(session.Completion.IsCompleted);
+    }
+
+    [Fact]
+    public async Task SendBinaryAsync_SendFailureCompletesSessionWithTypedError()
+    {
+        await using var session = CreateSession();
+
+        var exception = await Record.ExceptionAsync(async () =>
+            await session.SendBinaryAsync(ImmutableArray.Create<byte>(1), CancellationToken.None));
+
+        Assert.NotNull(exception);
+        Assert.IsNotType<OperationCanceledException>(exception);
+        var error = await session.Completion.WaitAsync(Timeout);
+        Assert.Equal("transport.send_failed", error.Code);
+        Assert.Equal(Daemon.API.Errors.DaemonErrorKind.Transport, error.Kind);
+    }
+
     private static TouchSocketV2ClientConnectionSession CreateSession(
         Action<V2ClientDiagnostic>? diagnostic = null) =>
         CreateSession(Endpoint, diagnostic);
@@ -353,4 +422,42 @@ public sealed class TouchSocketV2ClientConnectionSessionTests
         await client.GetStream().WriteAsync(Encoding.ASCII.GetBytes(response));
         await client.GetStream().FlushAsync();
     }
+
+    private static async Task<CapturedClientFrame> ReadClientFrameAsync(TcpClient client)
+    {
+        var stream = client.GetStream();
+        using var timeout = new CancellationTokenSource(Timeout);
+        var header = new byte[2];
+        await stream.ReadExactlyAsync(header, timeout.Token);
+        var final = (header[0] & 0x80) != 0;
+        var opcode = (WSDataType)(header[0] & 0x0f);
+        Assert.NotEqual(0, header[1] & 0x80);
+        ulong payloadLength = (uint)(header[1] & 0x7f);
+        if (payloadLength == 126)
+        {
+            var extended = new byte[2];
+            await stream.ReadExactlyAsync(extended, timeout.Token);
+            payloadLength = BinaryPrimitives.ReadUInt16BigEndian(extended);
+        }
+        else if (payloadLength == 127)
+        {
+            var extended = new byte[8];
+            await stream.ReadExactlyAsync(extended, timeout.Token);
+            payloadLength = BinaryPrimitives.ReadUInt64BigEndian(extended);
+        }
+        Assert.InRange(payloadLength, 0ul, (ulong)int.MaxValue);
+
+        var mask = new byte[4];
+        await stream.ReadExactlyAsync(mask, timeout.Token);
+        var payload = new byte[(int)payloadLength];
+        await stream.ReadExactlyAsync(payload, timeout.Token);
+        for (var index = 0; index < payload.Length; index++)
+            payload[index] ^= mask[index % mask.Length];
+        return new CapturedClientFrame(final, opcode, payload);
+    }
+
+    private readonly record struct CapturedClientFrame(
+        bool Final,
+        WSDataType Opcode,
+        byte[] Payload);
 }

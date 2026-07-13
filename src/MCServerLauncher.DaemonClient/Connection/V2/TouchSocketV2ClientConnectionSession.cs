@@ -85,6 +85,15 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
         return new ValueTask(SendTextCoreAsync(utf8Json, cancellationToken));
     }
 
+    public ValueTask SendBinaryAsync(
+        ImmutableArray<byte> frame,
+        CancellationToken cancellationToken)
+    {
+        if (frame.IsDefault)
+            throw new ArgumentException("The V2 binary frame must be initialized.", nameof(frame));
+        return new ValueTask(SendBinaryCoreAsync(frame, cancellationToken));
+    }
+
     public Task CloseAsync()
     {
         lock (_gate)
@@ -214,6 +223,32 @@ internal sealed class TouchSocketV2ClientConnectionSession : IV2ClientConnection
             await _client.SendAsync(
                 utf8Json.AsMemory(),
                 WSDataType.Text,
+                true,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Complete(new TransportDaemonError(
+                "transport.send_failed",
+                $"The V2 WebSocket send failed: {exception.GetType().Name}."));
+            throw;
+        }
+    }
+
+    private async Task SendBinaryCoreAsync(
+        ImmutableArray<byte> frame,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await _client.SendAsync(
+                frame.AsMemory(),
+                WSDataType.Binary,
                 true,
                 cancellationToken).ConfigureAwait(false);
         }

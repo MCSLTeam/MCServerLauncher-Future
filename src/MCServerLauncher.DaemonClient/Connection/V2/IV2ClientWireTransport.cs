@@ -7,6 +7,7 @@ namespace MCServerLauncher.DaemonClient.Connection.V2;
 internal interface IV2ClientWireTransport
 {
     ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken);
+    ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken);
 }
 
 internal enum V2ClientDiagnosticKind

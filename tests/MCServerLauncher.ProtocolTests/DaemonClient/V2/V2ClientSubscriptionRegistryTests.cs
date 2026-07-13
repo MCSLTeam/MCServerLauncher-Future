@@ -731,6 +731,9 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
             _available.Release();
             return ValueTask.CompletedTask;
         }
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            throw new NotSupportedException("This text-only test transport does not support binary frames.");
         internal async Task<SentRequest> NextAsync()
         {
             Assert.True(await _available.WaitAsync(Timeout));

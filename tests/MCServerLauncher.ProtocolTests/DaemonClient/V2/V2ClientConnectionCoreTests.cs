@@ -426,8 +426,7 @@ public sealed class V2ClientConnectionCoreTests
 
         core.RouteText(Utf8(json));
 
-        var diagnostic = Assert.Single(diagnostics);
-        Assert.Equal(V2ClientDiagnosticKind.ConsumerFault, diagnostic.Kind);
+        var diagnostic = Assert.Single(diagnostics, value => value.Kind == V2ClientDiagnosticKind.ConsumerFault);
         Assert.DoesNotContain("secret", diagnostic.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -439,6 +438,129 @@ public sealed class V2ClientConnectionCoreTests
             remoteEvent: _ => throw new InvalidOperationException("consumer failed"));
 
         core.RouteText(Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.daemon.report\",\"params\":{\"sequence\":1,\"timestamp\":2}}"));
+    }
+
+    [Fact]
+    public async Task SynchronouslyBlockingBinarySendCannotHoldAdmissionLockAgainstClose()
+    {
+        var transport = new CancellationBlockingBinaryTransport();
+        var core = new V2ClientConnectionCore(transport, TimeProvider.System, Timeout);
+        var session = Guid.NewGuid();
+        var upload = Task.Run(() => core.SendUploadChunkAsync(
+            new UploadChunkRequest(session, 0, ImmutableArray.Create<byte>(1)),
+            1,
+            CancellationToken.None));
+        await transport.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            var close = Task.Run(core.Close);
+            await close.WaitAsync(TimeSpan.FromSeconds(5));
+            await transport.TokenCanceled.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            transport.ReleaseForFailedAssertion();
+        }
+
+        var result = await upload.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("connection.closed", error!.Code);
+        await core.WaitForSendObserversAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(1, transport.BinarySendCount);
+        Assert.Equal(0, core.UploadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+    }
+
+    [Fact]
+    public async Task AlreadyCanceledCallerRegistrationCompletesSynchronouslyAndPoisonsPending()
+    {
+        var time = new TrackingTimeProvider();
+        var lifetimeCreated = 0;
+        var lifetimeDisposed = 0;
+        var coordinator = new V2ClientUploadCoordinator(
+            time,
+            Timeout,
+            () => Interlocked.Increment(ref lifetimeCreated),
+            () => Interlocked.Increment(ref lifetimeDisposed));
+        var session = Guid.NewGuid();
+        Assert.True(coordinator.TryAdmit(session, 0, 1, out var pending, out _));
+        pending!.CreateSendLifetime();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        pending.Register(cancellation.Token);
+
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.Task);
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.True(pending.IsCompleted);
+        Assert.Equal(0, time.CreateTimerCount);
+        pending.DisposeSendLifetime();
+        Assert.Equal(1, lifetimeCreated);
+        Assert.Equal(1, lifetimeDisposed);
+        Assert.False(coordinator.TryAdmit(session, 1, 1, out _, out var error));
+        Assert.IsType<ConflictDaemonError>(error);
+        Assert.Equal("file.upload.session_poisoned", error!.Code);
+    }
+
+    [Fact]
+    public async Task CloseDuringTimerRegistrationDoesNotBlockAndSkipsBinarySend()
+    {
+        var time = new BlockingTimerCreationTimeProvider();
+        var transport = new BinaryCountingTransport();
+        var core = new V2ClientConnectionCore(transport, time, Timeout);
+        var upload = Task.Run(() => core.SendUploadChunkAsync(
+            new UploadChunkRequest(Guid.NewGuid(), 0, ImmutableArray.Create<byte>(1)),
+            1,
+            CancellationToken.None));
+        await time.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            await Task.Run(core.Close).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            time.Release();
+        }
+
+        var result = await upload.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("connection.closed", error!.Code);
+        Assert.Equal(0, transport.BinarySendCount);
+        Assert.True(time.TimerDisposed);
+        Assert.Equal(0, core.UploadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+    }
+
+    [Fact]
+    public async Task SynchronousTimeoutDuringRegistrationSkipsBinarySendAndPoisonsSession()
+    {
+        var time = new SynchronousTimeoutTimeProvider();
+        var transport = new BinaryCountingTransport();
+        var core = new V2ClientConnectionCore(transport, time, TimeSpan.FromSeconds(1));
+        var session = Guid.NewGuid();
+
+        var result = await core.SendUploadChunkAsync(
+            new UploadChunkRequest(session, 0, ImmutableArray.Create<byte>(1)),
+            1,
+            CancellationToken.None);
+
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("request.timeout", error!.Code);
+        Assert.Equal(0, transport.BinarySendCount);
+        Assert.True(time.TimerDisposed);
+        Assert.Equal(0, core.UploadPendingCount);
+        Assert.Equal(0, core.SendObserverCount);
+        Assert.Equal(0, core.ActiveSendLifetimeCount);
+        var retry = await core.SendUploadChunkAsync(
+            new UploadChunkRequest(session, 1, ImmutableArray.Create<byte>(2)),
+            1,
+            CancellationToken.None);
+        Assert.True(retry.IsErr(out var poisoned));
+        Assert.IsType<ConflictDaemonError>(poisoned);
     }
 
     private static V2ClientConnectionCore Core(RecordingTransport transport, JsonRpcRequestId id, Action<V2ClientDiagnostic>? diagnostic = null) =>
@@ -460,6 +582,9 @@ public sealed class V2ClientConnectionCoreTests
             _bytes = utf8Json;
             return ValueTask.CompletedTask;
         }
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
     }
 
     private sealed class BlockingTransport : IV2ClientWireTransport
@@ -472,6 +597,8 @@ public sealed class V2ClientConnectionCoreTests
             cancellationToken.Register(() => _tokenCanceled.TrySetResult());
             return new(_completion.Task);
         }
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            new(_completion.Task);
         public void Succeed() => _completion.TrySetResult();
         public void Fail() => _completion.TrySetException(new IOException("late test failure"));
     }
@@ -484,6 +611,8 @@ public sealed class V2ClientConnectionCoreTests
             Interlocked.Increment(ref SendCount);
             return ValueTask.CompletedTask;
         }
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
     }
 
     private sealed class SynchronouslyEnteringTransport : IV2ClientWireTransport
@@ -504,6 +633,9 @@ public sealed class V2ClientConnectionCoreTests
             return new(_completion.Task);
         }
 
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            new(_completion.Task);
+
         public void Succeed() => _completion.TrySetResult();
     }
 
@@ -517,7 +649,111 @@ public sealed class V2ClientConnectionCoreTests
             return new(_completion.Task);
         }
 
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
+            new(_completion.Task);
+
         public void Release() => _completion.TrySetResult();
+    }
+
+    private sealed class BinaryCountingTransport : IV2ClientWireTransport
+    {
+        public int BinarySendCount;
+
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref BinarySendCount);
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class CancellationBlockingBinaryTransport : IV2ClientWireTransport
+    {
+        private readonly ManualResetEventSlim _failedAssertionRelease = new();
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _tokenCanceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task Entered => _entered.Task;
+        public Task TokenCanceled => _tokenCanceled.Task;
+        public int BinarySendCount;
+
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref BinarySendCount);
+            _entered.TrySetResult();
+            var signaled = WaitHandle.WaitAny(
+                [cancellationToken.WaitHandle, _failedAssertionRelease.WaitHandle],
+                TimeSpan.FromSeconds(10));
+            if (signaled == WaitHandle.WaitTimeout)
+                throw new TimeoutException("The connection token was not canceled.");
+            if (cancellationToken.IsCancellationRequested)
+            {
+                _tokenCanceled.TrySetResult();
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            throw new InvalidOperationException("The binary send was released after a failed assertion.");
+        }
+
+        public void ReleaseForFailedAssertion() => _failedAssertionRelease.Set();
+    }
+
+    private sealed class TrackingTimeProvider : TimeProvider
+    {
+        public int CreateTimerCount;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Interlocked.Increment(ref CreateTimerCount);
+            return new TrackingTimer();
+        }
+    }
+
+    private sealed class BlockingTimerCreationTimeProvider : TimeProvider
+    {
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly ManualResetEventSlim _release = new();
+        private TrackingTimer? _timer;
+        public Task Entered => _entered.Task;
+        public bool TimerDisposed => _timer?.Disposed ?? false;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            _entered.TrySetResult();
+            if (!_release.Wait(TimeSpan.FromSeconds(10)))
+                throw new TimeoutException("The test timer creation was not released.");
+            return _timer = new TrackingTimer();
+        }
+
+        public void Release() => _release.Set();
+    }
+
+    private sealed class SynchronousTimeoutTimeProvider : TimeProvider
+    {
+        private TrackingTimer? _timer;
+        public bool TimerDisposed => _timer?.Disposed ?? false;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            callback(state);
+            return _timer = new TrackingTimer();
+        }
+    }
+
+    private sealed class TrackingTimer : ITimer
+    {
+        public bool Disposed { get; private set; }
+        public bool Change(TimeSpan dueTime, TimeSpan period) => !Disposed;
+        public void Dispose() => Disposed = true;
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed class ManualTimeProvider : TimeProvider

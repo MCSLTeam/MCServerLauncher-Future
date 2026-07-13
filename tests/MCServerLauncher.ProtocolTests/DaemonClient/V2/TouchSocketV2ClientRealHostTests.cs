@@ -1,4 +1,7 @@
 using System.Net;
+using System.Collections.Immutable;
+using System.Security.Cryptography;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Bootstrap;
@@ -55,6 +58,58 @@ public sealed class TouchSocketV2ClientRealHostTests
         await AssertEventuallyAsync(() =>
             fixture.Host.Resolver.GetRequiredService<TouchSocketV2TransportPlugin>().ConnectionCount == 0 &&
             fixture.Host.Resolver.GetRequiredService<V2EventConnectionRegistry>().RawEntryCount == 0);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    public async Task ProductionSession_UploadsBinaryChunkThroughPrivateAcknowledgementRouting()
+    {
+        await using var fixture = new ProductionRealHostFixture();
+        await fixture.StartAsync();
+        var factory = new TouchSocketV2ClientConnectionSessionFactory(
+            new Uri($"ws://127.0.0.1:{fixture.Port}/api/v2"),
+            AppConfig.Get().MainToken,
+            requestTimeout: Timeout);
+        await using var owner = new V2ClientConnectionOwner(
+            factory,
+            TimeProvider.System,
+            TimeSpan.FromMilliseconds(20));
+        using var timeout = new CancellationTokenSource(Timeout);
+        var content = "private-upload-ack"u8.ToArray();
+        var relativePath = Path.Combine("protocol-tests", $"v2-upload-{Guid.NewGuid():N}.bin");
+        var absolutePath = Path.Combine(Daemon.Storage.FileManager.Root, relativePath);
+
+        try
+        {
+            var connected = await owner.ConnectAsync(timeout.Token);
+            Assert.True(connected.IsOk(out _));
+            Assert.True(owner.TryGetReadyCore(out var core));
+            var hash = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant();
+            var opened = await core.InvokeAsync(
+                V2ClientProtocol.OpenUpload,
+                new UploadOpenRequest(relativePath, content.Length, hash),
+                timeout.Token);
+            Assert.True(opened.IsOk(out var session));
+
+            var uploaded = await core.SendUploadChunkAsync(
+                new UploadChunkRequest(session!.SessionId, 0, ImmutableArray.Create(content)),
+                session.MaxChunkSize,
+                timeout.Token);
+            Assert.True(uploaded.IsOk(out _));
+
+            var closed = await core.InvokeUnitAsync(
+                V2ClientProtocol.CloseUpload,
+                new FileSessionReference(session.SessionId),
+                timeout.Token);
+            Assert.True(closed.IsOk(out _));
+            Assert.Equal(content, await File.ReadAllBytesAsync(absolutePath, timeout.Token));
+        }
+        finally
+        {
+            await owner.CloseAsync().WaitAsync(Timeout);
+            if (File.Exists(absolutePath))
+                File.Delete(absolutePath);
+        }
     }
 
     [Fact]

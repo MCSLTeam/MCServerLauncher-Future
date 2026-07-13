@@ -3,9 +3,11 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
@@ -27,6 +29,7 @@ internal sealed class V2ClientConnectionCore
     private readonly Action _sendLifetimeCreatedCallback;
     private readonly Action _sendLifetimeDisposedCallback;
     private readonly Func<JsonRpcRequestId, IPendingRequest, bool> _removePendingCallback;
+    private readonly V2ClientUploadCoordinator _uploadCoordinator;
     private readonly ConcurrentDictionary<JsonRpcRequestId, IPendingRequest> _pending = new();
     private readonly CancellationTokenSource _connectionCancellation = new();
     private readonly object _admissionLock = new();
@@ -60,9 +63,15 @@ internal sealed class V2ClientConnectionCore
         _sendLifetimeCreatedCallback = SendLifetimeCreated;
         _sendLifetimeDisposedCallback = SendLifetimeDisposed;
         _removePendingCallback = RemovePending;
+        _uploadCoordinator = new(
+            timeProvider,
+            requestTimeout,
+            _sendLifetimeCreatedCallback,
+            _sendLifetimeDisposedCallback);
     }
 
     internal int PendingCount => _pending.Count;
+    internal int UploadPendingCount => _uploadCoordinator.PendingCount;
     internal int SendObserverCount => Volatile.Read(ref _sendObserverCount);
     internal int ActiveSendLifetimeCount => Volatile.Read(ref _activeSendLifetimeCount);
 
@@ -151,6 +160,86 @@ internal sealed class V2ClientConnectionCore
             : Result.Err<Unit, DaemonError>(result.UnwrapErr());
     }
 
+    internal Task<Result<Unit, DaemonError>> SendUploadChunkAsync(
+        UploadChunkRequest request,
+        int maximumChunkSize,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var validationError = ValidateUploadChunk(request, maximumChunkSize);
+        if (validationError is not null)
+            return Task.FromResult(Result.Err<Unit, DaemonError>(validationError));
+
+        var frameBytes = new byte[BinaryFrameCodec.HeaderSize + request.Data.Length];
+        var header = new BinaryFrameHeader(
+            BinaryFrameKind.UploadChunk,
+            request.SessionId,
+            request.Offset,
+            checked((uint)request.Data.Length));
+        if (!BinaryFrameCodec.TryWrite(
+                frameBytes,
+                header,
+                request.Data.AsSpan(),
+                out var writeError,
+                checked((uint)maximumChunkSize)))
+        {
+            throw new InvalidOperationException($"The validated upload frame could not be encoded: {writeError}.");
+        }
+
+        var frame = ImmutableCollectionsMarshal.AsImmutableArray(frameBytes);
+        V2ClientUploadCoordinator.PendingUpload? pending;
+        DaemonError? admissionError;
+        ValueTask send;
+
+        lock (_admissionLock)
+        {
+            if (_closing)
+                return Task.FromResult(Result.Err<Unit, DaemonError>(ClosedError()));
+
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<Result<Unit, DaemonError>>(cancellationToken);
+
+            if (!_uploadCoordinator.TryAdmit(
+                    request.SessionId,
+                    request.Offset,
+                    request.Data.Length,
+                    out pending,
+                    out admissionError))
+            {
+                return Task.FromResult(Result.Err<Unit, DaemonError>(admissionError!));
+            }
+
+            RegisterSendObserver();
+            pending!.CreateSendLifetime();
+        }
+
+        try
+        {
+            pending!.Register(cancellationToken);
+            if (pending.IsCompleted || _connectionCancellation.IsCancellationRequested)
+            {
+                pending.DisposeSendLifetime();
+                CompleteSendObserver();
+                return pending.Task;
+            }
+
+            send = _transport.SendBinaryAsync(frame, _connectionCancellation.Token);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _uploadCoordinator.FailSend(
+                pending!,
+                new TransportDaemonError("transport.send_failed", "The V2 upload chunk could not be sent."));
+            pending!.DisposeSendLifetime();
+            CompleteSendObserver();
+            ProtocolFault("The V2 upload binary send failed.");
+            return pending.Task;
+        }
+
+        _ = ObserveUploadSendAsync(send, pending!);
+        return pending!.Task;
+    }
+
     public void RouteText(ReadOnlySpan<byte> utf8Json)
     {
         try
@@ -192,6 +281,7 @@ internal sealed class V2ClientConnectionCore
             snapshot = _pending.ToArray();
         }
 
+        _uploadCoordinator.Close(ClosedError());
         try
         {
             _connectionCancellation.Cancel();
@@ -238,17 +328,31 @@ internal sealed class V2ClientConnectionCore
 
     private void RouteNotification(ReadOnlySpan<byte> utf8Json)
     {
-        JsonRpcUploadAcknowledgementNotification? acknowledgement = null;
-        try
+        if (HasMethod(utf8Json, JsonRpcWireConstants.UploadAcknowledgementMethod))
         {
-            acknowledgement = JsonRpcWireParser.ParseUploadAcknowledgementNotification(utf8Json);
-        }
-        catch (JsonException)
-        {
-        }
+            JsonRpcUploadAcknowledgementNotification acknowledgement;
+            try
+            {
+                acknowledgement = JsonRpcWireParser.ParseUploadAcknowledgementNotification(utf8Json);
+            }
+            catch (JsonException)
+            {
+                ProtocolFault("The upload acknowledgement violates the V2 JSON-RPC profile.");
+                return;
+            }
 
-        if (acknowledgement is not null)
-        {
+            var route = _uploadCoordinator.RouteAcknowledgement(acknowledgement.Params);
+            if (route == UploadAcknowledgementRoute.Ignored)
+            {
+                EmitDiagnostic(new(
+                    V2ClientDiagnosticKind.UnknownNotification,
+                    "The upload acknowledgement has no pending chunk."));
+            }
+            else if (route == UploadAcknowledgementRoute.ProtocolFault)
+            {
+                ProtocolFault("The upload acknowledgement does not match the pending chunk.");
+            }
+
             InvokeConsumer(() => _uploadAcknowledgement?.Invoke(acknowledgement.Params));
             return;
         }
@@ -291,6 +395,33 @@ internal sealed class V2ClientConnectionCore
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             pending.TryError(new TransportDaemonError("transport.send_failed", "The V2 request could not be sent."));
+        }
+        finally
+        {
+            pending.DisposeSendLifetime();
+            CompleteSendObserver();
+        }
+    }
+
+    private async Task ObserveUploadSendAsync(
+        ValueTask send,
+        V2ClientUploadCoordinator.PendingUpload pending)
+    {
+        try
+        {
+            await send.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_connectionCancellation.IsCancellationRequested)
+        {
+            _uploadCoordinator.FailSend(pending, ClosedError());
+            ProtocolFault("The V2 upload binary send was canceled by connection termination.");
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _uploadCoordinator.FailSend(
+                pending,
+                new TransportDaemonError("transport.send_failed", "The V2 upload chunk could not be sent."));
+            ProtocolFault("The V2 upload binary send failed.");
         }
         finally
         {
@@ -358,7 +489,7 @@ internal sealed class V2ClientConnectionCore
     private static TransportDaemonError ClosedError() =>
         new(ClosedCode, "The V2 connection is closed.");
 
-    private static DaemonError MapError(JsonRpcErrorObject error)
+    internal static DaemonError MapError(JsonRpcErrorObject error)
     {
         var code = error.Data.DaemonErrorCode ?? $"jsonrpc.{error.Code}";
         var details = error.Data.Details;
@@ -373,6 +504,43 @@ internal sealed class V2ClientConnectionCore
             DaemonErrorWireKind.Internal => new InternalDaemonError(code, error.Message, details),
             _ => throw new JsonException("The V2 error response has an unsupported daemon error kind.")
         };
+    }
+
+    private static DaemonError? ValidateUploadChunk(UploadChunkRequest request, int maximumChunkSize)
+    {
+        if (request.Data.IsDefault)
+            return new ValidationDaemonError("file.chunk.data.invalid", "The upload chunk data is required.");
+        if (request.SessionId == Guid.Empty)
+            return new ValidationDaemonError("file.session.invalid", "The upload session identifier cannot be empty.");
+        if (request.Offset < 0)
+            return new ValidationDaemonError("file.chunk.offset.invalid", "The upload chunk offset cannot be negative.");
+        if (maximumChunkSize is <= 0 or > (int)BinaryFrameCodec.DefaultMaximumChunkSize)
+            return new ValidationDaemonError("file.chunk.size.invalid", "The upload maximum chunk size is invalid.");
+        if (request.Data.Length > maximumChunkSize)
+            return new ValidationDaemonError("file.chunk.size.invalid", "The upload chunk exceeds the maximum size.");
+        return null;
+    }
+
+    private static bool HasMethod(ReadOnlySpan<byte> utf8Json, string expectedMethod)
+    {
+        var reader = new Utf8JsonReader(utf8Json);
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+            return false;
+
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName)
+                return false;
+
+            var isMethod = reader.ValueTextEquals("method"u8);
+            if (!reader.Read())
+                return false;
+            if (isMethod)
+                return reader.TokenType == JsonTokenType.String && reader.ValueTextEquals(expectedMethod);
+            reader.Skip();
+        }
+
+        return false;
     }
 
     private static EnvelopeShape Classify(ReadOnlySpan<byte> utf8Json)

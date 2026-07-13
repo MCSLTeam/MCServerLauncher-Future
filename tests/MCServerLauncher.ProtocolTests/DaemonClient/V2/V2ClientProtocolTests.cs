@@ -343,6 +343,6 @@ public sealed class V2ClientProtocolTests
         }
 
         public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
-            ValueTask.CompletedTask;
+            throw new NotSupportedException("This text-only test transport does not support binary frames.");
     }
 }
