@@ -1,5 +1,6 @@
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection;
+using DaemonClientApi = MCServerLauncher.DaemonClient.Daemon;
 using System.Text.Json;
 using Serilog;
 using System;
@@ -152,7 +153,7 @@ namespace MCServerLauncher.WPF.Modules
             try
             {
 #pragma warning disable CS8604 // 引用类型参数可能为 null。
-                IDaemon daemon = await Daemon.OpenAsync(
+                IDaemon daemon = await DaemonClientApi.OpenAsync(
                     address: config.EndPoint,
                     port: config.Port,
                     token: config.Token,
@@ -219,7 +220,7 @@ namespace MCServerLauncher.WPF.Modules
                         }
 
 #pragma warning disable CS8604 // 引用类型参数可能为 null。
-                        IDaemon daemon = await Daemon.OpenAsync(
+                        IDaemon daemon = await DaemonClientApi.OpenAsync(
                             cfg.EndPoint,
                             cfg.Port,
                             cfg.Token,
