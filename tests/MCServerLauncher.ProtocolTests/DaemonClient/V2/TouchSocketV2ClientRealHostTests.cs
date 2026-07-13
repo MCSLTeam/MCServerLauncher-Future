@@ -1,5 +1,6 @@
 using System.Net;
 using System.Collections.Immutable;
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -109,6 +110,195 @@ public sealed class TouchSocketV2ClientRealHostTests
             await owner.CloseAsync().WaitAsync(Timeout);
             if (File.Exists(absolutePath))
                 File.Delete(absolutePath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    public async Task ProductionSession_DownloadsMultipleChunksWithEmptyFinalAndSha256()
+    {
+        await using var fixture = new ProductionRealHostFixture();
+        await fixture.StartAsync();
+        var factory = new TouchSocketV2ClientConnectionSessionFactory(
+            new Uri($"ws://127.0.0.1:{fixture.Port}/api/v2"),
+            AppConfig.Get().MainToken,
+            requestTimeout: Timeout);
+        var owner = new V2ClientConnectionOwner(
+            factory,
+            TimeProvider.System,
+            TimeSpan.FromMilliseconds(20));
+        var absolutePath = string.Empty;
+        V2ClientConnectionCore? core = null;
+        DownloadSession? session = null;
+        var downloadClosed = false;
+        var downloadRemoved = false;
+        var bodySucceeded = false;
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(Timeout);
+            var content = new byte[checked((int)(2 * BinaryFrameCodec.DefaultMaximumChunkSize))];
+            for (var index = 0; index < content.Length; index++)
+                content[index] = unchecked((byte)((index * 31 + 17) % 251));
+
+            var relativePath = Path.Combine("protocol-tests", $"v2-download-{Guid.NewGuid():N}.bin");
+            absolutePath = Path.Combine(Daemon.Storage.FileManager.Root, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
+            await File.WriteAllBytesAsync(absolutePath, content, timeout.Token);
+
+            var connected = await owner.ConnectAsync(timeout.Token);
+            Assert.True(connected.IsOk(out _));
+            Assert.True(owner.TryGetReadyCore(out var readyCore));
+            core = readyCore;
+
+            var opened = await readyCore.InvokeAsync(
+                V2ClientProtocol.OpenDownload,
+                new DownloadOpenRequest(relativePath),
+                timeout.Token);
+            Assert.True(opened.IsOk(out session));
+            var downloadSession = session!;
+            var registered = readyCore.TryRegisterDownloadSession(downloadSession, out var registrationError);
+            Assert.True(
+                registered,
+                registrationError is null
+                    ? "The download session could not be registered in the client rendezvous."
+                    : $"{registrationError.Code}: {registrationError.Message}");
+
+            var first = await readyCore.ReadDownloadChunkAsync(
+                new DownloadChunkRequest(downloadSession.SessionId, 0, downloadSession.MaxChunkSize),
+                timeout.Token);
+            Assert.True(first.IsOk(out var firstChunk));
+            Assert.False(firstChunk!.IsFinal);
+            Assert.Equal(0, firstChunk.Offset);
+            Assert.Equal(downloadSession.MaxChunkSize, firstChunk.Data.Length);
+
+            var second = await readyCore.ReadDownloadChunkAsync(
+                new DownloadChunkRequest(downloadSession.SessionId, downloadSession.MaxChunkSize, downloadSession.MaxChunkSize),
+                timeout.Token);
+            Assert.True(second.IsOk(out var secondChunk));
+            Assert.True(secondChunk!.IsFinal);
+            Assert.Equal(downloadSession.MaxChunkSize, secondChunk.Offset);
+            Assert.Equal(downloadSession.MaxChunkSize, secondChunk.Data.Length);
+
+            var rereadLength = downloadSession.MaxChunkSize / 2;
+            Assert.True(rereadLength > 1);
+            var reread = await readyCore.ReadDownloadChunkAsync(
+                new DownloadChunkRequest(downloadSession.SessionId, downloadSession.MaxChunkSize, rereadLength),
+                timeout.Token);
+            Assert.True(reread.IsOk(out var rereadChunk));
+            Assert.False(rereadChunk!.IsFinal);
+            Assert.Equal(secondChunk.Offset, rereadChunk.Offset);
+            Assert.Equal(rereadLength, rereadChunk.Data.Length);
+            Assert.Equal(
+                content.AsSpan(downloadSession.MaxChunkSize, rereadLength).ToArray(),
+                rereadChunk.Data.ToArray());
+
+            var emptyFinal = await readyCore.ReadDownloadChunkAsync(
+                new DownloadChunkRequest(downloadSession.SessionId, downloadSession.Length, downloadSession.MaxChunkSize),
+                timeout.Token);
+            Assert.True(emptyFinal.IsOk(out var emptyFinalChunk));
+            Assert.True(emptyFinalChunk!.IsFinal);
+            Assert.Equal(downloadSession.Length, emptyFinalChunk.Offset);
+            Assert.Empty(emptyFinalChunk.Data);
+
+            var assembled = new byte[firstChunk.Data.Length + secondChunk.Data.Length];
+            firstChunk.Data.AsSpan().CopyTo(assembled);
+            secondChunk.Data.AsSpan().CopyTo(assembled.AsSpan(firstChunk.Data.Length));
+            Assert.Equal(content, assembled);
+            Assert.Equal(
+                downloadSession.Sha256,
+                Convert.ToHexString(SHA256.HashData(assembled)).ToLowerInvariant());
+
+            var closed = await readyCore.InvokeUnitAsync(
+                V2ClientProtocol.CloseDownload,
+                new FileSessionReference(downloadSession.SessionId),
+                timeout.Token);
+            Assert.True(closed.IsOk(out _));
+            downloadClosed = true;
+            var removed = readyCore.TryRemoveDownloadSession(downloadSession.SessionId, out var removalError);
+            Assert.True(
+                removed,
+                removalError is null
+                    ? "The download session could not be removed from the client rendezvous."
+                    : $"{removalError.Code}: {removalError.Message}");
+            downloadRemoved = true;
+            bodySucceeded = true;
+        }
+        finally
+        {
+            try
+            {
+                if (core is not null && session is not null && !downloadClosed)
+                {
+                    try
+                    {
+                        await core.InvokeUnitAsync(
+                            V2ClientProtocol.CloseDownload,
+                            new FileSessionReference(session.SessionId),
+                            CancellationToken.None);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (core is not null && session is not null && !downloadRemoved)
+                {
+                    try
+                    {
+                        core.TryRemoveDownloadSession(session.SessionId, out _);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            finally
+            {
+                Exception? ownerCloseFailure = null;
+                Exception? deleteFailure = null;
+                try
+                {
+                    await owner.CloseAsync().WaitAsync(Timeout);
+                }
+                catch (Exception exception)
+                {
+                    ownerCloseFailure = exception;
+                }
+                finally
+                {
+                    if (bodySucceeded)
+                    {
+                        try
+                        {
+                            File.Delete(absolutePath);
+                        }
+                        catch (Exception exception)
+                        {
+                            deleteFailure = exception;
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            if (!string.IsNullOrEmpty(absolutePath) && File.Exists(absolutePath))
+                                File.Delete(absolutePath);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+
+                if (bodySucceeded)
+                {
+                    if (ownerCloseFailure is not null)
+                        ExceptionDispatchInfo.Capture(ownerCloseFailure).Throw();
+                    if (deleteFailure is not null)
+                        ExceptionDispatchInfo.Capture(deleteFailure).Throw();
+                }
+            }
         }
     }
 
