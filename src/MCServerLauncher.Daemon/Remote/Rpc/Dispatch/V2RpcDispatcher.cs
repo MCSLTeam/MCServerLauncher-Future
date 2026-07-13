@@ -96,7 +96,7 @@ internal sealed class V2RpcDispatcher
             var message = exception.FailureKind == JsonRpcRequestFailureKind.ParseError
                 ? "Parse error"
                 : "Invalid Request";
-            return Error(null, code, message, null, null);
+            return Error(null, code, message, DaemonErrorWireKind.Validation, null, null);
         }
 
         RpcMethod method;
@@ -110,6 +110,7 @@ internal sealed class V2RpcDispatcher
                 request,
                 -32600,
                 "Invalid Request",
+                DaemonErrorWireKind.Validation,
                 null,
                 null,
                 V2RpcNotificationSuppressionReason.InvalidRequest);
@@ -121,6 +122,7 @@ internal sealed class V2RpcDispatcher
                 request,
                 -32601,
                 "Method not found",
+                DaemonErrorWireKind.NotFound,
                 null,
                 null,
                 V2RpcNotificationSuppressionReason.UnknownMethod);
@@ -140,6 +142,7 @@ internal sealed class V2RpcDispatcher
                 request,
                 -32001,
                 "Permission denied",
+                DaemonErrorWireKind.Permission,
                 new ErrorPayload("permission.denied", null),
                 entry.Owner,
                 V2RpcNotificationSuppressionReason.PermissionDenied);
@@ -156,6 +159,7 @@ internal sealed class V2RpcDispatcher
                 request,
                 -32602,
                 "Invalid params",
+                DaemonErrorWireKind.Validation,
                 null,
                 entry.Owner,
                 V2RpcNotificationSuppressionReason.InvalidParams);
@@ -207,6 +211,7 @@ internal sealed class V2RpcDispatcher
                 request,
                 code,
                 message,
+                ToWireKind(daemonError.Kind),
                 new ErrorPayload(daemonError.Code, daemonError.Details),
                 entry.Owner,
                 V2RpcNotificationSuppressionReason.ExpectedDaemonError);
@@ -319,12 +324,13 @@ internal sealed class V2RpcDispatcher
         JsonRpcRequestEnvelope request,
         int code,
         string message,
+        DaemonErrorWireKind errorKind,
         ErrorPayload? payload,
         ProtocolExecutionOwner? owner,
         V2RpcNotificationSuppressionReason suppressionReason) =>
         request.IsNotification
             ? SuppressNotification(request.Method, owner, suppressionReason)
-            : Error(request.Id, code, message, payload, owner);
+            : Error(request.Id, code, message, errorKind, payload, owner);
 
     private V2RpcDispatchOutcome UnexpectedOrSuppress(
         JsonRpcRequestEnvelope request,
@@ -339,7 +345,7 @@ internal sealed class V2RpcDispatcher
             exception));
         return request.IsNotification
             ? V2RpcDispatchOutcome.NoResponse
-            : Error(request.Id, -32603, "Internal error", null, owner, correlationId);
+            : Error(request.Id, -32603, "Internal error", DaemonErrorWireKind.Internal, null, owner, correlationId);
     }
 
     private V2RpcDispatchOutcome SuppressNotification(
@@ -356,12 +362,14 @@ internal sealed class V2RpcDispatcher
         JsonRpcRequestId? id,
         int code,
         string message,
+        DaemonErrorWireKind errorKind,
         ErrorPayload? payload,
         ProtocolExecutionOwner? owner,
         string? correlationId = null)
     {
         var data = new JsonRpcErrorData(
             payload?.DaemonErrorCode,
+            errorKind,
             correlationId ?? Guid.NewGuid().ToString("N"),
             payload?.Details,
             originPlugin: null,
@@ -381,6 +389,18 @@ internal sealed class V2RpcDispatcher
         ProtocolExecutionOwnerKind.Plugin => owner.Plugin,
         null => null,
         _ => throw new InvalidOperationException("The frozen RPC entry has an unknown execution owner.")
+    };
+
+    private static DaemonErrorWireKind ToWireKind(DaemonErrorKind kind) => kind switch
+    {
+        DaemonErrorKind.Validation => DaemonErrorWireKind.Validation,
+        DaemonErrorKind.NotFound => DaemonErrorWireKind.NotFound,
+        DaemonErrorKind.Conflict => DaemonErrorWireKind.Conflict,
+        DaemonErrorKind.Permission => DaemonErrorWireKind.Permission,
+        DaemonErrorKind.Storage => DaemonErrorWireKind.Storage,
+        DaemonErrorKind.Transport => DaemonErrorWireKind.Transport,
+        DaemonErrorKind.Internal => DaemonErrorWireKind.Internal,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
     };
 
     private sealed record ErrorPayload(string DaemonErrorCode, JsonElement? Details);

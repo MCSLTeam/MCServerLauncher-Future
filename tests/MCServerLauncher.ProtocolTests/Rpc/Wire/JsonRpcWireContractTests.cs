@@ -139,7 +139,7 @@ public sealed class JsonRpcWireContractTests
             new JsonRpcErrorObject(
                 -32700,
                 "Parse error.",
-                new JsonRpcErrorData(null, "correlation", null, null, null)));
+                new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", null, null, null)));
 
         var successJson = JsonSerializer.Serialize(success, Json.JsonRpcSuccessResponseEnvelope);
         var errorJson = JsonSerializer.Serialize(parseError, Json.JsonRpcErrorResponseEnvelope);
@@ -147,7 +147,7 @@ public sealed class JsonRpcWireContractTests
         Assert.Equal("{\"jsonrpc\":\"2.0\",\"id\":\"request-1\",\"result\":{}}", successJson);
         Assert.DoesNotContain("error", successJson, StringComparison.Ordinal);
         Assert.Equal(
-            "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"Parse error.\",\"data\":{\"correlation_id\":\"correlation\"}}}",
+            "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"Parse error.\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\"}}}",
             errorJson);
         Assert.DoesNotContain("result", errorJson, StringComparison.Ordinal);
 
@@ -234,12 +234,13 @@ public sealed class JsonRpcWireContractTests
     public void StrictErrorParserRoundTripsFullTypedDataAndOpenDetails()
     {
         const string json =
-            "{\"jsonrpc\":\"2.0\",\"id\":\"request-1\",\"error\":{\"code\":-32005,\"message\":\"Plugin failed.\",\"data\":{\"daemon_error_code\":\"plugin.failed\",\"correlation_id\":\"correlation\",\"details\":{\"extension_key\":{\"nested\":[1,true,null]}},\"origin_plugin\":{\"id\":\"community.health\",\"version\":\"1.0.0\"},\"execution_owner\":{\"id\":\"community.proxy\",\"version\":\"2.0.0\"}}}}";
+            "{\"jsonrpc\":\"2.0\",\"id\":\"request-1\",\"error\":{\"code\":-32005,\"message\":\"Plugin failed.\",\"data\":{\"daemon_error_code\":\"plugin.failed\",\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\",\"details\":{\"extension_key\":{\"nested\":[1,true,null]}},\"origin_plugin\":{\"id\":\"community.health\",\"version\":\"1.0.0\"},\"execution_owner\":{\"id\":\"community.proxy\",\"version\":\"2.0.0\"}}}}";
 
         var parsed = JsonRpcWireParser.ParseErrorResponse(System.Text.Encoding.UTF8.GetBytes(json));
 
         Assert.Equal(-32005, parsed.Error.Code);
         Assert.Equal("plugin.failed", parsed.Error.Data.DaemonErrorCode);
+        Assert.Equal(DaemonErrorWireKind.Internal, parsed.Error.Data.DaemonErrorKind);
         Assert.Equal("community.health", parsed.Error.Data.OriginPlugin!.Id);
         Assert.Equal("community.proxy", parsed.Error.Data.ExecutionOwner!.Id);
         Assert.Equal(json, JsonSerializer.Serialize(parsed, Json.JsonRpcErrorResponseEnvelope));
@@ -251,15 +252,15 @@ public sealed class JsonRpcWireContractTests
         const string prefix = "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":";
         foreach (var invalidError in new[]
                  {
-                     "{\"message\":\"error\",\"data\":{\"correlation_id\":\"c\"}}",
-                     "{\"code\":1.0,\"message\":\"error\",\"data\":{\"correlation_id\":\"c\"}}",
-                     "{\"code\":2147483648,\"message\":\"error\",\"data\":{\"correlation_id\":\"c\"}}",
-                     "{\"code\":-32000,\"message\":null,\"data\":{\"correlation_id\":\"c\"}}",
-                     "{\"code\":-32000,\"message\":\" \",\"data\":{\"correlation_id\":\"c\"}}",
+                     "{\"message\":\"error\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"}}",
+                     "{\"code\":1.0,\"message\":\"error\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"}}",
+                     "{\"code\":2147483648,\"message\":\"error\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"}}",
+                     "{\"code\":-32000,\"message\":null,\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"}}",
+                     "{\"code\":-32000,\"message\":\" \",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"}}",
                      "{\"code\":-32000,\"message\":\"error\"}",
                      "{\"code\":-32000,\"message\":\"error\",\"data\":null}",
-                     "{\"code\":-32000,\"message\":\"error\",\"data\":{\"correlation_id\":\"c\"},\"unknown\":true}",
-                     "{\"code\":-32000,\"code\":-32001,\"message\":\"error\",\"data\":{\"correlation_id\":\"c\"}}"
+                     "{\"code\":-32000,\"message\":\"error\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"},\"unknown\":true}",
+                     "{\"code\":-32000,\"code\":-32001,\"message\":\"error\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\"}}"
                  })
         {
             Assert.Throws<JsonException>(() => JsonRpcWireParser.ParseErrorResponse(
@@ -268,22 +269,35 @@ public sealed class JsonRpcWireContractTests
 
         foreach (var invalidData in new[]
                  {
-                     "{}",
-                     "{\"correlation_id\":null}",
-                     "{\"correlation_id\":\" \"}",
-                     "{\"correlation_id\":\"c\",\"correlation_id\":\"d\"}",
-                     "{\"correlation_id\":\"c\",\"daemon_error_code\":null}",
-                     "{\"correlation_id\":\"c\",\"details\":null}",
-                     "{\"correlation_id\":\"c\",\"details\":{\"duplicate\":1,\"duplicate\":2}}",
-                     "{\"correlation_id\":\"c\",\"origin_plugin\":null}",
-                     "{\"correlation_id\":\"c\",\"origin_plugin\":{\"id\":\"plugin\"}}",
-                     "{\"correlation_id\":\"c\",\"origin_plugin\":{\"id\":\"plugin\",\"version\":null}}",
-                     "{\"correlation_id\":\"c\",\"origin_plugin\":{\"id\":\"plugin\",\"version\":\"1\",\"unknown\":true}}",
-                     "{\"correlation_id\":\"c\",\"execution_owner\":{\"id\":\"owner\",\"id\":\"other\",\"version\":\"1\"}}",
-                     "{\"correlation_id\":\"c\",\"unknown\":true}"
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":null}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\" \"}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"correlation_id\":\"d\"}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"daemon_error_code\":null}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"details\":null}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"details\":{\"duplicate\":1,\"duplicate\":2}}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"origin_plugin\":null}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"origin_plugin\":{\"id\":\"plugin\"}}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"origin_plugin\":{\"id\":\"plugin\",\"version\":null}}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"origin_plugin\":{\"id\":\"plugin\",\"version\":\"1\",\"unknown\":true}}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"execution_owner\":{\"id\":\"owner\",\"id\":\"other\",\"version\":\"1\"}}",
+                     "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"c\",\"unknown\":true}"
                  })
         {
             var error = "{\"code\":-32000,\"message\":\"error\",\"data\":" + invalidData + "}";
+            Assert.Throws<JsonException>(() => JsonRpcWireParser.ParseErrorResponse(
+                System.Text.Encoding.UTF8.GetBytes(prefix + error + "}")));
+        }
+
+        foreach (var invalidKindData in new[]
+                 {
+                     "{\"correlation_id\":\"c\"}",
+                     "{\"daemon_error_kind\":null,\"correlation_id\":\"c\"}",
+                     "{\"daemon_error_kind\":1,\"correlation_id\":\"c\"}",
+                     "{\"daemon_error_kind\":\"plugin\",\"correlation_id\":\"c\"}",
+                     "{\"daemon_error_kind\":\"internal\",\"daemon_error_kind\":\"transport\",\"correlation_id\":\"c\"}"
+                 })
+        {
+            var error = "{\"code\":-32000,\"message\":\"error\",\"data\":" + invalidKindData + "}";
             Assert.Throws<JsonException>(() => JsonRpcWireParser.ParseErrorResponse(
                 System.Text.Encoding.UTF8.GetBytes(prefix + error + "}")));
         }
@@ -301,7 +315,7 @@ public sealed class JsonRpcWireContractTests
             new JsonRpcErrorObject(
                 -32000,
                 "error",
-                new JsonRpcErrorData("domain.error", "correlation", document.RootElement, null, null)));
+                new JsonRpcErrorData("domain.error", DaemonErrorWireKind.Internal, "correlation", document.RootElement, null, null)));
 
         var json = JsonSerializer.Serialize(response, Json.JsonRpcErrorResponseEnvelope);
         var parsed = JsonRpcWireParser.ParseErrorResponse(System.Text.Encoding.UTF8.GetBytes(json));
@@ -317,13 +331,13 @@ public sealed class JsonRpcWireContractTests
         using var duplicateDetails = JsonDocument.Parse("{\"duplicate\":1,\"duplicate\":2}");
 
         Assert.Throws<ArgumentException>(() =>
-            new JsonRpcErrorData(" ", "correlation", null, null, null));
+            new JsonRpcErrorData(" ", DaemonErrorWireKind.Internal, "correlation", null, null, null));
         Assert.Throws<ArgumentException>(() =>
-            new JsonRpcErrorData(null, "correlation", default(JsonElement), null, null));
+            new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", default(JsonElement), null, null));
         Assert.Throws<ArgumentException>(() =>
-            new JsonRpcErrorData(null, "correlation", nullDetails.RootElement, null, null));
+            new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", nullDetails.RootElement, null, null));
         Assert.Throws<ArgumentException>(() =>
-            new JsonRpcErrorData(null, "correlation", duplicateDetails.RootElement, null, null));
+            new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", duplicateDetails.RootElement, null, null));
         Assert.Throws<ArgumentException>(() => new ProtocolOwnerIdentity(" ", "1.0.0"));
         Assert.Throws<ArgumentException>(() => new ProtocolOwnerIdentity("plugin", " "));
     }

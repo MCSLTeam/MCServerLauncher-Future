@@ -877,14 +877,18 @@ public class DaemonInboundTransportPipelineTests
             JsonNode.Parse(runtimeErrorDataSchema.GetRawText()),
             JsonNode.Parse(errorDataSchema.GetRawText())));
         Assert.Equal(
-            ["correlation_id"],
+            ["daemon_error_kind", "correlation_id"],
             errorDataSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
         Assert.False(errorDataSchema.GetProperty("additionalProperties").GetBoolean());
         Assert.Equal(
-            ["correlation_id", "daemon_error_code", "details", "execution_owner", "origin_plugin"],
+            ["correlation_id", "daemon_error_code", "daemon_error_kind", "details", "execution_owner", "origin_plugin"],
             errorDataSchema.GetProperty("properties").EnumerateObject().Select(property => property.Name).Order());
         var errorDataProperties = errorDataSchema.GetProperty("properties");
         Assert.Equal("string", errorDataProperties.GetProperty("daemon_error_code").GetProperty("type").GetString());
+        Assert.Equal(
+            ["validation", "not_found", "conflict", "permission", "storage", "transport", "internal"],
+            errorDataProperties.GetProperty("daemon_error_kind").GetProperty("enum")
+                .EnumerateArray().Select(value => value.GetString()));
         Assert.Equal("object", errorDataProperties.GetProperty("origin_plugin").GetProperty("type").GetString());
         Assert.Equal("object", errorDataProperties.GetProperty("execution_owner").GetProperty("type").GetString());
         Assert.Equal(

@@ -222,7 +222,7 @@ public sealed class BuiltInProtocolDefinitionTests
             .GetProperty("mcsl.schema.json-rpc.error.data");
         Assert.Contains("\"components\"", firstJson, StringComparison.Ordinal);
         Assert.Equal(
-            ["correlation_id"],
+            ["daemon_error_kind", "correlation_id"],
             errorDataSchema.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
         Assert.False(errorDataSchema.GetProperty("additionalProperties").GetBoolean());
         Assert.Equal(

@@ -1583,6 +1583,17 @@
                 "daemon_error_code": {
                   "type": "string"
                 },
+                "daemon_error_kind": {
+                  "enum": [
+                    "validation",
+                    "not_found",
+                    "conflict",
+                    "permission",
+                    "storage",
+                    "transport",
+                    "internal"
+                  ]
+                },
                 "correlation_id": {
                   "type": "string"
                 },
@@ -1625,6 +1636,7 @@
                 }
               },
               "required": [
+                "daemon_error_kind",
                 "correlation_id"
               ],
               "additionalProperties": false,

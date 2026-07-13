@@ -126,9 +126,21 @@ public sealed class JsonRpcErrorObject
     public JsonRpcErrorData Data { get; }
 }
 
+public enum DaemonErrorWireKind
+{
+    Validation,
+    NotFound,
+    Conflict,
+    Permission,
+    Storage,
+    Transport,
+    Internal
+}
+
 public sealed class JsonRpcErrorData
 {
     private string? _daemonErrorCode;
+    private DaemonErrorWireKind _daemonErrorKind;
     private string _correlationId = null!;
     private JsonElement? _details;
     private ProtocolOwnerIdentity? _originPlugin;
@@ -136,6 +148,7 @@ public sealed class JsonRpcErrorData
 
     public JsonRpcErrorData(
         string? daemonErrorCode,
+        DaemonErrorWireKind daemonErrorKind,
         string correlationId,
         JsonElement? details,
         ProtocolOwnerIdentity? originPlugin,
@@ -147,12 +160,18 @@ public sealed class JsonRpcErrorData
             ArgumentException.ThrowIfNullOrWhiteSpace(daemonErrorCode);
         }
 
+        if (!Enum.IsDefined(daemonErrorKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(daemonErrorKind));
+        }
+
         if (details is { } detailsValue)
         {
             JsonRpcErrorContractValidator.ValidateDetails(detailsValue);
         }
 
         _daemonErrorCode = daemonErrorCode;
+        _daemonErrorKind = daemonErrorKind;
         _correlationId = correlationId;
         _details = details?.Clone();
         _originPlugin = originPlugin;
@@ -175,6 +194,23 @@ public sealed class JsonRpcErrorData
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
             _daemonErrorCode = value;
+        }
+    }
+
+    [JsonInclude]
+    [JsonRequired]
+    [JsonPropertyName("daemon_error_kind")]
+    public DaemonErrorWireKind DaemonErrorKind
+    {
+        get => _daemonErrorKind;
+        internal set
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
+            }
+
+            _daemonErrorKind = value;
         }
     }
 
@@ -251,6 +287,10 @@ internal static class JsonRpcErrorContractValidator
         ArgumentException.ThrowIfNullOrWhiteSpace(error.Message);
         ArgumentNullException.ThrowIfNull(error.Data);
         ArgumentException.ThrowIfNullOrWhiteSpace(error.Data.CorrelationId);
+        if (!Enum.IsDefined(error.Data.DaemonErrorKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(error));
+        }
 
         if (error.Data.DaemonErrorCode is not null)
         {

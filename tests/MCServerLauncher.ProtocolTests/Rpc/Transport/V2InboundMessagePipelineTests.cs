@@ -69,12 +69,13 @@ public sealed class V2InboundMessagePipelineTests
     }
 
     [Theory]
-    [InlineData(null, -32000)]
-    [InlineData("permission", -32001)]
-    [InlineData("conflict", -32000)]
+    [InlineData(null, -32000, null)]
+    [InlineData("permission", -32001, DaemonErrorWireKind.Permission)]
+    [InlineData("conflict", -32000, DaemonErrorWireKind.Conflict)]
     public async Task ValidUploadAlwaysEmitsPrivateAcceptedOrTypedRejectedAcknowledgement(
         string? failure,
-        int expectedCode)
+        int expectedCode,
+        DaemonErrorWireKind? expectedKind)
     {
         await using var fixture = Fixture.Create();
         var session = (await fixture.Files.OpenUploadAsync(new UploadOpenRequest("x", 3, "hash"), CancellationToken.None)).Unwrap();
@@ -103,6 +104,7 @@ public sealed class V2InboundMessagePipelineTests
             Assert.Equal(V2InboundDisposition.Rejected, outcome.Disposition);
             Assert.Equal(UploadChunkAcknowledgementStatus.Rejected, acknowledgement.Status);
             Assert.Equal(expectedCode, acknowledgement.Error!.Code);
+            Assert.Equal(expectedKind, acknowledgement.Error.Data.DaemonErrorKind);
             Assert.Equal("mcsl.daemon", acknowledgement.Error.Data.ExecutionOwner!.Id);
         }
 

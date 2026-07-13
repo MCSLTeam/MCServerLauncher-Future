@@ -335,9 +335,9 @@ public sealed class V2RpcDispatcherTests
     }
 
     [Theory]
-    [InlineData(false, -32000)]
-    [InlineData(true, -32001)]
-    public async Task ExpectedDaemonErrorsPreserveIdentityDetailsAndMapping(bool permissionError, int expectedCode)
+    [InlineData(false, -32000, DaemonErrorWireKind.NotFound)]
+    [InlineData(true, -32001, DaemonErrorWireKind.Permission)]
+    public async Task ExpectedDaemonErrorsPreserveIdentityDetailsAndMapping(bool permissionError, int expectedCode, DaemonErrorWireKind expectedKind)
     {
         using var detailsDocument = JsonDocument.Parse("{\"reason\":\"expected\"}");
         DaemonError expected = permissionError
@@ -356,6 +356,7 @@ public sealed class V2RpcDispatcherTests
         Assert.Same(expected, observed);
         Assert.Equal(expectedCode, error.Code);
         Assert.Equal(expected.Code, error.Data.DaemonErrorCode);
+        Assert.Equal(expectedKind, error.Data.DaemonErrorKind);
         Assert.Equal("expected", error.Data.Details!.Value.GetProperty("reason").GetString());
         Assert.Null(error.Data.OriginPlugin);
         Assert.Equal("mcsl.daemon", error.Data.ExecutionOwner!.Id);

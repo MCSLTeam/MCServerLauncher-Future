@@ -16,6 +16,7 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(BuiltInProtocolInstanceTypeJsonConverter),
         typeof(BuiltInProtocolInstanceStatusJsonConverter),
         typeof(EventMetaFilterKindJsonConverter),
+        typeof(DaemonErrorWireKindJsonConverter),
         typeof(UploadChunkAcknowledgementStatusJsonConverter),
         typeof(InstanceCatalogChangeOperationJsonConverter),
         typeof(OpenRpcEventFieldPresenceJsonConverter)
@@ -27,6 +28,7 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(EventSubscriptionRequest))]
 [JsonSerializable(typeof(JsonRpcErrorObject))]
 [JsonSerializable(typeof(JsonRpcErrorData))]
+[JsonSerializable(typeof(DaemonErrorWireKind))]
 [JsonSerializable(typeof(ProtocolOwnerIdentity))]
 [JsonSerializable(typeof(UploadChunkAcknowledgement))]
 [JsonSerializable(typeof(FileSessionReference))]

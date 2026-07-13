@@ -196,6 +196,7 @@ internal sealed class V2InboundMessagePipeline
     {
         var data = new JsonRpcErrorData(
             error?.Code,
+            error is null ? DaemonErrorWireKind.Internal : ToWireKind(error.Kind),
             correlationId,
             error?.Details,
             originPlugin: null,
@@ -207,4 +208,16 @@ internal sealed class V2InboundMessagePipeline
             UploadChunkAcknowledgementStatus.Rejected,
             new JsonRpcErrorObject(code, message, data));
     }
+
+    private static DaemonErrorWireKind ToWireKind(DaemonErrorKind kind) => kind switch
+    {
+        DaemonErrorKind.Validation => DaemonErrorWireKind.Validation,
+        DaemonErrorKind.NotFound => DaemonErrorWireKind.NotFound,
+        DaemonErrorKind.Conflict => DaemonErrorWireKind.Conflict,
+        DaemonErrorKind.Permission => DaemonErrorWireKind.Permission,
+        DaemonErrorKind.Storage => DaemonErrorWireKind.Storage,
+        DaemonErrorKind.Transport => DaemonErrorWireKind.Transport,
+        DaemonErrorKind.Internal => DaemonErrorWireKind.Internal,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
 }

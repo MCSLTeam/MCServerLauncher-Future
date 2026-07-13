@@ -1250,11 +1250,13 @@ public static class JsonRpcWireParser
         }
 
         string? daemonErrorCode = null;
+        DaemonErrorWireKind daemonErrorKind = default;
         string? correlationId = null;
         JsonElement? details = null;
         ProtocolOwnerIdentity? originPlugin = null;
         ProtocolOwnerIdentity? executionOwner = null;
         var hasDaemonErrorCode = false;
+        var hasDaemonErrorKind = false;
         var hasCorrelationId = false;
         var hasDetails = false;
         var hasOriginPlugin = false;
@@ -1272,6 +1274,22 @@ public static class JsonRpcWireParser
                     }
 
                     hasDaemonErrorCode = true;
+                    break;
+                case "daemon_error_kind" when !hasDaemonErrorKind:
+                    daemonErrorKind = valueReader.TokenType == JsonTokenType.String
+                        ? valueReader.GetString() switch
+                        {
+                            "validation" => DaemonErrorWireKind.Validation,
+                            "not_found" => DaemonErrorWireKind.NotFound,
+                            "conflict" => DaemonErrorWireKind.Conflict,
+                            "permission" => DaemonErrorWireKind.Permission,
+                            "storage" => DaemonErrorWireKind.Storage,
+                            "transport" => DaemonErrorWireKind.Transport,
+                            "internal" => DaemonErrorWireKind.Internal,
+                            _ => throw new JsonException("daemon_error_kind is not a supported value.")
+                        }
+                        : throw new JsonException("daemon_error_kind must be a string.");
+                    hasDaemonErrorKind = true;
                     break;
                 case "correlation_id" when !hasCorrelationId:
                     correlationId = ReadString(ref valueReader, "correlation_id must be a string.");
@@ -1299,13 +1317,14 @@ public static class JsonRpcWireParser
             }
         });
 
-        if (!hasCorrelationId)
+        if (!hasCorrelationId || !hasDaemonErrorKind)
         {
-            throw new JsonException("JSON-RPC error data requires correlation_id.");
+            throw new JsonException("JSON-RPC error data requires daemon_error_kind and correlation_id.");
         }
 
         return new JsonRpcErrorData(
             daemonErrorCode,
+            daemonErrorKind,
             correlationId!,
             details,
             originPlugin,

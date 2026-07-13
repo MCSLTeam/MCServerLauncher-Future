@@ -441,6 +441,7 @@ MessagePipe 1.8.2 的 reflection/DI 路径不能通过当前 `PublishTrimmed=tru
 ```json
 {
   "daemon_error_code": "instance.not_found",
+  "daemon_error_kind": "not_found",
   "correlation_id": "...",
   "details": {},
   "origin_plugin": { "id": "...", "version": "..." },
@@ -448,7 +449,7 @@ MessagePipe 1.8.2 的 reflection/DI 路径不能通过当前 `PublishTrimmed=tru
 }
 ```
 
-可选字段缺失时 omit，不输出 CLR type、assembly、path、stack、exception 或 recursive inner-error graph。
+`daemon_error_kind` 与 `correlation_id` 必填。`daemon_error_kind` 是稳定 wire authority，只允许 `validation`、`not_found`、`conflict`、`permission`、`storage`、`transport`、`internal`；client 不得从 `daemon_error_code` 字符串猜测错误类型。`daemon_error_code`、`details`、`origin_plugin`、`execution_owner` 等可选字段缺失时 omit，不输出 CLR type、assembly、path、stack、exception 或 recursive inner-error graph。Phase 5 引入真实 `PluginError` 前，`-32005` 仍使用 `internal`，并保留 origin/execution owner。
 
 ### 11.4 Remote events 与 subscription
 

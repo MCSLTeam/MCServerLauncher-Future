@@ -23,6 +23,9 @@ internal sealed class InstanceStatusJsonConverter()
 internal sealed class EventMetaFilterKindJsonConverter()
     : JsonStringEnumConverter<EventMetaFilterKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
 
+internal sealed class DaemonErrorWireKindJsonConverter()
+    : JsonStringEnumConverter<DaemonErrorWireKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
 internal sealed class UploadChunkAcknowledgementStatusJsonConverter()
     : JsonStringEnumConverter<UploadChunkAcknowledgementStatus>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
 

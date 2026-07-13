@@ -153,7 +153,7 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
         var error = new JsonRpcErrorObject(
             -32000,
             "Upload failed.",
-            new JsonRpcErrorData("file.write_failed", "correlation", null, null, null));
+            new JsonRpcErrorData("file.write_failed", DaemonErrorWireKind.Storage, "correlation", null, null, null));
 
         Assert.Throws<ArgumentException>(() => new UploadChunkAcknowledgement(
             sessionId,
@@ -217,23 +217,23 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
         var errorDataTypeInfo = BuiltInProtocolJsonContext.Default.JsonRpcErrorData;
         Assert.Equal(JsonTypeInfoKind.Object, errorDataTypeInfo.Kind);
         Assert.Equal(
-            ["correlation_id", "daemon_error_code", "details", "execution_owner", "origin_plugin"],
+            ["correlation_id", "daemon_error_code", "daemon_error_kind", "details", "execution_owner", "origin_plugin"],
             errorDataTypeInfo.Properties.Select(property => property.Name).Order());
 
-        Assert.Throws<ArgumentException>(() => new JsonRpcErrorObject(-32000, " ", new JsonRpcErrorData(null, "correlation", null, null, null)));
+        Assert.Throws<ArgumentException>(() => new JsonRpcErrorObject(-32000, " ", new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", null, null, null)));
         Assert.Throws<ArgumentNullException>(() => new JsonRpcErrorObject(-32000, "failed", null!));
-        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, " ", null, null, null));
-        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(" ", "correlation", null, null, null));
-        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, "correlation", default(JsonElement), null, null));
+        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, " ", null, null, null));
+        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(" ", DaemonErrorWireKind.Internal, "correlation", null, null, null));
+        Assert.Throws<ArgumentException>(() => new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", default(JsonElement), null, null));
         Assert.Throws<ArgumentException>(() => new ProtocolOwnerIdentity(" ", "1.0.0"));
         Assert.Throws<ArgumentException>(() => new ProtocolOwnerIdentity("plugin", " "));
 
         var error = new JsonRpcErrorObject(
             -32000,
             "failed",
-            new JsonRpcErrorData(null, "correlation", null, null, null));
+            new JsonRpcErrorData(null, DaemonErrorWireKind.Internal, "correlation", null, null, null));
         var json = JsonSerializer.Serialize(error, BuiltInProtocolJsonContext.Default.JsonRpcErrorObject);
-        Assert.Equal("{\"code\":-32000,\"message\":\"failed\",\"data\":{\"correlation_id\":\"correlation\"}}", json);
+        Assert.Equal("{\"code\":-32000,\"message\":\"failed\",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\"}}", json);
         var roundTrip = JsonSerializer.Deserialize(json, BuiltInProtocolJsonContext.Default.JsonRpcErrorObject)!;
         Assert.Equal("correlation", roundTrip.Data.CorrelationId);
         Assert.Null(roundTrip.Data.DaemonErrorCode);
@@ -241,7 +241,7 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
         Assert.Null(roundTrip.Data.OriginPlugin);
         Assert.Null(roundTrip.Data.ExecutionOwner);
         var directRoundTrip = JsonSerializer.Deserialize(
-            "{\"correlation_id\":\"correlation\"}",
+            "{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\"}",
             BuiltInProtocolJsonContext.Default.JsonRpcErrorData)!;
         Assert.Equal("correlation", directRoundTrip.CorrelationId);
         Assert.Null(directRoundTrip.DaemonErrorCode);
@@ -271,15 +271,19 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
                  })
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
-                $"{{\"code\":-32000,\"message\":\"failed\",\"data\":{{\"correlation_id\":\"correlation\",{explicitNullProperty}}}}}",
+                $"{{\"code\":-32000,\"message\":\"failed\",\"data\":{{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\",{explicitNullProperty}}}}}",
                 BuiltInProtocolJsonContext.Default.JsonRpcErrorObject));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
-                $"{{\"correlation_id\":\"correlation\",{explicitNullProperty}}}",
+                $"{{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\",{explicitNullProperty}}}",
                 BuiltInProtocolJsonContext.Default.JsonRpcErrorData));
         }
 
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"daemon_error_kind\":null,\"correlation_id\":\"correlation\"}",
+            BuiltInProtocolJsonContext.Default.JsonRpcErrorData));
+
         Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
-            "{\"code\":-32000,\"message\":\" \",\"data\":{\"correlation_id\":\"correlation\"}}",
+            "{\"code\":-32000,\"message\":\" \",\"data\":{\"daemon_error_kind\":\"internal\",\"correlation_id\":\"correlation\"}}",
             BuiltInProtocolJsonContext.Default.JsonRpcErrorObject));
     }
 
