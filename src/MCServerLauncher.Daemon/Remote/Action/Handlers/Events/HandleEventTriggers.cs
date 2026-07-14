@@ -3,6 +3,7 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using Microsoft.Extensions.DependencyInjection;
 using RustyOptions;
 using TouchSocket.Core;
@@ -28,7 +29,7 @@ internal sealed class HandleGetEventRules : IActionHandler<GetEventRulesParamete
         var ruleSet = result.Unwrap();
         try
         {
-            var rules = JsonSerializer.Deserialize(ruleSet.Rules, ApplicationCore.Events.EventRuleJsonContext.Default.EventRuleList);
+            var rules = EventRuleDocumentCodec.Deserialize(ruleSet.Rules);
             return rules is null
                 ? this.Err(ActionRetcode.ParamError.WithMessage("Event rules were null"))
                 : this.Ok(new GetEventRulesResult { Rules = rules });
@@ -61,7 +62,7 @@ internal sealed class HandleSaveEventRules : IActionHandler<SaveEventRulesParame
         CancellationToken ct)
     {
         var application = resolver.GetRequiredService<IDaemonApplication>();
-        var rules = JsonSerializer.SerializeToElement(param.Rules, ApplicationCore.Events.EventRuleJsonContext.Default.EventRuleList);
+        var rules = EventRuleDocumentCodec.SerializeToElement(param.Rules);
         var result = application.EventRules.UpdateEventRulesAsync(new EventRuleUpdateRequest(param.InstanceId, rules), ct)
             .GetAwaiter()
             .GetResult();

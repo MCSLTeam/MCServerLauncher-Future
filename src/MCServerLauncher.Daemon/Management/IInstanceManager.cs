@@ -1,8 +1,12 @@
 using System.Collections.Concurrent;
-using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using InstanceConfiguration = MCServerLauncher.Common.Contracts.Instances.InstanceConfiguration;
+using InstanceFactoryConfiguration = MCServerLauncher.Common.Contracts.Instances.InstanceFactoryConfiguration;
+using InstanceSettingsResult = MCServerLauncher.Common.Contracts.Instances.InstanceSettingsResult;
+using UpdateInstanceSettingsRequest = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest;
+using UpdateInstanceSettingsResult = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsResult;
 
 namespace MCServerLauncher.Daemon.Management;
 
@@ -16,7 +20,9 @@ internal interface IInstanceManager
     /// </summary>
     /// <param name="setting"></param>
     /// <returns></returns>
-    Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting, CancellationToken ct = default);
+    Task<Result<InstanceConfiguration, Error>> TryAddInstance(
+        InstanceFactoryConfiguration setting,
+        CancellationToken ct = default);
 
     /// <summary>
     ///     尝试移除一个服务器实例即实例文件夹，服务器必须是停止状态。
@@ -69,12 +75,12 @@ internal interface IInstanceManager
 
     bool TryGetInstanceLog(Guid instanceId, out IReadOnlyList<string> logs);
 
-    Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(
+    Task<Result<InstanceSettingsResult, Error>> GetInstanceSettings(
         Guid instanceId,
         CancellationToken ct = default);
 
     Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
-        UpdateInstanceSettingsParameter request,
+        UpdateInstanceSettingsRequest request,
         CancellationToken ct = default);
 
     IDisposable AcquireInstanceMutation(Guid instanceId);

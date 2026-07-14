@@ -124,7 +124,9 @@ public sealed class LocalEventRuleApplicationTests
                 CancellationToken.None);
 
             Assert.True(update.IsOk(out _));
-            Assert.Equal("original", Assert.Single(settingsValue.Config.EventRules).Name);
+            Assert.Equal(
+                "original",
+                Assert.Single(EventRuleDocumentCodec.DeserializeRequired(settingsValue.Config.EventRules)).Name);
             Assert.Equal("replacement", Assert.Single(manager.Instances[config.Uuid].Config.EventRules).Name);
         }
         finally
@@ -191,7 +193,7 @@ public sealed class LocalEventRuleApplicationTests
     {
         return new EventRuleUpdateRequest(
             instanceId,
-            JsonSerializer.SerializeToElement(new List<EventRule>(rules), EventRuleJsonContext.Default.EventRuleList));
+            EventRuleDocumentCodec.SerializeToElement(rules));
     }
 
     private static EventRule CreateRule(string name)

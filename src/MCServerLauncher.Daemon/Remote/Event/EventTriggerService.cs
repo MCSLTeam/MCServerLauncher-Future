@@ -187,7 +187,7 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
             List<EventRule>? rules;
             try
             {
-                rules = JsonSerializer.Deserialize(ruleSet.Rules, EventRuleJsonContext.Default.EventRuleList);
+                rules = EventRuleDocumentCodec.Deserialize(ruleSet.Rules);
             }
             catch (JsonException exception)
             {

@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Text;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Management.Installer;
@@ -45,40 +47,48 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.MCSpongeNeo)]
 public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
-    public async Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting)
+    public async Task<Result<InstanceConfiguration, Error>> CreateInstanceFromArchive(InstanceFactoryConfiguration setting)
     {
-        var workingDirectory = setting.GetWorkingDirectory();
+        var workingDirectory = setting.Configuration.GetWorkingDirectory();
 
         var result = await ResultExt
             .Try(() => ZipFile.ExtractToDirectory(setting.Source, workingDirectory, Encoding.UTF8, true)
             ).MapAsync(_ => setting.FixEula());
 
         if (result.MapErr(Error.FromException).IsErr(out var error))
-            return ResultExt.Err<InstanceConfig>("Universal factory could not create instance from archive", error);
+            return ResultExt.Err<InstanceConfiguration>("Universal factory could not create instance from archive", error);
 
-        return ResultExt.Ok(setting.GetInstanceConfig());
+        return ResultExt.Ok(setting.Configuration);
     }
 
-    public async Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting)
+    public async Task<Result<InstanceConfiguration, Error>> CreateInstanceFromCore(InstanceFactoryConfiguration setting)
     {
-        setting = setting with { TargetType = TargetType.Jar };
+        setting = setting with
+        {
+            Configuration = InstanceConfigurationMapper.WithTarget(
+                setting.Configuration,
+                setting.Configuration.Target,
+                TargetType.Jar)
+        };
 
         var copyAndRenameTarget = await setting.CopyAndRenameTarget();
-        var installer = InstanceInstallerResolver.Resolve(setting, Path.Combine(setting.GetWorkingDirectory(), setting.Target));
+        var installer = InstanceInstallerResolver.Resolve(
+            setting,
+            Path.Combine(setting.Configuration.GetWorkingDirectory(), setting.Configuration.Target));
         var install = await copyAndRenameTarget.MapAsync(_ => installer.Run(setting));
         var fixEula = await install.MapAsync(_ => setting.FixEula());
 
         return fixEula.Map(_ =>
         {
-            var config = setting.GetInstanceConfig();
-            InstanceInstallMetadataStore.Write(setting.GetWorkingDirectory(), new Common.ProtoType.Action.InstanceInstallMetadata
-            {
-                InstallerKind = setting.InstanceType.ToString(),
-                InstallerSourcePath = setting.Source,
-                GeneratedPaths = Array.Empty<string>(),
-                ResolvedLaunchTarget = config.Target,
-                InstalledAt = DateTimeOffset.UtcNow
-            });
+            var config = setting.Configuration;
+            InstanceInstallMetadataStore.Write(
+                config.GetWorkingDirectory(),
+                new InstanceInstallMetadata(
+                    config.InstanceType.ToString(),
+                    setting.Source,
+                    ImmutableArray<string>.Empty,
+                    config.Target,
+                    DateTimeOffset.UtcNow));
             return config;
         });
     }

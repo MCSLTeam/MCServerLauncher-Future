@@ -500,7 +500,7 @@ public sealed class DomainEventPortAndTriggerTests
 
     private static EventRuleSet CreateRuleSet(Guid instanceId, List<EventRule> rules)
     {
-        var json = JsonSerializer.SerializeToElement(rules, EventRuleJsonContext.Default.EventRuleList);
+        var json = EventRuleDocumentCodec.SerializeToElement(rules);
         return new EventRuleSet(instanceId, json);
     }
 

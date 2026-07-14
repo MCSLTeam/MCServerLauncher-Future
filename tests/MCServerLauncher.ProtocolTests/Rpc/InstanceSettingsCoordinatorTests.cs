@@ -1,8 +1,10 @@
-using MCServerLauncher.Common.ProtoType.Action;
+using System.Collections.Immutable;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
 using System.Diagnostics;
+using RuntimeInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -34,16 +36,15 @@ public class InstanceSettingsCoordinatorTests
         manager.Instances[config.Uuid] = instance;
         manager.RunningInstances[config.Uuid] = instance;
 
-        var result = await manager.UpdateInstanceSettings(new UpdateInstanceSettingsParameter
-        {
-            Id = config.Uuid,
-            Name = "updated-name",
-            InstanceType = InstanceType.MCJava,
-            JavaPath = config.JavaPath,
-            Arguments = config.Arguments,
-            Version = config.Version,
-            ForceRerunInstaller = false
-        });
+        var result = await manager.UpdateInstanceSettings(new UpdateInstanceSettingsRequest(
+            config.Uuid,
+            "updated-name",
+            InstanceType.MCJava,
+            config.JavaPath,
+            config.Arguments.ToImmutableArray(),
+            config.Version,
+            null,
+            false));
 
         Assert.True(result.IsErr(out var error));
         Assert.Contains("must be stopped", error!.ToString(), StringComparison.OrdinalIgnoreCase);
@@ -185,9 +186,9 @@ public class InstanceSettingsCoordinatorTests
             remove { }
         }
 
-        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
+        public Task<RuntimeInstanceReport> GetReportAsync(CancellationToken ct = default)
         {
-            return Task.FromResult(new InstanceReport(Status, Config, new Dictionary<string, string>(), [], default));
+            return Task.FromResult(new RuntimeInstanceReport(Status, Config, new Dictionary<string, string>(), [], default));
         }
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)

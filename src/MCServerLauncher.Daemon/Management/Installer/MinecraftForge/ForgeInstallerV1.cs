@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
@@ -25,9 +26,9 @@ public class ForgeInstallerV1 : ForgeInstallerBase
     public VersionInfo VersionInfo { get; }
     public override InstallV1 Install { get; }
 
-    public override async Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default)
+    public override async Task<Result<Unit, Error>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
     {
-        var workingDirectory = setting.GetWorkingDirectory();
+        var workingDirectory = setting.Configuration.GetWorkingDirectory();
         var librariesDir = Path.Combine(workingDirectory, "libraries");
         Directory.CreateDirectory(librariesDir);
         ct.ThrowIfCancellationRequested();

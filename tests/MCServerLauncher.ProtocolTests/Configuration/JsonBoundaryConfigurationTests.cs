@@ -5,10 +5,13 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Daemon;
+using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.ProtocolTests.Helpers;
 using Xunit;
+using LegacyInstanceInstallMetadata = MCServerLauncher.Common.ProtoType.Action.InstanceInstallMetadata;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -44,13 +47,16 @@ public class JsonBoundaryConfigurationTests
     }
 
     [Fact]
-    public void DaemonPersistenceBoundary_StjOptions_AreOwnedByCommonContexts()
+    public void DaemonPersistenceBoundary_StjOptions_ResolveOnlyDaemonOwnedDocuments()
     {
         var options = DaemonPersistenceJsonBoundary.StjOptions;
 
         Assert.Equal(JsonNamingPolicy.SnakeCaseLower, options.PropertyNamingPolicy);
+        Assert.NotNull(options.GetTypeInfo(typeof(AppConfig)));
         Assert.NotNull(options.GetTypeInfo(typeof(InstanceConfig)));
-        Assert.NotNull(options.GetTypeInfo(typeof(InstanceFactorySetting)));
+        Assert.NotNull(options.GetTypeInfo(typeof(InstanceInstallMetadataDocument)));
+        Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(InstanceFactorySetting)));
+        Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(LegacyInstanceInstallMetadata)));
     }
 
     [Fact]
@@ -79,10 +85,21 @@ public class JsonBoundaryConfigurationTests
     }
 
     [Fact]
-    public void DaemonPersistenceBoundary_FallbackPolicy_DisabledHasResolver()
+    public void DaemonPersistenceBoundary_HasSourceGeneratedResolver()
     {
-        var resolver = DaemonPersistenceJsonBoundary.CreateStjResolver(DaemonStjReflectionFallbackPolicy.Disabled);
+        var resolver = DaemonPersistenceJsonBoundary.CreateStjResolver();
         Assert.NotNull(resolver);
+    }
+
+    [Fact]
+    public void DaemonPersistenceBoundary_RejectsUnknownTypes()
+    {
+        var options = DaemonPersistenceJsonBoundary.CreateStjOptions();
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            JsonSerializer.Serialize(new UnknownBoundaryPayload("persistence"), options));
+
+        Assert.Contains(nameof(UnknownBoundaryPayload), ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -122,7 +139,6 @@ public class JsonBoundaryConfigurationTests
         {
             AppContext.SetData(key, null);
             Assert.True(DaemonRpcJsonBoundary.UsesReflectionFallback());
-            Assert.True(DaemonPersistenceJsonBoundary.UsesReflectionFallback());
             Assert.True(DaemonClientRpcJsonBoundary.UsesReflectionFallback());
         }
         finally
@@ -144,7 +160,6 @@ public class JsonBoundaryConfigurationTests
         {
             AppContext.SetSwitch(key, false);
             Assert.False(DaemonRpcJsonBoundary.UsesReflectionFallback());
-            Assert.False(DaemonPersistenceJsonBoundary.UsesReflectionFallback());
             Assert.False(DaemonClientRpcJsonBoundary.UsesReflectionFallback());
         }
         finally

@@ -1,4 +1,4 @@
-using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 
@@ -6,5 +6,5 @@ namespace MCServerLauncher.Daemon.Management.Installer;
 
 public interface IInstanceInstaller
 {
-    Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default);
+    Task<Result<Unit, Error>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default);
 }

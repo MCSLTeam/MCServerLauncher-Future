@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using Downloader;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
@@ -36,7 +37,7 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
     protected InstanceFactoryMirror MirrorType { get; }
     protected static string LibraryCacheRoot => Path.Combine(FileManager.CacheRoot, "libraries");
     public abstract InstallV1 Install { get; }
-    public abstract Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default);
+    public abstract Task<Result<Unit, Error>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default);
 
     protected static async Task<List<TLibrary>> ParallelProcessLibraries<TLibrary>(
         List<TLibrary> libraries,

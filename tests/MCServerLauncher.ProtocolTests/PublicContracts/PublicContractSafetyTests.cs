@@ -8,9 +8,12 @@ using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Event;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Notification;
 using MCServerLauncher.Common.ProtoType.Relay;
 using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Daemon;
+using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
 using Xunit;
@@ -178,14 +181,15 @@ public class PublicContractSafetyTests
     [Fact]
     public void DaemonPersistenceBoundary_HasValidResolver()
     {
-        var resolver = DaemonPersistenceJsonBoundary.CreateStjResolver(DaemonStjReflectionFallbackPolicy.Disabled);
+        var resolver = DaemonPersistenceJsonBoundary.CreateStjResolver();
         Assert.NotNull(resolver);
 
-        var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        var options = DaemonPersistenceJsonBoundary.CreateStjOptions();
         Assert.True(options.IncludeFields);
 
-        var info = resolver.GetTypeInfo(typeof(Guid), options);
-        Assert.NotNull(info);
+        Assert.NotNull(resolver.GetTypeInfo(typeof(AppConfig), options));
+        Assert.NotNull(resolver.GetTypeInfo(typeof(InstanceConfig), options));
+        Assert.NotNull(resolver.GetTypeInfo(typeof(InstanceInstallMetadataDocument), options));
     }
 
     [Fact]

@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using MCServerLauncher.Common.Detection;
-using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
@@ -12,13 +11,18 @@ using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using RustyOptions.Async;
 using Serilog;
+using InstanceConfiguration = MCServerLauncher.Common.Contracts.Instances.InstanceConfiguration;
+using InstanceFactoryConfiguration = MCServerLauncher.Common.Contracts.Instances.InstanceFactoryConfiguration;
+using InstanceSettingsResult = MCServerLauncher.Common.Contracts.Instances.InstanceSettingsResult;
+using UpdateInstanceSettingsRequest = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest;
+using UpdateInstanceSettingsResult = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsResult;
 
 namespace MCServerLauncher.Daemon.Management;
 
 internal class InstanceManager : IInstanceManager
 {
     private readonly InstanceUpdateCoordinator _instanceUpdateCoordinator;
-    private readonly Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> _applyInstanceFactory;
+    private readonly Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> _applyInstanceFactory;
     private readonly Func<InstanceConfig, IInstance> _instanceFactory;
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _instanceMutationGates = new();
     private readonly Lock _mutationLock = new();
@@ -58,7 +62,7 @@ internal class InstanceManager : IInstanceManager
 
     internal InstanceManager(
         Func<InstanceConfig, IInstance> instanceFactory,
-        Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> applyInstanceFactory)
+        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> applyInstanceFactory)
     {
         ArgumentNullException.ThrowIfNull(instanceFactory);
         ArgumentNullException.ThrowIfNull(applyInstanceFactory);
@@ -68,23 +72,30 @@ internal class InstanceManager : IInstanceManager
         _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this, instanceFactory);
     }
 
-    public async Task<Result<InstanceConfig, Error>> TryAddInstance(InstanceFactorySetting setting, CancellationToken ct = default)
+    public async Task<Result<InstanceConfiguration, Error>> TryAddInstance(
+        InstanceFactoryConfiguration setting,
+        CancellationToken ct = default)
     {
         using var admission = _mutationAdmission.EnterExternal();
         ct.ThrowIfCancellationRequested();
+        var requestedConfig = setting.Configuration;
         if (!InstanceTargetPathValidator.TryResolveTargetFile(
-                setting.GetWorkingDirectory(),
-                setting.Target,
+                requestedConfig.GetWorkingDirectory(),
+                requestedConfig.Target,
                 out _,
                 out var targetError))
         {
-            return ResultExt.Err<InstanceConfig>(targetError!);
+            return ResultExt.Err<InstanceConfiguration>(targetError!);
         }
 
-        using var reservation = ReserveInstanceCreation(setting.Uuid);
-        var reservedSetting = setting with { Uuid = reservation.InstanceId };
+        using var reservation = ReserveInstanceCreation(requestedConfig.InstanceId);
+        var reservedSetting = setting with
+        {
+            Configuration = InstanceConfigurationMapper.WithInstanceId(requestedConfig, reservation.InstanceId)
+        };
 
-        var instanceRoot = reservedSetting.GetWorkingDirectory();
+        var reservedConfig = reservedSetting.Configuration;
+        var instanceRoot = reservedConfig.GetWorkingDirectory();
         try
         {
             Directory.CreateDirectory(instanceRoot);
@@ -96,10 +107,10 @@ internal class InstanceManager : IInstanceManager
 
         Log.Information(
             "[InstanceManager] Running InstanceFactory({0}) for instance '{1}'",
-            reservedSetting.InstanceType.ToString(),
-            reservedSetting.Name);
+            reservedConfig.InstanceType.ToString(),
+            reservedConfig.Name);
 
-        Result<InstanceConfig, Error> appliedFactoryResult;
+        Result<InstanceConfiguration, Error> appliedFactoryResult;
         try
         {
             appliedFactoryResult = await _applyInstanceFactory(reservedSetting);
@@ -120,7 +131,9 @@ internal class InstanceManager : IInstanceManager
         try
         {
             ct.ThrowIfCancellationRequested();
-            var reconciledConfig = InstanceVersionDetector.Reconcile(appliedFactoryResult.Unwrap(), instanceRoot);
+            var reconciledConfig = InstanceVersionDetector.Reconcile(
+                InstanceConfigurationMapper.ToInstanceConfig(appliedFactoryResult.Unwrap()),
+                instanceRoot);
             reconciledConfig.Uuid = reservation.InstanceId;
 
             using var mutation = await AcquireInstanceMutationAsync(reconciledConfig.Uuid, ct);
@@ -145,7 +158,7 @@ internal class InstanceManager : IInstanceManager
                 throw;
             }
 
-            return ResultExt.Ok(reconciledConfig);
+            return ResultExt.Ok(InstanceConfigurationMapper.ToContract(reconciledConfig));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -157,11 +170,11 @@ internal class InstanceManager : IInstanceManager
             return FailCreate(Error.FromException(exception));
         }
 
-        Result<InstanceConfig, Error> FailCreate(Error error)
+        Result<InstanceConfiguration, Error> FailCreate(Error error)
         {
-            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", reservedSetting.Name, error);
+            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", reservedConfig.Name, error);
             FileManager.TryRemove(instanceRoot);
-            return ResultExt.Err<InstanceConfig>(error);
+            return ResultExt.Err<InstanceConfiguration>(error);
         }
     }
 
@@ -351,7 +364,7 @@ internal class InstanceManager : IInstanceManager
         return false;
     }
 
-    public async Task<Result<GetInstanceSettingsResult, Error>> GetInstanceSettings(
+    public async Task<Result<InstanceSettingsResult, Error>> GetInstanceSettings(
         Guid instanceId,
         CancellationToken ct = default)
     {
@@ -360,7 +373,7 @@ internal class InstanceManager : IInstanceManager
     }
 
     public async Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
-        UpdateInstanceSettingsParameter request,
+        UpdateInstanceSettingsRequest request,
         CancellationToken ct = default)
     {
         using var admission = _mutationAdmission.EnterExternal();

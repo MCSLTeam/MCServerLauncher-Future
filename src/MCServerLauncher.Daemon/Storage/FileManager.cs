@@ -21,11 +21,9 @@ internal static class FileManager
 
     private static readonly ConcurrentDictionary<Guid, IDownload> Downloading = new();
     private static readonly JsonSerializerOptions PersistenceSourceGenReadOptions =
-        DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        DaemonPersistenceJsonBoundary.CreateStjOptions();
     private static readonly JsonSerializerOptions PersistenceSourceGenWriteIndentedOptions =
-        DaemonPersistenceJsonBoundary.CreateStjOptions(
-            DaemonStjReflectionFallbackPolicy.Disabled,
-            writeIndented: true);
+        DaemonPersistenceJsonBoundary.CreateStjOptions(writeIndented: true);
 
     public static async Task<string> FileSha1(string path, CancellationToken ct = default)
     {

@@ -16,18 +16,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        InstanceFactorySetting setting;
-        try
-        {
-            setting = InstanceContractMapper.ToLegacy(request.Setting);
-        }
-        catch (Exception exception) when (exception is ArgumentException or FormatException or System.Text.Json.JsonException)
-        {
-            return Result.Err<CreateInstanceResult, DaemonError>(
-                new ValidationDaemonError("instance.invalid", "The instance configuration is invalid."));
-        }
-
-        var validation = setting.ValidateSetting();
+        var validation = request.Setting.ValidateSetting();
         if (validation.IsErr(out _))
         {
             return Result.Err<CreateInstanceResult, DaemonError>(
@@ -36,7 +25,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
 
         try
         {
-            var result = await instanceManager.TryAddInstance(setting, cancellationToken);
+            var result = await instanceManager.TryAddInstance(request.Setting, cancellationToken);
             if (result.IsErr(out _))
             {
                 return Result.Err<CreateInstanceResult, DaemonError>(
@@ -44,7 +33,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             }
 
             return Result.Ok<CreateInstanceResult, DaemonError>(
-                new CreateInstanceResult(InstanceContractMapper.ToContract(result.Unwrap())));
+                new CreateInstanceResult(result.Unwrap()));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -225,7 +214,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
                 ? instance.ServerProcessId
                 : -1;
             return Result.Ok<MCServerLauncher.Common.Contracts.Instances.InstanceReport, DaemonError>(
-                InstanceContractMapper.ToContract(report, processId));
+                InstanceConfigurationMapper.ToContract(report, processId));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -247,7 +236,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             var reports = await instanceManager.GetAllReports(cancellationToken);
             var mapped = reports.ToImmutableDictionary(
                 pair => pair.Key,
-                pair => InstanceContractMapper.ToContract(
+                pair => InstanceConfigurationMapper.ToContract(
                     pair.Value,
                     instanceManager.Instances.TryGetValue(pair.Key, out var instance) ? instance.ServerProcessId : -1));
             return Result.Ok<InstanceReportList, DaemonError>(new InstanceReportList(mapped));
@@ -288,7 +277,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             var result = await instanceManager.GetInstanceSettings(request.InstanceId, cancellationToken);
             return result.IsErr(out _)
                 ? Result.Err<InstanceSettingsResult, DaemonError>(InstanceNotFound(request.InstanceId))
-                : Result.Ok<InstanceSettingsResult, DaemonError>(InstanceContractMapper.ToContract(result.Unwrap()));
+                : Result.Ok<InstanceSettingsResult, DaemonError>(result.Unwrap());
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -318,17 +307,6 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
                 new ConflictDaemonError("instance.running", "The instance must be stopped before updating settings."));
         }
 
-        MCServerLauncher.Common.ProtoType.Action.UpdateInstanceSettingsParameter parameter;
-        try
-        {
-            parameter = InstanceContractMapper.ToLegacy(request);
-        }
-        catch (Exception exception) when (exception is ArgumentException or FormatException)
-        {
-            return Result.Err<UpdateInstanceSettingsResult, DaemonError>(
-                new ValidationDaemonError("instance.settings_invalid", "The instance settings are invalid."));
-        }
-
         if (request.ReplacementCore is not null &&
             !InstanceTargetPathValidator.TryResolveTargetFile(
                 instance.Config.GetWorkingDirectory(),
@@ -342,7 +320,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
 
         try
         {
-            var result = await instanceManager.UpdateInstanceSettings(parameter, cancellationToken);
+            var result = await instanceManager.UpdateInstanceSettings(request, cancellationToken);
             if (result.IsErr(out var updateError))
             {
                 return updateError is InstancePathValidationError
@@ -353,7 +331,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             }
 
             return Result.Ok<UpdateInstanceSettingsResult, DaemonError>(
-                InstanceContractMapper.ToContract(result.Unwrap()));
+                result.Unwrap());
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

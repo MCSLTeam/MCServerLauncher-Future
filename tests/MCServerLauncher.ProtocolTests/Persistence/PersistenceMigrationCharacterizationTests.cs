@@ -1,9 +1,11 @@
 using System.Reflection;
+using System.Collections.Immutable;
 using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType;
-using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.ProtocolTests.Fixtures.Persistence;
 using MCServerLauncher.ProtocolTests.Helpers;
@@ -318,87 +320,146 @@ public class PersistenceMigrationCharacterizationTests
     }
 
     [Fact]
-    [Trait("Category", "Persistence")]
-    public void PersistenceBoundary_InstanceInstallMetadata_RoundTripsThroughFileManagerReadJson()
+    [Trait("Category", "PersistenceGolden")]
+    public void PersistenceGolden_InstanceInstallMetadataFixture_RoundTripsThroughStore()
     {
-        var metadata = new InstanceInstallMetadata
-        {
-            InstallerKind = "MCForge",
-            InstallerSourcePath = "/instances/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/uploads/forge-installer.jar",
-            GeneratedPaths = ["libraries", "server.jar"],
-            ResolvedLaunchTarget = "server.jar",
-            InstalledAt = DateTimeOffset.Parse("2026-06-02T12:34:56+00:00")
-        };
+        var fixturePath = Path.Combine(
+            PersistenceFixturePaths.InstanceInstallMetadataDir,
+            InstanceInstallMetadataStore.FileName);
+        var fixture = FixtureHarness.LoadFixture(fixturePath);
+        var workingDirectory = CreateTempDirectory();
+        var path = InstanceInstallMetadataStore.GetPath(workingDirectory);
+        File.Copy(fixturePath, path);
 
-        var path = CreateTempFile(SerializeWithDaemonSettings(metadata));
         try
         {
-            var parsed = InvokeReadJsonMethod<InstanceInstallMetadata>(path);
+            var parsed = InstanceInstallMetadataStore.Read(workingDirectory);
+
             Assert.NotNull(parsed);
-            Assert.Equal(metadata.InstallerKind, parsed!.InstallerKind);
-            Assert.Equal(metadata.InstallerSourcePath, parsed.InstallerSourcePath);
-            Assert.Equal(metadata.GeneratedPaths, parsed.GeneratedPaths);
-            Assert.Equal(metadata.ResolvedLaunchTarget, parsed.ResolvedLaunchTarget);
-            Assert.Equal(metadata.InstalledAt, parsed.InstalledAt);
+            Assert.Equal("MCForge", parsed!.InstallerKind);
+            Assert.Equal(
+                "/instances/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/uploads/forge-installer.jar",
+                parsed.InstallerSourcePath);
+            Assert.Collection(
+                parsed.GeneratedPaths,
+                path => Assert.Equal("libraries", path),
+                path => Assert.Equal("server.jar", path));
+            Assert.Equal("server.jar", parsed.ResolvedLaunchTarget);
+            Assert.Equal(DateTimeOffset.Parse("2026-06-02T12:34:56+00:00"), parsed.InstalledAt);
+
+            InstanceInstallMetadataStore.Write(workingDirectory, parsed);
+
+            FixtureHarness.AssertStructuralEquals(
+                fixture,
+                FixtureHarness.ParseJson(File.ReadAllText(path)),
+                "daemon_instance.install.json round-trip should match frozen baseline");
         }
         finally
         {
-            File.Delete(path);
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Persistence")]
+    public void PersistenceBoundary_InstanceInstallMetadata_MissingInstalledAt_UsesDefault()
+    {
+        var workingDirectory = CreateTempDirectory();
+        var path = InstanceInstallMetadataStore.GetPath(workingDirectory);
+        File.WriteAllText(path, """
+                                {
+                                  "installer_kind": "MCForge",
+                                  "installer_source_path": null,
+                                  "generated_paths": [],
+                                  "resolved_launch_target": null
+                                }
+                                """);
+
+        try
+        {
+            var parsed = InstanceInstallMetadataStore.Read(workingDirectory);
+
+            Assert.NotNull(parsed);
+            Assert.Equal(default, parsed!.InstalledAt);
+
+            InstanceInstallMetadataStore.Write(workingDirectory, parsed);
+
+            var written = FixtureHarness.ParseJson(File.ReadAllText(path));
+            Assert.Equal(default, written.GetProperty("installed_at").GetDateTimeOffset());
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [Trait("Category", "Persistence")]
+    [InlineData("{\"generated_paths\":[]}", "installer_kind")]
+    [InlineData("{\"installer_kind\":\"MCForge\"}", "generated_paths")]
+    public void PersistenceBoundary_InstanceInstallMetadata_MissingRequiredProperty_ThrowsJsonException(
+        string json,
+        string propertyName)
+    {
+        var workingDirectory = CreateTempDirectory();
+        File.WriteAllText(InstanceInstallMetadataStore.GetPath(workingDirectory), json);
+
+        try
+        {
+            var ex = Assert.Throws<JsonException>(() => InstanceInstallMetadataStore.Read(workingDirectory));
+            Assert.Contains(propertyName, ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
         }
     }
 
     [Fact]
     [Trait("Category", "BackupBehavior")]
-    public void BackupBehavior_WriteJsonAndBackup_InstanceInstallMetadata_CreatesBakThenWritesNewContent()
+    public void BackupBehavior_InstanceInstallMetadataStore_CreatesBakThenWritesNewContent()
     {
-        var existing = new InstanceInstallMetadata
-        {
-            InstallerKind = "MCForge",
-            InstallerSourcePath = "/instances/old/uploads/forge-installer.jar",
-            GeneratedPaths = ["libraries"],
-            ResolvedLaunchTarget = "forge.jar",
-            InstalledAt = DateTimeOffset.Parse("2026-06-01T00:00:00+00:00")
-        };
-
-        var updated = new InstanceInstallMetadata
-        {
-            InstallerKind = "MCNeoForge",
-            InstallerSourcePath = "/instances/new/uploads/neoforge-installer.jar",
-            GeneratedPaths = ["libraries", "server.jar"],
-            ResolvedLaunchTarget = "server.jar",
-            InstalledAt = DateTimeOffset.Parse("2026-06-02T00:00:00+00:00")
-        };
-
-        var path = CreateTempFile(SerializeWithDaemonSettings(existing));
+        var fixturePath = Path.Combine(
+            PersistenceFixturePaths.InstanceInstallMetadataDir,
+            InstanceInstallMetadataStore.FileName);
+        var existing = FixtureHarness.LoadFixture(fixturePath);
+        var updated = new InstanceInstallMetadata(
+            "MCNeoForge",
+            "/instances/new/uploads/neoforge-installer.jar",
+            ImmutableArray.Create("libraries", "server.jar"),
+            "server.jar",
+            DateTimeOffset.Parse("2026-06-03T00:00:00+00:00"));
+        var workingDirectory = CreateTempDirectory();
+        var path = InstanceInstallMetadataStore.GetPath(workingDirectory);
         var bakPath = path + ".bak";
+        File.Copy(fixturePath, path);
 
         try
         {
-            InvokeWriteJsonAndBackup(path, updated);
+            InstanceInstallMetadataStore.Write(workingDirectory, updated);
 
             Assert.True(File.Exists(bakPath));
 
             var backupJson = FixtureHarness.ParseJson(File.ReadAllText(bakPath));
-            var expectedExisting = FixtureHarness.ParseJson(SerializeWithDaemonSettings(existing));
-            FixtureHarness.AssertStructuralEquals(expectedExisting, backupJson,
+            FixtureHarness.AssertStructuralEquals(existing, backupJson,
                 "valid install metadata should be backed up before write");
 
-            var expectedUpdated = FixtureHarness.ParseJson(SerializeWithDaemonSettings(updated));
+            var expectedUpdated = FixtureHarness.ParseJson("""
+                {
+                  "installer_kind": "MCNeoForge",
+                  "installer_source_path": "/instances/new/uploads/neoforge-installer.jar",
+                  "generated_paths": ["libraries", "server.jar"],
+                  "resolved_launch_target": "server.jar",
+                  "installed_at": "2026-06-03T00:00:00+00:00"
+                }
+                """);
             var actualUpdated = FixtureHarness.ParseJson(File.ReadAllText(path));
             FixtureHarness.AssertStructuralEquals(expectedUpdated, actualUpdated,
                 "write should persist updated install metadata after backup");
         }
         finally
         {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-
-            if (File.Exists(bakPath))
-            {
-                File.Delete(bakPath);
-            }
+            Directory.Delete(workingDirectory, recursive: true);
         }
     }
 
@@ -446,6 +507,13 @@ public class PersistenceMigrationCharacterizationTests
     {
         var path = Path.Combine(Path.GetTempPath(), $"mcsl-persistence-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, content);
+        return path;
+    }
+
+    private static string CreateTempDirectory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"mcsl-persistence-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(path);
         return path;
     }
 

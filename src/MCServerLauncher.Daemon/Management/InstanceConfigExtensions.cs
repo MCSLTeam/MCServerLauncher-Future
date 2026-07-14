@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
@@ -24,6 +24,11 @@ public static class InstanceConfigExtensions
         return Path.Combine(FileManager.InstancesRoot, config.Uuid.ToString());
     }
 
+    public static string GetWorkingDirectory(this InstanceConfiguration config)
+    {
+        return Path.Combine(FileManager.InstancesRoot, config.InstanceId.ToString());
+    }
+
     /// <summary>
     ///     验证实例配置
     /// </summary>
@@ -31,28 +36,59 @@ public static class InstanceConfigExtensions
     /// <returns></returns>
     public static Result<Unit, Error> ValidateConfig(this InstanceConfig config)
     {
-        if (config.InstanceType.RequiresNumericMinecraftVersion() && string.IsNullOrWhiteSpace(config.McVersion))
+        return ValidateConfigCore(
+            config.InstanceType,
+            config.Version,
+            config.TargetType,
+            config.JavaPath,
+            config.Uuid,
+            config.GetWorkingDirectory(),
+            config.Target);
+    }
+
+    public static Result<Unit, Error> ValidateConfig(this InstanceConfiguration config)
+    {
+        return ValidateConfigCore(
+            config.InstanceType,
+            config.Version,
+            config.TargetType,
+            config.JavaPath,
+            config.InstanceId,
+            config.GetWorkingDirectory(),
+            config.Target);
+    }
+
+    private static Result<Unit, Error> ValidateConfigCore(
+        InstanceType instanceType,
+        string version,
+        TargetType targetType,
+        string javaPath,
+        Guid instanceId,
+        string workingDirectory,
+        string target)
+    {
+        if (instanceType.RequiresNumericMinecraftVersion() && string.IsNullOrWhiteSpace(version))
             return ResultExt.Err<Unit>("mc_version could not be empty");
 
-        if (config.InstanceType.RequiresNumericMinecraftVersion())
+        if (instanceType.RequiresNumericMinecraftVersion())
             try
             {
-                McVersion.Of(config.McVersion);
+                McVersion.Of(version);
             }
             catch (ArgumentException)
             {
                 return ResultExt.Err<Unit>("Could not parse mc_version");
             }
 
-        var javaPathValidation = config.ValidateJavaPathExists();
+        var javaPathValidation = ValidateJavaPathExists(targetType, javaPath);
         if (javaPathValidation.IsErr(out var javaPathError) && javaPathError is not null)
             return ResultExt.Err<Unit>(javaPathError);
 
-        if (config.Uuid == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
+        if (instanceId == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
 
         if (!InstanceTargetPathValidator.TryResolveTargetFile(
-                config.GetWorkingDirectory(),
-                config.Target,
+                workingDirectory,
+                target,
                 out _,
                 out var targetError))
         {
@@ -62,16 +98,16 @@ public static class InstanceConfigExtensions
         return ResultExt.Ok(Unit.Default);
     }
 
-    private static Result<Unit, Error> ValidateJavaPathExists(this InstanceConfig config)
+    private static Result<Unit, Error> ValidateJavaPathExists(TargetType targetType, string javaPath)
     {
         if (
-            config.TargetType is not TargetType.Jar
-            || config.JavaPath.Equals("java", StringComparison.OrdinalIgnoreCase)
+            targetType is not TargetType.Jar
+            || javaPath.Equals("java", StringComparison.OrdinalIgnoreCase)
         ) return ResultExt.Ok(Unit.Default);
 
         try
         {
-            return File.Exists(config.JavaPath)
+            return File.Exists(javaPath)
                 ? ResultExt.Ok(Unit.Default)
                 : ResultExt.Err<Unit>("Could not found java in java_path");
         }
@@ -185,56 +221,4 @@ public static class InstanceConfigExtensions
         };
     }
 
-    /// <summary>
-    ///     生成同意 EULA 的文本
-    /// </summary>
-    /// <returns></returns>
-    private static string[] GenerateEula()
-    {
-        var text = new string[3];
-        text[0] =
-            "#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).";
-        text[1] = "#" + DateTime.Now.ToString("ddd MMM dd HH:mm:ss zzz yyyy");
-        text[2] = "eula=true";
-        return text;
-    }
-
-    /// <summary>
-    ///     为实例生成 EULA 文件
-    /// </summary>
-    /// <param name="config"></param>
-    public static async Task<Result<Unit, Error>> FixEula(this InstanceConfig config)
-    {
-        var eulaPath = Path.Combine(config.GetWorkingDirectory(), "eula.txt");
-
-        var eula = await ReadOrGenerateEula(eulaPath);
-        if (eula.IsErr(out var readError) && readError is not null) return ResultExt.Err<Unit>(readError);
-
-        return await WriteEula(eulaPath, eula.Unwrap());
-    }
-
-    private static async Task<Result<string[], Error>> ReadOrGenerateEula(string eulaPath)
-    {
-        var result = await ResultExt.TryAsync(async path =>
-        {
-            return File.Exists(path)
-                ? (await File.ReadAllLinesAsync(path))
-                .Select(x => x.Trim().StartsWith("eula") ? "eula=true" : x)
-                .ToArray()
-                : GenerateEula();
-        }, eulaPath);
-
-        return result.MapErr(ex => new Error("Failed to read EULA").CauseBy(ex));
-    }
-
-    private static async Task<Result<Unit, Error>> WriteEula(string eulaPath, string[] text)
-    {
-        var result = await ResultExt.TryAsync(async state =>
-        {
-            var (path, lines) = state;
-            await File.WriteAllLinesAsync(path, lines, Encoding.UTF8);
-        }, (eulaPath, text));
-
-        return result.MapErr(ex => new Error("Failed to write EULA").CauseBy(ex));
-    }
 }

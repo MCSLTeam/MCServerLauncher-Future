@@ -83,7 +83,7 @@ internal class HandleGetAllReports : IAsyncActionHandler<EmptyActionParameter, G
         {
             Reports = result.Unwrap().Reports.ToDictionary(
                 pair => pair.Key,
-                pair => InstanceContractMapper.ToLegacy(pair.Value))
+                pair => LegacyInstanceActionMapper.ToLegacy(pair.Value))
         });
     }
 }
@@ -99,7 +99,7 @@ internal class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, Add
     {
         var request = new MCServerLauncher.Common.Contracts.Instances.CreateInstanceRequest(
             new MCServerLauncher.Common.Contracts.Instances.InstanceFactoryConfiguration(
-                InstanceContractMapper.ToContract(param.Setting),
+                LegacyInstanceActionMapper.ToContract(param.Setting),
                 param.Setting.Source,
                 param.Setting.SourceType,
                 param.Setting.Mirror,
@@ -107,7 +107,7 @@ internal class HandleAddInstance : IAsyncActionHandler<AddInstanceParameter, Add
         var result = await resolver.GetRequiredService<IInstanceApplication>().CreateInstanceAsync(request, ct);
         return result.IsErr(out var error)
             ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstallationError))
-            : this.Ok(new AddInstanceResult { Config = InstanceContractMapper.ToLegacy(result.Unwrap().Config) });
+            : this.Ok(new AddInstanceResult { Config = LegacyInstanceActionMapper.ToLegacy(result.Unwrap().Config) });
     }
 }
 
@@ -162,7 +162,7 @@ internal class HandleGetInstanceReport : IAsyncActionHandler<GetInstanceReportPa
             .GetInstanceReportAsync(new MCServerLauncher.Common.Contracts.Instances.InstanceReference(param.Id), ct);
         return result.IsErr(out var error)
             ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstanceNotFound))
-            : this.Ok(new GetInstanceReportResult { Report = InstanceContractMapper.ToLegacy(result.Unwrap()) });
+            : this.Ok(new GetInstanceReportResult { Report = LegacyInstanceActionMapper.ToLegacy(result.Unwrap()) });
     }
 }
 
@@ -200,7 +200,7 @@ internal class HandleGetInstanceSettings : IActionHandler<GetInstanceSettingsPar
             .GetResult();
         return result.IsErr(out var error)
             ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.BadRequest))
-            : this.Ok(InstanceContractMapper.ToLegacy(result.Unwrap()));
+            : this.Ok(LegacyInstanceActionMapper.ToLegacy(result.Unwrap()));
     }
 }
 
@@ -229,6 +229,6 @@ internal class HandleUpdateInstanceSettings : IAsyncActionHandler<UpdateInstance
         var result = await resolver.GetRequiredService<IInstanceApplication>().UpdateInstanceSettingsAsync(request, ct);
         return result.IsErr(out var error)
             ? this.Err(LegacyActionErrorMapper.ToActionError(error!, ActionRetcode.InstallationError))
-            : this.Ok(InstanceContractMapper.ToLegacy(result.Unwrap()));
+            : this.Ok(LegacyInstanceActionMapper.ToLegacy(result.Unwrap()));
     }
 }

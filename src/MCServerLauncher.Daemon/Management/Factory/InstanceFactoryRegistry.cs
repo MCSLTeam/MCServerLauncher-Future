@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Utils;
@@ -20,7 +21,7 @@ public static class InstanceFactoryRegistry
                 SourceType,
                 Dictionary<
                     (McVersion, McVersion),
-                    Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>
+                    Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>
                 >
             >
         > InstanceFactoryMapping = new();
@@ -66,7 +67,7 @@ public static class InstanceFactoryRegistry
                 = InstanceFactoryMapping.GetValueOrDefault(attr.InstanceType) ??
                   (InstanceFactoryMapping[attr.InstanceType] =
                       new Dictionary<SourceType, Dictionary<(McVersion, McVersion),
-                          Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>>());
+                          Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>>>());
 
             var allowedSourceType = attr.AllowedSourceType;
 
@@ -121,10 +122,10 @@ public static class InstanceFactoryRegistry
 
     private static void RegisterInstanceFactory(
         Dictionary<SourceType, Dictionary<(McVersion, McVersion),
-                Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>>
+                Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>>>
             sourceTypeMapping,
         SourceType sourceType,
-        Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> instanceFactory,
+        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> instanceFactory,
         InstanceFactoryAttribute attribute
     )
     {
@@ -132,7 +133,7 @@ public static class InstanceFactoryRegistry
             sourceTypeMapping.GetValueOrDefault(sourceType) ??
             (sourceTypeMapping[sourceType] =
                 new Dictionary<(McVersion, McVersion),
-                    Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>>>());
+                    Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>>());
 
         var versionRange = (McVersion.Of(attribute.MinVersion), McVersion.Of(attribute.MaxVersion));
 
@@ -150,14 +151,15 @@ public static class InstanceFactoryRegistry
     /// <param name="setting"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public static Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> GetInstanceFactory(
-        InstanceFactorySetting setting)
+    public static Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> GetInstanceFactory(
+        InstanceFactoryConfiguration setting)
     {
-        if (InstanceFactoryMapping.TryGetValue(setting.InstanceType, out var sourceTypeMapping))
+        var config = setting.Configuration;
+        if (InstanceFactoryMapping.TryGetValue(config.InstanceType, out var sourceTypeMapping))
         {
             if (sourceTypeMapping.TryGetValue(setting.SourceType, out var versionMapping))
             {
-                if (setting.InstanceType == InstanceType.MCJava && string.IsNullOrWhiteSpace(setting.McVersion))
+                if (config.InstanceType == InstanceType.MCJava && string.IsNullOrWhiteSpace(config.Version))
                 {
                     var fallbackFactory = versionMapping
                         .OrderBy(kv => kv.Key.Item1)
@@ -167,18 +169,18 @@ public static class InstanceFactoryRegistry
                         return fallbackFactory;
                 }
 
-                var targetVersion = McVersion.Of(setting.McVersion);
+                var targetVersion = McVersion.Of(config.Version);
                 var kv = versionMapping.FirstOrDefault(kv => targetVersion.Between(kv.Key.Item1, kv.Key.Item2));
                 if (kv.Value != null) return kv.Value;
 
                 throw new NotImplementedException(
-                    $"Unsupported minecraft version({setting.McVersion}) for {setting.InstanceType}(SourceType={setting.SourceType})");
+                    $"Unsupported minecraft version({config.Version}) for {config.InstanceType}(SourceType={setting.SourceType})");
             }
 
             throw new NotImplementedException(
-                $"Unsupported source type({setting.SourceType}) for {setting.InstanceType}");
+                $"Unsupported source type({setting.SourceType}) for {config.InstanceType}");
         }
 
-        throw new NotImplementedException($"Unsupported instance type({setting.InstanceType})");
+        throw new NotImplementedException($"Unsupported instance type({config.InstanceType})");
     }
 }

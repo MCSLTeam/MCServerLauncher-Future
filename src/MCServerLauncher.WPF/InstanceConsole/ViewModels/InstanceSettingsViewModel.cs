@@ -112,16 +112,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
                 CanEdit = result.CanEdit,
                 EditBlockedReason = result.EditBlockedReason ?? string.Empty,
                 CurrentTargetExists = result.CurrentTargetExists,
-                InstallMetadata = result.InstallMetadata is null
-                    ? null
-                    : new Common.ProtoType.Action.InstanceInstallMetadata
-                    {
-                        InstallerKind = result.InstallMetadata.InstallerKind,
-                        InstallerSourcePath = result.InstallMetadata.InstallerSourcePath,
-                        GeneratedPaths = result.InstallMetadata.GeneratedPaths.ToArray(),
-                        ResolvedLaunchTarget = result.InstallMetadata.ResolvedLaunchTarget,
-                        InstalledAt = result.InstallMetadata.InstalledAt
-                    }
+                InstallMetadata = result.InstallMetadata
             };
             ResetJvmArguments(result.Config.Arguments.ToArray());
             JavaRuntimeDisplayText = Settings.JavaPath;

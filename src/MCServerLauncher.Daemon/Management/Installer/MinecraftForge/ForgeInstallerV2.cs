@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
@@ -50,9 +51,9 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
     private static InstallV1 DeserializeInstallerProfile(string content) =>
         JsonSerializer.Deserialize<InstallV1>(content, InstallProfileJsonSettings.Settings)!;
 
-    public override async Task<Result<Unit, Error>> Run(InstanceFactorySetting setting, CancellationToken ct = default)
+    public override async Task<Result<Unit, Error>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
     {
-        var workingDirectory = setting.GetWorkingDirectory();
+        var workingDirectory = setting.Configuration.GetWorkingDirectory();
         var libRoot = Path.Combine(workingDirectory, "libraries");
         Directory.CreateDirectory(libRoot);
         ct.ThrowIfCancellationRequested();

@@ -41,7 +41,7 @@ internal sealed class LocalEventRuleApplication : IEventRuleApplication
                 new NotFoundDaemonError("instance.not_found", $"Instance '{request.InstanceId}' was not found."));
         }
 
-        var rules = JsonSerializer.SerializeToElement(instance.Config.EventRules, EventRuleJsonContext.Default.EventRuleList);
+        var rules = EventRuleDocumentCodec.SerializeToElement(instance.Config.EventRules);
         return Result.Ok<EventRuleSet, DaemonError>(new EventRuleSet(request.InstanceId, rules));
     }
 
@@ -60,7 +60,7 @@ internal sealed class LocalEventRuleApplication : IEventRuleApplication
         List<EventRule>? stagedRules;
         try
         {
-            stagedRules = JsonSerializer.Deserialize(request.Rules, EventRuleJsonContext.Default.EventRuleList);
+            stagedRules = EventRuleDocumentCodec.Deserialize(request.Rules);
         }
         catch (JsonException exception)
         {

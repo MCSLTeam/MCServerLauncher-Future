@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Daemon.Management.Minecraft;
@@ -22,7 +23,7 @@ public interface IInstanceFactory
 /// </summary>
 public interface IArchiveInstanceFactory : IInstanceFactory
 {
-    Task<Result<InstanceConfig, Error>> CreateInstanceFromArchive(InstanceFactorySetting setting);
+    Task<Result<InstanceConfiguration, Error>> CreateInstanceFromArchive(InstanceFactoryConfiguration setting);
 }
 
 /// <summary>
@@ -30,7 +31,7 @@ public interface IArchiveInstanceFactory : IInstanceFactory
 /// </summary>
 public interface ICoreInstanceFactory : IInstanceFactory
 {
-    Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting);
+    Task<Result<InstanceConfiguration, Error>> CreateInstanceFromCore(InstanceFactoryConfiguration setting);
 }
 
 /// <summary>
@@ -38,5 +39,5 @@ public interface ICoreInstanceFactory : IInstanceFactory
 /// </summary>
 public interface IScriptInstanceFactory : IInstanceFactory
 {
-    Task<Result<InstanceConfig, Error>> CreateInstanceFromScript(InstanceFactorySetting setting);
+    Task<Result<InstanceConfiguration, Error>> CreateInstanceFromScript(InstanceFactoryConfiguration setting);
 }

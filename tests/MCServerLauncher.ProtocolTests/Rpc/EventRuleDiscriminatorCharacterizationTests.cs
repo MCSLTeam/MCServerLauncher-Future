@@ -4,7 +4,7 @@ using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
-using MCServerLauncher.Daemon.Serialization;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.ProtocolTests.Fixtures.Persistence;
 using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
@@ -45,16 +45,15 @@ public class EventRuleDiscriminatorCharacterizationTests
 
     [Fact]
     [Trait("Category", "EventRuleKnown")]
-    public void EventRuleKnown_SystemTextJson_DedicatedFixture_RoundTripsKnownDiscriminators()
+    public void EventRuleKnown_DaemonDocumentCodec_RoundTripsKnownDiscriminators()
     {
         var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, "known-discriminators-event-rule.json");
         var fixture = FixtureHarness.LoadFixture(fixturePath);
 
-        var options = DaemonPersistenceJsonBoundary.CreateStjOptions();
-        var parsed = System.Text.Json.JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), options);
-        Assert.NotNull(parsed);
+        var rules = EventRuleDocumentCodec.DeserializeRequired(LoadEventRuleDocumentFixture(fixturePath));
+        var parsed = Assert.Single(rules);
 
-        Assert.Collection(parsed!.Rulesets,
+        Assert.Collection(parsed.Rulesets,
             ruleset => Assert.IsType<AlwaysTrueRuleset>(ruleset),
             ruleset => Assert.IsType<AlwaysFalseRuleset>(ruleset),
             ruleset => Assert.IsType<InstanceStatusRuleset>(ruleset));
@@ -69,20 +68,18 @@ public class EventRuleDiscriminatorCharacterizationTests
             action => Assert.IsType<ChangeInstanceStatusAction>(action),
             action => Assert.IsType<SendNotificationAction>(action));
 
-        var canonical = System.Text.Json.JsonSerializer.Serialize(parsed, options);
-        FixtureHarness.AssertStructuralEquals(fixture, FixtureHarness.ParseJson(canonical),
-            "known EventRule discriminators should round-trip through System.Text.Json too");
+        var canonical = EventRuleDocumentCodec.SerializeToElement(rules);
+        FixtureHarness.AssertStructuralEquals(fixture, canonical[0],
+            "known EventRule discriminators should round-trip through the daemon document codec");
     }
 
     [Fact]
     [Trait("Category", "EventRuleUnknown")]
-    public void EventRuleUnknown_SystemTextJson_UnknownTriggerDiscriminator_ThrowsExplicitFailure()
+    public void EventRuleUnknown_DaemonDocumentCodec_UnknownTriggerDiscriminator_ThrowsExplicitFailure()
     {
         var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, "unknown-trigger-discriminator-event-rule.json");
-        var fixture = FixtureHarness.LoadFixture(fixturePath);
-
         var ex = Assert.Throws<JsonException>(() =>
-            System.Text.Json.JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), DaemonPersistenceJsonBoundary.StjOptions));
+            EventRuleDocumentCodec.DeserializeRequired(LoadEventRuleDocumentFixture(fixturePath)));
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
         Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);
@@ -158,7 +155,14 @@ public class EventRuleDiscriminatorCharacterizationTests
 
     private static EventRule DeserializeEventRuleFixture(string fixtureFile)
     {
-        var json = File.ReadAllText(Path.Combine(PersistenceFixturePaths.EventRuleDir, fixtureFile));
-        return System.Text.Json.JsonSerializer.Deserialize<EventRule>(json, StjResolver.CreateDefaultOptions())!;
+        var fixturePath = Path.Combine(PersistenceFixturePaths.EventRuleDir, fixtureFile);
+        return Assert.Single(EventRuleDocumentCodec.DeserializeRequired(LoadEventRuleDocumentFixture(fixturePath)));
+    }
+
+    private static JsonElement LoadEventRuleDocumentFixture(string fixturePath)
+    {
+        var json = File.ReadAllText(fixturePath);
+        using var document = JsonDocument.Parse($"[{json}]");
+        return document.RootElement.Clone();
     }
 }

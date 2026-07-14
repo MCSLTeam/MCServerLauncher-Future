@@ -1,6 +1,5 @@
-using System;
-using System.IO;
-using MCServerLauncher.Common.ProtoType.Action;
+using System.Collections.Immutable;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Daemon.Storage;
 
 namespace MCServerLauncher.Daemon.Management;
@@ -17,12 +16,34 @@ internal static class InstanceInstallMetadataStore
     public static InstanceInstallMetadata? Read(string workingDirectory)
     {
         var path = GetPath(workingDirectory);
-        return File.Exists(path) ? FileManager.ReadJson<InstanceInstallMetadata>(path) : null;
+        if (!File.Exists(path))
+            return null;
+
+        var document = FileManager.ReadJson<InstanceInstallMetadataDocument>(path);
+        return document is null
+            ? null
+            : new InstanceInstallMetadata(
+                document.InstallerKind,
+                document.InstallerSourcePath,
+                (document.GeneratedPaths ?? []).ToImmutableArray(),
+                document.ResolvedLaunchTarget,
+                document.InstalledAt);
     }
 
     public static void Write(string workingDirectory, InstanceInstallMetadata metadata)
     {
-        FileManager.WriteJsonAndBackup(GetPath(workingDirectory), metadata);
+        ArgumentNullException.ThrowIfNull(metadata);
+
+        FileManager.WriteJsonAndBackup(
+            GetPath(workingDirectory),
+            new InstanceInstallMetadataDocument
+            {
+                InstallerKind = metadata.InstallerKind,
+                InstallerSourcePath = metadata.InstallerSourcePath,
+                GeneratedPaths = metadata.GeneratedPaths.IsDefault ? [] : metadata.GeneratedPaths.ToArray(),
+                ResolvedLaunchTarget = metadata.ResolvedLaunchTarget,
+                InstalledAt = metadata.InstalledAt
+            });
     }
 
     public static void Delete(string workingDirectory)

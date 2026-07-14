@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -26,11 +27,11 @@ internal sealed class InstanceUpdateCoordinator
         _instanceFactory = instanceFactory;
     }
 
-    public Result<GetInstanceSettingsResult, Error> GetInstanceSettings(Guid instanceId)
+    public Result<InstanceSettingsResult, Error> GetInstanceSettings(Guid instanceId)
     {
         if (!_instanceManager.Instances.TryGetValue(instanceId, out var instance))
         {
-            return ResultExt.Err<GetInstanceSettingsResult>(new Error($"Instance {instanceId} not found"));
+            return ResultExt.Err<InstanceSettingsResult>(new Error($"Instance {instanceId} not found"));
         }
 
         var config = CloneConfig(instance.Config);
@@ -43,31 +44,29 @@ internal sealed class InstanceUpdateCoordinator
         var metadata = InstanceInstallMetadataStore.Read(workingDirectory);
         var canEdit = instance.Status is InstanceStatus.Stopped or InstanceStatus.Crashed;
 
-        return ResultExt.Ok(new GetInstanceSettingsResult
-        {
-            Config = config,
-            WorkingDirectory = workingDirectory,
-            CurrentTargetExists = currentTargetExists,
-            CanEdit = canEdit,
-            EditBlockedReason = canEdit ? null : $"Instance is {instance.Status}",
-            InstallMetadata = metadata
-        });
+        return ResultExt.Ok(new InstanceSettingsResult(
+            InstanceConfigurationMapper.ToContract(config),
+            workingDirectory,
+            currentTargetExists,
+            canEdit,
+            canEdit ? null : $"Instance is {instance.Status}",
+            metadata));
     }
 
     public async Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
-        UpdateInstanceSettingsParameter request,
+        UpdateInstanceSettingsRequest request,
         CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        using var mutation = await _instanceManager.AcquireInstanceMutationAsync(request.Id, ct);
-        if (!_instanceManager.Instances.TryGetValue(request.Id, out var instance))
+        using var mutation = await _instanceManager.AcquireInstanceMutationAsync(request.InstanceId, ct);
+        if (!_instanceManager.Instances.TryGetValue(request.InstanceId, out var instance))
         {
-            return ResultExt.Err<UpdateInstanceSettingsResult>(new Error($"Instance {request.Id} not found"));
+            return ResultExt.Err<UpdateInstanceSettingsResult>(new Error($"Instance {request.InstanceId} not found"));
         }
 
         if (instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
         {
-            return ResultExt.Err<UpdateInstanceSettingsResult>(new Error($"Instance {request.Id} must be stopped before updating settings"));
+            return ResultExt.Err<UpdateInstanceSettingsResult>(new Error($"Instance {request.InstanceId} must be stopped before updating settings"));
         }
 
         var currentConfig = instance.Config;
@@ -123,7 +122,7 @@ internal sealed class InstanceUpdateCoordinator
             Name = request.Name,
             InstanceType = instanceType,
             JavaPath = request.JavaPath ?? currentConfig.JavaPath,
-            Arguments = request.Arguments,
+            Arguments = request.Arguments.ToArray(),
             Version = version,
             Target = target
         };
@@ -140,7 +139,10 @@ internal sealed class InstanceUpdateCoordinator
         if (request.ReplacementCore is not null && shouldRerunInstaller && installMetadata is not null)
         {
             var validatedGeneratedPaths = new List<(string RelativePath, string FullPath)>();
-            foreach (var generatedPath in installMetadata.GeneratedPaths ?? [])
+            var metadataGeneratedPaths = installMetadata.GeneratedPaths.IsDefault
+                ? ImmutableArray<string>.Empty
+                : installMetadata.GeneratedPaths;
+            foreach (var generatedPath in metadataGeneratedPaths)
             {
                 if (!InstanceTargetPathValidator.TryResolveGeneratedPath(
                         workingDirectory,
@@ -196,27 +198,14 @@ internal sealed class InstanceUpdateCoordinator
 
         if (request.ReplacementCore != null && shouldRerunInstaller)
         {
-            var setting = new InstanceFactorySetting
-            {
-                Name = newConfig.Name,
-                Target = newConfig.Target,
-                TargetType = newConfig.TargetType,
-                InstanceType = newConfig.InstanceType,
-                JavaPath = newConfig.JavaPath,
-                Arguments = newConfig.Arguments,
-                Version = newConfig.Version,
-                Source = replacementSourcePath!,
-                SourceType = SourceType.Core,
-                Mirror = InstanceFactoryMirror.None,
-                UsePostProcess = false,
-                Uuid = newConfig.Uuid,
-                Env = newConfig.Env,
-                EventRules = newConfig.EventRules,
-                InputEncoding = newConfig.InputEncoding,
-                OutputEncoding = newConfig.OutputEncoding
-            };
+            var setting = new InstanceFactoryConfiguration(
+                InstanceConfigurationMapper.ToContract(newConfig),
+                replacementSourcePath!,
+                SourceType.Core,
+                InstanceFactoryMirror.None,
+                false);
 
-            Result<InstanceConfig, Error> factoryResult;
+            Result<InstanceConfiguration, Error> factoryResult;
             try
             {
                 factoryResult = await setting.ApplyInstanceFactory();
@@ -237,7 +226,7 @@ internal sealed class InstanceUpdateCoordinator
                 return ResultExt.Err<UpdateInstanceSettingsResult>(new Error("Failed to rerun installer").WithInner(installError));
             }
 
-            newConfig = factoryResult.Unwrap() with
+            newConfig = InstanceConfigurationMapper.ToInstanceConfig(factoryResult.Unwrap()) with
             {
                 Name = newConfig.Name,
                 Uuid = newConfig.Uuid,
@@ -249,14 +238,14 @@ internal sealed class InstanceUpdateCoordinator
 
             try
             {
-                InstanceInstallMetadataStore.Write(workingDirectory, new InstanceInstallMetadata
-                {
-                    InstallerKind = newConfig.InstanceType.ToString(),
-                    InstallerSourcePath = replacementSourcePath,
-                    GeneratedPaths = DetectGeneratedPaths(workingDirectory),
-                    ResolvedLaunchTarget = newConfig.Target,
-                    InstalledAt = DateTimeOffset.UtcNow
-                });
+                InstanceInstallMetadataStore.Write(
+                    workingDirectory,
+                    new InstanceInstallMetadata(
+                        newConfig.InstanceType.ToString(),
+                        replacementSourcePath,
+                        DetectGeneratedPaths(workingDirectory).ToImmutableArray(),
+                        newConfig.Target,
+                        DateTimeOffset.UtcNow));
             }
             catch (Exception exception)
             {
@@ -314,7 +303,7 @@ internal sealed class InstanceUpdateCoordinator
 
         try
         {
-            _instanceManager.ReplaceInstanceWithinAdmission(request.Id, replacement);
+            _instanceManager.ReplaceInstanceWithinAdmission(request.InstanceId, replacement);
         }
         catch (Exception exception)
         {
@@ -336,19 +325,17 @@ internal sealed class InstanceUpdateCoordinator
                 Log.Warning(
                     exception,
                     "[InstanceUpdateCoordinator] Updated instance '{InstanceId}' but could not remove transaction staging '{StagingDirectory}'",
-                    request.Id,
+                    request.InstanceId,
                     storageJournal.StagingDirectory);
             }
         }
 
-        return ResultExt.Ok(new UpdateInstanceSettingsResult
-        {
-            Config = newConfig,
-            RequiresRestart = requiresRestart,
-            Reinstalled = reinstalled,
-            DeletedGeneratedPaths = deletedGeneratedPaths.ToArray(),
-            PreservedOriginalPaths = preservedPaths.ToArray()
-        });
+        return ResultExt.Ok(new UpdateInstanceSettingsResult(
+            InstanceConfigurationMapper.ToContract(newConfig),
+            requiresRestart,
+            reinstalled,
+            deletedGeneratedPaths.ToImmutableArray(),
+            preservedPaths.ToImmutableArray()));
     }
 
     private static bool RequiresInstaller(InstanceType instanceType)

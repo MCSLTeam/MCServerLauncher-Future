@@ -1,4 +1,7 @@
+using System.Collections.Immutable;
 using System.IO.Compression;
+using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Detection;
 using MCServerLauncher.Daemon.Management.Factory;
@@ -186,22 +189,29 @@ public class InstanceVersionDetectorTests
                 ["version.json"] = "{\"id\":\"1.20.1\"}"
             });
 
-            var setting = new InstanceFactorySetting
-            {
-                Name = "forge",
-                Source = jarPath,
-                SourceType = SourceType.Core,
-                Target = Path.GetFileName(jarPath),
-                TargetType = TargetType.Jar,
-                InstanceType = InstanceType.MCJava,
-                Version = string.Empty,
-                JavaPath = "java"
-            };
+            var setting = new InstanceFactoryConfiguration(
+                new InstanceConfiguration(
+                    Guid.NewGuid(),
+                    "forge",
+                    Path.GetFileName(jarPath),
+                    InstanceType.MCJava,
+                    TargetType.Jar,
+                    string.Empty,
+                    "utf-8",
+                    "utf-8",
+                    "java",
+                    ImmutableArray<string>.Empty,
+                    ImmutableDictionary<string, string>.Empty,
+                    JsonSerializer.SerializeToElement(Array.Empty<object>())),
+                jarPath,
+                SourceType.Core,
+                InstanceFactoryMirror.None,
+                false);
 
             var reconciled = InstanceVersionDetector.Reconcile(setting);
 
-            Assert.Equal(InstanceType.MCForge, reconciled.InstanceType);
-            Assert.Equal("1.20.1", reconciled.Version);
+            Assert.Equal(InstanceType.MCForge, reconciled.Configuration.InstanceType);
+            Assert.Equal("1.20.1", reconciled.Configuration.Version);
 
             InstanceFactoryRegistry.InitializeDefaults();
             var factory = InstanceFactoryRegistry.GetInstanceFactory(reconciled);

@@ -509,10 +509,14 @@ public sealed class LocalInstanceApplicationTests
         Directory.CreateDirectory(FileManager.UploadRoot);
         await File.WriteAllTextAsync(outsidePath, "outside-sentinel");
         await File.WriteAllTextAsync(uploadedPath, "replacement-core");
-        InstanceInstallMetadataStore.Write(instanceDirectory, new MCServerLauncher.Common.ProtoType.Action.InstanceInstallMetadata
-        {
-            GeneratedPaths = ["../" + Path.GetFileName(outsidePath)]
-        });
+        InstanceInstallMetadataStore.Write(
+            instanceDirectory,
+            new InstanceInstallMetadata(
+                "test",
+                null,
+                ImmutableArray.Create("../" + Path.GetFileName(outsidePath)),
+                null,
+                default));
 
         try
         {

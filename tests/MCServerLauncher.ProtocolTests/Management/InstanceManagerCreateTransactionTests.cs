@@ -1,10 +1,14 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
+using RuntimeInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -16,7 +20,7 @@ public sealed class InstanceManagerCreateTransactionTests
         var requestedId = Guid.NewGuid();
         var firstFactoryEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFirstFactory = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var observedSettings = new ConcurrentBag<InstanceFactorySetting>();
+        var observedSettings = new ConcurrentBag<InstanceFactoryConfiguration>();
         var factoryInvocations = 0;
         var manager = CreateManager(async setting =>
         {
@@ -29,7 +33,7 @@ public sealed class InstanceManagerCreateTransactionTests
                 await releaseFirstFactory.Task;
             }
 
-            return ResultExt.Ok(setting.GetInstanceConfig());
+            return ResultExt.Ok(setting.Configuration);
         });
 
         try
@@ -45,25 +49,25 @@ public sealed class InstanceManagerCreateTransactionTests
             var firstResult = await firstCreate.WaitAsync(TimeSpan.FromSeconds(3));
             Assert.True(firstResult.IsOk(out var firstConfig));
 
-            Assert.NotEqual(firstConfig.Uuid, secondConfig.Uuid);
-            Assert.Contains(observedSettings, setting => setting.Uuid == firstConfig.Uuid);
-            Assert.Contains(observedSettings, setting => setting.Uuid == secondConfig.Uuid);
+            Assert.NotEqual(firstConfig.InstanceId, secondConfig.InstanceId);
+            Assert.Contains(observedSettings, setting => setting.Configuration.InstanceId == firstConfig.InstanceId);
+            Assert.Contains(observedSettings, setting => setting.Configuration.InstanceId == secondConfig.InstanceId);
             Assert.All([firstConfig, secondConfig], config =>
             {
                 var workingDirectory = config.GetWorkingDirectory();
                 Assert.True(Directory.Exists(workingDirectory));
                 Assert.True(File.Exists(Path.Combine(workingDirectory, "factory-marker.txt")));
-                Assert.Equal(config.Uuid, manager.Instances[config.Uuid].Config.Uuid);
+                Assert.Equal(config.InstanceId, manager.Instances[config.InstanceId].Config.Uuid);
                 var persisted = FileManager.ReadJson<InstanceConfig>(
                     Path.Combine(workingDirectory, InstanceConfig.FileName));
                 Assert.NotNull(persisted);
-                Assert.Equal(config.Uuid, persisted.Uuid);
+                Assert.Equal(config.InstanceId, persisted.Uuid);
             });
         }
         finally
         {
             releaseFirstFactory.TrySetResult(true);
-            RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Uuid));
+            RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Configuration.InstanceId));
         }
     }
 
@@ -77,12 +81,12 @@ public sealed class InstanceManagerCreateTransactionTests
         FileManager.WriteJsonAndBackup(Path.Combine(existingDirectory, InstanceConfig.FileName), existingConfig);
         await File.WriteAllTextAsync(Path.Combine(existingDirectory, "existing-marker.txt"), "existing");
 
-        InstanceFactorySetting? factorySetting = null;
+        InstanceFactoryConfiguration? factorySetting = null;
         var manager = CreateManager(async setting =>
         {
             factorySetting = setting;
             await WriteFactoryMarkerAsync(setting);
-            return ResultExt.Ok(setting.GetInstanceConfig());
+            return ResultExt.Ok(setting.Configuration);
         });
         manager.ReplaceInstance(requestedId, new TransactionTestInstance(existingConfig));
 
@@ -91,17 +95,17 @@ public sealed class InstanceManagerCreateTransactionTests
             var result = await manager.TryAddInstance(CreateSetting(requestedId, "replacement-request"));
 
             Assert.True(result.IsOk(out var createdConfig));
-            Assert.NotEqual(requestedId, createdConfig.Uuid);
+            Assert.NotEqual(requestedId, createdConfig.InstanceId);
             Assert.NotNull(factorySetting);
-            Assert.Equal(createdConfig.Uuid, factorySetting.Uuid);
+            Assert.Equal(createdConfig.InstanceId, factorySetting.Configuration.InstanceId);
 
             var createdDirectory = createdConfig.GetWorkingDirectory();
             Assert.True(Directory.Exists(createdDirectory));
             Assert.True(File.Exists(Path.Combine(createdDirectory, "factory-marker.txt")));
             var persisted = FileManager.ReadJson<InstanceConfig>(Path.Combine(createdDirectory, InstanceConfig.FileName));
             Assert.NotNull(persisted);
-            Assert.Equal(createdConfig.Uuid, persisted.Uuid);
-            Assert.Equal(createdConfig.Uuid, manager.Instances[createdConfig.Uuid].Config.Uuid);
+            Assert.Equal(createdConfig.InstanceId, persisted.Uuid);
+            Assert.Equal(createdConfig.InstanceId, manager.Instances[createdConfig.InstanceId].Config.Uuid);
 
             Assert.True(File.Exists(Path.Combine(existingDirectory, "existing-marker.txt")));
             var existingPersisted = FileManager.ReadJson<InstanceConfig>(
@@ -113,7 +117,7 @@ public sealed class InstanceManagerCreateTransactionTests
         {
             RemoveDirectories(
                 requestedId,
-                factorySetting is null ? [] : [factorySetting.Uuid]);
+                factorySetting is null ? [] : [factorySetting.Configuration.InstanceId]);
         }
     }
 
@@ -123,7 +127,7 @@ public sealed class InstanceManagerCreateTransactionTests
         var requestedId = Guid.NewGuid();
         var firstFactoryEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFirstFactory = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var observedSettings = new ConcurrentBag<InstanceFactorySetting>();
+        var observedSettings = new ConcurrentBag<InstanceFactoryConfiguration>();
         var factoryInvocations = 0;
         var manager = CreateManager(async setting =>
         {
@@ -136,7 +140,7 @@ public sealed class InstanceManagerCreateTransactionTests
                 await releaseFirstFactory.Task;
             }
 
-            return ResultExt.Ok(setting.GetInstanceConfig());
+            return ResultExt.Ok(setting.Configuration);
         });
         using var cancellationSource = new CancellationTokenSource();
 
@@ -157,14 +161,14 @@ public sealed class InstanceManagerCreateTransactionTests
 
             Assert.True(Directory.Exists(survivingConfig.GetWorkingDirectory()));
             Assert.True(File.Exists(Path.Combine(survivingConfig.GetWorkingDirectory(), InstanceConfig.FileName)));
-            Assert.True(manager.Instances.ContainsKey(survivingConfig.Uuid));
+            Assert.True(manager.Instances.ContainsKey(survivingConfig.InstanceId));
             Assert.False(manager.Instances.ContainsKey(requestedId));
             Assert.False(Directory.Exists(Path.Combine(FileManager.InstancesRoot, requestedId.ToString())));
         }
         finally
         {
             releaseFirstFactory.TrySetResult(true);
-            RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Uuid));
+            RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Configuration.InstanceId));
         }
     }
 
@@ -174,7 +178,7 @@ public sealed class InstanceManagerCreateTransactionTests
         var requestedId = Guid.NewGuid();
         var firstFactoryEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFirstFactory = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var observedSettings = new ConcurrentBag<InstanceFactorySetting>();
+        var observedSettings = new ConcurrentBag<InstanceFactoryConfiguration>();
         var factoryInvocations = 0;
         var manager = CreateManager(async setting =>
         {
@@ -185,10 +189,10 @@ public sealed class InstanceManagerCreateTransactionTests
             {
                 firstFactoryEntered.TrySetResult(true);
                 await releaseFirstFactory.Task;
-                return ResultExt.Err<InstanceConfig>("expected factory failure");
+                return ResultExt.Err<InstanceConfiguration>("expected factory failure");
             }
 
-            return ResultExt.Ok(setting.GetInstanceConfig());
+            return ResultExt.Ok(setting.Configuration);
         });
 
         try
@@ -207,14 +211,14 @@ public sealed class InstanceManagerCreateTransactionTests
 
             Assert.True(Directory.Exists(survivingConfig.GetWorkingDirectory()));
             Assert.True(File.Exists(Path.Combine(survivingConfig.GetWorkingDirectory(), InstanceConfig.FileName)));
-            Assert.True(manager.Instances.ContainsKey(survivingConfig.Uuid));
+            Assert.True(manager.Instances.ContainsKey(survivingConfig.InstanceId));
             Assert.False(manager.Instances.ContainsKey(requestedId));
             Assert.False(Directory.Exists(Path.Combine(FileManager.InstancesRoot, requestedId.ToString())));
         }
         finally
         {
             releaseFirstFactory.TrySetResult(true);
-            RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Uuid));
+            RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Configuration.InstanceId));
         }
     }
 
@@ -226,12 +230,12 @@ public sealed class InstanceManagerCreateTransactionTests
         Directory.CreateDirectory(orphanDirectory);
         await File.WriteAllTextAsync(Path.Combine(orphanDirectory, "orphan-marker.txt"), "preserve-me");
 
-        InstanceFactorySetting? observedSetting = null;
+        InstanceFactoryConfiguration? observedSetting = null;
         var manager = CreateManager(async setting =>
         {
             observedSetting = setting;
             await WriteFactoryMarkerAsync(setting);
-            return ResultExt.Ok(setting.GetInstanceConfig());
+            return ResultExt.Ok(setting.Configuration);
         });
 
         try
@@ -239,15 +243,15 @@ public sealed class InstanceManagerCreateTransactionTests
             var result = await manager.TryAddInstance(CreateSetting(requestedId, "fresh"));
 
             Assert.True(result.IsOk(out var createdConfig));
-            Assert.NotEqual(requestedId, createdConfig.Uuid);
+            Assert.NotEqual(requestedId, createdConfig.InstanceId);
             Assert.NotNull(observedSetting);
-            Assert.Equal(createdConfig.Uuid, observedSetting.Uuid);
+            Assert.Equal(createdConfig.InstanceId, observedSetting.Configuration.InstanceId);
             Assert.Equal("preserve-me", await File.ReadAllTextAsync(Path.Combine(orphanDirectory, "orphan-marker.txt")));
             Assert.True(File.Exists(Path.Combine(createdConfig.GetWorkingDirectory(), InstanceConfig.FileName)));
         }
         finally
         {
-            RemoveDirectories(requestedId, observedSetting is null ? [] : [observedSetting.Uuid]);
+            RemoveDirectories(requestedId, observedSetting is null ? [] : [observedSetting.Configuration.InstanceId]);
         }
     }
 
@@ -262,10 +266,10 @@ public sealed class InstanceManagerCreateTransactionTests
         var manager = CreateManager(setting =>
         {
             factoryCalled = true;
-            return Task.FromResult(ResultExt.Ok(setting.GetInstanceConfig()));
+            return Task.FromResult(ResultExt.Ok(setting.Configuration));
         });
 
-        var result = await manager.TryAddInstance(CreateSetting(requestedId, "unsafe") with { Target = target });
+        var result = await manager.TryAddInstance(CreateSetting(requestedId, "unsafe", target));
 
         Assert.True(result.IsErr(out _));
         Assert.False(factoryCalled);
@@ -274,25 +278,33 @@ public sealed class InstanceManagerCreateTransactionTests
     }
 
     private static InstanceManager CreateManager(
-        Func<InstanceFactorySetting, Task<Result<InstanceConfig, Error>>> applyInstanceFactory)
+        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> applyInstanceFactory)
     {
         return new InstanceManager(
             config => new TransactionTestInstance(config),
             applyInstanceFactory);
     }
 
-    private static InstanceFactorySetting CreateSetting(Guid uuid, string name)
+    private static InstanceFactoryConfiguration CreateSetting(Guid uuid, string name, string target = "server.exe")
     {
-        return new InstanceFactorySetting
-        {
-            Uuid = uuid,
-            Name = name,
-            Target = "server.exe",
-            TargetType = TargetType.Executable,
-            InstanceType = InstanceType.Universal,
-            Source = "transaction-test-source",
-            SourceType = SourceType.Core
-        };
+        return new InstanceFactoryConfiguration(
+            new InstanceConfiguration(
+                uuid,
+                name,
+                target,
+                InstanceType.Universal,
+                TargetType.Executable,
+                string.Empty,
+                "utf-8",
+                "utf-8",
+                string.Empty,
+                ImmutableArray<string>.Empty,
+                ImmutableDictionary<string, string>.Empty,
+                JsonSerializer.SerializeToElement(Array.Empty<object>())),
+            "transaction-test-source",
+            SourceType.Core,
+            InstanceFactoryMirror.None,
+            false);
     }
 
     private static InstanceConfig CreateConfig(Guid uuid, string name)
@@ -307,11 +319,11 @@ public sealed class InstanceManagerCreateTransactionTests
         };
     }
 
-    private static async Task WriteFactoryMarkerAsync(InstanceFactorySetting setting)
+    private static async Task WriteFactoryMarkerAsync(InstanceFactoryConfiguration setting)
     {
         await File.WriteAllTextAsync(
-            Path.Combine(setting.GetWorkingDirectory(), "factory-marker.txt"),
-            setting.Name);
+            Path.Combine(setting.Configuration.GetWorkingDirectory(), "factory-marker.txt"),
+            setting.Configuration.Name);
     }
 
     private static void RemoveDirectories(Guid requestedId, IEnumerable<Guid> ids)
@@ -350,9 +362,9 @@ public sealed class InstanceManagerCreateTransactionTests
             remove { }
         }
 
-        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
+        public Task<RuntimeInstanceReport> GetReportAsync(CancellationToken ct = default)
         {
-            return Task.FromResult(new InstanceReport(Status, Config, [], [], default));
+            return Task.FromResult(new RuntimeInstanceReport(Status, Config, [], [], default));
         }
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)

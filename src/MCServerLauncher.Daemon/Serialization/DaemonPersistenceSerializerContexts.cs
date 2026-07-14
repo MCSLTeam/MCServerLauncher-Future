@@ -1,16 +1,17 @@
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.Management;
 
 namespace MCServerLauncher.Daemon.Serialization;
 
-/// <summary>
-/// Daemon persistence-specific STJ context placeholder.
-/// Intentionally empty in T5; persistence currently relies on Common contexts.
-/// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
-[JsonSerializable(typeof(Guid))]
 [JsonSerializable(typeof(AppConfig))]
+[JsonSerializable(typeof(InstanceConfig))]
+[JsonSerializable(typeof(InstanceInstallMetadataDocument))]
+[JsonSerializable(typeof(List<EventRule>))]
 internal partial class DaemonPersistenceSerializerContext : JsonSerializerContext
 {
 }

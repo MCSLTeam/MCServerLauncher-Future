@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Factory;
 using Xunit;
@@ -12,18 +15,32 @@ internal static class InstanceFactoryRegistryHarness
         InstanceFactoryRegistry.InitializeDefaults();
     }
 
-    public static InstanceFactorySetting CreateSetting(InstanceType instanceType, SourceType sourceType, string mcVersion)
+    public static InstanceFactoryConfiguration CreateSetting(
+        InstanceType instanceType,
+        SourceType sourceType,
+        string mcVersion)
     {
-        return new InstanceFactorySetting
-        {
-            InstanceType = instanceType,
-            SourceType = sourceType,
-            Version = mcVersion,
-            Source = "characterization-source"
-        };
+        return new InstanceFactoryConfiguration(
+            new InstanceConfiguration(
+                Guid.NewGuid(),
+                "characterization-instance",
+                "server.jar",
+                instanceType,
+                TargetType.Jar,
+                mcVersion,
+                "utf-8",
+                "utf-8",
+                "java",
+                ImmutableArray<string>.Empty,
+                ImmutableDictionary<string, string>.Empty,
+                JsonSerializer.SerializeToElement(Array.Empty<object>())),
+            "characterization-source",
+            sourceType,
+            InstanceFactoryMirror.None,
+            false);
     }
 
-    public static Delegate GetResolvedFactory(InstanceFactorySetting setting)
+    public static Delegate GetResolvedFactory(InstanceFactoryConfiguration setting)
     {
         return InstanceFactoryRegistry.GetInstanceFactory(setting);
     }

@@ -6,6 +6,7 @@ using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.DaemonClient.Serialization;
 using MCServerLauncher.ProtocolTests.Helpers;
@@ -20,7 +21,7 @@ public class TrimAotBoundaryVerificationTests
 {
     [Fact]
     [Trait("Category", "TrimAot")]
-    public void ReflectionDisabledSwitch_DisablesTrimFriendlyFallbackAcrossBoundaries()
+    public void ReflectionDisabledSwitch_DisablesTrimFriendlyFallbackAcrossRpcBoundaries()
     {
         const string key = "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault";
         var hadPrevious = AppContext.TryGetSwitch(key, out var previous);
@@ -30,7 +31,6 @@ public class TrimAotBoundaryVerificationTests
             AppContext.SetSwitch(key, false);
 
             Assert.False(DaemonRpcJsonBoundary.UsesReflectionFallback());
-            Assert.False(DaemonPersistenceJsonBoundary.UsesReflectionFallback());
             Assert.False(DaemonClientRpcJsonBoundary.UsesReflectionFallback());
         }
         finally
@@ -95,7 +95,7 @@ public class TrimAotBoundaryVerificationTests
             TargetType = TargetType.Jar
         };
 
-        var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        var options = DaemonPersistenceJsonBoundary.CreateStjOptions();
         var uuidField = typeof(InstanceConfig).GetField(nameof(InstanceConfig.Uuid), BindingFlags.Public | BindingFlags.Instance);
         var uuidProperty = typeof(InstanceConfig).GetProperty(nameof(InstanceConfig.Uuid), BindingFlags.Public | BindingFlags.Instance);
 
@@ -127,7 +127,7 @@ public class TrimAotBoundaryVerificationTests
             }
             """;
 
-        var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        var options = DaemonPersistenceJsonBoundary.CreateStjOptions();
         var appConfigType = typeof(AppConfig);
         var typeInfo = options.TypeInfoResolver!.GetTypeInfo(appConfigType, options);
         var parsed = JsonSerializer.Deserialize(appConfigJson, appConfigType, options);
@@ -146,15 +146,15 @@ public class TrimAotBoundaryVerificationTests
 
     [Fact]
     [Trait("Category", "TrimAot")]
-    public void RpcBoundary_DisabledFallback_RejectsUnknownEventRuleDiscriminatorWithoutReflection()
+    public void EventRuleDocumentCodec_RejectsUnknownEventRuleDiscriminatorWithoutReflection()
     {
         var fixture = FixtureHarness.LoadFixture(Path.Combine(
             MCServerLauncher.ProtocolTests.Fixtures.Persistence.PersistenceFixturePaths.EventRuleDir,
             "unknown-trigger-discriminator-event-rule.json"));
 
-        var options = DaemonPersistenceJsonBoundary.CreateStjOptions(DaemonStjReflectionFallbackPolicy.Disabled);
+        using var document = JsonDocument.Parse($"[{fixture.GetRawText()}]");
         var ex = Assert.Throws<JsonException>(() =>
-            JsonSerializer.Deserialize<EventRule>(fixture.GetRawText(), options));
+            EventRuleDocumentCodec.DeserializeRequired(document.RootElement));
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
         Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);

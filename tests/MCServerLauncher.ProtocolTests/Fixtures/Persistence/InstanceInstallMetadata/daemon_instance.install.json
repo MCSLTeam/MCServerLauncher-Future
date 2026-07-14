@@ -1,0 +1,10 @@
+{
+  "installer_kind": "MCForge",
+  "installer_source_path": "/instances/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/uploads/forge-installer.jar",
+  "generated_paths": [
+    "libraries",
+    "server.jar"
+  ],
+  "resolved_launch_target": "server.jar",
+  "installed_at": "2026-06-02T12:34:56+00:00"
+}

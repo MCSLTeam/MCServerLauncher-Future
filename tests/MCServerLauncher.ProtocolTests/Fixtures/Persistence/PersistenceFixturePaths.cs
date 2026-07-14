@@ -2,13 +2,15 @@ namespace MCServerLauncher.ProtocolTests.Fixtures.Persistence;
 
 /// <summary>
 /// Persistence fixture root.
-/// Contains JSON fixtures for daemon-managed files: config.json, instance configs, event-rule configs.
+/// Contains JSON fixtures for daemon-managed files: config.json, instance configs,
+/// install metadata, and event-rule configs.
 /// </summary>
 public static class PersistenceFixturePaths
 {
     public static string FixtureRoot => Path.Combine(GetProtocolTestsRoot(), "Fixtures", "Persistence");
 
     public static string InstanceConfigDir => Path.Combine(FixtureRoot, "InstanceConfig");
+    public static string InstanceInstallMetadataDir => Path.Combine(FixtureRoot, "InstanceInstallMetadata");
     public static string EventRuleDir => Path.Combine(FixtureRoot, "EventRule");
     public static string ConfigDir => Path.Combine(FixtureRoot, "Config");
 

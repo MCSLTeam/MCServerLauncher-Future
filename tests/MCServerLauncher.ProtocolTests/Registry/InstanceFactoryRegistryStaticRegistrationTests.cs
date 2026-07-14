@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Common.Minecraft;
@@ -76,7 +77,7 @@ public class InstanceFactoryRegistryStaticRegistrationTests
     [InstanceFactory(InstanceType.MCVanilla, SourceType.Core, "1.20.1", "1.20.1")]
     private sealed class DuplicateVanillaCoreFactory : ICoreInstanceFactory
     {
-        public Task<Result<InstanceConfig, Error>> CreateInstanceFromCore(InstanceFactorySetting setting)
+        public Task<Result<InstanceConfiguration, Error>> CreateInstanceFromCore(InstanceFactoryConfiguration setting)
             => throw new NotSupportedException();
 
         public Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()

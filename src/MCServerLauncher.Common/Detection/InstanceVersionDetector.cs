@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 
 namespace MCServerLauncher.Common.Detection;
@@ -70,24 +71,38 @@ public static partial class InstanceVersionDetector
         };
     }
 
-    public static InstanceFactorySetting Reconcile(InstanceFactorySetting setting, Func<string, string>? resolveSource = null)
+    public static InstanceFactoryConfiguration Reconcile(
+        InstanceFactoryConfiguration setting,
+        Func<string, string>? resolveSource = null)
     {
         var detection = Detect(setting, resolveSource);
         if (!detection.IsMatched)
             return setting;
 
-        var resolvedType = ShouldSwitchFactoryType(setting.InstanceType, detection.MatchedInstanceType)
+        var config = setting.Configuration;
+        var resolvedType = ShouldSwitchFactoryType(config.InstanceType, detection.MatchedInstanceType)
             ? detection.MatchedInstanceType
-            : setting.InstanceType;
+            : config.InstanceType;
 
         var versionToPersist = resolvedType.RequiresNumericMinecraftVersion()
-            ? detection.NormalizedMcVersion ?? setting.Version
-            : detection.Version ?? setting.Version;
+            ? detection.NormalizedMcVersion ?? config.Version
+            : detection.Version ?? config.Version;
 
         return setting with
         {
-            InstanceType = resolvedType,
-            Version = versionToPersist ?? string.Empty
+            Configuration = new InstanceConfiguration(
+                config.InstanceId,
+                config.Name,
+                config.Target,
+                resolvedType,
+                config.TargetType,
+                versionToPersist ?? string.Empty,
+                config.InputEncoding,
+                config.OutputEncoding,
+                config.JavaPath,
+                config.Arguments,
+                config.EnvironmentVariables,
+                config.EventRules)
         };
     }
 
@@ -105,21 +120,24 @@ public static partial class InstanceVersionDetector
         }
     }
 
-    public static InstanceVersionDetectionResult Detect(InstanceFactorySetting setting, Func<string, string>? resolveSource = null)
+    public static InstanceVersionDetectionResult Detect(
+        InstanceFactoryConfiguration setting,
+        Func<string, string>? resolveSource = null)
     {
         resolveSource ??= Path.GetFullPath;
+        var config = setting.Configuration;
         try
         {
             if (!TryResolveSourcePath(setting.Source, resolveSource, out var sourcePath))
-                return InstanceVersionDetectionResult.NoMatch(setting.InstanceType, "Source path unavailable for detection");
+                return InstanceVersionDetectionResult.NoMatch(config.InstanceType, "Source path unavailable for detection");
 
             var workingDirectory = Path.GetDirectoryName(sourcePath) ?? string.Empty;
             var candidateFiles = EnumerateSourceCandidates(sourcePath);
-            return DetectCore(setting.InstanceType, sourcePath, workingDirectory, candidateFiles);
+            return DetectCore(config.InstanceType, sourcePath, workingDirectory, candidateFiles);
         }
         catch (Exception ex)
         {
-            return InstanceVersionDetectionResult.NoMatch(setting.InstanceType, ex.Message);
+            return InstanceVersionDetectionResult.NoMatch(config.InstanceType, ex.Message);
         }
     }
 
