@@ -290,16 +290,11 @@ public class DaemonInboundTransportPipelineTests
     {
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
 
-        // The plugin registration order in ConfigurePlugins must remain exactly:
+        // Production registration is endpoint-first and V2-only:
         //   1. HttpPlugin
-        //   2. UseWebSocket (with exact /api/v2)
-        //   3. UseWebSocket (with branch-migration /api/v1)
-        //   4. TouchSocketV2TransportPlugin
-        //   5. WsBasePlugin
-        //   6. WsActionPlugin
-        //   7. WsEventPlugin
-        //   8. WsExpirationPlugin
-        //   9. UseDefaultHttpServicePlugin
+        //   2. WebSocketFeature (with exact /api/v2)
+        //   3. TouchSocketV2TransportPlugin
+        //   4. UseDefaultHttpServicePlugin
         var configPluginsStart = source.IndexOf("internal static void ConfigurePlugins", StringComparison.Ordinal);
         Assert.True(configPluginsStart >= 0, "ConfigurePlugins method not found");
 
@@ -309,14 +304,15 @@ public class DaemonInboundTransportPipelineTests
         {
             "Add<HttpPlugin>",
             "SetUrl(TouchSocketV2TransportPlugin.Endpoint)",
-            "SetUrl(\"/api/v1\")",
             "Add<TouchSocketV2TransportPlugin>",
-            "Add<WsBasePlugin>",
-            "Add<WsActionPlugin>",
-            "Add<WsEventPlugin>",
-            "Add<WsExpirationPlugin>",
             "UseDefaultHttpServicePlugin",
         };
+
+        Assert.DoesNotContain("/api/v1", configPluginsBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsBasePlugin>", configPluginsBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsActionPlugin>", configPluginsBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsEventPlugin>", configPluginsBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsExpirationPlugin>", configPluginsBody, StringComparison.Ordinal);
 
         var positions = order
             .Select(marker => configPluginsBody.IndexOf(marker, StringComparison.Ordinal))
@@ -341,14 +337,16 @@ public class DaemonInboundTransportPipelineTests
     [Trait("Category", "DaemonInbound")]
     [Trait("Category", "DaemonInboundStatic")]
     [Trait("Category", "CleanupValidation")]
-    public void DaemonServiceComposition_ConfigurePlugins_LocksApiV1WebsocketPathAndVerifyHandler()
+    public void DaemonServiceComposition_ConfigurePlugins_DoesNotComposeApiV1()
     {
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
 
-        // The /api/v1 path and verify handler must remain exactly as-is
-        Assert.Contains(".SetUrl(\"/api/v1\")", source, StringComparison.Ordinal);
-        Assert.Contains("v1Options.VerifyConnection = WsVerifyHandler.VerifyHandler", source, StringComparison.Ordinal);
-        Assert.Contains(".SetAutoPong(true)", source, StringComparison.Ordinal);
+        Assert.DoesNotContain(".SetUrl(\"/api/v1\")", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("WsVerifyHandler.VerifyHandler", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsBasePlugin>", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsActionPlugin>", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsEventPlugin>", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add<WsExpirationPlugin>", source, StringComparison.Ordinal);
     }
 
     [Fact]

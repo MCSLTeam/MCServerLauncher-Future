@@ -16,7 +16,7 @@ Phase 4A completed the daemon JSON-RPC profile/dispatcher/error mapping, typed r
 
 Phase 4B completed the daemon-client remote application implementation, typed subscriptions, binary sessions, reconnect/catalog reconciliation, and immutable remote instance mirror, plus the WPF connection-layer consumer cutover to typed application/event APIs and localized errors. Final independent Sol max review reported `P0=0 / P1=0 / P2=0`. Acceptance passed WPF tests 19/19, Release ProtocolTests `--no-build` 1105/1105, DaemonClient/WPF/full-solution Release builds at 0 warnings / 0 errors, and `git diff --check`; the WPF V1/raw-symbol search was clean except for `EventRuleEditorDialog`'s UI/domain string property `ActionType`. This does not claim an unperformed manual UI smoke test or runtime end-to-end UI exercise.
 
-Current focus: Phase 4C sole-endpoint switch and complete V1 daemon/Common/client/generator deletion. Although `/api/v2` is production-composed through TouchSocket and Phase 4B connection-layer consumers are cut over, `/api/v1` remains a branch-internal migration path until 4C. Phase 4 is therefore not release-complete or product-complete; do not change its scope, sequencing, or release-atomic exit criteria.
+Current status: Phase 4C is active. The M1 sole `/api/v2` authority and V2 connection administration are complete and independently reviewed; M2 legacy DTO/error/persistence-resolver decontamination is next. Phase 4C and Phase 4 overall remain incomplete and unreleasable. Residual V1 daemon/Common/client/generator source is intentionally retained for M2-M4, and the release-atomic scope and sequencing remain unchanged.
 
 ## Phase 0: Governance, Characterization, And Deletion Inventory
 
@@ -70,7 +70,7 @@ Exit criteria:
 
 Goal: make `/api/v2` the sole runtime protocol while preserving the complete V1 behavior inventory.
 
-Progress: Phase 4A daemon V2 and Phase 4B daemon-client/WPF connection-layer cutover are complete and independently reviewed with 0 open P0/P1/P2 findings. Phase 4C sole-endpoint switch and V1 deletion is next and remains pending. `/api/v2` is production-composed, but `/api/v1` remains branch-internal until the sole-endpoint/deletion gate, so Phase 4 is not yet releasable.
+Progress: Phase 4A daemon V2 and Phase 4B daemon-client/WPF connection-layer cutover are complete and independently reviewed with 0 open P0/P1/P2 findings. Phase 4C M1 sole `/api/v2` authority and V2 connection administration are complete and independently reviewed; M2 legacy DTO/error/persistence-resolver decontamination is next. Phase 4C and Phase 4 overall remain incomplete and unreleasable because legacy V1 daemon/Common/client/generator source and physical deletion work remain for M2-M4.
 
 Exit criteria:
 

@@ -6,7 +6,6 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Bootstrap;
-using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Transport;
@@ -359,7 +358,6 @@ public sealed class TouchSocketV2ClientRealHostTests
                 _transport = DaemonTouchSocketTransportProfile.CreateConfig(
                     services,
                     Host,
-                    ActionHandlerRegistryRuntime.CreateSelected(useGeneratedActionRegistry: true),
                     new IPHost(IPAddress.Loopback, 0));
                 await Host.SetupAsync(_transport.Config);
                 _rootProvider = _transport.Container.ServiceProvider;

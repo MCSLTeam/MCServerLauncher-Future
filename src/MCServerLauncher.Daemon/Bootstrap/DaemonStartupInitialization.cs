@@ -1,6 +1,5 @@
 using System.Reflection;
 using MCServerLauncher.Daemon.Management.Factory;
-using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.Status;
 using Serilog;
@@ -57,9 +56,6 @@ internal static class DaemonStartupInitialization
         }
 
         InstanceFactoryRegistry.InitializeDefaults();
-
-        var selectedRegistry = ActionHandlerRegistryRuntime.Initialize(AppConfig.Get().UseGeneratedActionRegistry);
-        Log.Information("[ActionHandlerRegistry] Using {Mode} registry path", selectedRegistry.Mode);
 
         return true;
     }

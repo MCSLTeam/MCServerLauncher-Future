@@ -52,7 +52,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .AddHeader("Content-type", "application/json")
                             .AddHeader("Access-Control-Allow-Origin", "*")
                             .SetContent(JsonSerializer.Serialize(
-                                new RootResponse("MCServerLauncher Future Daemon CSharp", version, "ok", "v1"),
+                                new RootResponse("MCServerLauncher Future Daemon CSharp", version, "ok", "v2"),
                                 HttpPluginJsonSerializerContext.Default.RootResponse))
                             .AnswerAsync();
                         break;
@@ -63,7 +63,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .AddHeader("Content-type", "application/json")
                             .AddHeader("Access-Control-Allow-Origin", "*")
                             .SetContent(JsonSerializer.Serialize(
-                                new InfoResponse("MCServerLauncher Future Daemon CSharp", version, "v1"),
+                                new InfoResponse("MCServerLauncher Future Daemon CSharp", version, "v2"),
                                 HttpPluginJsonSerializerContext.Default.InfoResponse))
                             .AnswerAsync();
                         break;

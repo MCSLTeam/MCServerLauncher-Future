@@ -4,7 +4,6 @@ using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
-using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,13 +31,6 @@ public sealed class DaemonRuntimeLifecycleTests
             new StubDaemonApplication(),
             domainEvents.Port,
             NullLogger<EventTriggerService>.Instance);
-        await using var legacyAdapter = new LegacyDomainEventAdapter(
-            domainEvents.Port,
-            new EventService(),
-            new WsContextContainer(),
-            NullLogger<LegacyDomainEventAdapter>.Instance);
-        var queueControl = new LegacyEventQueueControl();
-        queueControl.Attach(new CompletingQueueParticipant());
         var catalogBridge = new InstanceCatalogDomainEventBridge(manager.CatalogCommitFeed, domainEvents.Port);
         catalogBridge.Start();
         var lifecycle = new LocalDaemonRuntimeLifecycle(
@@ -50,11 +42,9 @@ public sealed class DaemonRuntimeLifecycleTests
                 domainEvents.Port,
                 NullLogger<DaemonReportPublisher>.Instance),
             trigger,
-            legacyAdapter,
             bridge,
             manager.CatalogCommitFeed,
             catalogBridge,
-            queueControl,
             NullLogger<LocalDaemonRuntimeLifecycle>.Instance);
         var observedLogs = 0;
         var observer = domainEvents.Port.CreateOwner(nameof(DaemonRuntimeLifecycleTests));
@@ -145,14 +135,5 @@ public sealed class DaemonRuntimeLifecycleTests
         {
             return OnLog?.Invoke(Config.Uuid, log, CancellationToken.None) ?? Task.CompletedTask;
         }
-    }
-
-    private sealed class CompletingQueueParticipant : ILegacyEventQueueParticipant
-    {
-        public void StopAccepting()
-        {
-        }
-
-        public Task DrainAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

@@ -25,15 +25,13 @@ internal class AppConfig
         string secret,
         string mainToken,
         int fileDownloadSessions = 3,
-        bool verbose = false,
-        bool? useGeneratedActionRegistry = null)
+        bool verbose = false)
     {
         Port = port;
         Secret = secret;
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
         Verbose = verbose;
-        UseGeneratedActionRegistry = useGeneratedActionRegistry;
         Log.Information("[AppConfig] Main token: {0}", mainToken);
     }
 
@@ -54,9 +52,6 @@ internal class AppConfig
     public string Secret { get; private set; }
 
     public int FileDownloadSessions { get; private set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? UseGeneratedActionRegistry { get; }
 
     internal static JsonTypeInfo<AppConfig> PersistenceWriteIndentedTypeInfo { get; } = ResolvePersistenceWriteIndentedTypeInfo();
 

@@ -7,7 +7,6 @@ using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote;
-using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
@@ -31,9 +30,7 @@ internal static class DaemonServiceComposition
     internal static void ConfigureContainer(
         IRegistrator a,
         IServiceCollection collection,
-        HttpService httpService,
-        ActionHandlerRegistrySnapshot selectedRegistry,
-        LegacyEventQueueControl? legacyEventQueueControl = null)
+        HttpService httpService)
     {
         collection.AddMessagePipe(options =>
         {
@@ -47,11 +44,6 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<ConsoleApplication>();
         a.RegisterSingleton<GracefulShutdown>();
         a.RegisterSingleton<IHttpService>(httpService);
-        a.RegisterSingleton(selectedRegistry);
-        a.RegisterSingleton(legacyEventQueueControl ?? new LegacyEventQueueControl());
-        a.RegisterSingleton<IActionExecutor, AnotherActionExecutor>();
-        a.RegisterSingleton<IEventService, EventService>();
-        a.RegisterSingleton<WsContextContainer>();
 
         var instanceManager = (InstanceManager)InstanceManager.Create();
         var fileSessionCoordinator = FileSessionCoordinator.Shared;
@@ -77,7 +69,6 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
         a.RegisterSingleton<IFileApplication, LocalFileApplication>();
         a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
-        a.RegisterSingleton<LegacySystemActionAdapter>();
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
@@ -105,16 +96,15 @@ internal static class DaemonServiceComposition
             services.GetRequiredService<IV2RpcDiagnosticSink>(),
             services.GetRequiredService<IV2InboundDiagnosticSink>(),
             services.GetRequiredService<TimeProvider>()));
+        collection.AddSingleton<IV2ConnectionAdministration>(services =>
+            services.GetRequiredService<TouchSocketV2TransportPlugin>());
         a.RegisterSingleton<InstanceDomainEventBridge>();
         a.RegisterSingleton<InstanceCatalogDomainEventBridge>();
         a.RegisterSingleton<EventTriggerService>();
-        a.RegisterSingleton<LegacyDomainEventAdapter>();
         a.RegisterSingleton<DaemonReportPublisher>();
     }
 
-    internal static void ConfigurePlugins(
-        IPluginManager a,
-        LegacyEventQueueControl? legacyEventQueueControl = null)
+    internal static void ConfigurePlugins(IPluginManager a)
     {
         a.Add<HttpPlugin>();
         var v2Options = new WebSocketFeatureOptions();
@@ -122,20 +112,8 @@ internal static class DaemonServiceComposition
         v2Options.SetAutoPong(true);
         v2Options.VerifyConnection = WsVerifyHandler.VerifyV2Handler;
         a.Add(new WebSocketFeature(v2Options));
-        var v1Options = new WebSocketFeatureOptions();
-        v1Options.SetUrl("/api/v1");
-        v1Options.SetAutoPong(true);
-        v1Options.VerifyConnection = WsVerifyHandler.VerifyHandler;
-        a.Add(new WebSocketFeature(v1Options));
 
         a.Add<TouchSocketV2TransportPlugin>();
-        a.Add<WsBasePlugin>();
-        a.Add<WsActionPlugin>();
-        var wsEventPlugin = a.Add<WsEventPlugin>();
-        (legacyEventQueueControl ?? throw new InvalidOperationException(
-            "Legacy event queue control must be provided when configuring plugins."))
-            .Attach(wsEventPlugin);
-        a.Add<WsExpirationPlugin>(); // WsExpirePlugin注册必须在WsBasePlugin之后
         a.UseDefaultHttpServicePlugin();
     }
 
@@ -147,13 +125,12 @@ internal static class DaemonServiceComposition
         return new DaemonLifecycleAttachment(
             httpService.Resolver.GetRequiredService<FileSessionCoordinator>(),
             httpService.Resolver.GetRequiredService<EventTriggerService>(),
-            httpService.Resolver.GetRequiredService<LegacyDomainEventAdapter>(),
             httpService.Resolver.GetRequiredService<InstanceDomainEventBridge>(),
             httpService.Resolver.GetRequiredService<InstanceCatalogDomainEventBridge>(),
             httpService.Resolver.GetRequiredService<DaemonReportPublisher>(),
             httpService.Resolver.GetRequiredService<ConsoleApplication>(),
             httpService.Resolver.GetRequiredService<V2RemoteEventBridge>(),
-            httpService.Resolver.GetRequiredService<TouchSocketV2TransportPlugin>());
+            httpService.Resolver.GetRequiredService<IV2ConnectionAdministration>());
     }
 }
 
@@ -177,19 +154,17 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
     internal DaemonLifecycleAttachment(
         FileSessionCoordinator files,
         EventTriggerService eventTrigger,
-        LegacyDomainEventAdapter legacyEvents,
         InstanceDomainEventBridge instanceEvents,
         InstanceCatalogDomainEventBridge catalogEvents,
         DaemonReportPublisher reports,
         ConsoleApplication console,
         V2RemoteEventBridge remoteEvents,
-        TouchSocketV2TransportPlugin v2Transport)
+        IV2ConnectionAdministration connections)
         : this(
             () =>
             {
                 files.Start();
                 _ = eventTrigger;
-                _ = legacyEvents;
                 _ = instanceEvents;
                 catalogEvents.Start();
                 reports.Start();
@@ -210,7 +185,7 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
 
                 try
                 {
-                    await v2Transport.ShutdownAsync().ConfigureAwait(false);
+                    await connections.ShutdownAsync().ConfigureAwait(false);
                 }
                 catch (Exception exception)
                 {

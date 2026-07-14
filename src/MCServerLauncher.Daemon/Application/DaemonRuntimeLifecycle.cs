@@ -18,11 +18,9 @@ internal sealed class LocalDaemonRuntimeLifecycle(
     InstanceMutationAdmissionGate mutationAdmission,
     DaemonReportPublisher reportPublisher,
     EventTriggerService eventTriggerService,
-    LegacyDomainEventAdapter legacyDomainEventAdapter,
     InstanceDomainEventBridge instanceDomainEventBridge,
     InstanceCatalogCommitFeed instanceCatalogCommitFeed,
     InstanceCatalogDomainEventBridge instanceCatalogDomainEventBridge,
-    LegacyEventQueueControl legacyEventQueueControl,
     ILogger<LocalDaemonRuntimeLifecycle> logger) : IDaemonRuntimeLifecycle
 {
     public async Task StopAsync(CancellationToken cancellationToken)
@@ -85,19 +83,6 @@ internal sealed class LocalDaemonRuntimeLifecycle(
             "drain instance catalog domain-event bridge",
             instanceCatalogDomainEventBridge.DrainAsync,
             failures);
-        await StopStepAsync(
-            "drain and dispose legacy domain-event adapter",
-            () => legacyDomainEventAdapter.DisposeAsync().AsTask(),
-            failures);
-        await StopStepAsync(
-            "stop and drain legacy websocket event queue",
-            async () =>
-            {
-                legacyEventQueueControl.StopAccepting();
-                await legacyEventQueueControl.DrainAsync(CancellationToken.None);
-            },
-            failures);
-
         logger.LogDebug("Closing file sessions");
         await StopStepAsync("close file sessions", fileSessionCoordinator.StopAsync, failures);
 

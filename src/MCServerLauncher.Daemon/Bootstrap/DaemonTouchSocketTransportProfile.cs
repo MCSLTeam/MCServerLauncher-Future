@@ -1,5 +1,4 @@
 using MCServerLauncher.Daemon;
-using MCServerLauncher.Daemon.Remote.Action;
 using Microsoft.Extensions.DependencyInjection;
 using TouchSocket.Core;
 using TouchSocket.Core.AspNetCore;
@@ -12,18 +11,15 @@ internal static class DaemonTouchSocketTransportProfile
 {
     internal static DaemonTouchSocketTransportConfiguration CreateConfig(
         IServiceCollection collection,
-        HttpService httpService,
-        ActionHandlerRegistrySnapshot selectedRegistry) =>
-        CreateConfig(collection, httpService, selectedRegistry, new IPHost(AppConfig.Get().Port));
+        HttpService httpService) =>
+        CreateConfig(collection, httpService, new IPHost(AppConfig.Get().Port));
 
     internal static DaemonTouchSocketTransportConfiguration CreateConfig(
         IServiceCollection collection,
         HttpService httpService,
-        ActionHandlerRegistrySnapshot selectedRegistry,
         IPHost listenHost)
     {
         ArgumentNullException.ThrowIfNull(listenHost);
-        var legacyEventQueueControl = new LegacyEventQueueControl();
         var container = new AspNetCoreContainer(collection);
         var config = new TouchSocketConfig()
             .SetListenIPHosts(listenHost)
@@ -31,10 +27,8 @@ internal static class DaemonTouchSocketTransportProfile
             .ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(
                 a,
                 collection,
-                httpService,
-                selectedRegistry,
-                legacyEventQueueControl))
-            .ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a, legacyEventQueueControl));
+                httpService))
+            .ConfigurePlugins(DaemonServiceComposition.ConfigurePlugins);
         return new DaemonTouchSocketTransportConfiguration(config, container);
     }
 }

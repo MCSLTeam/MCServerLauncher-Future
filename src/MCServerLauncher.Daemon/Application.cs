@@ -4,9 +4,6 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Bootstrap;
-using MCServerLauncher.Daemon.Remote;
-using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Event;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TouchSocket.Core;
@@ -68,9 +65,8 @@ public static class Application
 
 
     /// <summary>
-    ///     读取配置,添加/api/v1和/login路由的handler,并启动HttpServer。
-    ///     路由/api/v1: ws长连接，实现rpc。
-    ///     路由/login: http请求，实现登录，返回一个jwt。
+    ///     读取配置，添加 /api/v2 WebSocket 和 HTTP 路由，并启动 HttpServer。
+    ///     路由 /api/v2: WebSocket 长连接，实现 JSON-RPC V2 和版本化二进制帧。
     /// </summary>
     public static Task ServeAsync() => ServeAsync(null);
 
@@ -105,8 +101,7 @@ public static class Application
 
                 var endpoints = GetRemoteEndpoints(host.HttpService);
                 Log.Information("[Remote] Bind endpoint: {BindEndpoint}", endpoints.BindEndpoint);
-                Log.Information("[Remote] Ws V2 connect URLs: {ConnectUrls}", string.Join(", ", endpoints.V2WebSocketConnectUrls));
-                Log.Information("[Remote] Ws V1 migration URLs: {ConnectUrls}", string.Join(", ", endpoints.V1WebSocketMigrationUrls));
+                Log.Information("[Remote] Ws connect URLs: {ConnectUrls}", string.Join(", ", endpoints.WebSocketConnectUrls));
                 Log.Information("[Remote] Http Server connect URLs: {ConnectUrls}", string.Join(", ", endpoints.HttpConnectUrls));
                 Log.Information("[Remote] Apifox docs connect URLs: {ConnectUrls}", string.Join(", ", endpoints.ApifoxConnectUrls));
 
@@ -151,7 +146,6 @@ public static class Application
         IPHost? listenHost,
         DaemonHostTestHooks? testHooks)
     {
-        var selectedRegistry = ActionHandlerRegistryRuntime.Selected;
         IServiceCollection collection = new ServiceCollection();
         collection.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
         configureServices?.Invoke(collection);
@@ -166,8 +160,8 @@ public static class Application
         try
         {
             transport = listenHost is null
-                ? DaemonTouchSocketTransportProfile.CreateConfig(collection, httpService, selectedRegistry)
-                : DaemonTouchSocketTransportProfile.CreateConfig(collection, httpService, selectedRegistry, listenHost);
+                ? DaemonTouchSocketTransportProfile.CreateConfig(collection, httpService)
+                : DaemonTouchSocketTransportProfile.CreateConfig(collection, httpService, listenHost);
             await httpService.SetupAsync(transport.Config).ConfigureAwait(false);
             rootProvider = transport.Container.ServiceProvider;
             attachment = DaemonServiceComposition.AttachDaemonLifecycle(httpService);
@@ -319,7 +313,6 @@ public static class Application
         return new RemoteEndpoints(
             FormatAuthority(endpoint.Address, endpoint.Port),
             connectAuthorities.Select(authority => $"ws://{authority}/api/v2").ToArray(),
-            connectAuthorities.Select(authority => $"ws://{authority}/api/v1").ToArray(),
             connectAuthorities.Select(authority => $"http://{authority}/").ToArray(),
             connectAuthorities.Select(authority => $"http://{authority}/apifox.json").ToArray());
     }
@@ -365,8 +358,7 @@ public static class Application
 
     private sealed record RemoteEndpoints(
         string BindEndpoint,
-        string[] V2WebSocketConnectUrls,
-        string[] V1WebSocketMigrationUrls,
+        string[] WebSocketConnectUrls,
         string[] HttpConnectUrls,
         string[] ApifoxConnectUrls);
 
@@ -530,12 +522,6 @@ public static class Application
                             .StopAsync(CancellationToken.None),
                         failures).ConfigureAwait(false);
 
-                    Log.Debug("[WsContextContainer] closing websocket connections ...");
-                    await RunStepAsync(
-                        () => Task.WhenAll(HttpService.Resolver.GetRequiredService<WsContextContainer>()
-                            .Select(kv => kv.Value.GetWebsocket()
-                                .CloseAsync("Daemon exit", CancellationToken.None))),
-                        failures).ConfigureAwait(false);
                 }
 
                 ThrowIfCleanupFailed(failures, "One or more daemon host stop steps failed.");

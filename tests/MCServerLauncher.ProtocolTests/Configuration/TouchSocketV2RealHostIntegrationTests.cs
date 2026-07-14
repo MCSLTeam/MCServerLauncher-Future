@@ -5,7 +5,6 @@ using System.Text.Json;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Remote;
-using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -38,6 +37,8 @@ public sealed class TouchSocketV2RealHostIntegrationTests
             var token = AppConfig.Get().MainToken;
             var capture = new CapturePlugin();
             var client = await fixture.ConnectAsync(token, capture);
+            await AssertEndpointIsNotUpgradedAsync(port, "/api/v1", token);
+            await AssertHttpMetadataReportsV2Async(port);
 
             var request = Encoding.UTF8.GetBytes(
                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"rpc.discover\"}");
@@ -130,6 +131,40 @@ public sealed class TouchSocketV2RealHostIntegrationTests
         return false;
     }
 
+    private static async Task AssertEndpointIsNotUpgradedAsync(int port, string path, string token)
+    {
+        using var client = new System.Net.Http.HttpClient();
+        using var request = new HttpRequestMessage(
+            System.Net.Http.HttpMethod.Get,
+            $"http://127.0.0.1:{port}{path}?token={Uri.EscapeDataString(token)}");
+        request.Headers.TryAddWithoutValidation("Connection", "Upgrade");
+        request.Headers.TryAddWithoutValidation("Upgrade", "websocket");
+        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Version", "13");
+        request.Headers.TryAddWithoutValidation(
+            "Sec-WebSocket-Key",
+            Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+        using var timeout = new CancellationTokenSource(Timeout);
+        using var response = await client.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            timeout.Token);
+
+        Assert.NotEqual(System.Net.HttpStatusCode.SwitchingProtocols, response.StatusCode);
+    }
+
+    private static async Task AssertHttpMetadataReportsV2Async(int port)
+    {
+        using var client = new System.Net.Http.HttpClient();
+        foreach (var path in new[] { "/", "/info" })
+        {
+            using var timeout = new CancellationTokenSource(Timeout);
+            using var response = await client.GetAsync($"http://127.0.0.1:{port}{path}", timeout.Token);
+            response.EnsureSuccessStatusCode();
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
+            Assert.Equal("v2", document.RootElement.GetProperty("api_version").GetString());
+        }
+    }
+
     private sealed class RealHostFixture : IAsyncDisposable
     {
         private DaemonTouchSocketTransportConfiguration? _transport;
@@ -152,7 +187,6 @@ public sealed class TouchSocketV2RealHostIntegrationTests
                 _transport = DaemonTouchSocketTransportProfile.CreateConfig(
                     services,
                     Host,
-                    ActionHandlerRegistryRuntime.CreateSelected(useGeneratedActionRegistry: true),
                     new IPHost(IPAddress.Loopback, 0));
                 await Host.SetupAsync(_transport.Config);
                 _rootProvider = _transport.Container.ServiceProvider;

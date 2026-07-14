@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Net.WebSockets;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Application;
@@ -16,7 +17,8 @@ using TouchSocket.Sockets;
 namespace MCServerLauncher.Daemon.Remote.Rpc.Transport;
 
 internal sealed class TouchSocketV2TransportPlugin : PluginBase,
-    IWebSocketConnectedPlugin, IWebSocketReceivedPlugin, IWebSocketClosedPlugin, IAsyncDisposable
+    IWebSocketConnectedPlugin, IWebSocketReceivedPlugin, IWebSocketClosedPlugin,
+    IV2ConnectionAdministration, IAsyncDisposable
 {
     internal const string Endpoint = "/api/v2";
     private readonly IDaemonApplication _application;
@@ -95,7 +97,9 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             e.InvokeNext,
             () => CloseDirectAsync(webSocket, WebSocketCloseStatus.EndpointUnavailable, "V2 transport stopping"),
             () => CloseDirectAsync(webSocket, WebSocketCloseStatus.InternalServerError, "V2 connection setup failed"),
-            validTo == DateTime.MaxValue ? DateTimeOffset.MaxValue : new DateTimeOffset(validTo, TimeSpan.Zero)).ConfigureAwait(false);
+            validTo == DateTime.MaxValue ? DateTimeOffset.MaxValue : new DateTimeOffset(validTo, TimeSpan.Zero),
+            verified.Jti,
+            webSocket.Client.GetIPPort()).ConfigureAwait(false);
     }
 
     internal async Task HandleConnectedAsync(
@@ -106,7 +110,9 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         Func<Task> invokeNext,
         Func<Task> rejectStopping,
         Func<Task> rejectSetup,
-        DateTimeOffset? expiresAt = null)
+        DateTimeOffset? expiresAt = null,
+        Guid tokenId = default,
+        string remoteEndpoint = "")
     {
         ArgumentNullException.ThrowIfNull(relativeUrl);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionId);
@@ -142,7 +148,15 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             var files = filesResult.Unwrap();
             var context = new V2RpcConnectionContext(owner, eventEntry!.Ledger, owner.ConnectionToken, files);
             var pipeline = new V2InboundMessagePipeline(catalog, new V2RpcDispatcher(catalog, _rpcDiagnostics), context, owner, files, _inboundDiagnostics);
-            state = new ConnectionState(owner, pipeline);
+            state = new ConnectionState(
+                owner,
+                pipeline,
+                new V2ConnectionSnapshot(
+                    connectionId,
+                    remoteEndpoint,
+                    tokenId,
+                    owner.Permissions,
+                    expiresAt ?? DateTimeOffset.MaxValue));
             if (Volatile.Read(ref _stopping) != 0) throw new InvalidOperationException("The V2 transport is stopping.");
             if (!_connections.TryAdd(connectionId, state)) throw new InvalidOperationException("Duplicate V2 connection identifier.");
             if (Volatile.Read(ref _stopping) != 0)
@@ -265,6 +279,43 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
     internal int V2ConnectionMarkerCount => _v2Connections.Count;
     internal int ShutdownExecutionCount => Volatile.Read(ref _shutdownExecutionCount);
 
+    public ImmutableArray<V2ConnectionSnapshot> Snapshot() =>
+        _connections.ToArray()
+            .Select(static pair => pair.Value.Snapshot)
+            .OrderBy(static connection => connection.ConnectionId, StringComparer.Ordinal)
+            .ToImmutableArray();
+
+    public bool TryGet(string connectionId, out V2ConnectionSnapshot connection)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionId);
+        if (_connections.TryGetValue(connectionId, out var state))
+        {
+            connection = state.Snapshot;
+            return true;
+        }
+
+        connection = default;
+        return false;
+    }
+
+    public Task<bool> CloseAsync(string connectionId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionId);
+        return RemoveAndCloseAsync(connectionId, V2ConnectionCloseReason.Abort);
+    }
+
+    public async Task<int> CloseAllAsync()
+    {
+        var connectionIds = _connections.ToArray()
+            .Select(static pair => pair.Key)
+            .ToArray();
+        if (connectionIds.Length == 0)
+            return 0;
+
+        var closed = await Task.WhenAll(connectionIds.Select(CloseAsync)).ConfigureAwait(false);
+        return closed.Count(static value => value);
+    }
+
     internal static bool TryAuthenticateToken(string token, TimeProvider timeProvider, out V2VerifiedToken verified) =>
         TryAuthenticateToken(token, timeProvider, JwtUtils.ValidateToken, JwtUtils.ReadToken, out verified);
 
@@ -287,25 +338,26 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         catch { return false; }
     }
 
-    internal async Task ShutdownAsync()
+    public async Task ShutdownAsync()
     {
         if (Interlocked.Exchange(ref _stopping, 1) == 0)
             Interlocked.Increment(ref _shutdownExecutionCount);
         while (!_connections.IsEmpty)
-            await Task.WhenAll(_connections.Keys.Select(id => RemoveAndCloseAsync(id, V2ConnectionCloseReason.Abort))).ConfigureAwait(false);
+            await CloseAllAsync().ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync() => await ShutdownAsync().ConfigureAwait(false);
 
-    private async Task RemoveAndCloseAsync(string id, V2ConnectionCloseReason reason)
+    private async Task<bool> RemoveAndCloseAsync(string id, V2ConnectionCloseReason reason)
     {
-        if (_connections.TryRemove(id, out var state))
-        {
-            state.ClearAssembler();
-            var close = state.Owner.AbortAsync(reason);
-            await state.StopExpiryAsync().ConfigureAwait(false);
-            await close.ConfigureAwait(false);
-        }
+        if (!_connections.TryRemove(id, out var state))
+            return false;
+
+        state.ClearAssembler();
+        var close = state.Owner.AbortAsync(reason);
+        await state.StopExpiryAsync().ConfigureAwait(false);
+        await close.ConfigureAwait(false);
+        return true;
     }
 
     private Task RemoveIfClosingAsync(string connectionId, V2InboundOutcome outcome)
@@ -415,7 +467,10 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         return accessor;
     }
 
-    private sealed class ConnectionState(V2ConnectionOwner owner, V2InboundMessagePipeline pipeline)
+    private sealed class ConnectionState(
+        V2ConnectionOwner owner,
+        V2InboundMessagePipeline pipeline,
+        V2ConnectionSnapshot snapshot)
     {
         private readonly object _expiryGate = new();
         private readonly CancellationTokenSource _expiryCancellation = new();
@@ -425,6 +480,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 
         internal V2ConnectionOwner Owner { get; } = owner;
         internal V2InboundMessagePipeline Pipeline { get; } = pipeline;
+        internal V2ConnectionSnapshot Snapshot { get; } = snapshot;
 
         internal TouchSocketV2MessageAssembler GetAssembler(WebSocketMessageCombinator combinator)
         {

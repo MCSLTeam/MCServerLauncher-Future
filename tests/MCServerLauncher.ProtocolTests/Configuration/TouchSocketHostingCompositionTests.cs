@@ -45,7 +45,7 @@ public class TouchSocketHostingCompositionTests
             "SetListenIPHosts(listenHost)",
             "SetRegistrator(container)",
             "ConfigureContainer(a => DaemonServiceComposition.ConfigureContainer(",
-            "ConfigurePlugins(a => DaemonServiceComposition.ConfigurePlugins(a, legacyEventQueueControl))",
+            "ConfigurePlugins(DaemonServiceComposition.ConfigurePlugins)",
         };
 
         var positions = expectedOrder
@@ -84,8 +84,8 @@ public class TouchSocketHostingCompositionTests
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Application.cs");
 
         Assert.Contains("\"[Remote] Bind endpoint: {BindEndpoint}\"", source, StringComparison.Ordinal);
-        Assert.Contains("\"[Remote] Ws V2 connect URLs: {ConnectUrls}\"", source, StringComparison.Ordinal);
-        Assert.Contains("\"[Remote] Ws V1 migration URLs: {ConnectUrls}\"", source, StringComparison.Ordinal);
+        Assert.Contains("\"[Remote] Ws connect URLs: {ConnectUrls}\"", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Ws V1 migration URLs", source, StringComparison.Ordinal);
         Assert.Contains("GetConnectableAuthorities", source, StringComparison.Ordinal);
         Assert.Contains("IPAddress.Loopback", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ws://{RemoteAddress}/api/v1", source, StringComparison.Ordinal);
@@ -102,6 +102,55 @@ public class TouchSocketHostingCompositionTests
         Assert.Contains("GetRequiredService<IDaemonRuntimeLifecycle>()", source, StringComparison.Ordinal);
         Assert.DoesNotContain("GetRequiredService<IInstanceManager>()", source, StringComparison.Ordinal);
         Assert.DoesNotContain("GetRequiredService<FileSessionCoordinator>()", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetRequiredService<WsContextContainer>()", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void ConnectionsCommand_UsesOnlyV2ConnectionAdministration()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Console/Commands/ConnectionsCommand.cs");
+
+        Assert.Contains("GetRequiredService<IV2ConnectionAdministration>()", source, StringComparison.Ordinal);
+        Assert.Contains("connections.Snapshot()", source, StringComparison.Ordinal);
+        Assert.Contains("connections.TryGet(clientId", source, StringComparison.Ordinal);
+        Assert.Contains("connections.CloseAllAsync()", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("WsContextContainer", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("IHttpService", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("WsVerifyHandler", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void ProductionStartup_DoesNotSelectOrRegisterLegacyActionRuntime()
+    {
+        var startup = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonStartupInitialization.cs");
+        var application = ReadSourceFile("src/MCServerLauncher.Daemon/Application.cs");
+        var composition = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
+        var config = ReadSourceFile("src/MCServerLauncher.Daemon/AppConfig.cs");
+
+        Assert.DoesNotContain("ActionHandlerRegistryRuntime", startup, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActionHandlerRegistryRuntime", application, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActionHandlerRegistrySnapshot", composition, StringComparison.Ordinal);
+        Assert.DoesNotContain("UseGeneratedActionRegistry", config, StringComparison.Ordinal);
+        Assert.DoesNotContain("RegisterSingleton<IActionExecutor", composition, StringComparison.Ordinal);
+        Assert.DoesNotContain("RegisterSingleton<IEventService", composition, StringComparison.Ordinal);
+        Assert.DoesNotContain("RegisterSingleton<LegacyDomainEventAdapter", composition, StringComparison.Ordinal);
+        Assert.DoesNotContain("RegisterSingleton<WsContextContainer", composition, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "DaemonInbound")]
+    [Trait("Category", "DaemonInboundStatic")]
+    public void HttpMetadata_ReportsV2AsTheOnlyProductionApiVersion()
+    {
+        var source = ReadSourceFile("src/MCServerLauncher.Daemon/Remote/HttpPlugin.cs");
+
+        Assert.Contains("version, \"ok\", \"v2\"", source, StringComparison.Ordinal);
+        Assert.Contains("version, \"v2\"", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"v1\"", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -127,14 +176,12 @@ public class TouchSocketHostingCompositionTests
         services.AddLogging();
         var httpService = new HttpService();
         var rootContainer = new AspNetCoreContainer(services);
-        var selectedRegistry = ActionHandlerRegistryRuntime.CreateSelected(useGeneratedActionRegistry: true);
         var config = new TouchSocketConfig()
             .SetRegistrator(rootContainer)
             .ConfigureContainer(registrator => DaemonServiceComposition.ConfigureContainer(
                 registrator,
                 services,
-                httpService,
-                selectedRegistry));
+                httpService));
         IServiceProvider? rootProvider = null;
         DaemonLifecycleAttachment? attachment = null;
         try
@@ -152,7 +199,10 @@ public class TouchSocketHostingCompositionTests
 
             var catalogAccessor = resolver.GetRequiredService<IFrozenProtocolCatalogAccessor>();
             Assert.False(catalogAccessor.TryGet(out _));
-            Assert.NotNull(resolver.GetRequiredService<TouchSocketV2TransportPlugin>());
+            var transportPlugin = resolver.GetRequiredService<TouchSocketV2TransportPlugin>();
+            Assert.Same(transportPlugin, resolver.GetRequiredService<IV2ConnectionAdministration>());
+            Assert.Null(resolver.GetService<LegacyDomainEventAdapter>());
+            Assert.Null(resolver.GetService<IActionExecutor>());
 
             attachment = DaemonServiceComposition.AttachDaemonLifecycle(httpService);
 
@@ -177,10 +227,8 @@ public class TouchSocketHostingCompositionTests
             Assert.Same(manager.InstanceSnapshotSource, resolver.GetRequiredService<IInstanceSnapshotSource>());
 
             var trigger = resolver.GetRequiredService<EventTriggerService>();
-            var legacyAdapter = resolver.GetRequiredService<LegacyDomainEventAdapter>();
             var eventBridge = resolver.GetRequiredService<InstanceDomainEventBridge>();
             trigger.Stop();
-            legacyAdapter.Stop();
             eventBridge.Dispose();
         }
         finally

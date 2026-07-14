@@ -144,6 +144,58 @@ public sealed class TouchSocketV2TransportPluginTests
     }
 
     [Fact]
+    public async Task ConnectionAdministration_ProvidesImmutableLookupAndOwnedCloseOperations()
+    {
+        await using var fixture = Fixture.Create();
+        IV2ConnectionAdministration administration = fixture.Plugin;
+        var first = fixture.Sender("first");
+        var second = fixture.Sender("second");
+        var firstToken = Guid.NewGuid();
+        var expiry = DateTimeOffset.Parse("2030-01-01T01:00:00Z");
+
+        await fixture.Plugin.HandleConnectedAsync(
+            TouchSocketV2TransportPlugin.Endpoint,
+            "b-connection",
+            ["mcsl.daemon.file.upload"],
+            second,
+            Never,
+            Never,
+            Never,
+            expiry,
+            Guid.NewGuid(),
+            "127.0.0.1:20002");
+        await fixture.Plugin.HandleConnectedAsync(
+            TouchSocketV2TransportPlugin.Endpoint,
+            "a-connection",
+            ["mcsl.daemon.instance.read"],
+            first,
+            Never,
+            Never,
+            Never,
+            expiry,
+            firstToken,
+            "127.0.0.1:20001");
+
+        var snapshot = administration.Snapshot();
+        Assert.Equal(["a-connection", "b-connection"], snapshot.Select(static item => item.ConnectionId));
+        Assert.True(administration.TryGet("a-connection", out var found));
+        Assert.Equal("127.0.0.1:20001", found.RemoteEndpoint);
+        Assert.Equal(firstToken, found.TokenId);
+        Assert.Equal("mcsl.daemon.instance.read", Assert.Single(found.Permissions));
+        Assert.Equal(expiry, found.ExpiresAt);
+
+        Assert.True(await administration.CloseAsync("a-connection"));
+        await first.Closed.Task.WaitAsync(Timeout);
+        Assert.False(administration.TryGet("a-connection", out _));
+        Assert.False(await administration.CloseAsync("a-connection"));
+        Assert.Equal(2, snapshot.Length);
+
+        Assert.Equal(1, await administration.CloseAllAsync());
+        await second.Closed.Task.WaitAsync(Timeout);
+        Assert.Empty(administration.Snapshot());
+    }
+
+    [Fact]
     public async Task FutureTokenExpiry_RemovesAndClosesConnectionOnInjectedClock()
     {
         var now = DateTimeOffset.Parse("2030-01-01T00:00:00Z");

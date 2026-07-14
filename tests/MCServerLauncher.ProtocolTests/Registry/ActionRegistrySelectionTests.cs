@@ -27,7 +27,7 @@ public class ActionRegistrySelectionTests
 
     [Fact]
     [Trait("Category", "ActionRegistrySelection")]
-    public void ConfigSeam_MissingUseGeneratedActionRegistry_DeserializesNullAndDoesNotSerializeTheFlag()
+    public void ConfigSeam_ObsoleteUseGeneratedActionRegistry_IsIgnoredAndNotSerialized()
     {
         var json =
             """
@@ -36,7 +36,8 @@ public class ActionRegistrySelectionTests
               "secret": "0123456789abcdef0123456789abcdef",
               "main_token": "fedcba9876543210fedcba9876543210",
               "file_download_sessions": 5,
-              "verbose": true
+              "verbose": true,
+              "use_generated_action_registry": true
             }
             """;
 
@@ -47,8 +48,7 @@ public class ActionRegistrySelectionTests
             "UseGeneratedActionRegistry",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        Assert.NotNull(property);
-        Assert.Null(property!.GetValue(config));
+        Assert.Null(property);
 
         using var serialized = JsonDocument.Parse(
             JsonSerializer.Serialize(config, AppConfigType, DaemonPersistenceJsonBoundary.StjWriteIndentedOptions));
