@@ -450,6 +450,127 @@ public sealed class V2ClientConnectionOwnerTests
     }
 
     [Fact]
+    public async Task ExactCoreInvalidationImmediatelyClearsReadinessAndCreatesOneReplacement()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory, time);
+        var connect = owner.ConnectAsync();
+        var first = await factory.NextAsync();
+        await MakeReadyAsync(first, connect, Catalog(0));
+
+        owner.InvalidateEpoch(
+            first.Coordinator.Core,
+            new TransportDaemonError("transport.core_invalidated", "invalidated"));
+
+        Assert.False(owner.IsReady);
+        Assert.False(owner.TryGetReadyCore(out _));
+        Assert.Equal(V2ClientConnectionOwnerState.WaitingToReconnect, owner.State);
+        Assert.Equal(1, factory.CreatedCount);
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+
+        time.Advance(ReconnectDelay);
+        var replacement = await factory.NextAsync();
+        await MakeReplacementReadyAsync(owner, replacement, Catalog(1));
+
+        Assert.True(owner.IsReady);
+        Assert.Equal(2, factory.CreatedCount);
+    }
+
+    [Fact]
+    public async Task RepeatedExactCoreInvalidationAndNaturalCompletionCleanupOnce()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory, time);
+        var connect = owner.ConnectAsync();
+        var first = await factory.NextAsync();
+        await MakeReadyAsync(first, connect, Catalog(0));
+        var core = first.Coordinator.Core;
+        var error = new TransportDaemonError("transport.core_invalidated", "invalidated");
+
+        using var barrier = new Barrier(4);
+        var firstInvalidation = StartBarrierAction(barrier, () => owner.InvalidateEpoch(core, error));
+        var secondInvalidation = StartBarrierAction(barrier, () => owner.InvalidateEpoch(core, error));
+        var naturalCompletion = StartBarrierAction(barrier, () => first.Lose("transport.concurrent_loss"));
+        Assert.True(barrier.SignalAndWait(Timeout));
+        await Task.WhenAll(firstInvalidation, secondInvalidation, naturalCompletion).WaitAsync(Timeout);
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+
+        Assert.Equal(V2ClientConnectionOwnerState.WaitingToReconnect, owner.State);
+        Assert.Equal(1, first.CloseCount);
+        Assert.Equal(1, first.DisposeCount);
+        Assert.Equal(1, time.TimerCount);
+    }
+
+    [Fact]
+    public async Task ExactCoreInvalidationOfDetachedEpochDoesNotAffectReadyReplacement()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory, time);
+        var connect = owner.ConnectAsync();
+        var first = await factory.NextAsync();
+        await MakeReadyAsync(first, connect, Catalog(0));
+        var oldCore = first.Coordinator.Core;
+
+        owner.InvalidateEpoch(
+            oldCore,
+            new TransportDaemonError("transport.core_invalidated", "invalidated"));
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+        time.Advance(ReconnectDelay);
+        var replacement = await factory.NextAsync();
+        await MakeReplacementReadyAsync(owner, replacement, Catalog(1));
+        Assert.True(owner.TryGetReadyCore(out var replacementCore));
+
+        owner.InvalidateEpoch(
+            oldCore,
+            new TransportDaemonError("transport.stale_core", "stale"));
+
+        Assert.True(owner.IsReady);
+        Assert.True(owner.TryGetReadyCore(out var stillReadyCore));
+        Assert.Same(replacementCore, stillReadyCore);
+        Assert.Equal(2, factory.CreatedCount);
+        Assert.Equal(1, time.TimerCount);
+    }
+
+    [Fact]
+    public async Task ExactCoreInvalidationConcurrentWithCloseRemainsTerminalWithoutReplacement()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory, time);
+        var connect = owner.ConnectAsync();
+        var first = await factory.NextAsync();
+        await MakeReadyAsync(first, connect, Catalog(0));
+        var core = first.Coordinator.Core;
+
+        using var barrier = new Barrier(3);
+        var invalidation = StartBarrierAction(barrier, () => owner.InvalidateEpoch(
+            core,
+            new TransportDaemonError("transport.core_invalidated", "invalidated")));
+        var closing = Task.Factory.StartNew(
+            () =>
+            {
+                Assert.True(barrier.SignalAndWait(Timeout));
+                return owner.CloseAsync();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default).Unwrap();
+        Assert.True(barrier.SignalAndWait(Timeout));
+
+        await Task.WhenAll(invalidation, closing).WaitAsync(Timeout);
+        time.Advance(ReconnectDelay);
+
+        Assert.Equal(V2ClientConnectionOwnerState.Closed, owner.State);
+        Assert.Equal(1, factory.CreatedCount);
+        Assert.Equal(1, first.CloseCount);
+        Assert.Equal(1, first.DisposeCount);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
     public async Task ConcurrentInvalidationAndLossCoalesceAndStaleEpochCannotDropReplacement()
     {
         var time = new ManualTimeProvider();

@@ -387,6 +387,20 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             SignalEpochLossAsync(epoch, error);
     }
 
+    internal void InvalidateEpoch(V2ClientConnectionCore core, DaemonError error)
+    {
+        PhysicalEpoch? epoch;
+        lock (_gate)
+        {
+            epoch = Matches(_candidate, core) ? _candidate :
+                Matches(_current, core) ? _current : null;
+        }
+
+        core.Close();
+        if (epoch is not null)
+            SignalEpochLossAsync(epoch, error);
+    }
+
     private Task SignalEpochLossAsync(PhysicalEpoch epoch, DaemonError error)
     {
         var detach = false;
@@ -639,6 +653,9 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
     private static bool Matches(PhysicalEpoch? epoch, V2ClientConnectionCoordinator coordinator) =>
         epoch is not null && ReferenceEquals(epoch.Coordinator, coordinator);
+
+    private static bool Matches(PhysicalEpoch? epoch, V2ClientConnectionCore core) =>
+        epoch is not null && ReferenceEquals(epoch.Coordinator.Core, core);
 
     private static TransportDaemonError ClosedError() =>
         new(ClosedCode, "The logical V2 client connection is closed.");
