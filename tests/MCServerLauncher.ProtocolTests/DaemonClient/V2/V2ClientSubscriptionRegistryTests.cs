@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Protocol;
@@ -51,12 +52,25 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     }
 
     [Fact]
+    public void PublicFilterDefaultIsWildcardAndOtherStatesRemainDistinct()
+    {
+        DaemonEventFilter<InstanceLogEventMeta> wildcard = default;
+
+        Assert.Equal(DaemonEventFieldKind.Missing, wildcard.Kind);
+        Assert.Equal(DaemonEventFieldKind.ExplicitNull,
+            DaemonEventFilter<InstanceLogEventMeta>.ExplicitNull.Kind);
+        Assert.Equal(DaemonEventFieldKind.Value,
+            DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)).Kind);
+        Assert.Throws<InvalidOperationException>(() => wildcard.Value);
+    }
+
+    [Fact]
     public async Task FirstLastAndDuplicateHandlesUseOneServerSubscription()
     {
         var fixture = await ReadyFixtureAsync();
         var firstTask = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
+            DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
             _ => { });
         var subscribe = await fixture.Transport.NextAsync();
         Assert.Equal("mcsl.event.subscribe", subscribe.Method);
@@ -66,7 +80,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 
         var second = (await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
+            DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
             _ => { }).WaitAsync(Timeout)).Unwrap();
         Assert.Equal(3, fixture.Transport.SendCount);
         await first.DisposeAsync();
@@ -84,7 +98,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var calls = new List<string>();
         var wildcardTask = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             value => calls.Add("wildcard:" + value.Data.Value.Log));
         var wildcardRequest = await fixture.Transport.NextAsync();
         Assert.False(Params(wildcardRequest).TryGetProperty("meta", out _));
@@ -95,7 +109,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 
         var exactTask = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
+            DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
             value => calls.Add("exact:" + value.Data.Value.Log));
         var exactRequest = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(Success(exactRequest));
@@ -122,7 +136,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var calls = new List<string>();
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             value =>
             {
                 calls.Add(value.Data.Value.Log);
@@ -154,7 +168,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var calls = new List<string>();
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             value =>
             {
                 calls.Add(value.Data.Value.Log);
@@ -212,7 +226,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         {
             var subscription = first.Registry.SubscribeAsync(
                 V2ClientProtocol.DaemonReport,
-                V2ClientEventFilter<EmptyRequest>.Wildcard,
+                DaemonEventFilter<EmptyRequest>.Wildcard,
                 _ => { });
             Assert.True(subscription.Wait(Timeout));
             reportHandle = subscription.Result.Unwrap();
@@ -290,19 +304,19 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var unbound = Registry(invalidations);
         var noReady = await unbound.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => { });
         AssertError(noReady, V2ClientSubscriptionRegistry.NotReadyCode);
 
         var fixture = await ReadyFixtureAsync();
         var catalog = await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceCatalogChanged,
-            V2ClientEventFilter<EmptyRequest>.Wildcard,
+            DaemonEventFilter<EmptyRequest>.Wildcard,
             _ => { });
         AssertError(catalog, V2ClientSubscriptionRegistry.UnsupportedEventCode);
         var invalidFilter = await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.ExplicitNull,
+            DaemonEventFilter<InstanceLogEventMeta>.ExplicitNull,
             _ => { });
         AssertError(invalidFilter, V2ClientSubscriptionRegistry.InvalidFilterCode);
         Assert.Equal(2, fixture.Transport.SendCount);
@@ -314,7 +328,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var expected = await ReadyFixtureAsync();
         var deniedTask = expected.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => throw new InvalidOperationException());
         var denied = await expected.Transport.NextAsync();
         expected.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "dropped"));
@@ -325,7 +339,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         using var cancellation = new CancellationTokenSource();
         var canceled = expected.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => { },
             cancellation.Token);
         await expected.Transport.NextAsync();
@@ -351,7 +365,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         using var cancellation = new CancellationTokenSource();
         var subscription = registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => { },
             cancellation.Token);
         await fixture.Transport.NextAsync();
@@ -368,7 +382,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var calls = 0;
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => calls++);
         var request = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "buffered"));
@@ -394,7 +408,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         });
         var second = (await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => calls.Add("second"))).Unwrap();
 
         fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "line"));
@@ -421,7 +435,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         Assert.Single(fixture.Invalidations);
         var rejected = await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => { });
         AssertError(rejected, V2ClientSubscriptionRegistry.NotReadyCode);
     }
@@ -471,7 +485,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         using var cancellation = new CancellationTokenSource();
         var subscription = first.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => { },
             cancellation.Token);
         await first.Transport.NextAsync();
@@ -498,14 +512,14 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var log = await SubscribeAsync(first, _ => { });
         var notificationTask = first.Registry.SubscribeAsync(
             V2ClientProtocol.Notification,
-            V2ClientEventFilter<NotificationEventMeta>.Wildcard,
+            DaemonEventFilter<NotificationEventMeta>.Wildcard,
             _ => { });
         var notificationRequest = await first.Transport.NextAsync();
         first.Coordinator.Core.RouteText(Success(notificationRequest));
         var notification = (await notificationTask).Unwrap();
         var reportSubscription = first.Registry.SubscribeAsync(
             V2ClientProtocol.DaemonReport,
-            V2ClientEventFilter<EmptyRequest>.Wildcard,
+            DaemonEventFilter<EmptyRequest>.Wildcard,
             _ => { });
         var reportRequest = await first.Transport.NextAsync();
         first.Coordinator.Core.RouteText(Success(reportRequest));
@@ -537,7 +551,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var handle = await SubscribeAsync(first, value => calls.Add(value.Data.Value.Log));
         var reportTask = first.Registry.SubscribeAsync(
             V2ClientProtocol.DaemonReport,
-            V2ClientEventFilter<EmptyRequest>.Wildcard,
+            DaemonEventFilter<EmptyRequest>.Wildcard,
             _ => { });
         var reportRequest = await first.Transport.NextAsync();
         first.Coordinator.Core.RouteText(Success(reportRequest));
@@ -579,7 +593,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var calls = 0;
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             _ => calls++);
         var request = await fixture.Transport.NextAsync();
         for (var index = 0; index < V2ClientSubscriptionRegistry.PendingEventCapacity; index++)
@@ -602,7 +616,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var calls = new List<string>();
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
-            V2ClientEventFilter<InstanceLogEventMeta>.Wildcard,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
             value => calls.Add(value.Data.Value.Log));
         var request = await fixture.Transport.NextAsync();
         for (var index = 0; index < V2ClientSubscriptionRegistry.PendingEventCapacity; index++)
@@ -660,10 +674,10 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         return registry;
     }
 
-    private static async Task<IAsyncDisposable> SubscribeAsync(Fixture fixture, Action<V2ClientEvent<InstanceLogEventData, InstanceLogEventMeta>> callback)
+    private static async Task<IAsyncDisposable> SubscribeAsync(Fixture fixture, Action<DaemonEvent<InstanceLogEventData, InstanceLogEventMeta>> callback)
     {
         var task = fixture.Registry.SubscribeAsync(
-            V2ClientProtocol.InstanceLog, V2ClientEventFilter<InstanceLogEventMeta>.Wildcard, callback);
+            V2ClientProtocol.InstanceLog, DaemonEventFilter<InstanceLogEventMeta>.Wildcard, callback);
         var request = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(Success(request));
         return (await task.WaitAsync(Timeout)).Unwrap();
@@ -712,7 +726,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     private sealed class CallbackOwner
     {
         internal int Count { get; private set; }
-        internal void Accept(V2ClientEvent<InstanceLogEventData, InstanceLogEventMeta> value) => Count++;
+        internal void Accept(DaemonEvent<InstanceLogEventData, InstanceLogEventMeta> value) => Count++;
     }
 
     private sealed class ScriptedTransport : IV2ClientWireTransport

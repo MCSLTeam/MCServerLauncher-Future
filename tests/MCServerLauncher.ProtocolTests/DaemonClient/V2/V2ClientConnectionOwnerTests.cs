@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Protocol;
 using MCServerLauncher.DaemonClient.State;
@@ -844,8 +845,8 @@ public sealed class V2ClientConnectionOwnerTests
         Guid? instanceId = null)
     {
         var filter = instanceId is { } id
-            ? V2ClientEventFilter<InstanceLogEventMeta>.Exact(new(id))
-            : V2ClientEventFilter<InstanceLogEventMeta>.Wildcard;
+            ? DaemonEventFilter<InstanceLogEventMeta>.Exact(new(id))
+            : DaemonEventFilter<InstanceLogEventMeta>.Wildcard;
         var subscribing = owner.Subscriptions.SubscribeAsync(V2ClientProtocol.InstanceLog, filter, _ => { });
         var request = await session.Transport.NextAsync();
         Assert.Equal("mcsl.event.subscribe", request.Method);

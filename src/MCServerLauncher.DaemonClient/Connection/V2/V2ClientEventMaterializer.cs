@@ -3,52 +3,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.Daemon.API.Protocol;
 using RustyOptions;
 
 namespace MCServerLauncher.DaemonClient.Connection.V2;
-
-internal enum V2ClientEventFieldKind
-{
-    Missing,
-    ExplicitNull,
-    Value
-}
-
-internal sealed class V2ClientEventField<T>
-{
-    private readonly T? _value;
-
-    private V2ClientEventField(V2ClientEventFieldKind kind, T? value = default)
-    {
-        Kind = kind;
-        _value = value;
-    }
-
-    internal static V2ClientEventField<T> Missing { get; } =
-        new(V2ClientEventFieldKind.Missing);
-
-    internal static V2ClientEventField<T> ExplicitNull { get; } =
-        new(V2ClientEventFieldKind.ExplicitNull);
-
-    internal V2ClientEventFieldKind Kind { get; }
-
-    internal T Value => Kind == V2ClientEventFieldKind.Value
-        ? _value!
-        : throw new InvalidOperationException("Only a materialized value event field exposes a value.");
-
-    internal static V2ClientEventField<T> FromValue(T value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        return new V2ClientEventField<T>(V2ClientEventFieldKind.Value, value);
-    }
-}
-
-internal sealed record V2ClientEvent<TData, TMeta>(
-    long Sequence,
-    long Timestamp,
-    V2ClientEventField<TMeta> Meta,
-    V2ClientEventField<TData> Data);
 
 internal static class V2ClientEventMaterializer
 {
@@ -56,7 +15,7 @@ internal static class V2ClientEventMaterializer
     internal const string InvalidEventMessage =
         "A required V2 catalog event payload violates its descriptor metadata.";
 
-    internal static Result<V2ClientEvent<TData, TMeta>, DaemonError> Materialize<TData, TMeta>(
+    internal static Result<DaemonEvent<TData, TMeta>, DaemonError> Materialize<TData, TMeta>(
         EventDescriptor<TData, TMeta> descriptor,
         JsonRpcRemoteEventNotification notification)
     {
@@ -77,7 +36,7 @@ internal static class V2ClientEventMaterializer
                 notification.Params.Data,
                 descriptor.DataTypeInfo);
 
-            return Result.Ok<V2ClientEvent<TData, TMeta>, DaemonError>(new V2ClientEvent<TData, TMeta>(
+            return Result.Ok<DaemonEvent<TData, TMeta>, DaemonError>(new DaemonEvent<TData, TMeta>(
                 notification.Params.Sequence,
                 notification.Params.Timestamp,
                 meta,
@@ -87,11 +46,11 @@ internal static class V2ClientEventMaterializer
                                            InvalidOperationException or ArgumentException or FormatException or
                                            OverflowException)
         {
-            return Result.Err<V2ClientEvent<TData, TMeta>, DaemonError>(InvalidEventError());
+            return Result.Err<DaemonEvent<TData, TMeta>, DaemonError>(InvalidEventError());
         }
     }
 
-    private static V2ClientEventField<T> MaterializeField<T>(
+    private static DaemonEventField<T> MaterializeField<T>(
         OpenRpcEventFieldPresence presence,
         JsonRpcOptionalPayload payload,
         JsonTypeInfo<T>? typeInfo)
@@ -105,20 +64,20 @@ internal static class V2ClientEventMaterializer
         return presence switch
         {
             OpenRpcEventFieldPresence.Omitted when payload.Kind == JsonRpcOptionalPayloadKind.Missing =>
-                V2ClientEventField<T>.Missing,
+                DaemonEventField<T>.Missing,
             OpenRpcEventFieldPresence.Required when payload.Kind == JsonRpcOptionalPayloadKind.Value =>
                 MaterializeValue(payload, typeInfo),
             OpenRpcEventFieldPresence.Optional when payload.Kind == JsonRpcOptionalPayloadKind.Missing =>
-                V2ClientEventField<T>.Missing,
+                DaemonEventField<T>.Missing,
             OpenRpcEventFieldPresence.Optional when payload.Kind == JsonRpcOptionalPayloadKind.ExplicitNull =>
-                V2ClientEventField<T>.ExplicitNull,
+                DaemonEventField<T>.ExplicitNull,
             OpenRpcEventFieldPresence.Optional when payload.Kind == JsonRpcOptionalPayloadKind.Value =>
                 MaterializeValue(payload, typeInfo),
             _ => throw new InvalidOperationException("The remote event field does not match its descriptor presence.")
         };
     }
 
-    private static V2ClientEventField<T> MaterializeValue<T>(
+    private static DaemonEventField<T> MaterializeValue<T>(
         JsonRpcOptionalPayload payload,
         JsonTypeInfo<T>? typeInfo)
     {
@@ -128,7 +87,7 @@ internal static class V2ClientEventMaterializer
         if (value is null)
             throw new JsonException("A present remote event field cannot materialize to null.");
 
-        return V2ClientEventField<T>.FromValue(value);
+        return DaemonEventField<T>.FromValue(value);
     }
 
     private static TransportDaemonError InvalidEventError() =>

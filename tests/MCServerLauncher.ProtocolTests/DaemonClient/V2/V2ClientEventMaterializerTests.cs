@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Protocol;
@@ -29,9 +30,9 @@ public sealed partial class V2ClientEventMaterializerTests
 
         Assert.Equal(41, materialized.Sequence);
         Assert.Equal(1783677000000, materialized.Timestamp);
-        Assert.Equal(V2ClientEventFieldKind.Missing, materialized.Meta.Kind);
+        Assert.Equal(DaemonEventFieldKind.Missing, materialized.Meta.Kind);
         Assert.Throws<InvalidOperationException>(() => materialized.Meta.Value);
-        Assert.Equal(V2ClientEventFieldKind.Value, materialized.Data.Kind);
+        Assert.Equal(DaemonEventFieldKind.Value, materialized.Data.Kind);
         Assert.Equal(7, materialized.Data.Value.Version);
         Assert.Equal(Guid.Parse(InstanceId), materialized.Data.Value.InstanceId);
     }
@@ -56,8 +57,8 @@ public sealed partial class V2ClientEventMaterializerTests
             JsonRpcOptionalPayload.Missing,
             Raw($"{{\"system_info\":{SystemJson},\"start_timestamp\":123}}"));
 
-        Assert.Equal(V2ClientEventFieldKind.Missing, materialized.Meta.Kind);
-        Assert.Equal(V2ClientEventFieldKind.Value, materialized.Data.Kind);
+        Assert.Equal(DaemonEventFieldKind.Missing, materialized.Meta.Kind);
+        Assert.Equal(DaemonEventFieldKind.Value, materialized.Data.Kind);
         Assert.Equal(123, materialized.Data.Value.StartTimestamp);
         Assert.Equal("Windows", materialized.Data.Value.SystemInfo.Os.Name);
     }
@@ -70,9 +71,9 @@ public sealed partial class V2ClientEventMaterializerTests
             Raw($"{{\"instance_id\":\"{InstanceId}\"}}"),
             Raw("{\"log\":\"started\"}"));
 
-        Assert.Equal(V2ClientEventFieldKind.Value, materialized.Meta.Kind);
+        Assert.Equal(DaemonEventFieldKind.Value, materialized.Meta.Kind);
         Assert.Equal(Guid.Parse(InstanceId), materialized.Meta.Value.InstanceId);
-        Assert.Equal(V2ClientEventFieldKind.Value, materialized.Data.Kind);
+        Assert.Equal(DaemonEventFieldKind.Value, materialized.Data.Kind);
         Assert.Equal("started", materialized.Data.Value.Log);
     }
 
@@ -93,13 +94,13 @@ public sealed partial class V2ClientEventMaterializerTests
     [Fact]
     public void TypedFieldsDoNotCollapseExplicitNullIntoMissing()
     {
-        var missing = V2ClientEventField<string>.Missing;
-        var explicitNull = V2ClientEventField<string>.ExplicitNull;
-        var value = V2ClientEventField<string>.FromValue("value");
+        var missing = DaemonEventField<string>.Missing;
+        var explicitNull = DaemonEventField<string>.ExplicitNull;
+        var value = DaemonEventField<string>.FromValue("value");
 
-        Assert.Equal(V2ClientEventFieldKind.Missing, missing.Kind);
-        Assert.Equal(V2ClientEventFieldKind.ExplicitNull, explicitNull.Kind);
-        Assert.Equal(V2ClientEventFieldKind.Value, value.Kind);
+        Assert.Equal(DaemonEventFieldKind.Missing, missing.Kind);
+        Assert.Equal(DaemonEventFieldKind.ExplicitNull, explicitNull.Kind);
+        Assert.Equal(DaemonEventFieldKind.Value, value.Kind);
         Assert.Throws<InvalidOperationException>(() => missing.Value);
         Assert.Throws<InvalidOperationException>(() => explicitNull.Value);
         Assert.Equal("value", value.Value);
@@ -214,7 +215,7 @@ public sealed partial class V2ClientEventMaterializerTests
         AssertInvalid(result);
     }
 
-    private static V2ClientEvent<TData, TMeta> Materialize<TData, TMeta>(
+    private static DaemonEvent<TData, TMeta> Materialize<TData, TMeta>(
         EventDescriptor<TData, TMeta> descriptor,
         JsonRpcOptionalPayload meta,
         JsonRpcOptionalPayload data,
@@ -270,7 +271,7 @@ public sealed partial class V2ClientEventMaterializerTests
     }
 
     private static void AssertInvalid<TData, TMeta>(
-        RustyOptions.Result<V2ClientEvent<TData, TMeta>, DaemonError> result)
+        RustyOptions.Result<DaemonEvent<TData, TMeta>, DaemonError> result)
     {
         Assert.True(result.IsErr(out var error));
         var transportError = Assert.IsType<TransportDaemonError>(error);
@@ -290,22 +291,22 @@ public sealed partial class V2ClientEventMaterializerTests
             OpenRpcEventFieldPresence.Optional,
             documentation: null);
 
-    private static IEnumerable<(V2ClientEventFieldKind Kind, JsonRpcOptionalPayload Payload)> OptionalPayloads(
+    private static IEnumerable<(DaemonEventFieldKind Kind, JsonRpcOptionalPayload Payload)> OptionalPayloads(
         string valueJson)
     {
-        yield return (V2ClientEventFieldKind.Missing, JsonRpcOptionalPayload.Missing);
-        yield return (V2ClientEventFieldKind.ExplicitNull, JsonRpcOptionalPayload.ExplicitNull);
-        yield return (V2ClientEventFieldKind.Value, Raw(valueJson));
+        yield return (DaemonEventFieldKind.Missing, JsonRpcOptionalPayload.Missing);
+        yield return (DaemonEventFieldKind.ExplicitNull, JsonRpcOptionalPayload.ExplicitNull);
+        yield return (DaemonEventFieldKind.Value, Raw(valueJson));
     }
 
     private static void AssertSyntheticField<T>(
-        V2ClientEventField<T> field,
-        V2ClientEventFieldKind expectedKind,
+        DaemonEventField<T> field,
+        DaemonEventFieldKind expectedKind,
         string expectedText,
         int expectedNumber)
     {
         Assert.Equal(expectedKind, field.Kind);
-        if (expectedKind != V2ClientEventFieldKind.Value)
+        if (expectedKind != DaemonEventFieldKind.Value)
         {
             Assert.Throws<InvalidOperationException>(() => field.Value);
             return;

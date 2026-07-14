@@ -9,47 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient.Protocol;
 using RustyOptions;
 
 namespace MCServerLauncher.DaemonClient.Connection.V2;
-
-internal enum V2ClientEventFilterKind
-{
-    Wildcard,
-    ExplicitNull,
-    Exact
-}
-
-internal sealed class V2ClientEventFilter<TMeta>
-{
-    private readonly TMeta? _value;
-
-    private V2ClientEventFilter(V2ClientEventFilterKind kind, TMeta? value = default)
-    {
-        Kind = kind;
-        _value = value;
-    }
-
-    internal static V2ClientEventFilter<TMeta> Wildcard { get; } =
-        new(V2ClientEventFilterKind.Wildcard);
-
-    internal static V2ClientEventFilter<TMeta> ExplicitNull { get; } =
-        new(V2ClientEventFilterKind.ExplicitNull);
-
-    internal V2ClientEventFilterKind Kind { get; }
-
-    internal TMeta Value => Kind == V2ClientEventFilterKind.Exact
-        ? _value!
-        : throw new InvalidOperationException("Only an exact event filter exposes metadata.");
-
-    internal static V2ClientEventFilter<TMeta> Exact(TMeta value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        return new V2ClientEventFilter<TMeta>(V2ClientEventFilterKind.Exact, value);
-    }
-}
 
 /// <summary>
 /// Owns caller-held logical subscriptions independently from physical V2 connection epochs.
@@ -95,12 +60,11 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
     internal async Task<Result<IAsyncDisposable, DaemonError>> SubscribeAsync<TData, TMeta>(
         EventDescriptor<TData, TMeta> descriptor,
-        V2ClientEventFilter<TMeta> filter,
-        Action<V2ClientEvent<TData, TMeta>> callback,
+        DaemonEventFilter<TMeta> filter,
+        Action<DaemonEvent<TData, TMeta>> callback,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
-        ArgumentNullException.ThrowIfNull(filter);
         ArgumentNullException.ThrowIfNull(callback);
 
         if (!IsSupportedDescriptor(descriptor))
@@ -501,7 +465,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
     private SubscriptionHandle AddHandleLocked<TData, TMeta>(
         SubscriptionGroup group,
-        Action<V2ClientEvent<TData, TMeta>> callback)
+        Action<DaemonEvent<TData, TMeta>> callback)
     {
         var binding = (DescriptorBinding<TData, TMeta>)group.Binding;
         var handle = new SubscriptionHandle(
@@ -720,7 +684,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
     private static Result<PreparedFilter, DaemonError> PrepareFilter<TData, TMeta>(
         EventDescriptor<TData, TMeta> descriptor,
-        V2ClientEventFilter<TMeta> filter)
+        DaemonEventFilter<TMeta> filter)
     {
         try
         {
@@ -729,16 +693,16 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
             var metaTypeInfo = descriptor.MetaTypeInfo;
             switch (filter.Kind)
             {
-                case V2ClientEventFilterKind.Wildcard:
+                case DaemonEventFieldKind.Missing:
                     wire = EventMetaFilter.Missing;
                     canonical = [];
                     break;
-                case V2ClientEventFilterKind.ExplicitNull when
+                case DaemonEventFieldKind.ExplicitNull when
                     descriptor.MetaPresence == OpenRpcEventFieldPresence.Optional:
                     wire = EventMetaFilter.ExplicitNull;
                     canonical = [];
                     break;
-                case V2ClientEventFilterKind.Exact when
+                case DaemonEventFieldKind.Value when
                     descriptor.MetaPresence != OpenRpcEventFieldPresence.Omitted &&
                     metaTypeInfo is not null &&
                     filter.Value is { } exactValue &&
@@ -794,7 +758,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
     private sealed record SubscriptionKey(
         string Event,
-        V2ClientEventFilterKind FilterKind,
+        DaemonEventFieldKind FilterKind,
         ImmutableArray<byte> CanonicalUtf8);
 
     private sealed class SubscriptionKeyComparer : IEqualityComparer<SubscriptionKey>
@@ -901,10 +865,10 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
     }
 
     private sealed class MaterializedEvent<TData, TMeta>(
-        V2ClientEvent<TData, TMeta> value,
+        DaemonEvent<TData, TMeta> value,
         ImmutableArray<byte> canonicalMeta) : MaterializedEvent
     {
-        internal V2ClientEvent<TData, TMeta> Value { get; } = value;
+        internal DaemonEvent<TData, TMeta> Value { get; } = value;
         internal ImmutableArray<byte> CanonicalMeta { get; } = canonicalMeta;
     }
 
@@ -929,7 +893,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
             var value = result.Unwrap();
             ImmutableArray<byte> canonical = [];
-            if (value.Meta.Kind == V2ClientEventFieldKind.Value)
+            if (value.Meta.Kind == DaemonEventFieldKind.Value)
             {
                 var typeInfo = descriptor.MetaTypeInfo ??
                     throw new InvalidOperationException("A materialized metadata value requires descriptor metadata.");
@@ -945,17 +909,17 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
             var typed = (MaterializedEvent<TData, TMeta>)value;
             return key.FilterKind switch
             {
-                V2ClientEventFilterKind.Wildcard => true,
-                V2ClientEventFilterKind.ExplicitNull =>
-                    typed.Value.Meta.Kind == V2ClientEventFieldKind.ExplicitNull,
-                V2ClientEventFilterKind.Exact =>
-                    typed.Value.Meta.Kind == V2ClientEventFieldKind.Value &&
+                DaemonEventFieldKind.Missing => true,
+                DaemonEventFieldKind.ExplicitNull =>
+                    typed.Value.Meta.Kind == DaemonEventFieldKind.ExplicitNull,
+                DaemonEventFieldKind.Value =>
+                    typed.Value.Meta.Kind == DaemonEventFieldKind.Value &&
                     key.CanonicalUtf8.AsSpan().SequenceEqual(typed.CanonicalMeta.AsSpan()),
                 _ => false
             };
         }
 
-        internal V2ClientEvent<TData, TMeta> GetTyped(MaterializedEvent value) =>
+        internal DaemonEvent<TData, TMeta> GetTyped(MaterializedEvent value) =>
             ((MaterializedEvent<TData, TMeta>)value).Value;
     }
 }
