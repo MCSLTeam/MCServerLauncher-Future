@@ -490,42 +490,58 @@ public sealed class V2ClientUploadCoordinatorTests
             RequestTimeout,
             admissionGate);
         var session = Guid.NewGuid();
-        var invocation = Task.Run(() => core.SendUploadChunkTracked(
-            Chunk(session, 0, 1),
-            1,
-            CancellationToken.None));
-        await admissionGate.PublicationReached.WaitAsync(TimeSpan.FromSeconds(5));
-
-        var acknowledgementOffset = tupleMismatch ? 1 : 0;
-        var route = Task.Run(() => core.RouteText(Accepted(session, acknowledgementOffset, 1)));
-        await admissionGate.RouteAttempted.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.False(invocation.IsCompleted);
-        Assert.False(route.IsCompleted);
-
-        admissionGate.ReleasePublication();
-        var operation = await invocation.WaitAsync(TimeSpan.FromSeconds(5));
-        await route.WaitAsync(TimeSpan.FromSeconds(5));
-        var legacyResult = await operation.Completion.WaitAsync(TimeSpan.FromSeconds(5));
-
-        if (tupleMismatch)
+        var invocation = Task.Factory.StartNew(
+            () => core.SendUploadChunkTracked(
+                Chunk(session, 0, 1),
+                1,
+                CancellationToken.None),
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+        Task? route = null;
+        try
         {
-            Assert.True(legacyResult.IsErr(out var error));
-            Assert.Equal("protocol.upload_ack_mismatch", error!.Code);
-            Assert.Equal(
-                V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
-                operation.Outcome.Disposition);
-        }
-        else
-        {
-            Assert.True(legacyResult.IsOk(out _));
-            Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, operation.Outcome.Disposition);
-        }
+            await admissionGate.PublicationReached.WaitAsync(TimeSpan.FromSeconds(5));
 
-        await core.WaitForSendObserversAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(0, transport.BinarySendCount);
-        Assert.Equal(0, core.UploadPendingCount);
-        Assert.Equal(0, core.SendObserverCount);
-        Assert.Equal(0, core.ActiveSendLifetimeCount);
+            var acknowledgementOffset = tupleMismatch ? 1 : 0;
+            route = Task.Factory.StartNew(
+                () => core.RouteText(Accepted(session, acknowledgementOffset, 1)),
+                CancellationToken.None,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+            await admissionGate.RouteAttempted.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(invocation.IsCompleted);
+            Assert.False(route.IsCompleted);
+
+            admissionGate.ReleasePublication();
+            var operation = await invocation.WaitAsync(TimeSpan.FromSeconds(5));
+            await route.WaitAsync(TimeSpan.FromSeconds(5));
+            var legacyResult = await operation.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+
+            if (tupleMismatch)
+            {
+                Assert.True(legacyResult.IsErr(out var error));
+                Assert.Equal("protocol.upload_ack_mismatch", error!.Code);
+                Assert.Equal(
+                    V2ClientInvocationDisposition.AdmittedWithoutAuthoritativeResponse,
+                    operation.Outcome.Disposition);
+            }
+            else
+            {
+                Assert.True(legacyResult.IsOk(out _));
+                Assert.Equal(V2ClientInvocationDisposition.ResponseReceived, operation.Outcome.Disposition);
+            }
+
+            await core.WaitForSendObserversAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(0, transport.BinarySendCount);
+            Assert.Equal(0, core.UploadPendingCount);
+            Assert.Equal(0, core.SendObserverCount);
+            Assert.Equal(0, core.ActiveSendLifetimeCount);
+        }
+        finally
+        {
+            admissionGate.ReleasePublication();
+        }
     }
 
     [Fact]
