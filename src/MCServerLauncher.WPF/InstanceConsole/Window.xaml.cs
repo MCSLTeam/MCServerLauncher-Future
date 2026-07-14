@@ -29,6 +29,9 @@ namespace MCServerLauncher.WPF.InstanceConsole
 
         private Constants.DaemonConfigModel? _daemonConfig;
         private Guid _instanceId;
+        private bool _isInitializing = true;
+        private Type? _pendingNavigationType;
+        private NavigationTransitionInfo? _pendingTransitionInfo;
 
         public Window()
         {
@@ -72,14 +75,19 @@ namespace MCServerLauncher.WPF.InstanceConsole
                 InstanceDataManager.Instance.ReportUpdated += OnInstanceReportUpdated;
                 UpdateWindowTitle();
 
-                // Navigate to board page
-                CurrentPage.Navigate(_board);
+                _isInitializing = false;
+                NavigateTo(
+                    _pendingNavigationType ?? typeof(BoardPage),
+                    _pendingTransitionInfo ?? new EntranceNavigationTransitionInfo());
+                _pendingNavigationType = null;
+                _pendingTransitionInfo = null;
                 await WarnAboutClientSideModsAsync();
 
                 Log.Information("[InstanceConsole] Window loaded successfully for instance {0}", _instanceId);
             }
             catch (Exception ex)
             {
+                _isInitializing = false;
                 Log.Error(ex, "[InstanceConsole] Failed to load window");
                 Notification.Push(
                     "Error",
@@ -232,6 +240,13 @@ namespace MCServerLauncher.WPF.InstanceConsole
                 var navPageType = Type.GetType(args.InvokedItemContainer.Tag?.ToString() ?? string.Empty);
                 if (navPageType is not null && typeof(Page).IsAssignableFrom(navPageType))
                 {
+                    if (_isInitializing)
+                    {
+                        _pendingNavigationType = navPageType;
+                        _pendingTransitionInfo = args.RecommendedNavigationTransitionInfo;
+                        return;
+                    }
+
                     NavigateTo(navPageType, args.RecommendedNavigationTransitionInfo);
                 }
             }
