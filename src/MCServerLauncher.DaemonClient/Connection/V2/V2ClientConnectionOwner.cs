@@ -36,22 +36,28 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _reconnectDelay;
     private readonly Action<V2ClientDiagnostic>? _diagnostic;
+    private readonly Func<Action, bool> _queueStateNotificationDrain;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly RemoteInstanceCatalogMirror _mirror = new();
     private readonly V2ClientSubscriptionRegistry _registry;
+    private readonly Queue<StateNotification> _stateNotifications = new();
     private Task? _lifecycleWorker;
     private Task? _closeTask;
     private PhysicalEpoch? _candidate;
     private PhysicalEpoch? _current;
     private bool _hasReachedReady;
+    private bool _stateNotificationDraining;
     private DaemonError? _lastFailure;
+    private Func<DaemonConnectionState, Task>? _stateChanged;
     private V2ClientConnectionOwnerState _state = V2ClientConnectionOwnerState.Created;
+    private DaemonConnectionState _connectionState = DaemonConnectionState.Disconnected;
 
     internal V2ClientConnectionOwner(
         IV2ClientConnectionSessionFactory sessionFactory,
         TimeProvider timeProvider,
         TimeSpan reconnectDelay,
-        Action<V2ClientDiagnostic>? diagnostic = null)
+        Action<V2ClientDiagnostic>? diagnostic = null,
+        Func<Action, bool>? queueStateNotificationDrain = null)
     {
         _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
@@ -60,12 +66,43 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
         _reconnectDelay = reconnectDelay;
         _diagnostic = diagnostic;
+        _queueStateNotificationDrain = queueStateNotificationDrain ?? QueueStateNotificationDrain;
         _registry = new V2ClientSubscriptionRegistry(InvalidateEpoch, diagnostic);
     }
 
     internal RemoteInstanceCatalogMirror Mirror => _mirror;
 
     internal V2ClientSubscriptionRegistry Subscriptions => _registry;
+
+    internal DaemonConnectionState ConnectionState
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _connectionState;
+            }
+        }
+    }
+
+    internal event Func<DaemonConnectionState, Task> StateChanged
+    {
+        add
+        {
+            lock (_gate)
+            {
+                if (_state != V2ClientConnectionOwnerState.Closed)
+                    _stateChanged += value;
+            }
+        }
+        remove
+        {
+            lock (_gate)
+            {
+                _stateChanged -= value;
+            }
+        }
+    }
 
     internal V2ClientConnectionOwnerState State
     {
@@ -109,6 +146,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     internal Task<Result<Unit, DaemonError>> ConnectAsync(CancellationToken cancellationToken = default)
     {
         TaskCompletionSource<Result<Unit, DaemonError>> readiness;
+        bool startStateNotificationDrain;
         lock (_gate)
         {
             if (_state is V2ClientConnectionOwnerState.Closing or V2ClientConnectionOwnerState.Closed)
@@ -119,10 +157,11 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                 throw new InvalidOperationException("The initial V2 connection attempt is already running.");
 
             readiness = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            _state = V2ClientConnectionOwnerState.Connecting;
+            startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Connecting);
             _lifecycleWorker = RunLifecycleAsync(readiness, cancellationToken);
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         return readiness.Task;
     }
 
@@ -132,6 +171,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         Task? worker;
         PhysicalEpoch? candidate;
         PhysicalEpoch? current;
+        bool startStateNotificationDrain;
         lock (_gate)
         {
             if (_closeTask is not null)
@@ -139,7 +179,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
             completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
             _closeTask = completion.Task;
-            _state = V2ClientConnectionOwnerState.Closing;
+            startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Closing);
             worker = _lifecycleWorker;
             candidate = _candidate;
             current = _current;
@@ -147,6 +187,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             _current = null;
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         var failures = new List<Exception>();
         StartDetachedEpochLoss(candidate, ClosedError());
         if (!ReferenceEquals(current, candidate))
@@ -274,6 +315,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         var session = _sessionFactory.Create(_mirror, _registry.Route, _diagnostic);
         var epoch = new PhysicalEpoch(session);
         var closing = false;
+        var startStateNotificationDrain = false;
         lock (_gate)
         {
             if (_state is V2ClientConnectionOwnerState.Closing or V2ClientConnectionOwnerState.Closed)
@@ -281,10 +323,11 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             else
             {
                 _candidate = epoch;
-                _state = V2ClientConnectionOwnerState.Connecting;
+                startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Connecting);
             }
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         epoch.StartMonitor(ObserveCompletionAsync(epoch));
         if (closing)
             StartDetachedEpochLoss(epoch, ClosedError());
@@ -320,6 +363,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         if (bound.IsErr(out var bindingError))
             return Result.Err<Unit, DaemonError>(bindingError!);
 
+        bool startStateNotificationDrain;
         lock (_gate)
         {
             if (!ReferenceEquals(_candidate, epoch) || epoch.Loss.Task.IsCompleted ||
@@ -332,13 +376,16 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             _current = epoch;
             _hasReachedReady = true;
             _lastFailure = null;
-            _state = V2ClientConnectionOwnerState.Ready;
-            return Result.Ok<Unit, DaemonError>(Unit.Default);
+            startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Ready);
         }
+
+        StartStateNotificationDrain(startStateNotificationDrain);
+        return Result.Ok<Unit, DaemonError>(Unit.Default);
     }
 
     private bool TryAdvanceCandidate(PhysicalEpoch epoch, V2ClientConnectionOwnerState state)
     {
+        bool startStateNotificationDrain;
         lock (_gate)
         {
             if (!ReferenceEquals(_candidate, epoch) || epoch.Loss.Task.IsCompleted ||
@@ -347,9 +394,11 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                 return false;
             }
 
-            _state = state;
-            return true;
+            startStateNotificationDrain = SetLifecycleStateLocked(state);
         }
+
+        StartStateNotificationDrain(startStateNotificationDrain);
+        return true;
     }
 
     private async Task ObserveCompletionAsync(PhysicalEpoch epoch)
@@ -404,6 +453,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     private Task SignalEpochLossAsync(PhysicalEpoch epoch, DaemonError error)
     {
         var detach = false;
+        var startStateNotificationDrain = false;
         lock (_gate)
         {
             if (ReferenceEquals(_candidate, epoch))
@@ -420,9 +470,15 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             if (!detach)
                 return epoch.LossSignalTask;
             if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
-                _state = _hasReachedReady ? V2ClientConnectionOwnerState.WaitingToReconnect : V2ClientConnectionOwnerState.Connecting;
+            {
+                startStateNotificationDrain = SetLifecycleStateLocked(
+                    _hasReachedReady
+                        ? V2ClientConnectionOwnerState.WaitingToReconnect
+                        : V2ClientConnectionOwnerState.Connecting);
+            }
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         return StartDetachedEpochLoss(epoch, error);
     }
 
@@ -441,12 +497,14 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
     private async Task WaitToReconnectAsync()
     {
+        var startStateNotificationDrain = false;
         lock (_gate)
         {
             if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
-                _state = V2ClientConnectionOwnerState.WaitingToReconnect;
+                startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.WaitingToReconnect);
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         await Task.Delay(_reconnectDelay, _timeProvider, _lifetimeCancellation.Token).ConfigureAwait(false);
     }
 
@@ -483,11 +541,13 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             failures.Add(exception);
         }
 
+        bool startStateNotificationDrain;
         lock (_gate)
         {
-            _state = V2ClientConnectionOwnerState.Closed;
+            startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Closed);
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         if (failures.Count == 0)
             completion.TrySetResult();
         else
@@ -540,6 +600,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     {
         PhysicalEpoch? candidate;
         PhysicalEpoch? current;
+        var startStateNotificationDrain = false;
         lock (_gate)
         {
             candidate = _candidate;
@@ -548,10 +609,11 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             _current = null;
             _lastFailure = failure;
             if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
-                _state = V2ClientConnectionOwnerState.Created;
+                startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Created);
             _lifecycleWorker = null;
         }
 
+        StartStateNotificationDrain(startStateNotificationDrain);
         if (candidate is not null)
         {
             await StartDetachedEpochLoss(candidate, failure).ConfigureAwait(false);
@@ -641,14 +703,125 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         }
     }
 
+    private bool SetLifecycleStateLocked(V2ClientConnectionOwnerState state)
+    {
+        _state = state;
+        var connectionState = state switch
+        {
+            V2ClientConnectionOwnerState.Created => DaemonConnectionState.Disconnected,
+            V2ClientConnectionOwnerState.Connecting => _hasReachedReady
+                ? DaemonConnectionState.Reconnecting
+                : DaemonConnectionState.Connecting,
+            V2ClientConnectionOwnerState.Synchronizing => _hasReachedReady
+                ? DaemonConnectionState.Reconnecting
+                : DaemonConnectionState.Synchronizing,
+            V2ClientConnectionOwnerState.Ready => DaemonConnectionState.Ready,
+            V2ClientConnectionOwnerState.WaitingToReconnect => DaemonConnectionState.Reconnecting,
+            V2ClientConnectionOwnerState.Closing => DaemonConnectionState.Closing,
+            V2ClientConnectionOwnerState.Closed => DaemonConnectionState.Closed,
+            _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
+        };
+
+        var subscribers = _stateChanged;
+        if (state == V2ClientConnectionOwnerState.Closed)
+            _stateChanged = null;
+        if (_connectionState == connectionState)
+            return false;
+
+        _connectionState = connectionState;
+        if (subscribers is null)
+            return false;
+
+        var invocationList = subscribers.GetInvocationList();
+        var handlers = new Func<DaemonConnectionState, Task>[invocationList.Length];
+        for (var index = 0; index < invocationList.Length; index++)
+            handlers[index] = (Func<DaemonConnectionState, Task>)invocationList[index];
+        _stateNotifications.Enqueue(new(connectionState, handlers));
+
+        if (_stateNotificationDraining)
+            return false;
+
+        _stateNotificationDraining = true;
+        return true;
+    }
+
+    private void StartStateNotificationDrain(bool start)
+    {
+        if (!start)
+            return;
+
+        try
+        {
+            if (_queueStateNotificationDrain(StartStateNotificationDrainWorker))
+                return;
+        }
+        catch (Exception)
+        {
+            // Notification scheduling cannot own connection lifecycle.
+        }
+
+        lock (_gate)
+        {
+            _stateNotifications.Clear();
+            _stateNotificationDraining = false;
+        }
+    }
+
+    private void StartStateNotificationDrainWorker() => _ = DrainStateNotificationsAsync();
+
+    private async Task DrainStateNotificationsAsync()
+    {
+        try
+        {
+            while (true)
+            {
+                StateNotification notification;
+                lock (_gate)
+                {
+                    if (!_stateNotifications.TryDequeue(out notification))
+                    {
+                        _stateNotificationDraining = false;
+                        return;
+                    }
+                }
+
+                foreach (var handler in notification.Handlers)
+                {
+                    try
+                    {
+                        await handler(notification.State).ConfigureAwait(false);
+                    }
+                    catch (Exception)
+                    {
+                        // Observers cannot own connection lifecycle or block later observers.
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+            lock (_gate)
+            {
+                _stateNotifications.Clear();
+                _stateNotificationDraining = false;
+            }
+        }
+    }
+
+    private static bool QueueStateNotificationDrain(Action drain) =>
+        ThreadPool.QueueUserWorkItem(static callback => callback(), drain, preferLocal: false);
+
     private void ReturnToCreated()
     {
+        var startStateNotificationDrain = false;
         lock (_gate)
         {
             if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
-                _state = V2ClientConnectionOwnerState.Created;
+                startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Created);
             _lifecycleWorker = null;
         }
+
+        StartStateNotificationDrain(startStateNotificationDrain);
     }
 
     private static bool Matches(PhysicalEpoch? epoch, V2ClientConnectionCoordinator coordinator) =>
@@ -665,6 +838,10 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
     private static TransportDaemonError UnexpectedSessionError(Exception exception) =>
         new("transport.session_failed", $"The V2 physical session failed: {exception.GetType().Name}.");
+
+    private readonly record struct StateNotification(
+        DaemonConnectionState State,
+        Func<DaemonConnectionState, Task>[] Handlers);
 
     private sealed class PhysicalEpoch
     {

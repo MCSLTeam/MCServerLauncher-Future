@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Events;
+using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Protocol;
 using MCServerLauncher.DaemonClient.State;
@@ -17,6 +19,481 @@ public sealed class V2ClientConnectionOwnerTests
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(3);
     private static readonly Guid InstanceId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    [Fact]
+    public async Task PublicStatePublishesInitialHandshakeOrder()
+    {
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory);
+        var states = new ConcurrentQueue<DaemonConnectionState>();
+        var readyObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            states.Enqueue(state);
+            if (state == DaemonConnectionState.Ready)
+                readyObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        Assert.Equal(DaemonConnectionState.Disconnected, owner.ConnectionState);
+        var connecting = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connecting, Catalog(0));
+        await readyObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(DaemonConnectionState.Ready, owner.ConnectionState);
+        Assert.Equal(
+            [
+                DaemonConnectionState.Connecting,
+                DaemonConnectionState.Synchronizing,
+                DaemonConnectionState.Ready
+            ],
+            states.ToArray());
+    }
+
+    [Fact]
+    public async Task ReplacementHandshakeCollapsesToOneReconnectingState()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory, time);
+        var states = new ConcurrentQueue<DaemonConnectionState>();
+        var replacementReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            states.Enqueue(state);
+            if (states.Count == 5 && state == DaemonConnectionState.Ready)
+                replacementReady.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        var connecting = owner.ConnectAsync();
+        var first = await factory.NextAsync();
+        await MakeReadyAsync(first, connecting, Catalog(0));
+        first.Lose("transport.peer_closed");
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+        time.Advance(ReconnectDelay);
+        var replacement = await factory.NextAsync();
+        await MakeReplacementReadyAsync(owner, replacement, Catalog(1));
+        await replacementReady.Task.WaitAsync(Timeout);
+
+        Assert.Equal(
+            [
+                DaemonConnectionState.Connecting,
+                DaemonConnectionState.Synchronizing,
+                DaemonConnectionState.Ready,
+                DaemonConnectionState.Reconnecting,
+                DaemonConnectionState.Ready
+            ],
+            states.ToArray());
+    }
+
+    [Fact]
+    public async Task RepeatedLossPublishesOneReconnectingNotification()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory, time);
+        var connect = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connect, Catalog(0));
+        var reconnectCount = 0;
+        var reconnectObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            if (state == DaemonConnectionState.Reconnecting &&
+                Interlocked.Increment(ref reconnectCount) == 1)
+            {
+                reconnectObserved.TrySetResult();
+            }
+            return Task.CompletedTask;
+        };
+        var core = session.Coordinator.Core;
+        var error = new TransportDaemonError("transport.core_invalidated", "invalidated");
+
+        using var barrier = new Barrier(4);
+        var firstInvalidation = StartBarrierAction(barrier, () => owner.InvalidateEpoch(core, error));
+        var secondInvalidation = StartBarrierAction(barrier, () => owner.InvalidateEpoch(core, error));
+        var naturalCompletion = StartBarrierAction(barrier, () => session.Lose("transport.concurrent_loss"));
+        Assert.True(barrier.SignalAndWait(Timeout));
+        await Task.WhenAll(firstInvalidation, secondInvalidation, naturalCompletion).WaitAsync(Timeout);
+        await reconnectObserved.Task.WaitAsync(Timeout);
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+
+        Assert.Equal(1, Volatile.Read(ref reconnectCount));
+        Assert.Equal(DaemonConnectionState.Reconnecting, owner.ConnectionState);
+    }
+
+    [Fact]
+    public async Task ConcurrentLossAndCloseKeepsTerminalPublicationOrdered()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory, time);
+        var connect = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connect, Catalog(0));
+        var states = new ConcurrentQueue<DaemonConnectionState>();
+        var closedObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            states.Enqueue(state);
+            if (state == DaemonConnectionState.Closed)
+                closedObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        using var barrier = new Barrier(3);
+        var loss = StartBarrierAction(barrier, () => owner.InvalidateEpoch(
+            session.Coordinator.Core,
+            new TransportDaemonError("transport.core_invalidated", "invalidated")));
+        var close = Task.Factory.StartNew(
+            () =>
+            {
+                Assert.True(barrier.SignalAndWait(Timeout));
+                return owner.CloseAsync();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default).Unwrap();
+        Assert.True(barrier.SignalAndWait(Timeout));
+        await Task.WhenAll(loss, close).WaitAsync(Timeout);
+        await closedObserved.Task.WaitAsync(Timeout);
+
+        var published = states.ToArray();
+        var closingIndex = Array.IndexOf(published, DaemonConnectionState.Closing);
+        Assert.True(closingIndex >= 0);
+        Assert.Equal(DaemonConnectionState.Closed, published[^1]);
+        Assert.DoesNotContain(
+            published.Skip(closingIndex + 1),
+            state => state == DaemonConnectionState.Reconnecting);
+        Assert.True(published.Count(state => state == DaemonConnectionState.Reconnecting) <= 1);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task BlockedFirstObserverCannotInvertFifoStateDelivery()
+    {
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory);
+        using var releaseFirstObserver = new ManualResetEventSlim();
+        var firstObserverEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondObserverStates = new ConcurrentQueue<DaemonConnectionState>();
+        var readyObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            if (state != DaemonConnectionState.Connecting)
+                return Task.CompletedTask;
+            firstObserverEntered.TrySetResult();
+            if (!releaseFirstObserver.Wait(Timeout))
+                throw new TimeoutException("The first state observer was not released.");
+            return Task.CompletedTask;
+        };
+        owner.StateChanged += state =>
+        {
+            secondObserverStates.Enqueue(state);
+            if (state == DaemonConnectionState.Ready)
+                readyObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        var connecting = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await firstObserverEntered.Task.WaitAsync(Timeout);
+        try
+        {
+            await MakeReadyAsync(session, connecting, Catalog(0));
+        }
+        finally
+        {
+            releaseFirstObserver.Set();
+        }
+        await readyObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(
+            [
+                DaemonConnectionState.Connecting,
+                DaemonConnectionState.Synchronizing,
+                DaemonConnectionState.Ready
+            ],
+            secondObserverStates.ToArray());
+    }
+
+    [Fact]
+    public async Task ReentrantObserverCanReadStateAndAwaitCloseWithoutDeadlock()
+    {
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory);
+        var observerCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += async state =>
+        {
+            if (state != DaemonConnectionState.Connecting)
+                return;
+            Assert.Equal(DaemonConnectionState.Connecting, owner.ConnectionState);
+            await owner.CloseAsync();
+            observerCompleted.TrySetResult();
+        };
+
+        var connecting = owner.ConnectAsync();
+        await observerCompleted.Task.WaitAsync(Timeout);
+        Assert.True((await connecting.WaitAsync(Timeout)).IsErr(out var error));
+        Assert.Equal("connection.closed", error!.Code);
+        Assert.Equal(DaemonConnectionState.Closed, owner.ConnectionState);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ObserverExceptionIsolatedFromLaterObserverAndSuccessfulClose()
+    {
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory);
+        var closedObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += _ => Task.FromException(new InvalidOperationException("observer failed"));
+        owner.StateChanged += state =>
+        {
+            if (state == DaemonConnectionState.Closed)
+                closedObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        var connecting = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connecting, Catalog(0));
+        await owner.CloseAsync().WaitAsync(Timeout);
+        await closedObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(DaemonConnectionState.Closed, owner.ConnectionState);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task IdempotentClosePublishesClosingAndClosedOnce()
+    {
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory);
+        var connect = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connect, Catalog(0));
+        var states = new ConcurrentQueue<DaemonConnectionState>();
+        var closedObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            states.Enqueue(state);
+            if (state == DaemonConnectionState.Closed)
+                closedObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        var first = owner.CloseAsync();
+        var second = owner.CloseAsync();
+        Assert.Same(first, second);
+        await Task.WhenAll(first, second).WaitAsync(Timeout);
+        await closedObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(
+            [DaemonConnectionState.Closing, DaemonConnectionState.Closed],
+            states.ToArray());
+        await owner.DisposeAsync();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConnectConvergesWhenFirstNotificationScheduleIsRejectedOrThrows(bool throws)
+    {
+        var scheduler = new ControlledStateNotificationScheduler(failFirst: true, throws);
+        var factory = new ControlledSessionFactory();
+        var diagnostics = new ConcurrentQueue<V2ClientDiagnostic>();
+        var owner = Owner(factory, diagnostic: diagnostics.Enqueue, queueStateNotificationDrain: scheduler.Queue);
+        var states = new ConcurrentQueue<DaemonConnectionState>();
+        var readyObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Func<DaemonConnectionState, Task> observer = state =>
+        {
+            states.Enqueue(state);
+            if (state == DaemonConnectionState.Ready)
+                readyObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+        owner.StateChanged += observer;
+
+        var connecting = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connecting, Catalog(0));
+        var drain = await scheduler.NextAsync();
+        drain();
+        await readyObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(
+            [DaemonConnectionState.Synchronizing, DaemonConnectionState.Ready],
+            states.ToArray());
+        Assert.Null(owner.LastFailure);
+        Assert.Empty(diagnostics);
+        owner.StateChanged -= observer;
+        await owner.CloseAsync().WaitAsync(Timeout);
+        await owner.DisposeAsync();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CloseConvergesWhenFirstNotificationScheduleIsRejectedOrThrows(bool throws)
+    {
+        var scheduler = new ControlledStateNotificationScheduler(failFirst: true, throws);
+        var factory = new ControlledSessionFactory();
+        var diagnostics = new ConcurrentQueue<V2ClientDiagnostic>();
+        var owner = Owner(factory, diagnostic: diagnostics.Enqueue, queueStateNotificationDrain: scheduler.Queue);
+        var closedObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += state =>
+        {
+            if (state == DaemonConnectionState.Closed)
+                closedObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        await owner.CloseAsync().WaitAsync(Timeout);
+        var drain = await scheduler.NextAsync();
+        drain();
+        await closedObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(DaemonConnectionState.Closed, owner.ConnectionState);
+        Assert.Null(owner.LastFailure);
+        Assert.Empty(diagnostics);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AwaitedObserverFailureIsolatedFromLaterObserverAndCloseLifecycle()
+    {
+        var factory = new ControlledSessionFactory();
+        var diagnostics = new ConcurrentQueue<V2ClientDiagnostic>();
+        var owner = Owner(factory, diagnostic: diagnostics.Enqueue);
+        var connect = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connect, Catalog(0));
+        var firstObserverEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstObserver = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var laterStates = new ConcurrentQueue<DaemonConnectionState>();
+        var closedObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        owner.StateChanged += async state =>
+        {
+            if (state != DaemonConnectionState.Closing)
+                return;
+            firstObserverEntered.TrySetResult();
+            await releaseFirstObserver.Task;
+            throw new InvalidOperationException("observer failed after await");
+        };
+        owner.StateChanged += state =>
+        {
+            laterStates.Enqueue(state);
+            if (state == DaemonConnectionState.Closed)
+                closedObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        var closing = owner.CloseAsync();
+        await firstObserverEntered.Task.WaitAsync(Timeout);
+        await closing.WaitAsync(Timeout);
+        Assert.Empty(laterStates);
+        releaseFirstObserver.TrySetResult();
+        await closedObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal(
+            [DaemonConnectionState.Closing, DaemonConnectionState.Closed],
+            laterStates.ToArray());
+        Assert.Null(owner.LastFailure);
+        Assert.Empty(diagnostics);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task SubscriptionChangesAfterTransitionDoNotAlterCapturedSnapshot()
+    {
+        var scheduler = new ControlledStateNotificationScheduler();
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory, queueStateNotificationDrain: scheduler.Queue);
+        var oldStates = new ConcurrentQueue<DaemonConnectionState>();
+        var newStates = new ConcurrentQueue<DaemonConnectionState>();
+        var oldObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var newObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var newReadyObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Func<DaemonConnectionState, Task> oldObserver = state =>
+        {
+            oldStates.Enqueue(state);
+            oldObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+        Func<DaemonConnectionState, Task> newObserver = state =>
+        {
+            newStates.Enqueue(state);
+            newObserved.TrySetResult();
+            if (state == DaemonConnectionState.Ready)
+                newReadyObserved.TrySetResult();
+            return Task.CompletedTask;
+        };
+        owner.StateChanged += oldObserver;
+
+        var connecting = owner.ConnectAsync();
+        var connectingDrain = await scheduler.NextAsync();
+        owner.StateChanged -= oldObserver;
+        owner.StateChanged += newObserver;
+        connectingDrain();
+        await oldObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal([DaemonConnectionState.Connecting], oldStates.ToArray());
+        Assert.Empty(newStates);
+
+        var session = await factory.NextAsync();
+        session.CompleteConnect();
+        var synchronizingDrain = await scheduler.NextAsync();
+        synchronizingDrain();
+        await newObserved.Task.WaitAsync(Timeout);
+
+        Assert.Equal([DaemonConnectionState.Synchronizing], newStates.ToArray());
+        await CompleteCatalogAsync(session, Catalog(0));
+        Assert.True((await connecting.WaitAsync(Timeout)).IsOk(out _));
+        var readyDrain = await scheduler.NextAsync();
+        readyDrain();
+        await newReadyObserved.Task.WaitAsync(Timeout);
+        Assert.Equal([DaemonConnectionState.Connecting], oldStates.ToArray());
+        Assert.Equal(
+            [DaemonConnectionState.Synchronizing, DaemonConnectionState.Ready],
+            newStates.ToArray());
+        owner.StateChanged -= newObserver;
+        await owner.CloseAsync().WaitAsync(Timeout);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AddingObserverAfterClosedDoesNotScheduleNotification()
+    {
+        var scheduler = new ControlledStateNotificationScheduler();
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory, queueStateNotificationDrain: scheduler.Queue);
+        await owner.CloseAsync().WaitAsync(Timeout);
+
+        var subscriber = SubscribeEphemeralStateObserver(owner);
+        await owner.CloseAsync().WaitAsync(Timeout);
+        AssertEventuallyCollected(subscriber);
+
+        Assert.Equal(0, scheduler.QueueCount);
+        await owner.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ClosedDrainReleasesTerminalSubscriberSnapshot()
+    {
+        var scheduler = new ControlledStateNotificationScheduler();
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory, queueStateNotificationDrain: scheduler.Queue);
+        var subscriber = SubscribeEphemeralStateObserver(owner);
+
+        await owner.CloseAsync().WaitAsync(Timeout);
+        var drain = await scheduler.NextAsync();
+        drain();
+        AssertEventuallyCollected(subscriber);
+
+        await owner.DisposeAsync();
+    }
 
     [Fact]
     public async Task InitialReadinessUsesHandshakeCatalogAndRegistryWithoutAuthRpc()
@@ -798,8 +1275,40 @@ public sealed class V2ClientConnectionOwnerTests
 
     private static V2ClientConnectionOwner Owner(
         ControlledSessionFactory factory,
-        TimeProvider? timeProvider = null) =>
-        new(factory, timeProvider ?? TimeProvider.System, ReconnectDelay);
+        TimeProvider? timeProvider = null,
+        Action<V2ClientDiagnostic>? diagnostic = null,
+        Func<Action, bool>? queueStateNotificationDrain = null) =>
+        new(
+            factory,
+            timeProvider ?? TimeProvider.System,
+            ReconnectDelay,
+            diagnostic,
+            queueStateNotificationDrain);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference SubscribeEphemeralStateObserver(V2ClientConnectionOwner owner)
+    {
+        var target = new object();
+        owner.StateChanged += _ =>
+        {
+            GC.KeepAlive(target);
+            return Task.CompletedTask;
+        };
+        return new(target);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void AssertEventuallyCollected(WeakReference reference)
+    {
+        for (var attempt = 0; attempt < 5 && reference.IsAlive; attempt++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        Assert.False(reference.IsAlive);
+    }
 
     private static async Task MakeReadyAsync(
         ControlledSession session,
@@ -901,6 +1410,37 @@ public sealed class V2ClientConnectionOwnerTests
         $"{{\"instance_id\":\"{InstanceId:D}\",\"name\":\"{name}\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\"}}";
 
     private sealed record SentRequest(string Method, string IdJson, string Json);
+
+    private sealed class ControlledStateNotificationScheduler(bool failFirst = false, bool throws = false)
+    {
+        private readonly ConcurrentQueue<Action> _queued = new();
+        private readonly SemaphoreSlim _available = new(0);
+        private int _attempts;
+
+        internal int QueueCount => _queued.Count;
+
+        internal bool Queue(Action drain)
+        {
+            ArgumentNullException.ThrowIfNull(drain);
+            if (failFirst && Interlocked.Increment(ref _attempts) == 1)
+            {
+                if (throws)
+                    throw new NotSupportedException("notification scheduling unavailable");
+                return false;
+            }
+
+            _queued.Enqueue(drain);
+            _available.Release();
+            return true;
+        }
+
+        internal async Task<Action> NextAsync()
+        {
+            Assert.True(await _available.WaitAsync(Timeout));
+            Assert.True(_queued.TryDequeue(out var drain));
+            return drain!;
+        }
+    }
 
     private sealed class ControlledSessionFactory : IV2ClientConnectionSessionFactory
     {
