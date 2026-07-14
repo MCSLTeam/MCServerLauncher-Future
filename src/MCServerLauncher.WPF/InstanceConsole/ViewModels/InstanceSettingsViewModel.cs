@@ -1,18 +1,19 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.Files;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType;
-using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.InstanceConsole.ViewModels.Models;
 using MCServerLauncher.WPF.Modules;
@@ -24,13 +25,17 @@ using Serilog;
 using System.Windows;
 using System.Windows.Controls;
 using ListView = iNKORE.UI.WPF.Modern.Controls.ListView;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
+using TypedInstanceCoreReplacementRequest = MCServerLauncher.Common.Contracts.Instances.InstanceCoreReplacementRequest;
+using TypedInstanceReference = MCServerLauncher.Common.Contracts.Instances.InstanceReference;
+using TypedUpdateInstanceSettingsRequest = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest;
 
 namespace MCServerLauncher.WPF.InstanceConsole.ViewModels;
 
 public partial class InstanceSettingsViewModel : ObservableObject
 {
     private readonly INotificationService _notification;
-    private IDaemon? _daemon;
+    private TypedDaemonClient? _daemon;
     private Guid _instanceId;
     private SettingsSnapshot? _originalSnapshot;
     private bool _suppressDirtyTracking;
@@ -63,8 +68,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
         {
             _instanceId = InstanceDataManager.Instance.InstanceId;
             InstanceIdText = _instanceId.ToString();
-            var daemonField = typeof(InstanceDataManager).GetField("_daemon", BindingFlags.NonPublic | BindingFlags.Instance);
-            _daemon = daemonField?.GetValue(InstanceDataManager.Instance) as IDaemon;
+            _daemon = InstanceDataManager.Instance.CurrentDaemon;
 
             if (_daemon == null)
             {
@@ -90,7 +94,11 @@ public partial class InstanceSettingsViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            var result = await _daemon.GetInstanceSettingsAsync(_instanceId);
+            var settingsResult = await _daemon.Instances.GetInstanceSettingsAsync(new TypedInstanceReference(_instanceId), default);
+            if (settingsResult.IsErr(out var settingsError))
+                throw DaemonErrorLocalization.ToException(settingsError!);
+
+            var result = settingsResult.Unwrap();
             _suppressDirtyTracking = true;
             Settings = new InstanceSettingsModel
             {
@@ -99,14 +107,23 @@ public partial class InstanceSettingsViewModel : ObservableObject
                 Version = result.Config.Version,
                 Target = result.Config.Target,
                 InstanceType = result.Config.InstanceType,
-                Arguments = result.Config.Arguments,
+                Arguments = result.Config.Arguments.ToArray(),
                 WorkingDirectory = result.WorkingDirectory,
                 CanEdit = result.CanEdit,
                 EditBlockedReason = result.EditBlockedReason ?? string.Empty,
                 CurrentTargetExists = result.CurrentTargetExists,
-                InstallMetadata = result.InstallMetadata
+                InstallMetadata = result.InstallMetadata is null
+                    ? null
+                    : new Common.ProtoType.Action.InstanceInstallMetadata
+                    {
+                        InstallerKind = result.InstallMetadata.InstallerKind,
+                        InstallerSourcePath = result.InstallMetadata.InstallerSourcePath,
+                        GeneratedPaths = result.InstallMetadata.GeneratedPaths.ToArray(),
+                        ResolvedLaunchTarget = result.InstallMetadata.ResolvedLaunchTarget,
+                        InstalledAt = result.InstallMetadata.InstalledAt
+                    }
             };
-            ResetJvmArguments(result.Config.Arguments);
+            ResetJvmArguments(result.Config.Arguments.ToArray());
             JavaRuntimeDisplayText = Settings.JavaPath;
             SelectJavaRuntimeOptionByPath(Settings.JavaPath);
             _originalSnapshot = CreateSnapshot();
@@ -201,31 +218,71 @@ public partial class InstanceSettingsViewModel : ObservableObject
                 return;
             }
 
-            InstanceCoreReplacementRequest? replacement = null;
+            TypedInstanceCoreReplacementRequest? replacement = null;
             if (!string.IsNullOrWhiteSpace(Settings.ReplacementCorePath))
             {
                 var uploadPath = $"/instances/{_instanceId}/uploads/{Path.GetFileName(Settings.ReplacementCorePath)}";
-                var ctx = await _daemon.UploadFileAsync(Settings.ReplacementCorePath, uploadPath, 1024 * 1024);
-                if (ctx.NetworkLoadTask != null) await ctx.NetworkLoadTask;
+                await using var stream = File.OpenRead(Settings.ReplacementCorePath);
+                var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream));
+                stream.Position = 0;
+                var openResult = await _daemon.Files.OpenUploadAsync(
+                    new UploadOpenRequest(uploadPath, stream.Length, hash),
+                    default);
+                if (openResult.IsErr(out var openError))
+                    throw DaemonErrorLocalization.ToException(openError!);
 
-                replacement = new InstanceCoreReplacementRequest
+                var session = openResult.Unwrap();
+                var completed = false;
+                try
                 {
-                    UploadedSourcePath = uploadPath,
-                    PreferredTargetName = Path.GetFileName(Settings.ReplacementCorePath)
-                };
+                    var buffer = new byte[session.MaxChunkSize];
+                    var offset = 0L;
+                    int read;
+                    while ((read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+                    {
+                        var writeResult = await _daemon.Files.WriteUploadChunkAsync(
+                            new UploadChunkRequest(session.SessionId, offset, ImmutableArray.Create(buffer[..read])),
+                            default);
+                        if (writeResult.IsErr(out var writeError))
+                        throw DaemonErrorLocalization.ToException(writeError!);
+
+                        offset += read;
+                    }
+
+                    var closeResult = await _daemon.Files.CloseUploadAsync(session.SessionId, default);
+                    if (closeResult.IsErr(out var closeError))
+                    throw DaemonErrorLocalization.ToException(closeError!);
+
+                    completed = true;
+                }
+                finally
+                {
+                    if (!completed)
+                    {
+                        var cancelResult = await _daemon.Files.CancelUploadAsync(session.SessionId, default);
+                        if (cancelResult.IsErr(out var cancelError))
+                            Log.Warning("[InstanceSettings] Failed to cancel upload {0}: {1}", session.SessionId, cancelError!.Message);
+                    }
+                }
+
+                replacement = new TypedInstanceCoreReplacementRequest(
+                    uploadPath,
+                    Path.GetFileName(Settings.ReplacementCorePath));
             }
 
-            _ = await _daemon.UpdateInstanceSettingsAsync(new UpdateInstanceSettingsParameter
-            {
-                Id = _instanceId,
-                Name = Settings.Name,
-                InstanceType = Settings.InstanceType,
-                JavaPath = Settings.JavaPath,
-                Arguments = Settings.Arguments,
-                Version = Settings.Version,
-                ReplacementCore = replacement,
-                ForceRerunInstaller = Settings.ForceRerunInstaller
-            });
+            var updateResult = await _daemon.Instances.UpdateInstanceSettingsAsync(
+                new TypedUpdateInstanceSettingsRequest(
+                    _instanceId,
+                    Settings.Name,
+                    Settings.InstanceType,
+                    Settings.JavaPath,
+                    Settings.Arguments.ToImmutableArray(),
+                    Settings.Version,
+                    replacement,
+                    Settings.ForceRerunInstaller),
+                default);
+            if (updateResult.IsErr(out var updateError))
+                throw DaemonErrorLocalization.ToException(updateError!);
 
             _notification.Push(Lang.Tr["Success"], Lang.Tr["SettingsSaveSuccess"], false, InfoBarSeverity.Success);
             Settings.ReplacementCorePath = string.Empty;
@@ -326,7 +383,11 @@ public partial class InstanceSettingsViewModel : ObservableObject
 
         try
         {
-            var javaRuntimeOptions = await _daemon.GetJavaListAsync();
+            var javaResult = await _daemon.System.ListJavaRuntimesAsync(default);
+            if (javaResult.IsErr(out var javaError))
+                throw DaemonErrorLocalization.ToException(javaError!);
+
+            var javaRuntimeOptions = javaResult.Unwrap().Items.ToArray();
             PopulateJavaRuntimeOptions(javaRuntimeOptions);
 
             if (!showNotifications) return;
@@ -354,7 +415,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
         }
     }
 
-    private async Task ShowJavaRuntimePickerAsync(JavaInfo[] jvms)
+    private async Task ShowJavaRuntimePickerAsync(JavaRuntime[] jvms)
     {
         var listView = new ListView
         {
@@ -390,7 +451,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
         }
     }
 
-    private void PopulateJavaRuntimeOptions(JavaInfo[] jvms)
+    private void PopulateJavaRuntimeOptions(JavaRuntime[] jvms)
     {
         JavaRuntimeOptions.Clear();
         foreach (var jvm in jvms)

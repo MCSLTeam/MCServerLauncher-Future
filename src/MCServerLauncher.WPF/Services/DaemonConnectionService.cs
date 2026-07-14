@@ -1,18 +1,25 @@
+using System.Threading;
 using System.Threading.Tasks;
-using MCServerLauncher.DaemonClient;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.WPF.Modules;
+using RustyOptions;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.Services;
 
 public class DaemonConnectionService : IDaemonConnectionService
 {
-    public Task<IDaemon?> GetAsync(Constants.DaemonConfigModel config)
+    public Task<Result<TypedDaemonClient, DaemonError>> GetAsync(
+        Constants.DaemonConfigModel config,
+        CancellationToken cancellationToken = default)
     {
-        return DaemonsWsManager.Get(config);
+        return DaemonsWsManager.Get(config, cancellationToken);
     }
 
-    public Task RemoveAsync(Constants.DaemonConfigModel config)
+    public Task<Result<Unit, DaemonError>> RemoveAsync(
+        Constants.DaemonConfigModel config,
+        CancellationToken cancellationToken = default)
     {
-        return DaemonsWsManager.Remove(config);
+        return DaemonsWsManager.Remove(config, cancellationToken);
     }
 }

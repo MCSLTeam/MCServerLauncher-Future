@@ -1,19 +1,23 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Collections.Generic;
 using System.Windows.Input;
 using MCServerLauncher.Common.Helpers;
-using MCServerLauncher.DaemonClient;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
 using Microsoft.Win32;
 using Serilog;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 {
@@ -235,7 +239,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
     public class FileManagerViewModel : INotifyPropertyChanged
     {
-        private IDaemon? _daemon;
+        private TypedDaemonClient? _daemon;
         private string _rootPath = "";
         private string _currentPath = "";
         private FileItem? _selectedItem;
@@ -371,11 +375,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 var report = InstanceDataManager.Instance.CurrentReport;
                 if (report == null) return;
 
-                var daemonField = typeof(InstanceDataManager).GetField("_daemon", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (daemonField != null)
-                {
-                    _daemon = daemonField.GetValue(InstanceDataManager.Instance) as IDaemon;
-                }
+                _daemon = InstanceDataManager.Instance.CurrentDaemon;
 
                 if (_daemon == null)
                 {
@@ -451,8 +451,22 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             if (_daemon == null) throw new InvalidOperationException("Daemon connection is unavailable.");
             var realPath = GetRealPath(virtualPath);
-            var (directories, _, _) = await _daemon.GetDirectoryInfoAsync(realPath);
-            return directories;
+            var directoryResult = await _daemon.Files.GetDirectoryInfoAsync(new PathRequest(realPath), default);
+            if (directoryResult.IsErr(out var directoryError))
+                throw DaemonErrorLocalization.ToException(directoryError!);
+
+            return directoryResult.Unwrap().Directories.Select(directory =>
+                new Common.ProtoType.Files.DirectoryEntry.DirectoryInformation
+                {
+                    Name = directory.Name,
+                    Meta = new Common.ProtoType.Files.DirectoryMetadata
+                    {
+                        CreationTime = directory.Meta.CreationTime.ToUnixTimeSeconds(),
+                        Hidden = directory.Meta.Hidden,
+                        LastAccessTime = directory.Meta.LastAccessTime.ToUnixTimeSeconds(),
+                        LastWriteTime = directory.Meta.LastWriteTime.ToUnixTimeSeconds()
+                    }
+                });
         }
 
         public void OnTreeItemSelected(TreeItem item)
@@ -509,7 +523,11 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 virtualPath = NormalizeVirtualPath(virtualPath);
                 
                 var realPath = GetRealPath(virtualPath);
-                var (directories, files, parent) = await _daemon.GetDirectoryInfoAsync(realPath);
+                var directoryResult = await _daemon.Files.GetDirectoryInfoAsync(new PathRequest(realPath), default);
+                if (directoryResult.IsErr(out var directoryError))
+                    throw DaemonErrorLocalization.ToException(directoryError!);
+
+                var directory = directoryResult.Unwrap();
                 
                 Items.Clear();
                 
@@ -524,18 +542,18 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     });
                 }
 
-                foreach (var dir in directories)
+                foreach (var dir in directory.Directories)
                 {
                     Items.Add(new FileItem
                     {
                         Name = dir.Name,
                         Path = virtualPath == "/" ? $"/{dir.Name}" : $"{virtualPath}/{dir.Name}",
                         IsDirectory = true,
-                        ModifiedTime = dir.Meta.LastWriteTime
+                        ModifiedTime = dir.Meta.LastWriteTime.ToUnixTimeSeconds()
                     });
                 }
 
-                foreach (var file in files)
+                foreach (var file in directory.Files)
                 {
                     Items.Add(new FileItem
                     {
@@ -543,7 +561,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                         Path = virtualPath == "/" ? $"/{file.Name}" : $"{virtualPath}/{file.Name}",
                         IsDirectory = false,
                         SizeBytes = file.Meta.Size,
-                        ModifiedTime = file.Meta.LastWriteTime
+                        ModifiedTime = file.Meta.LastWriteTime.ToUnixTimeSeconds()
                     });
                 }
 
@@ -610,11 +628,57 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 try
                 {
                     var realPath = GetRealPath(SelectedItem.Path);
-                    var context = await _daemon.DownloadFileAsync(realPath, dialog.FileName, 1024 * 1024); // 1MB chunks
-                    // TODO: Show progress UI
-                    if (context.NetworkLoadTask != null)
+                    var openResult = await _daemon.Files.OpenDownloadAsync(new DownloadOpenRequest(realPath), default);
+                    if (openResult.IsErr(out var openError))
+                        throw DaemonErrorLocalization.ToException(openError!);
+
+                    var session = openResult.Unwrap();
+                    var completed = false;
+                    try
                     {
-                        await context.NetworkLoadTask;
+                        await using var stream = new FileStream(
+                            dialog.FileName,
+                            FileMode.Create,
+                            FileAccess.Write,
+                            FileShare.None,
+                            session.MaxChunkSize,
+                            useAsync: true);
+                        var offset = 0L;
+                        while (true)
+                        {
+                            var chunkResult = await _daemon.Files.ReadDownloadChunkAsync(
+                                new DownloadChunkRequest(session.SessionId, offset, session.MaxChunkSize),
+                                default);
+                            if (chunkResult.IsErr(out var chunkError))
+                                throw DaemonErrorLocalization.ToException(chunkError!);
+
+                            var chunk = chunkResult.Unwrap();
+                            if (chunk.Offset != offset)
+                                throw new InvalidDataException("The daemon returned a download chunk at an unexpected offset.");
+
+                            await stream.WriteAsync(chunk.Data.AsMemory());
+                            offset += chunk.Data.Length;
+                            if (chunk.IsFinal)
+                                break;
+                        }
+
+                        if (offset != session.Length)
+                            throw new InvalidDataException("The downloaded file length does not match the daemon metadata.");
+
+                        var closeResult = await _daemon.Files.CloseDownloadAsync(session.SessionId, default);
+                        if (closeResult.IsErr(out var closeError))
+                            throw DaemonErrorLocalization.ToException(closeError!);
+
+                        completed = true;
+                    }
+                    finally
+                    {
+                        if (!completed)
+                        {
+                            var closeResult = await _daemon.Files.CloseDownloadAsync(session.SessionId, default);
+                            if (closeResult.IsErr(out var closeError))
+                                Log.Warning("[FileManager] Failed to close download {0}: {1}", session.SessionId, closeError!.Message);
+                        }
                     }
                     MessageBox.Show("下载完成！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -644,11 +708,47 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     var virtualTargetPath = CurrentPath == "/" ? $"/{fileName}" : $"{CurrentPath}/{fileName}";
                     var realTargetPath = GetRealPath(virtualTargetPath);
                     
-                    var context = await _daemon.UploadFileAsync(dialog.FileName, realTargetPath, 1024 * 1024); // 1MB chunks
-                    // TODO: Show progress UI
-                    if (context.NetworkLoadTask != null)
+                    await using var stream = File.OpenRead(dialog.FileName);
+                    var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream));
+                    stream.Position = 0;
+                    var openResult = await _daemon.Files.OpenUploadAsync(
+                        new UploadOpenRequest(realTargetPath, stream.Length, hash),
+                        default);
+                    if (openResult.IsErr(out var openError))
+                        throw DaemonErrorLocalization.ToException(openError!);
+
+                    var session = openResult.Unwrap();
+                    var completed = false;
+                    try
                     {
-                        await context.NetworkLoadTask;
+                        var buffer = new byte[session.MaxChunkSize];
+                        var offset = 0L;
+                        int read;
+                        while ((read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+                        {
+                            var writeResult = await _daemon.Files.WriteUploadChunkAsync(
+                                new UploadChunkRequest(session.SessionId, offset, ImmutableArray.Create(buffer[..read])),
+                                default);
+                            if (writeResult.IsErr(out var writeError))
+                                throw DaemonErrorLocalization.ToException(writeError!);
+
+                            offset += read;
+                        }
+
+                        var closeResult = await _daemon.Files.CloseUploadAsync(session.SessionId, default);
+                        if (closeResult.IsErr(out var closeError))
+                            throw DaemonErrorLocalization.ToException(closeError!);
+
+                        completed = true;
+                    }
+                    finally
+                    {
+                        if (!completed)
+                        {
+                            var cancelResult = await _daemon.Files.CancelUploadAsync(session.SessionId, default);
+                            if (cancelResult.IsErr(out var cancelError))
+                                Log.Warning("[FileManager] Failed to cancel upload {0}: {1}", session.SessionId, cancelError!.Message);
+                        }
                     }
                     
                     await LoadDirectoryAsync(CurrentPath);
@@ -699,11 +799,15 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 var realPath = GetRealPath(SelectedItem.Path);
                 if (SelectedItem.IsDirectory)
                 {
-                    await _daemon.RenameDirectoryAsync(realPath, newName);
+                    var renameResult = await _daemon.Files.RenameDirectoryAsync(new PathRenameRequest(realPath, newName), default);
+                    if (renameResult.IsErr(out var renameError))
+                        throw DaemonErrorLocalization.ToException(renameError!);
                 }
                 else
                 {
-                    await _daemon.RenameFileAsync(realPath, newName);
+                    var renameResult = await _daemon.Files.RenameFileAsync(new PathRenameRequest(realPath, newName), default);
+                    if (renameResult.IsErr(out var renameError))
+                        throw DaemonErrorLocalization.ToException(renameError!);
                 }
                 await LoadDirectoryAsync(CurrentPath);
                 
@@ -732,11 +836,15 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 var realPath = GetRealPath(SelectedItem.Path);
                 if (SelectedItem.IsDirectory)
                 {
-                    await _daemon.DeleteDirectoryAsync(realPath, true);
+                    var deleteResult = await _daemon.Files.DeleteDirectoryAsync(new DeleteDirectoryRequest(realPath, true), default);
+                    if (deleteResult.IsErr(out var deleteError))
+                        throw DaemonErrorLocalization.ToException(deleteError!);
                 }
                 else
                 {
-                    await _daemon.DeleteFileAsync(realPath);
+                    var deleteResult = await _daemon.Files.DeleteFileAsync(new PathRequest(realPath), default);
+                    if (deleteResult.IsErr(out var deleteError))
+                        throw DaemonErrorLocalization.ToException(deleteError!);
                 }
                 await LoadDirectoryAsync(CurrentPath);
                 
@@ -764,7 +872,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             {
                 var virtualNewPath = CurrentPath == "/" ? $"/{dirName}" : $"{CurrentPath}/{dirName}";
                 var realNewPath = GetRealPath(virtualNewPath);
-                await _daemon.CreateDirectoryAsync(realNewPath);
+                var createResult = await _daemon.Files.CreateDirectoryAsync(new PathRequest(realNewPath), default);
+                if (createResult.IsErr(out var createError))
+                    throw DaemonErrorLocalization.ToException(createError!);
                 await LoadDirectoryAsync(CurrentPath);
                 await RefreshTreeItemAsync(CurrentPath);
             }

@@ -1,27 +1,31 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Services;
 using Microsoft.Win32;
 using Serilog;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.InstanceConsole.ViewModels;
 
 public partial class ComponentManagerViewModel : ObservableObject
 {
     private readonly INotificationService _notification;
-    private IDaemon? _daemon;
+    private TypedDaemonClient? _daemon;
     private string _instanceRoot = string.Empty;
 
     [ObservableProperty] private ObservableCollection<ComponentItemModel> _mods = new();
@@ -53,7 +57,7 @@ public partial class ComponentManagerViewModel : ObservableObject
             var instanceId = InstanceDataManager.Instance.InstanceId;
             var daemonField = typeof(InstanceDataManager).GetField("_daemon",
                 BindingFlags.NonPublic | BindingFlags.Instance);
-            _daemon = daemonField?.GetValue(InstanceDataManager.Instance) as IDaemon;
+            _daemon = daemonField?.GetValue(InstanceDataManager.Instance) as TypedDaemonClient;
 
             if (_daemon == null)
             {
@@ -165,7 +169,9 @@ public partial class ComponentManagerViewModel : ObservableObject
 
         try
         {
-            await _daemon.DeleteFileAsync(item.VirtualPath);
+            var deleteResult = await _daemon.Files.DeleteFileAsync(new PathRequest(item.VirtualPath), default);
+            if (deleteResult.IsErr(out var deleteError))
+                throw DaemonErrorLocalization.ToException(deleteError!);
             if (item.Kind == ComponentKind.Mod) Mods.Remove(item);
             else Plugins.Remove(item);
             OnTabStateChanged();
@@ -293,8 +299,50 @@ public partial class ComponentManagerViewModel : ObservableObject
 
                     var fileName = Path.GetFileName(local);
                     var target = $"{_instanceRoot}/{folder}/{fileName}";
-                    var ctx = await _daemon.UploadFileAsync(local, target, 1024 * 1024);
-                    if (ctx.NetworkLoadTask != null) await ctx.NetworkLoadTask;
+                    await using var stream = File.OpenRead(local);
+                    var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream));
+                    stream.Position = 0;
+
+                    var openResult = await _daemon.Files.OpenUploadAsync(
+                        new UploadOpenRequest(target, stream.Length, hash),
+                        default);
+                    if (openResult.IsErr(out var openError))
+                        throw DaemonErrorLocalization.ToException(openError!);
+
+                    var session = openResult.Unwrap();
+                    var completed = false;
+                    try
+                    {
+                        var buffer = new byte[session.MaxChunkSize];
+                        var offset = 0L;
+                        int read;
+                        while ((read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+                        {
+                            var writeResult = await _daemon.Files.WriteUploadChunkAsync(
+                                new UploadChunkRequest(session.SessionId, offset, ImmutableArray.Create(buffer[..read])),
+                                default);
+                            if (writeResult.IsErr(out var writeError))
+                            throw DaemonErrorLocalization.ToException(writeError!);
+
+                            offset += read;
+                        }
+
+                        var closeResult = await _daemon.Files.CloseUploadAsync(session.SessionId, default);
+                        if (closeResult.IsErr(out var closeError))
+                        throw DaemonErrorLocalization.ToException(closeError!);
+
+                        completed = true;
+                    }
+                    finally
+                    {
+                        if (!completed)
+                        {
+                            var cancelResult = await _daemon.Files.CancelUploadAsync(session.SessionId, default);
+                            if (cancelResult.IsErr(out var cancelError))
+                                Log.Warning("[ComponentManager] Failed to cancel upload {0}: {1}", session.SessionId, cancelError!.Message);
+                        }
+                    }
+
                     success++;
                 }
                 catch (Exception ex)

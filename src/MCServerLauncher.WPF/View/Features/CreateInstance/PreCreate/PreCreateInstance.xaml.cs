@@ -47,8 +47,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 {
                     Constants.SelectedDaemon = listView.SelectedItem.ToString() ?? string.Empty;
                     var daemon = DaemonsListManager.MatchDaemonBySelection(Constants.SelectedDaemon);
-                    var conn = await DaemonsWsManager.Get(daemon);
-                    if (conn == null)
+                    var connectionResult = await DaemonsWsManager.Get(daemon);
+                    if (connectionResult.IsErr(out _))
                     {
                         var dialog = new ContentDialog()
                         {

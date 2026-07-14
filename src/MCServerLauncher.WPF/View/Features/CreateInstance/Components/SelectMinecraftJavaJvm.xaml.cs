@@ -1,9 +1,8 @@
 using iNKORE.UI.WPF.Controls;
 using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.Common.ProtoType;
-using MCServerLauncher.DaemonClient;
-using MCServerLauncher.DaemonClient.Connection;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +19,7 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
     /// </summary>
     public partial class SelectMinecraftJavaJvm : ICreateInstanceStep
     {
-        private JavaInfo[]? _cachedJavaList;
+        private JavaRuntime[]? _cachedJavaList;
         private bool _isLoadingJavaList;
         private bool _suppressEvents;
         private int _pendingSelectionIndex = -1;
@@ -144,12 +143,16 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             try
             {
                 var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
-                var daemon = await DaemonsWsManager.Get(daemonConfig);
+                var connectionResult = await DaemonsWsManager.Get(daemonConfig);
 
-                if (daemon != null)
+                if (connectionResult.IsOk(out var daemon))
                 {
-                    _cachedJavaList = await daemon.GetJavaListAsync();
-                    PopulateJavaComboBox();
+                    var javaResult = await daemon!.System.ListJavaRuntimesAsync(default);
+                    if (javaResult.IsOk(out var javaList))
+                    {
+                        _cachedJavaList = javaList!.Items.ToArray();
+                        PopulateJavaComboBox();
+                    }
                 }
             }
             catch (Exception)
@@ -192,9 +195,9 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
             try
             {
                 var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
-                var daemon = await DaemonsWsManager.Get(daemonConfig);
+                var connectionResult = await DaemonsWsManager.Get(daemonConfig);
 
-                if (daemon == null)
+                if (connectionResult.IsErr(out _))
                 {
                     Notification.Push(
                         Lang.Tr["Error"],
@@ -208,7 +211,12 @@ namespace MCServerLauncher.WPF.View.Components.CreateInstance
                     return;
                 }
 
-                var jvms = await daemon.GetJavaListAsync();
+                var daemon = connectionResult.Unwrap();
+                var javaResult = await daemon.System.ListJavaRuntimesAsync(default);
+                if (javaResult.IsErr(out var javaError))
+                    throw DaemonErrorLocalization.ToException(javaError!);
+
+                var jvms = javaResult.Unwrap().Items.ToArray();
                 _cachedJavaList = jvms;
 
                 if (jvms.Length > 0)

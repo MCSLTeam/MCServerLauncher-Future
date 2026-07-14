@@ -1,18 +1,28 @@
 using MCServerLauncher.Common.Extensibility;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.Files;
+using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.View.Components.CreateInstance;
 using MCServerLauncher.WPF.View.Pages;
 using System;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
 using static MCServerLauncher.WPF.Modules.VisualTreeHelper;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 {
@@ -161,23 +171,17 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     confirmDialog.CloseButtonText = Lang.Tr["DebugCopyConfig"];
                     confirmDialog.CloseButtonClick += (s, args) =>
                     {
-                        var previewSetting = new InstanceFactorySetting
+                        var previewRequest = CreateRequest(
+                            instanceName, corePath, Path.GetFileName(corePath), javaPath, arguments);
+                        var serializerOptions = new JsonSerializerOptions(
+                            ApplicationContractJsonContext.Default.Options)
                         {
-                            Name = instanceName,
-                            Source = corePath,
-                            SourceType = SourceType.Core,
-                            Target = System.IO.Path.GetFileName(corePath),
-                            TargetType = TargetType,
-                            InstanceType = InstanceType,
-                            JavaPath = javaPath,
-                            Arguments = arguments,
-                            Version = "1.21.1",
-                            Mirror = InstanceFactoryMirror.None,
-                            UsePostProcess = false
+                            WriteIndented = true
                         };
-                        var json = System.Text.Json.JsonSerializer.Serialize(previewSetting,
-                            DaemonClient.Serialization.DaemonClientRpcJsonBoundary.CreateStjOptions(
-                                writeIndented: true));
+                        var serializerContext = new ApplicationContractJsonContext(serializerOptions);
+                        var json = JsonSerializer.Serialize(
+                            previewRequest,
+                            serializerContext.CreateInstanceRequest);
                         Modules.Clipboard.SetText(json);
                         Notification.Push(
                             Lang.Tr["Success"],
@@ -200,9 +204,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
 
 
                 var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
-                var daemon = await DaemonsWsManager.Get(daemonConfig);
+                var connectionResult = await DaemonsWsManager.Get(daemonConfig);
 
-                if (daemon == null)
+                if (connectionResult.IsErr(out _))
                 {
                     Notification.Push(
                         Lang.Tr["Error"],
@@ -216,6 +220,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     FinishButton.IsEnabled = true;
                     return;
                 }
+                var daemon = connectionResult.Unwrap();
 
                 // Upload core file to daemon
                 string sourcePathForDaemon = corePath;
@@ -234,13 +239,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                         false
                     );
 
-                    var uploadContext = await daemon.UploadFileAsync(corePath, daemonUploadPath, 1024 * 1024);
-                    if (uploadContext.NetworkLoadTask != null)
-                    {
-                        await uploadContext.NetworkLoadTask;
-                    }
-
-                    if (!uploadContext.Done)
+                    if (!await UploadFileAsync(daemon, corePath, daemonUploadPath, CancellationToken.None))
                     {
                         Notification.Push(
                             Lang.Tr["Error"],
@@ -258,20 +257,8 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     sourcePathForDaemon = daemonUploadPath;
                 }
 
-                var setting = new InstanceFactorySetting
-                {
-                    Name = instanceName,
-                    Source = sourcePathForDaemon,
-                    SourceType = SourceType.Core,
-                    Target = System.IO.Path.GetFileName(corePath),
-                    TargetType = TargetType,
-                    InstanceType = InstanceType,
-                    JavaPath = javaPath,
-                    Arguments = arguments,
-                    Version = "1.21.1", // TODO: Extract from core filename or add version selection step
-                    Mirror = InstanceFactoryMirror.None,
-                    UsePostProcess = false
-                };
+                var request = CreateRequest(
+                    instanceName, sourcePathForDaemon, Path.GetFileName(corePath), javaPath, arguments);
 
                 Notification.Push(
                     Lang.Tr["PleaseWait"],
@@ -283,7 +270,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     false
                 );
 
-                var config = await daemon.AddInstanceAsync(setting);
+                var createResult = await daemon.Instances.CreateInstanceAsync(request, CancellationToken.None);
+                if (createResult.IsErr(out var createError))
+                    throw DaemonErrorLocalization.ToException(createError!);
 
                 Notification.Push(
                     Lang.Tr["Success"],
@@ -302,6 +291,96 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             {
                 FinishButton.IsEnabled = true;
                 throw;
+            }
+        }
+
+        private CreateInstanceRequest CreateRequest(
+            string name,
+            string source,
+            string target,
+            string javaPath,
+            string[] arguments)
+        {
+            using var eventRules = JsonDocument.Parse("[]");
+            var configuration = new InstanceConfiguration(
+                Guid.NewGuid(), name, target, InstanceType, TargetType,
+                "1.21.1", "utf-8", "utf-8", javaPath, arguments.ToImmutableArray(),
+                ImmutableDictionary<string, string>.Empty,
+                eventRules.RootElement);
+            return new CreateInstanceRequest(new InstanceFactoryConfiguration(
+                configuration, source, SourceType.Core, InstanceFactoryMirror.None, false));
+        }
+
+        private static async Task<bool> UploadFileAsync(
+            TypedDaemonClient daemon,
+            string sourcePath,
+            string destinationPath,
+            CancellationToken cancellationToken)
+        {
+            Guid? sessionId = null;
+            var closed = false;
+            try
+            {
+                await using var hashStream = new FileStream(
+                    sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                    1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                var sha256 = Convert.ToHexString(
+                    await SHA256.HashDataAsync(hashStream, cancellationToken));
+
+                var openResult = await daemon.Files.OpenUploadAsync(
+                    new UploadOpenRequest(destinationPath, hashStream.Length, sha256),
+                    cancellationToken);
+                if (openResult.IsErr(out _))
+                    return false;
+
+                var session = openResult.Unwrap();
+                sessionId = session.SessionId;
+                var buffer = new byte[session.MaxChunkSize];
+                long offset = 0;
+
+                await using var uploadStream = new FileStream(
+                    sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                    1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                while (true)
+                {
+                    var read = await uploadStream.ReadAsync(buffer.AsMemory(), cancellationToken);
+                    if (read == 0)
+                        break;
+
+                    var writeResult = await daemon.Files.WriteUploadChunkAsync(
+                        new UploadChunkRequest(
+                            session.SessionId,
+                            offset,
+                            ImmutableArray.Create(buffer, 0, read)),
+                        cancellationToken);
+                    if (writeResult.IsErr(out _))
+                        return false;
+                    offset += read;
+                }
+
+                var closeResult = await daemon.Files.CloseUploadAsync(
+                    session.SessionId,
+                    cancellationToken);
+                closed = closeResult.IsOk(out _);
+                return closed;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (sessionId is Guid openedSessionId && !closed)
+                {
+                    try
+                    {
+                        await daemon.Files.CancelUploadAsync(openedSessionId, CancellationToken.None);
+                    }
+                    catch
+                    {
+                        // Best-effort cleanup must not replace the original upload failure.
+                    }
+                }
             }
         }
     }

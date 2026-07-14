@@ -5,7 +5,6 @@ using Serilog;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
-using MCServerLauncher.DaemonClient;
 
 namespace MCServerLauncher.WPF.View.Components.DaemonManager
 {
@@ -99,7 +98,33 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                         IsSecure = IsSecure
                     }
                 );
-                var daemon = await DaemonsWsManager.Get(new Constants.DaemonConfigModel
+                var config = new Constants.DaemonConfigModel
+                {
+                    EndPoint = EndPoint,
+                    Port = Port,
+                    Token = Token,
+                    IsSecure = IsSecure,
+                    FriendlyName = FriendlyName
+                };
+                var result = await DaemonsWsManager.Get(config);
+                if (result.IsErr(out var error))
+                {
+                    Log.Error(
+                        "[Daemon] Error occurred when connecting to daemon {Address}: {Code}: {Message}",
+                        Address,
+                        error!.Code,
+                        error.Message);
+                    Status = "err";
+                    return false;
+                }
+
+                Log.Information("[Daemon] Connected: {0}", Address);
+                Status = "ok";
+                return true;
+            }
+            catch (Exception e)
+            {
+                await DaemonsWsManager.Remove(new Constants.DaemonConfigModel
                 {
                     EndPoint = EndPoint,
                     Port = Port,
@@ -107,20 +132,6 @@ namespace MCServerLauncher.WPF.View.Components.DaemonManager
                     IsSecure = IsSecure,
                     FriendlyName = FriendlyName
                 });
-                Log.Information("[Daemon] Connected: {0}", Address);
-                Status = "ok";
-                return true;
-            }
-            catch (Exception e)
-            {
-                DaemonsWsManager.Remove(new Constants.DaemonConfigModel
-                {
-                    EndPoint = EndPoint,
-                    Port = Port,
-                    Token = Token,
-                    IsSecure = IsSecure,
-                    FriendlyName = FriendlyName
-                }).Wait();
                 Log.Error($"[Daemon] Error occurred when connecting to daemon({(IsSecure ? "wss" : "ws")}://{EndPoint}:{Port}): {e}");
                 Status = "err";
                 return false;

@@ -6,12 +6,15 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.ViewModels.Models;
 using Serilog;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
+using TypedInstanceReport = MCServerLauncher.Common.Contracts.Instances.InstanceReport;
 
 namespace MCServerLauncher.WPF.ViewModels;
 
@@ -126,10 +129,20 @@ public partial class InstanceManagerViewModel : ObservableObject
         var daemonConfig = DaemonsListManager.Get[daemonIndex];
         try
         {
-            var daemon = await _daemonService.GetAsync(daemonConfig)
-                ?? throw new Exception("Daemon is offline or unreachable.");
+            var connectionResult = await _daemonService.GetAsync(daemonConfig);
+            if (connectionResult.IsErr(out var connectionError))
+                throw DaemonErrorLocalization.ToException(connectionError!);
+
+            var daemon = connectionResult.Unwrap();
             var memoryTotalBytes = await GetDaemonMemoryTotalBytesOrNullAsync(daemon, daemonConfig);
-            var instanceReports = await DaemonExtensions.GetAllReportsAsync(daemon);
+            var reportsResult = await daemon.Instances.ListInstanceReportsAsync(default);
+            if (reportsResult.IsErr(out var reportsError))
+                throw DaemonErrorLocalization.ToException(reportsError!);
+
+            var catalog = daemon.InstanceCatalog.Current.Value;
+            var instanceReports = reportsResult.Unwrap().Reports
+                .Where(pair => catalog.Instances.ContainsKey(pair.Key))
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
 
             if (instanceReports == null || instanceReports.Count == 0)
             {
@@ -159,7 +172,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         }
     }
 
-    private void UpdateExistingCards(Dictionary<Guid, InstanceReport> reports, Constants.DaemonConfigModel daemonConfig, ulong? memoryTotalBytes)
+    private void UpdateExistingCards(IReadOnlyDictionary<Guid, TypedInstanceReport> reports, Constants.DaemonConfigModel daemonConfig, ulong? memoryTotalBytes)
     {
         var existingIds = AllInstances.Select(c => c.InstanceId).ToList();
         var newIds = reports.Keys.ToList();
@@ -178,7 +191,7 @@ public partial class InstanceManagerViewModel : ObservableObject
             {
                 existing.Status = kvp.Value.Status;
                 existing.CpuUsage = kvp.Value.PerformanceCounter.Cpu;
-                existing.MemoryUsage = kvp.Value.PerformanceCounter.Memory;
+                existing.MemoryUsage = kvp.Value.PerformanceCounter.MemoryBytes;
                 existing.MemoryTotalBytes = memoryTotalBytes;
             }
             else
@@ -188,7 +201,7 @@ public partial class InstanceManagerViewModel : ObservableObject
         }
     }
 
-    private InstanceCardModel CreateInstanceCard(Guid id, InstanceReport report, Constants.DaemonConfigModel config, ulong? memoryTotalBytes)
+    private InstanceCardModel CreateInstanceCard(Guid id, TypedInstanceReport report, Constants.DaemonConfigModel config, ulong? memoryTotalBytes)
     {
         return new InstanceCardModel
         {
@@ -204,17 +217,20 @@ public partial class InstanceManagerViewModel : ObservableObject
             Version = report.Config.Version ?? "",
             Status = report.Status,
             CpuUsage = report.PerformanceCounter.Cpu,
-            MemoryUsage = report.PerformanceCounter.Memory,
+            MemoryUsage = report.PerformanceCounter.MemoryBytes,
             MemoryTotalBytes = memoryTotalBytes
         };
     }
 
-    private static async Task<ulong?> GetDaemonMemoryTotalBytesOrNullAsync(IDaemon daemon, Constants.DaemonConfigModel daemonConfig)
+    private static async Task<ulong?> GetDaemonMemoryTotalBytesOrNullAsync(TypedDaemonClient daemon, Constants.DaemonConfigModel daemonConfig)
     {
         try
         {
-            var systemInfo = await daemon.GetSystemInfoAsync();
-            return systemInfo.Mem.Total * 1024UL;
+            var systemInfoResult = await daemon.System.GetSystemInfoAsync(default);
+            if (systemInfoResult.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
+
+            return systemInfoResult.Unwrap().Mem.TotalKilobytes * 1024UL;
         }
         catch (Exception ex)
         {
@@ -261,14 +277,17 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         try
         {
-            var daemon = await _daemonService.GetAsync(instance.DaemonConfig);
-            if (daemon == null)
+            var connectionResult = await _daemonService.GetAsync(instance.DaemonConfig);
+            if (connectionResult.IsErr(out var connectionError))
             {
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
 
-            await daemon.StartInstanceAsync(instance.InstanceId);
+            var daemon = connectionResult.Unwrap();
+            var startResult = await daemon.Instances.StartInstanceAsync(new InstanceReference(instance.InstanceId), default);
+            if (startResult.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StartingInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
             Log.Information("[InstanceManager] Started instance {0}", instance.InstanceId);
             await RefreshCardsInPlaceAsync();
@@ -298,14 +317,17 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         try
         {
-            var daemon = await _daemonService.GetAsync(instance.DaemonConfig);
-            if (daemon == null)
+            var connectionResult = await _daemonService.GetAsync(instance.DaemonConfig);
+            if (connectionResult.IsErr(out var connectionError))
             {
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
 
-            await daemon.StopInstanceAsync(instance.InstanceId);
+            var daemon = connectionResult.Unwrap();
+            var stopResult = await daemon.Instances.StopInstanceAsync(new InstanceReference(instance.InstanceId), default);
+            if (stopResult.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_StoppingInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
             await RefreshCardsInPlaceAsync();
         }
@@ -334,14 +356,17 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         try
         {
-            var daemon = await _daemonService.GetAsync(instance.DaemonConfig);
-            if (daemon == null)
+            var connectionResult = await _daemonService.GetAsync(instance.DaemonConfig);
+            if (connectionResult.IsErr(out var connectionError))
             {
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
 
-            await daemon.RestartInstanceAsync(instance.InstanceId);
+            var daemon = connectionResult.Unwrap();
+            var restartResult = await daemon.RestartInstanceAsync(instance.InstanceId);
+            if (restartResult.IsErr(out var restartError))
+                throw DaemonErrorLocalization.ToException(restartError!);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_RestartingInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
             await RefreshCardsInPlaceAsync();
         }
@@ -370,14 +395,17 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         try
         {
-            var daemon = await _daemonService.GetAsync(instance.DaemonConfig);
-            if (daemon == null)
+            var connectionResult = await _daemonService.GetAsync(instance.DaemonConfig);
+            if (connectionResult.IsErr(out var connectionError))
             {
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
 
-            await daemon.KillInstanceAsync(instance.InstanceId);
+            var daemon = connectionResult.Unwrap();
+            var haltResult = await daemon.Instances.HaltInstanceAsync(new InstanceReference(instance.InstanceId), default);
+            if (haltResult.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
             _notification.Push(Lang.Tr["Warning"], string.Format(Lang.Tr["InstanceCard_KillingInstance"], instance.InstanceName), false, InfoBarSeverity.Warning);
             await RefreshCardsInPlaceAsync();
         }
@@ -406,14 +434,17 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         try
         {
-            var daemon = await _daemonService.GetAsync(instance.DaemonConfig);
-            if (daemon == null)
+            var connectionResult = await _daemonService.GetAsync(instance.DaemonConfig);
+            if (connectionResult.IsErr(out var connectionError))
             {
                 _notification.Push(Lang.Tr["Status_Error"], Lang.Tr["ConnectDaemonFailedTip"], true, InfoBarSeverity.Error);
                 return;
             }
 
-            await daemon.RemoveInstanceAsync(instance.InstanceId);
+            var daemon = connectionResult.Unwrap();
+            var removeResult = await daemon.Instances.RemoveInstanceAsync(new InstanceReference(instance.InstanceId), default);
+            if (removeResult.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
             RemoveInstanceCard(instance);
             _notification.Push(Lang.Tr["Status_OK"], string.Format(Lang.Tr["InstanceCard_DeletedInstance"], instance.InstanceName), false, InfoBarSeverity.Success);
             await RefreshCardsInPlaceAsync();

@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -17,10 +19,12 @@ using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Rendering;
 using iNKORE.UI.WPF.Modern.Controls;
-using MCServerLauncher.DaemonClient;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.WPF.InstanceConsole.View.Pages;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
 using Serilog;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
 {
@@ -34,7 +38,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
 
     public class FileEditorViewModel : INotifyPropertyChanged
     {
-        private readonly IDaemon _daemon;
+        private readonly TypedDaemonClient _daemon;
         private readonly string _realPath;
         private readonly string _virtualPath;
         private readonly long _fileSize;
@@ -137,7 +141,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
         public ICommand RestoreDefaultZoomCommand { get; }
         public ICommand ChangeEncodingCommand { get; }
 
-        public FileEditorViewModel(IDaemon daemon, string realPath, string virtualPath, long fileSize, System.Windows.Window window)
+        public FileEditorViewModel(TypedDaemonClient daemon, string realPath, string virtualPath, long fileSize, System.Windows.Window window)
         {
             _daemon = daemon;
             _realPath = realPath;
@@ -293,29 +297,67 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                     var tempFile = Path.GetTempFileName();
                     try
                     {
-                        var context = await _daemon.DownloadFileAsync(_realPath, tempFile, 1024 * 1024);
+                        var openResult = await _daemon.Files.OpenDownloadAsync(new DownloadOpenRequest(_realPath), default);
+                        if (openResult.IsErr(out var openError))
+                            throw DaemonErrorLocalization.ToException(openError!);
 
-                        var progressTask = Task.Run(async () =>
+                        var session = openResult.Unwrap();
+                        var completed = false;
+                        try
                         {
-                            while (!context.Done && context.State != NetworkLoadContextState.Closed)
+                            await using var stream = new FileStream(
+                                tempFile,
+                                FileMode.Create,
+                                FileAccess.Write,
+                                FileShare.None,
+                                session.MaxChunkSize,
+                                useAsync: true);
+                            var offset = 0L;
+                            while (true)
                             {
-                                if (_fileSize > 0)
+                                var chunkResult = await _daemon.Files.ReadDownloadChunkAsync(
+                                    new DownloadChunkRequest(session.SessionId, offset, session.MaxChunkSize),
+                                    default);
+                                if (chunkResult.IsErr(out var chunkError))
+                                    throw DaemonErrorLocalization.ToException(chunkError!);
+
+                                var chunk = chunkResult.Unwrap();
+                                if (chunk.Offset != offset)
+                                    throw new InvalidDataException("The daemon returned a download chunk at an unexpected offset.");
+
+                                await stream.WriteAsync(chunk.Data.AsMemory());
+                                offset += chunk.Data.Length;
+                                if (session.Length > 0)
                                 {
-                                    var progress = (double)context.LoadedBytes / _fileSize * 100;
+                                    var progress = (double)offset / session.Length * 100;
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         LoadingText = $"{Lang.Tr["DownloadingFile"]} {progress:F1}%";
                                     });
                                 }
-                                await Task.Delay(100);
-                            }
-                        });
 
-                        if (context.NetworkLoadTask != null)
-                        {
-                            await context.NetworkLoadTask;
+                                if (chunk.IsFinal)
+                                    break;
+                            }
+
+                            if (offset != session.Length)
+                                throw new InvalidDataException("The downloaded file length does not match the daemon metadata.");
+
+                            var closeResult = await _daemon.Files.CloseDownloadAsync(session.SessionId, default);
+                            if (closeResult.IsErr(out var closeError))
+                                throw DaemonErrorLocalization.ToException(closeError!);
+
+                            completed = true;
                         }
-                        await progressTask;
+                        finally
+                        {
+                            if (!completed)
+                            {
+                                var closeResult = await _daemon.Files.CloseDownloadAsync(session.SessionId, default);
+                                if (closeResult.IsErr(out var closeError))
+                                    Log.Warning("[FileEditor] Failed to close download {0}: {1}", session.SessionId, closeError!.Message);
+                            }
+                        }
 
                         LoadingText = Lang.Tr["ReadingFile"];
 
@@ -394,32 +436,57 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                     await writer.WriteAsync(Document.Text);
                 }
 
-                var fileInfo = new FileInfo(tempFile);
-                var uploadSize = fileInfo.Length;
+                await using var stream = File.OpenRead(tempFile);
+                var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream));
+                stream.Position = 0;
+                var uploadSize = stream.Length;
+                var openResult = await _daemon.Files.OpenUploadAsync(
+                    new UploadOpenRequest(_realPath, uploadSize, hash),
+                    default);
+                if (openResult.IsErr(out var openError))
+                    throw DaemonErrorLocalization.ToException(openError!);
 
-                var context = await _daemon.UploadFileAsync(tempFile, _realPath, 1024 * 1024);
-                
-                var progressTask = Task.Run(async () =>
+                var session = openResult.Unwrap();
+                var completed = false;
+                try
                 {
-                    while (!context.Done && context.State != NetworkLoadContextState.Closed)
+                    var buffer = new byte[session.MaxChunkSize];
+                    var offset = 0L;
+                    int read;
+                    while ((read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
                     {
+                        var writeResult = await _daemon.Files.WriteUploadChunkAsync(
+                            new UploadChunkRequest(session.SessionId, offset, ImmutableArray.Create(buffer[..read])),
+                            default);
+                        if (writeResult.IsErr(out var writeError))
+                            throw DaemonErrorLocalization.ToException(writeError!);
+
+                        offset += read;
                         if (uploadSize > 0)
                         {
-                            var progress = (double)context.LoadedBytes / uploadSize * 100;
+                            var progress = (double)offset / uploadSize * 100;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 LoadingText = $"{Lang.Tr["SavingFile"]} {progress:F1}%";
                             });
                         }
-                        await Task.Delay(100);
                     }
-                });
 
-                if (context.NetworkLoadTask != null)
-                {
-                    await context.NetworkLoadTask;
+                    var closeResult = await _daemon.Files.CloseUploadAsync(session.SessionId, default);
+                    if (closeResult.IsErr(out var closeError))
+                        throw DaemonErrorLocalization.ToException(closeError!);
+
+                    completed = true;
                 }
-                await progressTask;
+                finally
+                {
+                    if (!completed)
+                    {
+                        var cancelResult = await _daemon.Files.CancelUploadAsync(session.SessionId, default);
+                        if (cancelResult.IsErr(out var cancelError))
+                            Log.Warning("[FileEditor] Failed to cancel upload {0}: {1}", session.SessionId, cancelError!.Message);
+                    }
+                }
 
                 _isDirty = false;
                 StatusText = Lang.Tr["Saved"];

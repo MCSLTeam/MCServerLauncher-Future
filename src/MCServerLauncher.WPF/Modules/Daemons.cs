@@ -1,6 +1,5 @@
 using MCServerLauncher.DaemonClient;
-using MCServerLauncher.DaemonClient.Connection;
-using DaemonClientApi = MCServerLauncher.DaemonClient.Daemon;
+using MCServerLauncher.Daemon.API.Errors;
 using System.Text.Json;
 using Serilog;
 using System;
@@ -8,9 +7,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RustyOptions;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -91,175 +93,221 @@ namespace MCServerLauncher.WPF.Modules
 
     public class DaemonsWsManager
     {
-        public static ConcurrentDictionary<string, IDaemon> DaemonConnections = new();
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> ConnectionGates = new();
+        private static readonly ConcurrentDictionary<string, TypedDaemonClient> Connections = new();
 
-        private static void Add(string key, IDaemon daemon)
-        {
-            DaemonConnections.TryAdd(key, daemon);
-        }
+        public static IReadOnlyDictionary<string, TypedDaemonClient> DaemonConnections => Connections;
 
-        public static async Task Remove(Constants.DaemonConfigModel config)
+        public static async Task<Result<Unit, DaemonError>> Remove(
+            Constants.DaemonConfigModel config,
+            CancellationToken cancellationToken = default)
         {
-            if (config == null) return;
-            string key = $"{config.FriendlyName}|{config.EndPoint}|{config.Port}";
-            if (DaemonConnections.TryRemove(key, out var existing) && existing != null)
+            if (config is null)
             {
+                return Result.Err<Unit, DaemonError>(new ValidationDaemonError(
+                    "connection.config_required",
+                    "A daemon connection configuration is required."));
+            }
+
+            var validation = CreateOptions(config);
+            if (validation.IsErr(out var validationError))
+                return Result.Err<Unit, DaemonError>(validationError!);
+
+            var key = GetKey(validation.Unwrap());
+            var gate = ConnectionGates.GetOrAdd(key, static _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (!Connections.TryRemove(key, out var existing))
+                    return Result.Ok<Unit, DaemonError>(Unit.Default);
+
                 try
                 {
-                    await existing.CloseAsync().ConfigureAwait(false);
-                    existing.Dispose();
+                    await existing.DisposeAsync().ConfigureAwait(false);
                     Log.Information("[DaemonWs] Disconnected: {0}:{1}", config.EndPoint, config.Port);
+                    return Result.Ok<Unit, DaemonError>(Unit.Default);
                 }
                 catch (Exception ex)
                 {
-                    try
-                    {
-                        Log.Error("[DaemonWs] Error while disconnecting from daemon {0}:{1} - {2}", config.EndPoint, config.Port, ex.Message);
-                    }
-                    catch
-                    {
-                    }
+                    Log.Error(ex, "[DaemonWs] Error while disconnecting from daemon {0}:{1}", config.EndPoint, config.Port);
+                    return Result.Err<Unit, DaemonError>(new TransportDaemonError(
+                        "transport.dispose_failed",
+                        "The daemon client could not be disposed."));
                 }
+            }
+            finally
+            {
+                gate.Release();
             }
         }
 
-        public static async Task<IDaemon?> Get(Constants.DaemonConfigModel config)
+        public static async Task<Result<TypedDaemonClient, DaemonError>> Get(
+            Constants.DaemonConfigModel config,
+            CancellationToken cancellationToken = default)
         {
-            if (config == null) return null;
+            var validation = CreateOptions(config);
+            if (validation.IsErr(out var validationError))
+                return Result.Err<TypedDaemonClient, DaemonError>(validationError!);
 
-            string key = $"{config.FriendlyName}|{config.EndPoint}|{config.Port}";
-
-            if (DaemonConnections.TryGetValue(key, out var existing) && existing != null)
-            {
-                // Check if connection is still valid
-                if (existing.Online)
-                {
-                    return existing;
-                }
-                else
-                {
-                    // Remove dead connection
-                    DaemonConnections.TryRemove(key, out _);
-                    try
-                    {
-                        existing.Dispose();
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
-
+            var key = GetKey(validation.Unwrap());
+            var gate = ConnectionGates.GetOrAdd(key, static _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-#pragma warning disable CS8604 // 引用类型参数可能为 null。
-                IDaemon daemon = await DaemonClientApi.OpenAsync(
-                    address: config.EndPoint,
-                    port: config.Port,
-                    token: config.Token,
-                    isSecure: config.IsSecure,
-                    config: new ClientConnectionConfig
-                    {
-                        MaxFailCount = 3,
-                        PendingRequestCapacity = 100,
-                        HeartBeatTick = TimeSpan.FromSeconds(5),
-                        PingTimeout = 5000
-                    }
-                ).ConfigureAwait(false);
-#pragma warning restore CS8604 // 引用类型参数可能为 null。
-
-                Add(key, daemon);
-                Log.Information("[DaemonWs] Connected: {0}:{1}", config.EndPoint, config.Port);
-                return daemon;
-            }
-            catch (Exception ex)
-            {
-                try
+                if (Connections.TryGetValue(key, out var existing))
                 {
-                    Log.Error("[DaemonWs] Failed to connect to daemon {0}:{1} - {2}", config.EndPoint, config.Port, ex.Message);
-                }
-                catch
-                {
-                }
-                return null;
-            }
-        }
+                    if (existing.ConnectionState is not DaemonConnectionState.Closing and not DaemonConnectionState.Closed)
+                        return Result.Ok<TypedDaemonClient, DaemonError>(existing);
 
-        public static async Task CreateAllDaemonWsAsync()
-        {
-            var listSnapshot = DaemonsListManager.Get;
-            if (listSnapshot == null || listSnapshot.Count == 0)
-            {
-                return;
-            }
-
-            int maxConcurrency = Math.Min(Math.Max(1, Environment.ProcessorCount), 4);
-            using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
-            var tasks = new List<Task>(listSnapshot.Count);
-
-            foreach (var daemonConfig in listSnapshot)
-            {
-                var cfg = daemonConfig;
-                string key = $"{cfg.FriendlyName}|{cfg.EndPoint}|{cfg.Port}";
-
-                // Skip if already connected and online
-                if (DaemonConnections.TryGetValue(key, out var existing) && existing != null && existing.Online)
-                {
-                    continue;
-                }
-
-                await semaphore.WaitAsync().ConfigureAwait(false);
-
-                tasks.Add(Task.Run(async () =>
-                {
+                    Connections.TryRemove(new KeyValuePair<string, TypedDaemonClient>(key, existing));
                     try
                     {
-                        if (DaemonConnections.TryGetValue(key, out var existingDaemon) && existingDaemon != null && existingDaemon.Online)
-                        {
-                            return;
-                        }
-
-#pragma warning disable CS8604 // 引用类型参数可能为 null。
-                        IDaemon daemon = await DaemonClientApi.OpenAsync(
-                            cfg.EndPoint,
-                            cfg.Port,
-                            cfg.Token,
-                            cfg.IsSecure,
-                            new ClientConnectionConfig
-                            {
-                                MaxFailCount = 3,
-                                PendingRequestCapacity = 100,
-                                HeartBeatTick = TimeSpan.FromSeconds(5),
-                                PingTimeout = 5000
-                            }
-                        ).ConfigureAwait(false);
-#pragma warning restore CS8604 // 引用类型参数可能为 null。
-
-                        Add(key, daemon);
-                        Log.Information("[DaemonWs] Connected: {0}:{1}", cfg.EndPoint, cfg.Port);
+                        await existing.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        try
-                        {
-                            Log.Error("[DaemonWs] Failed to connect to daemon {0}:{1} - {2}", cfg.EndPoint, cfg.Port, ex.Message);
-                        }
-                        catch
-                        {
-                        }
+                        Log.Error(ex, "[DaemonWs] Failed to dispose a closed daemon client {0}:{1}", config.EndPoint, config.Port);
+                        return Result.Err<TypedDaemonClient, DaemonError>(new TransportDaemonError(
+                            "transport.dispose_failed",
+                            "The previous daemon client could not be disposed."));
                     }
-                    finally
+                }
+
+                var client = new TypedDaemonClient(validation.Unwrap());
+                try
+                {
+                    var connectResult = await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                    if (connectResult.IsErr(out var connectError))
                     {
-                        semaphore.Release();
+                        await DisposeIgnoringFailureAsync(client, config).ConfigureAwait(false);
+                        LogConnectionFailure(config, connectError!);
+                        return Result.Err<TypedDaemonClient, DaemonError>(connectError!);
                     }
-                }));
+
+                    if (!Connections.TryAdd(key, client))
+                    {
+                        await DisposeIgnoringFailureAsync(client, config).ConfigureAwait(false);
+                        return Connections.TryGetValue(key, out var winner)
+                            ? Result.Ok<TypedDaemonClient, DaemonError>(winner)
+                            : Result.Err<TypedDaemonClient, DaemonError>(new TransportDaemonError(
+                                "transport.connection_race",
+                                "The daemon connection changed while it was being created."));
+                    }
+
+                    Log.Information("[DaemonWs] Connected: {0}:{1}", config.EndPoint, config.Port);
+                    return Result.Ok<TypedDaemonClient, DaemonError>(client);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    await DisposeIgnoringFailureAsync(client, config).ConfigureAwait(false);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    await DisposeIgnoringFailureAsync(client, config).ConfigureAwait(false);
+                    Log.Error(ex, "[DaemonWs] Unexpected connection failure for daemon {0}:{1}", config.EndPoint, config.Port);
+                    return Result.Err<TypedDaemonClient, DaemonError>(new TransportDaemonError(
+                        "transport.connect_failed",
+                        "The daemon client could not establish a connection."));
+                }
             }
+            finally
+            {
+                gate.Release();
+            }
+        }
+
+        public static async Task CreateAllDaemonWsAsync(CancellationToken cancellationToken = default)
+        {
+            var listSnapshot = DaemonsListManager.Get?.ToArray();
+            if (listSnapshot is not { Length: > 0 })
+                return;
+
+            var maxConcurrency = Math.Min(Math.Max(1, Environment.ProcessorCount), 4);
+            using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+            var tasks = listSnapshot.Select(ConnectOneAsync).ToArray();
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            async Task ConnectOneAsync(Constants.DaemonConfigModel config)
+            {
+                await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    var result = await Get(config, cancellationToken).ConfigureAwait(false);
+                    if (result.IsErr(out var error))
+                        LogConnectionFailure(config, error!);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }
+        }
+
+        public static bool TryGetExisting(
+            Constants.DaemonConfigModel config,
+            out TypedDaemonClient? daemon)
+        {
+            var validation = CreateOptions(config);
+            if (validation.IsErr(out _))
+            {
+                daemon = null;
+                return false;
+            }
+
+            return Connections.TryGetValue(GetKey(validation.Unwrap()), out daemon);
+        }
+
+        private static Result<DaemonClientOptions, DaemonError> CreateOptions(Constants.DaemonConfigModel config)
+        {
+            if (config is null)
+            {
+                return Result.Err<DaemonClientOptions, DaemonError>(new ValidationDaemonError(
+                    "connection.config_required",
+                    "A daemon connection configuration is required."));
+            }
+
             try
             {
-                await Task.WhenAll(tasks).ConfigureAwait(false);
+                var scheme = config.IsSecure ? Uri.UriSchemeWss : Uri.UriSchemeWs;
+                var endpoint = new UriBuilder(scheme, config.EndPoint, config.Port, "/api/v2").Uri;
+                return Result.Ok<DaemonClientOptions, DaemonError>(new DaemonClientOptions(endpoint, config.Token!));
             }
-            catch
+            catch (Exception ex) when (ex is ArgumentException or UriFormatException)
             {
+                return Result.Err<DaemonClientOptions, DaemonError>(new ValidationDaemonError(
+                    "connection.config_invalid",
+                    "The daemon connection configuration is invalid."));
+            }
+        }
+
+        private static string GetKey(DaemonClientOptions options)
+        {
+            var tokenDigest = SHA256.HashData(Encoding.UTF8.GetBytes(options.Token));
+            return $"{options.Endpoint.AbsoluteUri}|sha256:{Convert.ToHexString(tokenDigest)}";
+        }
+
+        private static void LogConnectionFailure(Constants.DaemonConfigModel config, DaemonError error)
+        {
+            Log.Error(
+                "[DaemonWs] Failed to connect to daemon {0}:{1} - {2}: {3}",
+                config.EndPoint,
+                config.Port,
+                error.Code,
+                error.Message);
+        }
+
+        private static async Task DisposeIgnoringFailureAsync(
+            TypedDaemonClient client,
+            Constants.DaemonConfigModel config)
+        {
+            try
+            {
+                await client.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[DaemonWs] Failed to dispose daemon client {0}:{1}", config.EndPoint, config.Port);
             }
         }
     }

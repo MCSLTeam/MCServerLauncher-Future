@@ -211,8 +211,20 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             {
                 var card = CreateDaemonCard(daemonConfig);
                 DaemonListView.Items.Add(card);
-                var daemon = isDebugSession ? GetExistingDaemon(daemonConfig) : await DaemonsWsManager.Get(daemonConfig);
-                card.Status = daemon?.Online == true ? "ok" : "err";
+                if (isDebugSession)
+                {
+                    card.Status = GetExistingDaemon(daemonConfig)?.ConnectionState ==
+                        MCServerLauncher.DaemonClient.DaemonConnectionState.Ready
+                        ? "ok"
+                        : "err";
+                    continue;
+                }
+
+                var result = await DaemonsWsManager.Get(daemonConfig);
+                card.Status = result.IsOk(out var daemon) &&
+                    daemon!.ConnectionState == MCServerLauncher.DaemonClient.DaemonConnectionState.Ready
+                    ? "ok"
+                    : "err";
             }
 
             NextButton.IsEnabled = DaemonListView.Items.Count > 0;
@@ -237,10 +249,9 @@ namespace MCServerLauncher.WPF.View.FirstSetupHelper
             return card;
         }
 
-        private static MCServerLauncher.DaemonClient.IDaemon? GetExistingDaemon(Constants.DaemonConfigModel daemonConfig)
+        private static MCServerLauncher.DaemonClient.DaemonClient? GetExistingDaemon(Constants.DaemonConfigModel daemonConfig)
         {
-            var key = $"{daemonConfig.FriendlyName}|{daemonConfig.EndPoint}|{daemonConfig.Port}";
-            return DaemonsWsManager.DaemonConnections.TryGetValue(key, out var daemon) ? daemon : null;
+            return DaemonsWsManager.TryGetExisting(daemonConfig, out var daemon) ? daemon : null;
         }
 
         private async Task AskAddAnotherHostAsync()

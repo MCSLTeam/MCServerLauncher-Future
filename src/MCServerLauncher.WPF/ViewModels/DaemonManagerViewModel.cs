@@ -7,6 +7,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.Services;
@@ -131,7 +132,19 @@ public partial class DaemonManagerViewModel : ObservableObject
                     Status = "ing"
                 };
 
-                await _daemonService.RemoveAsync(originalConfig);
+                var removeResult = await _daemonService.RemoveAsync(originalConfig);
+                if (removeResult.IsErr(out var removeError))
+                {
+                    Log.Error(
+                        "[Daemon] Failed to remove the previous daemon connection while editing {Address}: {Code}: {Message}",
+                        daemon.Address,
+                        removeError!.Code,
+                        removeError.Message);
+                    args.Cancel = true;
+                    NotifyConnectionFailure();
+                    return;
+                }
+
                 if (await ConnectDaemonInternalAsync(newModel))
                 {
                     DaemonsListManager.RemoveDaemon(originalConfig);
@@ -143,7 +156,14 @@ public partial class DaemonManagerViewModel : ObservableObject
                 {
                     args.Cancel = true;
                     await ConnectDaemonInternalAsync(daemon);
+                    NotifyConnectionFailure();
                 }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[Daemon] Failed to edit daemon connection {Address}", daemon.Address);
+                args.Cancel = true;
+                NotifyConnectionFailure();
             }
             finally
             {
@@ -153,6 +173,15 @@ public partial class DaemonManagerViewModel : ObservableObject
 
         try { await dialog.ShowAsync(); }
         catch { }
+    }
+
+    private void NotifyConnectionFailure()
+    {
+        _notification.Push(
+            Lang.Tr["Status_Error"],
+            Lang.Tr["ConnectDaemonFailedTip"],
+            true,
+            InfoBarSeverity.Error);
     }
 
     [RelayCommand]
@@ -169,7 +198,9 @@ public partial class DaemonManagerViewModel : ObservableObject
 
         try
         {
-            await _daemonService.RemoveAsync(daemon.Config);
+            var removeResult = await _daemonService.RemoveAsync(daemon.Config);
+            if (removeResult.IsErr(out var removeError))
+                throw DaemonErrorLocalization.ToException(removeError!);
             Daemons.Remove(daemon);
             ApplyFilters();
             DaemonsListManager.RemoveDaemon(daemon.Config);
@@ -212,15 +243,20 @@ public partial class DaemonManagerViewModel : ObservableObject
     {
         try
         {
-            var daemon = await _daemonService.GetAsync(model.Config);
-            if (daemon == null)
+            var connectionResult = await _daemonService.GetAsync(model.Config);
+            if (connectionResult.IsErr(out var connectionError))
             {
                 model.Status = "err";
-                model.MarkResourceLoadFailed(Lang.Tr["ConnectDaemonFailedSubTip"]);
+                model.MarkResourceLoadFailed(DaemonErrorLocalization.GetMessage(connectionError!));
                 return false;
             }
 
-            var systemInfo = await daemon.GetSystemInfoAsync();
+            var daemon = connectionResult.Unwrap();
+            var systemInfoResult = await daemon.System.GetSystemInfoAsync(default);
+            if (systemInfoResult.IsErr(out var systemInfoError))
+                throw DaemonErrorLocalization.ToException(systemInfoError!);
+
+            var systemInfo = systemInfoResult.Unwrap();
             var systemName = systemInfo.Os.Name;
             var cpuVendor = systemInfo.Cpu.Vendor;
 
@@ -300,22 +336,24 @@ public partial class DaemonManagerViewModel : ObservableObject
         target.DriveUsageTooltip = source.DriveUsageTooltip;
     }
 
-    private static void UpdateResourceUsage(DaemonCardModel model, MCServerLauncher.Common.ProtoType.Status.SystemInfo systemInfo)
+    private static void UpdateResourceUsage(DaemonCardModel model, SystemInfo systemInfo)
     {
         model.CpuUsage = ClampPercentage(systemInfo.Cpu.Usage);
-        model.MemoryUsage = CalculateUsagePercentage(systemInfo.Mem.Total, systemInfo.Mem.Free);
-        model.SystemVersion = $"{systemInfo.Os.Name} ({systemInfo.Os.Arch})";
+        model.MemoryUsage = CalculateUsagePercentage(systemInfo.Mem.TotalKilobytes, systemInfo.Mem.FreeKilobytes);
+        model.SystemVersion = $"{systemInfo.Os.Name} ({systemInfo.Os.Architecture})";
         model.DaemonVersion = string.IsNullOrWhiteSpace(systemInfo.DaemonVersion) ? Lang.Tr["Status_LoadFailed"] : systemInfo.DaemonVersion;
 
-        var usedMemory = systemInfo.Mem.Total > systemInfo.Mem.Free ? systemInfo.Mem.Total - systemInfo.Mem.Free : 0;
-        var drives = systemInfo.Drives is { Length: > 0 } ? systemInfo.Drives : [systemInfo.Drive];
-        var totalDrive = drives.Aggregate(0UL, (sum, drive) => sum + drive.Total);
-        var freeDrive = drives.Aggregate(0UL, (sum, drive) => sum + drive.Free);
+        var usedMemory = systemInfo.Mem.TotalKilobytes > systemInfo.Mem.FreeKilobytes
+            ? systemInfo.Mem.TotalKilobytes - systemInfo.Mem.FreeKilobytes
+            : 0;
+        var drives = systemInfo.Drives.IsDefaultOrEmpty ? [systemInfo.Drive] : systemInfo.Drives.ToArray();
+        var totalDrive = drives.Aggregate(0UL, (sum, drive) => sum + drive.TotalBytes);
+        var freeDrive = drives.Aggregate(0UL, (sum, drive) => sum + drive.FreeBytes);
         var usedDrive = totalDrive > freeDrive ? totalDrive - freeDrive : 0;
 
         model.DriveUsage = CalculateUsagePercentage(totalDrive, freeDrive);
         model.CpuUsageText = $"{model.CpuUsage:F2}% ({systemInfo.Cpu.CoreCount}C / {systemInfo.Cpu.ThreadCount}T)";
-        model.MemoryUsageText = $"{model.MemoryUsage:F2}% ({FormatSize(usedMemory * 1024d)} / {FormatSize(systemInfo.Mem.Total * 1024d)})";
+        model.MemoryUsageText = $"{model.MemoryUsage:F2}% ({FormatSize(usedMemory * 1024d)} / {FormatSize(systemInfo.Mem.TotalKilobytes * 1024d)})";
         model.DriveUsageText = $"{model.DriveUsage:F2}% ({FormatSize(usedDrive)} / {FormatSize(totalDrive)})";
         model.DriveUsageTooltip = string.Join(Environment.NewLine, drives.Select(FormatDriveUsage));
         model.ResourceSummary = $"{Lang.Tr["Daemon_CpuUsage"]} {model.CpuUsage:F2}% | {Lang.Tr["Daemon_MemoryUsage"]} {model.MemoryUsage:F2}% | {Lang.Tr["Daemon_DriveUsage"]} {model.DriveUsage:F2}%";
@@ -428,12 +466,12 @@ public partial class DaemonManagerViewModel : ObservableObject
         return $"{value:F2} {suffixes[suffixIndex]}";
     }
 
-    private static string FormatDriveUsage(MCServerLauncher.Common.ProtoType.Status.DriveInformation drive)
+    private static string FormatDriveUsage(DriveInfo drive)
     {
-        var used = drive.Total > drive.Free ? drive.Total - drive.Free : 0;
-        var usage = CalculateUsagePercentage(drive.Total, drive.Free);
+        var used = drive.TotalBytes > drive.FreeBytes ? drive.TotalBytes - drive.FreeBytes : 0;
+        var usage = CalculateUsagePercentage(drive.TotalBytes, drive.FreeBytes);
         var name = string.IsNullOrWhiteSpace(drive.Name) ? drive.DriveFormat : drive.Name;
-        return $"{name} {usage:F2}% ({FormatSize(used)} / {FormatSize(drive.Total)})";
+        return $"{name} {usage:F2}% ({FormatSize(used)} / {FormatSize(drive.TotalBytes)})";
     }
 
     private static int GetStoredRefreshInterval()

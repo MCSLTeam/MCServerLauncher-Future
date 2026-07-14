@@ -1,14 +1,33 @@
-using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.DaemonClient;
-using MCServerLauncher.WPF.Modules;
-using Serilog;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.EventRules;
+using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.ProtoType.Serialization;
+using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Events;
+using MCServerLauncher.DaemonClient;
+using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
+using RustyOptions;
+using Serilog;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
+using TypedInstanceReport = MCServerLauncher.Common.Contracts.Instances.InstanceReport;
+using InstanceCommandRequest = MCServerLauncher.Common.Contracts.Instances.InstanceCommandRequest;
+using InstanceLogQuery = MCServerLauncher.Common.Contracts.Instances.InstanceLogQuery;
+using InstanceReference = MCServerLauncher.Common.Contracts.Instances.InstanceReference;
 
 namespace MCServerLauncher.WPF.InstanceConsole.Modules
 {
-    /// <summary>
+        /// <summary>
     /// Manages instance data and daemon communication for console window
     /// </summary>
     public class InstanceDataManager
@@ -16,7 +35,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         private static InstanceDataManager? _instance;
         private static readonly object Lock = new();
 
-        private IDaemon? _daemon;
+        private TypedDaemonClient? _daemon;
+        private DaemonEventBridge? _eventBridge;
         private Guid _instanceId;
         private Constants.DaemonConfigModel? _daemonConfig;
         private InstanceReport? _latestReport;
@@ -38,7 +58,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
         }
 
-        /// <summary>
+    /// <summary>
         /// Current instance report
         /// </summary>
         public InstanceReport? CurrentReport
@@ -59,22 +79,15 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Check if daemon is connected
         /// </summary>
-        public bool IsConnected => _daemon != null && _daemon.Online;
-        public IDaemon? CurrentDaemon => _daemon;
+        public bool IsConnected => _daemon?.ConnectionState == DaemonConnectionState.Ready;
+
+        public TypedDaemonClient? CurrentDaemon => _daemon;
 
         /// <summary>
         /// Check if current instance is a Minecraft server
         /// </summary>
-        public bool IsMinecraftInstance
-        {
-            get
-            {
-                if (CurrentReport == null)
-                    return false;
-
-                return CurrentReport.Config.InstanceType.SupportsMinecraftBoardWidgets();
-            }
-        }
+        public bool IsMinecraftInstance =>
+            CurrentReport?.Config.InstanceType.SupportsMinecraftBoardWidgets() == true;
 
         /// <summary>
         /// Event fired when instance report is updated
@@ -96,35 +109,95 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                 _daemonConfig = daemonConfig;
                 _instanceId = instanceId;
 
-                // Get daemon connection
-                _daemon = await DaemonsWsManager.Get(daemonConfig);
-                if (_daemon == null)
-                {
-                    Log.Error("[InstanceDataManager] Failed to connect to daemon");
-                    throw new InvalidOperationException("Failed to connect to daemon");
-                }
+                var connectionResult = await DaemonsWsManager.Get(daemonConfig);
+                if (connectionResult.IsErr(out var connectionError))
+                    throw DaemonErrorLocalization.ToException(connectionError!);
 
-                // Subscribe to instance logs
-                _daemon.InstanceLogEvent += OnInstanceLog;
+                _daemon = connectionResult.Unwrap();
+                var bridgeResult = await CreateEventBridgeAsync(
+                    new DaemonClientEventSource(_daemon),
+                    instanceId,
+                    DispatchAsync,
+                    log => LogReceived?.Invoke(this, log),
+                    (title, message, severity) => Notification.Push(
+                        title,
+                        message,
+                        true,
+                        severity,
+                        Constants.InfoBarPosition.Top,
+                        5000,
+                        false));
+                if (bridgeResult.IsErr(out var bridgeError))
+                    throw DaemonErrorLocalization.ToException(bridgeError!);
 
-                await _daemon.SubscribeEvent(
-                    Common.ProtoType.Event.EventType.InstanceLog,
-                    new Common.ProtoType.Event.InstanceLogEventMeta { InstanceId = instanceId }
-                );
-
-                // Initial data load
+                _eventBridge = bridgeResult.Unwrap();
                 await RefreshInstanceDataAsync();
-
-                // Start periodic refresh (every 2 seconds)
-                _refreshTimer = new Timer(async _ => await RefreshInstanceDataAsync(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+                _refreshTimer = new Timer(
+                    async _ => await RefreshInstanceDataAsync(),
+                    null,
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(2));
 
                 Log.Information("[InstanceDataManager] Initialized for instance {0}", instanceId);
             }
             catch (Exception ex)
             {
+                if (_eventBridge != null)
+                {
+                    try
+                    {
+                        await _eventBridge.DisposeAsync();
+                    }
+                    catch (Exception disposeException)
+                    {
+                        Log.Error(disposeException, "[InstanceDataManager] Failed to clean up event bridge after initialization failure");
+                    }
+
+                    _eventBridge = null;
+                }
+
                 Log.Error(ex, "[InstanceDataManager] Failed to initialize");
                 throw;
             }
+        }
+
+        internal static Task<Result<DaemonEventBridge, DaemonError>> CreateEventBridgeAsync(
+            ITypedDaemonEventSource source,
+            Guid instanceId,
+            Func<Action, Task> dispatchAsync,
+            Action<string> appendLog,
+            Action<string, string, InfoBarSeverity> pushNotification,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(dispatchAsync);
+            ArgumentNullException.ThrowIfNull(appendLog);
+            ArgumentNullException.ThrowIfNull(pushNotification);
+
+            return DaemonEventBridge.CreateAsync(
+                source,
+                instanceId,
+                @event =>
+                {
+                    if (@event.Meta.Kind != DaemonEventFieldKind.Value ||
+                        @event.Data.Kind != DaemonEventFieldKind.Value ||
+                        @event.Meta.Value.InstanceId != instanceId)
+                        return Task.CompletedTask;
+
+                    return dispatchAsync(() => appendLog(@event.Data.Value.Log));
+                },
+                @event =>
+                {
+                    if (@event.Meta.Kind != DaemonEventFieldKind.Value ||
+                        @event.Data.Kind != DaemonEventFieldKind.Value ||
+                        @event.Meta.Value.SourceInstanceId != instanceId)
+                        return Task.CompletedTask;
+
+                    var data = @event.Data.Value;
+                    var severity = DaemonEventBridge.MapNotificationSeverity(data.Severity);
+                    return dispatchAsync(() => pushNotification(data.Title, data.Message, severity));
+                },
+                cancellationToken);
         }
 
         /// <summary>
@@ -134,19 +207,22 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || _isDisposed || !_daemon.Online)
+                if (_daemon == null || _isDisposed || !IsConnected)
                 {
-                    CurrentReport = null;
+                    await SetCurrentReportAsync(null);
                     return;
                 }
 
-                var report = await _daemon.GetInstanceReportAsync(_instanceId);
-                CurrentReport = report;
+                var reportResult = await _daemon.Instances.GetInstanceReportAsync(new InstanceReference(_instanceId), default);
+                if (reportResult.IsErr(out var error))
+                    throw DaemonErrorLocalization.ToException(error!);
+
+                await SetCurrentReportAsync(ToPresentationReport(reportResult.Unwrap()));
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to refresh instance data");
-                CurrentReport = null;
+                await SetCurrentReportAsync(null);
             }
         }
 
@@ -157,10 +233,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon not initialized or offline");
-
-                await _daemon.StartInstanceAsync(_instanceId);
+                var daemon = GetReadyDaemon();
+                await EnsureSuccessAsync(daemon.Instances.StartInstanceAsync(new InstanceReference(_instanceId), default));
                 Log.Information("[InstanceDataManager] Started instance {0}", _instanceId);
             }
             catch (Exception ex)
@@ -177,10 +251,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon not initialized or offline");
-
-                await _daemon.StopInstanceAsync(_instanceId);
+                var daemon = GetReadyDaemon();
+                await EnsureSuccessAsync(daemon.Instances.StopInstanceAsync(new InstanceReference(_instanceId), default));
                 Log.Information("[InstanceDataManager] Stopped instance {0}", _instanceId);
             }
             catch (Exception ex)
@@ -197,10 +269,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon not initialized or offline");
-
-                await _daemon.KillInstanceAsync(_instanceId);
+                var daemon = GetReadyDaemon();
+                await EnsureSuccessAsync(daemon.Instances.HaltInstanceAsync(new InstanceReference(_instanceId), default));
                 Log.Information("[InstanceDataManager] Killed instance {0}", _instanceId);
             }
             catch (Exception ex)
@@ -217,10 +287,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon not initialized or offline");
-
-                await _daemon.RestartInstanceAsync(_instanceId);
+                var daemon = GetReadyDaemon();
+                await EnsureSuccessAsync(daemon.RestartInstanceAsync(_instanceId));
                 Log.Information("[InstanceDataManager] Restarted instance {0}", _instanceId);
             }
             catch (Exception ex)
@@ -237,10 +305,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon not initialized or offline");
-
-                await _daemon.SentToInstanceAsync(_instanceId, command);
+                var daemon = GetReadyDaemon();
+                await EnsureSuccessAsync(daemon.Instances.SendCommandAsync(new InstanceCommandRequest(_instanceId, command), default));
                 Log.Debug("[InstanceDataManager] Sent command to instance {0}: {1}", _instanceId, command);
             }
             catch (Exception ex)
@@ -257,10 +323,19 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_isDisposed || _daemon == null || !_daemon.Online)
+                var daemon = GetReadyDaemon();
+                var started = Stopwatch.GetTimestamp();
+                var result = await daemon.PingAsync();
+                if (result.IsErr(out var error))
+                {
+                    Log.Warning(
+                        "[InstanceDataManager] Daemon ping failed: {Code}: {Message}",
+                        error!.Code,
+                        error.Message);
                     return null;
+                }
 
-                return await _daemon.PingAsync();
+                return (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             }
             catch (Exception ex)
             {
@@ -276,10 +351,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         {
             try
             {
-                if (_isDisposed || _daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon is offline or unavailable.");
+                var daemon = GetReadyDaemon();
+                var logResult = await daemon.Instances.GetInstanceLogAsync(new InstanceLogQuery(_instanceId), default);
+                if (logResult.IsErr(out var error))
+                    throw DaemonErrorLocalization.ToException(error!);
 
-                return await _daemon.GetInstanceLogHistoryAsync(_instanceId);
+                return logResult.Unwrap().Logs.ToArray();
             }
             catch (Exception ex)
             {
@@ -291,14 +368,16 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Get event rules
         /// </summary>
-        public async Task<System.Collections.Generic.List<Common.ProtoType.EventTrigger.EventRule>> GetEventRulesAsync()
+        public async Task<List<EventRule>> GetEventRulesAsync()
         {
             try
             {
-                if (_isDisposed || _daemon == null || !_daemon.Online)
-                    throw new InvalidOperationException("Daemon is offline or unavailable.");
+                var daemon = GetReadyDaemon();
+                var rulesResult = await daemon.EventRules.GetEventRulesAsync(new EventRuleQuery(_instanceId), default);
+                if (rulesResult.IsErr(out var error))
+                    throw DaemonErrorLocalization.ToException(error!);
 
-                return await _daemon.GetEventRulesAsync(_instanceId);
+                return JsonSerializer.Deserialize<List<EventRule>>(rulesResult.Unwrap().Rules, StjResolver.CreateDefaultOptions()) ?? [];
             }
             catch (Exception ex)
             {
@@ -310,27 +389,20 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Save event rules
         /// </summary>
-        public async Task SaveEventRulesAsync(System.Collections.Generic.List<Common.ProtoType.EventTrigger.EventRule> rules)
+        public async Task SaveEventRulesAsync(List<EventRule> rules)
         {
             try
             {
-                if (_isDisposed || _daemon == null || !_daemon.Online)
-                    return;
-
-                await _daemon.SaveEventRulesAsync(_instanceId, rules);
+                var daemon = GetReadyDaemon();
+                var request = new EventRuleUpdateRequest(
+                    _instanceId,
+                    JsonSerializer.SerializeToElement(rules, StjResolver.CreateDefaultOptions()));
+                await EnsureSuccessAsync(daemon.EventRules.UpdateEventRulesAsync(request, default));
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[InstanceDataManager] Failed to save event rules");
                 throw;
-            }
-        }
-
-        private void OnInstanceLog(Guid instanceId, string log)
-        {
-            if (instanceId == _instanceId)
-            {
-                LogReceived?.Invoke(this, log);
             }
         }
 
@@ -343,32 +415,89 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                 return;
 
             _isDisposed = true;
-
             _refreshTimer?.Dispose();
             _refreshTimer = null;
 
-            if (_daemon != null)
+            if (_eventBridge != null)
             {
                 try
                 {
-                    await _daemon.UnSubscribeEvent(
-                        Common.ProtoType.Event.EventType.InstanceLog,
-                        new Common.ProtoType.Event.InstanceLogEventMeta { InstanceId = _instanceId }
-                    );
+                    await _eventBridge.DisposeAsync();
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex, "[InstanceDataManager] Error unsubscribing from events");
                 }
 
-                _daemon.InstanceLogEvent -= OnInstanceLog;
+                _eventBridge = null;
             }
 
             _daemon = null;
             _latestReport = null;
-            _instance = null; // Reset the singleton instance so it can be re-initialized
+            _instance = null;
 
             Log.Information("[InstanceDataManager] Disposed");
+        }
+
+        private TypedDaemonClient GetReadyDaemon()
+        {
+            if (_isDisposed || _daemon == null || !IsConnected)
+                throw new InvalidOperationException("Daemon is offline or unavailable.");
+
+            return _daemon;
+        }
+
+        private static async Task EnsureSuccessAsync(Task<RustyOptions.Result<RustyOptions.Unit, MCServerLauncher.Daemon.API.Errors.DaemonError>> task)
+        {
+            var result = await task;
+            if (result.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
+        }
+
+        private Task SetCurrentReportAsync(InstanceReport? report)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                CurrentReport = report;
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(() => CurrentReport = report).Task;
+        }
+
+        private static Task DispatchAsync(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action).Task;
+        }
+
+        private static InstanceReport ToPresentationReport(TypedInstanceReport report)
+        {
+            var config = report.Config;
+            return new InstanceReport(
+                report.Status,
+                new InstanceConfig
+                {
+                    Name = config.Name,
+                    Target = config.Target,
+                    InstanceType = config.InstanceType,
+                    TargetType = config.TargetType,
+                    Version = config.Version,
+                    InputEncodingWebName = config.InputEncoding,
+                    OutputEncodingWebName = config.OutputEncoding,
+                    JavaPath = config.JavaPath,
+                    Arguments = config.Arguments.ToArray()
+                },
+                report.Properties.ToDictionary(pair => pair.Key, pair => pair.Value),
+                report.Players.Select(player => new Player(player.Name, player.Uuid)).ToArray(),
+                new InstancePerformanceCounter(report.PerformanceCounter.Cpu, report.PerformanceCounter.MemoryBytes));
         }
     }
 }

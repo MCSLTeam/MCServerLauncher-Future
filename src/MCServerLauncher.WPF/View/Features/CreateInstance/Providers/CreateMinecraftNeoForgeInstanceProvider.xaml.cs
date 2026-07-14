@@ -1,14 +1,18 @@
 using MCServerLauncher.Common.Extensibility;
 using iNKORE.UI.WPF.Modern.Controls;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
-using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.View.Components.CreateInstance;
 using MCServerLauncher.WPF.View.Pages;
 using System;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text.Json;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using static MCServerLauncher.WPF.Modules.Constants;
@@ -186,9 +190,9 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                 }
 
                 var daemonConfig = DaemonsListManager.MatchDaemonBySelection(SelectedDaemon);
-                var daemon = await DaemonsWsManager.Get(daemonConfig);
+                var connectionResult = await DaemonsWsManager.Get(daemonConfig);
 
-                if (daemon == null)
+                if (connectionResult.IsErr(out _))
                 {
                     Notification.Push(Lang.Tr["Error"], Lang.Tr["DaemonConnectionError"],
                         true, InfoBarSeverity.Error, InfoBarPosition.Top, 5000, false);
@@ -196,25 +200,17 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     return;
                 }
 
-                var setting = new InstanceFactorySetting
-                {
-                    Name = instanceName,
-                    Source = installerUrl,
-                    SourceType = SourceType.Core,
-                    Target = installerFileName,
-                    TargetType = TargetType,
-                    InstanceType = InstanceType,
-                    JavaPath = javaPath,
-                    Arguments = arguments,
-                    Version = mcVersion,
-                    Mirror = useMirror ? InstanceFactoryMirror.BmclApi : InstanceFactoryMirror.None,
-                    UsePostProcess = false
-                };
+                var daemon = connectionResult.Unwrap();
+                var request = CreateRequest(
+                    instanceName, installerUrl, installerFileName, javaPath, arguments, mcVersion,
+                    useMirror ? InstanceFactoryMirror.BmclApi : InstanceFactoryMirror.None);
 
                 Notification.Push(Lang.Tr["PleaseWait"], Lang.Tr["CreatingInstance"],
                     false, InfoBarSeverity.Informational, InfoBarPosition.Top, 5000, false);
 
-                await daemon.AddInstanceAsync(setting);
+                var createResult = await daemon.Instances.CreateInstanceAsync(request, CancellationToken.None);
+                if (createResult.IsErr(out var createError))
+                    throw DaemonErrorLocalization.ToException(createError!);
 
                 Notification.Push(Lang.Tr["Success"], Lang.Tr["InstanceCreatedSuccess"],
                     true, InfoBarSeverity.Success, InfoBarPosition.Top, 3000, false);
@@ -228,6 +224,25 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
                     true, InfoBarSeverity.Error, InfoBarPosition.Top, 5000, false);
                 FinishButton.IsEnabled = true;
             }
+        }
+
+        private CreateInstanceRequest CreateRequest(
+            string name,
+            string source,
+            string target,
+            string javaPath,
+            string[] arguments,
+            string version,
+            InstanceFactoryMirror mirror)
+        {
+            using var eventRules = JsonDocument.Parse("[]");
+            var configuration = new InstanceConfiguration(
+                Guid.NewGuid(), name, target, InstanceType, TargetType, version,
+                "utf-8", "utf-8", javaPath, arguments.ToImmutableArray(),
+                ImmutableDictionary<string, string>.Empty,
+                eventRules.RootElement);
+            return new CreateInstanceRequest(new InstanceFactoryConfiguration(
+                configuration, source, SourceType.Core, mirror, false));
         }
     }
 }

@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Events;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Protocol;
@@ -89,11 +90,24 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DisposeAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DisposeAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
                 .Order());
+        var ping = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.PingAsync));
+        Assert.NotNull(ping);
+        Assert.Equal(typeof(Task<Result<PingResult, DaemonError>>), ping.ReturnType);
+        var pingCancellation = Assert.Single(ping.GetParameters());
+        Assert.Equal(typeof(CancellationToken), pingCancellation.ParameterType);
+        Assert.True(pingCancellation.IsOptional);
+        var restart = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.RestartInstanceAsync));
+        Assert.NotNull(restart);
+        Assert.Equal(typeof(Task<Result<Unit, DaemonError>>), restart.ReturnType);
+        Assert.Equal(
+            [typeof(Guid), typeof(CancellationToken)],
+            restart.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(restart.GetParameters()[1].IsOptional);
         Assert.Equal("StateChanged", Assert.Single(type.GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)).Name);
 
         var signatures = type.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
@@ -196,6 +210,115 @@ public sealed class DaemonClientFacadeTests
     }
 
     [Fact]
+    public async Task ReadyPingUsesFrozenMethodReturnsTypedResultAndPreservesCancellation()
+    {
+        var factory = new ControlledSessionFactory();
+        await using var client = Client(factory);
+        var session = await MakeReadyAsync(client, factory);
+
+        var pinging = client.PingAsync();
+        var ping = await session.Transport.NextAsync();
+        Assert.Equal(BuiltInProtocolDefinitions.PingDaemon.Method.Value, ping.Method);
+        session.RouteSuccess(ping, "{\"time\":123456789}");
+
+        var result = await pinging.WaitAsync(Timeout);
+        Assert.True(result.IsOk(out var value));
+        Assert.Equal(123456789, value!.Time);
+
+        using var cancellation = new CancellationTokenSource();
+        var canceledPing = client.PingAsync(cancellation.Token);
+        Assert.Equal(
+            BuiltInProtocolDefinitions.PingDaemon.Method.Value,
+            (await session.Transport.NextAsync()).Method);
+        cancellation.Cancel();
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledPing);
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+    }
+
+    [Fact]
+    public async Task RestartStopsWaitsOneSecondThenStarts()
+    {
+        var factory = new ControlledSessionFactory();
+        var time = new ManualTimeProvider();
+        await using var client = Client(factory, time);
+        var session = await MakeReadyAsync(client, factory);
+        var instanceId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+
+        var restarting = client.RestartInstanceAsync(instanceId);
+        var stop = await session.Transport.NextAsync();
+        Assert.Equal(BuiltInProtocolDefinitions.StopInstance.Method.Value, stop.Method);
+        session.RouteSuccess(stop);
+
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+        Assert.False(restarting.IsCompleted);
+        Assert.Equal(TimeSpan.FromSeconds(1), time.LastDueTime);
+        time.Advance(TimeSpan.FromMilliseconds(999));
+        Assert.False(restarting.IsCompleted);
+        Assert.Equal(0, session.Transport.PendingCount);
+
+        time.Advance(TimeSpan.FromMilliseconds(1));
+        var start = await session.Transport.NextAsync();
+        Assert.Equal(BuiltInProtocolDefinitions.StartInstance.Method.Value, start.Method);
+        session.RouteSuccess(start);
+
+        Assert.True((await restarting.WaitAsync(Timeout)).IsOk(out _));
+    }
+
+    [Fact]
+    public async Task RestartStopAndStartErrorsRemainTyped()
+    {
+        var stopFactory = new ControlledSessionFactory();
+        var stopTime = new ManualTimeProvider();
+        await using var stopClient = Client(stopFactory, stopTime);
+        var stopSession = await MakeReadyAsync(stopClient, stopFactory);
+
+        var stopped = stopClient.RestartInstanceAsync(Guid.NewGuid());
+        var stop = await stopSession.Transport.NextAsync();
+        stopSession.RouteError(stop, "instance.stop_failed", "conflict");
+        var stopResult = await stopped.WaitAsync(Timeout);
+        Assert.True(stopResult.IsErr(out var stopError));
+        Assert.Equal("instance.stop_failed", stopError!.Code);
+        Assert.Equal(0, stopTime.TimerCount);
+        Assert.Equal(0, stopSession.Transport.PendingCount);
+
+        var startFactory = new ControlledSessionFactory();
+        var startTime = new ManualTimeProvider();
+        await using var startClient = Client(startFactory, startTime);
+        var startSession = await MakeReadyAsync(startClient, startFactory);
+
+        var started = startClient.RestartInstanceAsync(Guid.NewGuid());
+        var successfulStop = await startSession.Transport.NextAsync();
+        startSession.RouteSuccess(successfulStop);
+        await startTime.TimerCreated.Task.WaitAsync(Timeout);
+        startTime.Advance(TimeSpan.FromSeconds(1));
+        var start = await startSession.Transport.NextAsync();
+        startSession.RouteError(start, "instance.start_failed", "conflict");
+        var startResult = await started.WaitAsync(Timeout);
+        Assert.True(startResult.IsErr(out var startError));
+        Assert.Equal("instance.start_failed", startError!.Code);
+    }
+
+    [Fact]
+    public async Task RestartDelayCancellationPreservesTokenAndDoesNotStart()
+    {
+        var factory = new ControlledSessionFactory();
+        var time = new ManualTimeProvider();
+        await using var client = Client(factory, time);
+        var session = await MakeReadyAsync(client, factory);
+        using var cancellation = new CancellationTokenSource();
+
+        var restarting = client.RestartInstanceAsync(Guid.NewGuid(), cancellation.Token);
+        var stop = await session.Transport.NextAsync();
+        session.RouteSuccess(stop);
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+
+        cancellation.Cancel();
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => restarting);
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(0, session.Transport.PendingCount);
+    }
+
+    [Fact]
     public async Task SubscriptionAndFacadeDisposeShareOneCleanupTask()
     {
         var inner = new BlockingAsyncDisposable();
@@ -225,8 +348,12 @@ public sealed class DaemonClientFacadeTests
 
     private static Uri Endpoint() => new("ws://daemon.example/api/v2");
 
-    private static MCServerLauncher.DaemonClient.DaemonClient Client(ControlledSessionFactory factory) =>
-        new(new V2ClientConnectionOwner(factory, TimeProvider.System, TimeSpan.FromSeconds(3)));
+    private static MCServerLauncher.DaemonClient.DaemonClient Client(
+        ControlledSessionFactory factory,
+        TimeProvider? timeProvider = null) =>
+        new(
+            new V2ClientConnectionOwner(factory, TimeProvider.System, TimeSpan.FromSeconds(3)),
+            timeProvider ?? TimeProvider.System);
 
     private static async Task<ControlledSession> MakeReadyAsync(
         MCServerLauncher.DaemonClient.DaemonClient client,
@@ -345,6 +472,10 @@ public sealed class DaemonClientFacadeTests
             Coordinator.Core.RouteText(Encoding.UTF8.GetBytes(
                 $"{{\"jsonrpc\":\"2.0\",\"id\":{request.IdJson},\"result\":{result}}}"));
 
+        internal void RouteError(SentRequest request, string code, string kind) =>
+            Coordinator.Core.RouteText(Encoding.UTF8.GetBytes(
+                $"{{\"jsonrpc\":\"2.0\",\"id\":{request.IdJson},\"error\":{{\"code\":-32000,\"message\":\"Rejected\",\"data\":{{\"daemon_error_code\":\"{code}\",\"daemon_error_kind\":\"{kind}\",\"correlation_id\":\"facade-test\"}}}}}}"));
+
         internal void RouteNotification(string notification) =>
             Coordinator.Core.RouteText(Encoding.UTF8.GetBytes(notification));
     }
@@ -353,6 +484,8 @@ public sealed class DaemonClientFacadeTests
     {
         private readonly ConcurrentQueue<SentRequest> _requests = new();
         private readonly SemaphoreSlim _available = new(0);
+
+        internal int PendingCount => _requests.Count;
 
         public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
         {
@@ -374,6 +507,72 @@ public sealed class DaemonClientFacadeTests
             Assert.True(await _available.WaitAsync(Timeout));
             Assert.True(_requests.TryDequeue(out var request));
             return request!;
+        }
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private readonly List<ManualTimer> _timers = [];
+        private int _timerCount;
+
+        internal TaskCompletionSource TimerCreated { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal int TimerCount => Volatile.Read(ref _timerCount);
+
+        internal TimeSpan LastDueTime { get; private set; }
+
+        public override ITimer CreateTimer(
+            TimerCallback callback,
+            object? state,
+            TimeSpan dueTime,
+            TimeSpan period)
+        {
+            LastDueTime = dueTime;
+            var timer = new ManualTimer(callback, state, dueTime);
+            lock (_timers)
+                _timers.Add(timer);
+            Interlocked.Increment(ref _timerCount);
+            TimerCreated.TrySetResult();
+            return timer;
+        }
+
+        internal void Advance(TimeSpan elapsed)
+        {
+            ManualTimer[] timers;
+            lock (_timers)
+                timers = _timers.ToArray();
+            foreach (var timer in timers)
+                timer.Advance(elapsed);
+        }
+
+        private sealed class ManualTimer(
+            TimerCallback callback,
+            object? state,
+            TimeSpan remaining) : ITimer
+        {
+            private int _disposed;
+
+            public bool Change(TimeSpan dueTime, TimeSpan period)
+            {
+                remaining = dueTime;
+                return Volatile.Read(ref _disposed) == 0;
+            }
+
+            public void Dispose() => Interlocked.Exchange(ref _disposed, 1);
+
+            public ValueTask DisposeAsync()
+            {
+                Dispose();
+                return ValueTask.CompletedTask;
+            }
+
+            internal void Advance(TimeSpan elapsed)
+            {
+                remaining -= elapsed;
+                if (remaining <= TimeSpan.Zero && Interlocked.Exchange(ref _disposed, 1) == 0)
+                    callback(state);
+            }
         }
     }
 
