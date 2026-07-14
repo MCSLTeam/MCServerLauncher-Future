@@ -50,9 +50,10 @@ public sealed class TouchSocketV2RealHostIntegrationTests
             Assert.Equal(publishedCatalog!.Rpcs.Count,
                 document.RootElement.GetProperty("result").GetProperty("methods").GetArrayLength());
 
-            await AssertHandshakeRejectedAsync(port, token: null);
-            await AssertHandshakeRejectedAsync(port, "not-a-valid-token");
-            await AssertHandshakeRejectedAsync(port, JwtUtils.GenerateToken("*", -1));
+            // TouchSocket can reset a rejected upgrade before HttpClient receives the status response.
+            await AssertHandshakeRejectedAsync(port, token: null, allowConnectionReset: true);
+            await AssertHandshakeRejectedAsync(port, "not-a-valid-token", allowConnectionReset: true);
+            await AssertHandshakeRejectedAsync(port, JwtUtils.GenerateToken("*", -1), allowConnectionReset: true);
             WsVerifyHandler.RejectWithNoReason = true;
             try
             {
