@@ -15,6 +15,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
     private static readonly Guid InstanceId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private const string SystemInfoJson = "{\"os\":{\"name\":\"Windows\",\"architecture\":\"x64\"},\"cpu\":{\"vendor\":\"vendor\",\"name\":\"cpu\",\"count\":16,\"usage\":5.5,\"core_count\":8,\"thread_count\":16},\"mem\":{\"total_kilobytes\":32768,\"free_kilobytes\":16384},\"drive\":{\"drive_format\":\"NTFS\",\"total_bytes\":1024,\"free_bytes\":512,\"name\":\"C\"},\"drives\":[],\"daemon_version\":\"2.0.0\"}";
     private readonly List<V2ClientConnectionCoordinator> _coordinators = [];
     private readonly List<V2ClientSubscriptionRegistry> _registries = [];
 
@@ -71,7 +72,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var firstTask = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
-            _ => { });
+            _ => Task.CompletedTask);
         var subscribe = await fixture.Transport.NextAsync();
         Assert.Equal("mcsl.event.subscribe", subscribe.Method);
         Assert.Equal(InstanceId.ToString("D"), Params(subscribe).GetProperty("meta").GetProperty("instance_id").GetString());
@@ -81,7 +82,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var second = (await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
-            _ => { }).WaitAsync(Timeout)).Unwrap();
+            _ => Task.CompletedTask).WaitAsync(Timeout)).Unwrap();
         Assert.Equal(3, fixture.Transport.SendCount);
         await first.DisposeAsync();
         Assert.Equal(3, fixture.Transport.SendCount);
@@ -96,10 +97,11 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     {
         var fixture = await ReadyFixtureAsync();
         var calls = new List<string>();
+        var allCalls = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var wildcardTask = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            value => calls.Add("wildcard:" + value.Data.Value.Log));
+            value => AddAsync(calls, "wildcard:" + value.Data.Value.Log));
         var wildcardRequest = await fixture.Transport.NextAsync();
         Assert.False(Params(wildcardRequest).TryGetProperty("meta", out _));
         fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "buffered"));
@@ -110,12 +112,18 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var exactTask = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
-            value => calls.Add("exact:" + value.Data.Value.Log));
+            value =>
+            {
+                calls.Add("exact:" + value.Data.Value.Log);
+                allCalls.TrySetResult();
+                return Task.CompletedTask;
+            });
         var exactRequest = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(Success(exactRequest));
         var exact = (await exactTask).Unwrap();
         fixture.Coordinator.Core.RouteText(LogEvent(2, Guid.NewGuid(), "other"));
         fixture.Coordinator.Core.RouteText(LogEvent(3, InstanceId, "matching"));
+        await allCalls.Task.WaitAsync(Timeout);
 
         Assert.Equal([
             "wildcard:buffered",
@@ -128,22 +136,117 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PendingRouteBlocksLaterActiveRouteUntilAckThenGlobalFifoDeliversBoth()
+    {
+        var scheduler = new ControlledDeliveryScheduler();
+        var fixture = await ReadyFixtureAsync(queueDeliveryDrain: scheduler.Queue);
+        var calls = new List<string>();
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reportTask = fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.DaemonReport,
+            DaemonEventFilter<EmptyRequest>.Wildcard,
+            _ =>
+            {
+                calls.Add("report");
+                if (calls.Count == 2)
+                    completed.TrySetResult();
+                return Task.CompletedTask;
+            });
+        var reportRequest = await fixture.Transport.NextAsync();
+        fixture.Coordinator.Core.RouteText(Success(reportRequest));
+        var report = (await reportTask.WaitAsync(Timeout)).Unwrap();
+
+        var logTask = fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ =>
+            {
+                calls.Add("log");
+                if (calls.Count == 2)
+                    completed.TrySetResult();
+                return Task.CompletedTask;
+            });
+        var logRequest = await fixture.Transport.NextAsync();
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "pending"));
+        Assert.Equal(0, scheduler.QueueCount);
+        fixture.Coordinator.Core.RouteText(ReportEvent(2));
+
+        Assert.Equal(0, scheduler.QueueCount);
+        Assert.Empty(calls);
+        fixture.Coordinator.Core.RouteText(Success(logRequest));
+        var log = (await logTask.WaitAsync(Timeout)).Unwrap();
+        var drain = await scheduler.NextAsync();
+        drain();
+        await completed.Task.WaitAsync(Timeout);
+
+        Assert.Equal(["log", "report"], calls);
+        await DisposeHandleAsync(fixture, report);
+        await DisposeHandleAsync(fixture, log);
+    }
+
+    [Fact]
+    public async Task PendingSubscribeFailureReleasesLaterActiveRouteWithoutInvalidatingEpoch()
+    {
+        var scheduler = new ControlledDeliveryScheduler();
+        var fixture = await ReadyFixtureAsync(queueDeliveryDrain: scheduler.Queue);
+        var reportDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = new List<string>();
+        var reportTask = fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.DaemonReport,
+            DaemonEventFilter<EmptyRequest>.Wildcard,
+            _ =>
+            {
+                calls.Add("report");
+                reportDelivered.TrySetResult();
+                return Task.CompletedTask;
+            });
+        var reportRequest = await fixture.Transport.NextAsync();
+        fixture.Coordinator.Core.RouteText(Success(reportRequest));
+        var report = (await reportTask.WaitAsync(Timeout)).Unwrap();
+
+        var logTask = fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ => AddAsync(calls, "log"));
+        var logRequest = await fixture.Transport.NextAsync();
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "pending"));
+        Assert.Equal(0, scheduler.QueueCount);
+        fixture.Coordinator.Core.RouteText(ReportEvent(2));
+        Assert.Equal(0, scheduler.QueueCount);
+
+        fixture.Coordinator.Core.RouteText(Error(logRequest, "permission.denied", "permission"));
+        Assert.IsType<PermissionDaemonError>((await logTask.WaitAsync(Timeout)).UnwrapErr());
+        var drain = await scheduler.NextAsync();
+        drain();
+        await reportDelivered.Task.WaitAsync(Timeout);
+
+        Assert.Equal(["report"], calls);
+        Assert.Empty(fixture.Invalidations);
+        await DisposeHandleAsync(fixture, report);
+    }
+
+    [Fact]
     public async Task EventsArrivingDuringAckDrainRemainOrderedBeforeActivation()
     {
         var fixture = await ReadyFixtureAsync();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var release = new ManualResetEventSlim();
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var calls = new List<string>();
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            value =>
+            async value =>
             {
                 calls.Add(value.Data.Value.Log);
                 if (value.Data.Value.Log == "first")
                 {
                     entered.TrySetResult();
-                    Assert.True(release.Wait(Timeout));
+                    await release.Task.WaitAsync(Timeout);
+                }
+                else
+                {
+                    completed.TrySetResult();
                 }
             });
         var request = await fixture.Transport.NextAsync();
@@ -153,8 +256,9 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 
         fixture.Coordinator.Core.RouteText(LogEvent(2, InstanceId, "second"));
         Assert.Equal(["first"], calls);
-        release.Set();
+        release.TrySetResult();
         var handle = (await task.WaitAsync(Timeout)).Unwrap();
+        await completed.Task.WaitAsync(Timeout);
         Assert.Equal(["first", "second"], calls);
         await DisposeHandleAsync(fixture, handle);
     }
@@ -164,16 +268,16 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     {
         var fixture = await ReadyFixtureAsync();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var release = new ManualResetEventSlim();
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var calls = new List<string>();
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            value =>
+            async value =>
             {
                 calls.Add(value.Data.Value.Log);
                 entered.TrySetResult();
-                Assert.True(release.Wait(Timeout));
+                await release.Task.WaitAsync(Timeout);
             });
         var request = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "first"));
@@ -182,7 +286,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 
         fixture.Registry.DetachEpoch(fixture.Coordinator);
         fixture.Coordinator.Core.RouteText(LogEvent(2, InstanceId, "stale"));
-        release.Set();
+        release.TrySetResult();
         var handle = (await task.WaitAsync(Timeout)).Unwrap();
         Assert.Equal(["first"], calls);
         Assert.Empty(fixture.Invalidations);
@@ -190,15 +294,15 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ReplayCallbackMaySynchronouslyDisposeItsHandleWithoutMutationLaneDeadlock()
+    public async Task ReplayCallbackMayAwaitDisposeItsHandleWithoutMutationLaneDeadlock()
     {
         var mirror = new RemoteInstanceCatalogMirror();
         var first = await ReadyFixtureAsync(mirror: mirror);
         IAsyncDisposable? handle = null;
         var callbackCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        handle = await SubscribeAsync(first, _ =>
+        handle = await SubscribeAsync(first, async _ =>
         {
-            Assert.True(handle!.DisposeAsync().AsTask().Wait(Timeout));
+            await handle!.DisposeAsync();
             callbackCompleted.TrySetResult();
         });
         first.Registry.DetachEpoch(first.Coordinator);
@@ -217,19 +321,19 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ReplayCallbackMaySynchronouslySubscribeWithoutMutationLaneDeadlock()
+    public async Task ReplayCallbackMayAwaitSubscribeWithoutMutationLaneDeadlock()
     {
         var mirror = new RemoteInstanceCatalogMirror();
         var first = await ReadyFixtureAsync(mirror: mirror);
         IAsyncDisposable? reportHandle = null;
-        var logHandle = await SubscribeAsync(first, _ =>
+        var callbackCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var logHandle = await SubscribeAsync(first, async _ =>
         {
-            var subscription = first.Registry.SubscribeAsync(
+            reportHandle = (await first.Registry.SubscribeAsync(
                 V2ClientProtocol.DaemonReport,
                 DaemonEventFilter<EmptyRequest>.Wildcard,
-                _ => { });
-            Assert.True(subscription.Wait(Timeout));
-            reportHandle = subscription.Result.Unwrap();
+                _ => Task.CompletedTask)).Unwrap();
+            callbackCompleted.TrySetResult();
         });
         first.Registry.DetachEpoch(first.Coordinator);
 
@@ -242,20 +346,21 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 
         Assert.True((await bind.WaitAsync(Timeout)).IsOk(out _));
         await subscribeResponder.WaitAsync(Timeout);
+        await callbackCompleted.Task.WaitAsync(Timeout);
         Assert.NotNull(reportHandle);
         await DisposeHandleAsync(replacement, logHandle);
         await DisposeHandleAsync(replacement, reportHandle!);
     }
 
     [Fact]
-    public async Task ReplayCallbackMaySynchronouslyDisposeRegistryWithoutMutationLaneDeadlock()
+    public async Task ReplayCallbackMayAwaitDisposeRegistryWithoutMutationLaneDeadlock()
     {
         var mirror = new RemoteInstanceCatalogMirror();
         var first = await ReadyFixtureAsync(mirror: mirror);
         var callbackCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var handle = await SubscribeAsync(first, _ =>
+        var handle = await SubscribeAsync(first, async _ =>
         {
-            Assert.True(first.Registry.DisposeAsync().AsTask().Wait(Timeout));
+            await first.Registry.DisposeAsync();
             callbackCompleted.TrySetResult();
         });
         first.Registry.DetachEpoch(first.Coordinator);
@@ -305,19 +410,19 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var noReady = await unbound.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => { });
+            _ => Task.CompletedTask);
         AssertError(noReady, V2ClientSubscriptionRegistry.NotReadyCode);
 
         var fixture = await ReadyFixtureAsync();
         var catalog = await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceCatalogChanged,
             DaemonEventFilter<EmptyRequest>.Wildcard,
-            _ => { });
+            _ => Task.CompletedTask);
         AssertError(catalog, V2ClientSubscriptionRegistry.UnsupportedEventCode);
         var invalidFilter = await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.ExplicitNull,
-            _ => { });
+            _ => Task.CompletedTask);
         AssertError(invalidFilter, V2ClientSubscriptionRegistry.InvalidFilterCode);
         Assert.Equal(2, fixture.Transport.SendCount);
     }
@@ -340,7 +445,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var canceled = expected.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => { },
+            _ => Task.CompletedTask,
             cancellation.Token);
         await expected.Transport.NextAsync();
         cancellation.Cancel();
@@ -351,14 +456,15 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task InvalidationOwnerHookMaySynchronouslyDisposeRegistryWithoutLaneDeadlock()
+    public async Task InvalidationOwnerHookMayStartRegistryDisposeWithoutLaneDeadlock()
     {
         V2ClientSubscriptionRegistry? registry = null;
-        var hookCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? dispose = null;
+        var hookInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         registry = new V2ClientSubscriptionRegistry((_, _) =>
         {
-            Assert.True(registry!.DisposeAsync().AsTask().Wait(Timeout));
-            hookCompleted.TrySetResult();
+            dispose = registry!.DisposeAsync().AsTask();
+            hookInvoked.TrySetResult();
         });
         _registries.Add(registry);
         var fixture = await ReadyFixtureAsync(registry: registry);
@@ -366,13 +472,14 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var subscription = registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => { },
+            _ => Task.CompletedTask,
             cancellation.Token);
         await fixture.Transport.NextAsync();
 
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => subscription.WaitAsync(Timeout));
-        await hookCompleted.Task.WaitAsync(Timeout);
+        await hookInvoked.Task.WaitAsync(Timeout);
+        await dispose!.WaitAsync(Timeout);
     }
 
     [Fact]
@@ -383,7 +490,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => calls++);
+            _ => IncrementAsync(() => calls++));
         var request = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "buffered"));
 
@@ -400,18 +507,24 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var diagnostics = new List<V2ClientDiagnostic>();
         var fixture = await ReadyFixtureAsync(diagnostics.Add);
         var calls = new List<string>();
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var first = await SubscribeAsync(fixture, _ =>
         {
             calls.Add("first");
-            fixture.Registry.DetachEpoch(fixture.Coordinator);
             throw new InvalidOperationException("secret");
         });
         var second = (await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => calls.Add("second"))).Unwrap();
+            _ =>
+            {
+                calls.Add("second");
+                completed.TrySetResult();
+                return Task.CompletedTask;
+            })).Unwrap();
 
         fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "line"));
+        await completed.Task.WaitAsync(Timeout);
         Assert.Equal(["first", "second"], calls);
         var diagnostic = Assert.Single(diagnostics, value => value.Kind == V2ClientDiagnosticKind.ConsumerFault);
         Assert.DoesNotContain("secret", diagnostic.Message, StringComparison.OrdinalIgnoreCase);
@@ -420,11 +533,231 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RouteReturnsBeforeAwaitedCallbackCompletesAndTwoEventsRemainFifo()
+    {
+        var fixture = await ReadyFixtureAsync();
+        var firstEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = new List<string>();
+        var handle = await SubscribeAsync(fixture, async value =>
+        {
+            calls.Add(value.Data.Value.Log);
+            if (value.Data.Value.Log == "first")
+            {
+                firstEntered.TrySetResult();
+                await releaseFirst.Task;
+            }
+            else
+            {
+                secondCompleted.TrySetResult();
+            }
+        });
+
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "first"));
+        await firstEntered.Task.WaitAsync(Timeout);
+        fixture.Coordinator.Core.RouteText(LogEvent(2, InstanceId, "second"));
+
+        Assert.False(secondCompleted.Task.IsCompleted);
+        Assert.Equal(["first"], calls);
+        releaseFirst.TrySetResult();
+        await secondCompleted.Task.WaitAsync(Timeout);
+        Assert.Equal(["first", "second"], calls);
+        await DisposeHandleAsync(fixture, handle);
+    }
+
+    [Fact]
+    public async Task CallbackFailuresAreDiagnosedOnceEachAndDoNotStopLaterHandles()
+    {
+        var diagnostics = new ConcurrentQueue<V2ClientDiagnostic>();
+        var fixture = await ReadyFixtureAsync(diagnostics.Enqueue);
+        var synchronous = await SubscribeAsync(fixture, _ => throw new InvalidOperationException("sync"));
+        var asynchronous = (await fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ => Task.FromException(new InvalidOperationException("async")))).Unwrap();
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var cancellation = (await fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ => Task.FromCanceled(canceled.Token))).Unwrap();
+        var continued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var final = (await fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ =>
+            {
+                continued.TrySetResult();
+                return Task.CompletedTask;
+            })).Unwrap();
+
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "line"));
+        await continued.Task.WaitAsync(Timeout);
+
+        Assert.Equal(3, diagnostics.Count(item => item.Kind == V2ClientDiagnosticKind.ConsumerFault));
+        await synchronous.DisposeAsync();
+        await asynchronous.DisposeAsync();
+        await cancellation.DisposeAsync();
+        await DisposeHandleAsync(fixture, final);
+    }
+
+    [Fact]
+    public async Task DisposeSkipsQueuedHandleButAllowsStartedHandleToFinish()
+    {
+        var fixture = await ReadyFixtureAsync();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queuedCalls = 0;
+        var first = await SubscribeAsync(fixture, async _ =>
+        {
+            started.TrySetResult();
+            await release.Task;
+            finished.TrySetResult();
+        });
+        var queued = (await fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ => IncrementAsync(() => queuedCalls++))).Unwrap();
+        var survivorCalled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var survivor = (await fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ =>
+            {
+                survivorCalled.TrySetResult();
+                return Task.CompletedTask;
+            })).Unwrap();
+
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "line"));
+        await started.Task.WaitAsync(Timeout);
+        await first.DisposeAsync();
+        await queued.DisposeAsync();
+        release.TrySetResult();
+
+        await finished.Task.WaitAsync(Timeout);
+        await survivorCalled.Task.WaitAsync(Timeout);
+        Assert.Equal(0, queuedCalls);
+        await DisposeHandleAsync(fixture, survivor);
+    }
+
+    [Fact]
+    public async Task DetachSkipsQueuedOldEpochDeliveryAndNewEpochStillDelivers()
+    {
+        var mirror = new RemoteInstanceCatalogMirror();
+        var first = await ReadyFixtureAsync(mirror: mirror);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var newDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = new List<string>();
+        var handle = await SubscribeAsync(first, async value =>
+        {
+            calls.Add(value.Data.Value.Log);
+            if (value.Data.Value.Log == "old-started")
+            {
+                entered.TrySetResult();
+                await release.Task;
+            }
+            else if (value.Data.Value.Log == "new")
+            {
+                newDelivered.TrySetResult();
+            }
+        });
+
+        first.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "old-started"));
+        await entered.Task.WaitAsync(Timeout);
+        first.Coordinator.Core.RouteText(LogEvent(2, InstanceId, "old-queued"));
+        first.Registry.DetachEpoch(first.Coordinator);
+
+        var replacement = await ReadyFixtureAsync(mirror: mirror, registry: first.Registry, bind: false);
+        var bind = first.Registry.BindReadyEpochAsync(replacement.Coordinator);
+        await RespondNextSuccessAsync(replacement, "mcsl.event.subscribe");
+        Assert.True((await bind.WaitAsync(Timeout)).IsOk(out _));
+        release.TrySetResult();
+        replacement.Coordinator.Core.RouteText(LogEvent(3, InstanceId, "new"));
+        await newDelivered.Task.WaitAsync(Timeout);
+
+        Assert.Equal(["old-started", "new"], calls);
+        await DisposeHandleAsync(replacement, handle);
+    }
+
+    [Fact]
+    public async Task ActiveDeliveryQueueExceedingPendingCapacityDoesNotInvalidateEpoch()
+    {
+        var fixture = await ReadyFixtureAsync();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        var expected = V2ClientSubscriptionRegistry.PendingEventCapacity + 1;
+        var handle = await SubscribeAsync(fixture, async _ =>
+        {
+            var current = Interlocked.Increment(ref calls);
+            if (current == 1)
+            {
+                entered.TrySetResult();
+                await release.Task;
+            }
+            if (current == expected)
+                completed.TrySetResult();
+        });
+
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "line-0"));
+        await entered.Task.WaitAsync(Timeout);
+        for (var index = 1; index < expected; index++)
+            fixture.Coordinator.Core.RouteText(LogEvent(index + 1, InstanceId, $"line-{index}"));
+        Assert.Empty(fixture.Invalidations);
+
+        release.TrySetResult();
+        await completed.Task.WaitAsync(Timeout);
+        Assert.Equal(expected, calls);
+        Assert.Empty(fixture.Invalidations);
+        await DisposeHandleAsync(fixture, handle);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeliverySchedulerFailureDropsCapturedHandlersAndLaterRouteRecovers(bool throws)
+    {
+        var attempts = 0;
+        bool Scheduler(Action drain)
+        {
+            if (Interlocked.Increment(ref attempts) == 1)
+            {
+                if (throws)
+                    throw new InvalidOperationException("schedule");
+                return false;
+            }
+
+            return ThreadPool.QueueUserWorkItem(static callback => callback(), drain, preferLocal: false);
+        }
+
+        var fixture = await ReadyFixtureAsync(queueDeliveryDrain: Scheduler);
+        var calls = new List<string>();
+        var recovered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handle = await SubscribeAsync(fixture, value =>
+        {
+            calls.Add(value.Data.Value.Log);
+            recovered.TrySetResult();
+            return Task.CompletedTask;
+        });
+
+        fixture.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "dropped"));
+        fixture.Coordinator.Core.RouteText(LogEvent(2, InstanceId, "recovered"));
+        await recovered.Task.WaitAsync(Timeout);
+
+        Assert.Equal(["recovered"], calls);
+        await DisposeHandleAsync(fixture, handle);
+    }
+
+    [Fact]
     public async Task LastDisposeRemovesLocallyThenUnsubscribeErrorInvalidates()
     {
         var fixture = await ReadyFixtureAsync();
         var calls = 0;
-        var handle = await SubscribeAsync(fixture, _ => calls++);
+        var handle = await SubscribeAsync(fixture, _ => IncrementAsync(() => calls++));
         var dispose = handle.DisposeAsync().AsTask();
         var unsubscribe = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(LogEvent(2, InstanceId, "after-remove"));
@@ -436,7 +769,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var rejected = await fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => { });
+            _ => Task.CompletedTask);
         AssertError(rejected, V2ClientSubscriptionRegistry.NotReadyCode);
     }
 
@@ -445,7 +778,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     {
         var time = new ManualTimeProvider();
         var fixture = await ReadyFixtureAsync(timeProvider: time, requestTimeout: TimeSpan.FromSeconds(1));
-        var handle = await SubscribeAsync(fixture, _ => { });
+        var handle = await SubscribeAsync(fixture, _ => Task.CompletedTask);
         var dispose = handle.DisposeAsync().AsTask();
         await fixture.Transport.NextAsync();
 
@@ -461,7 +794,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     {
         var mirror = new RemoteInstanceCatalogMirror();
         var first = await ReadyFixtureAsync(mirror: mirror);
-        var handle = await SubscribeAsync(first, _ => { });
+        var handle = await SubscribeAsync(first, _ => Task.CompletedTask);
         var dispose = handle.DisposeAsync().AsTask();
         var unsubscribe = await first.Transport.NextAsync();
         first.Registry.DetachEpoch(first.Coordinator);
@@ -486,7 +819,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var subscription = first.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => { },
+            _ => Task.CompletedTask,
             cancellation.Token);
         await first.Transport.NextAsync();
         cancellation.Cancel();
@@ -509,18 +842,18 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     {
         var mirror = new RemoteInstanceCatalogMirror();
         var first = await ReadyFixtureAsync(mirror: mirror);
-        var log = await SubscribeAsync(first, _ => { });
+        var log = await SubscribeAsync(first, _ => Task.CompletedTask);
         var notificationTask = first.Registry.SubscribeAsync(
             V2ClientProtocol.Notification,
             DaemonEventFilter<NotificationEventMeta>.Wildcard,
-            _ => { });
+            _ => Task.CompletedTask);
         var notificationRequest = await first.Transport.NextAsync();
         first.Coordinator.Core.RouteText(Success(notificationRequest));
         var notification = (await notificationTask).Unwrap();
         var reportSubscription = first.Registry.SubscribeAsync(
             V2ClientProtocol.DaemonReport,
             DaemonEventFilter<EmptyRequest>.Wildcard,
-            _ => { });
+            _ => Task.CompletedTask);
         var reportRequest = await first.Transport.NextAsync();
         first.Coordinator.Core.RouteText(Success(reportRequest));
         var report = (await reportSubscription).Unwrap();
@@ -548,11 +881,21 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var mirror = new RemoteInstanceCatalogMirror();
         var first = await ReadyFixtureAsync(mirror: mirror);
         var calls = new List<string>();
-        var handle = await SubscribeAsync(first, value => calls.Add(value.Data.Value.Log));
+        var ackRaceDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var currentDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handle = await SubscribeAsync(first, value =>
+        {
+            calls.Add(value.Data.Value.Log);
+            if (value.Data.Value.Log == "ack-race")
+                ackRaceDelivered.TrySetResult();
+            else if (value.Data.Value.Log == "current")
+                currentDelivered.TrySetResult();
+            return Task.CompletedTask;
+        });
         var reportTask = first.Registry.SubscribeAsync(
             V2ClientProtocol.DaemonReport,
             DaemonEventFilter<EmptyRequest>.Wildcard,
-            _ => { });
+            _ => Task.CompletedTask);
         var reportRequest = await first.Transport.NextAsync();
         first.Coordinator.Core.RouteText(Success(reportRequest));
         var reportHandle = (await reportTask).Unwrap();
@@ -578,9 +921,11 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var reportReplay = await current.Transport.NextAsync();
         current.Coordinator.Core.RouteText(Success(reportReplay));
         Assert.True((await bind).IsOk(out _));
+        await ackRaceDelivered.Task.WaitAsync(Timeout);
         Assert.Equal(["ack-race"], calls);
         first.Coordinator.Core.RouteText(LogEvent(1, InstanceId, "stale"));
         current.Coordinator.Core.RouteText(LogEvent(3, InstanceId, "current"));
+        await currentDelivered.Task.WaitAsync(Timeout);
         Assert.Equal(["ack-race", "current"], calls);
         await DisposeHandleAsync(current, handle);
         await DisposeHandleAsync(current, reportHandle);
@@ -594,7 +939,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            _ => calls++);
+            _ => IncrementAsync(() => calls++));
         var request = await fixture.Transport.NextAsync();
         for (var index = 0; index < V2ClientSubscriptionRegistry.PendingEventCapacity; index++)
             fixture.Coordinator.Core.RouteText(LogEvent(index + 1, InstanceId, $"line-{index}"));
@@ -614,10 +959,20 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     {
         var fixture = await ReadyFixtureAsync();
         var calls = new List<string>();
+        var drained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var liveDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var task = fixture.Registry.SubscribeAsync(
             V2ClientProtocol.InstanceLog,
             DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
-            value => calls.Add(value.Data.Value.Log));
+            value =>
+            {
+                calls.Add(value.Data.Value.Log);
+                if (calls.Count == V2ClientSubscriptionRegistry.PendingEventCapacity)
+                    drained.TrySetResult();
+                if (value.Data.Value.Log == "live")
+                    liveDelivered.TrySetResult();
+                return Task.CompletedTask;
+            });
         var request = await fixture.Transport.NextAsync();
         for (var index = 0; index < V2ClientSubscriptionRegistry.PendingEventCapacity; index++)
             fixture.Coordinator.Core.RouteText(LogEvent(index + 1, InstanceId, $"line-{index}"));
@@ -625,6 +980,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
 
         fixture.Coordinator.Core.RouteText(Success(request));
         var handle = (await task.WaitAsync(Timeout)).Unwrap();
+        await drained.Task.WaitAsync(Timeout);
         Assert.Equal(V2ClientSubscriptionRegistry.PendingEventCapacity, calls.Count);
         Assert.Equal("line-0", calls[0]);
         Assert.Equal($"line-{V2ClientSubscriptionRegistry.PendingEventCapacity - 1}", calls[^1]);
@@ -632,6 +988,7 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
             Enumerable.Range(0, V2ClientSubscriptionRegistry.PendingEventCapacity).Select(index => $"line-{index}"),
             calls);
         fixture.Coordinator.Core.RouteText(LogEvent(300, InstanceId, "live"));
+        await liveDelivered.Task.WaitAsync(Timeout);
         Assert.Equal("live", calls[^1]);
         Assert.Empty(fixture.Invalidations);
         await DisposeHandleAsync(fixture, handle);
@@ -643,10 +1000,11 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         V2ClientSubscriptionRegistry? registry = null,
         bool bind = true,
         TimeProvider? timeProvider = null,
-        TimeSpan? requestTimeout = null)
+        TimeSpan? requestTimeout = null,
+        Func<Action, bool>? queueDeliveryDrain = null)
     {
         var invalidations = new List<Invalidation>();
-        registry ??= Registry(invalidations, diagnostic);
+        registry ??= Registry(invalidations, diagnostic, queueDeliveryDrain);
         mirror ??= new RemoteInstanceCatalogMirror();
         var transport = new ScriptedTransport();
         var next = 0;
@@ -666,21 +1024,42 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         return new Fixture(registry, coordinator, transport, invalidations);
     }
 
-    private V2ClientSubscriptionRegistry Registry(List<Invalidation> invalidations, Action<V2ClientDiagnostic>? diagnostic = null)
+    private V2ClientSubscriptionRegistry Registry(
+        List<Invalidation> invalidations,
+        Action<V2ClientDiagnostic>? diagnostic = null,
+        Func<Action, bool>? queueDeliveryDrain = null)
     {
         var registry = new V2ClientSubscriptionRegistry(
-            (epoch, error) => invalidations.Add(new(epoch, error)), diagnostic);
+            (epoch, error) => invalidations.Add(new(epoch, error)),
+            diagnostic,
+            queueDeliveryDrain);
         _registries.Add(registry);
         return registry;
     }
 
-    private static async Task<IAsyncDisposable> SubscribeAsync(Fixture fixture, Action<DaemonEvent<InstanceLogEventData, InstanceLogEventMeta>> callback)
+    private static async Task<IAsyncDisposable> SubscribeAsync(
+        Fixture fixture,
+        Func<DaemonEvent<InstanceLogEventData, InstanceLogEventMeta>, Task> callback)
     {
         var task = fixture.Registry.SubscribeAsync(
-            V2ClientProtocol.InstanceLog, DaemonEventFilter<InstanceLogEventMeta>.Wildcard, callback);
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            callback);
         var request = await fixture.Transport.NextAsync();
         fixture.Coordinator.Core.RouteText(Success(request));
         return (await task.WaitAsync(Timeout)).Unwrap();
+    }
+
+    private static Task AddAsync(List<string> values, string value)
+    {
+        values.Add(value);
+        return Task.CompletedTask;
+    }
+
+    private static Task IncrementAsync(Action increment)
+    {
+        increment();
+        return Task.CompletedTask;
     }
 
     private static async Task DisposeHandleAsync(Fixture fixture, IAsyncDisposable handle)
@@ -717,6 +1096,8 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{request.IdJson},\"error\":{{\"code\":-32000,\"message\":\"failed\",\"data\":{{\"daemon_error_code\":\"{code}\",\"daemon_error_kind\":\"{kind}\",\"correlation_id\":\"test\"}}}}}}");
     private static byte[] LogEvent(long sequence, Guid instanceId, string log) =>
         Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.instance.log\",\"params\":{{\"sequence\":{sequence},\"timestamp\":{sequence},\"meta\":{{\"instance_id\":\"{instanceId:D}\"}},\"data\":{{\"log\":{JsonSerializer.Serialize(log)}}}}}}}");
+    private static byte[] ReportEvent(long sequence) =>
+        Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.daemon.report\",\"params\":{{\"sequence\":{sequence},\"timestamp\":{sequence},\"data\":{{\"system_info\":{SystemInfoJson},\"start_timestamp\":1}}}}}}");
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
     private sealed record Invalidation(V2ClientConnectionCoordinator Epoch, DaemonError Error);
@@ -726,7 +1107,11 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
     private sealed class CallbackOwner
     {
         internal int Count { get; private set; }
-        internal void Accept(DaemonEvent<InstanceLogEventData, InstanceLogEventMeta> value) => Count++;
+        internal Task Accept(DaemonEvent<InstanceLogEventData, InstanceLogEventMeta> value)
+        {
+            Count++;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class ScriptedTransport : IV2ClientWireTransport
@@ -753,6 +1138,28 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
             Assert.True(await _available.WaitAsync(Timeout));
             Assert.True(_requests.TryDequeue(out var request));
             return request!;
+        }
+    }
+
+    private sealed class ControlledDeliveryScheduler
+    {
+        private readonly ConcurrentQueue<Action> _queued = new();
+        private readonly SemaphoreSlim _available = new(0);
+
+        internal int QueueCount => _queued.Count;
+
+        internal bool Queue(Action drain)
+        {
+            _queued.Enqueue(drain);
+            _available.Release();
+            return true;
+        }
+
+        internal async Task<Action> NextAsync()
+        {
+            Assert.True(await _available.WaitAsync(Timeout));
+            Assert.True(_queued.TryDequeue(out var drain));
+            return drain!;
         }
     }
 

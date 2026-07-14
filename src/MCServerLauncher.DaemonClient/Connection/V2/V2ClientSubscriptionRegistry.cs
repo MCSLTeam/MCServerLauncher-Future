@@ -38,21 +38,26 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
     private readonly SemaphoreSlim _mutationLane = new(1, 1);
     private readonly Action<V2ClientConnectionCoordinator, DaemonError> _invalidateEpoch;
     private readonly Action<V2ClientDiagnostic>? _diagnostic;
+    private readonly Func<Action, bool> _queueDeliveryDrain;
     private readonly Dictionary<SubscriptionKey, SubscriptionGroup> _groups =
         new(SubscriptionKeyComparer.Instance);
+    private readonly Queue<Delivery> _deliveries = new();
     private V2ClientConnectionCoordinator? _boundEpoch;
     private V2ClientConnectionCoordinator? _candidateEpoch;
     private readonly ConditionalWeakTable<V2ClientConnectionCoordinator, InvalidEpochMarker> _invalidEpochs = new();
     private long _nextRegistration;
     private long _nextRoute;
+    private bool _deliveryDraining;
     private bool _disposed;
 
     internal V2ClientSubscriptionRegistry(
         Action<V2ClientConnectionCoordinator, DaemonError> invalidateEpoch,
-        Action<V2ClientDiagnostic>? diagnostic = null)
+        Action<V2ClientDiagnostic>? diagnostic = null,
+        Func<Action, bool>? queueDeliveryDrain = null)
     {
         _invalidateEpoch = invalidateEpoch ?? throw new ArgumentNullException(nameof(invalidateEpoch));
         _diagnostic = diagnostic;
+        _queueDeliveryDrain = queueDeliveryDrain ?? QueueDeliveryDrain;
     }
 
     internal static bool HandleRetainsResources(IAsyncDisposable handle) =>
@@ -61,7 +66,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
     internal async Task<Result<IAsyncDisposable, DaemonError>> SubscribeAsync<TData, TMeta>(
         EventDescriptor<TData, TMeta> descriptor,
         DaemonEventFilter<TMeta> filter,
-        Action<DaemonEvent<TData, TMeta>> callback,
+        Func<DaemonEvent<TData, TMeta>, Task> callback,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
@@ -133,6 +138,10 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
                     var invalidation = MarkInvalid(epoch, error!);
                     ReleaseLane(ref laneHeld);
                     NotifyInvalidation(invalidation);
+                }
+                else
+                {
+                    ResumeDeliveryDrain();
                 }
                 return Result.Err<IAsyncDisposable, DaemonError>(error!);
             }
@@ -274,6 +283,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
     internal void DetachEpoch(V2ClientConnectionCoordinator epoch)
     {
         ArgumentNullException.ThrowIfNull(epoch);
+        var startDeliveryDrain = false;
         lock (_gate)
         {
             if (ReferenceEquals(_boundEpoch, epoch))
@@ -281,7 +291,10 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
             DetachCandidateLocked(epoch);
             foreach (var group in _groups.Values.Where(group => ReferenceEquals(group.Epoch, epoch)))
                 UnbindGroupLocked(group);
+            startDeliveryDrain = TryStartDeliveryDrainLocked();
         }
+
+        StartDeliveryDrain(startDeliveryDrain);
     }
 
     internal void Route(
@@ -303,9 +316,10 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         }
 
         var value = materialized.Unwrap();
-        var routeOrder = Interlocked.Increment(ref _nextRoute);
         var callbacks = new List<SubscriptionHandle>();
+        var pendingGroups = new List<SubscriptionGroup>();
         var overflow = false;
+        var startDeliveryDrain = false;
         lock (_gate)
         {
             if (_disposed || IsInvalidEpoch(epoch) ||
@@ -313,6 +327,8 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
             {
                 return;
             }
+
+            var routeOrder = ++_nextRoute;
 
             foreach (var group in _groups.Values)
             {
@@ -330,16 +346,18 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
                         overflow = true;
                         break;
                     }
+                    pendingGroups.Add(group);
+                }
 
-                    group.Buffer.Add(new BufferedEvent(
-                        routeOrder,
-                        value,
-                        group.Handles.Where(static handle => !handle.IsDisposed).ToArray()));
-                }
-                else if (group.State == EpochBindingState.Active)
-                {
-                    callbacks.AddRange(group.Handles.Where(static handle => !handle.IsDisposed));
-                }
+                callbacks.AddRange(group.Handles.Where(static handle => !handle.IsDisposed));
+            }
+
+            if (!overflow && callbacks.Count != 0)
+            {
+                foreach (var group in pendingGroups)
+                    group.Buffer.Add(new BufferedEvent(routeOrder));
+                callbacks.Sort(static (left, right) => left.Registration.CompareTo(right.Registration));
+                startDeliveryDrain = EnqueueDeliveryLocked(new(routeOrder, epoch, value, callbacks));
             }
         }
 
@@ -349,7 +367,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
             return;
         }
 
-        InvokeCallbacks(value, callbacks);
+        StartDeliveryDrain(startDeliveryDrain);
     }
 
     public async ValueTask DisposeAsync()
@@ -382,6 +400,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
                     UnbindGroupLocked(group);
                 }
                 _groups.Clear();
+                _deliveries.Clear();
                 _boundEpoch = null;
                 _candidateEpoch = null;
             }
@@ -415,6 +434,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         if (!handle.TryBeginDispose(out var ownedGroup))
             return;
 
+        ResumeDeliveryDrain();
         await _mutationLane.WaitAsync().ConfigureAwait(false);
         var laneHeld = true;
         try
@@ -465,7 +485,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
     private SubscriptionHandle AddHandleLocked<TData, TMeta>(
         SubscriptionGroup group,
-        Action<DaemonEvent<TData, TMeta>> callback)
+        Func<DaemonEvent<TData, TMeta>, Task> callback)
     {
         var binding = (DescriptorBinding<TData, TMeta>)group.Binding;
         var handle = new SubscriptionHandle(
@@ -497,8 +517,14 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
 
     private void DetachCandidate(V2ClientConnectionCoordinator epoch)
     {
+        var startDeliveryDrain = false;
         lock (_gate)
+        {
             DetachCandidateLocked(epoch);
+            startDeliveryDrain = TryStartDeliveryDrainLocked();
+        }
+
+        StartDeliveryDrain(startDeliveryDrain);
     }
 
     private void DetachCandidateLocked(V2ClientConnectionCoordinator epoch)
@@ -516,85 +542,186 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         group.Buffer.Clear();
     }
 
-    private List<Delivery> DrainBufferedLocked(IEnumerable<SubscriptionGroup> groups)
-    {
-        var byRoute = new Dictionary<long, Delivery>();
-        foreach (var group in groups)
-        {
-            foreach (var buffered in group.Buffer)
-            {
-                if (!byRoute.TryGetValue(buffered.RouteOrder, out var delivery))
-                {
-                    delivery = new Delivery(buffered.RouteOrder, buffered.Event, []);
-                    byRoute.Add(buffered.RouteOrder, delivery);
-                }
-                delivery.Callbacks.AddRange(buffered.Callbacks);
-            }
-            group.Buffer.Clear();
-        }
-
-        return byRoute.Values.OrderBy(static delivery => delivery.RouteOrder).ToList();
-    }
-
     private void DrainAndActivate(
         V2ClientConnectionCoordinator epoch,
         IReadOnlyCollection<SubscriptionGroup> groups)
     {
-        while (true)
+        var startDeliveryDrain = false;
+        lock (_gate)
         {
-            List<Delivery> buffered;
+            if (_disposed || IsInvalidEpoch(epoch) ||
+                (!ReferenceEquals(_boundEpoch, epoch) && !ReferenceEquals(_candidateEpoch, epoch)))
+            {
+                return;
+            }
+
+            var current = groups
+                .Where(group => ReferenceEquals(group.Epoch, epoch) &&
+                                group.State == EpochBindingState.Draining)
+                .ToArray();
+            if (current.Length != groups.Count)
+                return;
+
+            foreach (var group in current)
+            {
+                group.Buffer.Clear();
+                group.State = EpochBindingState.Active;
+            }
+            startDeliveryDrain = TryStartDeliveryDrainLocked();
+        }
+
+        StartDeliveryDrain(startDeliveryDrain);
+    }
+
+    private bool EnqueueDeliveryLocked(Delivery delivery)
+    {
+        _deliveries.Enqueue(delivery);
+        return TryStartDeliveryDrainLocked();
+    }
+
+    private bool TryStartDeliveryDrainLocked()
+    {
+        if (_deliveryDraining ||
+            !_deliveries.TryPeek(out var delivery) ||
+            IsDeliveryBlockedLocked(delivery))
+        {
+            return false;
+        }
+
+        _deliveryDraining = true;
+        return true;
+    }
+
+    private bool IsDeliveryBlockedLocked(Delivery delivery)
+    {
+        foreach (var handle in delivery.Handles)
+        {
+            if (handle.IsDisposed ||
+                !handle.TryGetGroup(out var group) ||
+                !_groups.TryGetValue(group.Key, out var current) ||
+                !ReferenceEquals(current, group) ||
+                !ReferenceEquals(group.Epoch, delivery.Epoch))
+            {
+                continue;
+            }
+
+            if (group.State is EpochBindingState.Pending or EpochBindingState.Draining)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void ResumeDeliveryDrain()
+    {
+        bool startDeliveryDrain;
+        lock (_gate)
+            startDeliveryDrain = TryStartDeliveryDrainLocked();
+        StartDeliveryDrain(startDeliveryDrain);
+    }
+
+    private void StartDeliveryDrain(bool start)
+    {
+        if (!start)
+            return;
+
+        try
+        {
+            if (_queueDeliveryDrain(StartDeliveryDrainWorker))
+                return;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Delivery scheduling cannot own the transport receive path.
+        }
+
+        lock (_gate)
+        {
+            ClearDeliveriesLocked();
+            _deliveryDraining = false;
+        }
+    }
+
+    private void StartDeliveryDrainWorker() => _ = DrainDeliveriesAsync();
+
+    private async Task DrainDeliveriesAsync()
+    {
+        try
+        {
+            while (true)
+            {
+                Delivery delivery;
+                lock (_gate)
+                {
+                    if (!_deliveries.TryPeek(out delivery!) || IsDeliveryBlockedLocked(delivery))
+                    {
+                        _deliveryDraining = false;
+                        return;
+                    }
+
+                    _deliveries.Dequeue();
+                }
+
+                foreach (var handle in delivery.Handles)
+                {
+                    Func<MaterializedEvent, Task>? callback;
+                    lock (_gate)
+                    {
+                        callback = TryGetCallbackLocked(handle, delivery.Epoch);
+                    }
+
+                    if (callback is null)
+                        continue;
+
+                    try
+                    {
+                        await callback(delivery.Event).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is not OutOfMemoryException)
+                    {
+                        EmitDiagnostic(new(
+                            V2ClientDiagnosticKind.ConsumerFault,
+                            "A typed V2 event subscription callback failed."));
+                    }
+                }
+            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
             lock (_gate)
             {
-                if (_disposed || IsInvalidEpoch(epoch) ||
-                    (!ReferenceEquals(_boundEpoch, epoch) && !ReferenceEquals(_candidateEpoch, epoch)))
-                {
-                    return;
-                }
-
-                var current = groups
-                    .Where(group => ReferenceEquals(group.Epoch, epoch) &&
-                                    group.State == EpochBindingState.Draining)
-                    .ToArray();
-                if (current.Length != groups.Count)
-                    return;
-
-                buffered = DrainBufferedLocked(current);
-                if (buffered.Count == 0)
-                {
-                    foreach (var group in current)
-                        group.State = EpochBindingState.Active;
-                    return;
-                }
+                ClearDeliveriesLocked();
+                _deliveryDraining = false;
             }
-
-            InvokeDeliveries(buffered);
         }
     }
 
-    private void InvokeDeliveries(IEnumerable<Delivery> deliveries)
+    private void ClearDeliveriesLocked()
     {
-        foreach (var delivery in deliveries)
-            InvokeCallbacks(delivery.Event, delivery.Callbacks);
+        _deliveries.Clear();
+        foreach (var group in _groups.Values)
+            group.Buffer.Clear();
     }
 
-    private void InvokeCallbacks(MaterializedEvent value, IEnumerable<SubscriptionHandle> callbacks)
+    private Func<MaterializedEvent, Task>? TryGetCallbackLocked(
+        SubscriptionHandle handle,
+        V2ClientConnectionCoordinator epoch)
     {
-        foreach (var callback in callbacks.OrderBy(static item => item.Registration))
+        if (_disposed || handle.IsDisposed ||
+            !handle.TryGetGroup(out var group) ||
+            !_groups.TryGetValue(group.Key, out var current) ||
+            !ReferenceEquals(current, group) ||
+            !ReferenceEquals(group.Epoch, epoch) ||
+            (!ReferenceEquals(_boundEpoch, epoch) && !ReferenceEquals(_candidateEpoch, epoch)))
         {
-            if (callback.IsDisposed)
-                continue;
-            try
-            {
-                callback.Invoke(value);
-            }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                EmitDiagnostic(new(
-                    V2ClientDiagnosticKind.ConsumerFault,
-                    "A typed V2 event subscription callback failed."));
-            }
+            return null;
         }
+
+        return handle.Callback;
     }
+
+    private static bool QueueDeliveryDrain(Action drain) =>
+        ThreadPool.QueueUserWorkItem(static callback => callback(), drain, preferLocal: false);
 
     private void Invalidate(V2ClientConnectionCoordinator epoch, DaemonError error)
     {
@@ -606,6 +733,8 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         DaemonError error,
         bool allowUnattached = false)
     {
+        EpochInvalidation? invalidation;
+        var startDeliveryDrain = false;
         lock (_gate)
         {
             if (IsInvalidEpoch(epoch) ||
@@ -623,8 +752,12 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
                 _candidateEpoch = null;
             foreach (var group in _groups.Values.Where(group => ReferenceEquals(group.Epoch, epoch)))
                 UnbindGroupLocked(group);
-            return new EpochInvalidation(epoch, error);
+            invalidation = new(epoch, error);
+            startDeliveryDrain = TryStartDeliveryDrainLocked();
         }
+
+        StartDeliveryDrain(startDeliveryDrain);
+        return invalidation;
     }
 
     private void NotifyInvalidation(EpochInvalidation? invalidation)
@@ -810,18 +943,23 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         V2ClientSubscriptionRegistry owner,
         SubscriptionGroup group,
         long registration,
-        Action<MaterializedEvent> callback) : IAsyncDisposable
+        Func<MaterializedEvent, Task> callback) : IAsyncDisposable
     {
         private V2ClientSubscriptionRegistry? _owner = owner;
         private SubscriptionGroup? _group = group;
-        private Action<MaterializedEvent>? _callback = callback;
+        private Func<MaterializedEvent, Task>? _callback = callback;
         private int _disposed;
         internal long Registration { get; } = registration;
         internal bool IsDisposed => Volatile.Read(ref _disposed) != 0;
         internal bool RetainsResources => Volatile.Read(ref _owner) is not null ||
                                           Volatile.Read(ref _group) is not null ||
                                           Volatile.Read(ref _callback) is not null;
-        internal void Invoke(MaterializedEvent value) => Volatile.Read(ref _callback)?.Invoke(value);
+        internal Func<MaterializedEvent, Task>? Callback => Volatile.Read(ref _callback);
+        internal bool TryGetGroup(out SubscriptionGroup group)
+        {
+            group = Volatile.Read(ref _group)!;
+            return group is not null;
+        }
         internal bool TryBeginDispose(out SubscriptionGroup group)
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -850,15 +988,13 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         }
     }
 
-    private sealed record BufferedEvent(
-        long RouteOrder,
-        MaterializedEvent Event,
-        IReadOnlyList<SubscriptionHandle> Callbacks);
+    private sealed record BufferedEvent(long RouteOrder);
 
     private sealed record Delivery(
         long RouteOrder,
+        V2ClientConnectionCoordinator Epoch,
         MaterializedEvent Event,
-        List<SubscriptionHandle> Callbacks);
+        List<SubscriptionHandle> Handles);
 
     private abstract class MaterializedEvent
     {

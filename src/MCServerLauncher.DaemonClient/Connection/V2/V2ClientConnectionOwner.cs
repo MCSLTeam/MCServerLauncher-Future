@@ -43,6 +43,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     private readonly Queue<StateNotification> _stateNotifications = new();
     private Task? _lifecycleWorker;
     private Task? _closeTask;
+    private TaskCompletionSource<Result<Unit, DaemonError>>? _readiness;
     private PhysicalEpoch? _candidate;
     private PhysicalEpoch? _current;
     private bool _hasReachedReady;
@@ -146,29 +147,32 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     internal Task<Result<Unit, DaemonError>> ConnectAsync(CancellationToken cancellationToken = default)
     {
         TaskCompletionSource<Result<Unit, DaemonError>> readiness;
-        bool startStateNotificationDrain;
+        var startStateNotificationDrain = false;
         lock (_gate)
         {
             if (_state is V2ClientConnectionOwnerState.Closing or V2ClientConnectionOwnerState.Closed)
                 return Task.FromResult(Result.Err<Unit, DaemonError>(ClosedError()));
             if (_state == V2ClientConnectionOwnerState.Ready)
                 return Task.FromResult(Result.Ok<Unit, DaemonError>(Unit.Default));
-            if (_lifecycleWorker is not null)
-                throw new InvalidOperationException("The initial V2 connection attempt is already running.");
-
-            readiness = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Connecting);
-            _lifecycleWorker = RunLifecycleAsync(readiness, cancellationToken);
+            readiness = GetOrCreateReadinessLocked();
+            if (_lifecycleWorker is null)
+            {
+                startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Connecting);
+                _lifecycleWorker = RunLifecycleAsync();
+            }
         }
 
         StartStateNotificationDrain(startStateNotificationDrain);
-        return readiness.Task;
+        return cancellationToken.CanBeCanceled
+            ? readiness.Task.WaitAsync(cancellationToken)
+            : readiness.Task;
     }
 
     internal Task CloseAsync()
     {
         TaskCompletionSource completion;
         Task? worker;
+        TaskCompletionSource<Result<Unit, DaemonError>>? readiness;
         PhysicalEpoch? candidate;
         PhysicalEpoch? current;
         bool startStateNotificationDrain;
@@ -181,6 +185,8 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             _closeTask = completion.Task;
             startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Closing);
             worker = _lifecycleWorker;
+            readiness = _readiness;
+            _readiness = null;
             candidate = _candidate;
             current = _current;
             _candidate = null;
@@ -188,6 +194,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         }
 
         StartStateNotificationDrain(startStateNotificationDrain);
+        readiness?.TrySetResult(Result.Err<Unit, DaemonError>(ClosedError()));
         var failures = new List<Exception>();
         StartDetachedEpochLoss(candidate, ClosedError());
         if (!ReferenceEquals(current, candidate))
@@ -199,25 +206,19 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
     public ValueTask DisposeAsync() => new(CloseAsync());
 
-    private async Task RunLifecycleAsync(
-        TaskCompletionSource<Result<Unit, DaemonError>> initialReadiness,
-        CancellationToken initialCallerToken)
+    private async Task RunLifecycleAsync()
     {
         await Task.Yield();
-        var initial = true;
         try
         {
             while (!_lifetimeCancellation.IsCancellationRequested)
             {
                 PhysicalEpoch? epoch = null;
                 Result<Unit, DaemonError> established;
-                var callerCanceled = false;
                 try
                 {
                     epoch = CreateEpoch();
-                    established = await EstablishAsync(
-                        epoch,
-                        initial ? initialCallerToken : CancellationToken.None).ConfigureAwait(false);
+                    established = await EstablishAsync(epoch).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
                 {
@@ -226,13 +227,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                         await AbandonEpochAsync(epoch, ClosedError()).ConfigureAwait(false);
                         ReportCleanupFailures(await CleanupEpochAsync(epoch).ConfigureAwait(false));
                     }
-                    initialReadiness.TrySetResult(Result.Err<Unit, DaemonError>(ClosedError()));
                     return;
-                }
-                catch (OperationCanceledException) when (initial && initialCallerToken.IsCancellationRequested)
-                {
-                    callerCanceled = true;
-                    established = Result.Err<Unit, DaemonError>(EpochLostError());
                 }
                 catch (OperationCanceledException) when (epoch?.OperationToken.IsCancellationRequested == true)
                 {
@@ -255,13 +250,11 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                 {
                     if (!_hasReachedReady)
                     {
-                        ReturnToCreated();
-                        initialReadiness.TrySetResult(established);
+                        CompleteInitialFailure(established);
                         return;
                     }
 
                     await WaitToReconnectAsync().ConfigureAwait(false);
-                    initial = false;
                     continue;
                 }
 
@@ -269,26 +262,17 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                 {
                     await AbandonEpochAsync(epoch, error!).ConfigureAwait(false);
                     ReportCleanupFailures(await CleanupEpochAsync(epoch).ConfigureAwait(false));
-                    if (callerCanceled)
-                    {
-                        ReturnToCreated();
-                        initialReadiness.TrySetCanceled(initialCallerToken);
-                        return;
-                    }
+                    SetLastFailure(error!);
                     if (!_hasReachedReady)
                     {
-                        ReturnToCreated();
-                        initialReadiness.TrySetResult(Result.Err<Unit, DaemonError>(error!));
+                        CompleteInitialFailure(Result.Err<Unit, DaemonError>(error!));
                         return;
                     }
 
                     await WaitToReconnectAsync().ConfigureAwait(false);
-                    initial = false;
                     continue;
                 }
 
-                initialReadiness.TrySetResult(Result.Ok<Unit, DaemonError>(Unit.Default));
-                initial = false;
                 await epoch.Loss.Task.WaitAsync(_lifetimeCancellation.Token).ConfigureAwait(false);
                 ReportCleanupFailures(await CleanupEpochAsync(epoch).ConfigureAwait(false));
                 if (_lifetimeCancellation.IsCancellationRequested)
@@ -299,14 +283,12 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
         {
-            initialReadiness.TrySetResult(Result.Err<Unit, DaemonError>(ClosedError()));
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             var failure = UnexpectedSessionError(exception);
             ReportCleanupFailures([exception]);
             await EnterRetryableFaultAsync(failure).ConfigureAwait(false);
-            initialReadiness.TrySetResult(Result.Err<Unit, DaemonError>(failure));
         }
     }
 
@@ -334,14 +316,9 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         return epoch;
     }
 
-    private async Task<Result<Unit, DaemonError>> EstablishAsync(
-        PhysicalEpoch epoch,
-        CancellationToken initialCallerToken)
+    private async Task<Result<Unit, DaemonError>> EstablishAsync(PhysicalEpoch epoch)
     {
-        using var establishmentCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            epoch.OperationToken,
-            initialCallerToken);
-        var cancellationToken = establishmentCancellation.Token;
+        var cancellationToken = epoch.OperationToken;
 
         var connectTask = epoch.Session.ConnectAsync(cancellationToken);
         epoch.TrackStage(connectTask);
@@ -364,6 +341,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             return Result.Err<Unit, DaemonError>(bindingError!);
 
         bool startStateNotificationDrain;
+        TaskCompletionSource<Result<Unit, DaemonError>>? readiness;
         lock (_gate)
         {
             if (!ReferenceEquals(_candidate, epoch) || epoch.Loss.Task.IsCompleted ||
@@ -377,9 +355,12 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             _hasReachedReady = true;
             _lastFailure = null;
             startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Ready);
+            readiness = _readiness;
+            _readiness = null;
         }
 
         StartStateNotificationDrain(startStateNotificationDrain);
+        readiness?.TrySetResult(Result.Ok<Unit, DaemonError>(Unit.Default));
         return Result.Ok<Unit, DaemonError>(Unit.Default);
     }
 
@@ -471,6 +452,9 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                 return epoch.LossSignalTask;
             if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
             {
+                _lastFailure = error;
+                if (_hasReachedReady)
+                    GetOrCreateReadinessLocked();
                 startStateNotificationDrain = SetLifecycleStateLocked(
                     _hasReachedReady
                         ? V2ClientConnectionOwnerState.WaitingToReconnect
@@ -600,6 +584,7 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
     {
         PhysicalEpoch? candidate;
         PhysicalEpoch? current;
+        TaskCompletionSource<Result<Unit, DaemonError>>? readiness;
         var startStateNotificationDrain = false;
         lock (_gate)
         {
@@ -607,13 +592,22 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
             current = _current;
             _candidate = null;
             _current = null;
-            _lastFailure = failure;
             if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
+            {
+                _lastFailure = failure;
+                readiness = _readiness;
+                _readiness = null;
                 startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Created);
+            }
+            else
+            {
+                readiness = null;
+            }
             _lifecycleWorker = null;
         }
 
         StartStateNotificationDrain(startStateNotificationDrain);
+        readiness?.TrySetResult(Result.Err<Unit, DaemonError>(failure));
         if (candidate is not null)
         {
             await StartDetachedEpochLoss(candidate, failure).ConfigureAwait(false);
@@ -822,6 +816,43 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
         }
 
         StartStateNotificationDrain(startStateNotificationDrain);
+    }
+
+    private TaskCompletionSource<Result<Unit, DaemonError>> GetOrCreateReadinessLocked()
+    {
+        if (_readiness is null || _readiness.Task.IsCompleted)
+            _readiness = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        return _readiness;
+    }
+
+    private void CompleteInitialFailure(Result<Unit, DaemonError> result)
+    {
+        TaskCompletionSource<Result<Unit, DaemonError>>? readiness;
+        var startStateNotificationDrain = false;
+        lock (_gate)
+        {
+            if (_state is V2ClientConnectionOwnerState.Closing or V2ClientConnectionOwnerState.Closed)
+                return;
+
+            if (result.IsErr(out var failure))
+                _lastFailure = failure;
+            readiness = _readiness;
+            _readiness = null;
+            startStateNotificationDrain = SetLifecycleStateLocked(V2ClientConnectionOwnerState.Created);
+            _lifecycleWorker = null;
+        }
+
+        StartStateNotificationDrain(startStateNotificationDrain);
+        readiness?.TrySetResult(result);
+    }
+
+    private void SetLastFailure(DaemonError failure)
+    {
+        lock (_gate)
+        {
+            if (_state is not V2ClientConnectionOwnerState.Closing and not V2ClientConnectionOwnerState.Closed)
+                _lastFailure = failure;
+        }
     }
 
     private static bool Matches(PhysicalEpoch? epoch, V2ClientConnectionCoordinator coordinator) =>

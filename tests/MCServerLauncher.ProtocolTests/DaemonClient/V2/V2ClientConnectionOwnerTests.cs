@@ -539,57 +539,52 @@ public sealed class V2ClientConnectionOwnerTests
     }
 
     [Fact]
-    public async Task InitialCancellationCleansEpochAndAllowsExplicitRetry()
+    public async Task CanceledInitialWaiterDoesNotCancelSharedEpochOrOtherWaiter()
     {
         var factory = new ControlledSessionFactory();
         await using var owner = Owner(factory);
         using var cancellation = new CancellationTokenSource();
 
-        var firstConnect = owner.ConnectAsync(cancellation.Token);
+        var canceledWaiter = owner.ConnectAsync(cancellation.Token);
         var first = await factory.NextAsync();
         await first.ConnectStarted.Task.WaitAsync(Timeout);
+        var survivingWaiter = owner.ConnectAsync();
         cancellation.Cancel();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstConnect.WaitAsync(Timeout));
-        await WaitUntilAsync(() => owner.State == V2ClientConnectionOwnerState.Created);
-        Assert.Equal(1, first.CloseCount);
-        Assert.Equal(1, first.DisposeCount);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledWaiter.WaitAsync(Timeout));
+        Assert.Equal(V2ClientConnectionOwnerState.Connecting, owner.State);
+        Assert.Equal(0, first.CloseCount);
+        Assert.Equal(0, first.DisposeCount);
         Assert.Equal(1, factory.CreatedCount);
 
-        var retry = owner.ConnectAsync();
-        var replacement = await factory.NextAsync();
-        await MakeReadyAsync(replacement, retry, Catalog(0));
+        await MakeReadyAsync(first, survivingWaiter, Catalog(0));
         Assert.True(owner.IsReady);
-        Assert.Equal(2, factory.CreatedCount);
+        Assert.Equal(1, factory.CreatedCount);
     }
 
     [Fact]
-    public async Task CallerCancellationWinsRegistryBindInvalidationRace()
+    public async Task CanceledReconnectWaiterDoesNotInterruptReplacement()
     {
-        var time = new ThrowOnceManualTimeProvider();
+        var time = new ManualTimeProvider();
         var factory = new ControlledSessionFactory();
         await using var owner = Owner(factory, time);
         var initial = owner.ConnectAsync();
         var first = await factory.NextAsync();
         await MakeReadyAsync(first, initial, Catalog(0));
-        var handle = await SubscribeLogAsync(owner, first);
         first.Lose("transport.peer_closed");
-        await WaitUntilAsync(() => owner.State == V2ClientConnectionOwnerState.Created);
+        await time.TimerCreated.Task.WaitAsync(Timeout);
 
         using var cancellation = new CancellationTokenSource();
-        var reconnecting = owner.ConnectAsync(cancellation.Token);
+        var canceledWaiter = owner.ConnectAsync(cancellation.Token);
+        var survivingWaiter = owner.ConnectAsync();
+        time.Advance(ReconnectDelay);
         var replacement = await factory.NextAsync();
-        replacement.CompleteConnect();
-        await CompleteCatalogAsync(replacement, Catalog(1));
-        var replay = await replacement.Transport.NextAsync();
-        Assert.Equal("mcsl.event.subscribe", replay.Method);
-
         cancellation.Cancel();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reconnecting.WaitAsync(Timeout));
-        await WaitUntilAsync(() => owner.State == V2ClientConnectionOwnerState.Created);
-        Assert.Equal(1, replacement.CloseCount);
-        await handle.DisposeAsync().AsTask().WaitAsync(Timeout);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledWaiter.WaitAsync(Timeout));
+        Assert.Equal(0, replacement.CloseCount);
+        await MakeReplacementReadyAsync(owner, replacement, Catalog(1));
+        Assert.True((await survivingWaiter.WaitAsync(Timeout)).IsOk(out _));
     }
 
     [Fact]
@@ -605,6 +600,141 @@ public sealed class V2ClientConnectionOwnerTests
         Assert.True(result.IsErr(out var error));
         Assert.Equal("transport.session_failed", error!.Code);
         Assert.Equal(V2ClientConnectionOwnerState.Created, owner.State);
+    }
+
+    [Fact]
+    public async Task InitialFailureCompletesSharedWaitersAndLaterConnectCanRetry()
+    {
+        var factory = new FailFirstSessionFactory();
+        await using var owner = new V2ClientConnectionOwner(factory, TimeProvider.System, ReconnectDelay);
+
+        var first = owner.ConnectAsync();
+        var second = owner.ConnectAsync();
+
+        var firstResult = await first.WaitAsync(Timeout);
+        var secondResult = await second.WaitAsync(Timeout);
+        Assert.True(firstResult.IsErr(out var firstError));
+        Assert.True(secondResult.IsErr(out var secondError));
+        Assert.Equal("transport.session_failed", firstError!.Code);
+        Assert.Equal(firstError.Code, secondError!.Code);
+        Assert.Equal(firstError.Code, owner.LastFailure!.Code);
+        Assert.Equal(V2ClientConnectionOwnerState.Created, owner.State);
+
+        var retry = owner.ConnectAsync();
+        var session = await factory.Sessions.NextAsync();
+        await MakeReadyAsync(session, retry, Catalog(0));
+        Assert.Null(owner.LastFailure);
+    }
+
+    [Fact]
+    public async Task ReadyConnectReturnsOkWithoutStartingAnotherEpoch()
+    {
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory);
+        var connecting = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await MakeReadyAsync(session, connecting, Catalog(0));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+
+        var result = await owner.ConnectAsync(canceled.Token).WaitAsync(Timeout);
+
+        Assert.True(result.IsOk(out _));
+        Assert.Equal(1, factory.CreatedCount);
+    }
+
+    [Fact]
+    public async Task ReconnectFailureUpdatesLastFailureButWaiterContinuesUntilReplacementReady()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(factory, time);
+        var initial = owner.ConnectAsync();
+        var first = await factory.NextAsync();
+        await MakeReadyAsync(first, initial, Catalog(0));
+        first.Lose("transport.peer_closed");
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+        var waiter = owner.ConnectAsync();
+        time.Advance(ReconnectDelay);
+        var failed = await factory.NextAsync();
+        await failed.ConnectStarted.Task.WaitAsync(Timeout);
+        failed.Lose("transport.replacement_failed");
+        await WaitUntilAsync(() => time.TimerCount == 2);
+
+        Assert.False(waiter.IsCompleted);
+        Assert.Equal("transport.replacement_failed", owner.LastFailure!.Code);
+        time.Advance(ReconnectDelay);
+        var replacement = await factory.NextAsync();
+        await MakeReplacementReadyAsync(owner, replacement, Catalog(1));
+        Assert.True((await waiter.WaitAsync(Timeout)).IsOk(out _));
+        Assert.Null(owner.LastFailure);
+    }
+
+    [Fact]
+    public async Task LossBetweenReadyCommitAndOldReadinessCompletionUsesNewGeneration()
+    {
+        var time = new ManualTimeProvider();
+        var factory = new ControlledSessionFactory();
+        await using var owner = Owner(
+            factory,
+            time,
+            queueStateNotificationDrain: drain =>
+            {
+                drain();
+                return true;
+            });
+        ControlledSession? first = null;
+        Task<Result<Unit, DaemonError>>? reconnecting = null;
+        var invalidated = 0;
+        owner.StateChanged += state =>
+        {
+            if (state == DaemonConnectionState.Ready &&
+                Interlocked.Exchange(ref invalidated, 1) == 0)
+            {
+                owner.InvalidateEpoch(
+                    first!.Coordinator.Core,
+                    new TransportDaemonError("transport.ready_commit_lost", "lost after Ready commit"));
+                reconnecting = owner.ConnectAsync();
+            }
+            return Task.CompletedTask;
+        };
+
+        var initial = owner.ConnectAsync();
+        first = await factory.NextAsync();
+        await MakeReadyAsync(first, initial, Catalog(0));
+
+        Assert.NotNull(reconnecting);
+        Assert.False(reconnecting.IsCompleted);
+        Assert.Equal(DaemonConnectionState.Reconnecting, owner.ConnectionState);
+        await time.TimerCreated.Task.WaitAsync(Timeout);
+        time.Advance(ReconnectDelay);
+        var replacement = await factory.NextAsync();
+        await MakeReplacementReadyAsync(owner, replacement, Catalog(1));
+        Assert.True((await reconnecting.WaitAsync(Timeout)).IsOk(out _));
+    }
+
+    [Fact]
+    public async Task CloseCompletesEveryPendingConnectWaiterWithClosedError()
+    {
+        var factory = new ControlledSessionFactory();
+        var owner = Owner(factory);
+        var first = owner.ConnectAsync();
+        var session = await factory.NextAsync();
+        await session.ConnectStarted.Task.WaitAsync(Timeout);
+        var second = owner.ConnectAsync();
+
+        await owner.CloseAsync().WaitAsync(Timeout);
+
+        foreach (var pending in new[] { first, second })
+        {
+            var result = await pending.WaitAsync(Timeout);
+            Assert.True(result.IsErr(out var error));
+            Assert.Equal("connection.closed", error!.Code);
+        }
+        var closed = await owner.ConnectAsync().WaitAsync(Timeout);
+        Assert.True(closed.IsErr(out var closedError));
+        Assert.Equal("connection.closed", closedError!.Code);
+        await owner.DisposeAsync();
     }
 
     [Fact]
@@ -854,7 +984,7 @@ public sealed class V2ClientConnectionOwnerTests
     }
 
     [Fact]
-    public async Task ConcurrentConnectIsRejectedWithoutChangingActiveAttempt()
+    public async Task ConcurrentConnectSharesOneInitialEpochAndBothWaitersSucceed()
     {
         var factory = new ControlledSessionFactory();
         var owner = Owner(factory);
@@ -862,23 +992,11 @@ public sealed class V2ClientConnectionOwnerTests
         var session = await factory.NextAsync();
         await session.ConnectStarted.Task.WaitAsync(Timeout);
         Assert.Equal(V2ClientConnectionOwnerState.Connecting, owner.State);
-        using var barrier = new Barrier(2);
-        var second = Task.Factory.StartNew(
-            () =>
-            {
-                Assert.True(barrier.SignalAndWait(Timeout));
-                return Record.Exception((Action)(() => _ = owner.ConnectAsync()));
-            },
-            CancellationToken.None,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default);
-        Assert.True(barrier.SignalAndWait(Timeout));
-
-        Assert.IsType<InvalidOperationException>(await second.WaitAsync(Timeout));
+        var second = owner.ConnectAsync();
         Assert.Equal(1, factory.CreatedCount);
 
-        await owner.CloseAsync().WaitAsync(Timeout);
-        Assert.True((await first.WaitAsync(Timeout)).IsErr(out _));
+        await MakeReadyAsync(session, first, Catalog(0));
+        Assert.True((await second.WaitAsync(Timeout)).IsOk(out _));
     }
 
     [Fact]
@@ -1356,7 +1474,10 @@ public sealed class V2ClientConnectionOwnerTests
         var filter = instanceId is { } id
             ? DaemonEventFilter<InstanceLogEventMeta>.Exact(new(id))
             : DaemonEventFilter<InstanceLogEventMeta>.Wildcard;
-        var subscribing = owner.Subscriptions.SubscribeAsync(V2ClientProtocol.InstanceLog, filter, _ => { });
+        var subscribing = owner.Subscriptions.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            filter,
+            _ => Task.CompletedTask);
         var request = await session.Transport.NextAsync();
         Assert.Equal("mcsl.event.subscribe", request.Method);
         session.RouteSuccess(request);
@@ -1484,6 +1605,23 @@ public sealed class V2ClientConnectionOwnerTests
             Action<V2ClientConnectionCoordinator, JsonRpcRemoteEventNotification> routeEvent,
             Action<V2ClientDiagnostic>? diagnostic = null) =>
             throw new InvalidOperationException("factory failed");
+    }
+
+    private sealed class FailFirstSessionFactory : IV2ClientConnectionSessionFactory
+    {
+        private int _createCount;
+
+        internal ControlledSessionFactory Sessions { get; } = new();
+
+        public IV2ClientConnectionSession Create(
+            RemoteInstanceCatalogMirror mirror,
+            Action<V2ClientConnectionCoordinator, JsonRpcRemoteEventNotification> routeEvent,
+            Action<V2ClientDiagnostic>? diagnostic = null)
+        {
+            if (Interlocked.Increment(ref _createCount) == 1)
+                throw new InvalidOperationException("factory failed");
+            return Sessions.Create(mirror, routeEvent, diagnostic);
+        }
     }
 
     private sealed class BlockingSessionFactory : IV2ClientConnectionSessionFactory, IDisposable
