@@ -116,7 +116,6 @@ public sealed class DaemonClientFacadeTests
         {
             Assert.DoesNotContain("TouchSocket", signature, StringComparison.Ordinal);
             Assert.DoesNotContain("Connection.V2", signature, StringComparison.Ordinal);
-            Assert.DoesNotContain("ActionType", signature, StringComparison.Ordinal);
             Assert.DoesNotContain("ClientConnectionConfig", signature, StringComparison.Ordinal);
             Assert.DoesNotContain("SubscribedEvents", signature, StringComparison.Ordinal);
             Assert.DoesNotContain("IDaemon ", signature, StringComparison.Ordinal);

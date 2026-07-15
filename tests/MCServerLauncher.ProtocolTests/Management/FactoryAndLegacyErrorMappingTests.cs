@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Instances;
-using MCServerLauncher.Common.ProtoType.Action;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.ApplicationCore;
@@ -10,8 +9,6 @@ using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Management.Installer;
 using MCServerLauncher.Daemon.Storage;
-using MCServerLauncher.Daemon.Remote.Action;
-using MCServerLauncher.Daemon.Remote.Action.Handlers;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -250,41 +247,6 @@ public sealed class FactoryAndLegacyErrorMappingTests
         }
     }
 
-    [Theory]
-    [InlineData("instance.not_found", 30001)]
-    [InlineData("instance.running", 30003)]
-    [InlineData("instance.invalid", 10001)]
-    [InlineData("unexpected", 31003)]
-    public void LegacyActionErrorMapper_MapsTypedErrorsToV1Retcodes(string errorCode, int expectedRetcode)
-    {
-        var error = new InternalDaemonError(errorCode, "stable message");
-
-        var actionError = LegacyActionErrorMapper.ToActionError(error, ActionRetcode.ProcessError);
-
-        Assert.Equal(expectedRetcode, actionError.Retcode.Code);
-        Assert.Contains("stable message", actionError.Cause);
-        Assert.Null(actionError.CausedException);
-    }
-
-    [Theory]
-    [InlineData(DaemonErrorKind.Validation, 10006)]
-    [InlineData(DaemonErrorKind.NotFound, 21001)]
-    [InlineData(DaemonErrorKind.Conflict, 21101)]
-    [InlineData(DaemonErrorKind.Permission, 21006)]
-    [InlineData(DaemonErrorKind.Storage, 21000)]
-    [InlineData(DaemonErrorKind.Internal, 21000)]
-    public void LegacyFileActionAdapter_MapsTypedErrorsToV1Retcodes(
-        DaemonErrorKind kind,
-        int expectedRetcode)
-    {
-        var error = CreateError(kind);
-
-        var actionError = LegacyFileActionAdapter.ToActionError(error);
-
-        Assert.Equal(expectedRetcode, actionError.Retcode.Code);
-        Assert.Contains("stable message", actionError.Cause);
-        Assert.Null(actionError.CausedException);
-    }
 
     private static InstanceFactoryConfiguration CreateSetting()
     {
@@ -310,15 +272,4 @@ public sealed class FactoryAndLegacyErrorMappingTests
             false);
     }
 
-    private static DaemonError CreateError(DaemonErrorKind kind) => kind switch
-    {
-        DaemonErrorKind.Validation => new ValidationDaemonError("test.validation", "stable message"),
-        DaemonErrorKind.NotFound => new NotFoundDaemonError("test.not_found", "stable message"),
-        DaemonErrorKind.Conflict => new ConflictDaemonError("test.conflict", "stable message"),
-        DaemonErrorKind.Permission => new PermissionDaemonError("test.permission", "stable message"),
-        DaemonErrorKind.Storage => new StorageDaemonError("test.storage", "stable message"),
-        DaemonErrorKind.Transport => new TransportDaemonError("test.transport", "stable message"),
-        DaemonErrorKind.Internal => new InternalDaemonError("test.internal", "stable message"),
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
-    };
 }

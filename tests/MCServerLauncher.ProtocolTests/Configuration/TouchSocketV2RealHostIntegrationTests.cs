@@ -37,7 +37,7 @@ public sealed class TouchSocketV2RealHostIntegrationTests
             var token = AppConfig.Get().MainToken;
             var capture = new CapturePlugin();
             var client = await fixture.ConnectAsync(token, capture);
-            await AssertEndpointIsNotUpgradedAsync(port, "/api/v1", token);
+            await AssertEndpointIsNotUpgradedAsync(port, "/api/invalid", token);
             await AssertHttpMetadataReportsV2Async(port);
 
             var request = Encoding.UTF8.GetBytes(

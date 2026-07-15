@@ -9,7 +9,6 @@ using System.Windows;
 using iNKORE.UI.WPF.Modern.Controls;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Protocol;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.API.Errors;

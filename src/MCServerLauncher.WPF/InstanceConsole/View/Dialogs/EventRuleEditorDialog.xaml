@@ -69,7 +69,7 @@
         <DataTemplate DataType="{x:Type local:ChangeInstanceStatusActionWrapper}">
             <StackPanel>
                 <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_ChangeInstanceStatusAction], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
-                <ComboBox SelectedValue="{Binding ActionType}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Action], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
+                <ComboBox SelectedValue="{Binding SelectedAction}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Action], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
                     <ComboBoxItem Content="{Binding [Start], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Start" />
                     <ComboBoxItem Content="{Binding [Stop], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stop" />
                     <ComboBoxItem Content="{Binding [Restart], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Restart" />

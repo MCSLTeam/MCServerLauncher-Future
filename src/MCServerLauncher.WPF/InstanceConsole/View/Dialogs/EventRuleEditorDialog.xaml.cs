@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Globalization;
 using System;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
@@ -267,7 +267,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
     {
         public ChangeInstanceStatusAction Action { get; }
         public ChangeInstanceStatusActionWrapper(ChangeInstanceStatusAction action) => Action = action;
-        public string ActionType { get => Action.Action; set => Action.Action = value ?? string.Empty; }
+        public string SelectedAction { get => Action.Action; set => Action.Action = value ?? string.Empty; }
     }
 
     public class SendNotificationActionWrapper

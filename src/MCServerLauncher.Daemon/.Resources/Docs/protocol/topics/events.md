@@ -1,43 +1,14 @@
-# 事件列表
+# Typed events
 
-## 实例日志更新 {#instance-log}
+通过 `mcsl.event.subscribe` 和 `mcsl.event.unsubscribe` 管理当前连接的 typed subscription。订阅参数引用 catalog 中的 event 名称和可选 typed meta。
 
-<primary-label ref="instance-event"/>
-<secondary-label ref="1.0"/>
+内置事件为：
 
-- **事件名称**：`instance_log`
-- **C# 名称**：`InstanceLog`
-- **事件说明**：instance 进程输出日志时触发。
-- **订阅权限**：当前 handler 声明为 `*`。
+| Event | Meta |
+| --- | --- |
+| `mcsl.event.instance.catalog.changed` | omitted |
+| `mcsl.event.daemon.report` | omitted |
+| `mcsl.event.instance.log` | required `instance_id` |
+| `mcsl.event.notification` | required source instance/rule identity |
 
-### 订阅 meta {collapsible="true"}
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `instance_id` | uuid string | instance ID |
-
-### 推送 data {collapsible="true"}
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `log` | string | 输出日志文本 |
-
-## Daemon 报告 {#daemon-report}
-
-<primary-label ref="system-event"/>
-<secondary-label ref="1.0"/>
-
-- **事件名称**：`daemon_report`
-- **C# 名称**：`DaemonReport`
-- **事件说明**：daemon 周期性推送系统和 daemon 状态。当前周期约为 3 秒。
-- **订阅权限**：当前 handler 声明为 `*`。
-
-### 订阅 meta {collapsible="true"}
-
-无过滤器，`meta` 可为 `null`。
-
-### 推送 data {collapsible="true"}
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `report` | [`DaemonReport`](models.md#daemon_report) | daemon 报告对象 |
+每个事件以其 event 名称作为 JSON-RPC notification method。`params` 中携带 typed `data`、按 catalog 规定的 missing/null/object meta，以及 timestamp。事件按连接顺序投递；慢消费者超过 bounded queue 容量时会被断开，不能依赖静默丢包。

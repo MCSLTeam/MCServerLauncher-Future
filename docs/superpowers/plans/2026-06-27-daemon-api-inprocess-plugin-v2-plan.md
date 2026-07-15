@@ -2,7 +2,7 @@
 
 > **Current authority:** 本文整体取代 2026-06-27 至 2026-06-30 的旧版增量迁移设计。2026-07-10 项目负责人在架构访谈中冻结的决策优先于旧 plan、旧 review 中的兼容性建议。
 >
-> **Plan status:** Architecture approved. Phase 0 through Phase 3, Phase 4A daemon V2, and Phase 4B daemon-client/WPF cutover are complete and independently reviewed. Phase 4C is active: M1, M2a, and M2b are closed and independently reviewed with no open P0/P1/P2 findings. Phase 4C and Phase 4 overall remain incomplete and unreleasable; residual V1 daemon/Common/client/generator source is intentionally retained for M3-M4.
+> **Plan status:** Architecture approved. Phase 0 through Phase 4 are complete and independently reviewed with no open P0/P1/P2 findings. The release-atomic V2 cutover is accepted; Phase 5 startup plugin host implementation is next.
 >
 > **Touched areas for implementation:** `docs`, `agent-docs`, `backend`, `protocol`, `serialization`, `storage`, `frontend`, `tests`, `benchmarks`, `workflow`, `integrations`.
 
@@ -762,13 +762,13 @@ PluginA.dll
 - [x] DaemonClient 实现 remote `IDaemonApplication`、typed event subscription、binary sessions、reconnect semantics。
 - [x] WPF 全量切 typed application/event API；error code 映射 i18n。
 - [x] endpoint 切到 `/api/v2`，移除 `/api/v1`。
-- [ ] 删除 `src/MCServerLauncher.Daemon/Remote/Action/`、旧 `WsActionPlugin`/`WsEventPlugin`/`IEventService` 路径及 V1-only contexts。
-- [ ] 删除 Common V1 `ActionType`/packet/retcode/status/interfaces 与旧 EventType/packet；保留并重命名仍有真实 domain ownership 的 DTO。
-- [ ] 删除 DaemonClient `RequestAsync(ActionType)`、V1 parser/events/callbacks/caches 和 compatibility helpers。
+- [x] 删除 `src/MCServerLauncher.Daemon/Remote/Action/`、旧 `WsActionPlugin`/`WsEventPlugin`/`IEventService` 路径及 V1-only contexts。
+- [x] 删除 Common V1 `ActionType`/packet/retcode/status/interfaces 与旧 EventType/packet；保留并重命名仍有真实 domain ownership 的 DTO。
+- [x] 删除 DaemonClient `RequestAsync(ActionType)`、V1 parser/events/callbacks/caches 和 compatibility helpers。
 - [x] 删除/替换 WPF V1 call sites。
-- [ ] 删除 V1-only `MCServerLauncher.Daemon.Generators` project、registry tests、startup benchmarks 与 generated/legacy runtime switch。
-- [ ] rewrite protocol tests/benchmarks to V2；migration fixture 只能留作 test input，不能参与 runtime。
-- [ ] 新增 `tools/VerifyNoV1Runtime.ps1`：明确 allowlist migration fixtures/changelog，并以 runtime match 非空作为失败；不把裸 `rg` exit code 当 gate。
+- [x] 删除 V1-only `MCServerLauncher.Daemon.Generators` project、registry tests、startup benchmarks 与 generated/legacy runtime switch。
+- [x] rewrite protocol tests/benchmarks to V2；migration fixture 只能留作 test input，不能参与 runtime。
+- [x] 新增 `tools/VerifyNoV1Runtime.ps1`：明确 allowlist migration fixtures/changelog，并以 runtime match 非空作为失败；不把裸 `rg` exit code 当 gate。
 
 Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 release-atomic milestone，任何中间状态都不是可发布产品：
 
@@ -785,6 +785,8 @@ Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 relea
 **4C M2a sub-exit (2026-07-14):** Canonical instance DTOs and daemon-owned persistence boundaries now cover detection, factory, installer, manager, application, event-rule, and WPF settings-owner paths. Persistence uses explicit source-generated metadata with no reflection fallback; legacy wire translation is isolated under `Remote.Action`; daemon-internal `Result<..., Error>` remains intentionally unchanged for M2b. Independent Sol max closure review reported `P0=0 / P1=0 / P2=0`. Acceptance passed Common, Daemon.API, DaemonClient, daemon, and WPF Release builds at 0 warnings / 0 errors; WPF.Tests `20/20`; Release ProtocolTests and the required `--no-build` gate at `1115/1115`; ProtocolDocs `--check` at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`; exact legacy setting DTO residual searches at 0 matches; and `git diff --check`. No manual WPF/runtime smoke test is claimed. M2b-M4 still retain daemon-internal `Error`, V1 daemon/Common/client/generator source, and physical deletion work, so Phase 4C and Phase 4 overall remain incomplete and unreleasable.
 
 **4C M2b sub-exit (2026-07-15):** The non-V1 daemon call graph now uses `Result<T, DaemonError>`; legacy `Utils.Error`/`ErrorExtensions` and `InstancePathValidationError` are deleted from migrated paths. Factory, installer, archive, copy, EULA, metadata-write, and cancellation boundaries preserve original exceptions in daemon logs, return stable typed errors without serialized exception details, and rethrow caller cancellation. Replacement installers run in an isolated factory workspace; failures leave live files untouched, while success journals actual generated outputs, metadata and backups before runtime/catalog publication. Focused regressions cover source containment/classification, partial factory output, construction/persistence/publication rollback, reserved and colliding targets, reparse-point traversal with an external sentinel, and fail-closed Windows case-alias handling. Expanded focused M2b/application tests passed `133/133`; Release ProtocolTests and the required `--no-build` repeat each passed `1196/1196`; WPF.Tests passed `20/20`; daemon and full-solution Release builds passed at `0 warnings / 0 errors`; ProtocolDocs `--check` passed at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`; the exact M2b residual search returned only the two allowlisted V1 adapter `CauseBy` calls; and `git diff --check` passed. Independent Sol max closure review reported `P0=0 / P1=0 / P2=0`. V1 daemon/Common/client/generator deletion and the Phase 4 release-atomic exit remain pending.
+
+**4C M3-M4 sub-exit (2026-07-15):** Removed the V1 daemon action/event runtime and serializer fallback cluster, Common V1 envelopes/status/generation resources, DaemonClient V1 facade/transport/parser/cache surface, the custom action generator, V1-only tests/benchmarks, and obsolete embedded topics. Canonical system and event-rule contracts remain source-generated; the combined Common resolver directly covers event-rule lists, missing metadata, and canonical instance/factory enum strings. `tools/VerifyNoV1Runtime.ps1` passes with only the frozen Phase 0 benchmark baseline and migration fixtures allowlisted. Root acceptance passed Release ProtocolTests `897/897`, WPF.Tests `20/20`, Common/Daemon.API/DaemonClient/daemon/WPF/benchmark/full-solution Release builds at `0 warnings / 0 errors`, ProtocolDocs `--check` at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`, and `git diff --check`. Independent Sol max review found one missing no-V1 matcher and one empty-link-label documentation defect; both were fixed, the enum-resolver gap was regression-locked, and closure re-review reported `P0=0 / P1=0 / P2=0`. Phase 4 is complete and accepted.
 
 **Exit:** daemon、DaemonClient、WPF 只运行 V2；full solution/build/tests 通过；V1 code deletion manifest 清零。
 
@@ -860,22 +862,22 @@ Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 relea
 
 Phase 4 不完成以下删除就不算 cutover：
 
-- [ ] `/api/v1` registration and docs
-- [ ] Common `ActionType`, V1 action request/response/status/retcode interfaces and packets
-- [ ] Common V1 `EventType`/`EventPacket`/legacy meta/data marker path
-- [ ] legacy `RelayPacket`
-- [ ] daemon `Remote/Action` handlers/executor/registry/error/response utilities
-- [ ] old `WsActionPlugin` and `WsEventPlugin`
-- [ ] old `IEventService` fan-out path
-- [ ] generated-vs-legacy action registry runtime switch
-- [ ] V1-only custom action source generator project and release tracking
-- [ ] DaemonClient `RequestAsync(ActionType)` and V1 inbound heuristic parser
-- [ ] DaemonClient legacy notification/relay/event callbacks and serializer caches
-- [ ] WPF V1 action/event references
-- [ ] V1-only tests, fixtures used as runtime contract, benchmarks and embedded docs
-- [ ] old `Error`/`ActionError`/`ActionRetcode` after all application migrations
-- [ ] runtime instance filesystem watcher side-channel
-- [ ] compatibility flags, fallback branches, obsolete wrappers and dual endpoint tests
+- [x] `/api/v1` registration and docs
+- [x] Common `ActionType`, V1 action request/response/status/retcode interfaces and packets
+- [x] Common V1 `EventType`/`EventPacket`/legacy meta/data marker path
+- [x] legacy `RelayPacket`
+- [x] daemon `Remote/Action` handlers/executor/registry/error/response utilities
+- [x] old `WsActionPlugin` and `WsEventPlugin`
+- [x] old `IEventService` fan-out path
+- [x] generated-vs-legacy action registry runtime switch
+- [x] V1-only custom action source generator project and release tracking
+- [x] DaemonClient `RequestAsync(ActionType)` and V1 inbound heuristic parser
+- [x] DaemonClient legacy notification/relay/event callbacks and serializer caches
+- [x] WPF V1 action/event references
+- [x] V1-only tests, fixtures used as runtime contract, benchmarks and embedded docs
+- [x] old `Error`/`ActionError`/`ActionRetcode` after all application migrations
+- [x] runtime instance filesystem watcher side-channel
+- [x] compatibility flags, fallback branches, obsolete wrappers and dual endpoint tests
 
 ## 19. Acceptance Criteria
 
@@ -1004,3 +1006,4 @@ git status --short --branch
 - 2026-07-14: Phase 4C M2a CORE implementation checkpoint migrated daemon detection, factory, installer, manager, application, and event-rule paths to canonical instance contracts while intentionally retaining daemon-internal `Result<..., Error>` for M2b and retaining V1/Common/client/generator source for M2-M4. Daemon-owned source-generated persistence metadata now covers `config.json`, `daemon_instance.json`, `daemon_instance.install.json`, and event-rule documents without reflection fallback; the V1 wire adapter is isolated under `Remote.Action`; golden persistence, discriminator, and compiled namespace-boundary tests cover the migration. Worker verification passed focused ProtocolTests at 85/85 and 69/69, Common/Daemon.API/daemon Release builds at 0 warnings / 0 errors, ProtocolDocs `--check` at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`, targeted residual searches, and `git diff --check`. This is not the M2a sub-exit: WPF-owner integration, root closure gates, and independent review remain, so Phase 4C and Phase 4 overall are still incomplete and unreleasable.
 - 2026-07-14: Closed Phase 4C M2a after independent Sol max review with `P0=0 / P1=0 / P2=0`. Canonical instance DTO/persistence-boundary migration covers daemon detection, factory, installer, manager, application, event-rule, and WPF settings-owner paths while daemon-internal `Result<..., Error>` remains for M2b. Acceptance passed Common/Daemon.API/DaemonClient/daemon/WPF Release builds at 0 warnings / 0 errors, WPF.Tests `20/20`, Release ProtocolTests and `--no-build` at `1115/1115`, ProtocolDocs `--check` at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`, exact legacy setting DTO residual searches at 0 matches, and `git diff --check`. No manual WPF/runtime smoke test is claimed; M2b-M4 remain pending.
 - 2026-07-15: Closed Phase 4C M2b after independent Sol max review with `P0=0 / P1=0 / P2=0`. Migrated non-V1 daemon error results to `DaemonError`, removed legacy error helpers, preserved exception diagnostics/cancellation, isolated replacement installers from live instance storage, journaled output/metadata/config commits, rejected reparse-point output and Windows case aliases before unsafe merge, and added focused success/error/cancellation/rollback/security coverage. Acceptance passed the expanded focused slice at `133/133`, Release ProtocolTests twice at `1196/1196`, WPF.Tests at `20/20`, daemon/full-solution Release builds at `0 warnings / 0 errors`, ProtocolDocs `--check` at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`, the allowlisted residual search, and `git diff --check`. Phase 4C deletion proof remains incomplete until M3-M4 remove the V1 daemon/Common/client/generator surface.
+- 2026-07-15: Completed and independently accepted Phase 4C M3-M4 and the release-atomic Phase 4 exit. Removed the V1 daemon/Common/DaemonClient/generator/test/benchmark/docs runtime surface, added the explicit no-V1 gate, preserved canonical source-generated event-rule/system contracts, and fixed public Common resolver enum metadata. Final acceptance passed Release ProtocolTests `897/897`, WPF.Tests `20/20`, all affected/full-solution Release builds at `0 warnings / 0 errors`, ProtocolDocs `--check`, and `git diff --check`; independent Sol max closure re-review reported `P0=0 / P1=0 / P2=0`.

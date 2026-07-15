@@ -1,15 +1,10 @@
 using MCServerLauncher.Common.Contracts.Files;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using RustyOptions;
-using LegacyJavaRuntime = MCServerLauncher.Common.ProtoType.JavaInfo;
-using LegacyCpuInfo = MCServerLauncher.Common.ProtoType.Status.CpuInfo;
-using LegacyDriveInfo = MCServerLauncher.Common.ProtoType.Status.DriveInformation;
-using LegacyMemInfo = MCServerLauncher.Common.ProtoType.Status.MemInfo;
-using LegacyOsInfo = MCServerLauncher.Common.ProtoType.Status.OsInfo;
-using LegacySystemInfo = MCServerLauncher.Common.ProtoType.Status.SystemInfo;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -58,23 +53,23 @@ public sealed class LocalFileAndSystemApplicationTests
     }
 
     [Fact]
-    public async Task LocalSystemApplication_MapsLegacyCellsToContracts()
+    public async Task LocalSystemApplication_MapsCellsToContracts()
     {
-        var systemInfo = new LegacySystemInfo(
-            new LegacyOsInfo("TestOS", "x64"),
-            new LegacyCpuInfo("vendor", "processor", 8, 12.5, 4, 8),
-            new LegacyMemInfo(4096, 1024),
-            new LegacyDriveInfo("NTFS", 1_000, 400, "C:"),
-            [new LegacyDriveInfo("ext4", 2_000, 1_500, "/data")],
+        var systemInfo = new SystemInfo(
+            new OperatingSystemInfo("TestOS", "x64"),
+            new ProcessorInfo("vendor", "processor", 8, 12.5, 4, 8),
+            new MemoryInfo(4096, 1024),
+            new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1_000, 400, "C:"),
+            [new MCServerLauncher.Common.Contracts.System.DriveInfo("ext4", 2_000, 1_500, "/data")],
             "test-daemon");
-        LegacyJavaRuntime[] runtimes =
+        JavaRuntime[] runtimes =
         [
-            new LegacyJavaRuntime("java-17", "17.0.13", "x64"),
-            new LegacyJavaRuntime("java-21", "21.0.5", "arm64")
+            new JavaRuntime("java-17", "17.0.13", "x64"),
+            new JavaRuntime("java-21", "21.0.5", "arm64")
         ];
         var application = new LocalSystemApplication(
-            new ControlledAsyncTimedLazyCell<LegacySystemInfo>(Task.FromResult(systemInfo)),
-            new ControlledAsyncTimedLazyCell<LegacyJavaRuntime[]>(Task.FromResult(runtimes)));
+            new ControlledAsyncTimedLazyCell<SystemInfo>(Task.FromResult(systemInfo)),
+            new ControlledAsyncTimedLazyCell<JavaRuntime[]>(Task.FromResult(runtimes)));
 
         var systemResult = await application.GetSystemInfoAsync(CancellationToken.None);
         var javaResult = await application.ListJavaRuntimesAsync(CancellationToken.None);
@@ -94,10 +89,10 @@ public sealed class LocalFileAndSystemApplicationTests
     [Fact]
     public async Task LocalSystemApplication_PropagatesCallerCancellationAndMapsCellFailures()
     {
-        var pendingSystemInfo = new TaskCompletionSource<LegacySystemInfo>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pendingSystemInfo = new TaskCompletionSource<SystemInfo>(TaskCreationOptions.RunContinuationsAsynchronously);
         var application = new LocalSystemApplication(
-            new ControlledAsyncTimedLazyCell<LegacySystemInfo>(pendingSystemInfo.Task),
-            new ControlledAsyncTimedLazyCell<LegacyJavaRuntime[]>(Task.FromException<LegacyJavaRuntime[]>(
+            new ControlledAsyncTimedLazyCell<SystemInfo>(pendingSystemInfo.Task),
+            new ControlledAsyncTimedLazyCell<JavaRuntime[]>(Task.FromException<JavaRuntime[]>(
                 new IOException("Java scan failed."))));
         using var cancellationSource = new CancellationTokenSource();
 

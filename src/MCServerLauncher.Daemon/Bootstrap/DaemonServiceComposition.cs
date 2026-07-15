@@ -1,5 +1,5 @@
 using MCServerLauncher.Common.Helpers;
-using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
@@ -21,7 +21,6 @@ using Microsoft.Extensions.Logging;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
-using LegacySystemInfo = MCServerLauncher.Common.ProtoType.Status.SystemInfo;
 
 namespace MCServerLauncher.Daemon.Bootstrap;
 
@@ -48,10 +47,10 @@ internal static class DaemonServiceComposition
         var instanceManager = (InstanceManager)InstanceManager.Create();
         var fileSessionCoordinator = FileSessionCoordinator.Shared;
         fileSessionCoordinator.ConfigureDownloadSessionLimit(AppConfig.Get().FileDownloadSessions);
-        var systemInfoCell = new AsyncTimedLazyCell<LegacySystemInfo>(
+        var systemInfoCell = new AsyncTimedLazyCell<SystemInfo>(
             SystemInfoHelper.GetSystemInfo,
             TimeSpan.FromSeconds(2));
-        var javaRuntimeCell = new AsyncTimedLazyCell<JavaInfo[]>(
+        var javaRuntimeCell = new AsyncTimedLazyCell<JavaRuntime[]>(
             JavaScanner.ScanJavaAsync,
             TimeSpan.FromSeconds(2));
 
@@ -61,8 +60,8 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton(instanceManager.CatalogCommitFeed);
         a.RegisterSingleton(instanceManager.MutationAdmission);
         a.RegisterSingleton(fileSessionCoordinator);
-        a.RegisterSingleton<IAsyncTimedLazyCell<LegacySystemInfo>>(systemInfoCell);
-        a.RegisterSingleton<IAsyncTimedLazyCell<JavaInfo[]>>(javaRuntimeCell);
+        a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
+        a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntime[]>>(javaRuntimeCell);
 
         a.RegisterSingleton(DomainEventDispatchPolicy.Default);
         a.RegisterSingleton<IDomainEventPort, DomainEventPort>();

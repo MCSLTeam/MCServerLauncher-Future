@@ -29,7 +29,7 @@ public sealed class TouchSocketV2ClientConnectionSessionTests
                 "token"));
         Assert.Throws<ArgumentException>(() =>
             new TouchSocketV2ClientConnectionSessionFactory(
-                new Uri("ws://127.0.0.1:11452/api/v1"),
+                new Uri("ws://127.0.0.1:11452/api/invalid"),
                 "token"));
         Assert.Throws<ArgumentException>(() =>
             new TouchSocketV2ClientConnectionSessionFactory(

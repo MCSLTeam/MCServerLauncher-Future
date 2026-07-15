@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Instances;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
@@ -360,7 +359,7 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
                     break;
                 default:
                     _logger.LogWarning(
-                        "Unsupported event rule action '{ActionType}' for rule '{RuleId}' on instance '{InstanceId}'",
+                        "Unsupported event rule action '{RuleActionType}' for rule '{RuleId}' on instance '{InstanceId}'",
                         action.GetType().Name,
                         rule.Id,
                         instanceId);
@@ -369,7 +368,7 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            _logger.LogError(exception, "Error executing action '{ActionType}' for rule '{RuleId}'", action.GetType().Name, rule.Id);
+            _logger.LogError(exception, "Error executing action '{RuleActionType}' for rule '{RuleId}'", action.GetType().Name, rule.Id);
         }
     }
 
@@ -436,7 +435,7 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
             return;
 
         _logger.LogWarning(
-            "Event rule action '{ActionType}' failed for rule '{RuleId}' on instance '{InstanceId}': {ErrorCode} ({ErrorKind}) {ErrorMessage}",
+            "Event rule action '{RuleActionType}' failed for rule '{RuleId}' on instance '{InstanceId}': {ErrorCode} ({ErrorKind}) {ErrorMessage}",
             actionType,
             ruleId,
             instanceId,

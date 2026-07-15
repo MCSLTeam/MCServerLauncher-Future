@@ -10,7 +10,7 @@ using StjJsonValueKind = System.Text.Json.JsonValueKind;
 using StjUtf8JsonReader = System.Text.Json.Utf8JsonReader;
 using StjUtf8JsonWriter = System.Text.Json.Utf8JsonWriter;
 
-namespace MCServerLauncher.Common.ProtoType.EventTrigger
+namespace MCServerLauncher.Common.Contracts.EventRules
 {
     /// <summary>
     /// Represents a complete rule consisting of multiple triggers and actions.
@@ -170,7 +170,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     /// Handles discriminator-based deserialization using the 'type' field.
     /// Discriminator error behavior is locked by characterization tests.
     /// </summary>
-    internal sealed class RulesetDefinitionStjConverter : System.Text.Json.Serialization.JsonConverter<RulesetDefinition>
+    internal sealed class RulesetDefinitionStjConverter : global::System.Text.Json.Serialization.JsonConverter<RulesetDefinition>
     {
         private static readonly string[] KnownDiscriminators =
         {
@@ -256,7 +256,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     /// Handles discriminator-based deserialization using the 'type' field.
     /// Discriminator error behavior is locked by characterization tests.
     /// </summary>
-    internal sealed class TriggerDefinitionStjConverter : System.Text.Json.Serialization.JsonConverter<TriggerDefinition>
+    internal sealed class TriggerDefinitionStjConverter : global::System.Text.Json.Serialization.JsonConverter<TriggerDefinition>
     {
         private static readonly string[] KnownDiscriminators =
         {
@@ -367,7 +367,7 @@ namespace MCServerLauncher.Common.ProtoType.EventTrigger
     /// Handles discriminator-based deserialization using the 'type' field.
     /// Discriminator error behavior is locked by characterization tests.
     /// </summary>
-    internal sealed class ActionDefinitionStjConverter : System.Text.Json.Serialization.JsonConverter<ActionDefinition>
+    internal sealed class ActionDefinitionStjConverter : global::System.Text.Json.Serialization.JsonConverter<ActionDefinition>
     {
         private static readonly string[] KnownDiscriminators =
         {

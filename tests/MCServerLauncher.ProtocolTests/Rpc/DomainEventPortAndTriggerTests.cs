@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Instances;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.ApplicationCore.Events;

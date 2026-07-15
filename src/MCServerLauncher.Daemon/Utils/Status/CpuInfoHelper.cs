@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
-using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Common.Contracts.System;
 using Microsoft.Management.Infrastructure;
 
 namespace MCServerLauncher.Daemon.Utils.Status;
@@ -82,7 +82,7 @@ public static class CpuInfoHelper
         throw new NotSupportedException("Unsupported OS");
     }
 
-    public static async Task<CpuInfo> GetCpuInfo()
+    public static async Task<ProcessorInfo> GetCpuInfo()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return CreateCpuInfo(await GetWinCpuUsage());
@@ -96,7 +96,7 @@ public static class CpuInfoHelper
 
             var name = await SystemInfoHelper.RunCommandAsync("sysctl", "-n machdep.cpu.brand_string");
             var vendor = name.Split(' ')[0];
-            return new CpuInfo(
+            return new ProcessorInfo(
                 vendor,
                 name,
                 ThreadCount,
@@ -125,9 +125,9 @@ public static class CpuInfoHelper
             : 0;
     }
 
-    private static CpuInfo CreateCpuInfo(double usage)
+    private static ProcessorInfo CreateCpuInfo(double usage)
     {
-        return new CpuInfo(Vendor, Name, ThreadCount, usage, CoreCount, ThreadCount);
+        return new ProcessorInfo(Vendor, Name, ThreadCount, usage, CoreCount, ThreadCount);
     }
 
     private static int ReadCimInt(CimInstance instance, string propertyName)

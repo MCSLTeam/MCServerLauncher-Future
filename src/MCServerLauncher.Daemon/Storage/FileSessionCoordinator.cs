@@ -73,24 +73,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return await OpenUploadCoreAsync(request.Path, request.Length, request.Sha256, legacySha1: null, cancellationToken);
-    }
-
-    internal async Task<Result<LegacyUploadSession, DaemonError>> OpenLegacyUploadAsync(
-        string? path,
-        long length,
-        string? sha1,
-        CancellationToken cancellationToken)
-    {
-        var result = await OpenUploadCoreAsync(
-            GetLegacyUploadTargetPath(path),
-            length,
-            sha256: null,
-            NormalizeOptionalSha1(sha1),
-            cancellationToken);
-        return result.Match(
-            value => Ok<LegacyUploadSession>(new LegacyUploadSession(value.SessionId)),
-            Err<LegacyUploadSession>);
+        return await OpenUploadCoreAsync(request.Path, request.Length, request.Sha256, cancellationToken);
     }
 
     public async Task<Result<Unit, DaemonError>> WriteUploadChunkAsync(
@@ -102,24 +85,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         return result.Match(
             _ => Ok(Unit.Default),
             Err<Unit>);
-    }
-
-    internal async Task<Result<LegacyUploadWriteResult, DaemonError>> WriteLegacyUploadChunkAsync(
-        Guid sessionId,
-        long offset,
-        ImmutableArray<byte> data,
-        CancellationToken cancellationToken)
-    {
-        var writeResult = await WriteUploadChunkCoreAsync(sessionId, offset, data, cancellationToken);
-        if (!writeResult.IsOk(out var progress))
-            return Err<LegacyUploadWriteResult>(writeResult.UnwrapErr());
-        if (!progress.IsComplete)
-            return Ok(new LegacyUploadWriteResult(false, progress.Received));
-
-        var closeResult = await CloseUploadCoreAsync(sessionId, cancellationToken);
-        return closeResult.Match(
-            _ => Ok(new LegacyUploadWriteResult(true, progress.Received)),
-            Err<LegacyUploadWriteResult>);
     }
 
     public Task<Result<Unit, DaemonError>> CloseUploadAsync(Guid sessionId, CancellationToken cancellationToken)
@@ -155,20 +120,10 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var result = await OpenDownloadCoreAsync(request.Path, includeLegacySha1: false, cancellationToken);
+        var result = await OpenDownloadCoreAsync(request.Path, cancellationToken);
         return result.Match(
             value => Ok(new DownloadSession(value.SessionId, value.Size, value.Sha256, MaxChunkSize, value.ExpiresAt)),
             Err<DownloadSession>);
-    }
-
-    internal async Task<Result<LegacyDownloadSession, DaemonError>> OpenLegacyDownloadAsync(
-        string path,
-        CancellationToken cancellationToken)
-    {
-        var result = await OpenDownloadCoreAsync(path, includeLegacySha1: true, cancellationToken);
-        return result.Match(
-            value => Ok(new LegacyDownloadSession(value.SessionId, value.Size, value.LegacySha1!)),
-            Err<LegacyDownloadSession>);
     }
 
     public async Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
@@ -177,23 +132,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(request);
         return await ReadDownloadCoreAsync(request.SessionId, request.Offset, request.MaximumLength, cancellationToken);
-    }
-
-    internal async Task<Result<ImmutableArray<byte>, DaemonError>> ReadLegacyDownloadRangeAsync(
-        Guid sessionId,
-        long from,
-        long to,
-        CancellationToken cancellationToken)
-    {
-        if (to < from)
-            return Err<ImmutableArray<byte>>(new ValidationDaemonError("file.range.invalid", "The requested range is invalid."));
-
-        var length = to - from;
-        if (length > MaxChunkSize)
-            return Err<ImmutableArray<byte>>(new ValidationDaemonError("file.chunk.size.invalid", "The requested chunk exceeds the maximum size."));
-
-        var result = await ReadDownloadCoreAsync(sessionId, from, checked((int)length), cancellationToken);
-        return result.Match(value => Ok(value.Data), Err<ImmutableArray<byte>>);
     }
 
     public async Task<Result<Unit, DaemonError>> CloseDownloadAsync(Guid sessionId, CancellationToken cancellationToken)
@@ -217,11 +155,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
         await DisposeSessionAsync(session);
         return Ok(Unit.Default);
-    }
-
-    internal Task<Result<Unit, DaemonError>> CloseLegacyDownloadAsync(Guid sessionId, CancellationToken cancellationToken)
-    {
-        return CloseDownloadAsync(sessionId, cancellationToken);
     }
 
     public Task<Result<DirectoryDetails, DaemonError>> GetDirectoryInfoAsync(PathRequest request, CancellationToken cancellationToken)
@@ -399,7 +332,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         string path,
         long length,
         string? sha256,
-        string? legacySha1,
         CancellationToken cancellationToken)
     {
         if (IsStopped)
@@ -411,7 +343,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
             if (IsStopped)
                 return Err<UploadSession>(CoordinatorStopped());
 
-            return await OpenUploadCoreLockedAsync(path, length, sha256, legacySha1, cancellationToken);
+            return await OpenUploadCoreLockedAsync(path, length, sha256, cancellationToken);
         }
         finally
         {
@@ -423,7 +355,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         string path,
         long length,
         string? sha256,
-        string? legacySha1,
         CancellationToken cancellationToken)
     {
         if (length < 0)
@@ -431,9 +362,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
         if (sha256 is not null && !IsHexHash(sha256, 32))
             return Err<UploadSession>(new ValidationDaemonError("file.upload.sha256.invalid", "The upload SHA-256 hash must be 64 hexadecimal characters."));
-
-        if (legacySha1 is not null && !IsHexHash(legacySha1, 20))
-            return Err<UploadSession>(new ValidationDaemonError("file.upload.sha1.invalid", "The upload SHA-1 hash must be 40 hexadecimal characters."));
 
         string targetPath;
         try
@@ -482,7 +410,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 bufferSize: 81920,
                 FileOptions.Asynchronous | FileOptions.RandomAccess);
             var expiresAt = _timeProvider.GetUtcNow() + SessionLifetime;
-            var session = new FileUploadInfo(targetPath, stagingPath, length, sha256, legacySha1, stream, expiresAt);
+            var session = new FileUploadInfo(targetPath, stagingPath, length, sha256, stream, expiresAt);
             if (!_uploadSessions.TryAdd(sessionId, session))
                 throw new IOException("The upload session could not be registered.");
 
@@ -603,19 +531,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 return Err<Unit>(new ValidationDaemonError("file.upload.hash_mismatch", "The uploaded file SHA-256 hash does not match the declared hash."));
             }
 
-            if (session.LegacySha1 is not null)
-            {
-                session.Stream.Position = 0;
-                var actualSha1 = await _hashAsync(session.Stream, HashAlgorithmName.SHA1, cancellationToken);
-                if (!actualSha1.Equals(session.LegacySha1, StringComparison.OrdinalIgnoreCase))
-                {
-                    session.IsClosed = true;
-                    _uploadSessions.TryRemove(sessionId, out _);
-                    cleanup = true;
-                    return Err<Unit>(new ValidationDaemonError("file.upload.hash_mismatch", "The uploaded file SHA-1 hash does not match the declared hash."));
-                }
-            }
-
             await session.Stream.DisposeAsync();
             File.Move(session.StagingPath, session.Path, overwrite: true);
             session.IsClosed = true;
@@ -645,7 +560,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
     private async Task<Result<FileDownloadInfo, DaemonError>> OpenDownloadCoreAsync(
         string path,
-        bool includeLegacySha1,
         CancellationToken cancellationToken)
     {
         if (IsStopped)
@@ -657,7 +571,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
             if (IsStopped)
                 return Err<FileDownloadInfo>(CoordinatorStopped());
 
-            return await OpenDownloadCoreLockedAsync(path, includeLegacySha1, cancellationToken);
+            return await OpenDownloadCoreLockedAsync(path, cancellationToken);
         }
         finally
         {
@@ -667,7 +581,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
     private async Task<Result<FileDownloadInfo, DaemonError>> OpenDownloadCoreLockedAsync(
         string path,
-        bool includeLegacySha1,
         CancellationToken cancellationToken)
     {
         string resolvedPath;
@@ -699,13 +612,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
             var length = stream.Length;
             var sha256 = await _hashAsync(stream, HashAlgorithmName.SHA256, cancellationToken);
-            string? sha1 = null;
-            if (includeLegacySha1)
-            {
-                stream.Position = 0;
-                sha1 = await _hashAsync(stream, HashAlgorithmName.SHA1, cancellationToken);
-            }
-
             stream.Position = 0;
             var sessionId = Guid.NewGuid();
             var session = new FileDownloadInfo(
@@ -713,7 +619,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 resolvedPath,
                 length,
                 sha256,
-                sha1,
                 stream,
                 _timeProvider.GetUtcNow() + SessionLifetime);
             if (!_downloadSessions.TryAdd(sessionId, session))
@@ -1084,11 +989,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 
-    private static string? NormalizeOptionalSha1(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? null : value;
-    }
-
     private static bool IsHexHash(string value, int byteLength)
     {
         if (value.Length != byteLength * 2)
@@ -1200,11 +1100,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
     private bool IsStopped => Volatile.Read(ref _stopped) != 0;
 
-    internal static string GetLegacyUploadTargetPath(string? path)
-    {
-        return path ?? FileManager.UploadRoot;
-    }
-
     private Task<Result<T, DaemonError>> ExecuteAsync<T>(Func<T> action)
         where T : notnull
     {
@@ -1236,12 +1131,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
     {
         return RResult.Err<T, DaemonError>(error);
     }
-
-    internal readonly record struct LegacyUploadSession(Guid SessionId);
-
-    internal readonly record struct LegacyUploadWriteResult(bool Done, long Received);
-
-    internal readonly record struct LegacyDownloadSession(Guid SessionId, long Size, string Sha1);
 
     private readonly record struct UploadWriteProgress(bool IsComplete, long Received);
 }

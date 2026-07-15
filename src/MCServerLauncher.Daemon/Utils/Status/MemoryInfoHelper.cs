@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Helpers;
-using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Common.Contracts.System;
 using Microsoft.Management.Infrastructure;
 using Serilog;
 
@@ -63,7 +63,7 @@ public static class MemoryInfoHelper
         throw new PlatformNotSupportedException("Unsupported OS");
     }
 
-    public static async Task<MemInfo> GetMemInfo()
+    public static async Task<MemoryInfo> GetMemInfo()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Session != null)
         {
@@ -92,7 +92,7 @@ public static class MemoryInfoHelper
                 }
             });
 
-            return new MemInfo(TotalPhysicalMemory, available);
+            return new MemoryInfo(TotalPhysicalMemory, available);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -102,7 +102,7 @@ public static class MemoryInfoHelper
                 .ConfigureAwait(false);
             if (!ulong.TryParse(availableMemRaw.Trim(), out var availableKb))
                 throw new InvalidOperationException("Failed to parse available memory");
-            return new MemInfo(TotalPhysicalMemory, availableKb);
+            return new MemoryInfo(TotalPhysicalMemory, availableKb);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -123,7 +123,7 @@ public static class MemoryInfoHelper
             var availablePages = pagesFree + pagesInactive;
             var freeKb = availablePages * pageSizeKb;
 
-            return new MemInfo(TotalPhysicalMemory, freeKb);
+            return new MemoryInfo(TotalPhysicalMemory, freeKb);
         }
 
         throw new PlatformNotSupportedException("Unsupported OS");

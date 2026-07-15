@@ -1,13 +1,7 @@
 using System.Text.Json;
-using System.Text;
-using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Common.ProtoType.Event;
 using MCServerLauncher.Common.ProtoType.Serialization;
-using MCServerLauncher.Common.ProtoType.Status;
-using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.ProtocolTests.Fixtures.Persistence;
-using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
 using StjJsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -19,115 +13,13 @@ public class DaemonTransportAndPersistencePerformanceGateTests
     private static readonly Type InstanceConfigType =
         Type.GetType("MCServerLauncher.Common.ProtoType.Instance.InstanceConfig, MCServerLauncher.Common", throwOnError: true)!;
 
-    private static readonly Guid FixedResponseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-
     private const double MaxRegressionRatio = 0.05;
     private const int WarmupSamples = 4;
     private const int MeasuredSamples = 7;
 
-    private static readonly HotPathBaseline ActionRequestParseBaseline = new(
-        NanosecondsPerOperation: 28_000,
-        AllocatedBytesPerOperation: 1_672);
-
-    private static readonly HotPathBaseline ActionResponseSerializeBaseline = new(
-        NanosecondsPerOperation: 3_000,
-        AllocatedBytesPerOperation: 720);
-
-    private static readonly HotPathBaseline EventPacketSerializeBaseline = new(
-        NanosecondsPerOperation: 8_300,
-        AllocatedBytesPerOperation: 1_680);
-
     private static readonly HotPathBaseline PersistenceReadWriteBaseline = new(
         NanosecondsPerOperation: 97_000,
         AllocatedBytesPerOperation: 16_700);
-
-    [Fact]
-    [Trait("Category", "Perf")]
-    [Trait("Category", "PerformanceGate")]
-    [Trait("Category", "AllocationGate")]
-    public void PerfGate_DaemonInboundActionParse_DoesNotRegressMoreThanFivePercent()
-    {
-        var actionRequestJson = File.ReadAllText(Path.Combine(RpcFixturePaths.ActionRequestDir, "save-event-rules-nested-parameter.json"));
-        var actionRequestUtf8 = Encoding.UTF8.GetBytes(actionRequestJson);
-        const int operationsPerSample = 1500;
-
-        var precheck = ActionExecutorExtensions.ParseRequest(null!, actionRequestUtf8);
-        Assert.True(precheck.IsOk(out _));
-
-        var measurement = PerformanceGateHarness.Measure(
-            operation: () =>
-            {
-                var result = ActionExecutorExtensions.ParseRequest(null!, actionRequestUtf8);
-                if (!result.IsOk(out _))
-                    throw new InvalidOperationException("Inbound action parse replay sample failed unexpectedly");
-            },
-            operationsPerSample: operationsPerSample,
-            warmupSamples: WarmupSamples,
-            measuredSamples: MeasuredSamples);
-
-        AssertWithinThreshold("daemon inbound action parse", measurement, ActionRequestParseBaseline);
-    }
-
-    [Fact]
-    [Trait("Category", "Perf")]
-    [Trait("Category", "PerformanceGate")]
-    [Trait("Category", "AllocationGate")]
-    public void PerfGate_DaemonOutboundActionResponseSerialize_DoesNotRegressMoreThanFivePercent()
-    {
-        var fixture = FixtureHarness.LoadFixture(RpcFixturePaths.ActionResponseDir, "success-typed-data.json");
-        var response = new ActionResponse
-        {
-            RequestStatus = ActionRequestStatus.Ok,
-            Retcode = ActionRetcode.Ok.Code,
-            Message = ActionRetcode.Ok.Message,
-            Data = fixture.GetProperty("data"),
-            Id = FixedResponseId
-        };
-
-        const int operationsPerSample = 3000;
-        var measurement = PerformanceGateHarness.Measure(
-            operation: () =>
-            {
-                var json = StjJsonSerializer.Serialize(response, DaemonRpcJsonBoundary.StjOptions);
-                if (json.Length == 0)
-                    throw new InvalidOperationException("Outbound action response replay sample serialized empty payload");
-            },
-            operationsPerSample: operationsPerSample,
-            warmupSamples: WarmupSamples,
-            measuredSamples: MeasuredSamples);
-
-        AssertWithinThreshold("daemon outbound action response serialize", measurement, ActionResponseSerializeBaseline);
-    }
-
-    [Fact]
-    [Trait("Category", "Perf")]
-    [Trait("Category", "PerformanceGate")]
-    [Trait("Category", "AllocationGate")]
-    public void PerfGate_DaemonOutboundEventPacketSerialize_DoesNotRegressMoreThanFivePercent()
-    {
-        var eventPacketFixture = FixtureHarness.LoadFixture(RpcFixturePaths.EventPacketDir, "null-meta-structured-data.json");
-        var packet = new EventPacket
-        {
-            EventType = EventType.DaemonReport,
-            EventMeta = null,
-            EventData = new JsonPayloadBuffer(eventPacketFixture.GetProperty("data")),
-            Timestamp = eventPacketFixture.GetProperty("time").GetInt64()
-        };
-
-        const int operationsPerSample = 2500;
-        var measurement = PerformanceGateHarness.Measure(
-            operation: () =>
-            {
-                var json = StjJsonSerializer.Serialize(packet, DaemonRpcJsonBoundary.StjOptions);
-                if (json.Length == 0)
-                    throw new InvalidOperationException("Outbound event packet replay sample serialized empty payload");
-            },
-            operationsPerSample: operationsPerSample,
-            warmupSamples: WarmupSamples,
-            measuredSamples: MeasuredSamples);
-
-        AssertWithinThreshold("daemon outbound event packet serialize", measurement, EventPacketSerializeBaseline);
-    }
 
     [Fact]
     [Trait("Category", "Perf")]

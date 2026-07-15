@@ -1,7 +1,6 @@
 using System.Text.Json;
 using MCServerLauncher.ProtocolTests.Fixtures.ConverterParity;
 using MCServerLauncher.ProtocolTests.Fixtures.Persistence;
-using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
 using MCServerLauncher.ProtocolTests.Helpers.Integration;
 
@@ -14,19 +13,9 @@ public class FixtureHarnessTests
     public void FixtureRoot_Directories_Exist()
     {
         // Validate that all fixture root directories are properly defined
-        Assert.True(Directory.Exists(RpcFixturePaths.FixtureRoot), "RPC fixture root should exist");
         Assert.True(Directory.Exists(PersistenceFixturePaths.FixtureRoot), "Persistence fixture root should exist");
         Assert.True(Directory.Exists(ConverterParityFixturePaths.FixtureRoot), "ConverterParity fixture root should exist");
         Assert.True(Directory.Exists(IntegrationHelperPaths.HelperRoot), "Integration helper root should exist");
-    }
-
-    [Fact]
-    [Trait("Category", "FixtureHarness")]
-    public void RpcFixtureSubDirectories_Exist()
-    {
-        Assert.True(Directory.Exists(RpcFixturePaths.ActionRequestDir), "ActionRequest fixture dir should exist");
-        Assert.True(Directory.Exists(RpcFixturePaths.ActionResponseDir), "ActionResponse fixture dir should exist");
-        Assert.True(Directory.Exists(RpcFixturePaths.EventPacketDir), "EventPacket fixture dir should exist");
     }
 
     [Fact]

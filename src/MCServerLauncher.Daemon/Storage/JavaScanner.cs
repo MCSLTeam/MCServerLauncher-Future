@@ -9,7 +9,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using MCServerLauncher.Common.ProtoType;
+using MCServerLauncher.Common.Contracts.System;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Storage;
@@ -51,7 +51,7 @@ public static class JavaScanner
         return (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path.Split(';') : path.Split(':')).ToList();
     }
 
-    private static async Task<JavaInfo?> GetJavaVersionAsync(string path)
+    private static async Task<JavaRuntime?> GetJavaVersionAsync(string path)
     {
         using var process = new Process
         {
@@ -71,12 +71,12 @@ public static class JavaScanner
         var match = VersionRegex.Match(content);
         if (!match.Success) return null;
 
-        return new JavaInfo(path, match.Value, content.Contains("64-Bit") ? "x64" : "x86");
+        return new JavaRuntime(path, match.Value, content.Contains("64-Bit") ? "x64" : "x86");
     }
 
     private static void ScanRoot(
         string workingPath,
-        List<Task<JavaInfo?>> tasks,
+        List<Task<JavaRuntime?>> tasks,
         bool recursive
     )
     {
@@ -111,12 +111,12 @@ public static class JavaScanner
     ///     扫描Java
     /// </summary>
     /// <returns></returns>
-    public static async Task<JavaInfo[]> ScanJavaAsync()
+    public static async Task<JavaRuntime[]> ScanJavaAsync()
     {
         var startTime = DateTime.Now;
         Log.Verbose("[JVM] Start scanning available Java");
 
-        List<Task<JavaInfo?>> tasks = [];
+        List<Task<JavaRuntime?>> tasks = [];
 
         // Disk
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -152,7 +152,7 @@ public static class JavaScanner
             .ContinueWith(t =>
                 t.Result
                     .Where(i => i is not null)
-                    .OfType<JavaInfo>()
+                    .OfType<JavaRuntime>()
                     .DistinctBy(i => i.Path)
                     .ToArray()
             );

@@ -1,4 +1,5 @@
 using System.Text;
+using MCServerLauncher.Common.Contracts.EventRules;
 using SysTextJsonIgnore = System.Text.Json.Serialization.JsonIgnoreAttribute;
 using SysTextJsonPropertyName = System.Text.Json.Serialization.JsonPropertyNameAttribute;
 using SysTextJsonRequired = System.Text.Json.Serialization.JsonRequiredAttribute;
@@ -137,7 +138,7 @@ public record InstanceConfig
     ///     事件触发器规则
     /// </summary>
     [SysTextJsonPropertyName("event_rules")]
-    public List<EventTrigger.EventRule> EventRules { get; init; } = new();
+    public List<EventRule> EventRules { get; init; } = new();
 
     #endregion
 }

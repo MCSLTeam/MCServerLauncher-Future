@@ -12,14 +12,12 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
-    <PackageReference Include="TouchSocket.Core.DependencyInjection" Version="4.2.17" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
     <ProjectReference Include="..\..\src\MCServerLauncher.Daemon.API\MCServerLauncher.Daemon.API.csproj" />
     <ProjectReference Include="..\..\src\MCServerLauncher.Daemon\MCServerLauncher.Daemon.csproj" />
-    <ProjectReference Include="..\..\src\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
   </ItemGroup>
 
 </Project>

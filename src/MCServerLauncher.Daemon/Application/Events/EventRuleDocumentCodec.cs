@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.Contracts.EventRules;
 
 namespace MCServerLauncher.Daemon.ApplicationCore.Events;
 

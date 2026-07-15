@@ -1,6 +1,6 @@
 using System;
 using System.Text.Json;
-using MCServerLauncher.Common.ProtoType.Action;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
@@ -33,6 +33,47 @@ public class StjFoundationTests
     }
 
     [Fact]
+    public void StjResolver_EventRuleList_RoundTripsWithGeneratedMetadata()
+    {
+        var options = StjResolver.CreateDefaultOptions();
+        var rules = new List<EventRule>
+        {
+            new()
+            {
+                Name = "notify",
+                Actions =
+                [
+                    new SendNotificationAction
+                    {
+                        Title = "title",
+                        Message = "message"
+                    }
+                ]
+            }
+        };
+
+        Assert.NotNull(options.GetTypeInfo(typeof(List<EventRule>)));
+
+        var json = JsonSerializer.Serialize(rules, options);
+        var parsed = JsonSerializer.Deserialize<List<EventRule>>(json, options);
+
+        var rule = Assert.Single(parsed!);
+        var action = Assert.IsType<SendNotificationAction>(Assert.Single(rule.Actions));
+        Assert.Equal("notify", rule.Name);
+        Assert.Equal("title", action.Title);
+        Assert.Equal("message", action.Message);
+    }
+
+    [Fact]
+    public void StjResolver_UnregisteredRoot_RejectsReflectionFallback()
+    {
+        var options = StjResolver.CreateDefaultOptions();
+
+        Assert.Throws<NotSupportedException>(() =>
+            JsonSerializer.Serialize(new UnregisteredPayload("value"), options));
+    }
+
+    [Fact]
     public void GuidStjConverter_SerializesGuid()
     {
         var guid = Guid.NewGuid();
@@ -42,47 +83,7 @@ public class StjFoundationTests
     }
 
     [Fact]
-    public void GuidStjConverter_DeserializesGuidDictionaryKeys()
-    {
-        var guid = Guid.Parse("fdbf680c-fe52-4f1d-89ba-a0d9d8b857b3");
-        var json =
-            $$"""
-              {
-                "reports": {
-                  "{{guid}}": {
-                    "status": "stopped",
-                    "config": {
-                      "name": "demo",
-                      "target": "server.jar",
-                      "instance_type": "mc_java",
-                      "target_type": "jar",
-                      "mc_version": "1.21.1",
-                      "input_encoding": "utf-8",
-                      "output_encoding": "utf-8",
-                      "java_path": "java",
-                      "arguments": [],
-                      "env": {},
-                      "event_rules": []
-                    },
-                    "properties": {},
-                    "players": [],
-                    "performance_counter": {
-                      "cpu": 0,
-                      "memory": 0
-                    }
-                  }
-                }
-              }
-            """;
-
-        var result = JsonSerializer.Deserialize<GetAllReportsResult>(json, DaemonClientRpcJsonBoundary.StjOptions);
-
-        Assert.NotNull(result);
-        Assert.True(result!.Reports.ContainsKey(guid));
-    }
-
-    [Fact]
-    public void InstanceConfig_EncodingWebNames_RoundTripAsStableStrings()
+    public void InstanceConfig_PublicResolver_RoundTripsCanonicalEnumsAndEncodings()
     {
         var config = new InstanceConfig
         {
@@ -94,12 +95,17 @@ public class StjFoundationTests
             OutputEncoding = System.Text.Encoding.Unicode
         };
 
-        var json = JsonSerializer.Serialize(config, PersistenceContext.Default.InstanceConfig);
-        var parsed = JsonSerializer.Deserialize(json, PersistenceContext.Default.InstanceConfig);
+        var options = StjResolver.CreateDefaultOptions();
+        var json = JsonSerializer.Serialize(config, options);
+        var parsed = JsonSerializer.Deserialize<InstanceConfig>(json, options);
 
+        Assert.True(json.Contains("\"instance_type\":\"mc_java\"", StringComparison.Ordinal), json);
+        Assert.True(json.Contains("\"target_type\":\"jar\"", StringComparison.Ordinal), json);
         Assert.Contains("\"input_encoding\":\"utf-8\"", json);
         Assert.Contains("\"output_encoding\":\"utf-16\"", json);
-        Assert.Equal(System.Text.Encoding.UTF8.WebName, parsed!.InputEncoding.WebName);
+        Assert.Equal(InstanceType.MCJava, parsed!.InstanceType);
+        Assert.Equal(TargetType.Jar, parsed.TargetType);
+        Assert.Equal(System.Text.Encoding.UTF8.WebName, parsed.InputEncoding.WebName);
         Assert.Equal(System.Text.Encoding.Unicode.WebName, parsed.OutputEncoding.WebName);
     }
 
@@ -130,17 +136,6 @@ public class StjFoundationTests
 
         Assert.Equal(expectedCpu, counter.Cpu);
         Assert.Equal(expectedMemory, counter.Memory);
-    }
-
-    [Fact]
-    public void InstancePerformanceCounter_SourceGeneratedJson_NormalizesInvalidValues()
-    {
-        const string json = """{"cpu":-5,"memory":-1024}""";
-
-        var counter = JsonSerializer.Deserialize(json, ActionResultsContext.Default.InstancePerformanceCounter);
-
-        Assert.Equal(0, counter.Cpu);
-        Assert.Equal(0, counter.Memory);
     }
 
     [Fact]
@@ -194,4 +189,6 @@ public class StjFoundationTests
                 AppContext.SetData(key, null);
         }
     }
+
+    private sealed record UnregisteredPayload(string Value);
 }

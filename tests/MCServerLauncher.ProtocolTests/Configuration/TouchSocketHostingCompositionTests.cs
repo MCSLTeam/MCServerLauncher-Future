@@ -7,7 +7,6 @@ using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Management;
-using MCServerLauncher.Daemon.Remote.Action;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
@@ -85,10 +84,8 @@ public class TouchSocketHostingCompositionTests
 
         Assert.Contains("\"[Remote] Bind endpoint: {BindEndpoint}\"", source, StringComparison.Ordinal);
         Assert.Contains("\"[Remote] Ws connect URLs: {ConnectUrls}\"", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("Ws V1 migration URLs", source, StringComparison.Ordinal);
         Assert.Contains("GetConnectableAuthorities", source, StringComparison.Ordinal);
         Assert.Contains("IPAddress.Loopback", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ws://{RemoteAddress}/api/v1", source, StringComparison.Ordinal);
         Assert.DoesNotContain("http://{RemoteAddress}/", source, StringComparison.Ordinal);
     }
 
@@ -119,26 +116,6 @@ public class TouchSocketHostingCompositionTests
         Assert.DoesNotContain("WsContextContainer", source, StringComparison.Ordinal);
         Assert.DoesNotContain("IHttpService", source, StringComparison.Ordinal);
         Assert.DoesNotContain("WsVerifyHandler", source, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [Trait("Category", "DaemonInbound")]
-    [Trait("Category", "DaemonInboundStatic")]
-    public void ProductionStartup_DoesNotSelectOrRegisterLegacyActionRuntime()
-    {
-        var startup = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonStartupInitialization.cs");
-        var application = ReadSourceFile("src/MCServerLauncher.Daemon/Application.cs");
-        var composition = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
-        var config = ReadSourceFile("src/MCServerLauncher.Daemon/AppConfig.cs");
-
-        Assert.DoesNotContain("ActionHandlerRegistryRuntime", startup, StringComparison.Ordinal);
-        Assert.DoesNotContain("ActionHandlerRegistryRuntime", application, StringComparison.Ordinal);
-        Assert.DoesNotContain("ActionHandlerRegistrySnapshot", composition, StringComparison.Ordinal);
-        Assert.DoesNotContain("UseGeneratedActionRegistry", config, StringComparison.Ordinal);
-        Assert.DoesNotContain("RegisterSingleton<IActionExecutor", composition, StringComparison.Ordinal);
-        Assert.DoesNotContain("RegisterSingleton<IEventService", composition, StringComparison.Ordinal);
-        Assert.DoesNotContain("RegisterSingleton<LegacyDomainEventAdapter", composition, StringComparison.Ordinal);
-        Assert.DoesNotContain("RegisterSingleton<WsContextContainer", composition, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -201,9 +178,6 @@ public class TouchSocketHostingCompositionTests
             Assert.False(catalogAccessor.TryGet(out _));
             var transportPlugin = resolver.GetRequiredService<TouchSocketV2TransportPlugin>();
             Assert.Same(transportPlugin, resolver.GetRequiredService<IV2ConnectionAdministration>());
-            Assert.Null(resolver.GetService<LegacyDomainEventAdapter>());
-            Assert.Null(resolver.GetService<IActionExecutor>());
-
             attachment = DaemonServiceComposition.AttachDaemonLifecycle(httpService);
 
             Assert.True(catalogAccessor.TryGet(out var attachedCatalog));
@@ -318,7 +292,6 @@ public class TouchSocketHostingCompositionTests
     public async Task Application_PrecompletedShutdownStopsWithoutStartingAndDisposesRootProvider()
     {
         await Application.DisposeCurrentHostAsync();
-        ActionHandlerRegistryRuntime.Initialize(useGeneratedActionRegistry: true);
         var coreStopCount = 0;
         var stoppingCount = 0;
         Func<Task> stoppingHandler = () =>
@@ -360,16 +333,9 @@ public class TouchSocketHostingCompositionTests
         }
         finally
         {
-            try
-            {
-                Application.OnStopping -= stoppingHandler;
-                if (Application.CurrentHostContext is { IsServing: false })
-                    await Application.DisposeCurrentHostAsync();
-            }
-            finally
-            {
-                ActionHandlerRegistryRuntime.Reset();
-            }
+            Application.OnStopping -= stoppingHandler;
+            if (Application.CurrentHostContext is { IsServing: false })
+                await Application.DisposeCurrentHostAsync();
         }
     }
 
@@ -378,7 +344,6 @@ public class TouchSocketHostingCompositionTests
     public async Task Application_HttpServiceDisposeFailureIsReportedAfterRemainingCleanup()
     {
         await Application.DisposeCurrentHostAsync();
-        ActionHandlerRegistryRuntime.Initialize(useGeneratedActionRegistry: true);
         const string resultMessage = "controlled-sensitive-normal-dispose-detail";
         var coreStopCount = 0;
         var disposeAttemptCount = 0;
@@ -418,15 +383,8 @@ public class TouchSocketHostingCompositionTests
         }
         finally
         {
-            try
-            {
-                if (Application.CurrentHostContext is { IsServing: false })
-                    await Application.DisposeCurrentHostAsync();
-            }
-            finally
-            {
-                ActionHandlerRegistryRuntime.Reset();
-            }
+            if (Application.CurrentHostContext is { IsServing: false })
+                await Application.DisposeCurrentHostAsync();
         }
     }
 
@@ -435,7 +393,6 @@ public class TouchSocketHostingCompositionTests
     public async Task Application_ShutdownAfterListenerStartCannotStartStoppedLifecycle()
     {
         await Application.DisposeCurrentHostAsync();
-        ActionHandlerRegistryRuntime.Initialize(useGeneratedActionRegistry: true);
         var startedCount = 0;
         var stoppingCount = 0;
         var coreStopCount = 0;
@@ -482,17 +439,10 @@ public class TouchSocketHostingCompositionTests
         }
         finally
         {
-            try
-            {
-                Application.OnStarted -= startedHandler;
-                Application.OnStopping -= stoppingHandler;
-                if (Application.CurrentHostContext is { IsServing: false })
-                    await Application.DisposeCurrentHostAsync();
-            }
-            finally
-            {
-                ActionHandlerRegistryRuntime.Reset();
-            }
+            Application.OnStarted -= startedHandler;
+            Application.OnStopping -= stoppingHandler;
+            if (Application.CurrentHostContext is { IsServing: false })
+                await Application.DisposeCurrentHostAsync();
         }
     }
 
@@ -501,7 +451,6 @@ public class TouchSocketHostingCompositionTests
     public async Task Application_RejectsHostReplacementWhileServeOwnsCapturedContext()
     {
         await Application.DisposeCurrentHostAsync();
-        ActionHandlerRegistryRuntime.Initialize(useGeneratedActionRegistry: true);
         var listenerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseListener = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var configureReplacementCount = 0;
@@ -553,24 +502,17 @@ public class TouchSocketHostingCompositionTests
         }
         finally
         {
-            try
+            releaseListener.TrySetResult();
+            if (serveTask is not null)
             {
-                releaseListener.TrySetResult();
-                if (serveTask is not null)
-                {
-                    var current = Application.CurrentHostContext;
-                    if (current is not null)
-                        _ = current.RootProvider.GetRequiredService<GracefulShutdown>().Shutdown();
-                    await serveTask.WaitAsync(TimeSpan.FromSeconds(10));
-                }
-                else if (Application.CurrentHostContext is { IsServing: false })
-                {
-                    await Application.DisposeCurrentHostAsync();
-                }
+                var current = Application.CurrentHostContext;
+                if (current is not null)
+                    _ = current.RootProvider.GetRequiredService<GracefulShutdown>().Shutdown();
+                await serveTask.WaitAsync(TimeSpan.FromSeconds(10));
             }
-            finally
+            else if (Application.CurrentHostContext is { IsServing: false })
             {
-                ActionHandlerRegistryRuntime.Reset();
+                await Application.DisposeCurrentHostAsync();
             }
         }
     }
@@ -580,7 +522,6 @@ public class TouchSocketHostingCompositionTests
     public async Task Application_ReplacingUnservedHostDisposesEachRootProviderExactlyOnce()
     {
         await Application.DisposeCurrentHostAsync();
-        ActionHandlerRegistryRuntime.Initialize(useGeneratedActionRegistry: true);
         Application.DaemonHostContext? firstHost = null;
         AsyncDisposeProbe? firstProbe = null;
         AsyncDisposeProbe? secondProbe = null;
@@ -609,15 +550,8 @@ public class TouchSocketHostingCompositionTests
         }
         finally
         {
-            try
-            {
-                if (Application.CurrentHostContext is { IsServing: false })
-                    await Application.DisposeCurrentHostAsync();
-            }
-            finally
-            {
-                ActionHandlerRegistryRuntime.Reset();
-            }
+            if (Application.CurrentHostContext is { IsServing: false })
+                await Application.DisposeCurrentHostAsync();
         }
     }
 
@@ -626,7 +560,6 @@ public class TouchSocketHostingCompositionTests
     public async Task Application_SetupFailureDisposesPartiallyBuiltRootProvider()
     {
         await Application.DisposeCurrentHostAsync();
-        ActionHandlerRegistryRuntime.Initialize(useGeneratedActionRegistry: true);
         const string resultMessage = "controlled-sensitive-rollback-dispose-detail";
         AsyncDisposeProbe? probe = null;
         var disposeAttemptCount = 0;
@@ -658,15 +591,8 @@ public class TouchSocketHostingCompositionTests
         }
         finally
         {
-            try
-            {
-                if (Application.CurrentHostContext is { IsServing: false })
-                    await Application.DisposeCurrentHostAsync();
-            }
-            finally
-            {
-                ActionHandlerRegistryRuntime.Reset();
-            }
+            if (Application.CurrentHostContext is { IsServing: false })
+                await Application.DisposeCurrentHostAsync();
         }
     }
 

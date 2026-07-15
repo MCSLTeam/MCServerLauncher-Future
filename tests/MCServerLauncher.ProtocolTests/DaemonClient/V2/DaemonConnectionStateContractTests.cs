@@ -38,8 +38,6 @@ public sealed class DaemonConnectionStateContractTests
         Assert.True(typeof(DaemonConnectionState).IsPublic);
         Assert.Equal("MCServerLauncher.DaemonClient", typeof(DaemonConnectionState).Namespace);
         Assert.Equal("MCServerLauncher.DaemonClient", typeof(DaemonConnectionState).Assembly.GetName().Name);
-        Assert.Same(
-            typeof(global::MCServerLauncher.DaemonClient.Daemon).Assembly,
-            typeof(DaemonConnectionState).Assembly);
+        Assert.Equal("MCServerLauncher.DaemonClient", typeof(DaemonConnectionState).Assembly.GetName().Name);
     }
 }

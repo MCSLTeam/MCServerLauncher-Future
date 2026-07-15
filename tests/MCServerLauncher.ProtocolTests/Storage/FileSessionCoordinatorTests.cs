@@ -154,40 +154,6 @@ public sealed class FileSessionCoordinatorTests
 
     [Fact]
     [Trait("Category", "FileSessionCoordinator")]
-    public async Task LegacyUpload_UsesSha1OnlyAtAdapterBoundaryAndCommitsZeroLengthContent()
-    {
-        var fixture = CreateFixture("legacy");
-        var coordinator = new FileSessionCoordinator();
-        var relativePath = Path.Combine(fixture.RelativePath, "empty.bin");
-        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
-
-        try
-        {
-            var opened = AssertOk(await coordinator.OpenLegacyUploadAsync(
-                relativePath,
-                0,
-                Sha1([]),
-                CancellationToken.None));
-            var written = AssertOk(await coordinator.WriteLegacyUploadChunkAsync(
-                opened.SessionId,
-                0,
-                ImmutableArray<byte>.Empty,
-                CancellationToken.None));
-
-            Assert.True(written.Done);
-            Assert.Equal(0, written.Received);
-            Assert.True(File.Exists(targetPath));
-            Assert.Empty(await File.ReadAllBytesAsync(targetPath));
-        }
-        finally
-        {
-            await coordinator.StopAsync();
-            Cleanup(fixture.ResolvedPath);
-        }
-    }
-
-    [Fact]
-    [Trait("Category", "FileSessionCoordinator")]
     public async Task StopAsync_CleansOpenSessionsAndMakesSessionOperationsNotFound()
     {
         var fixture = CreateFixture("stop");
@@ -563,14 +529,6 @@ public sealed class FileSessionCoordinatorTests
         }
     }
 
-    [Fact]
-    [Trait("Category", "FileSessionCoordinator")]
-    public void LegacyUpload_NullPathUsesUploadRoot()
-    {
-        Assert.Equal(FileManager.UploadRoot, FileSessionCoordinator.GetLegacyUploadTargetPath(null));
-        Assert.Equal(Path.GetFullPath(FileManager.UploadRoot), FileSessionCoordinator.ResolveAndValidatePath(FileManager.UploadRoot));
-    }
-
     private static T AssertOk<T>(Result<T, DaemonError> result)
         where T : notnull
     {
@@ -597,8 +555,6 @@ public sealed class FileSessionCoordinatorTests
     }
 
     private static string Sha256(byte[] value) => Convert.ToHexString(SHA256.HashData(value)).ToLowerInvariant();
-
-    private static string Sha1(byte[] value) => Convert.ToHexString(SHA1.HashData(value)).ToLowerInvariant();
 
     private static Fixture CreateFixture(string name)
     {

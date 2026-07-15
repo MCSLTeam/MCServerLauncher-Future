@@ -120,6 +120,18 @@ public class ProjectConfigurationTests
         Assert.Equal("true", value);
     }
 
+    [Fact]
+    public void V1DeletionGate_CoversLegacyActionFailureType()
+    {
+        var script = File.ReadAllText(Path.Combine(
+            GetRepositoryRoot(),
+            "tools",
+            "VerifyNoV1Runtime.ps1"));
+        var legacyType = string.Concat("Action", "Error");
+
+        Assert.Contains($"'\\b{legacyType}\\b'", script, StringComparison.Ordinal);
+    }
+
     private static string GetRepositoryRoot()
     {
         var directory = AppContext.BaseDirectory;

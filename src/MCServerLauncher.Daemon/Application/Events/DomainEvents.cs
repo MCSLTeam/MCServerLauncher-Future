@@ -280,7 +280,7 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
             {
                 logger.LogError(
                     exception,
-                    "Domain event owner '{Owner}' failed while handling '{EventType}'",
+                    "Domain event owner '{Owner}' failed while handling '{DomainEventType}'",
                     owner,
                     typeof(TEvent).FullName ?? typeof(TEvent).Name);
             }
@@ -290,7 +290,7 @@ internal sealed class DomainEventPort : IDomainEventPort, IDisposable
                 if (elapsed >= policy.SlowHandlerThreshold)
                 {
                     logger.LogWarning(
-                        "Slow domain event owner '{Owner}' handled '{EventType}' in {ElapsedMilliseconds} ms",
+                        "Slow domain event owner '{Owner}' handled '{DomainEventType}' in {ElapsedMilliseconds} ms",
                         owner,
                         typeof(TEvent).FullName ?? typeof(TEvent).Name,
                         elapsed.TotalMilliseconds);

@@ -1,16 +1,15 @@
+using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using RustyOptions;
-using LegacyJavaRuntime = MCServerLauncher.Common.ProtoType.JavaInfo;
-using LegacySystemInfo = MCServerLauncher.Common.ProtoType.Status.SystemInfo;
 
 namespace MCServerLauncher.Daemon.ApplicationCore;
 
 internal sealed class LocalSystemApplication(
-    IAsyncTimedLazyCell<LegacySystemInfo> systemInfoCell,
-    IAsyncTimedLazyCell<LegacyJavaRuntime[]> javaRuntimeCell) : ISystemApplication
+    IAsyncTimedLazyCell<SystemInfo> systemInfoCell,
+    IAsyncTimedLazyCell<JavaRuntime[]> javaRuntimeCell) : ISystemApplication
 {
     public async Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(CancellationToken cancellationToken)
     {
@@ -18,7 +17,7 @@ internal sealed class LocalSystemApplication(
         try
         {
             var systemInfo = await systemInfoCell.Value.AsTask().WaitAsync(cancellationToken);
-            return Result.Ok<SystemInfo, DaemonError>(SystemContractMapper.ToContract(systemInfo));
+            return Result.Ok<SystemInfo, DaemonError>(systemInfo);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -38,7 +37,7 @@ internal sealed class LocalSystemApplication(
         try
         {
             var runtimes = await javaRuntimeCell.Value.AsTask().WaitAsync(cancellationToken);
-            return Result.Ok<JavaRuntimeList, DaemonError>(SystemContractMapper.ToContract(runtimes));
+            return Result.Ok<JavaRuntimeList, DaemonError>(new JavaRuntimeList(runtimes.ToImmutableArray()));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

@@ -12,11 +12,4 @@ public class ProtocolTestInfrastructureSmokeTests
         Assert.NotNull(resolver);
     }
 
-    [Fact]
-    public void CommonLibrary_IsReferenced()
-    {
-        // Verify the Common library reference is functional
-        var commonAssembly = typeof(Common.ProtoType.Action.ActionRequest).Assembly;
-        Assert.NotNull(commonAssembly);
-    }
 }

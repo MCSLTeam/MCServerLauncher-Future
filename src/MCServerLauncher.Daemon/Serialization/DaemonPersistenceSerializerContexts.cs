@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management;
 

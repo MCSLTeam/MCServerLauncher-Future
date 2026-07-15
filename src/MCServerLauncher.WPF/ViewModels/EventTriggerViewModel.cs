@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.Modules;

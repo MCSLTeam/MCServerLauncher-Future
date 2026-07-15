@@ -8,12 +8,6 @@ public static class WsVerifyHandler
 {
     public static bool RejectWithNoReason { get; set; } = false;
 
-    public static async Task<bool> VerifyHandler(IHttpSessionClient client, HttpContext context)
-    {
-        if (!context.Request.URL.StartsWith("/api/v1")) return false;
-        return await VerifyTokenAsync(context).ConfigureAwait(false);
-    }
-
     public static async Task<bool> VerifyV2Handler(IHttpSessionClient client, HttpContext context)
     {
         if (!StringComparer.Ordinal.Equals(context.Request.RelativeURL, "/api/v2")) return false;

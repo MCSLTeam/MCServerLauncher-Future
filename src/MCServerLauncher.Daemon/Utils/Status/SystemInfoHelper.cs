@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
-using MCServerLauncher.Common.ProtoType.Status;
+using MCServerLauncher.Common.Contracts.System;
+using ContractDriveInfo = MCServerLauncher.Common.Contracts.System.DriveInfo;
+using IoDriveInfo = System.IO.DriveInfo;
 
 namespace MCServerLauncher.Daemon.Utils.Status;
 
@@ -14,25 +17,24 @@ public static class SystemInfoHelper
             await MemoryInfoHelper.GetMemInfo(),
             GetDiskInfo(),
             GetDiskInfos(),
-            Application.AppVersion.ToString()
-        );
+            Application.AppVersion.ToString());
     }
 
-    public static OsInfo GetOsInfo()
+    public static OperatingSystemInfo GetOsInfo()
     {
         // Environment.OSVersion 在 Unix 上常为 "Unix …"，导致客户端把 macOS 误判为 Linux。
         // 使用 RuntimeInformation 给出平台友好名称，架构仍取 OSArchitecture。
         var arch = RuntimeInformation.OSArchitecture.ToString();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return new OsInfo($"Windows {Environment.OSVersion.Version}", arch);
+            return new OperatingSystemInfo($"Windows {Environment.OSVersion.Version}", arch);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            return new OsInfo($"macOS {Environment.OSVersion.Version}", arch);
+            return new OperatingSystemInfo($"macOS {Environment.OSVersion.Version}", arch);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            return new OsInfo($"Linux {Environment.OSVersion.Version}", arch);
-        return new OsInfo(Environment.OSVersion.ToString(), arch);
+            return new OperatingSystemInfo($"Linux {Environment.OSVersion.Version}", arch);
+        return new OperatingSystemInfo(Environment.OSVersion.ToString(), arch);
     }
 
-    public static DriveInformation GetDiskInfo()
+    public static ContractDriveInfo GetDiskInfo()
     {
         var location = AppContext.BaseDirectory;
 
@@ -59,7 +61,7 @@ public static class SystemInfoHelper
             normalizedRoot = Path.DirectorySeparatorChar.ToString();
 
         // 查找匹配的驱动器
-        var drive = DriveInfo.GetDrives()
+        var drive = IoDriveInfo.GetDrives()
             .Select(d => new
             {
                 Info = d,
@@ -73,7 +75,7 @@ public static class SystemInfoHelper
         if (!drive.IsReady)
             throw new IOException($"驱动器未就绪：{rootPath}");
 
-        return new DriveInformation(
+        return new ContractDriveInfo(
             drive.DriveFormat,
             (ulong)drive.TotalSize,
             (ulong)drive.AvailableFreeSpace,
@@ -81,21 +83,21 @@ public static class SystemInfoHelper
         );
     }
 
-    public static DriveInformation[] GetDiskInfos()
+    public static ImmutableArray<ContractDriveInfo> GetDiskInfos()
     {
         // 按 Name+TotalSize 去重，避免 macOS 同一物理盘多挂载点导致客户端求和虚高
-        return DriveInfo.GetDrives()
+        return IoDriveInfo.GetDrives()
             .Where(d => d.IsReady)
             .Where(d => d.TotalSize > 0)
             .Where(d => d.DriveType is not DriveType.CDRom and not DriveType.NoRootDirectory and not DriveType.Ram)
             .GroupBy(d => $"{d.Name}\0{d.TotalSize}\0{d.AvailableFreeSpace}")
             .Select(g => g.First())
-            .Select(d => new DriveInformation(
+            .Select(d => new ContractDriveInfo(
                 d.DriveFormat,
                 (ulong)d.TotalSize,
                 (ulong)d.AvailableFreeSpace,
                 d.Name))
-            .ToArray();
+            .ToImmutableArray();
     }
 
     private static string NormalizeDriveName(string path)

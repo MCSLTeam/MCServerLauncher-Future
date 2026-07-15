@@ -27,7 +27,6 @@ internal sealed class FileUploadInfo(
     string stagingPath,
     long size,
     string? sha256,
-    string? legacySha1,
     FileStream stream,
     DateTimeOffset expiresAt)
     : FileSessionInfo(path, stream, expiresAt)
@@ -37,8 +36,6 @@ internal sealed class FileUploadInfo(
     public long Size { get; } = size;
 
     public string? Sha256 { get; } = sha256;
-
-    public string? LegacySha1 { get; } = legacySha1;
 
     public long NextExpectedOffset { get; set; }
 
@@ -52,7 +49,6 @@ internal sealed class FileDownloadInfo(
     string path,
     long size,
     string sha256,
-    string? legacySha1,
     FileStream stream,
     DateTimeOffset expiresAt)
     : FileSessionInfo(path, stream, expiresAt)
@@ -62,6 +58,4 @@ internal sealed class FileDownloadInfo(
     public long Size { get; } = size;
 
     public string Sha256 { get; } = sha256;
-
-    public string? LegacySha1 { get; } = legacySha1;
 }

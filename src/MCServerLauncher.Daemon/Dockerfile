@@ -9,7 +9,6 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj", "src/MCServerLauncher.Daemon/"]
 COPY ["src/MCServerLauncher.Common/MCServerLauncher.Common.csproj", "src/MCServerLauncher.Common/"]
-COPY ["generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj", "generators/MCServerLauncher.Daemon.Generators/"]
 RUN dotnet restore "src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj"
 COPY . .
 WORKDIR "/src/src/MCServerLauncher.Daemon"

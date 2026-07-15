@@ -1,44 +1,39 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using MCServerLauncher.Common.Contracts.Serialization;
 
 namespace MCServerLauncher.Common.ProtoType.Serialization;
 
 /// <summary>
-/// Composition point for STJ type resolvers - allows later runtime paths to extend without modifying JsonSettings
+/// Composes the explicit Common-owned source-generated JSON contexts.
 /// </summary>
 public static class StjResolver
 {
-    /// <summary>
-    /// Creates a combined resolver with all Common-side STJ contexts
-    /// </summary>
     public static IJsonTypeInfoResolver CreateDefaultResolver()
     {
         return JsonTypeInfoResolver.Combine(
-            RpcEnvelopeContext.Default,
-            ActionParametersContext.Default,
-            ActionResultsContext.Default,
-            EventDataContext.Default,
-            PersistenceContext.Default
-        );
+            ApplicationContractJsonContext.Default,
+            BuiltInProtocolJsonContext.Default,
+            PersistenceContext.Default);
     }
 
-    /// <summary>
-    /// Creates JsonSerializerOptions with default resolver and converters
-    /// </summary>
     public static JsonSerializerOptions CreateDefaultOptions()
     {
         var options = new JsonSerializerOptions
         {
             TypeInfoResolver = CreateDefaultResolver(),
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
+            DefaultIgnoreCondition = JsonIgnoreCondition.Never
         };
 
         options.Converters.Add(new GuidStjConverter());
         options.Converters.Add(new EncodingStjConverter());
         options.Converters.Add(new PlaceHolderStringStjConverter());
-        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.SnakeCaseLower));
-
+        options.Converters.Add(new InstanceTypeJsonConverter());
+        options.Converters.Add(new TargetTypeJsonConverter());
+        options.Converters.Add(new SourceTypeJsonConverter());
+        options.Converters.Add(new InstanceFactoryMirrorJsonConverter());
         return options;
     }
 }

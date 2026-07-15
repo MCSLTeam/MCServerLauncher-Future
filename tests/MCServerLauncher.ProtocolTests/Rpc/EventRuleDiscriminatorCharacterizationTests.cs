@@ -1,12 +1,9 @@
 using System.Text.Json;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType;
-using MCServerLauncher.Common.ProtoType.Action;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
-using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.ProtocolTests.Fixtures.Persistence;
-using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
@@ -83,46 +80,6 @@ public class EventRuleDiscriminatorCharacterizationTests
 
         Assert.Contains("Unknown TriggerDefinition discriminator 'FutureTrigger'", ex.Message);
         Assert.Contains("Known values: ConsoleOutput, Schedule, InstanceStatus", ex.Message);
-    }
-
-    [Fact]
-    [Trait("Category", "EventRuleKnown")]
-    public void EventRuleKnown_PersistenceAndRpcFixtures_RemainCompatible()
-    {
-        var persistenceJson = File.ReadAllText(Path.Combine(
-            PersistenceFixturePaths.InstanceConfigDir,
-            "event-rule-heavy-daemon-instance.json"));
-        var persistenceParsed = System.Text.Json.JsonSerializer.Deserialize<InstanceConfig>(persistenceJson, StjResolver.CreateDefaultOptions());
-
-        Assert.NotNull(persistenceParsed);
-        Assert.NotEmpty(persistenceParsed!.EventRules);
-        Assert.All(persistenceParsed.EventRules, rule =>
-        {
-            Assert.All(rule.Rulesets, ruleset => Assert.IsAssignableFrom<RulesetDefinition>(ruleset));
-            Assert.All(rule.Triggers, trigger => Assert.IsAssignableFrom<TriggerDefinition>(trigger));
-            Assert.All(rule.Actions, action => Assert.IsAssignableFrom<ActionDefinition>(action));
-        });
-
-        var rpcJson = File.ReadAllText(Path.Combine(
-            RpcFixturePaths.ActionRequestDir,
-            "save-event-rules-nested-parameter.json"));
-        var request = System.Text.Json.JsonSerializer.Deserialize<ActionRequest>(rpcJson, StjResolver.CreateDefaultOptions());
-        Assert.NotNull(request);
-        Assert.NotNull(request!.Parameter);
-
-        var parameter = System.Text.Json.JsonSerializer.Deserialize<SaveEventRulesParameter>(
-            request.Parameter.Value.GetRawText(),
-            StjResolver.CreateDefaultOptions());
-        Assert.NotNull(parameter);
-        Assert.NotEmpty(parameter!.Rules);
-
-        var nestedRule = parameter.Rules[0];
-        Assert.Single(nestedRule.Triggers);
-        Assert.IsType<ConsoleOutputTrigger>(nestedRule.Triggers[0]);
-        Assert.Single(nestedRule.Rulesets);
-        Assert.IsType<AlwaysTrueRuleset>(nestedRule.Rulesets[0]);
-        Assert.Single(nestedRule.Actions);
-        Assert.IsType<SendCommandAction>(nestedRule.Actions[0]);
     }
 
     [Fact]

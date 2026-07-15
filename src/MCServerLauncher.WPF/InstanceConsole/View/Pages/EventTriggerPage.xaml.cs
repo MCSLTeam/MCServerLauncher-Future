@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using MCServerLauncher.Common.ProtoType.EventTrigger;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.WPF.InstanceConsole.View.Dialogs;
 using MCServerLauncher.WPF.Modules;
 using MCServerLauncher.WPF.ViewModels;
