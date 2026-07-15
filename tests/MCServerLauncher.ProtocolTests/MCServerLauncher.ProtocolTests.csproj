@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\MCServerLauncher.Daemon\MCServerLauncher.Daemon.csproj" />
     <ProjectReference Include="..\..\src\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
     <ProjectReference Include="..\..\tools\MCServerLauncher.ProtocolDocs\MCServerLauncher.ProtocolDocs.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Fixtures\Plugins\ExternalCompile\ExternalCompile.csproj" />
   </ItemGroup>
 
   <ItemGroup>

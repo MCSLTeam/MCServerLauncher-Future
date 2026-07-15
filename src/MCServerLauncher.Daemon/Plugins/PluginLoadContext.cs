@@ -1,0 +1,49 @@
+using System.Reflection;
+using System.Runtime.Loader;
+using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Daemon.API.Plugins;
+using Microsoft.Extensions.Logging;
+using RustyOptions;
+
+namespace MCServerLauncher.Daemon.Plugins;
+
+internal sealed class PluginLoadContext : AssemblyLoadContext
+{
+    private readonly AssemblyDependencyResolver _resolver;
+
+    internal PluginLoadContext(string entryAssemblyPath, string pluginId)
+        : base($"MCServerLauncher.Plugin.{pluginId}", isCollectible: false)
+    {
+        _resolver = new AssemblyDependencyResolver(entryAssemblyPath);
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "The daemon plugin product is an untrimmed JIT host; sidecar plugin assemblies are loaded intentionally at startup.")]
+    protected override Assembly? Load(AssemblyName assemblyName)
+    {
+        ArgumentNullException.ThrowIfNull(assemblyName);
+        if (PluginAssemblyPolicy.IsShared(assemblyName.Name))
+            return ResolveSharedAssembly(assemblyName.Name!);
+
+        var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
+        return assemblyPath is null ? null : LoadFromAssemblyPath(assemblyPath);
+    }
+
+    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+    {
+        var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+        return libraryPath is null ? IntPtr.Zero : LoadUnmanagedDllFromPath(libraryPath);
+    }
+
+    private static Assembly ResolveSharedAssembly(string name) => name switch
+    {
+        "MCServerLauncher.Daemon.API" => typeof(IDaemonPlugin).Assembly,
+        "MCServerLauncher.Common" => typeof(Unit).Assembly,
+        "RustyOptions" => typeof(Result<,>).Assembly,
+        "Microsoft.Extensions.Logging.Abstractions" => typeof(ILogger).Assembly,
+        _ => throw new InvalidOperationException($"Unsupported shared plugin assembly '{name}'.")
+    };
+}

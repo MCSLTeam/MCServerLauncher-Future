@@ -794,13 +794,15 @@ Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 relea
 
 > **M1 checkpoint (2026-07-15):** The public startup-plugin SDK boundary and package-level contract evidence are complete and independently reviewed. Host loading, lifecycle transactions, catalog admission, health plugin, and published-host integration remain pending in this phase.
 
+> **A1 checkpoint (2026-07-15):** Deterministic manifest parsing, API-range/capability validation, duplicate-id discovery, forbidden/shared-contract reference checks, and one non-collectible `AssemblyLoadContext` per plugin bundle are implemented. Lifecycle admission, catalog integration, health plugin, and published-host integration remain pending.
+
 **Create/update:** `src/MCServerLauncher.Daemon.API/Plugins/`, `src/MCServerLauncher.Daemon/Plugins/`, daemon bootstrap/lifecycle, sample/fixture plugin projects, `tests/MCServerLauncher.PluginIntegrationTests/`.
 
-- [ ] 实现 JSON manifest/bundle validation、API version range、capability parsing与 duplicate id checks。
-- [ ] 在 Daemon.API 中定义 plugin lifecycle/context/registration/event interfaces；不增加 service locator、hooks、factory/store/control capability。
-- [ ] 加入 sealed `PluginError`、scoped `IPluginErrorFactory` 与直接返回 `Result<T, DaemonError>` 的 no-map helper。
-- [ ] 建立 external compile fixture，证明只引用 Daemon.API/Common 即可编译 plugin。
-- [ ] compile fixture 明确证明 public signatures 不出现 `Result<T, PluginError>`/`IResult`，helper 无显式 `MapErr` 即可返回 public Result。
+- [x] 实现 JSON manifest/bundle validation、API version range、capability parsing与 duplicate id checks。
+- [x] 在 Daemon.API 中定义 plugin lifecycle/context/registration/event interfaces；不增加 service locator、hooks、factory/store/control capability。
+- [x] 加入 sealed `PluginError`、scoped `IPluginErrorFactory` 与直接返回 `Result<T, DaemonError>` 的 no-map helper。
+- [x] 建立 external compile fixture，证明只引用 Daemon.API/Common 即可编译 plugin。
+- [x] compile fixture 明确证明 public signatures 不出现 `Result<T, PluginError>`/`IResult`，helper 无显式 `MapErr` 即可返回 public Result。
 - [ ] 实现 per-plugin ALC/resolver/shared-contract allowlist 与 forbidden duplicate/reference checks。
 - [ ] 实现 registration draft、Configure/Start transaction、final catalog freeze、reverse Stop。
 - [ ] 按 §9.1 实现 deterministic discovery/conflict policy；测试 duplicate id 全拒绝、own-namespace enforcement、built-in priority 与 residual collision all-fail。
@@ -1010,3 +1012,4 @@ git status --short --branch
 - 2026-07-15: Closed Phase 4C M2b after independent Sol max review with `P0=0 / P1=0 / P2=0`. Migrated non-V1 daemon error results to `DaemonError`, removed legacy error helpers, preserved exception diagnostics/cancellation, isolated replacement installers from live instance storage, journaled output/metadata/config commits, rejected reparse-point output and Windows case aliases before unsafe merge, and added focused success/error/cancellation/rollback/security coverage. Acceptance passed the expanded focused slice at `133/133`, Release ProtocolTests twice at `1196/1196`, WPF.Tests at `20/20`, daemon/full-solution Release builds at `0 warnings / 0 errors`, ProtocolDocs `--check` at hash `3e100b801b7c34c4e6ac61c36b5d7f064b9c1936d81356aa30695f4894146b86`, the allowlisted residual search, and `git diff --check`. Phase 4C deletion proof remains incomplete until M3-M4 remove the V1 daemon/Common/client/generator surface.
 - 2026-07-15: Completed and independently accepted Phase 4C M3-M4 and the release-atomic Phase 4 exit. Removed the V1 daemon/Common/DaemonClient/generator/test/benchmark/docs runtime surface, added the explicit no-V1 gate, preserved canonical source-generated event-rule/system contracts, and fixed public Common resolver enum metadata. Final acceptance passed Release ProtocolTests `897/897`, WPF.Tests `20/20`, all affected/full-solution Release builds at `0 warnings / 0 errors`, ProtocolDocs `--check`, and `git diff --check`; independent Sol max closure re-review reported `P0=0 / P1=0 / P2=0`.
 - 2026-07-15: Phase 5 M1 SDK boundary checkpoint completed. Added the startup-plugin contracts, host-owned identity/error construction, typed no-map result helpers, required documentation and read-only `JsonTypeInfo` admission, external compile coverage, packed `PackageReference` publish filtering, complete Common event-rule ABI/metadata coverage, and public result-signature leakage checks. Daemon.ApiTests passed `80/80`; Daemon.API Release build passed with `0 warnings / 0 errors`; the packed consumer publish test passed. Phase 5 host loading/lifecycle and Phase 6 packaging/documentation/performance work remain pending.
+- 2026-07-15: Phase 5 A1 plugin-boundary checkpoint completed. Added source-generated manifest parsing, NuGet API-range and capability validation, deterministic discovery with duplicate-id rejection, recursive forbidden/shared-contract reference checks, and non-collectible `AssemblyLoadContext` resolution. Focused plugin manifest tests passed `4/4`; daemon Release build passed with `0 warnings / 0 errors`. Lifecycle admission, catalog integration, health plugin, and published-host integration remain pending.
