@@ -13,6 +13,26 @@ namespace MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 /// </summary>
 internal sealed class BuiltInProtocolCatalogComposition
 {
+    internal BuiltInProtocolCatalogComposition(
+        IInstanceApplication instanceApplication,
+        IFileApplication fileApplication,
+        ISystemApplication systemApplication,
+        IEventRuleApplication eventRuleApplication,
+        IInstanceSnapshotSource snapshotSource,
+        TimeProvider timeProvider,
+        FrozenProtocolCatalogAccessor catalogAccessor)
+        : this(
+            instanceApplication,
+            fileApplication,
+            systemApplication,
+            eventRuleApplication,
+            snapshotSource,
+            timeProvider,
+            catalogAccessor,
+            configureStartupDraft: null)
+    {
+    }
+
     public BuiltInProtocolCatalogComposition(
         IInstanceApplication instanceApplication,
         IFileApplication fileApplication,

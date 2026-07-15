@@ -8,7 +8,22 @@
     <IsPackable>true</IsPackable>
     <PackageId>MCServerLauncher.Daemon.API</PackageId>
     <PackageVersion>1.0.0</PackageVersion>
+    <Authors>MCSLTeam</Authors>
+    <Description>Transport-neutral application and startup-plugin contracts for MCServerLauncher Future.</Description>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/MCSLTeam/MCServerLauncher-Future</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MCSLTeam/MCServerLauncher-Future.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>mcsl;daemon;plugin;json-rpc</PackageTags>
     <EnablePackageValidation>true</EnablePackageValidation>
+    <EnableStrictModeForBaselineValidation>true</EnableStrictModeForBaselineValidation>
+  </PropertyGroup>
+
+  <!-- A release pipeline can opt into ApiCompat against the last published package. -->
+  <PropertyGroup Condition="'$(MCSL_PACKAGE_VALIDATION_BASELINE_VERSION)' != ''">
+    <PackageValidationBaselineName>$(PackageId)</PackageValidationBaselineName>
+    <PackageValidationBaselineVersion>$(MCSL_PACKAGE_VALIDATION_BASELINE_VERSION)</PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\README.md"
+          Pack="true"
+          PackagePath="README.md" />
     <None Include="buildTransitive\MCServerLauncher.Daemon.API.targets"
           Pack="true"
           PackagePath="buildTransitive\MCServerLauncher.Daemon.API.targets" />

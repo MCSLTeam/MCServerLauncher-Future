@@ -5176,21 +5176,21 @@
                               "type": [
                                 "string",
                                 "null"
-                              ]
+                              ],
+                              "default": null
                             },
                             "description": {
                               "type": [
                                 "string",
                                 "null"
-                              ]
+                              ],
+                              "default": null
                             }
                           },
                           "required": [
                             "name",
                             "schema",
-                            "required",
-                            "summary",
-                            "description"
+                            "required"
                           ],
                           "additionalProperties": false
                         }
@@ -5213,21 +5213,21 @@
                             "type": [
                               "string",
                               "null"
-                            ]
+                            ],
+                            "default": null
                           },
                           "description": {
                             "type": [
                               "string",
                               "null"
-                            ]
+                            ],
+                            "default": null
                           }
                         },
                         "required": [
                           "name",
                           "schema",
-                          "required",
-                          "summary",
-                          "description"
+                          "required"
                         ],
                         "additionalProperties": false
                       },
@@ -5247,13 +5247,15 @@
                         "type": [
                           "string",
                           "null"
-                        ]
+                        ],
+                        "default": null
                       },
                       "description": {
                         "type": [
                           "string",
                           "null"
-                        ]
+                        ],
+                        "default": null
                       }
                     },
                     "required": [
@@ -5261,9 +5263,7 @@
                       "params",
                       "result",
                       "x-mcsl-permission",
-                      "x-mcsl-allow-notification",
-                      "summary",
-                      "description"
+                      "x-mcsl-allow-notification"
                     ],
                     "additionalProperties": false
                   }
@@ -5294,11 +5294,12 @@
                               "optional"
                             ]
                           },
-                          "schema": true
+                          "schema": {
+                            "default": null
+                          }
                         },
                         "required": [
-                          "presence",
-                          "schema"
+                          "presence"
                         ],
                         "additionalProperties": false
                       },
@@ -5312,11 +5313,12 @@
                               "optional"
                             ]
                           },
-                          "schema": true
+                          "schema": {
+                            "default": null
+                          }
                         },
                         "required": [
-                          "presence",
-                          "schema"
+                          "presence"
                         ],
                         "additionalProperties": false
                       },
@@ -5324,22 +5326,22 @@
                         "type": [
                           "string",
                           "null"
-                        ]
+                        ],
+                        "default": null
                       },
                       "description": {
                         "type": [
                           "string",
                           "null"
-                        ]
+                        ],
+                        "default": null
                       }
                     },
                     "required": [
                       "name",
                       "permission",
                       "data",
-                      "meta",
-                      "summary",
-                      "description"
+                      "meta"
                     ],
                     "additionalProperties": false
                   }

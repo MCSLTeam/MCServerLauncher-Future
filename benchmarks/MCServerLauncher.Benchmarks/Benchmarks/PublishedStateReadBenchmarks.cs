@@ -9,6 +9,8 @@ namespace MCServerLauncher.Benchmarks.Benchmarks;
 
 /// <summary>
 /// Establishes the Phase 6 baseline for steady-state published catalog reads.
+/// Primitive return values keep BenchmarkDotNet's consumer from creating a
+/// measurement-only allocation for the returned reference object.
 /// </summary>
 [MemoryDiagnoser]
 [ShortRunJob]
@@ -40,16 +42,10 @@ public class PublishedStateReadBenchmarks
     }
 
     [Benchmark]
-    public PublishedState<InstanceCatalogSnapshot> ReadCurrent()
-    {
-        return _publisher.Current;
-    }
+    public long ReadCurrentVersion() => _publisher.Current.Version;
 
     [Benchmark]
-    public bool TryGetSnapshot()
-    {
-        return _snapshotSource.TryGet(InstanceId, out _);
-    }
+    public bool TryGetSnapshot() => _snapshotSource.TryGet(InstanceId, out _);
 
     private sealed class BenchmarkSnapshotSource(StatePublisher<InstanceCatalogSnapshot> publisher) : IInstanceSnapshotSource
     {

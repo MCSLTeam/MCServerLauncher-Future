@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace MCServerLauncher.Daemon.ApiTests;
@@ -54,8 +55,16 @@ public sealed class PackageContractTests
             Assert.Equal("[0.10.1]", dependencies["RustyOptions"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.Logging.Abstractions"]);
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.API.dll");
+            Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
             Assert.DoesNotContain(package.Entries, entry => entry.FullName.EndsWith("MCServerLauncher.Common.dll", StringComparison.Ordinal));
             Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.API.targets");
+
+            var metadata = nuspec.Descendants(ns + "metadata").Single();
+            var license = metadata.Element(ns + "license");
+            Assert.Equal("expression", (string?)license?.Attribute("type"));
+            Assert.Equal("GPL-3.0-only", license?.Value);
+            Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
+            Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
         }
         finally
         {
@@ -64,6 +73,35 @@ public sealed class PackageContractTests
                 Directory.Delete(packageOutput, recursive: true);
             }
         }
+    }
+
+    [Fact]
+    public void RestoreGraphContainsOnlyTheApprovedDaemonApiPackageClosure()
+    {
+        var assetsPath = Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "MCServerLauncher.Daemon.API",
+            "obj",
+            "project.assets.json");
+        Assert.True(File.Exists(assetsPath), $"The restore graph was not found at {assetsPath}.");
+
+        using var document = JsonDocument.Parse(File.ReadAllBytes(assetsPath));
+        var packages = document.RootElement
+            .GetProperty("libraries")
+            .EnumerateObject()
+            .Where(static entry => entry.Value.GetProperty("type").GetString() == "package")
+            .Select(static entry => entry.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            [
+                "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.9",
+                "Microsoft.Extensions.Logging.Abstractions/10.0.9",
+                "RustyOptions/0.10.1"
+            ],
+            packages);
     }
 
     private static string FindRepositoryRoot()

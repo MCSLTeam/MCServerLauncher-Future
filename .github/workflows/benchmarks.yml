@@ -29,7 +29,10 @@ jobs:
         run: dotnet restore "${{ steps.benchmark_project.outputs.path }}"
 
       - name: Run benchmarks (Release)
-        run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --artifacts ./BenchmarkDotNet.Artifacts
+        run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --exporters json --artifacts ./BenchmarkDotNet.Artifacts
+
+      - name: Enforce V2 performance gate
+        run: dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- --baseline benchmarks/baselines/v2.json --results BenchmarkDotNet.Artifacts/results
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4

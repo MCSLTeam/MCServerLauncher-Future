@@ -1,10 +1,7 @@
-# 常见的开发问题
+# MCServerLauncher Daemon
 
-------
+The daemon is the local implementation of the transport-neutral application contracts. It serves the authenticated `/api/v2` WebSocket endpoint and owns instance, file, system, event-rule, and startup-plugin behavior.
 
-### 曾经运行过Daemon, pull后运行发现报错
+For configuration, authentication, publish profiles, and operational shutdown, see [the daemon manual](../../docs/daemon-manual.md).
 
-- 如果是Daemon启动时 (http服务运行前) Json解析报错, 说明某些配置文件类结构已经更改, 删除相应的json即可,
-  例如./config.json、./daemon/instances/<uuid>/daemon_instance.json等
-
-### 待补充...
+The daemon package is published as an untrimmed JIT single-file application. Trusted plugin bundles live in the `plugins/` sidecar directory next to the published executable.

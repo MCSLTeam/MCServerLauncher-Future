@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "name": "mcsl-daemon-v2-phase6",
+  "captured_at_utc": "2026-07-15T12:29:00Z",
+  "source": {
+    "commit": "daemon-api-phase6-working-tree",
+    "protocol_endpoint": "/api/v2",
+    "benchmarkdotnet_version": "0.15.8",
+    "comparison_baseline": "benchmarks/baselines/v1.json"
+  },
+  "environment": {
+    "benchmarkdotnet_version": "0.15.8",
+    "dotnet_cli_version": "10.0.201",
+    "runtime_version": ".NET 10.0.5 (10.0.5, 10.0.526.15411)",
+    "os_version": "Windows 11 (10.0.26200.8875/25H2/2025Update/HudsonValley2)",
+    "architecture": "X64",
+    "processor": "AMD Ryzen 9 9900X",
+    "configuration": "RELEASE"
+  },
+  "gate": {
+    "maximum_mean_regression_percent": 25.0,
+    "mean_requires_matching_environment": true,
+    "allocation_is_environment_independent": true
+  },
+  "metrics": [
+    {
+      "id": "request.dispatch.ping.v2",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.V2RequestDispatchBenchmarks.DispatchPing",
+      "mean_nanoseconds": 41.29206736882528,
+      "allocated_bytes_per_operation": 240,
+      "comparison": {
+        "source": "benchmarks/baselines/v1.json#request.dispatch.ping",
+        "mean_nanoseconds": 448.64,
+        "allocated_bytes_per_operation": 424
+      }
+    },
+    {
+      "id": "state.current.v2",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.PublishedStateReadBenchmarks.ReadCurrentVersion",
+      "mean_nanoseconds": null,
+      "allocated_bytes_per_operation": 0,
+      "require_zero_allocation": true
+    },
+    {
+      "id": "state.tryget.v2",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.PublishedStateReadBenchmarks.TryGetSnapshot",
+      "mean_nanoseconds": null,
+      "allocated_bytes_per_operation": 0,
+      "require_zero_allocation": true
+    },
+    {
+      "id": "event.serialize.once.32",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ProtocolEventFanOutSerializationBenchmarks.SerializeOnceThenFanOut(Subscribers: 32)",
+      "mean_nanoseconds": 258.11296304066974,
+      "allocated_bytes_per_operation": 584
+    },
+    {
+      "id": "event.serialize.per-subscriber.32",
+      "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ProtocolEventFanOutSerializationBenchmarks.SerializePerSubscriberThenFanOut(Subscribers: 32)",
+      "mean_nanoseconds": 7504.9102783203125,
+      "allocated_bytes_per_operation": 18688
+    }
+  ]
+}

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MCServerLauncher.Daemon.API\MCServerLauncher.Daemon.API.csproj" />
+    <ProjectReference Include="..\..\tools\MCServerLauncher.PerformanceGate\MCServerLauncher.PerformanceGate.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -108,6 +108,8 @@ jobs:
               '-c', 'Release',
               '-r', '${{ matrix.rid }}',
               '--self-contained', $mode.selfContained,
+              '-p:PublishSingleFile=true',
+              '-p:PublishTrimmed=false',
               '-o', $daemonPublishDir
             )
 
@@ -129,6 +131,8 @@ jobs:
                 '-c', 'Release',
                 '-r', '${{ matrix.rid }}',
                 '--self-contained', $mode.selfContained,
+                '-p:PublishSingleFile=true',
+                '-p:PublishTrimmed=false',
                 '-o', $wpfPublishDir
               )
 

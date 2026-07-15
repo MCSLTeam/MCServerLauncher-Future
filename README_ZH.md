@@ -1,61 +1,53 @@
-![大头图](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=MCSL%E7%9A%84%E5%85%A8%E6%96%B0%E7%89%88%E6%9C%AC%E3%80%82%E5%AE%8C%E5%85%A8%E9%87%8D%E6%96%B0%E8%AE%BE%E8%AE%A1%EF%BC%8C%E5%8A%9F%E8%83%BD%E5%85%A8%E9%9D%A2%EF%BC%8C%E7%AE%80%E5%8D%95%E4%B8%8A%E6%89%8B%E3%80%82&font=Jost&logo=https%3A%2F%2Fimages.mcsl.com.cn%2Fnew%2FMCServerLauncherFuture.png&name=1&pattern=Circuit%20Board&theme=Auto)  
-中文 | [English](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master#readme)  
-</br>
-此仓库仅包含 <u>**守护进程** 和 **WPF桌面启动器**</u> 的源码。若想了解更多关于 <u>**网页面板** 和 **Tauri 启动器**</u> 的信息，请点击[这里](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)。
+# MCServerLauncher Future
 
-[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
-![平台 Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
+MCServerLauncher Future 用守护进程管理 Minecraft 服务器和其他控制台程序。本仓库包含 .NET 守护进程、WPF 客户端连接层、共享协议契约、可打包的 Daemon API 以及协议测试。
 
-## 特色
+[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 
-**高效**：顷刻即可创建新实例。  
+## 架构
 
-**全面**：支持大多数控制台应用程序的管理。  
+- 守护进程只提供一个经过认证的 `/api/v2` WebSocket 端点，使用类型化 JSON-RPC 和版本化二进制传输帧。
+- `src/MCServerLauncher.Daemon.API` 是传输无关的 NuGet 边界，包含应用、协议、状态、错误和启动插件契约。
+- `src/MCServerLauncher.DaemonClient` 实现远程应用和类型化事件 API。
+- `src/MCServerLauncher.WPF` 是 Windows 桌面客户端，只通过 daemon client 连接层访问守护进程。
+- 启动插件是受信任且只在启动阶段运行的 sidecar。插件可以注册类型化 RPC、发布类型化事件、读取不可变实例快照，但不能引用 TouchSocket、MessagePipe、Serilog 或守护进程实现类型。
 
-**多语言支持**: 官方支持 6 种语言，国际化无压力。  
+启用插件的守护进程是未裁剪的 JIT single-file 主机，并通过 sidecar 加载插件。产品不支持 Native AOT 或 `PublishTrimmed=true`。
 
-**多实例管理**：从一处同时控制多个实例。
+## 构建和测试
 
-## 概览
+项目目标框架为 .NET 10：
 
-MCServerLauncher Future 是新一代的服务器管理软件，提供直观的界面来设置、监控和控制多个游戏服务器及控制台应用程序。作为 [MCServerLauncher 2](https://github.com/MCSLTeam/MCSL2) 的下一世代产品，拥有更好的性能、更灵活的架构、更简便的操作、更丰富的体验。
+```powershell
+dotnet build MCServerLauncher.sln /m:1
+dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release /m:1
+dotnet test tests/MCServerLauncher.Daemon.ApiTests/MCServerLauncher.Daemon.ApiTests.csproj -c Release /m:1
+```
 
-## 组件
+运行守护进程或 WPF 客户端：
 
-[.NET 守护进程](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon)：使用 .NET C# 构建的核心服务，提供强大的性能和灵活性。  
+```powershell
+dotnet run --project src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
+dotnet run --project src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj
+```
 
-[Rust 守护进程](https://github.com/MCSLTeam/mcsl-daemon-rs/): (实验性) 采用新一代技术构建，使用 Rust 编写。
+## 插件 SDK
 
-[WPF 启动器](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF)：针对 Windows 用户的最优解决方案。  
+请阅读[插件开发指南](docs/plugin-developer-guide.md)，了解 manifest、capability、生命周期和 sidecar 发布布局。打包公开 API：
 
-[Tauri 启动器](https://github.com/MCSLTeam/MCServerLauncher-Future-Web/tree/main/apps/app): 针对跨平台用户的解决方案。
+```powershell
+dotnet pack src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj -c Release -o artifacts/packages
+```
 
-[网页面板](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)：可以通过浏览器访问的仪表板，非常适合非 Windows 用户，当然 Windows 用户也可使用。
+## 发布文档
 
-## 系统需求
+- [守护进程手册](docs/daemon-manual.md)
+- [第三方声明和许可证清单](docs/THIRD-PARTY-NOTICES.md)
+- [发布工作流说明](Release.md)
+- [变更日志](CHANGELOG.md)
 
-守护进程：需要 [.NET 运行时 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+WPF 客户端需要 .NET Desktop Runtime 10.x。框架依赖的守护进程包需要 .NET Runtime 10.x；self-contained 包会包含运行时。
 
-WPF桌面启动器：需要 [.NET 桌面运行时 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) 
+## 许可证
 
-## 贡献
-
-我们正在通过 Weblate 进行如火如荼的国际化工作。如果您有这方面的特长，欢迎前往 <https://translate.mcsl.com.cn/engage/mcsl-future/> 贡献您的一份力量。  
-
-如需报告问题或提出改进建议，请 [提交 Issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose) 或 [提交 Pull Request](https://github.com/MCSLTeam/MCServerLauncher-Future/compare) 。
-
-## 联系我们
-
-电子邮件：[services@mcsl.com.cn](mailto:services@mcsl.com.cn)
-
-QQ群1：[733951376](https://qm.qq.com/q/WtVCQWSBEe)
-
-QQ群2：[1025218881](https://qm.qq.com/q/V2blZlJOee)
-
-## 开源许可证
-
-本项目采用 [GNU General Public License Version 3.0](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/LICENSE) 进行分发。
-
-## 版权
-
-版权所有 © 2022-2026 MCSLTeam。保留所有权利。
+MCServerLauncher Future 使用 [GNU General Public License v3.0](LICENSE) 发布。第三方包信息记录在 [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md)。

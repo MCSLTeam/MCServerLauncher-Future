@@ -1,71 +1,62 @@
-![Header Image](https://socialify.git.ci/MCSLTeam/MCServerLauncher-Future/image?description=1&descriptionEditable=Future%20version%20of%20MCSL.%20Redefined%2C%20Versatile%2C%20Easy%20to%20use.&font=Jost&logo=https%3A%2F%2Fimages.mcsl.com.cn%2Fnew%2FMCServerLauncherFuture.png&name=1&pattern=Circuit%20Board&theme=Auto)  
-English | [中文](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/README_ZH.md)  
-</br>
-This repository only includes sources of the Daemon and the WPF Desktop Launcher. If you want to know more about the web
-frontend or Tauri launcher, just click [here](https://github.com/MCSLTeam/MCServerLauncher-Future-Web).
+# MCServerLauncher Future
 
-[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
-![Platform Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
+MCServerLauncher Future manages Minecraft servers and other console applications through a daemon and client applications. The repository contains the .NET daemon, the WPF connection-layer client, shared wire contracts, the packable Daemon API, and protocol tests.
 
-## Feature
+[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 
-**Efficient Instance Setup**: Simplified methods for creating new server instances.  
+## Architecture
 
-**Console Program Compatibility**: Supports a wide range of console applications.  
+- The daemon exposes one authenticated `/api/v2` WebSocket endpoint using typed JSON-RPC and versioned binary transfer frames.
+- `src/MCServerLauncher.Daemon.API` is the transport-neutral NuGet boundary for application, protocol, state, error, and startup-plugin contracts.
+- `src/MCServerLauncher.DaemonClient` implements the remote application and typed event APIs.
+- `src/MCServerLauncher.WPF` is the Windows desktop client and uses the daemon client connection layer.
+- Startup plugins are trusted, startup-only sidecars. They may register typed RPCs, publish typed events, and read immutable instance snapshots. They do not receive TouchSocket, MessagePipe, Serilog, or daemon implementation types.
 
-**Multi-language Support**: Officially supports 6 languages, making internationalization effortless.  
+The plugin-enabled daemon is an untrimmed JIT single-file host with sidecar plugin bundles. Native AOT and `PublishTrimmed=true` are not supported product configurations.
 
-**Multi-instance Management**: Control multiple servers simultaneously from a single interface.
+## Build And Test
 
-## Overview
+The repository targets .NET 10.
 
-MCServerLauncher Future is the next generation of server management software, providing an intuitive interface for
-setting up, monitoring, and controlling multiple game servers and console applications. It's the evolution
-of [MCServerLauncher 2](https://github.com/MCSLTeam/MCSL2), offering enhanced compatibility and efficiency.
+```powershell
+dotnet build MCServerLauncher.sln /m:1
+dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release /m:1
+dotnet test tests/MCServerLauncher.Daemon.ApiTests/MCServerLauncher.Daemon.ApiTests.csproj -c Release /m:1
+```
 
-## Components
+Run the daemon or WPF client from their project paths:
 
-[.NET Daemon](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.Daemon): The core service
-built with .NET C#, delivering robust performance and flexibility.
+```powershell
+dotnet run --project src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
+dotnet run --project src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj
+```
 
-[Rust Daemon](https://github.com/MCSLTeam/mcsl-daemon-rs/): The core service
-built with Rust, experimental!
+## Plugin SDK
 
-[WPF Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future/tree/master/MCServerLauncher.WPF): A
-Windows-specific interface for connecting to daemons.
+See [the plugin developer guide](docs/plugin-developer-guide.md) for the manifest, capability declarations, lifecycle rules, and sidecar publish layout. The public API package can be packed with:
 
-[Tauri Launcher](https://github.com/MCSLTeam/MCServerLauncher-Future-Web/tree/main/apps/app): A
-cross-platform interface for connecting to daemons.
+```powershell
+dotnet pack src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj -c Release -o artifacts/packages
+```
 
-[Web Panel](https://github.com/MCSLTeam/MCServerLauncher-Future-Web/tree/main/apps/web): A browser-accessible dashboard, ideal for
-non-Windows users.
+## Release Documentation
 
-## System Requirements
+- [Daemon manual](docs/daemon-manual.md)
+- [Third-party notices and license inventory](docs/THIRD-PARTY-NOTICES.md)
+- [Release workflow notes](Release.md)
+- [Changelog](CHANGELOG.md)
 
-Daemon Requires [.NET Runtime 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
-WPF Launcher Requires [.NET Desktop Runtime 10.x](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+The WPF client requires the .NET Desktop Runtime 10.x. Framework-dependent daemon packages require the .NET Runtime 10.x; self-contained packages include the runtime.
 
-## Contribute
+## Related Clients
 
-We are actively working on internationalization through Weblate. If you have expertise in this area, please visit <https://translate.mcsl.com.cn/engage/mcsl-future/> to contribute your efforts.  
+- [Web frontend](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)
+- [Rust daemon experiment](https://github.com/MCSLTeam/mcsl-daemon-rs/)
 
-To report issues or suggest improvements,
-please [open an issue](https://github.com/MCSLTeam/MCServerLauncher-Future/issues/new/choose)
-or [submit a pull request](https://github.com/MCSLTeam/MCServerLauncher-Future/compare).
+## Contributing
 
-## Contact
+Open an issue or pull request for bugs and improvements. Domain and protocol changes must preserve the rules in [PROJECT_PLAN.md](PROJECT_PLAN.md), [RULES.md](RULES.md), and [AGENTS.md](AGENTS.md).
 
-Email: [services@mcsl.com.cn](mailto:services@mcsl.com.cn)
+## License
 
-QQ Group 1: [733951376](https://qm.qq.com/q/WtVCQWSBEe)
-
-QQ Group 2: [1025218881](https://qm.qq.com/q/ljxb0XpSEi)
-
-## Open Source License
-
-This project is distributed under
-the [GNU General Public License Version 3.0](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/LICENSE).
-
-## Copyright
-
-Copyright © 2022-2026 MCSLTeam. All rights reserved.
+MCServerLauncher Future is distributed under the [GNU General Public License v3.0](LICENSE). Third-party package notices are recorded in [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md).
