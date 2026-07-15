@@ -49,11 +49,13 @@ public sealed class PackageContractTests
                     element => (string?)element.Attribute("version") ?? throw new InvalidOperationException("A dependency had no version."),
                     StringComparer.Ordinal);
 
-            Assert.Equal(2, dependencies.Count);
+            Assert.Equal(3, dependencies.Count);
             Assert.Equal("[1.0.0]", dependencies["MCServerLauncher.Common"]);
             Assert.Equal("[0.10.1]", dependencies["RustyOptions"]);
+            Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.Logging.Abstractions"]);
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.API.dll");
             Assert.DoesNotContain(package.Entries, entry => entry.FullName.EndsWith("MCServerLauncher.Common.dll", StringComparison.Ordinal));
+            Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.API.targets");
         }
         finally
         {

@@ -42,6 +42,9 @@ public sealed record PluginCapability
 
 internal static class ProtocolIdentifier
 {
+    public static string ValidatePluginId(string value, string parameterName) =>
+        ValidateDottedIdentifier(value, parameterName, "Plugin id", allowHyphen: true, allowUnderscore: false);
+
     public static string ValidateRpcMethod(string value, string parameterName) =>
         ValidateDottedIdentifier(value, parameterName, "RPC method");
 
@@ -60,7 +63,12 @@ internal static class ProtocolIdentifier
     public static string ValidatePluginCapability(string value, string parameterName) =>
         ValidateDottedIdentifier(value, parameterName, "Plugin capability");
 
-    private static string ValidateDottedIdentifier(string value, string parameterName, string kind)
+    private static string ValidateDottedIdentifier(
+        string value,
+        string parameterName,
+        string kind,
+        bool allowHyphen = true,
+        bool allowUnderscore = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
@@ -89,12 +97,21 @@ internal static class ProtocolIdentifier
                 throw new ArgumentException($"{kind} segments must start with a lowercase ASCII letter or digit.", parameterName);
             }
 
-            if (!isAsciiLetter && !isDigit && character is not '-' and not '_')
+            if (!isAsciiLetter &&
+                !isDigit &&
+                (!allowUnderscore || character != '_') &&
+                (!allowHyphen || character != '-'))
             {
-                throw new ArgumentException($"{kind} must use lowercase ASCII letters, digits, dots, hyphens, or underscores.", parameterName);
+                throw new ArgumentException(
+                    allowHyphen && allowUnderscore
+                        ? $"{kind} must use lowercase ASCII letters, digits, dots, hyphens, or underscores."
+                        : allowHyphen
+                            ? $"{kind} must use lowercase ASCII letters, digits, dots, or hyphens."
+                            : $"{kind} must use lowercase ASCII letters, digits, dots, or underscores.",
+                    parameterName);
             }
 
-            if (index == value.Length - 1 && character is '-' or '_')
+            if (index == value.Length - 1 && (character is '-' or '_'))
             {
                 throw new ArgumentException($"{kind} segments must end with a lowercase ASCII letter or digit.", parameterName);
             }

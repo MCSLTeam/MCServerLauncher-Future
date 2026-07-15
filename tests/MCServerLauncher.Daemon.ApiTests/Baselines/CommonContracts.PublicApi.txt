@@ -1,3 +1,33 @@
+type MCServerLauncher.Common.Contracts.EventRules.ActionDefinition | kind=class | visibility=public | abstract=True | sealed=False | base=System.Object | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.ActionDefinition() | visibility=protected
+property MCServerLauncher.Common.Contracts.EventRules.ActionDefinition.Id[] : System.Guid | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.ActionDefinition.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.AlwaysFalseRuleset | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.AlwaysFalseRuleset() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.AlwaysFalseRuleset.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.AlwaysTrueRuleset | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.AlwaysTrueRuleset() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.AlwaysTrueRuleset.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.ChangeInstanceStatusAction | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.ActionDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.ChangeInstanceStatusAction() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.ChangeInstanceStatusAction.Action[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.ChangeInstanceStatusAction.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.ConsoleOutputTrigger | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.ConsoleOutputTrigger() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.ConsoleOutputTrigger.IsRegex[] : System.Boolean | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.ConsoleOutputTrigger.Pattern[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.ConsoleOutputTrigger.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.EventRule | kind=class | visibility=public | abstract=False | sealed=False | base=System.Object | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.EventRule() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.ActionExecutionMode[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.Actions[] : System.Collections.Generic.List<MCServerLauncher.Common.Contracts.EventRules.ActionDefinition> | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.Description[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.Id[] : System.Guid | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.IsEnabled[] : System.Boolean | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.Name[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.Rulesets[] : System.Collections.Generic.List<MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition> | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.TriggerCondition[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.EventRule.Triggers[] : System.Collections.Generic.List<MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition> | get=public | set=public
 type MCServerLauncher.Common.Contracts.EventRules.EventRuleQuery | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=System.IEquatable<MCServerLauncher.Common.Contracts.EventRules.EventRuleQuery> | constraints=-
 ctor MCServerLauncher.Common.Contracts.EventRules.EventRuleQuery(System.Guid InstanceId optional=False default=-) | visibility=public
 property MCServerLauncher.Common.Contracts.EventRules.EventRuleQuery.InstanceId[] : System.Guid | get=public | set=public
@@ -31,6 +61,36 @@ method MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest.GetHa
 method MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest.ToString() -> System.String | visibility=public | static=False | abstract=False | virtual=True | constraints=-
 method MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest.op_Equality(MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest left optional=False default=-,MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest right optional=False default=-) -> System.Boolean | visibility=public | static=True | abstract=False | virtual=False | constraints=-
 method MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest.op_Inequality(MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest left optional=False default=-,MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest right optional=False default=-) -> System.Boolean | visibility=public | static=True | abstract=False | virtual=False | constraints=-
+type MCServerLauncher.Common.Contracts.EventRules.InstanceStatusRuleset | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.InstanceStatusRuleset() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.InstanceStatusRuleset.TargetStatus[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.InstanceStatusRuleset.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.InstanceStatusTrigger | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.InstanceStatusTrigger() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.InstanceStatusTrigger.TargetStatus[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.InstanceStatusTrigger.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition | kind=class | visibility=public | abstract=True | sealed=False | base=System.Object | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition() | visibility=protected
+property MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition.Id[] : System.Guid | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.ScheduleTrigger | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.ScheduleTrigger() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.ScheduleTrigger.CronExpression[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.ScheduleTrigger.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.SendCommandAction | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.ActionDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.SendCommandAction() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.SendCommandAction.Command[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.SendCommandAction.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction | kind=class | visibility=public | abstract=False | sealed=False | base=MCServerLauncher.Common.Contracts.EventRules.ActionDefinition | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction() | visibility=public
+property MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction.Message[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction.Severity[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction.Title[] : System.String | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction.Type[] : System.String | get=public | set=-
+type MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition | kind=class | visibility=public | abstract=True | sealed=False | base=System.Object | interfaces=- | constraints=-
+ctor MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition() | visibility=protected
+property MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition.Id[] : System.Guid | get=public | set=public
+property MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition.Type[] : System.String | get=public | set=-
 type MCServerLauncher.Common.Contracts.Files.DeleteDirectoryRequest | kind=class | visibility=public | abstract=False | sealed=True | base=System.Object | interfaces=System.IEquatable<MCServerLauncher.Common.Contracts.Files.DeleteDirectoryRequest> | constraints=-
 ctor MCServerLauncher.Common.Contracts.Files.DeleteDirectoryRequest(System.String Path optional=False default=-,System.Boolean Recursive optional=False default=-) | visibility=public
 property MCServerLauncher.Common.Contracts.Files.DeleteDirectoryRequest.Path[] : System.String | get=public | set=public
@@ -920,8 +980,13 @@ field MCServerLauncher.Common.Contracts.Protocol.UploadChunkAcknowledgementStatu
 type MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext | kind=class | visibility=public | abstract=False | sealed=False | base=System.Text.Json.Serialization.JsonSerializerContext | interfaces=System.Text.Json.Serialization.Metadata.IBuiltInJsonTypeInfoResolver,System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver | constraints=-
 ctor MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext() | visibility=public
 ctor MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext(System.Text.Json.JsonSerializerOptions options optional=False default=-) | visibility=public
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ActionDefinition[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.ActionDefinition> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.AlwaysFalseRuleset[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.AlwaysFalseRuleset> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.AlwaysTrueRuleset[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.AlwaysTrueRuleset> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.Boolean[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Boolean> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.Byte[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Byte> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ChangeInstanceStatusAction[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.ChangeInstanceStatusAction> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ConsoleOutputTrigger[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.ConsoleOutputTrigger> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.CreateInstanceRequest[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.CreateInstanceRequest> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.CreateInstanceResult[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.CreateInstanceResult> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.DateTimeOffset[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.DateTimeOffset> | get=public | set=-
@@ -939,6 +1004,7 @@ property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJson
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.EventRuleQuery[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.EventRuleQuery> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.EventRuleSet[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.EventRuleSet> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.EventRuleUpdateRequest[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.EventRuleUpdateRequest> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.EventRule[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.EventRule> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.FileDetails[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Files.FileDetails> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.FileEntry[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Files.FileEntry> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.FileMetadata[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Files.FileMetadata> | get=public | set=-
@@ -968,6 +1034,8 @@ property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJson
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceReportList[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.InstanceReportList> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceReport[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.InstanceReport> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceSettingsResult[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.InstanceSettingsResult> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceStatusRuleset[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.InstanceStatusRuleset> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceStatusTrigger[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.InstanceStatusTrigger> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceStatus[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.ProtoType.Instance.InstanceStatus> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.InstanceType[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.ProtoType.Instance.InstanceType> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.Int32[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Int32> | get=public | set=-
@@ -975,6 +1043,9 @@ property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJson
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.JavaRuntimeList[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.System.JavaRuntimeList> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.JavaRuntime[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.System.JavaRuntime> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.JsonElement[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Text.Json.JsonElement> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ListActionDefinition[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.List<MCServerLauncher.Common.Contracts.EventRules.ActionDefinition>> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ListRulesetDefinition[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.List<MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition>> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ListTriggerDefinition[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.List<MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition>> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.MemoryInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.System.MemoryInfo> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.NullableInt32[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Nullable<System.Int32>> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.OperatingSystemInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.System.OperatingSystemInfo> | get=public | set=-
@@ -982,10 +1053,15 @@ property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJson
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.PathRequest[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Files.PathRequest> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.PathTransferRequest[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Files.PathTransferRequest> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ProcessorInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.System.ProcessorInfo> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.RulesetDefinition[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.RulesetDefinition> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.ScheduleTrigger[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.ScheduleTrigger> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.SendCommandAction[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.SendCommandAction> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.SendNotificationAction[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.SendNotificationAction> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.SourceType[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.ProtoType.Instance.SourceType> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.String[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.String> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.SystemInfo[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.System.SystemInfo> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.TargetType[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.ProtoType.Instance.TargetType> | get=public | set=-
+property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.TriggerDefinition[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.EventRules.TriggerDefinition> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.UInt64[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.UInt64> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.UpdateInstanceSettingsRequest[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest> | get=public | set=-
 property MCServerLauncher.Common.Contracts.Serialization.ApplicationContractJsonContext.UpdateInstanceSettingsResult[] : System.Text.Json.Serialization.Metadata.JsonTypeInfo<MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsResult> | get=public | set=-

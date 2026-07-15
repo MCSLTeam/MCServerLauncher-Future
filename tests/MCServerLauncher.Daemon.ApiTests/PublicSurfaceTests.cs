@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Reflection;
 using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.Errors;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.ApiTests;
 
@@ -29,6 +31,7 @@ public sealed class PublicSurfaceTests
     [
         "MCServerLauncher.Common",
         "RustyOptions",
+        "Microsoft.Extensions.Logging.Abstractions",
         "System.Collections",
         "System.Collections.Immutable",
         "System.Runtime",
@@ -78,6 +81,30 @@ public sealed class PublicSurfaceTests
         Assert.Contains(typeof(TimeSpan), exposedTypes);
         Assert.Contains(typeof(Guid), exposedTypes);
         Assert.Contains(typeof(TextReader), exposedTypes);
+    }
+
+    [Fact]
+    public void PublicResultSurfacesAlwaysUseDaemonError()
+    {
+        var resultTypes = typeof(IDaemonApplication).Assembly
+            .GetExportedTypes()
+            .SelectMany(GetExposedTypes)
+            .SelectMany(FlattenType)
+            .Where(type => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Result<,>))
+            .ToArray();
+
+        Assert.NotEmpty(resultTypes);
+        Assert.All(resultTypes, resultType =>
+            Assert.Equal(typeof(DaemonError), resultType.GetGenericArguments()[1]));
+
+        var resultInterfaces = typeof(IDaemonApplication).Assembly
+            .GetExportedTypes()
+            .SelectMany(GetExposedTypes)
+            .SelectMany(FlattenType)
+            .Where(type => type.IsInterface && type.Name.StartsWith("IResult", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Empty(resultInterfaces);
     }
 
     private static IEnumerable<Type> GetExposedTypes(Type type)
@@ -153,6 +180,30 @@ public sealed class PublicSurfaceTests
                 foreach (var constraint in genericParameter.GetGenericParameterConstraints())
                 {
                     yield return constraint;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<Type> FlattenType(Type type)
+    {
+        yield return type;
+
+        if (type.HasElementType)
+        {
+            foreach (var nestedType in FlattenType(type.GetElementType()!))
+            {
+                yield return nestedType;
+            }
+        }
+
+        if (type.IsGenericType)
+        {
+            foreach (var argument in type.GetGenericArguments())
+            {
+                foreach (var nestedType in FlattenType(argument))
+                {
+                    yield return nestedType;
                 }
             }
         }

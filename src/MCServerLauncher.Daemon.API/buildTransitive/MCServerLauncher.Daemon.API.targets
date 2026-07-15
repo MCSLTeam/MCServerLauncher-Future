@@ -1,0 +1,13 @@
+<Project>
+  <Target Name="MCServerLauncherFilterPluginBundlePublishFiles"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(MCSLPluginBundle)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Daemon.API' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Common' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'RustyOptions' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Extensions.Logging.Abstractions'" />
+    </ItemGroup>
+  </Target>
+</Project>

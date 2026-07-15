@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
 
 namespace MCServerLauncher.Daemon.ApiTests;
 
@@ -36,6 +37,7 @@ public sealed class DaemonErrorTests
                 typeof(InternalDaemonError),
                 typeof(NotFoundDaemonError),
                 typeof(PermissionDaemonError),
+                typeof(PluginError),
                 typeof(StorageDaemonError),
                 typeof(TransportDaemonError),
                 typeof(ValidationDaemonError)

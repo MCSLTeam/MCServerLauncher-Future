@@ -21,9 +21,7 @@ public sealed class PublicApiBaselineTests
     public void CommonContractsPublicApiMatchesTheReviewedFirstReleaseBaseline()
     {
         var expected = ReadBaseline("CommonContracts.PublicApi.txt");
-        var actual = PublicApiText.Render(
-            typeof(InstanceReport).Assembly,
-            "MCServerLauncher.Common.Contracts");
+        var actual = PublicApiText.RenderCanonicalCommonContracts(typeof(InstanceReport).Assembly);
         WriteDiagnosticBaseline("MCSL_COMMON_CONTRACTS_BASELINE_OUTPUT", actual);
 
         AssertBaselineMatches("Common Contracts", "CommonContracts.PublicApi.txt", expected, actual);
@@ -105,6 +103,14 @@ internal static class PublicApiText
             type => type.Namespace is not null &&
                     (type.Namespace.Equals(namespacePrefix, StringComparison.Ordinal) ||
                      type.Namespace.StartsWith($"{namespacePrefix}.", StringComparison.Ordinal)),
+            static _ => true);
+
+    public static string RenderCanonicalCommonContracts(Assembly assembly) =>
+        Render(
+            assembly,
+            type => type.Namespace is not null &&
+                    (type.Namespace.Equals("MCServerLauncher.Common.Contracts", StringComparison.Ordinal) ||
+                     type.Namespace.StartsWith("MCServerLauncher.Common.Contracts.", StringComparison.Ordinal)),
             static _ => true);
 
     public static string Render(
@@ -353,4 +359,5 @@ internal static class PublicApiText
          method.Name.StartsWith("remove_", StringComparison.Ordinal));
 
     private static string NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? "-" : value;
+
 }

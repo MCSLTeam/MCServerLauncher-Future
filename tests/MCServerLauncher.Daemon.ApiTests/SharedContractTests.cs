@@ -74,6 +74,11 @@ public sealed class SharedContractTests
         foreach (var property in contractTypes.SelectMany(type =>
                      type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)))
         {
+            if (IsEventRulePersistenceProperty(property))
+            {
+                continue;
+            }
+
             Assert.False(
                 property.PropertyType.IsGenericType &&
                 property.PropertyType.GetGenericTypeDefinition() is var definition &&
@@ -104,4 +109,22 @@ public sealed class SharedContractTests
         Assert.Contains(nameof(ContractInstanceReport.PerformanceCounter), reportProperties);
         Assert.Contains(nameof(ContractInstanceReport.ProcessId), reportProperties);
     }
+
+    [Fact]
+    public void EventRulePersistenceModelsKeepTheirExplicitMutableAuthoringShape()
+    {
+        Assert.Equal(typeof(List<TriggerDefinition>), typeof(EventRule).GetProperty(nameof(EventRule.Triggers))!.PropertyType);
+        Assert.Equal(typeof(List<RulesetDefinition>), typeof(EventRule).GetProperty(nameof(EventRule.Rulesets))!.PropertyType);
+        Assert.Equal(typeof(List<ActionDefinition>), typeof(EventRule).GetProperty(nameof(EventRule.Actions))!.PropertyType);
+        Assert.Contains(
+            typeof(EventRule).GetProperties(),
+            property => property.SetMethod is not null && property.Name == nameof(EventRule.Name));
+    }
+
+    private static bool IsEventRulePersistenceProperty(PropertyInfo property) =>
+        property.DeclaringType == typeof(EventRule) ||
+        (property.DeclaringType is not null &&
+         (typeof(RulesetDefinition).IsAssignableFrom(property.DeclaringType) ||
+          typeof(TriggerDefinition).IsAssignableFrom(property.DeclaringType) ||
+          typeof(ActionDefinition).IsAssignableFrom(property.DeclaringType)));
 }

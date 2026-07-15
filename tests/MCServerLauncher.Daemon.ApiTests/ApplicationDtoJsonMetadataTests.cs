@@ -191,4 +191,5 @@ public sealed class ApplicationDtoJsonMetadataTests
             new JavaRuntimeList([new JavaRuntime("C:/Java/bin/java.exe", "21.0.7", "x64")])
         ];
     }
+
 }
