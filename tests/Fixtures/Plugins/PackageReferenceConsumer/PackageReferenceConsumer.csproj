@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <MCSLPluginBundle>true</MCSLPluginBundle>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

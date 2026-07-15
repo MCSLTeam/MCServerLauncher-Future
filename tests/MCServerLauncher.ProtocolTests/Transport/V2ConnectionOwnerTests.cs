@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
+using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 using MCServerLauncher.Daemon.Remote.Rpc.Transport;
 
 namespace MCServerLauncher.ProtocolTests.Transport;
@@ -8,6 +10,25 @@ namespace MCServerLauncher.ProtocolTests.Transport;
 public sealed class V2ConnectionOwnerTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+
+    [Fact]
+    public async Task CompiledPermissionsPreserveMatchingAndInvalidSetsFailClosed()
+    {
+        await using var valid = new V2ConnectionOwner(
+            new RecordingSender(),
+            ["mcsl.daemon.file.**"]);
+        Assert.True(V2RpcDispatcher.HasPermission(
+            valid,
+            new PermissionName("mcsl.daemon.file.download")));
+
+        await using var invalid = new V2ConnectionOwner(
+            new RecordingSender(),
+            ["123"]);
+        Assert.Empty(invalid.CompiledPermissions.PermissionList);
+        Assert.False(V2RpcDispatcher.HasPermission(
+            invalid,
+            new PermissionName("mcsl.daemon.file.download")));
+    }
 
     [Fact]
     public void OutboundMessages_AreImmutableAndRejectInvalidGroups()

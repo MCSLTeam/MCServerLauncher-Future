@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -124,6 +125,11 @@ internal interface IProtocolPermissionView
     ImmutableArray<string> Permissions { get; }
 }
 
+internal interface ICompiledProtocolPermissionView : IProtocolPermissionView
+{
+    Permissions CompiledPermissions { get; }
+}
+
 internal interface IProtocolSubscriptionOperations
 {
     Result<Unit, DaemonError> Subscribe(EventSubscriptionRequest request);
@@ -190,18 +196,37 @@ internal sealed class ProtocolDownloadAttachment
     public bool IsFinal { get; }
 }
 
-internal sealed class ProtocolRpcExecution<TResult>
+internal readonly struct ProtocolRpcExecution<TResult>
     where TResult : notnull
 {
+    private readonly Result<TResult, DaemonError> _result;
+    private readonly ProtocolDownloadAttachment? _downloadAttachment;
+    private readonly bool _isInitialized;
+
     private ProtocolRpcExecution(Result<TResult, DaemonError> result, ProtocolDownloadAttachment? downloadAttachment)
     {
-        Result = result;
-        DownloadAttachment = downloadAttachment;
+        _result = result;
+        _downloadAttachment = downloadAttachment;
+        _isInitialized = true;
     }
 
-    public Result<TResult, DaemonError> Result { get; }
+    public Result<TResult, DaemonError> Result
+    {
+        get
+        {
+            EnsureInitialized();
+            return _result;
+        }
+    }
 
-    public ProtocolDownloadAttachment? DownloadAttachment { get; }
+    public ProtocolDownloadAttachment? DownloadAttachment
+    {
+        get
+        {
+            EnsureInitialized();
+            return _downloadAttachment;
+        }
+    }
 
     public static ProtocolRpcExecution<TResult> Ok(TResult result)
     {
@@ -242,10 +267,22 @@ internal sealed class ProtocolRpcExecution<TResult>
             RustyOptions.Result.Ok<DownloadReadResult, DaemonError>(result),
             attachment);
     }
+
+    private void EnsureInitialized()
+    {
+        if (!_isInitialized)
+        {
+            throw new InvalidOperationException("An RPC execution must be created through an execution factory.");
+        }
+    }
 }
 
-internal sealed class ErasedProtocolRpcExecution
+internal readonly struct ErasedProtocolRpcExecution
 {
+    private readonly Result<object, DaemonError> _result;
+    private readonly ProtocolDownloadAttachment? _downloadAttachment;
+    private readonly bool _isInitialized;
+
     public ErasedProtocolRpcExecution(
         Result<object, DaemonError> result,
         ProtocolDownloadAttachment? downloadAttachment)
@@ -255,13 +292,36 @@ internal sealed class ErasedProtocolRpcExecution
             throw new ArgumentException("An RPC error cannot carry a download attachment.", nameof(downloadAttachment));
         }
 
-        Result = result;
-        DownloadAttachment = downloadAttachment;
+        _result = result;
+        _downloadAttachment = downloadAttachment;
+        _isInitialized = true;
     }
 
-    public Result<object, DaemonError> Result { get; }
+    public Result<object, DaemonError> Result
+    {
+        get
+        {
+            EnsureInitialized();
+            return _result;
+        }
+    }
 
-    public ProtocolDownloadAttachment? DownloadAttachment { get; }
+    public ProtocolDownloadAttachment? DownloadAttachment
+    {
+        get
+        {
+            EnsureInitialized();
+            return _downloadAttachment;
+        }
+    }
+
+    private void EnsureInitialized()
+    {
+        if (!_isInitialized)
+        {
+            throw new InvalidOperationException("An erased RPC execution must be initialized.");
+        }
+    }
 }
 
 internal delegate Task<ProtocolRpcExecution<TResult>> ProtocolRpcHandler<TRequest, TResult>(
@@ -283,7 +343,7 @@ internal abstract class RpcBinding
 
     public abstract Type ResultType { get; }
 
-    internal abstract Task<ErasedProtocolRpcExecution> InvokeAsync(
+    internal abstract ValueTask<ErasedProtocolRpcExecution> InvokeAsync(
         ProtocolInvocationContext context,
         object request,
         CancellationToken cancellationToken);
@@ -308,7 +368,7 @@ internal sealed class RpcBinding<TRequest, TResult> : RpcBinding
 
     public override Type ResultType => typeof(TResult);
 
-    internal override async Task<ErasedProtocolRpcExecution> InvokeAsync(
+    internal override ValueTask<ErasedProtocolRpcExecution> InvokeAsync(
         ProtocolInvocationContext context,
         object request,
         CancellationToken cancellationToken)
@@ -321,8 +381,21 @@ internal sealed class RpcBinding<TRequest, TResult> : RpcBinding
                 $"RPC binding request type '{request.GetType()}' does not exactly match '{typeof(TRequest)}'.");
         }
 
-        var execution = await Handler(context, (TRequest)request, cancellationToken).ConfigureAwait(false);
-        ArgumentNullException.ThrowIfNull(execution);
+        var pendingExecution = Handler(context, (TRequest)request, cancellationToken);
+        return pendingExecution.IsCompletedSuccessfully
+            ? new ValueTask<ErasedProtocolRpcExecution>(Erase(pendingExecution.Result))
+            : AwaitExecutionAsync(pendingExecution);
+    }
+
+    private static async ValueTask<ErasedProtocolRpcExecution> AwaitExecutionAsync(
+        Task<ProtocolRpcExecution<TResult>> pendingExecution)
+    {
+        var execution = await pendingExecution.ConfigureAwait(false);
+        return Erase(execution);
+    }
+
+    private static ErasedProtocolRpcExecution Erase(ProtocolRpcExecution<TResult> execution)
+    {
         var erasedResult = execution.Result.IsOk(out var value)
             ? RustyOptions.Result.Ok<object, DaemonError>(value)
             : RustyOptions.Result.Err<object, DaemonError>(execution.Result.UnwrapErr());

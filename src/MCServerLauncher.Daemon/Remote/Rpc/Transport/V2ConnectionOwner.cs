@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Threading.Channels;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
+using MCServerLauncher.Daemon.Remote.Authentication;
 
 namespace MCServerLauncher.Daemon.Remote.Rpc.Transport;
 
@@ -13,7 +14,7 @@ internal enum V2ConnectionState
     Closed
 }
 
-internal sealed class V2ConnectionOwner : IProtocolPermissionView, IAsyncDisposable
+internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyncDisposable
 {
     internal const int OutboundCapacity = 256;
     internal static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(30);
@@ -46,6 +47,7 @@ internal sealed class V2ConnectionOwner : IProtocolPermissionView, IAsyncDisposa
         _sender = sender ?? throw new ArgumentNullException(nameof(sender));
         _timeProvider = timeProvider ?? TimeProvider.System;
         Permissions = NormalizePermissions(permissions);
+        CompiledPermissions = CompilePermissions(Permissions);
         _connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(connectionCancellation);
         _connectionToken = _connectionLifetime.Token;
         _outbound = Channel.CreateBounded<V2OutboundMessage>(
@@ -59,6 +61,8 @@ internal sealed class V2ConnectionOwner : IProtocolPermissionView, IAsyncDisposa
     }
 
     public ImmutableArray<string> Permissions { get; }
+
+    public Permissions CompiledPermissions { get; }
 
     internal V2ConnectionState State
     {
@@ -450,6 +454,18 @@ internal sealed class V2ConnectionOwner : IProtocolPermissionView, IAsyncDisposa
             .Order(StringComparer.Ordinal)
             .ToImmutableArray();
         return normalized;
+    }
+
+    private static Permissions CompilePermissions(ImmutableArray<string> permissions)
+    {
+        try
+        {
+            return new Permissions(permissions.ToArray());
+        }
+        catch (ArgumentException)
+        {
+            return MCServerLauncher.Daemon.Remote.Authentication.Permissions.Never;
+        }
     }
 
     private sealed record ClosePlan(

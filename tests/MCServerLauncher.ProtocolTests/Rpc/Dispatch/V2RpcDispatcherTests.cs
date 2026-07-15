@@ -25,6 +25,29 @@ public sealed class V2RpcDispatcherTests
     private static readonly BuiltInProtocolJsonContext ProtocolJson = BuiltInProtocolJsonContext.Default;
 
     [Fact]
+    public async Task ParsedDispatchBoundaryBuildsTheSuccessEnvelopeUsedByTheWirePath()
+    {
+        var dispatcher = CreatePingDispatcher(static (_, _, _) =>
+            Task.FromResult(ProtocolRpcExecution<PingResult>.Ok(new PingResult(42))));
+        var requestUtf8 = PingRequest("1", "{}");
+        var request = JsonRpcWireParser.ParseRequest(requestUtf8.Span);
+
+        var prepared = await dispatcher.DispatchParsedAsync(request, Connection("*"));
+        var preparedResponse = Assert.IsType<JsonRpcSuccessResponseEnvelope>(prepared.SuccessResponse);
+        var preparedResult = Assert.IsType<PingResult>(preparedResponse.Result.Deserialize(ProtocolJson.PingResult));
+
+        var wire = await dispatcher.DispatchAsync(requestUtf8, Connection("*"));
+        var wireResponse = JsonRpcWireParser.ParseSuccessResponse(wire.ResponseUtf8.AsSpan());
+        var wireResult = Assert.IsType<PingResult>(wireResponse.Result.Deserialize(ProtocolJson.PingResult));
+
+        Assert.Equal(42, preparedResult.Time);
+        Assert.Equal(preparedResponse.Id, wireResponse.Id);
+        Assert.Equal(preparedResult, wireResult);
+        Assert.Null(prepared.DownloadAttachment);
+        Assert.Null(wire.DownloadAttachment);
+    }
+
+    [Fact]
     public async Task Dispatch_MapsFileSessionOperationsAndPreservesDownloadAttachment()
     {
         var sessionId = Guid.NewGuid();
@@ -868,7 +891,7 @@ public sealed class V2RpcDispatcherTests
                 return Task.FromResult(ProtocolRpcExecution<PingResult>.Ok(new PingResult(1)));
             });
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => binding.InvokeAsync(
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await binding.InvokeAsync(
             new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn),
             new UnitResult(),
             CancellationToken.None));
@@ -891,6 +914,52 @@ public sealed class V2RpcDispatcherTests
         Assert.True(execution.Result.IsErr(out _));
         Assert.Same(expected, execution.Result.UnwrapErr());
         Assert.Null(execution.DownloadAttachment);
+    }
+
+    [Fact]
+    public async Task TypeErasedBindingAwaitsIncompleteHandlerTask()
+    {
+        var completion = new TaskCompletionSource<ProtocolRpcExecution<PingResult>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var binding = new RpcBinding<EmptyRequest, PingResult>(
+            ProtocolExecutionOwner.BuiltIn,
+            (_, _, _) => completion.Task);
+
+        var pending = binding.InvokeAsync(
+            new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn),
+            new EmptyRequest(),
+            CancellationToken.None);
+        Assert.False(pending.IsCompleted);
+
+        var expected = new PingResult(7);
+        completion.SetResult(ProtocolRpcExecution<PingResult>.Ok(expected));
+        var execution = await pending;
+
+        Assert.Same(expected, execution.Result.Unwrap());
+        Assert.Null(execution.DownloadAttachment);
+    }
+
+    [Fact]
+    public async Task TypeErasedBindingPreservesFaultedAndCanceledHandlerTasks()
+    {
+        var expected = new InvalidOperationException("Expected binding failure.");
+        var faulted = new RpcBinding<EmptyRequest, PingResult>(
+            ProtocolExecutionOwner.BuiltIn,
+            (_, _, _) => Task.FromException<ProtocolRpcExecution<PingResult>>(expected));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var canceled = new RpcBinding<EmptyRequest, PingResult>(
+            ProtocolExecutionOwner.BuiltIn,
+            (_, _, _) => Task.FromCanceled<ProtocolRpcExecution<PingResult>>(cancellation.Token));
+        var context = new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn);
+
+        var fault = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await faulted.InvokeAsync(context, new EmptyRequest(), CancellationToken.None));
+        var cancel = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await canceled.InvokeAsync(context, new EmptyRequest(), CancellationToken.None));
+
+        Assert.Same(expected, fault);
+        Assert.Equal(cancellation.Token, cancel.CancellationToken);
     }
 
     private static async Task<CancellationToken> ObserveEffectiveTokenAsync(

@@ -76,6 +76,59 @@ public sealed class PackageContractTests
     }
 
     [Fact]
+    public async Task PackedCommonArtifactCarriesPublicPackageMetadata()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var packageOutput = Path.Combine(Path.GetTempPath(), $"mcsl-common-package-{Guid.NewGuid():N}");
+
+        try
+        {
+            Directory.CreateDirectory(packageOutput);
+            var projectPath = Path.Combine(
+                repositoryRoot,
+                "src",
+                "MCServerLauncher.Common",
+                "MCServerLauncher.Common.csproj");
+
+            var packResult = await RunDotNetAsync(
+                repositoryRoot,
+                "pack",
+                projectPath,
+                "--configuration",
+                "Release",
+                "--no-restore",
+                "--output",
+                packageOutput,
+                "/m:1");
+
+            Assert.True(packResult.ExitCode == 0, $"dotnet pack failed:{Environment.NewLine}{packResult.Output}");
+
+            var packagePath = Assert.Single(Directory.GetFiles(packageOutput, "MCServerLauncher.Common.*.nupkg"));
+            using var package = ZipFile.OpenRead(packagePath);
+            var nuspecEntry = Assert.Single(package.Entries, entry => entry.FullName.EndsWith(".nuspec", StringComparison.Ordinal));
+            using var nuspecStream = nuspecEntry.Open();
+            var nuspec = XDocument.Load(nuspecStream);
+            var ns = nuspec.Root?.Name.Namespace ?? throw new InvalidOperationException("The packed nuspec had no root element.");
+            var metadata = nuspec.Descendants(ns + "metadata").Single();
+
+            Assert.Equal("MCServerLauncher.Common", (string?)metadata.Element(ns + "id"));
+            Assert.Equal("1.0.0", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
+            Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
+            Assert.Equal("GPL-3.0-only", metadata.Element(ns + "license")?.Value);
+            Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
+            Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Common.dll");
+        }
+        finally
+        {
+            if (Directory.Exists(packageOutput))
+            {
+                Directory.Delete(packageOutput, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void RestoreGraphContainsOnlyTheApprovedDaemonApiPackageClosure()
     {
         var assetsPath = Path.Combine(

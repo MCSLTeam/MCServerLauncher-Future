@@ -22,52 +22,112 @@ permissions:
   contents: write
 
 jobs:
+  resolve_tag:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.resolve.outputs.commit_sha }}
+    steps:
+      - name: Checkout repository refs
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve exact tag to commit
+        id: resolve
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tagRef = "refs/tags/$env:RELEASE_TAG"
+
+          & git check-ref-format $tagRef
+          if ($LASTEXITCODE -ne 0) {
+            throw "Invalid release tag ref."
+          }
+
+          & git show-ref --verify --quiet $tagRef
+          if ($LASTEXITCODE -ne 0) {
+            throw "The exact release tag ref does not exist."
+          }
+
+          $commitSha = & git rev-parse --verify "$tagRef^{commit}"
+          if ($LASTEXITCODE -ne 0) {
+            throw "The release tag does not resolve to a commit."
+          }
+
+          $commitSha = "$commitSha".Trim()
+          if ($commitSha -notmatch '^[0-9a-fA-F]{40,64}$') {
+            throw "The release tag resolved to an invalid commit SHA."
+          }
+
+          "commit_sha=$commitSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+  performance_gate:
+    needs: resolve_tag
+    uses: ./.github/workflows/benchmarks.yml
+    with:
+      checkout_ref: ${{ needs.resolve_tag.outputs.commit_sha }}
+
   publish:
-    runs-on: windows-latest
+    needs:
+      - resolve_tag
+      - performance_gate
     strategy:
       fail-fast: false
       matrix:
         include:
           - rid: win-x64
+            runner: windows-latest
             family: windows
             architecture: x64
             include_wpf: true
             archive_ext: zip
           - rid: win-x86
+            runner: windows-latest
             family: windows
             architecture: x86
             include_wpf: true
             archive_ext: zip
           - rid: win-arm64
+            runner: windows-latest
             family: windows
             architecture: arm64
             include_wpf: true
             archive_ext: zip
           - rid: linux-x64
+            runner: ubuntu-latest
             family: linux
             architecture: x64
             include_wpf: false
             archive_ext: tar.gz
           - rid: linux-arm64
+            runner: ubuntu-latest
             family: linux
             architecture: arm64
             include_wpf: false
             archive_ext: tar.gz
           - rid: osx-x64
+            runner: macos-latest
             family: macos
             architecture: x64
             include_wpf: false
             archive_ext: tar.gz
           - rid: osx-arm64
+            runner: macos-latest
             family: macos
             architecture: arm64
             include_wpf: false
             archive_ext: tar.gz
 
+    runs-on: ${{ matrix.runner }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.resolve_tag.outputs.commit_sha }}
           submodules: 'recursive'
 
       - name: Setup .NET
@@ -85,6 +145,7 @@ jobs:
       - name: Publish packages
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $publishRoot = Join-Path $env:GITHUB_WORKSPACE 'artifacts'
           $includePdb = if ('${{ inputs.include_pdb }}' -eq 'true') { 'true' } else { 'false' }
           $packageModes = @(
@@ -118,7 +179,10 @@ jobs:
               $daemonArgs += '-p:DebugSymbols=false'
             }
 
-            dotnet @daemonArgs
+            & dotnet @daemonArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "Daemon publish failed for ${{ matrix.rid }} ($($mode.name)) with exit code $LASTEXITCODE."
+            }
 
             $contents = @('daemon')
 
@@ -141,7 +205,10 @@ jobs:
                 $wpfArgs += '-p:DebugSymbols=false'
               }
 
-              dotnet @wpfArgs
+              & dotnet @wpfArgs
+              if ($LASTEXITCODE -ne 0) {
+                throw "WPF publish failed for ${{ matrix.rid }} ($($mode.name)) with exit code $LASTEXITCODE."
+              }
               $contents += 'wpf'
             }
 
@@ -154,7 +221,22 @@ jobs:
               Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $archivePath -Force
             }
             else {
-              tar -czf $archivePath -C $packageDir .
+              & tar -czf $archivePath -C $packageDir .
+              if ($LASTEXITCODE -ne 0) {
+                throw "Archive creation failed for $archivePath with exit code $LASTEXITCODE."
+              }
+
+              $archiveEntries = & tar -tvzf $archivePath
+              if ($LASTEXITCODE -ne 0) {
+                throw "Archive listing failed for $archivePath with exit code $LASTEXITCODE."
+              }
+
+              $daemonEntry = $archiveEntries |
+                Where-Object { $_ -match 'MCServerLauncher\.Daemon(?:\s|$)' } |
+                Select-Object -First 1
+              if ([string]::IsNullOrWhiteSpace($daemonEntry) -or $daemonEntry -notmatch '^-rwx') {
+                throw "The Unix daemon archive must preserve an executable daemon entry: $archivePath"
+              }
             }
 
             $metadata = [ordered]@{
@@ -173,46 +255,140 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.rid }}
+          name: release-${{ matrix.rid }}
           path: |
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
             artifacts/metadata/*.json
           if-no-files-found: error
 
-  release:
-    needs: publish
+  nuget:
+    needs:
+      - resolve_tag
+      - performance_gate
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve_tag.outputs.commit_sha }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack NuGet packages
+        id: pack
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tagName = $env:RELEASE_TAG
+          $packageVersion = if ($tagName.StartsWith('v', [System.StringComparison]::OrdinalIgnoreCase)) {
+            $tagName.Substring(1)
+          }
+          else {
+            $tagName
+          }
+
+          if ([string]::IsNullOrWhiteSpace($packageVersion)) {
+            throw 'The release tag must produce a non-empty NuGet package version.'
+          }
+
+          $packageRoot = Join-Path $env:GITHUB_WORKSPACE 'artifacts/nuget'
+          New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
+
+          $commonArgs = @(
+            'pack',
+            'src/MCServerLauncher.Common/MCServerLauncher.Common.csproj',
+            '-c', 'Release',
+            '-p:PackageVersion=' + $packageVersion,
+            '-o', $packageRoot
+          )
+          & dotnet @commonArgs
+          if ($LASTEXITCODE -ne 0) {
+            throw "Common pack failed with exit code $LASTEXITCODE."
+          }
+
+          $daemonApiArgs = @(
+            'pack',
+            'src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj',
+            '-c', 'Release',
+            '-p:PackageVersion=' + $packageVersion,
+            '-o', $packageRoot
+          )
+          & dotnet @daemonApiArgs
+          if ($LASTEXITCODE -ne 0) {
+            throw "Daemon API pack failed with exit code $LASTEXITCODE."
+          }
+
+          $expectedPackages = @(
+            "MCServerLauncher.Common.$packageVersion.nupkg",
+            "MCServerLauncher.Daemon.API.$packageVersion.nupkg"
+          )
+          foreach ($expectedPackage in $expectedPackages) {
+            if (-not (Test-Path -LiteralPath (Join-Path $packageRoot $expectedPackage) -PathType Leaf)) {
+              throw "Expected NuGet package was not produced: $expectedPackage"
+            }
+          }
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-nuget
+          path: artifacts/nuget/*.nupkg
+          if-no-files-found: error
+
+  release:
+    needs:
+      - resolve_tag
+      - performance_gate
+      - publish
+      - nuget
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve_tag.outputs.commit_sha }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: release-*
 
       - name: Build release body
         shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag_name }}
         run: |
           $body = Get-Content Release.md -Raw
           $body += "`n## Published Packages`n"
           $body += "`n| RID | Mode | Archive | Contents |`n| --- | --- | --- | --- |`n"
 
-          $metadataFiles = Get-ChildItem -Recurse artifacts -Filter *.json | Sort-Object FullName
+          $metadataFiles = Get-ChildItem -Recurse artifacts -Filter *.json |
+            Where-Object { $_.Directory.Name -eq 'metadata' } |
+            Sort-Object FullName
           foreach ($metadataFile in $metadataFiles) {
             $metadata = Get-Content $metadataFile.FullName -Raw | ConvertFrom-Json
             $body += "| $($metadata.rid) | $($metadata.mode) | $($metadata.archiveName) | $($metadata.contents -join ', ') |`n"
           }
 
           $body += "`n## Build Settings`n"
-          $body += "`n- Release tag: ${{ inputs.tag_name }}`n"
+          $body += "`n- Release tag: $env:RELEASE_TAG`n"
           $body += "- Pre-release: ${{ inputs.prerelease }}`n"
           $body += "- Include PDB: ${{ inputs.include_pdb }}`n"
           $body += "`n## Assets`n"
           foreach ($metadataFile in $metadataFiles) {
             $metadata = Get-Content $metadataFile.FullName -Raw | ConvertFrom-Json
             $body += "- $($metadata.archiveName)`n"
+          }
+          $nugetPackages = Get-ChildItem -Recurse artifacts -Filter *.nupkg | Sort-Object Name
+          foreach ($nugetPackage in $nugetPackages) {
+            $body += "- $($nugetPackage.Name)`n"
           }
           Set-Content -Path release-body.md -Value $body -Encoding utf8
 
@@ -225,3 +401,4 @@ jobs:
           files: |
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
+            artifacts/**/*.nupkg

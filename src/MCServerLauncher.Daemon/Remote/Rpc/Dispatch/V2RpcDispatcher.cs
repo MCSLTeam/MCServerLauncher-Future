@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -17,6 +18,12 @@ internal sealed class V2RpcConnectionContext(
     CancellationToken connectionCancellationToken,
     IProtocolFileSessionOperations? fileSessionOperations = null)
 {
+    private readonly ProtocolInvocationContext _builtInInvocationContext = new(
+        ProtocolExecutionOwner.BuiltIn,
+        permissionView,
+        subscriptionOperations,
+        fileSessionOperations);
+
     internal IProtocolPermissionView? PermissionView { get; } = permissionView;
 
     internal IProtocolSubscriptionOperations? SubscriptionOperations { get; } = subscriptionOperations;
@@ -24,6 +31,15 @@ internal sealed class V2RpcConnectionContext(
     internal IProtocolFileSessionOperations? FileSessionOperations { get; } = fileSessionOperations;
 
     internal CancellationToken ConnectionCancellationToken { get; } = connectionCancellationToken;
+
+    internal ProtocolInvocationContext GetInvocationContext(ProtocolExecutionOwner owner) =>
+        owner.Kind == ProtocolExecutionOwnerKind.BuiltIn
+            ? _builtInInvocationContext
+            : new ProtocolInvocationContext(
+                owner,
+                PermissionView,
+                SubscriptionOperations,
+                FileSessionOperations);
 }
 
 internal sealed class V2RpcDispatchOutcome
@@ -67,9 +83,60 @@ internal sealed class V2RpcDispatchOutcome
     }
 }
 
+internal readonly struct V2RpcPreparedDispatchOutcome
+{
+    private V2RpcPreparedDispatchOutcome(
+        JsonRpcSuccessResponseEnvelope? successResponse,
+        JsonRpcErrorResponseEnvelope? errorResponse,
+        ProtocolExecutionOwner? owner,
+        ProtocolDownloadAttachment? downloadAttachment)
+    {
+        if (successResponse is not null && errorResponse is not null)
+        {
+            throw new ArgumentException("A prepared dispatch outcome cannot contain both response kinds.");
+        }
+
+        if (successResponse is null && errorResponse is null && downloadAttachment is not null)
+        {
+            throw new ArgumentException("A response attachment requires a prepared success response.", nameof(downloadAttachment));
+        }
+
+        SuccessResponse = successResponse;
+        ErrorResponse = errorResponse;
+        Owner = owner;
+        DownloadAttachment = downloadAttachment;
+    }
+
+    internal static V2RpcPreparedDispatchOutcome NoResponse => default;
+
+    internal JsonRpcSuccessResponseEnvelope? SuccessResponse { get; }
+
+    internal JsonRpcErrorResponseEnvelope? ErrorResponse { get; }
+
+    internal ProtocolExecutionOwner? Owner { get; }
+
+    internal ProtocolDownloadAttachment? DownloadAttachment { get; }
+
+    internal bool HasResponse => SuccessResponse is not null || ErrorResponse is not null;
+
+    internal static V2RpcPreparedDispatchOutcome Success(
+        JsonRpcSuccessResponseEnvelope response,
+        ProtocolExecutionOwner owner,
+        ProtocolDownloadAttachment? downloadAttachment) =>
+        new(
+            response ?? throw new ArgumentNullException(nameof(response)),
+            null,
+            owner ?? throw new ArgumentNullException(nameof(owner)),
+            downloadAttachment);
+
+    internal static V2RpcPreparedDispatchOutcome Error(JsonRpcErrorResponseEnvelope response) =>
+        new(null, response ?? throw new ArgumentNullException(nameof(response)), null, null);
+}
+
 internal sealed class V2RpcDispatcher
 {
-    private static readonly byte[] EmptyObjectUtf8 = "{}"u8.ToArray();
+    private static readonly EmptyRequest SharedEmptyRequest = new();
+    private static readonly ConcurrentDictionary<string, Permission> PermissionCache = new(StringComparer.Ordinal);
     private readonly FrozenProtocolCatalog _catalog;
     private readonly IV2RpcDiagnosticSink _diagnosticSink;
 
@@ -97,8 +164,22 @@ internal sealed class V2RpcDispatcher
             var message = exception.FailureKind == JsonRpcRequestFailureKind.ParseError
                 ? "Parse error"
                 : "Invalid Request";
-            return Error(null, code, message, DaemonErrorWireKind.Validation, null, null);
+            return SerializePreparedOutcome(
+                null,
+                Error(null, code, message, DaemonErrorWireKind.Validation, null, null));
         }
+
+        var prepared = await DispatchParsedAsync(request, connection, requestCancellationToken).ConfigureAwait(false);
+        return SerializePreparedOutcome(request, prepared);
+    }
+
+    internal async Task<V2RpcPreparedDispatchOutcome> DispatchParsedAsync(
+        JsonRpcRequestEnvelope request,
+        V2RpcConnectionContext connection,
+        CancellationToken requestCancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(connection);
 
         RpcMethod method;
         try
@@ -182,11 +263,7 @@ internal sealed class V2RpcDispatcher
         try
         {
             invocationCancellationToken.ThrowIfCancellationRequested();
-            var invocationContext = new ProtocolInvocationContext(
-                entry.Owner,
-                connection.PermissionView,
-                connection.SubscriptionOperations,
-                connection.FileSessionOperations);
+            var invocationContext = connection.GetInvocationContext(entry.Owner);
             execution = await entry.Binding
                 .InvokeAsync(invocationContext, typedRequest, invocationCancellationToken)
                 .ConfigureAwait(false);
@@ -225,7 +302,7 @@ internal sealed class V2RpcDispatcher
 
         if (request.IsNotification)
         {
-            return V2RpcDispatchOutcome.NoResponse;
+            return V2RpcPreparedDispatchOutcome.NoResponse;
         }
 
         var result = execution.Result.Unwrap();
@@ -251,11 +328,7 @@ internal sealed class V2RpcDispatcher
         {
             var payload = JsonRpcObjectPayload.From(result, entry.Descriptor.ResultTypeInfo);
             var envelope = new JsonRpcSuccessResponseEnvelope(request.Id!, payload);
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(
-                envelope,
-                BuiltInProtocolJsonContext.Default.JsonRpcSuccessResponseEnvelope);
-            return V2RpcDispatchOutcome.Response(
-                ImmutableCollectionsMarshal.AsImmutableArray(bytes), execution.DownloadAttachment);
+            return V2RpcPreparedDispatchOutcome.Success(envelope, entry.Owner, execution.DownloadAttachment);
         }
         catch (Exception exception)
         {
@@ -263,20 +336,61 @@ internal sealed class V2RpcDispatcher
         }
     }
 
-    internal static object DeserializeRequest(JsonRpcObjectPayload? parameters, RpcDescriptor descriptor)
+    private V2RpcDispatchOutcome SerializePreparedOutcome(
+        JsonRpcRequestEnvelope? request,
+        V2RpcPreparedDispatchOutcome prepared)
     {
-        if (parameters is null)
+        if (!prepared.HasResponse)
         {
-            if (descriptor.RequestTypeInfo.Type != typeof(EmptyRequest))
-            {
-                throw new JsonException("This RPC method requires params.");
-            }
-
-            return JsonSerializer.Deserialize(EmptyObjectUtf8, descriptor.RequestTypeInfo)
-                ?? throw new JsonException("Empty request metadata produced null.");
+            return V2RpcDispatchOutcome.NoResponse;
         }
 
-        if (parameters.IsEmptyObject && descriptor.RequestTypeInfo.Type != typeof(EmptyRequest))
+        if (prepared.ErrorResponse is not null)
+        {
+            var errorBytes = JsonSerializer.SerializeToUtf8Bytes(
+                prepared.ErrorResponse,
+                BuiltInProtocolJsonContext.Default.JsonRpcErrorResponseEnvelope);
+            return V2RpcDispatchOutcome.Response(ImmutableCollectionsMarshal.AsImmutableArray(errorBytes));
+        }
+
+        try
+        {
+            var successBytes = JsonSerializer.SerializeToUtf8Bytes(
+                prepared.SuccessResponse!,
+                BuiltInProtocolJsonContext.Default.JsonRpcSuccessResponseEnvelope);
+            return V2RpcDispatchOutcome.Response(
+                ImmutableCollectionsMarshal.AsImmutableArray(successBytes),
+                prepared.DownloadAttachment);
+        }
+        catch (Exception exception)
+        {
+            if (request is null)
+            {
+                throw;
+            }
+
+            return SerializePreparedOutcome(request, UnexpectedOrSuppress(request, prepared.Owner, exception));
+        }
+    }
+
+    internal static object DeserializeRequest(JsonRpcObjectPayload? parameters, RpcDescriptor descriptor)
+    {
+        if (descriptor.RequestTypeInfo.Type == typeof(EmptyRequest))
+        {
+            if (parameters is null || parameters.IsEmptyObject)
+            {
+                return SharedEmptyRequest;
+            }
+
+            throw new JsonException("EmptyRequest RPC methods accept only an empty params object.");
+        }
+
+        if (parameters is null)
+        {
+            throw new JsonException("This RPC method requires params.");
+        }
+
+        if (parameters.IsEmptyObject)
         {
             throw new JsonException("Only EmptyRequest RPC methods accept an empty params object.");
         }
@@ -284,7 +398,7 @@ internal sealed class V2RpcDispatcher
         return parameters.Deserialize(descriptor.RequestTypeInfo);
     }
 
-    private static bool HasPermission(IProtocolPermissionView? permissionView, PermissionName requiredPermission)
+    internal static bool HasPermission(IProtocolPermissionView? permissionView, PermissionName requiredPermission)
     {
         if (permissionView is null || permissionView.Permissions.IsDefault)
         {
@@ -293,8 +407,12 @@ internal sealed class V2RpcDispatcher
 
         try
         {
-            return new Permissions(permissionView.Permissions.ToArray())
-                .Matches(Permission.Of(requiredPermission.Value));
+            var required = PermissionCache.GetOrAdd(
+                requiredPermission.Value,
+                static value => Permission.Of(value));
+            return permissionView is ICompiledProtocolPermissionView compiled
+                ? compiled.CompiledPermissions.Matches(required)
+                : new Permissions(permissionView.Permissions.ToArray()).Matches(required);
         }
         catch (ArgumentException)
         {
@@ -326,7 +444,7 @@ internal sealed class V2RpcDispatcher
         return source;
     }
 
-    private V2RpcDispatchOutcome ErrorOrSuppress(
+    private V2RpcPreparedDispatchOutcome ErrorOrSuppress(
         JsonRpcRequestEnvelope request,
         int code,
         string message,
@@ -339,7 +457,7 @@ internal sealed class V2RpcDispatcher
             ? SuppressNotification(request.Method, owner, suppressionReason)
             : Error(request.Id, code, message, errorKind, payload, owner, originPlugin: originPlugin);
 
-    private V2RpcDispatchOutcome UnexpectedOrSuppress(
+    private V2RpcPreparedDispatchOutcome UnexpectedOrSuppress(
         JsonRpcRequestEnvelope request,
         ProtocolExecutionOwner? owner,
         Exception exception)
@@ -351,21 +469,21 @@ internal sealed class V2RpcDispatcher
             owner,
             exception));
         return request.IsNotification
-            ? V2RpcDispatchOutcome.NoResponse
+            ? V2RpcPreparedDispatchOutcome.NoResponse
             : Error(request.Id, -32603, "Internal error", DaemonErrorWireKind.Internal, null, owner, correlationId);
     }
 
-    private V2RpcDispatchOutcome SuppressNotification(
+    private V2RpcPreparedDispatchOutcome SuppressNotification(
         string method,
         ProtocolExecutionOwner? owner,
         V2RpcNotificationSuppressionReason reason)
     {
         _diagnosticSink.RecordNotificationSuppressed(
             new V2RpcNotificationSuppressionDiagnostic(method, owner, reason));
-        return V2RpcDispatchOutcome.NoResponse;
+        return V2RpcPreparedDispatchOutcome.NoResponse;
     }
 
-    private V2RpcDispatchOutcome Error(
+    private V2RpcPreparedDispatchOutcome Error(
         JsonRpcRequestId? id,
         int code,
         string message,
@@ -383,10 +501,7 @@ internal sealed class V2RpcDispatcher
             originPlugin,
             executionOwner: ResolveExecutionOwner(owner));
         var envelope = new JsonRpcErrorResponseEnvelope(id, new JsonRpcErrorObject(code, message, data));
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(
-            envelope,
-            BuiltInProtocolJsonContext.Default.JsonRpcErrorResponseEnvelope);
-        return V2RpcDispatchOutcome.Response(ImmutableCollectionsMarshal.AsImmutableArray(bytes));
+        return V2RpcPreparedDispatchOutcome.Error(envelope);
     }
 
     private ProtocolOwnerIdentity? ResolveExecutionOwner(ProtocolExecutionOwner? owner) => owner?.Kind switch

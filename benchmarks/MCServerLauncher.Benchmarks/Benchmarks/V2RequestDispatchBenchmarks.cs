@@ -1,42 +1,83 @@
+using System.Collections.Immutable;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
-using MCServerLauncher.Benchmarks.Infrastructure;
 using MCServerLauncher.Common.Contracts.Protocol;
-using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Common.Contracts.Serialization;
+using MCServerLauncher.Benchmarks.Infrastructure;
+using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
+using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 
 namespace MCServerLauncher.Benchmarks.Benchmarks;
 
 /// <summary>
-/// Measures the definition-derived V2 request binding without a socket.
-/// Transport and serialization have separate benchmarks; this isolates the
-/// dispatch work that is comparable to the Phase 0 request-dispatch baseline.
+/// Measures the same dispatch boundary as the Phase 0 V1 request benchmark:
+/// catalog lookup, notification and permission admission, params
+/// validation/materialization, erased binding invocation, result validation,
+/// and success envelope construction. Socket framing, request parsing, and
+/// final response serialization are separate transport concerns, just as they
+/// were for the V1 baseline.
 /// </summary>
 [MemoryDiagnoser]
 [ShortRunJob]
 [JsonExporterAttribute.Full]
 public class V2RequestDispatchBenchmarks
 {
-    private RpcBinding<EmptyRequest, PingResult> _ping = null!;
-    private ProtocolInvocationContext _context = null!;
+    private V2RpcDispatcher _dispatcher = null!;
+    private V2RpcConnectionContext _connection = null!;
+    private JsonRpcRequestEnvelope _request = null!;
 
     [GlobalSetup]
     public void GlobalSetup()
     {
-        var catalog = BenchmarkProtocolCatalogFactory.Create();
-        _ping = (RpcBinding<EmptyRequest, PingResult>)catalog.Rpcs[
-            new RpcMethod("mcsl.daemon.ping")].Binding;
-        _context = new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn);
+        _dispatcher = new V2RpcDispatcher(
+            BenchmarkProtocolCatalogFactory.Create(),
+            BenchmarkDiagnosticSink.Instance);
+        _connection = new V2RpcConnectionContext(
+            new BenchmarkPermissionView(ImmutableArray.Create("*")),
+            null,
+            CancellationToken.None);
+        _request = new JsonRpcRequestEnvelope(
+            "mcsl.daemon.ping",
+            JsonRpcRequestId.FromInt64(1),
+            JsonRpcObjectPayload.From(new EmptyRequest(), BuiltInProtocolJsonContext.Default.EmptyRequest));
+
+        var validation = _dispatcher
+            .DispatchParsedAsync(_request, _connection, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
+        if (validation.SuccessResponse?.Result.Deserialize(BuiltInProtocolJsonContext.Default.PingResult) is not PingResult)
+        {
+            throw new InvalidOperationException("The benchmark dispatch did not produce a typed ping success response.");
+        }
     }
 
     [Benchmark]
-    public async Task<long> DispatchPing()
-    {
-        var execution = await _ping.Handler(_context, new EmptyRequest(), CancellationToken.None);
-        if (!execution.Result.IsOk(out var result))
-            throw new InvalidOperationException("The benchmark ping binding returned an error.");
+    public Task DispatchPing() =>
+        _dispatcher.DispatchParsedAsync(_request, _connection, CancellationToken.None);
 
-        return result!.Time;
+    private sealed class BenchmarkPermissionView : ICompiledProtocolPermissionView
+    {
+        internal BenchmarkPermissionView(ImmutableArray<string> permissions)
+        {
+            Permissions = permissions;
+            CompiledPermissions = new Permissions(permissions.ToArray());
+        }
+
+        public ImmutableArray<string> Permissions { get; }
+
+        public Permissions CompiledPermissions { get; }
+    }
+
+    private sealed class BenchmarkDiagnosticSink : IV2RpcDiagnosticSink
+    {
+        internal static BenchmarkDiagnosticSink Instance { get; } = new();
+
+        public void RecordUnexpected(V2RpcUnexpectedDiagnostic diagnostic) =>
+            throw new InvalidOperationException("The benchmark dispatch produced an unexpected diagnostic.");
+
+        public void RecordNotificationSuppressed(V2RpcNotificationSuppressionDiagnostic diagnostic) =>
+            throw new InvalidOperationException("The benchmark dispatch suppressed its request.");
     }
 }

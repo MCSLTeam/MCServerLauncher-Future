@@ -1,6 +1,13 @@
 name: Benchmarks
 
 on:
+  workflow_call:
+    inputs:
+      checkout_ref:
+        description: Git ref to benchmark; defaults to the triggering ref
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
   schedule:
     - cron: '0 3 * * 1'
@@ -12,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -28,15 +37,30 @@ jobs:
       - name: Restore benchmark project
         run: dotnet restore "${{ steps.benchmark_project.outputs.path }}"
 
-      - name: Run benchmarks (Release)
-        run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --exporters json --artifacts ./BenchmarkDotNet.Artifacts
+      - name: Checkout immutable Phase 0 V1 reference
+        uses: actions/checkout@v4
+        with:
+          ref: 925666a460e6a757844949c5ba1c85e936c7be9f
+          path: phase0-reference
+
+      - name: Restore V1 reference benchmark project
+        run: dotnet restore phase0-reference/benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj
+
+      - name: Run V1 dispatch reference benchmark (Release)
+        working-directory: phase0-reference
+        run: dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --filter "*ActionDispatchBenchmarks.DispatchPing*" --exporters json --artifacts "${{ github.workspace }}/BenchmarkDotNet.Reference"
+
+      - name: Run candidate benchmarks (Release)
+        run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --filter "*" --exporters json --artifacts ./BenchmarkDotNet.Artifacts
 
       - name: Enforce V2 performance gate
-        run: dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- --baseline benchmarks/baselines/v2.json --results BenchmarkDotNet.Artifacts/results
+        run: dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- --baseline benchmarks/baselines/v2.json --reference-results BenchmarkDotNet.Reference/results --results BenchmarkDotNet.Artifacts/results --paired
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-artifacts
-          path: BenchmarkDotNet.Artifacts
+          path: |
+            BenchmarkDotNet.Reference
+            BenchmarkDotNet.Artifacts
           if-no-files-found: warn

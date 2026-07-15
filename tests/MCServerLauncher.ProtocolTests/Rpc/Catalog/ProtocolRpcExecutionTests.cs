@@ -23,6 +23,18 @@ public sealed class ProtocolRpcExecutionTests
     }
 
     [Fact]
+    public void DefaultExecutionsRejectPropertyAccess()
+    {
+        var typed = default(ProtocolRpcExecution<PingResult>);
+        var erased = default(ErasedProtocolRpcExecution);
+
+        Assert.Throws<InvalidOperationException>(() => _ = typed.Result);
+        Assert.Throws<InvalidOperationException>(() => _ = typed.DownloadAttachment);
+        Assert.Throws<InvalidOperationException>(() => _ = erased.Result);
+        Assert.Throws<InvalidOperationException>(() => _ = erased.DownloadAttachment);
+    }
+
+    [Fact]
     public void NormalOk_RejectsNullAndDownloadMetadata()
     {
         Assert.Throws<ArgumentNullException>(() => ProtocolRpcExecution<string>.Ok(null!));

@@ -6,7 +6,7 @@
 dotnet run --project src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
 ```
 
-The daemon reads `config.json` from its working directory. The minimum local configuration contains a listening port and the authentication secret:
+The daemon reads `config.json` from its executable base directory. Keep it beside the published daemon executable; the process working directory does not change this location when a service manager launches the daemon. The minimum local configuration contains a listening port and the authentication secret:
 
 ```json
 {
@@ -47,9 +47,22 @@ Daemon logs are written under the configured daemon data directory. Plugin failu
 The benchmark project emits BenchmarkDotNet JSON reports. The checked-in V2 baseline covers request dispatch, immutable state reads, and the 32-subscriber event serialization comparison:
 
 ```powershell
+$referenceRoot = Join-Path ([System.IO.Path]::GetTempPath()) "mcsl-phase0-925666a4"
+git worktree add --detach $referenceRoot 925666a4
+$referenceArtifacts = Join-Path $PWD "BenchmarkDotNet.Reference"
+Push-Location $referenceRoot
+try {
+  dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- `
+    --filter "*ActionDispatchBenchmarks.DispatchPing*" --exporters json --artifacts $referenceArtifacts
+}
+finally {
+  Pop-Location
+}
 dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --exporters json --artifacts BenchmarkDotNet.Artifacts
 dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- `
-  --baseline benchmarks/baselines/v2.json --results BenchmarkDotNet.Artifacts/results
+  --baseline benchmarks/baselines/v2.json --reference-results BenchmarkDotNet.Reference/results `
+  --results BenchmarkDotNet.Artifacts/results --paired
+git worktree remove $referenceRoot
 ```
 
-The gate always checks allocations. The request-dispatch entry explicitly compares the V2 report with the Phase 0 V1 `request.dispatch.ping` reference; the state and event entries use their recorded V2 captures. Mean comparisons require the BenchmarkDotNet, SDK, runtime, OS, architecture, processor, and configuration fingerprint to match the baseline. A deliberately paired same-machine A/B run may pass `--paired`; an unrelated environment must recapture its baseline instead.
+The gate always checks allocations. The request-dispatch entry compares the V2 report with `ActionDispatchBenchmarks.DispatchPing` built from the immutable Phase 0 commit `925666a4`; the state and event entries use their recorded V2 captures. `--paired` requires that independent V1 report, and the gate verifies that its BenchmarkDotNet, SDK, runtime, OS, architecture, processor, and configuration fingerprint matches the V2 candidate. The scheduled benchmark workflow and every release run perform the same two-checkout comparison on one runner before release artifacts are built.

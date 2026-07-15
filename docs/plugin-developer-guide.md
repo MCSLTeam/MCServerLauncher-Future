@@ -18,6 +18,8 @@ Reference the packable API package (and Common only when the public DTO contract
 <PackageReference Include="MCServerLauncher.Daemon.API" Version="1.0.0" />
 ```
 
+Each tagged GitHub release attaches matching `MCServerLauncher.Common.<version>.nupkg` and `MCServerLauncher.Daemon.API.<version>.nupkg` assets. Download both into a configured NuGet source before restore when a package feed is not available; the Daemon API package pins its Common dependency to that same release version.
+
 The API package does not expose TouchSocket, MessagePipe, Serilog, daemon DI, mutable runtime collections, or disposable resource handles.
 
 ## Manifest
@@ -53,10 +55,10 @@ Return `Result.Err` for expected failures. Unexpected exceptions are caught, log
 
 ```powershell
 dotnet build Example.Plugin/Example.Plugin.csproj -c Release
-dotnet publish Example.Plugin/Example.Plugin.csproj -c Release -o artifacts/plugins/community.example.health
+dotnet publish Example.Plugin/Example.Plugin.csproj -c Release -p:MCSLPluginBundle=true -o artifacts/plugins/community.example.health
 ```
 
-Copy `plugin.json`, the plugin entry DLL, and private dependencies to `plugins/community.example.health/` beside the published daemon. Do not copy the daemon executable, TouchSocket assemblies, MessagePipe, Serilog, `MCServerLauncher.Daemon.API.dll`, or `MCServerLauncher.Common.dll` into the bundle.
+The `MCSLPluginBundle=true` property is required: the API package's publish target removes shared host assemblies from the bundle so the daemon can preserve one shared contract identity. Copy `plugin.json`, the plugin entry DLL, and private dependencies to `plugins/community.example.health/` beside the published daemon. Do not copy the daemon executable, TouchSocket assemblies, MessagePipe, Serilog, `MCServerLauncher.Daemon.API.dll`, or `MCServerLauncher.Common.dll` into the bundle.
 
 The repository fixtures under `tests/Fixtures/Plugins/` show external-style compile, health, returned-error, and throwing cases. The published acceptance command is:
 

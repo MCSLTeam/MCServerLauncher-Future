@@ -2,7 +2,7 @@
 
 > **Current authority:** 本文整体取代 2026-06-27 至 2026-06-30 的旧版增量迁移设计。2026-07-10 项目负责人在架构访谈中冻结的决策优先于旧 plan、旧 review 中的兼容性建议。
 >
-> **Plan status:** Architecture approved. Phase 0 through Phase 5 are complete and independently reviewed with no open P0/P1/P2 findings. The release-atomic V2 cutover and startup-only plugin host are accepted; Phase 6 packaging, performance, and public documentation is active.
+> **Plan status:** Architecture approved. Phase 0 through Phase 6 are complete and independently reviewed. The final fresh Sol max closure review reports `P0=0 / P1=0 / P2=0`; Fable review is permanently skipped after the failed Claude Code attempts. Phase 7 remains a separately planned mandatory follow-up and is not part of this closure.
 >
 > **Touched areas for implementation:** `docs`, `agent-docs`, `backend`, `protocol`, `serialization`, `storage`, `frontend`, `tests`, `benchmarks`, `workflow`, `integrations`.
 
@@ -803,14 +803,14 @@ Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 relea
 - [x] 加入 sealed `PluginError`、scoped `IPluginErrorFactory` 与直接返回 `Result<T, DaemonError>` 的 no-map helper。
 - [x] 建立 external compile fixture，证明只引用 Daemon.API/Common 即可编译 plugin。
 - [x] compile fixture 明确证明 public signatures 不出现 `Result<T, PluginError>`/`IResult`，helper 无显式 `MapErr` 即可返回 public Result。
-- [ ] 实现 per-plugin ALC/resolver/shared-contract allowlist 与 forbidden duplicate/reference checks。
-- [ ] 实现 registration draft、Configure/Start transaction、final catalog freeze、reverse Stop。
-- [ ] 按 §9.1 实现 deterministic discovery/conflict policy；测试 duplicate id 全拒绝、own-namespace enforcement、built-in priority 与 residual collision all-fail。
-- [ ] 实现 Activation/Lifetime owner state machine；测试 Start 期间 publish 立即失败、background activation 后才 publish、failed Start 无 event/catalog residue。
-- [ ] 对 returned Err 与 unexpected exception 分别 Error log + skip；一个坏 plugin 不阻断 daemon/其他 plugin。
-- [ ] 实现 owner cleanup，并验证失败无 RPC/event slot/CTS/catalog residue。
-- [ ] 实现 §14 health plugin、error fixture、throw fixture。
-- [ ] PluginIntegrationTests 从 `MCSL_PUBLISHED_DAEMON` 启动已发布 single-file host，加载 sidecars，验证 discover/RPC/event、bad-plugin Error log + skip、reverse shutdown。
+- [x] 实现 per-plugin ALC/resolver/shared-contract allowlist 与 forbidden duplicate/reference checks。
+- [x] 实现 registration draft、Configure/Start transaction、final catalog freeze、reverse Stop。
+- [x] 按 §9.1 实现 deterministic discovery/conflict policy；测试 duplicate id 全拒绝、own-namespace enforcement、built-in priority 与 residual collision all-fail。
+- [x] 实现 Activation/Lifetime owner state machine；测试 Start 期间 publish 立即失败、background activation 后才 publish、failed Start 无 event/catalog residue。
+- [x] 对 returned Err 与 unexpected exception 分别 Error log + skip；一个坏 plugin 不阻断 daemon/其他 plugin。
+- [x] 实现 owner cleanup，并验证失败无 RPC/event slot/CTS/catalog residue。
+- [x] 实现 §14 health plugin、error fixture、throw fixture。
+- [x] PluginIntegrationTests 从 `MCSL_PUBLISHED_DAEMON` 启动已发布 single-file host，加载 sidecars，验证 discover/RPC/event、bad-plugin Error log + skip、reverse shutdown。
 
 **Exit:** acceptance plugin 完整证明三个 capability；失败隔离和 transaction tests 通过；daemon 正常启动。
 
@@ -821,7 +821,7 @@ Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 relea
 - [x] 更新 README/README_ZH、daemon manual、plugin developer guide、fixture build/publish instructions。
 - [x] `dotnet publish` untrimmed single-file supported RIDs；不运行/承诺 Native AOT 或 `PublishTrimmed=true`。
 - [x] 清理不在冻结 matrix 的 legacy `win-arm`/`linux-arm` publish profiles；release workflow 对七个 daemon RID 显式传 `PublishTrimmed=false`，Windows 三个 RID 同时打 WPF。
-- [x] BenchmarkDotNet 输出 JSON；gate harness 对比已记录的 baseline（request dispatch 显式引用 Phase 0 V1 threshold）：allocation 始终比较；mean 只在 SDK/runtime/OS/architecture/CPU 指纹一致或显式同机 A/B 时比较。等价 request dispatch mean/allocated bytes 不得回退超过 25%，环境不匹配时 gate 必须要求重新捕获 paired baseline，而不是比较无效绝对时间。
+- [x] BenchmarkDotNet 输出 JSON；gate harness 对比已记录的 baseline（request dispatch 显式引用 Phase 0 V1 threshold）：allocation 始终比较；mean 只在 SDK/runtime/OS/architecture/CPU 指纹一致或显式同机 A/B 时比较。等价 request dispatch mean/allocated bytes 不得回退超过 25%，定时 workflow 在同一 runner 生成 reference/candidate 后显式使用 paired gate，不能比较开发机与 hosted runner 的无效绝对时间。
 - [x] snapshot Current/TryGet steady state 0 B/op；event payload 每次 publish 只序列化一次。
 - [x] 记录 final public API baseline、protocol catalog hash、Apifox generation check。
 - [x] 更新本 plan Changelog 与 phase status。
@@ -913,8 +913,19 @@ dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.
 dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build /m:1
 
 dotnet run --project tools/MCServerLauncher.ProtocolDocs/MCServerLauncher.ProtocolDocs.csproj -- --check
-dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --exporters json --artifacts BenchmarkDotNet.Artifacts
-dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- --baseline benchmarks/baselines/v2.json --results BenchmarkDotNet.Artifacts/results
+$referenceRoot = Join-Path ([System.IO.Path]::GetTempPath()) "mcsl-phase0-925666a4"
+git worktree add --detach $referenceRoot 925666a4
+$referenceArtifacts = Join-Path $PWD "BenchmarkDotNet.Reference"
+Push-Location $referenceRoot
+try {
+  dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --filter "*ActionDispatchBenchmarks.DispatchPing*" --exporters json --artifacts $referenceArtifacts
+}
+finally {
+  Pop-Location
+}
+dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --filter "*" --exporters json --artifacts BenchmarkDotNet.Artifacts
+dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- --baseline benchmarks/baselines/v2.json --reference-results BenchmarkDotNet.Reference/results --results BenchmarkDotNet.Artifacts/results --paired
+git worktree remove $referenceRoot
 
 dotnet publish src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj -c Release -r win-x64 --self-contained -o artifacts/plugin-e2e/daemon
 dotnet publish tests/Fixtures/Plugins/InstanceHealth/InstanceHealth.csproj -c Release -o artifacts/plugin-e2e/daemon/plugins/community.instance-health
@@ -1015,7 +1026,11 @@ git status --short --branch
 - 2026-07-15: Phase 5 A1 plugin-boundary checkpoint completed. Added source-generated manifest parsing, NuGet API-range and capability validation, deterministic discovery with duplicate-id rejection, recursive forbidden/shared-contract reference checks, and non-collectible `AssemblyLoadContext` resolution. Focused plugin manifest tests passed `4/4`; daemon Release build passed with `0 warnings / 0 errors`. Lifecycle admission, catalog integration, health plugin, and published-host integration remain pending.
 - 2026-07-15: Completed Phase 5 startup plugin host and independently accepted it after Sol max closure review. Added transactional registration/configure/start/commit/activate and reverse-stop ownership, canonical catalog admission, typed health/error/throwing fixtures, and published single-file sidecar integration. The first-subscription built-in descriptor identity hole was fixed with a regression test; published integration now drives `exit` through redirected stdin and verifies the health plugin Stop path. Acceptance passed Release ProtocolTests `905/905`, Daemon.ApiTests `81/81`, daemon Release build at `0 warnings / 0 errors`, published PluginIntegrationTests `1/1`, and `git diff --check`; Fable review was skipped after three ineffective attempts and only Sol max review is authoritative. Phase 6 packaging, performance, and public documentation remains pending.
 - 2026-07-15: Closed the Phase 5 review residuals by recording the `Configured` runtime state before draft validation and adding separate returned-error and throwing fixtures for `StartAsync`; lifecycle and published-host assertions now cover both Configure and Start isolation paths. The full Release ProtocolTests gate remains `905/905`, Daemon.ApiTests `81/81`, and published integration `1/1`.
-- 2026-07-15: Completed Phase 6 packaging, performance, and public documentation. Added the Daemon.API package metadata and dependency-graph gate, supported untrimmed single-file publish matrix, third-party/public/plugin documentation, JSON benchmark reports, an environment-aware performance gate with explicit Phase 0 V1 dispatch comparison, and refreshed Apifox output. Release ProtocolTests passed `905/905`, Daemon.ApiTests `85/85`, WPF.Tests `20/20`, published PluginIntegrationTests `1/1`, the no-V1 gate passed, full-solution Release build emitted `0 warnings / 0 errors`, and fresh Phase 6 benchmarks passed the gate. Independent Sol max closure review remains the final acceptance authority.
+- 2026-07-15: Completed the initial Phase 6 packaging, release, and documentation implementation, then reopened Phase 6 after independent Sol max closure review rejected its performance evidence. The reported `146.10 ns / 464 B` dispatch measurement omitted params deserialization and success-payload/envelope construction, while scheduled CI ran the same candidate benchmark twice instead of building the immutable Phase 0 V1 reference. Closure remediation now uses a production parsed-request dispatch boundary and a same-runner `925666a4` V1 checkout with explicit benchmark-name mapping. All prior non-performance acceptance evidence remains provisional until the corrected benchmark gate, full root gates, and a fresh independent Sol max review pass.
+- 2026-07-15: Completed the Phase 6 closure remediation candidate. The production parsed-request benchmark passed the corrected paired gate at `364.6141 ns / 440 B` against immutable same-runner V1 at `340.2907 ns / 424 B` (mean `+7.15%`, allocation `+3.77%`); state reads remained `0 B/op`, serialization-once measured `212.0309 ns / 584 B`, and per-subscriber serialization measured `6423.0069 ns / 18688 B`. Root acceptance passed ProtocolTests `910/910`, Daemon.ApiTests `93/93`, WPF.Tests `20/20`, ProtocolDocs `--check`, the no-V1 gate, daemon/WPF `win-x64` publishes, published PluginIntegrationTests `1/1`, the full Release solution build at `0 warnings / 0 errors`, workflow YAML parsing, and `git diff --check`. A fresh independent Sol max closure review remains the sole acceptance authority.
+- 2026-07-16: Fresh Sol max review rejected the first remediation candidate with `P0=0 / P1=3 / P2=2`: invalid/duplicate benchmark evidence was not fail-closed, native release failures could be masked, tagged releases omitted the public NuGet packages, releases did not depend on the paired performance gate, and `System.Drawing.Common` was absent from the direct test inventory. The fixes reject duplicate, negative, and non-finite benchmark metrics; make the immutable-reference benchmark workflow reusable and release-blocking; fail native publish/pack/tar commands immediately; attach version-aligned Common/Daemon.API packages; isolate release artifacts from benchmark JSON; and complete the inventory/docs. Affected verification passed Daemon.ApiTests `101/101`, the original paired evidence under the stricter gate, workflow YAML/structural checks, and the PerformanceGate Release build at `0 warnings / 0 errors`. The full Release solution rebuild succeeded with `0 errors`; its only warning was environmental `NU1900` because the current runtime could not reach the NuGet vulnerability feed, while the pre-remediation root acceptance remains `0 warnings / 0 errors`. A fresh zero-finding Sol max re-review remains required.
+- 2026-07-16: The next Sol max re-review confirmed the prior five findings closed but rejected release tag/ref integrity with `P0=0 / P1=1 / P2=0`: an unqualified input could select a same-named branch while release assets targeted the tag. The release workflow now validates the exact `refs/tags/<name>` ref, peels lightweight or annotated tags to one immutable commit SHA, and passes only that SHA to the paired gate, seven-RID publish matrix, NuGet pack, and final release checkout. Local ambiguity checks proved `refs/heads/daemon-api` cannot satisfy a missing `refs/tags/daemon-api`; workflow YAML/structural checks pass. A fresh zero-finding Sol max re-review remains required.
+- 2026-07-16: Completed and independently accepted Phase 6 after the final fresh Sol max review reported no findings and `P0=0 / P1=0 / P2=0`. The final Release ProtocolTests `--no-build` commit gate passed `910/910`; its first sandboxed invocation exposed only a restricted-session WMI/CIM initialization failure, while the required unsandboxed repeat passed cleanly. Phase 0 through Phase 6 now satisfy this plan's closure; Phase 7 remains the separately planned mandatory dependency/contracts follow-up.
 
 ## Phase 5 Acceptance Ledger
 
@@ -1031,11 +1046,14 @@ The dense Phase 5 checklist above is complete. The following ledger is the canon
 
 The dense Phase 6 checklist above is complete. The following ledger records the release evidence; the independent Sol max closure review is the final review authority.
 
-- [x] Daemon.API packs with README, GPL-3.0-only metadata, repository metadata, pinned Common dependency, and the exact approved transitive package closure. Daemon.ApiTests passed `85/85`.
-- [x] Third-party inventory records TouchSocket `4.2.17`, MessagePipe `1.8.2`, daemon-internal `NuGet.Versioning`, and the remaining direct runtime/test scopes.
+- [x] Daemon.API and Common pack with README, GPL-3.0-only metadata, repository metadata, the pinned Common dependency, and the exact approved transitive package closure. Daemon.ApiTests passed `101/101` after closure hardening.
+- [x] Third-party inventory records TouchSocket `4.2.17`, MessagePipe `1.8.2`, daemon-internal `NuGet.Versioning`, Microsoft.Management.Infrastructure, all direct WPF dependencies, `System.Drawing.Common` for WPF tests, and the remaining direct runtime/test scopes.
 - [x] Root and Chinese README, daemon manual, plugin developer guide, fixture publish instructions, and changelog describe the actual `/api/v2`, startup-only sidecar, and untrimmed single-file boundary.
 - [x] Supported daemon and WPF profiles are explicit single-file/untrimmed configurations; unsupported `win-arm`/`linux-arm` profiles are removed and release workflow arguments enforce `PublishTrimmed=false`.
-- [x] Fresh Release benchmark evidence passed the gate: dispatch `40.14 ns / 240 B` against the Phase 0 V1 `448.64 ns / 424 B` reference, state reads `0 B`, event serialization-once `209.27 ns / 584 B`, and 32-subscriber per-subscriber comparison `6494.23 ns / 18688 B`.
+- [x] Every release validates the exact tag ref, resolves it to one immutable commit SHA used by all candidate checkouts and the reusable immutable-Phase-0 paired benchmark gate, fails native publish/pack/archive commands immediately, and attaches version-aligned `MCServerLauncher.Common` and `MCServerLauncher.Daemon.API` packages without mixing benchmark JSON into release metadata.
+- [x] Fresh Release benchmark evidence passes the corrected paired gate against `ActionDispatchBenchmarks.DispatchPing` built from immutable Phase 0 commit `925666a4`: V1 measured `340.2907 ns / 424 B`, while the production parsed-request V2 boundary measured `364.6141 ns / 440 B` after params materialization and success payload/envelope construction (`+7.15%` mean, `+3.77%` allocation). State Current/TryGet remained `0 B/op`; serialization-once measured `212.0309 ns / 584 B`, versus `6423.0069 ns / 18688 B` for per-subscriber serialization.
 - [x] Public API baselines, ProtocolDocs `--check`, and generated Apifox output are current at catalog/document hash `4a243d3298e784c0864ddb3b84a91f75531264ecbd6011df7bafcb539edd27d2`.
-- [x] Release ProtocolTests passed `905/905`, WPF.Tests `20/20`, daemon and WPF `win-x64` publishes succeeded, and published-host PluginIntegrationTests passed `1/1`.
-- [x] The no-V1 runtime gate passed and the full solution Release build emitted `0 warnings / 0 errors`; final `--no-build` and hygiene checks remain required immediately before commit.
+- [x] Release ProtocolTests passed `910/910`, WPF.Tests `20/20`, daemon and WPF `win-x64` publishes succeeded, and published-host PluginIntegrationTests passed `1/1`, including the package-reference plugin built with the documented `MCSLPluginBundle=true` command.
+- [x] The no-V1 runtime gate, original full solution Release build at `0 warnings / 0 errors`, post-hardening full solution rebuild at `0 errors`, workflow YAML/structural checks, and unstaged `git diff --check` pass. The current runtime's post-hardening rebuild reports only environmental `NU1900` because the NuGet vulnerability feed is unreachable; the changed PerformanceGate project builds at `0 warnings / 0 errors`.
+- [x] The final Release ProtocolTests `--no-build` commit gate passed `910/910` immediately before the Phase 6 closure-fix commit.
+- [x] Staged hygiene and tracked-file scope pass immediately before the Phase 6 closure-fix commit.

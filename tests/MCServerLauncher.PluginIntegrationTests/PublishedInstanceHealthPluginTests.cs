@@ -88,6 +88,7 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.Contains("fixture_start_returned_error", logs, StringComparison.Ordinal);
         Assert.Contains("fixture.start-throwing", logs, StringComparison.Ordinal);
         Assert.Contains("start_threw", logs, StringComparison.Ordinal);
+        Assert.Contains("fixture.package_reference_consumer.configure", logs, StringComparison.Ordinal);
         Assert.Contains("fixture.instance_health.stop", logs, StringComparison.Ordinal);
     }
 
@@ -159,6 +160,7 @@ public sealed class PublishedInstanceHealthPluginTests
                 typeof(StartThrowingPlugin).Assembly,
                 typeof(StartThrowingPlugin).FullName!,
                 "[\"rpc.register\"]");
+            await WriteDocumentedPackagePluginAsync(root);
 
             return new PublishedDaemonFixture(root, daemonPath, port, token);
         }
@@ -366,6 +368,96 @@ public sealed class PublishedInstanceHealthPluginTests
                   "capabilities": {{capabilities}}
                 }
                 """);
+        }
+
+        private static async Task WriteDocumentedPackagePluginAsync(string daemonRoot)
+        {
+            var repositoryRoot = FindRepositoryRoot();
+            var buildRoot = Path.Combine(daemonRoot, ".documented-plugin-build");
+            var packageSource = Path.Combine(buildRoot, "packages");
+            var packageCache = Path.Combine(buildRoot, "package-cache");
+            var publishDirectory = Path.Combine(buildRoot, "publish");
+            Directory.CreateDirectory(packageSource);
+
+            await RunDotNetAsync(
+                repositoryRoot,
+                "pack",
+                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Common", "MCServerLauncher.Common.csproj"),
+                "--configuration", "Release", "--output", packageSource, "/m:1");
+            await RunDotNetAsync(
+                repositoryRoot,
+                "pack",
+                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.API", "MCServerLauncher.Daemon.API.csproj"),
+                "--configuration", "Release", "--output", packageSource, "/m:1");
+            await RunDotNetAsync(
+                repositoryRoot,
+                "publish",
+                Path.Combine(repositoryRoot, "tests", "Fixtures", "Plugins", "PackageReferenceConsumer", "PackageReferenceConsumer.csproj"),
+                "--configuration", "Release",
+                "-p:MCSLPluginBundle=true",
+                "--output", publishDirectory,
+                "--packages", packageCache,
+                $"/p:RestoreAdditionalProjectSources={packageSource}",
+                "/m:1");
+
+            var pluginDirectory = Path.Combine(daemonRoot, "plugins", "fixture.package-reference-consumer");
+            Directory.CreateDirectory(pluginDirectory);
+            CopyDirectory(publishDirectory, pluginDirectory);
+            await File.WriteAllTextAsync(
+                Path.Combine(pluginDirectory, "plugin.json"),
+                """
+                {
+                  "id": "fixture.package-reference-consumer",
+                  "version": "1.0.0",
+                  "entry_assembly": "PackageReferenceConsumer.dll",
+                  "entry_type": "MCServerLauncher.PackageReferenceConsumer.PackageReferenceConsumerPlugin",
+                  "api_version": "[1.0.0,2.0.0)",
+                  "capabilities": []
+                }
+                """);
+
+            Directory.Delete(buildRoot, recursive: true);
+        }
+
+        private static async Task RunDotNetAsync(string workingDirectory, params string[] arguments)
+        {
+            var startInfo = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = workingDirectory,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            startInfo.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+
+            foreach (var argument in arguments)
+                startInfo.ArgumentList.Add(argument);
+
+            using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start dotnet.");
+            var output = process.StandardOutput.ReadToEndAsync();
+            var error = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException(
+                    $"dotnet {string.Join(' ', arguments)} failed:{Environment.NewLine}{await output}{Environment.NewLine}{await error}");
+            }
+        }
+
+        private static string FindRepositoryRoot()
+        {
+            var current = new DirectoryInfo(AppContext.BaseDirectory);
+            while (current is not null)
+            {
+                if (File.Exists(Path.Combine(current.FullName, "MCServerLauncher.sln")))
+                    return current.FullName;
+
+                current = current.Parent;
+            }
+
+            throw new DirectoryNotFoundException("Could not find the MCServerLauncher repository root.");
         }
     }
 }

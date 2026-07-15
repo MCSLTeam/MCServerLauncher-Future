@@ -8,6 +8,8 @@ public sealed class PackedPackageReferenceFixtureTests
     public async Task PackedPackageReferencePluginPublishOmitsHostProvidedAssemblies()
     {
         var repositoryRoot = FindRepositoryRoot();
+        var guide = File.ReadAllText(Path.Combine(repositoryRoot, "docs", "plugin-developer-guide.md"));
+        Assert.Contains("-p:MCSLPluginBundle=true", guide, StringComparison.Ordinal);
         var temporaryRoot = Path.Combine(Path.GetTempPath(), $"mcsl-packed-plugin-fixture-{Guid.NewGuid():N}");
         var packageSource = Path.Combine(temporaryRoot, "packages");
         var packageCache = Path.Combine(temporaryRoot, "package-cache");
@@ -34,7 +36,9 @@ public sealed class PackedPackageReferenceFixtureTests
                 Path.Combine(repositoryRoot, "tests", "Fixtures", "Plugins", "PackageReferenceConsumer", "PackageReferenceConsumer.csproj"),
                 "--configuration", "Release", "--output", publishDirectory,
                 "--packages", packageCache,
-                $"/p:RestoreAdditionalProjectSources={packageSource}", "/m:1");
+                $"/p:RestoreAdditionalProjectSources={packageSource}",
+                "/p:MCSLPluginBundle=true",
+                "/m:1");
 
             var publishedNames = Directory
                 .EnumerateFiles(publishDirectory)

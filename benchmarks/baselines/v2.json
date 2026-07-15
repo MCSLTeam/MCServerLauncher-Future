@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "name": "mcsl-daemon-v2-phase6",
-  "captured_at_utc": "2026-07-15T12:29:00Z",
+  "captured_at_utc": "2026-07-15T15:07:08Z",
   "source": {
-    "commit": "daemon-api-phase6-working-tree",
+    "commit": "daemon-api-phase6-closure",
     "protocol_endpoint": "/api/v2",
     "benchmarkdotnet_version": "0.15.8",
     "comparison_baseline": "benchmarks/baselines/v1.json"
@@ -26,10 +26,11 @@
     {
       "id": "request.dispatch.ping.v2",
       "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.V2RequestDispatchBenchmarks.DispatchPing",
-      "mean_nanoseconds": 41.29206736882528,
-      "allocated_bytes_per_operation": 240,
+      "mean_nanoseconds": 364.6141052246094,
+      "allocated_bytes_per_operation": 440,
       "comparison": {
         "source": "benchmarks/baselines/v1.json#request.dispatch.ping",
+        "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ActionDispatchBenchmarks.DispatchPing",
         "mean_nanoseconds": 448.64,
         "allocated_bytes_per_operation": 424
       }
@@ -51,13 +52,13 @@
     {
       "id": "event.serialize.once.32",
       "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ProtocolEventFanOutSerializationBenchmarks.SerializeOnceThenFanOut(Subscribers: 32)",
-      "mean_nanoseconds": 258.11296304066974,
+      "mean_nanoseconds": 212.03087170918783,
       "allocated_bytes_per_operation": 584
     },
     {
       "id": "event.serialize.per-subscriber.32",
       "benchmark": "MCServerLauncher.Benchmarks.Benchmarks.ProtocolEventFanOutSerializationBenchmarks.SerializePerSubscriberThenFanOut(Subscribers: 32)",
-      "mean_nanoseconds": 7504.9102783203125,
+      "mean_nanoseconds": 6423.006947835286,
       "allocated_bytes_per_operation": 18688
     }
   ]
