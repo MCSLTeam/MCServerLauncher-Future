@@ -135,6 +135,31 @@ public sealed class PluginManifestAndDiscoveryTests
             () => PluginAssemblyPolicy.ValidateBundle(
                 PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0")));
         Assert.Equal("forbidden_reference", assemblyException.Code);
+
+        using var nestedFixture = PluginFixture.Create(
+            "nested",
+            Directory.CreateTempSubdirectory("mcsl-plugin-nested-").FullName,
+            typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+        nestedFixture.WriteManifest(
+            "nested",
+            "1.0.0",
+            "PluginEntry.dll",
+            "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register");
+        var nestedDirectory = Path.Combine(nestedFixture.BundleDirectory, "deps");
+        Directory.CreateDirectory(nestedDirectory);
+        File.Copy(
+            typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location,
+            Path.Combine(nestedDirectory, "TouchSocket.Fake.dll"));
+        File.Copy(
+            typeof(PluginHost).Assembly.Location,
+            Path.Combine(nestedDirectory, "renamed.dll"));
+
+        var nestedException = Assert.Throws<PluginAssemblyException>(
+            () => PluginAssemblyPolicy.ValidateBundle(
+                PluginManifestReader.ReadAndValidate(nestedFixture.BundleDirectory, "1.0.0")));
+        Assert.Equal("forbidden_reference", nestedException.Code);
     }
 
     private sealed class PluginFixture : IDisposable

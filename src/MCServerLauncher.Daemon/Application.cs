@@ -212,6 +212,8 @@ public static class Application
         List<Exception> failures = [];
         if (attachment is not null)
             await RunStepAsync(() => attachment.DisposeAsync().AsTask(), failures).ConfigureAwait(false);
+        else if (rootProvider?.GetService<Plugins.PluginHost>() is { } plugins)
+            await RunStepAsync(() => plugins.StopAsync(CancellationToken.None), failures).ConfigureAwait(false);
         await RunStepAsync(() => httpService.StopAsync(), failures).ConfigureAwait(false);
         CaptureHttpServiceDisposeResult(httpService, disposeHttpService, failures);
 

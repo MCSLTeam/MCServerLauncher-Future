@@ -3,14 +3,18 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
+using Microsoft.Extensions.Logging;
 using RustyOptions;
 
 namespace MCServerLauncher.ExternalCompileFixture;
 
 public sealed class ExternalCompilePlugin : IDaemonPlugin
 {
+    private IPluginContext? _context;
+
     public Result<Unit, DaemonError> Configure(IPluginContext context)
     {
+        _context = context;
         var rpc = PluginProtocol.CreateRpc(
             "plugin.external-compile.rpc.ping",
             "plugin.external-compile.rpc",
@@ -49,8 +53,12 @@ public sealed class ExternalCompilePlugin : IDaemonPlugin
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken) =>
         Task.FromResult(PluginResult.Ok());
 
-    public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(PluginResult.Ok());
+    public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _context?.Logger.LogInformation("fixture.external_compile.stop");
+        return Task.FromResult(PluginResult.Ok());
+    }
 }
 
 [JsonSerializable(typeof(EmptyRequest))]

@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.Loader;
 using NuGet.Versioning;
 
 namespace MCServerLauncher.Daemon.Plugins;
@@ -68,14 +70,14 @@ internal sealed class PluginDiscovery(string hostApiVersion)
 internal static class PluginAssemblyPolicy
 {
     private static readonly ImmutableHashSet<string> SharedAssemblies =
-        ImmutableHashSet.Create(StringComparer.Ordinal,
+        ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
             "MCServerLauncher.Daemon.API",
             "MCServerLauncher.Common",
             "RustyOptions",
             "Microsoft.Extensions.Logging.Abstractions");
 
     private static readonly ImmutableHashSet<string> ForbiddenAssemblies =
-        ImmutableHashSet.Create(StringComparer.Ordinal,
+        ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
             "MCServerLauncher.Daemon",
             "TouchSocket",
             "TouchSocket.Core",
@@ -86,25 +88,28 @@ internal static class PluginAssemblyPolicy
     internal static void ValidateBundle(PluginManifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
-        var dllPaths = Directory.EnumerateFiles(manifest.BundleDirectory, "*.dll", SearchOption.TopDirectoryOnly)
+        var bundleDirectory = Path.GetFullPath(manifest.BundleDirectory);
+        var dllPaths = Directory.EnumerateFiles(bundleDirectory, "*.dll", SearchOption.AllDirectories)
             .OrderBy(static path => path, StringComparer.Ordinal)
             .ToArray();
         foreach (var path in dllPaths)
-        {
-            var assemblyName = Path.GetFileNameWithoutExtension(path);
-            if (SharedAssemblies.Contains(assemblyName))
-            {
-                throw new PluginAssemblyException(
-                    "shared_contract_duplicate",
-                    $"Plugin bundle '{manifest.Identity.Id}' contains a private copy of shared assembly '{assemblyName}'.");
-            }
+            ValidateAssemblyFileIdentity(
+                path,
+                manifest.Identity.Id,
+                rejectSharedCopy: true,
+                bundleDirectory: bundleDirectory);
 
-            if (IsForbidden(assemblyName))
-            {
-                throw new PluginAssemblyException(
-                    "forbidden_reference",
-                    $"Plugin bundle '{manifest.Identity.Id}' contains forbidden assembly '{assemblyName}'.");
-            }
+        AssemblyDependencyResolver resolver;
+        try
+        {
+            resolver = new AssemblyDependencyResolver(manifest.EntryAssemblyPath);
+        }
+        catch (Exception exception) when (exception is ArgumentException or FileLoadException or IOException)
+        {
+            throw new PluginAssemblyException(
+                "assembly_invalid",
+                $"Plugin bundle '{manifest.Identity.Id}' has an invalid dependency graph.",
+                exception);
         }
 
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -132,16 +137,24 @@ internal static class PluginAssemblyPolicy
                             $"Plugin assembly '{Path.GetFileName(path)}' references forbidden assembly '{referenceName}'.");
                     }
 
-                    var localPath = Path.Combine(manifest.BundleDirectory, referenceName + ".dll");
-                    if (File.Exists(localPath))
-                        pending.Enqueue(localPath);
+                    var resolvedPath = resolver.ResolveAssemblyToPath(new AssemblyName(referenceName));
+                    if (resolvedPath is not null)
+                    {
+                        var fullResolvedPath = Path.GetFullPath(resolvedPath);
+                        ValidateAssemblyFileIdentity(
+                            fullResolvedPath,
+                            manifest.Identity.Id,
+                            rejectSharedCopy: IsWithinBundle(bundleDirectory, fullResolvedPath),
+                            bundleDirectory: bundleDirectory);
+                        pending.Enqueue(fullResolvedPath);
+                    }
                 }
             }
             catch (PluginAssemblyException)
             {
                 throw;
             }
-            catch (Exception exception) when (exception is BadImageFormatException or IOException or InvalidOperationException)
+            catch (Exception exception) when (exception is ArgumentException or BadImageFormatException or FileLoadException or IOException or InvalidOperationException)
             {
                 throw new PluginAssemblyException("assembly_invalid", $"Plugin assembly '{Path.GetFileName(path)}' is invalid.", exception);
             }
@@ -152,9 +165,71 @@ internal static class PluginAssemblyPolicy
 
     private static bool IsForbidden(string assemblyName) =>
         ForbiddenAssemblies.Contains(assemblyName) ||
-        assemblyName.StartsWith("TouchSocket.", StringComparison.Ordinal) ||
-        assemblyName.StartsWith("Serilog.", StringComparison.Ordinal) ||
-        assemblyName.StartsWith("MessagePipe.", StringComparison.Ordinal);
+        assemblyName.StartsWith("TouchSocket.", StringComparison.OrdinalIgnoreCase) ||
+        assemblyName.StartsWith("Serilog.", StringComparison.OrdinalIgnoreCase) ||
+        assemblyName.StartsWith("MessagePipe.", StringComparison.OrdinalIgnoreCase);
+
+    private static void ValidateAssemblyFileIdentity(
+        string path,
+        string pluginId,
+        bool rejectSharedCopy,
+        string bundleDirectory)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(path);
+        ValidateAssemblyName(fileName, pluginId, path, rejectSharedCopy, bundleDirectory);
+
+        var definedName = TryReadAssemblyDefinitionName(path);
+        if (definedName is not null)
+            ValidateAssemblyName(definedName, pluginId, path, rejectSharedCopy, bundleDirectory);
+    }
+
+    private static void ValidateAssemblyName(
+        string assemblyName,
+        string pluginId,
+        string path,
+        bool rejectSharedCopy,
+        string bundleDirectory)
+    {
+        if (rejectSharedCopy && SharedAssemblies.Contains(assemblyName))
+        {
+            throw new PluginAssemblyException(
+                "shared_contract_duplicate",
+                $"Plugin bundle '{pluginId}' contains a private copy of shared assembly '{assemblyName}'.");
+        }
+
+        if (IsForbidden(assemblyName))
+        {
+            throw new PluginAssemblyException(
+                "forbidden_reference",
+                $"Plugin assembly '{Path.GetRelativePath(bundleDirectory, path)}' uses forbidden assembly '{assemblyName}'.");
+        }
+    }
+
+    private static string? TryReadAssemblyDefinitionName(string path)
+    {
+        try
+        {
+            using var stream = File.OpenRead(path);
+            using var peReader = new PEReader(stream);
+            var metadata = peReader.GetMetadataReader();
+            if (!metadata.IsAssembly)
+                return null;
+            return metadata.GetString(metadata.GetAssemblyDefinition().Name);
+        }
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+    }
+
+    private static bool IsWithinBundle(string bundleDirectory, string candidatePath)
+    {
+        var relative = Path.GetRelativePath(bundleDirectory, Path.GetFullPath(candidatePath));
+        return !Path.IsPathRooted(relative) &&
+               !StringComparer.Ordinal.Equals(relative, "..") &&
+               !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
+               !relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal);
+    }
 }
 
 internal sealed class PluginAssemblyException(

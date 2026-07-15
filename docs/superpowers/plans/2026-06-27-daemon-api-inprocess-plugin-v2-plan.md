@@ -2,7 +2,7 @@
 
 > **Current authority:** 本文整体取代 2026-06-27 至 2026-06-30 的旧版增量迁移设计。2026-07-10 项目负责人在架构访谈中冻结的决策优先于旧 plan、旧 review 中的兼容性建议。
 >
-> **Plan status:** Architecture approved. Phase 0 through Phase 4 are complete and independently reviewed with no open P0/P1/P2 findings. The release-atomic V2 cutover is accepted; Phase 5 startup plugin host implementation is next.
+> **Plan status:** Architecture approved. Phase 0 through Phase 5 are complete and independently reviewed with no open P0/P1/P2 findings. The release-atomic V2 cutover and startup-only plugin host are accepted; Phase 6 packaging, performance, and public documentation is active.
 >
 > **Touched areas for implementation:** `docs`, `agent-docs`, `backend`, `protocol`, `serialization`, `storage`, `frontend`, `tests`, `benchmarks`, `workflow`, `integrations`.
 
@@ -792,9 +792,9 @@ Phase 4 内部按以下顺序验收，但三个子出口共同构成一个 relea
 
 ### Phase 5: Startup plugin host 与 health plugin
 
-> **M1 checkpoint (2026-07-15):** The public startup-plugin SDK boundary and package-level contract evidence are complete and independently reviewed. Host loading, lifecycle transactions, catalog admission, health plugin, and published-host integration remain pending in this phase.
+> **M1 checkpoint (2026-07-15):** The public startup-plugin SDK boundary and package-level contract evidence are complete and independently reviewed. Host loading, lifecycle transactions, catalog admission, health plugin, and published-host integration are complete in this phase.
 
-> **A1 checkpoint (2026-07-15):** Deterministic manifest parsing, API-range/capability validation, duplicate-id discovery, forbidden/shared-contract reference checks, and one non-collectible `AssemblyLoadContext` per plugin bundle are implemented. Lifecycle admission, catalog integration, health plugin, and published-host integration remain pending.
+> **A1 checkpoint (2026-07-15):** Deterministic manifest parsing, API-range/capability validation, duplicate-id discovery, forbidden/shared-contract reference checks, and one non-collectible `AssemblyLoadContext` per plugin bundle are implemented and accepted. Lifecycle admission, catalog integration, health plugin, and published-host integration are also complete; Phase 5 has exited.
 
 **Create/update:** `src/MCServerLauncher.Daemon.API/Plugins/`, `src/MCServerLauncher.Daemon/Plugins/`, daemon bootstrap/lifecycle, sample/fixture plugin projects, `tests/MCServerLauncher.PluginIntegrationTests/`.
 
@@ -1013,3 +1013,15 @@ git status --short --branch
 - 2026-07-15: Completed and independently accepted Phase 4C M3-M4 and the release-atomic Phase 4 exit. Removed the V1 daemon/Common/DaemonClient/generator/test/benchmark/docs runtime surface, added the explicit no-V1 gate, preserved canonical source-generated event-rule/system contracts, and fixed public Common resolver enum metadata. Final acceptance passed Release ProtocolTests `897/897`, WPF.Tests `20/20`, all affected/full-solution Release builds at `0 warnings / 0 errors`, ProtocolDocs `--check`, and `git diff --check`; independent Sol max closure re-review reported `P0=0 / P1=0 / P2=0`.
 - 2026-07-15: Phase 5 M1 SDK boundary checkpoint completed. Added the startup-plugin contracts, host-owned identity/error construction, typed no-map result helpers, required documentation and read-only `JsonTypeInfo` admission, external compile coverage, packed `PackageReference` publish filtering, complete Common event-rule ABI/metadata coverage, and public result-signature leakage checks. Daemon.ApiTests passed `80/80`; Daemon.API Release build passed with `0 warnings / 0 errors`; the packed consumer publish test passed. Phase 5 host loading/lifecycle and Phase 6 packaging/documentation/performance work remain pending.
 - 2026-07-15: Phase 5 A1 plugin-boundary checkpoint completed. Added source-generated manifest parsing, NuGet API-range and capability validation, deterministic discovery with duplicate-id rejection, recursive forbidden/shared-contract reference checks, and non-collectible `AssemblyLoadContext` resolution. Focused plugin manifest tests passed `4/4`; daemon Release build passed with `0 warnings / 0 errors`. Lifecycle admission, catalog integration, health plugin, and published-host integration remain pending.
+- 2026-07-15: Completed Phase 5 startup plugin host and independently accepted it after Sol max closure review. Added transactional registration/configure/start/commit/activate and reverse-stop ownership, canonical catalog admission, typed health/error/throwing fixtures, and published single-file sidecar integration. The first-subscription built-in descriptor identity hole was fixed with a regression test; published integration now drives `exit` through redirected stdin and verifies the health plugin Stop path. Acceptance passed Release ProtocolTests `905/905`, Daemon.ApiTests `81/81`, daemon Release build at `0 warnings / 0 errors`, published PluginIntegrationTests `1/1`, and `git diff --check`; Fable review was skipped after three ineffective attempts and only Sol max review is authoritative. Phase 6 packaging, performance, and public documentation remains pending.
+- 2026-07-15: Closed the Phase 5 review residuals by recording the `Configured` runtime state before draft validation and adding separate returned-error and throwing fixtures for `StartAsync`; lifecycle and published-host assertions now cover both Configure and Start isolation paths. The full Release ProtocolTests gate remains `905/905`, Daemon.ApiTests `81/81`, and published integration `1/1`.
+
+## Phase 5 Acceptance Ledger
+
+The dense Phase 5 checklist above is complete. The following ledger is the canonical status record for this milestone:
+
+- [x] Manifest, API-range, capability, duplicate-id, dependency/reference, namespace, and catalog-conflict validation is deterministic.
+- [x] Each plugin bundle uses a non-collectible `AssemblyLoadContext` while preserving shared contract identity.
+- [x] Configure/start/commit/activate and reverse-stop are transactional; returned errors and exceptions log and skip without blocking daemon startup.
+- [x] The health plugin proves typed RPC, immutable instance query, typed event publication, and explicit source-generated metadata.
+- [x] Returned-error and throwing fixtures prove failure isolation against a published single-file daemon host.

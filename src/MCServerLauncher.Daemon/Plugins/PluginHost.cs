@@ -1,0 +1,478 @@
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.Loader;
+using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
+using MCServerLauncher.Daemon.Remote.Rpc.Events;
+using Microsoft.Extensions.Logging;
+using RustyOptions;
+
+namespace MCServerLauncher.Daemon.Plugins;
+
+internal enum PluginRuntimeState
+{
+    Discovered,
+    Configured,
+    Validated,
+    Started,
+    Committed,
+    Active,
+    Stopping,
+    Stopped,
+    Failed
+}
+
+internal sealed class PluginHost
+{
+    internal const string HostApiVersion = "1.0.0";
+
+    private readonly object _gate = new();
+    private readonly IInstanceSnapshotSource _instances;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<PluginHost> _logger;
+    private readonly IPluginEventBus _eventBus;
+    private readonly string _pluginsRoot;
+    private readonly List<PluginRuntime> _runtimes = [];
+    private readonly List<PluginRuntime> _started = [];
+    private readonly SemaphoreSlim _operationGate = new(1, 1);
+    private bool _prepared;
+    private bool _catalogAdmissionComplete;
+    private bool _stopping;
+
+    public PluginHost(
+        IInstanceSnapshotSource instances,
+        ILoggerFactory loggerFactory,
+        ILogger<PluginHost> logger,
+        IPluginEventBus eventBus)
+        : this(
+            instances,
+            loggerFactory,
+            logger,
+            Path.Combine(AppContext.BaseDirectory, "plugins"),
+            eventBus)
+    {
+    }
+
+    internal PluginHost(
+        IInstanceSnapshotSource instances,
+        ILoggerFactory loggerFactory,
+        ILogger<PluginHost> logger,
+        string pluginsRoot,
+        IPluginEventBus eventBus)
+    {
+        _instances = instances ?? throw new ArgumentNullException(nameof(instances));
+        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginsRoot);
+        _pluginsRoot = Path.GetFullPath(pluginsRoot);
+    }
+
+    internal ImmutableArray<(string Id, PluginRuntimeState State)> States
+    {
+        get
+        {
+            lock (_gate)
+                return _runtimes.Select(static runtime => (runtime.Manifest.Identity.Id, runtime.State)).ToImmutableArray();
+        }
+    }
+
+    internal async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await _operationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_prepared)
+                return;
+
+            var discovery = new PluginDiscovery(HostApiVersion).Discover(_pluginsRoot);
+            foreach (var failure in discovery.Failures)
+                _logger.LogError(failure.Exception, "Skipping plugin bundle {Bundle}: {Code} {Message}", failure.BundleDirectory, failure.Code, failure.Message);
+
+            foreach (var manifest in discovery.Plugins)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var runtime = TryLoad(manifest);
+                if (runtime is null)
+                    continue;
+
+                _runtimes.Add(runtime);
+                Configure(runtime);
+            }
+
+            ValidateGlobalDrafts();
+            foreach (var runtime in _runtimes.Where(static runtime => runtime.State == PluginRuntimeState.Validated))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await StartPluginAsync(runtime, cancellationToken).ConfigureAwait(false);
+            }
+
+            _prepared = true;
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    internal void AddCatalogContributions(ProtocolCatalogBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        lock (_gate)
+        {
+            if (!_prepared)
+                throw new InvalidOperationException("Plugin host startup must complete before catalog admission.");
+
+            if (_catalogAdmissionComplete)
+                throw new InvalidOperationException("Plugin catalog admission has already completed.");
+
+            foreach (var runtime in _started)
+            {
+                if (runtime.State != PluginRuntimeState.Started)
+                    throw new InvalidOperationException($"Plugin '{runtime.Manifest.Identity.Id}' is not in the Started state during catalog admission.");
+
+                // Drafts were fully validated and globally admitted before any StartAsync call.
+                // An exception here is a host invariant failure, not a recoverable plugin conflict;
+                // the catalog builder cannot roll back a partially-added registration.
+                runtime.Draft.AddTo(builder);
+                runtime.State = PluginRuntimeState.Committed;
+            }
+
+            _catalogAdmissionComplete = true;
+        }
+    }
+
+    internal void Activate(FrozenProtocolCatalog catalog, V2RemoteEventBridge remoteEvents)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(remoteEvents);
+        lock (_gate)
+        {
+            if (!_catalogAdmissionComplete)
+                throw new InvalidOperationException("Plugin catalog admission must complete before activation.");
+
+            foreach (var runtime in _started)
+            {
+                if (runtime.State != PluginRuntimeState.Committed)
+                    throw new InvalidOperationException($"Plugin '{runtime.Manifest.Identity.Id}' is not Committed during activation.");
+
+                runtime.Draft.Attach(catalog, remoteEvents, runtime.EventOwner);
+                runtime.State = PluginRuntimeState.Active;
+                runtime.Activation.TrySetResult();
+            }
+        }
+    }
+
+    internal async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await _operationGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            lock (_gate)
+            {
+                if (_stopping)
+                    return;
+                _stopping = true;
+            }
+
+            foreach (var runtime in _started.AsEnumerable().Reverse())
+            {
+                if (runtime.State is not (PluginRuntimeState.Active or PluginRuntimeState.Committed or PluginRuntimeState.Started))
+                    continue;
+
+                runtime.State = PluginRuntimeState.Stopping;
+                CancelLifetime(runtime, "stop");
+                // Stop accepting plugin-originated events before invoking plugin code.
+                runtime.Draft.Clear();
+                runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
+                using var stopTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                stopTimeout.CancelAfter(TimeSpan.FromSeconds(30));
+                try
+                {
+                    var result = await runtime.Plugin.StopAsync(stopTimeout.Token)
+                        .WaitAsync(stopTimeout.Token)
+                        .ConfigureAwait(false);
+                    if (result.IsErr(out var error))
+                        LogReturnedError(runtime, "stop", error!);
+                }
+                catch (OperationCanceledException) when (stopTimeout.IsCancellationRequested)
+                {
+                    _logger.LogError("Plugin {PluginId} stop timed out.", runtime.Manifest.Identity.Id);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Plugin {PluginId} stop threw an unexpected exception.", runtime.Manifest.Identity.Id);
+                }
+                finally
+                {
+                    runtime.Activation.TrySetCanceled();
+                    runtime.Lifetime.Dispose();
+                    runtime.State = PluginRuntimeState.Stopped;
+                }
+            }
+
+            foreach (var runtime in _runtimes.Where(static runtime => runtime.State is PluginRuntimeState.Configured or PluginRuntimeState.Validated))
+            {
+                CancelLifetime(runtime, "cleanup");
+                runtime.Draft.Clear();
+                runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
+                runtime.Activation.TrySetCanceled();
+                runtime.Lifetime.Dispose();
+                runtime.State = PluginRuntimeState.Stopped;
+            }
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "The daemon plugin product is an untrimmed JIT host and resolves the manifest entry type at startup.")]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072",
+        Justification = "The daemon plugin product is an untrimmed JIT host and requires a public parameterless plugin constructor.")]
+    private PluginRuntime? TryLoad(PluginManifest manifest)
+    {
+        try
+        {
+            var loadContext = new PluginLoadContext(manifest.EntryAssemblyPath, manifest.Identity.Id);
+            var assembly = loadContext.LoadEntryAssembly(manifest.EntryAssemblyPath);
+            var pluginType = assembly.GetType(manifest.EntryType, throwOnError: true, ignoreCase: false);
+            if (pluginType is null || !typeof(IDaemonPlugin).IsAssignableFrom(pluginType))
+                throw new InvalidOperationException($"Entry type '{manifest.EntryType}' does not implement IDaemonPlugin.");
+
+            if (Activator.CreateInstance(pluginType) is not IDaemonPlugin plugin)
+                throw new InvalidOperationException($"Entry type '{manifest.EntryType}' could not be constructed.");
+
+            var owner = ProtocolExecutionOwner.ForPlugin(
+                new ProtocolOwnerIdentity(manifest.Identity.Id, manifest.Identity.Version));
+            var errors = new PluginErrorFactory(manifest.Identity);
+            var pluginLogger = _loggerFactory.CreateLogger($"Plugin.{manifest.Identity.Id}");
+            var draft = new PluginRegistrationDraft(manifest, owner, errors, _eventBus, pluginLogger);
+            var lifetime = new CancellationTokenSource();
+            var activation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var eventOwner = new PluginEventOwnerLedger();
+            var context = new PluginContext(
+                manifest.Identity,
+                pluginLogger,
+                errors,
+                draft,
+                _instances,
+                manifest.HasCapability(PluginCapability.InstanceQuery),
+                activation.Task,
+                lifetime.Token);
+            return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Failed to load plugin {PluginId}; skipping bundle.", manifest.Identity.Id);
+            return null;
+        }
+    }
+
+    private void Configure(PluginRuntime runtime)
+    {
+        try
+        {
+            var result = runtime.Plugin.Configure(runtime.Context);
+            runtime.Draft.Close();
+            if (result.IsErr(out var error))
+            {
+                Fail(runtime, "configure_returned_error", "Plugin Configure returned an error.", error!);
+                return;
+            }
+
+            runtime.State = PluginRuntimeState.Configured;
+            runtime.Draft.Validate();
+            runtime.State = PluginRuntimeState.Validated;
+        }
+        catch (Exception exception)
+        {
+            Fail(runtime, "configure_threw", "Plugin Configure threw an unexpected exception.", exception);
+        }
+        finally
+        {
+            runtime.Draft.Close();
+        }
+    }
+
+    private void ValidateGlobalDrafts()
+    {
+        var candidates = _runtimes
+            .Where(static runtime => runtime.State == PluginRuntimeState.Validated)
+            .ToArray();
+        var builtInNames = BuiltInProtocolDefinitions.Rpcs
+            .Select(static descriptor => descriptor.Method.Value)
+            .Concat(BuiltInProtocolDefinitions.Events.Select(static descriptor => descriptor.Name.Value))
+            .ToHashSet(StringComparer.Ordinal);
+        var conflicts = new HashSet<PluginRuntime>();
+        var names = candidates
+            .SelectMany(runtime => runtime.Draft.WireNames.Select(name => (runtime, name)))
+            .GroupBy(static registration => registration.name, StringComparer.Ordinal);
+
+        foreach (var group in names)
+        {
+            var owners = group.Select(static registration => registration.runtime).Distinct().ToArray();
+            if (builtInNames.Contains(group.Key) || owners.Length > 1)
+            {
+                foreach (var owner in owners)
+                    conflicts.Add(owner);
+            }
+        }
+
+        foreach (var runtime in conflicts.OrderBy(static runtime => runtime.Manifest.Identity.Id, StringComparer.Ordinal))
+        {
+            Fail(
+                runtime,
+                "catalog_conflict",
+                "The plugin registration draft conflicts with a built-in or another plugin protocol name.");
+        }
+    }
+
+    private async Task StartPluginAsync(PluginRuntime runtime, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await runtime.Plugin.StartAsync(cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out var error))
+            {
+                Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
+                return;
+            }
+
+            runtime.State = PluginRuntimeState.Started;
+            _started.Add(runtime);
+        }
+        catch (Exception exception)
+        {
+            Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
+        }
+    }
+
+    private void Fail(
+        PluginRuntime runtime,
+        string stage,
+        string message,
+        Exception? exception = null)
+    {
+        if (runtime.State is PluginRuntimeState.Failed or PluginRuntimeState.Stopped)
+            return;
+
+        if (exception is PluginErrorException pluginErrorException)
+            _logger.LogError(
+                exception,
+                "Plugin {PluginId} version {PluginVersion} failed at {Stage}: {Code} {Message} Details={Details}",
+                runtime.Manifest.Identity.Id,
+                runtime.Manifest.Identity.Version,
+                stage,
+                pluginErrorException.Error.Code,
+                pluginErrorException.Error.Message,
+                pluginErrorException.Error.Details);
+        else if (exception is not null)
+            _logger.LogError(
+                exception,
+                "Plugin {PluginId} version {PluginVersion} failed at {Stage}: {Message}",
+                runtime.Manifest.Identity.Id,
+                runtime.Manifest.Identity.Version,
+                stage,
+                message);
+        else
+            _logger.LogError(
+                "Plugin {PluginId} version {PluginVersion} failed at {Stage}: {Message}",
+                runtime.Manifest.Identity.Id,
+                runtime.Manifest.Identity.Version,
+                stage,
+                message);
+
+        CancelLifetime(runtime, stage);
+        runtime.Draft.Clear();
+        runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
+        runtime.Activation.TrySetCanceled();
+        runtime.Lifetime.Dispose();
+        runtime.State = PluginRuntimeState.Failed;
+    }
+
+    private void Fail(
+        PluginRuntime runtime,
+        string stage,
+        string message,
+        DaemonError error)
+    {
+        _logger.LogError(
+            "Plugin {PluginId} version {PluginVersion} returned error at {Stage}: {Code} {Message} Details={Details}",
+            runtime.Manifest.Identity.Id,
+            runtime.Manifest.Identity.Version,
+            stage,
+            error.Code,
+            error.Message,
+            error.Details);
+        CancelLifetime(runtime, stage);
+        runtime.Draft.Clear();
+        runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
+        runtime.Activation.TrySetCanceled();
+        runtime.Lifetime.Dispose();
+        runtime.State = PluginRuntimeState.Failed;
+    }
+
+    private void LogReturnedError(PluginRuntime runtime, string stage, DaemonError error)
+    {
+        _logger.LogError(
+            "Plugin {PluginId} returned error at {Stage}: {Code} {Message}",
+            runtime.Manifest.Identity.Id,
+            stage,
+            error.Code,
+            error.Message);
+    }
+
+    private void CancelLifetime(PluginRuntime runtime, string stage)
+    {
+        try
+        {
+            runtime.Lifetime.Cancel(throwOnFirstException: false);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Plugin {PluginId} lifetime cancellation callbacks failed at {Stage}; continuing cleanup.",
+                runtime.Manifest.Identity.Id,
+                stage);
+        }
+    }
+
+    private sealed class PluginRuntime(
+        PluginManifest manifest,
+        PluginLoadContext loadContext,
+        IDaemonPlugin plugin,
+        PluginContext context,
+        PluginRegistrationDraft draft,
+        CancellationTokenSource lifetime,
+        TaskCompletionSource activation,
+        PluginEventOwnerLedger eventOwner)
+    {
+        internal PluginManifest Manifest { get; } = manifest;
+        internal PluginLoadContext LoadContext { get; } = loadContext;
+        internal IDaemonPlugin Plugin { get; } = plugin;
+        internal PluginContext Context { get; } = context;
+        internal PluginRegistrationDraft Draft { get; } = draft;
+        internal CancellationTokenSource Lifetime { get; } = lifetime;
+        internal TaskCompletionSource Activation { get; } = activation;
+        internal PluginEventOwnerLedger EventOwner { get; } = eventOwner;
+        internal PluginRuntimeState State { get; set; } = PluginRuntimeState.Discovered;
+    }
+}
+
+internal sealed class PluginErrorException(PluginError error, Exception? innerException = null)
+    : Exception(error.Message, innerException)
+{
+    internal PluginError Error { get; } = error ?? throw new ArgumentNullException(nameof(error));
+}

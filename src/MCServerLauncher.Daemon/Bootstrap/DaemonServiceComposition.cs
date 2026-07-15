@@ -6,6 +6,7 @@ using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -71,6 +72,8 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
+        a.RegisterSingleton<IPluginEventBus, PluginEventBus>();
+        a.RegisterSingleton<PluginHost>();
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);
@@ -118,17 +121,25 @@ internal static class DaemonServiceComposition
 
     internal static DaemonLifecycleAttachment AttachDaemonLifecycle(HttpService httpService)
     {
+        var pluginHost = httpService.Resolver.GetRequiredService<PluginHost>();
+        pluginHost.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+
         // Setup completes before ServeAsync starts the HTTP/WebSocket listener, so resolving here
         // guarantees the final catalog is frozen and published before any connection is accepted.
         _ = httpService.Resolver.GetRequiredService<BuiltInProtocolCatalogComposition>();
+        var remoteEvents = httpService.Resolver.GetRequiredService<V2RemoteEventBridge>();
+        pluginHost.Activate(
+            httpService.Resolver.GetRequiredService<BuiltInProtocolCatalogComposition>().Catalog,
+            remoteEvents);
         return new DaemonLifecycleAttachment(
+            pluginHost,
             httpService.Resolver.GetRequiredService<FileSessionCoordinator>(),
             httpService.Resolver.GetRequiredService<EventTriggerService>(),
             httpService.Resolver.GetRequiredService<InstanceDomainEventBridge>(),
             httpService.Resolver.GetRequiredService<InstanceCatalogDomainEventBridge>(),
             httpService.Resolver.GetRequiredService<DaemonReportPublisher>(),
             httpService.Resolver.GetRequiredService<ConsoleApplication>(),
-            httpService.Resolver.GetRequiredService<V2RemoteEventBridge>(),
+            remoteEvents,
             httpService.Resolver.GetRequiredService<IV2ConnectionAdministration>());
     }
 }
@@ -151,6 +162,7 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
     private int _state = (int)DaemonLifecycleState.Created;
 
     internal DaemonLifecycleAttachment(
+        PluginHost plugins,
         FileSessionCoordinator files,
         EventTriggerService eventTrigger,
         InstanceDomainEventBridge instanceEvents,
@@ -185,6 +197,15 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
                 try
                 {
                     await connections.ShutdownAsync().ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    failures.Add(exception);
+                }
+
+                try
+                {
+                    await plugins.StopAsync(CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception exception)
                 {

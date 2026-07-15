@@ -4,6 +4,7 @@ using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -204,9 +205,13 @@ internal sealed class V2RpcDispatcher
         if (execution.Result.IsErr(out _))
         {
             var daemonError = execution.Result.UnwrapErr();
-            // Phase 5 adds an explicit PluginError -> -32005 branch; owner or error-code strings are not a substitute.
-            var code = daemonError is PermissionDaemonError ? -32001 : -32000;
-            var message = daemonError is PermissionDaemonError ? "Permission denied" : "Daemon error";
+            var pluginError = daemonError as PluginError;
+            var code = pluginError is not null
+                ? -32005
+                : daemonError is PermissionDaemonError ? -32001 : -32000;
+            var message = pluginError is not null
+                ? "Plugin error"
+                : daemonError is PermissionDaemonError ? "Permission denied" : "Daemon error";
             return ErrorOrSuppress(
                 request,
                 code,
@@ -214,7 +219,8 @@ internal sealed class V2RpcDispatcher
                 ToWireKind(daemonError.Kind),
                 new ErrorPayload(daemonError.Code, daemonError.Details),
                 entry.Owner,
-                V2RpcNotificationSuppressionReason.ExpectedDaemonError);
+                V2RpcNotificationSuppressionReason.ExpectedDaemonError,
+                pluginError is null ? null : new ProtocolOwnerIdentity(pluginError.Identity.Id, pluginError.Identity.Version));
         }
 
         if (request.IsNotification)
@@ -327,10 +333,11 @@ internal sealed class V2RpcDispatcher
         DaemonErrorWireKind errorKind,
         ErrorPayload? payload,
         ProtocolExecutionOwner? owner,
-        V2RpcNotificationSuppressionReason suppressionReason) =>
+        V2RpcNotificationSuppressionReason suppressionReason,
+        ProtocolOwnerIdentity? originPlugin = null) =>
         request.IsNotification
             ? SuppressNotification(request.Method, owner, suppressionReason)
-            : Error(request.Id, code, message, errorKind, payload, owner);
+            : Error(request.Id, code, message, errorKind, payload, owner, originPlugin: originPlugin);
 
     private V2RpcDispatchOutcome UnexpectedOrSuppress(
         JsonRpcRequestEnvelope request,
@@ -365,14 +372,15 @@ internal sealed class V2RpcDispatcher
         DaemonErrorWireKind errorKind,
         ErrorPayload? payload,
         ProtocolExecutionOwner? owner,
-        string? correlationId = null)
+        string? correlationId = null,
+        ProtocolOwnerIdentity? originPlugin = null)
     {
         var data = new JsonRpcErrorData(
             payload?.DaemonErrorCode,
             errorKind,
             correlationId ?? Guid.NewGuid().ToString("N"),
             payload?.Details,
-            originPlugin: null,
+            originPlugin,
             executionOwner: ResolveExecutionOwner(owner));
         var envelope = new JsonRpcErrorResponseEnvelope(id, new JsonRpcErrorObject(code, message, data));
         var bytes = JsonSerializer.SerializeToUtf8Bytes(

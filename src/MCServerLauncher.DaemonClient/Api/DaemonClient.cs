@@ -70,6 +70,17 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
     public Task<Result<PingResult, DaemonError>> PingAsync(CancellationToken cancellationToken = default) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.PingDaemon, new EmptyRequest(), cancellationToken);
 
+    public Task<Result<OpenRpcDocument, DaemonError>> DiscoverAsync(
+        CancellationToken cancellationToken = default) =>
+        _invoker.InvokeAsync(BuiltInProtocolDefinitions.DiscoverRpc, new EmptyRequest(), cancellationToken);
+
+    public Task<Result<TResult, DaemonError>> InvokeAsync<TRequest, TResult>(
+        RpcDescriptor<TRequest, TResult> descriptor,
+        TRequest request,
+        CancellationToken cancellationToken = default)
+        where TResult : notnull =>
+        _invoker.InvokeAsync(descriptor, request, cancellationToken);
+
     public async Task<Result<Unit, DaemonError>> RestartInstanceAsync(
         Guid instanceId,
         CancellationToken cancellationToken = default)

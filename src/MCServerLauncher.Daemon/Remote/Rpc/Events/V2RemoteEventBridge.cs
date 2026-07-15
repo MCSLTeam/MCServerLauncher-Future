@@ -4,9 +4,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
+using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Events;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Transport;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Remote.Rpc.Events;
 
@@ -82,15 +86,15 @@ internal sealed class V2RemoteEventBridge : IDisposable
         Publish(
             _catalogChanged,
             V2CanonicalEventMeta.Omitted(_catalogChanged),
-            domainEvent.Data,
-            BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
+            JsonRpcOptionalPayload.From(domainEvent.Data, BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData));
 
     private ValueTask OnDaemonReport(DaemonReportDomainEvent domainEvent, CancellationToken _) =>
         Publish(
             _daemonReport,
             V2CanonicalEventMeta.Omitted(_daemonReport),
-            new DaemonReportEventData(domainEvent.SystemInfo, domainEvent.StartTimestamp),
-            BuiltInProtocolJsonContext.Default.DaemonReportEventData);
+            JsonRpcOptionalPayload.From(
+                new DaemonReportEventData(domainEvent.SystemInfo, domainEvent.StartTimestamp),
+                BuiltInProtocolJsonContext.Default.DaemonReportEventData));
 
     private ValueTask OnInstanceLog(InstanceLogDomainEvent domainEvent, CancellationToken _) =>
         Publish(
@@ -98,8 +102,9 @@ internal sealed class V2RemoteEventBridge : IDisposable
             V2CanonicalEventMeta.FromTypedObject(
                 _instanceLog,
                 new InstanceLogEventMeta(domainEvent.InstanceId)),
-            new InstanceLogEventData(domainEvent.Log),
-            BuiltInProtocolJsonContext.Default.InstanceLogEventData);
+            JsonRpcOptionalPayload.From(
+                new InstanceLogEventData(domainEvent.Log),
+                BuiltInProtocolJsonContext.Default.InstanceLogEventData));
 
     private ValueTask OnNotification(ClientNotificationDomainEvent domainEvent, CancellationToken _) =>
         Publish(
@@ -107,14 +112,14 @@ internal sealed class V2RemoteEventBridge : IDisposable
             V2CanonicalEventMeta.FromTypedObject(
                 _notification,
                 new NotificationEventMeta(domainEvent.SourceInstanceId, domainEvent.RuleId)),
-            new NotificationEventData(domainEvent.Title, domainEvent.Message, domainEvent.Severity),
-            BuiltInProtocolJsonContext.Default.NotificationEventData);
+            JsonRpcOptionalPayload.From(
+                new NotificationEventData(domainEvent.Title, domainEvent.Message, domainEvent.Severity),
+                BuiltInProtocolJsonContext.Default.NotificationEventData));
 
-    private ValueTask Publish<TData>(
+    private ValueTask Publish(
         FrozenEventBinding binding,
         V2CanonicalEventMeta actualMeta,
-        TData data,
-        JsonTypeInfo<TData> dataTypeInfo)
+        JsonRpcOptionalPayload dataPayload)
     {
         lock (_publishGate)
         {
@@ -137,7 +142,7 @@ internal sealed class V2RemoteEventBridge : IDisposable
                     _sequence,
                     timestamp,
                     ToWireMeta(actualMeta),
-                    JsonRpcOptionalPayload.From(data, dataTypeInfo)));
+                    dataPayload));
             var bytes = JsonSerializer.SerializeToUtf8Bytes(
                 notification,
                 BuiltInProtocolJsonContext.Default.JsonRpcRemoteEventNotification);
@@ -149,6 +154,87 @@ internal sealed class V2RemoteEventBridge : IDisposable
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    internal ValueTask<Result<Unit, DaemonError>> PublishPluginAsync<TData, TMeta>(
+        FrozenEventBinding binding,
+        DaemonEventField<TMeta> meta,
+        DaemonEventField<TData> data,
+        JsonTypeInfo<TData> dataTypeInfo,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        ArgumentNullException.ThrowIfNull(dataTypeInfo);
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            if (binding.Descriptor.DataTypeInfo.Type != typeof(TData))
+            {
+                throw new ArgumentException(
+                    "The plugin event data metadata does not match its descriptor.",
+                    nameof(dataTypeInfo));
+            }
+
+            var dataPayload = ToWireData(binding.Descriptor, data, dataTypeInfo);
+            var actualMeta = ToCanonicalMeta(binding, meta);
+            lock (_publishGate)
+            {
+                if (_disposed)
+                {
+                    return new ValueTask<Result<Unit, DaemonError>>(
+                        Result.Err<Unit, DaemonError>(
+                            new InternalDaemonError("event_bridge_closed", "The daemon event bridge is closed.")));
+                }
+
+                _ = Publish(binding, actualMeta, dataPayload);
+                return new ValueTask<Result<Unit, DaemonError>>(
+                    Result.Ok<Unit, DaemonError>(Unit.Default));
+            }
+        }
+        catch (ArgumentException exception)
+        {
+            return new ValueTask<Result<Unit, DaemonError>>(
+                Result.Err<Unit, DaemonError>(
+                    new ValidationDaemonError("plugin_event_invalid", exception.Message)));
+        }
+    }
+
+    private static JsonRpcOptionalPayload ToWireData<TData>(
+        EventDescriptor descriptor,
+        DaemonEventField<TData> data,
+        JsonTypeInfo<TData> dataTypeInfo)
+    {
+        if (descriptor.DataPresence == OpenRpcEventFieldPresence.Required && data.Kind != DaemonEventFieldKind.Value)
+            throw new ArgumentException("The plugin event requires a data value.", nameof(data));
+        if (descriptor.DataPresence == OpenRpcEventFieldPresence.Omitted && data.Kind != DaemonEventFieldKind.Missing)
+            throw new ArgumentException("The plugin event omits its data field.", nameof(data));
+
+        return data.Kind switch
+        {
+            DaemonEventFieldKind.Missing => JsonRpcOptionalPayload.Missing,
+            DaemonEventFieldKind.ExplicitNull => JsonRpcOptionalPayload.ExplicitNull,
+            DaemonEventFieldKind.Value => JsonRpcOptionalPayload.From(data.Value, dataTypeInfo),
+            _ => throw new ArgumentOutOfRangeException(nameof(data))
+        };
+    }
+
+    private static V2CanonicalEventMeta ToCanonicalMeta<TMeta>(
+        FrozenEventBinding binding,
+        DaemonEventField<TMeta> meta)
+    {
+        var descriptor = binding.Descriptor;
+        return meta.Kind switch
+        {
+            DaemonEventFieldKind.Missing when descriptor.MetaPresence is OpenRpcEventFieldPresence.Omitted or OpenRpcEventFieldPresence.Optional =>
+                V2CanonicalEventMeta.Omitted(binding),
+            DaemonEventFieldKind.ExplicitNull when descriptor.MetaPresence == OpenRpcEventFieldPresence.Optional =>
+                V2CanonicalEventMeta.ExplicitNull(binding),
+            DaemonEventFieldKind.Value when descriptor.MetaTypeInfo?.Type == typeof(TMeta) =>
+                V2CanonicalEventMeta.FromTypedObject(binding, meta.Value!),
+            DaemonEventFieldKind.Value =>
+                throw new ArgumentException("The plugin event metadata type does not match its descriptor.", nameof(meta)),
+            _ => throw new ArgumentException("The plugin event requires metadata.", nameof(meta))
+        };
     }
 
     private static JsonRpcOptionalPayload ToWireMeta(V2CanonicalEventMeta meta) => meta.Kind switch

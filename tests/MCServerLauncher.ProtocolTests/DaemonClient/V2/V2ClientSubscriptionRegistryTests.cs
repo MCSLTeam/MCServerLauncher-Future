@@ -3,8 +3,11 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Protocol;
 using MCServerLauncher.DaemonClient.State;
@@ -90,6 +93,58 @@ public sealed class V2ClientSubscriptionRegistryTests : IAsyncLifetime
         await DisposeHandleAsync(fixture, second);
         await second.DisposeAsync();
         Assert.Equal(4, fixture.Transport.SendCount);
+    }
+
+    [Fact]
+    public async Task SameEventNameRejectsDifferentDescriptorInstancesBeforeServerSubscription()
+    {
+        var fixture = await ReadyFixtureAsync();
+        var firstTask = fixture.Registry.SubscribeAsync(
+            V2ClientProtocol.InstanceLog,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ => Task.CompletedTask);
+        var firstRequest = await fixture.Transport.NextAsync();
+        fixture.Coordinator.Core.RouteText(Success(firstRequest));
+        var first = (await firstTask.WaitAsync(Timeout)).Unwrap();
+
+        var duplicateDescriptor = PluginProtocol.CreateEvent<InstanceLogEventData, InstanceLogEventMeta>(
+            V2ClientProtocol.InstanceLog.Name.Value,
+            V2ClientProtocol.InstanceLog.Permission.Value,
+            BuiltInProtocolJsonContext.Default.InstanceLogEventData,
+            BuiltInProtocolJsonContext.Default.InstanceLogEventMeta,
+            new EventDocumentation("test", "Instance log", "Duplicate descriptor test.", "test.data", "test.meta"),
+            OpenRpcEventFieldPresence.Required,
+            OpenRpcEventFieldPresence.Required);
+        var duplicate = await fixture.Registry.SubscribeAsync(
+            duplicateDescriptor,
+            DaemonEventFilter<InstanceLogEventMeta>.Exact(new(InstanceId)),
+            _ => Task.CompletedTask);
+
+        AssertError(duplicate, "client.event.descriptor_conflict");
+        Assert.Equal(3, fixture.Transport.SendCount);
+        await DisposeHandleAsync(fixture, first);
+    }
+
+    [Fact]
+    public async Task ForgedBuiltInDescriptorIsRejectedBeforeItsFirstServerSubscription()
+    {
+        var fixture = await ReadyFixtureAsync();
+        var forgedDescriptor = PluginProtocol.CreateEvent<InstanceLogEventData, InstanceLogEventMeta>(
+            V2ClientProtocol.InstanceLog.Name.Value,
+            V2ClientProtocol.InstanceLog.Permission.Value,
+            BuiltInProtocolJsonContext.Default.InstanceLogEventData,
+            BuiltInProtocolJsonContext.Default.InstanceLogEventMeta,
+            new EventDocumentation("test", "Instance log", "Forged descriptor test.", "test.data", "test.meta"),
+            OpenRpcEventFieldPresence.Required,
+            OpenRpcEventFieldPresence.Required);
+
+        var result = await fixture.Registry.SubscribeAsync(
+            forgedDescriptor,
+            DaemonEventFilter<InstanceLogEventMeta>.Wildcard,
+            _ => Task.CompletedTask);
+
+        AssertError(result, "client.event.descriptor_conflict");
+        Assert.Equal(2, fixture.Transport.SendCount);
     }
 
     [Fact]

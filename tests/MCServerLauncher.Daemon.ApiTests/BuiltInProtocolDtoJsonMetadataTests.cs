@@ -365,6 +365,21 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
     }
 
     [Fact]
+    public void OpenRpcContentDescriptorAllowsOmittedOptionalDocumentation()
+    {
+        const string json = "{\"openrpc\":\"1.3.2\",\"info\":{\"title\":\"daemon\",\"version\":\"1\"},\"methods\":[{\"name\":\"plugin.example.rpc\",\"params\":[{\"name\":\"scope\",\"schema\":{\"type\":\"string\"},\"required\":false}],\"result\":{\"name\":\"result\",\"schema\":{\"type\":\"object\"},\"required\":true},\"x-mcsl-permission\":\"plugin.example.rpc\",\"x-mcsl-allow-notification\":false}],\"x-mcsl-events\":[],\"components\":{\"schemas\":{}}}";
+
+        var document = JsonSerializer.Deserialize(
+            json,
+            BuiltInProtocolJsonContext.Default.OpenRpcDocument);
+
+        var parameter = Assert.Single(document!.Methods[0].Params);
+        Assert.Equal("scope", parameter.Name);
+        Assert.Null(parameter.Summary);
+        Assert.Null(parameter.Description);
+    }
+
+    [Fact]
     public void NotificationMetadataRequiresBothPublicIdentifiers()
     {
         Assert.Throws<ArgumentException>(() => new NotificationEventMeta(Guid.Empty, Guid.NewGuid()));

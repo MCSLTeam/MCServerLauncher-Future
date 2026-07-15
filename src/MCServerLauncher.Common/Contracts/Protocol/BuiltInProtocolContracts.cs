@@ -655,8 +655,8 @@ public sealed class OpenRpcContentDescriptor
         string name,
         JsonElement schema,
         bool required,
-        string? summary,
-        string? description)
+        string? summary = null,
+        string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -688,8 +688,8 @@ public sealed class OpenRpcMethod
         OpenRpcContentDescriptor result,
         string permission,
         bool allowNotification,
-        string? summary,
-        string? description)
+        string? summary = null,
+        string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
@@ -739,7 +739,7 @@ public enum OpenRpcEventFieldPresence
 
 public sealed class OpenRpcEventField
 {
-    public OpenRpcEventField(OpenRpcEventFieldPresence presence, JsonElement? schema)
+    public OpenRpcEventField(OpenRpcEventFieldPresence presence, JsonElement? schema = null)
     {
         if (!Enum.IsDefined(presence))
         {
@@ -773,8 +773,8 @@ public sealed class OpenRpcEvent
         string permission,
         OpenRpcEventField data,
         OpenRpcEventField meta,
-        string? summary,
-        string? description)
+        string? summary = null,
+        string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);

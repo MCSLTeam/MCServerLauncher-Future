@@ -11,7 +11,9 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 using RustyOptions;
@@ -679,6 +681,36 @@ public sealed class V2RpcDispatcherTests
         Assert.Null(data.OriginPlugin);
         Assert.Equal("test.owner", data.ExecutionOwner!.Id);
         Assert.Equal("2.3.4", data.ExecutionOwner.Version);
+    }
+
+    [Fact]
+    public async Task PluginErrorUsesDedicatedCodeAndAuthenticatedOrigin()
+    {
+        var identity = (PluginIdentity)Activator.CreateInstance(
+            typeof(PluginIdentity),
+            BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null,
+            args: ["test.origin", "2.3.4"],
+            culture: null)!;
+        var pluginError = new PluginErrorFactory(identity).Create("plugin.failed", "Plugin failed.");
+        var owner = ProtocolExecutionOwner.ForPlugin(new ProtocolOwnerIdentity("test.owner", "2.3.4"));
+        var dispatcher = CreatePluginDispatcher(
+            owner,
+            "plugin.test.owner.rpc.fail",
+            allowNotification: false,
+            (_, _, _) => Task.FromResult(ProtocolRpcExecution<PingResult>.Err(pluginError)));
+
+        var outcome = await dispatcher.DispatchAsync(
+            Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"plugin.test.owner.rpc.fail\",\"id\":1,\"params\":{}}"),
+            Connection("*"));
+
+        var error = ParseError(outcome);
+        Assert.Equal(-32005, error.Error.Code);
+        Assert.Equal("Plugin error", error.Error.Message);
+        Assert.Equal("plugin.failed", error.Error.Data.DaemonErrorCode);
+        Assert.Equal("test.origin", error.Error.Data.OriginPlugin!.Id);
+        Assert.Equal("2.3.4", error.Error.Data.OriginPlugin.Version);
+        Assert.Equal("test.owner", error.Error.Data.ExecutionOwner!.Id);
     }
 
     [Fact]

@@ -90,7 +90,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DisposeAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DiscoverAsync", "DisposeAsync", "InvokeAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)

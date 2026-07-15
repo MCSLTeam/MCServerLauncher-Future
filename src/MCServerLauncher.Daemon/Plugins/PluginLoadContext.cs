@@ -32,6 +32,12 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         return assemblyPath is null ? null : LoadFromAssemblyPath(assemblyPath);
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "The daemon plugin product is an untrimmed JIT host; sidecar plugin assemblies are loaded intentionally at startup.")]
+    internal Assembly LoadEntryAssembly(string entryAssemblyPath) => LoadFromAssemblyPath(entryAssemblyPath);
+
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {
         var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
@@ -41,7 +47,9 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
     private static Assembly ResolveSharedAssembly(string name) => name switch
     {
         "MCServerLauncher.Daemon.API" => typeof(IDaemonPlugin).Assembly,
-        "MCServerLauncher.Common" => typeof(Unit).Assembly,
+        // Resolve the actual shared Common contract assembly. RustyOptions.Unit is
+        // intentionally a different assembly and must never satisfy this binding.
+        "MCServerLauncher.Common" => typeof(JsonRpcRequestEnvelope).Assembly,
         "RustyOptions" => typeof(Result<,>).Assembly,
         "Microsoft.Extensions.Logging.Abstractions" => typeof(ILogger).Assembly,
         _ => throw new InvalidOperationException($"Unsupported shared plugin assembly '{name}'.")

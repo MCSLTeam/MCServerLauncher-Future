@@ -78,6 +78,7 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         var prepared = PrepareFilter(descriptor, filter);
         if (prepared.IsErr(out var filterError))
             return Result.Err<IAsyncDisposable, DaemonError>(filterError!);
+        var preparedFilter = prepared.Unwrap();
 
         await _mutationLane.WaitAsync(cancellationToken).ConfigureAwait(false);
         var laneHeld = true;
@@ -95,15 +96,30 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
                 }
 
                 epoch = ready;
-                if (_groups.TryGetValue(prepared.Unwrap().Key, out existing))
+                if (GetBuiltInBinding(descriptor.Name.Value) is { } builtInBinding &&
+                    !ReferenceEquals(builtInBinding.Descriptor, descriptor))
                 {
+                    return Result.Err<IAsyncDisposable, DaemonError>(DescriptorConflict());
+                }
+
+                if (_groups.Values.Any(group =>
+                        StringComparer.Ordinal.Equals(group.Key.Event, preparedFilter.Key.Event) &&
+                        !ReferenceEquals(group.Binding.Descriptor, descriptor)))
+                {
+                    return Result.Err<IAsyncDisposable, DaemonError>(DescriptorConflict());
+                }
+
+                if (_groups.TryGetValue(preparedFilter.Key, out existing))
+                {
+                    if (!ReferenceEquals(existing.Binding.Descriptor, descriptor))
+                        return Result.Err<IAsyncDisposable, DaemonError>(DescriptorConflict());
+
                     var duplicate = AddHandleLocked(existing, callback);
                     return Result.Ok<IAsyncDisposable, DaemonError>(duplicate);
                 }
 
-                var value = prepared.Unwrap();
                 var binding = new DescriptorBinding<TData, TMeta>(descriptor);
-                var group = new SubscriptionGroup(value.Key, value.Request, binding)
+                var group = new SubscriptionGroup(preparedFilter.Key, preparedFilter.Request, binding)
                 {
                     State = EpochBindingState.Pending,
                     Epoch = epoch
@@ -801,12 +817,30 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
     private bool IsInvalidEpoch(V2ClientConnectionCoordinator epoch) =>
         _invalidEpochs.TryGetValue(epoch, out _);
 
-    private static bool IsSupportedDescriptor(EventDescriptor descriptor) =>
-        ReferenceEquals(descriptor, V2ClientProtocol.DaemonReport) ||
-        ReferenceEquals(descriptor, V2ClientProtocol.InstanceLog) ||
-        ReferenceEquals(descriptor, V2ClientProtocol.Notification);
+    private static bool IsSupportedDescriptor(EventDescriptor descriptor)
+    {
+        var name = descriptor.Name.Value;
+        return StringComparer.Ordinal.Equals(name, V2ClientProtocol.DaemonReport.Name.Value) ||
+               StringComparer.Ordinal.Equals(name, V2ClientProtocol.InstanceLog.Name.Value) ||
+               StringComparer.Ordinal.Equals(name, V2ClientProtocol.Notification.Name.Value) ||
+               name.StartsWith("plugin.", StringComparison.Ordinal);
+    }
 
-    private static DescriptorBinding? GetBinding(string method) =>
+    private DescriptorBinding? GetBinding(string method)
+    {
+        var builtInBinding = GetBuiltInBinding(method);
+        if (builtInBinding is not null)
+            return builtInBinding;
+
+        lock (_gate)
+        {
+            return _groups.Values
+                .Select(static group => group.Binding)
+                .FirstOrDefault(binding => StringComparer.Ordinal.Equals(binding.Descriptor.Name.Value, method));
+        }
+    }
+
+    private static DescriptorBinding? GetBuiltInBinding(string method) =>
         StringComparer.Ordinal.Equals(method, V2ClientProtocol.DaemonReport.Name.Value)
             ? DaemonReportBinding
             : StringComparer.Ordinal.Equals(method, V2ClientProtocol.InstanceLog.Name.Value)
@@ -864,7 +898,10 @@ internal sealed class V2ClientSubscriptionRegistry : IAsyncDisposable
         new(NotReadyCode, "The daemon client has no bound ready V2 connection epoch.");
 
     private static ValidationDaemonError UnsupportedEvent() =>
-        new(UnsupportedEventCode, "The event descriptor is not a caller-subscribable built-in event.");
+        new(UnsupportedEventCode, "The event descriptor is not caller-subscribable.");
+
+    private static ConflictDaemonError DescriptorConflict() =>
+        new("client.event.descriptor_conflict", "The event name is already subscribed with a different descriptor instance.");
 
     private static ValidationDaemonError InvalidFilter() =>
         new(InvalidFilterCode, "The typed event metadata filter is invalid for its descriptor.");

@@ -3,6 +3,7 @@ using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.Plugins;
 
 namespace MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 
@@ -19,7 +20,8 @@ internal sealed class BuiltInProtocolCatalogComposition
         IEventRuleApplication eventRuleApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
-        FrozenProtocolCatalogAccessor catalogAccessor)
+        FrozenProtocolCatalogAccessor catalogAccessor,
+        PluginHost pluginHost)
         : this(
             instanceApplication,
             fileApplication,
@@ -28,7 +30,7 @@ internal sealed class BuiltInProtocolCatalogComposition
             snapshotSource,
             timeProvider,
             catalogAccessor,
-            null)
+            GetPluginDraftCallback(pluginHost))
     {
     }
 
@@ -72,6 +74,12 @@ internal sealed class BuiltInProtocolCatalogComposition
     }
 
     public FrozenProtocolCatalog Catalog { get; }
+
+    private static Action<ProtocolCatalogBuilder> GetPluginDraftCallback(PluginHost pluginHost)
+    {
+        ArgumentNullException.ThrowIfNull(pluginHost);
+        return pluginHost.AddCatalogContributions;
+    }
 
     private static void RegisterBuiltInEvents(ProtocolCatalogBuilder builder)
     {
