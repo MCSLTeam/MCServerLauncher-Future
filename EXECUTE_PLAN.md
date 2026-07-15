@@ -16,7 +16,7 @@ Phase 4A completed the daemon JSON-RPC profile/dispatcher/error mapping, typed r
 
 Phase 4B completed the daemon-client remote application implementation, typed subscriptions, binary sessions, reconnect/catalog reconciliation, and immutable remote instance mirror, plus the WPF connection-layer consumer cutover to typed application/event APIs and localized errors. Final independent Sol max review reported `P0=0 / P1=0 / P2=0`. Acceptance passed WPF tests 19/19, Release ProtocolTests `--no-build` 1105/1105, DaemonClient/WPF/full-solution Release builds at 0 warnings / 0 errors, and `git diff --check`; the WPF V1/raw-symbol search was clean except for `EventRuleEditorDialog`'s UI/domain string property `ActionType`. This does not claim an unperformed manual UI smoke test or runtime end-to-end UI exercise.
 
-Current status: Phase 4C is active. The M1 sole `/api/v2` authority and V2 connection administration are complete and independently reviewed; M2 legacy DTO/error/persistence-resolver decontamination is next. Phase 4C and Phase 4 overall remain incomplete and unreleasable. Residual V1 daemon/Common/client/generator source is intentionally retained for M2-M4, and the release-atomic scope and sequencing remain unchanged.
+Current status: Phase 4C is active. M1, M2a, and M2b are complete and independently reviewed with no open P0/P1/P2 findings. M2b closed the non-V1 legacy error migration and hardened replacement-installer transactions against partial output, rollback failure, reparse-point traversal, and Windows case-alias ambiguity. Phase 4C and Phase 4 overall remain incomplete and unreleasable. Residual V1 daemon/Common/client/generator source is intentionally retained for M3-M4, and the release-atomic scope and sequencing remain unchanged.
 
 ## Phase 0: Governance, Characterization, And Deletion Inventory
 
@@ -70,7 +70,7 @@ Exit criteria:
 
 Goal: make `/api/v2` the sole runtime protocol while preserving the complete V1 behavior inventory.
 
-Progress: Phase 4A daemon V2 and Phase 4B daemon-client/WPF connection-layer cutover are complete and independently reviewed with 0 open P0/P1/P2 findings. Phase 4C M1 sole `/api/v2` authority and V2 connection administration are complete and independently reviewed; M2 legacy DTO/error/persistence-resolver decontamination is next. Phase 4C and Phase 4 overall remain incomplete and unreleasable because legacy V1 daemon/Common/client/generator source and physical deletion work remain for M2-M4.
+Progress: Phase 4A daemon V2 and Phase 4B daemon-client/WPF connection-layer cutover are complete and independently reviewed with 0 open P0/P1/P2 findings. Phase 4C M1 sole `/api/v2` authority, M2a canonical DTO/persistence-boundary migration, and M2b legacy error migration are complete and independently reviewed. M2b acceptance passed the expanded focused slice at 133/133, Release ProtocolTests twice at 1196/1196, WPF.Tests at 20/20, the full Release solution build at 0 warnings / 0 errors, ProtocolDocs `--check`, the allowlisted residual search, and `git diff --check`; independent Sol max closure review reported `P0=0 / P1=0 / P2=0`. M3-M4 retain the V1 daemon/Common/client/generator physical deletion work. Phase 4C and Phase 4 overall remain incomplete and unreleasable.
 
 Exit criteria:
 

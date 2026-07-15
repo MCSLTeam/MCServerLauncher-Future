@@ -7,11 +7,15 @@ using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
+using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
 using LegacyInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
 
 namespace MCServerLauncher.ProtocolTests;
 
+[Collection("InstanceFactoryRegistryIsolation")]
 public sealed class LocalInstanceApplicationTests
 {
     [Fact]
@@ -193,6 +197,31 @@ public sealed class LocalInstanceApplicationTests
     }
 
     [Fact]
+    public async Task GetSettings_CorruptInstallMetadata_PreservesTypedStorageError()
+    {
+        var (manager, config, instanceDirectory) = CreateLoadedManager();
+        try
+        {
+            await File.WriteAllTextAsync(
+                InstanceInstallMetadataStore.GetPath(instanceDirectory),
+                "{ not valid json }");
+            var application = new LocalInstanceApplication(manager);
+
+            var result = await application.GetInstanceSettingsAsync(
+                new InstanceReference(config.Uuid),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var storage = Assert.IsType<StorageDaemonError>(error);
+            Assert.Equal("instance.install_metadata.read_failed", storage.Code);
+        }
+        finally
+        {
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
     public void AuthoritativeCatalog_OnlyPublishesActualCatalogOrStatusChanges()
     {
         var config = CreateConfig();
@@ -327,7 +356,8 @@ public sealed class LocalInstanceApplicationTests
                 CancellationToken.None);
 
             Assert.True(result.IsErr(out var error));
-            Assert.IsType<StorageDaemonError>(error);
+            var internalError = Assert.IsType<InternalDaemonError>(error);
+            Assert.Equal("instance.construct_failed", internalError.Code);
             var persisted = FileManager.ReadJson<InstanceConfig>(Path.Combine(instanceDirectory, InstanceConfig.FileName));
             Assert.NotNull(persisted);
             Assert.Equal(config.Name, persisted.Name);
@@ -379,7 +409,8 @@ public sealed class LocalInstanceApplicationTests
             var result = await application.UpdateInstanceSettingsAsync(request, CancellationToken.None);
 
             Assert.True(result.IsErr(out var error));
-            Assert.IsType<StorageDaemonError>(error);
+            var internalError = Assert.IsType<InternalDaemonError>(error);
+            Assert.Equal("instance.update.commit_failed", internalError.Code);
             var persisted = FileManager.ReadJson<InstanceConfig>(configPath);
             Assert.NotNull(persisted);
             Assert.Equal(config.Name, persisted.Name);
@@ -498,6 +529,807 @@ public sealed class LocalInstanceApplicationTests
         }
     }
 
+    [Theory]
+    [InlineData(InstanceConfig.FileName)]
+    [InlineData(InstanceConfig.FileName + ".bak")]
+    [InlineData(InstanceInstallMetadataStore.FileName)]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".bak")]
+    [InlineData(InstanceConfig.FileName + ".")]
+    [InlineData(InstanceConfig.FileName + " ")]
+    [InlineData(InstanceConfig.FileName + ".bak.")]
+    [InlineData(InstanceConfig.FileName + ".bak ")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".")]
+    [InlineData(InstanceInstallMetadataStore.FileName + " ")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".bak.")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".bak ")]
+    [InlineData("NUL")]
+    [InlineData("nul.txt")]
+    [InlineData("CON")]
+    [InlineData("PRN.log")]
+    [InlineData("AUX")]
+    [InlineData("CLOCK$")]
+    [InlineData("COM1")]
+    [InlineData("com9.jar")]
+    [InlineData("LPT1")]
+    [InlineData("lpt9.log")]
+    public async Task UpdateSettings_ReservedReplacementTarget_IsRejectedBeforeStorageMutation(string target)
+    {
+        var (manager, config, instanceDirectory) = CreateLoadedManager();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var metadataPath = InstanceInstallMetadataStore.GetPath(instanceDirectory);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"reserved-target-{Guid.NewGuid():N}.jar");
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        InstanceInstallMetadataStore.Write(
+            instanceDirectory,
+            new InstanceInstallMetadata(
+                "reserved-target-test",
+                null,
+                ImmutableArray<string>.Empty,
+                config.Target,
+                DateTimeOffset.Parse("2026-07-01T00:00:00+00:00")));
+        await File.WriteAllTextAsync(metadataPath + ".bak", "metadata-backup");
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+        var originalMetadataBytes = await File.ReadAllBytesAsync(metadataPath);
+        var originalMetadataBackupBytes = await File.ReadAllBytesAsync(metadataPath + ".bak");
+
+        try
+        {
+            var application = new LocalInstanceApplication(manager);
+            var before = manager.InstanceSnapshotSource.Current;
+
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "reserved-target",
+                    config.InstanceType,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, target),
+                    false),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var validation = Assert.IsType<ValidationDaemonError>(error);
+            Assert.Equal("instance.settings_invalid", validation.Code);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Equal(originalMetadataBytes, await File.ReadAllBytesAsync(metadataPath));
+            Assert.Equal(originalMetadataBackupBytes, await File.ReadAllBytesAsync(metadataPath + ".bak"));
+            Assert.Equal(config.Name, manager.Instances[config.Uuid].Config.Name);
+            Assert.Equal(before.Version, manager.InstanceSnapshotSource.Current.Version);
+            Assert.Same(before.Value, manager.InstanceSnapshotSource.Current.Value);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+        }
+        finally
+        {
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UpdateSettings_ExistingReplacementDestination_IsRejectedBeforeStorageMutation(
+        bool destinationIsDirectory)
+    {
+        var (manager, config, instanceDirectory) = CreateLoadedManager();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var collisionPath = Path.Combine(instanceDirectory, "world");
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"destination-collision-{Guid.NewGuid():N}.jar");
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        if (destinationIsDirectory)
+        {
+            Directory.CreateDirectory(collisionPath);
+            await File.WriteAllTextAsync(Path.Combine(collisionPath, "level.dat"), "world-data");
+        }
+        else
+        {
+            await File.WriteAllTextAsync(collisionPath, "existing-file");
+        }
+
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+
+        try
+        {
+            var application = new LocalInstanceApplication(manager);
+            var before = manager.InstanceSnapshotSource.Current;
+
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "destination-collision",
+                    config.InstanceType,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, Path.GetFileName(collisionPath)),
+                    false),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var conflict = Assert.IsType<ConflictDaemonError>(error);
+            Assert.Equal("instance.replacement_core.target_conflict", conflict.Code);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            if (destinationIsDirectory)
+                Assert.Equal("world-data", await File.ReadAllTextAsync(Path.Combine(collisionPath, "level.dat")));
+            else
+                Assert.Equal("existing-file", await File.ReadAllTextAsync(collisionPath));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Equal(config.Name, manager.Instances[config.Uuid].Config.Name);
+            Assert.Equal(before.Version, manager.InstanceSnapshotSource.Current.Version);
+            Assert.Same(before.Value, manager.InstanceSnapshotSource.Current.Value);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+        }
+        finally
+        {
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_ReplacementSourceTraversal_ReturnsTypedValidationError()
+    {
+        var (manager, config, instanceDirectory) = CreateLoadedManager();
+        try
+        {
+            var application = new LocalInstanceApplication(manager);
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "unsafe-source",
+                    config.InstanceType,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest("../outside.jar", "replacement.jar"),
+                    false),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var validation = Assert.IsType<ValidationDaemonError>(error);
+            Assert.Equal("instance.replacement_core.invalid", validation.Code);
+        }
+        finally
+        {
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_CanceledInstallerWithoutMetadata_RollsBackGeneratedOutputs()
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var replacementTargetPath = Path.Combine(instanceDirectory, "replacement.jar");
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"rollback-{Guid.NewGuid():N}.jar");
+        var librariesPath = Path.Combine(instanceDirectory, "libraries");
+        var runScriptPath = Path.Combine(instanceDirectory, "run.bat");
+        var userLibraryPath = Path.Combine(librariesPath, "user-owned.jar");
+        var installerLogPath = Path.Combine(instanceDirectory, "installer.log");
+        var eulaPath = Path.Combine(instanceDirectory, "eula.txt");
+        Directory.CreateDirectory(instanceDirectory);
+        Directory.CreateDirectory(librariesPath);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        await File.WriteAllTextAsync(userLibraryPath, "user-library");
+        await File.WriteAllTextAsync(runScriptPath, "user-run-script");
+        FileManager.WriteJsonAndBackup(configPath, config);
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+        Assert.False(File.Exists(InstanceInstallMetadataStore.GetPath(instanceDirectory)));
+
+        var manager = new InstanceManager();
+        var originalInstance = new TestInstance(config, () => null);
+        manager.ReplaceInstance(config.Uuid, originalInstance);
+        var application = new LocalInstanceApplication(manager);
+        using var cancellationSource = new CancellationTokenSource();
+        PartialOutputCancelingFactory.CancellationSource = cancellationSource;
+        InstanceFactoryRegistry.Reset();
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(PartialOutputCancelingFactory));
+
+        try
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                application.UpdateInstanceSettingsAsync(
+                    new UpdateInstanceSettingsRequest(
+                        config.Uuid,
+                        "canceled-installer",
+                        InstanceType.MCBedrock,
+                        config.JavaPath,
+                        config.Arguments.ToImmutableArray(),
+                        config.Version,
+                        new InstanceCoreReplacementRequest(uploadedPath, Path.GetFileName(replacementTargetPath)),
+                        true),
+                    cancellationSource.Token));
+
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.False(File.Exists(replacementTargetPath));
+            Assert.Equal("user-library", await File.ReadAllTextAsync(userLibraryPath));
+            Assert.Equal("user-run-script", await File.ReadAllTextAsync(runScriptPath));
+            Assert.False(File.Exists(Path.Combine(librariesPath, "partial.jar")));
+            Assert.False(File.Exists(installerLogPath));
+            Assert.False(File.Exists(eulaPath));
+            Assert.False(File.Exists(InstanceInstallMetadataStore.GetPath(instanceDirectory)));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Same(originalInstance, manager.Instances[config.Uuid]);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+            Assert.NotNull(PartialOutputCancelingFactory.LastWorkingDirectory);
+            Assert.False(Directory.Exists(PartialOutputCancelingFactory.LastWorkingDirectory));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            PartialOutputCancelingFactory.CancellationSource = null;
+            DeleteFactoryWorkspace(PartialOutputCancelingFactory.LastWorkingDirectory);
+            PartialOutputCancelingFactory.LastWorkingDirectory = null;
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, "instance.factory.test_failed")]
+    [InlineData(true, "instance.factory.failed")]
+    public async Task UpdateSettings_FactoryFailureWithIncompleteMetadata_LeavesLiveFilesUnchanged(
+        bool throwException,
+        string expectedCode)
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"factory-error-{Guid.NewGuid():N}.jar");
+        var librariesPath = Path.Combine(instanceDirectory, "libraries");
+        var userLibraryPath = Path.Combine(librariesPath, "user-owned.jar");
+        var runScriptPath = Path.Combine(instanceDirectory, "run.bat");
+        var metadataPath = InstanceInstallMetadataStore.GetPath(instanceDirectory);
+        Directory.CreateDirectory(librariesPath);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        await File.WriteAllTextAsync(userLibraryPath, "user-library");
+        await File.WriteAllTextAsync(runScriptPath, "user-run-script");
+        FileManager.WriteJsonAndBackup(configPath, config);
+        InstanceInstallMetadataStore.Write(
+            instanceDirectory,
+            new InstanceInstallMetadata(
+                "legacy-test",
+                "legacy-installer.jar",
+                ImmutableArray.Create("libraries/declared-output.jar"),
+                config.Target,
+                DateTimeOffset.Parse("2026-07-01T00:00:00+00:00")));
+        await File.WriteAllTextAsync(metadataPath + ".bak", "metadata-backup-sentinel");
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+        var originalMetadataBytes = await File.ReadAllBytesAsync(metadataPath);
+        var originalMetadataBackupBytes = await File.ReadAllBytesAsync(metadataPath + ".bak");
+
+        var manager = new InstanceManager();
+        var originalInstance = new TestInstance(config, () => null);
+        manager.ReplaceInstance(config.Uuid, originalInstance);
+        var application = new LocalInstanceApplication(manager);
+        InstanceFactoryRegistry.Reset();
+        PartialOutputFailureFactory.ThrowException = throwException;
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(PartialOutputFailureFactory));
+
+        try
+        {
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "failed-installer",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            Assert.Equal(expectedCode, error!.Code);
+            if (throwException)
+                Assert.IsType<InternalDaemonError>(error);
+            else
+                Assert.IsType<StorageDaemonError>(error);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal("user-library", await File.ReadAllTextAsync(userLibraryPath));
+            Assert.Equal("user-run-script", await File.ReadAllTextAsync(runScriptPath));
+            Assert.False(File.Exists(Path.Combine(librariesPath, "partial.jar")));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, "installer.log")));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, "eula.txt")));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Equal(originalMetadataBytes, await File.ReadAllBytesAsync(metadataPath));
+            Assert.Equal(originalMetadataBackupBytes, await File.ReadAllBytesAsync(metadataPath + ".bak"));
+            Assert.Same(originalInstance, manager.Instances[config.Uuid]);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+            Assert.NotNull(PartialOutputFailureFactory.LastWorkingDirectory);
+            Assert.False(Directory.Exists(PartialOutputFailureFactory.LastWorkingDirectory));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            DeleteFactoryWorkspace(PartialOutputFailureFactory.LastWorkingDirectory);
+            PartialOutputFailureFactory.LastWorkingDirectory = null;
+            PartialOutputFailureFactory.ThrowException = false;
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_SuccessfulInstallerMerge_ConstructsFromCommittedOutputs()
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"factory-success-{Guid.NewGuid():N}.jar");
+        var librariesPath = Path.Combine(instanceDirectory, "libraries");
+        var userLibraryPath = Path.Combine(librariesPath, "user-owned.jar");
+        Directory.CreateDirectory(librariesPath);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        await File.WriteAllTextAsync(userLibraryPath, "user-library");
+        FileManager.WriteJsonAndBackup(configPath, config);
+
+        string? observedProperties = null;
+        var observedTargetExists = false;
+        var manager = new InstanceManager(updatedConfig =>
+        {
+            observedProperties = File.ReadAllText(Path.Combine(instanceDirectory, "server.properties"));
+            observedTargetExists = File.Exists(Path.Combine(instanceDirectory, updatedConfig.Target));
+            return new TestInstance(updatedConfig, () => null);
+        });
+        manager.ReplaceInstance(config.Uuid, new TestInstance(config, () => null));
+        var application = new LocalInstanceApplication(manager);
+        InstanceFactoryRegistry.Reset();
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(SuccessfulReplacementFactory));
+
+        try
+        {
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "successful-installer",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsOk(out var update));
+            Assert.Equal(SuccessfulReplacementFactory.LaunchTarget, update.Config.Target);
+            Assert.Equal("server-port=25570", observedProperties);
+            Assert.True(observedTargetExists);
+            Assert.Equal("user-library", await File.ReadAllTextAsync(userLibraryPath));
+            Assert.Equal(
+                "factory-library",
+                await File.ReadAllTextAsync(Path.Combine(librariesPath, "factory.jar")));
+            Assert.Equal("installer-log", await File.ReadAllTextAsync(Path.Combine(instanceDirectory, "installer.log")));
+            Assert.Equal("eula=true", await File.ReadAllTextAsync(Path.Combine(instanceDirectory, "eula.txt")));
+            Assert.Equal("generated-launcher", await File.ReadAllTextAsync(
+                Path.Combine(instanceDirectory, SuccessfulReplacementFactory.LaunchTarget)));
+            Assert.False(File.Exists(originalTargetPath));
+            var preservedPath = Assert.Single(update.PreservedOriginalPaths);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(preservedPath));
+            Assert.Empty(update.DeletedGeneratedPaths);
+
+            var metadata = InstanceInstallMetadataStore.Read(instanceDirectory);
+            Assert.NotNull(metadata);
+            Assert.Equal(InstanceType.MCBedrock.ToString(), metadata.InstallerKind);
+            Assert.Equal(uploadedPath, metadata.InstallerSourcePath);
+            Assert.Equal(SuccessfulReplacementFactory.LaunchTarget, metadata.ResolvedLaunchTarget);
+            Assert.Equal(
+                ["eula.txt", SuccessfulReplacementFactory.LaunchTarget, "installer.log", "libraries", "server.properties"],
+                metadata.GeneratedPaths.ToArray());
+            Assert.Equal(SuccessfulReplacementFactory.LaunchTarget, manager.Instances[config.Uuid].Config.Target);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+            Assert.NotNull(SuccessfulReplacementFactory.LastWorkingDirectory);
+            Assert.False(Directory.Exists(SuccessfulReplacementFactory.LastWorkingDirectory));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            DeleteFactoryWorkspace(SuccessfulReplacementFactory.LastWorkingDirectory);
+            SuccessfulReplacementFactory.LastWorkingDirectory = null;
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_ConstructionFailureAfterInstallerMerge_RollsBackStorageAndMetadata()
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"construction-rollback-{Guid.NewGuid():N}.jar");
+        var librariesPath = Path.Combine(instanceDirectory, "libraries");
+        var userLibraryPath = Path.Combine(librariesPath, "user-owned.jar");
+        var propertiesPath = Path.Combine(instanceDirectory, "server.properties");
+        var metadataPath = InstanceInstallMetadataStore.GetPath(instanceDirectory);
+        Directory.CreateDirectory(librariesPath);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        await File.WriteAllTextAsync(userLibraryPath, "user-library");
+        await File.WriteAllTextAsync(propertiesPath, "server-port=25560");
+        FileManager.WriteJsonAndBackup(configPath, config);
+        InstanceInstallMetadataStore.Write(
+            instanceDirectory,
+            new InstanceInstallMetadata(
+                "old-installer",
+                "old-source.jar",
+                ImmutableArray<string>.Empty,
+                config.Target,
+                DateTimeOffset.Parse("2026-07-01T00:00:00+00:00")));
+        await File.WriteAllTextAsync(metadataPath + ".bak", "old-metadata-backup");
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+        var originalMetadataBytes = await File.ReadAllBytesAsync(metadataPath);
+        var originalMetadataBackupBytes = await File.ReadAllBytesAsync(metadataPath + ".bak");
+
+        var manager = new InstanceManager(_ => throw new InvalidOperationException("construction failed"));
+        var originalInstance = new TestInstance(config, () => null);
+        manager.ReplaceInstance(config.Uuid, originalInstance);
+        var application = new LocalInstanceApplication(manager);
+        InstanceFactoryRegistry.Reset();
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(SuccessfulReplacementFactory));
+
+        try
+        {
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "construction-rollback",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var internalError = Assert.IsType<InternalDaemonError>(error);
+            Assert.Equal("instance.construct_failed", internalError.Code);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal("user-library", await File.ReadAllTextAsync(userLibraryPath));
+            Assert.Equal("server-port=25560", await File.ReadAllTextAsync(propertiesPath));
+            Assert.False(File.Exists(Path.Combine(librariesPath, "factory.jar")));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, "installer.log")));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, "eula.txt")));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, SuccessfulReplacementFactory.LaunchTarget)));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Equal(originalMetadataBytes, await File.ReadAllBytesAsync(metadataPath));
+            Assert.Equal(originalMetadataBackupBytes, await File.ReadAllBytesAsync(metadataPath + ".bak"));
+            Assert.Same(originalInstance, manager.Instances[config.Uuid]);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+            Assert.NotNull(SuccessfulReplacementFactory.LastWorkingDirectory);
+            Assert.False(Directory.Exists(SuccessfulReplacementFactory.LastWorkingDirectory));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            DeleteFactoryWorkspace(SuccessfulReplacementFactory.LastWorkingDirectory);
+            SuccessfulReplacementFactory.LastWorkingDirectory = null;
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_InstallerOutputTypeCollision_RollsBackWithoutDeletingUserDirectory()
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var worldPath = Path.Combine(instanceDirectory, "world");
+        var worldDataPath = Path.Combine(worldPath, "level.dat");
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"factory-collision-{Guid.NewGuid():N}.jar");
+        Directory.CreateDirectory(worldPath);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(worldDataPath, "world-data");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        FileManager.WriteJsonAndBackup(configPath, config);
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+
+        var manager = new InstanceManager();
+        var originalInstance = new TestInstance(config, () => null);
+        manager.ReplaceInstance(config.Uuid, originalInstance);
+        var application = new LocalInstanceApplication(manager);
+        var before = manager.InstanceSnapshotSource.Current;
+        InstanceFactoryRegistry.Reset();
+        SuccessfulReplacementFactory.CreateTypeCollision = true;
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(SuccessfulReplacementFactory));
+
+        try
+        {
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "factory-collision",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var storage = Assert.IsType<StorageDaemonError>(error);
+            Assert.Equal("instance.settings.commit_failed", storage.Code);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal("world-data", await File.ReadAllTextAsync(worldDataPath));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, SuccessfulReplacementFactory.LaunchTarget)));
+            Assert.False(File.Exists(Path.Combine(instanceDirectory, "installer.log")));
+            Assert.False(File.Exists(InstanceInstallMetadataStore.GetPath(instanceDirectory)));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Same(originalInstance, manager.Instances[config.Uuid]);
+            Assert.Equal(before.Version, manager.InstanceSnapshotSource.Current.Version);
+            Assert.Same(before.Value, manager.InstanceSnapshotSource.Current.Value);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+            Assert.NotNull(SuccessfulReplacementFactory.LastWorkingDirectory);
+            Assert.False(Directory.Exists(SuccessfulReplacementFactory.LastWorkingDirectory));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            SuccessfulReplacementFactory.CreateTypeCollision = false;
+            DeleteFactoryWorkspace(SuccessfulReplacementFactory.LastWorkingDirectory);
+            SuccessfulReplacementFactory.LastWorkingDirectory = null;
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_FactoryOutputDirectoryReparsePoint_DoesNotMoveExternalFiles()
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"factory-reparse-{Guid.NewGuid():N}.jar");
+        var externalDirectory = Path.Combine(Path.GetTempPath(), $"mcsl-factory-external-{Guid.NewGuid():N}");
+        var externalSentinelPath = Path.Combine(externalDirectory, "sentinel.txt");
+        var probeLinkPath = Path.Combine(Path.GetTempPath(), $"mcsl-factory-link-probe-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(instanceDirectory);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        Directory.CreateDirectory(externalDirectory);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        await File.WriteAllTextAsync(externalSentinelPath, "external-sentinel");
+        FileManager.WriteJsonAndBackup(configPath, config);
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+
+        var manager = new InstanceManager();
+        var originalInstance = new TestInstance(config, () => null);
+        manager.ReplaceInstance(config.Uuid, originalInstance);
+        var application = new LocalInstanceApplication(manager);
+        var before = manager.InstanceSnapshotSource.Current;
+
+        try
+        {
+            if (!TryCreateDirectorySymbolicLink(probeLinkPath, externalDirectory))
+                return;
+            Directory.Delete(probeLinkPath);
+
+            InstanceFactoryRegistry.Reset();
+            ReparsePointReplacementFactory.ExternalDirectory = externalDirectory;
+            InstanceFactoryRegistry.LoadFactoryFromType(typeof(ReparsePointReplacementFactory));
+
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "factory-reparse",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var storage = Assert.IsType<StorageDaemonError>(error);
+            Assert.Equal("instance.settings.commit_failed", storage.Code);
+            Assert.Equal("external-sentinel", await File.ReadAllTextAsync(externalSentinelPath));
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.False(Directory.Exists(Path.Combine(instanceDirectory, "linked-output")));
+            Assert.False(File.Exists(InstanceInstallMetadataStore.GetPath(instanceDirectory)));
+            Assert.Same(originalInstance, manager.Instances[config.Uuid]);
+            Assert.Equal(before.Version, manager.InstanceSnapshotSource.Current.Version);
+            Assert.Same(before.Value, manager.InstanceSnapshotSource.Current.Value);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+            Assert.NotNull(ReparsePointReplacementFactory.LastWorkingDirectory);
+            Assert.False(Directory.Exists(ReparsePointReplacementFactory.LastWorkingDirectory));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            ReparsePointReplacementFactory.ExternalDirectory = null;
+            DeleteFactoryWorkspace(ReparsePointReplacementFactory.LastWorkingDirectory);
+            ReparsePointReplacementFactory.LastWorkingDirectory = null;
+            if (Directory.Exists(probeLinkPath))
+                Directory.Delete(probeLinkPath);
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+            if (Directory.Exists(externalDirectory))
+                Directory.Delete(externalDirectory, true);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_CaseSensitiveWindowsAliases_AreRejectedBeforeStorageMutation()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"factory-case-sensitive-{Guid.NewGuid():N}.jar");
+        var metadataPath = InstanceInstallMetadataStore.GetPath(instanceDirectory);
+        Directory.CreateDirectory(instanceDirectory);
+
+        try
+        {
+            if (!await TryEnableDirectoryCaseSensitivityAsync(instanceDirectory))
+                return;
+            if (!await TryCreateCaseDistinctFilesAsync(instanceDirectory))
+                return;
+
+            Directory.CreateDirectory(FileManager.UploadRoot);
+            await File.WriteAllTextAsync(originalTargetPath, "original-core");
+            await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+            Assert.Equal(
+                ["upper-original", "lower-original"],
+                await ReadCaseDistinctFilesAsync(instanceDirectory));
+            FileManager.WriteJsonAndBackup(configPath, config);
+            InstanceInstallMetadataStore.Write(
+                instanceDirectory,
+                new InstanceInstallMetadata(
+                    "case-sensitive-test",
+                    null,
+                    ImmutableArray.Create("Core.jar", "core.jar"),
+                    config.Target,
+                    DateTimeOffset.Parse("2026-07-01T00:00:00+00:00")));
+            var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+            var originalMetadataBytes = await File.ReadAllBytesAsync(metadataPath);
+
+            var manager = new InstanceManager();
+            var originalInstance = new TestInstance(config, () => null);
+            manager.ReplaceInstance(config.Uuid, originalInstance);
+            var application = new LocalInstanceApplication(manager);
+            var before = manager.InstanceSnapshotSource.Current;
+
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "case-sensitive-rollback",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var validationError = Assert.IsType<ValidationDaemonError>(error);
+            Assert.Equal("instance.generated_path.invalid", validationError.Code);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal(
+                ["upper-original", "lower-original"],
+                await ReadCaseDistinctFilesAsync(instanceDirectory));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Equal(originalMetadataBytes, await File.ReadAllBytesAsync(metadataPath));
+            Assert.Same(originalInstance, manager.Instances[config.Uuid]);
+            Assert.Equal(before.Version, manager.InstanceSnapshotSource.Current.Version);
+            Assert.Same(before.Value, manager.InstanceSnapshotSource.Current.Value);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateSettings_DirectReplacement_UpdatesMetadataAndPreservesPreviousBackup()
+    {
+        var config = CreateConfig();
+        var instanceDirectory = config.GetWorkingDirectory();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"direct-replacement-{Guid.NewGuid():N}.jar");
+        var replacementTargetPath = Path.Combine(instanceDirectory, "replacement.jar");
+        var metadataPath = InstanceInstallMetadataStore.GetPath(instanceDirectory);
+        Directory.CreateDirectory(instanceDirectory);
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        FileManager.WriteJsonAndBackup(configPath, config);
+        InstanceInstallMetadataStore.Write(
+            instanceDirectory,
+            new InstanceInstallMetadata(
+                "old-installer",
+                "old-source.jar",
+                ImmutableArray.Create("libraries"),
+                config.Target,
+                DateTimeOffset.Parse("2026-07-01T00:00:00+00:00")));
+        var originalMetadataBytes = await File.ReadAllBytesAsync(metadataPath);
+
+        var manager = new InstanceManager(updatedConfig => new TestInstance(updatedConfig, () => null));
+        manager.ReplaceInstance(config.Uuid, new TestInstance(config, () => null));
+        var application = new LocalInstanceApplication(manager);
+
+        try
+        {
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "direct-replacement",
+                    InstanceType.MCJava,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, Path.GetFileName(replacementTargetPath)),
+                    false),
+                CancellationToken.None);
+
+            Assert.True(result.IsOk(out var update));
+            Assert.Equal("replacement-core", await File.ReadAllTextAsync(replacementTargetPath));
+            Assert.False(File.Exists(originalTargetPath));
+            Assert.Equal("original-core", await File.ReadAllTextAsync(Assert.Single(update.PreservedOriginalPaths)));
+            var metadata = InstanceInstallMetadataStore.Read(instanceDirectory);
+            Assert.NotNull(metadata);
+            Assert.Equal(InstanceType.MCJava.ToString(), metadata.InstallerKind);
+            Assert.Equal(uploadedPath, metadata.InstallerSourcePath);
+            Assert.Equal(Path.GetFileName(replacementTargetPath), metadata.ResolvedLaunchTarget);
+            Assert.Equal(["libraries"], metadata.GeneratedPaths.ToArray());
+            Assert.Equal(originalMetadataBytes, await File.ReadAllBytesAsync(metadataPath + ".bak"));
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+        }
+        finally
+        {
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
     [Fact]
     public async Task UpdateSettings_TamperedGeneratedPath_IsRejectedBeforeStorageMutation()
     {
@@ -547,6 +1379,87 @@ public sealed class LocalInstanceApplicationTests
                 File.Delete(uploadedPath);
             if (File.Exists(outsidePath))
                 File.Delete(outsidePath);
+            DeleteInstanceDirectory(instanceDirectory);
+        }
+    }
+
+    [Theory]
+    [InlineData(InstanceConfig.FileName, "instance.generated_path.reserved")]
+    [InlineData(InstanceConfig.FileName + ".bak", "instance.generated_path.reserved")]
+    [InlineData(InstanceInstallMetadataStore.FileName, "instance.generated_path.reserved")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".bak", "instance.generated_path.reserved")]
+    [InlineData(InstanceConfig.FileName + ".", "instance.generated_path.invalid")]
+    [InlineData(InstanceConfig.FileName + " ", "instance.generated_path.invalid")]
+    [InlineData(InstanceConfig.FileName + ".bak.", "instance.generated_path.invalid")]
+    [InlineData(InstanceConfig.FileName + ".bak ", "instance.generated_path.invalid")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".", "instance.generated_path.invalid")]
+    [InlineData(InstanceInstallMetadataStore.FileName + " ", "instance.generated_path.invalid")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".bak.", "instance.generated_path.invalid")]
+    [InlineData(InstanceInstallMetadataStore.FileName + ".bak ", "instance.generated_path.invalid")]
+    [InlineData("foo:bar", "instance.generated_path.invalid")]
+    [InlineData("daemon_instance.json::$DATA", "instance.generated_path.invalid")]
+    [InlineData("NUL", "instance.generated_path.invalid")]
+    [InlineData("nul.txt", "instance.generated_path.invalid")]
+    [InlineData("COM1", "instance.generated_path.invalid")]
+    [InlineData("lpt9.log", "instance.generated_path.invalid")]
+    public async Task UpdateSettings_ReservedGeneratedPath_IsRejectedBeforeStorageMutation(
+        string generatedPath,
+        string expectedCode)
+    {
+        var (manager, config, instanceDirectory) = CreateLoadedManager();
+        var configPath = Path.Combine(instanceDirectory, InstanceConfig.FileName);
+        var originalTargetPath = Path.Combine(instanceDirectory, config.Target);
+        var metadataPath = InstanceInstallMetadataStore.GetPath(instanceDirectory);
+        var uploadedPath = Path.Combine(FileManager.UploadRoot, $"reserved-generated-{Guid.NewGuid():N}.jar");
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        await File.WriteAllTextAsync(originalTargetPath, "original-core");
+        await File.WriteAllTextAsync(uploadedPath, "replacement-core");
+        InstanceInstallMetadataStore.Write(
+            instanceDirectory,
+            new InstanceInstallMetadata(
+                "reserved-generated-test",
+                null,
+                ImmutableArray.Create(generatedPath),
+                config.Target,
+                DateTimeOffset.Parse("2026-07-01T00:00:00+00:00")));
+        await File.WriteAllTextAsync(metadataPath + ".bak", "metadata-backup");
+        var originalConfigBytes = await File.ReadAllBytesAsync(configPath);
+        var originalMetadataBytes = await File.ReadAllBytesAsync(metadataPath);
+        var originalMetadataBackupBytes = await File.ReadAllBytesAsync(metadataPath + ".bak");
+
+        try
+        {
+            var application = new LocalInstanceApplication(manager);
+            var before = manager.InstanceSnapshotSource.Current;
+
+            var result = await application.UpdateInstanceSettingsAsync(
+                new UpdateInstanceSettingsRequest(
+                    config.Uuid,
+                    "reserved-generated",
+                    InstanceType.MCBedrock,
+                    config.JavaPath,
+                    config.Arguments.ToImmutableArray(),
+                    config.Version,
+                    new InstanceCoreReplacementRequest(uploadedPath, "replacement.jar"),
+                    true),
+                CancellationToken.None);
+
+            Assert.True(result.IsErr(out var error));
+            var validation = Assert.IsType<ValidationDaemonError>(error);
+            Assert.Equal(expectedCode, validation.Code);
+            Assert.Equal("original-core", await File.ReadAllTextAsync(originalTargetPath));
+            Assert.Equal(originalConfigBytes, await File.ReadAllBytesAsync(configPath));
+            Assert.Equal(originalMetadataBytes, await File.ReadAllBytesAsync(metadataPath));
+            Assert.Equal(originalMetadataBackupBytes, await File.ReadAllBytesAsync(metadataPath + ".bak"));
+            Assert.Equal(config.Name, manager.Instances[config.Uuid].Config.Name);
+            Assert.Equal(before.Version, manager.InstanceSnapshotSource.Current.Version);
+            Assert.Same(before.Value, manager.InstanceSnapshotSource.Current.Value);
+            Assert.Empty(Directory.EnumerateDirectories(instanceDirectory, ".instance-update-*"));
+        }
+        finally
+        {
+            if (File.Exists(uploadedPath))
+                File.Delete(uploadedPath);
             DeleteInstanceDirectory(instanceDirectory);
         }
     }
@@ -729,6 +1642,185 @@ public sealed class LocalInstanceApplicationTests
             Directory.Delete(instanceDirectory, true);
     }
 
+    private static void DeleteFactoryWorkspace(string? workingDirectory)
+    {
+        if (workingDirectory is not null && Directory.Exists(workingDirectory))
+            Directory.Delete(workingDirectory, true);
+    }
+
+    private static bool TryCreateDirectorySymbolicLink(string link, string target)
+    {
+        try
+        {
+            Directory.CreateSymbolicLink(link, target);
+            return true;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return TryCreateDirectoryJunction(link, target);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return TryCreateDirectoryJunction(link, target);
+        }
+        catch (IOException)
+        {
+            return TryCreateDirectoryJunction(link, target);
+        }
+    }
+
+    private static bool TryCreateDirectoryJunction(string link, string target)
+    {
+        if (!OperatingSystem.IsWindows())
+            return false;
+
+        var startInfo = new System.Diagnostics.ProcessStartInfo("cmd.exe")
+        {
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        };
+        startInfo.ArgumentList.Add("/d");
+        startInfo.ArgumentList.Add("/c");
+        startInfo.ArgumentList.Add("mklink");
+        startInfo.ArgumentList.Add("/J");
+        startInfo.ArgumentList.Add(link);
+        startInfo.ArgumentList.Add(target);
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            if (process is null)
+                return false;
+
+            process.StandardOutput.ReadToEnd();
+            process.StandardError.ReadToEnd();
+            process.WaitForExit();
+            return process.ExitCode == 0 &&
+                   Directory.Exists(link) &&
+                   File.GetAttributes(link).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> TryEnableDirectoryCaseSensitivityAsync(string directory)
+    {
+        var startInfo = new System.Diagnostics.ProcessStartInfo("fsutil.exe")
+        {
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        };
+        startInfo.ArgumentList.Add("file");
+        startInfo.ArgumentList.Add("setCaseSensitiveInfo");
+        startInfo.ArgumentList.Add(directory);
+        startInfo.ArgumentList.Add("enable");
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            if (process is null)
+                return false;
+
+            var standardOutput = process.StandardOutput.ReadToEndAsync();
+            var standardError = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            await Task.WhenAll(standardOutput, standardError);
+            return process.ExitCode == 0;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> TryCreateCaseDistinctFilesAsync(string directory)
+    {
+        const string script = """
+            Set-Content -LiteralPath (Join-Path $env:MCSL_CASE_DIR 'Core.jar') -Value 'upper-original' -NoNewline
+            Set-Content -LiteralPath (Join-Path $env:MCSL_CASE_DIR 'core.jar') -Value 'lower-original' -NoNewline
+            """;
+        try
+        {
+            var result = await RunWindowsPowerShellAsync(directory, script);
+            if (result.ExitCode != 0)
+                return false;
+
+            var names = Directory.EnumerateFileSystemEntries(directory)
+                .Select(Path.GetFileName)
+                .ToArray();
+            return names.Contains("Core.jar", StringComparer.Ordinal) &&
+                   names.Contains("core.jar", StringComparer.Ordinal);
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string[]> ReadCaseDistinctFilesAsync(string directory)
+    {
+        const string script = """
+            $upper = Get-Content -Raw -LiteralPath (Join-Path $env:MCSL_CASE_DIR 'Core.jar')
+            $lower = Get-Content -Raw -LiteralPath (Join-Path $env:MCSL_CASE_DIR 'core.jar')
+            [Console]::Out.Write($upper)
+            [Console]::Out.Write([char]0)
+            [Console]::Out.Write($lower)
+            """;
+        var result = await RunWindowsPowerShellAsync(directory, script);
+        if (result.ExitCode != 0)
+        {
+            throw new Xunit.Sdk.XunitException(
+                $"Failed to read case-distinct files: {result.Error}");
+        }
+
+        return result.Output.Split('\0');
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunWindowsPowerShellAsync(
+        string directory,
+        string script)
+    {
+        var startInfo = new System.Diagnostics.ProcessStartInfo("powershell.exe")
+        {
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        };
+        startInfo.ArgumentList.Add("-NoLogo");
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-NonInteractive");
+        startInfo.ArgumentList.Add("-Command");
+        startInfo.ArgumentList.Add(script);
+        startInfo.Environment["MCSL_CASE_DIR"] = directory;
+
+        using var process = System.Diagnostics.Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Failed to start Windows PowerShell.");
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return (process.ExitCode, await standardOutput, await standardError);
+    }
+
+    private static void WritePartialFactoryOutputs(string workingDirectory)
+    {
+        Directory.CreateDirectory(Path.Combine(workingDirectory, "libraries"));
+        File.WriteAllText(Path.Combine(workingDirectory, "libraries", "partial.jar"), "partial");
+        File.WriteAllText(Path.Combine(workingDirectory, "run.bat"), "partial");
+        File.WriteAllText(Path.Combine(workingDirectory, "installer.log"), "partial-log");
+        File.WriteAllText(Path.Combine(workingDirectory, "eula.txt"), "eula=true");
+    }
+
     private static InstanceConfig CreateConfig(string? name = null)
     {
         return new InstanceConfig
@@ -742,6 +1834,113 @@ public sealed class LocalInstanceApplicationTests
             JavaPath = "java",
             Arguments = ["nogui"]
         };
+    }
+
+    [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]
+    private sealed class PartialOutputCancelingFactory : ICoreInstanceFactory
+    {
+        public static CancellationTokenSource? CancellationSource { get; set; }
+
+        public static string? LastWorkingDirectory { get; set; }
+
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
+        {
+            var workingDirectory = setting.Configuration.GetWorkingDirectory();
+            LastWorkingDirectory = workingDirectory;
+            WritePartialFactoryOutputs(workingDirectory);
+            CancellationSource!.Cancel();
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ResultExt.Ok(setting.Configuration));
+        }
+    }
+
+    [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]
+    private sealed class PartialOutputFailureFactory : ICoreInstanceFactory
+    {
+        public static string? LastWorkingDirectory { get; set; }
+
+        public static bool ThrowException { get; set; }
+
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var workingDirectory = setting.Configuration.GetWorkingDirectory();
+            LastWorkingDirectory = workingDirectory;
+            WritePartialFactoryOutputs(workingDirectory);
+            if (ThrowException)
+                throw new InvalidOperationException("The test factory failed after writing partial output.");
+
+            return Task.FromResult(ResultExt.Err<InstanceConfiguration>(new StorageDaemonError(
+                "instance.factory.test_failed",
+                "The test factory failed after writing partial output.")));
+        }
+    }
+
+    [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]
+    private sealed class ReparsePointReplacementFactory : ICoreInstanceFactory
+    {
+        private const string LaunchTarget = "generated-launcher.jar";
+
+        public static string? ExternalDirectory { get; set; }
+
+        public static string? LastWorkingDirectory { get; set; }
+
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var workingDirectory = setting.Configuration.GetWorkingDirectory();
+            LastWorkingDirectory = workingDirectory;
+            File.WriteAllText(Path.Combine(workingDirectory, LaunchTarget), "generated-launcher");
+            var externalDirectory = ExternalDirectory ??
+                                    throw new InvalidOperationException("External directory was not configured.");
+            if (!TryCreateDirectorySymbolicLink(
+                    Path.Combine(workingDirectory, "linked-output"),
+                    externalDirectory))
+            {
+                throw new InvalidOperationException("The test could not create a directory reparse point.");
+            }
+            return Task.FromResult(ResultExt.Ok(InstanceConfigurationMapper.WithTarget(
+                setting.Configuration,
+                LaunchTarget,
+                TargetType.Jar)));
+        }
+    }
+
+    [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]
+    private sealed class SuccessfulReplacementFactory : ICoreInstanceFactory
+    {
+        public const string LaunchTarget = "generated-launcher.jar";
+
+        public static string? LastWorkingDirectory { get; set; }
+
+        public static bool CreateTypeCollision { get; set; }
+
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var workingDirectory = setting.Configuration.GetWorkingDirectory();
+            LastWorkingDirectory = workingDirectory;
+            Directory.CreateDirectory(Path.Combine(workingDirectory, "libraries"));
+            File.WriteAllText(Path.Combine(workingDirectory, "libraries", "factory.jar"), "factory-library");
+            File.WriteAllText(Path.Combine(workingDirectory, LaunchTarget), "generated-launcher");
+            File.WriteAllText(Path.Combine(workingDirectory, "server.properties"), "server-port=25570");
+            File.WriteAllText(Path.Combine(workingDirectory, "installer.log"), "installer-log");
+            File.WriteAllText(Path.Combine(workingDirectory, "eula.txt"), "eula=true");
+            if (CreateTypeCollision)
+                File.WriteAllText(Path.Combine(workingDirectory, "world"), "factory-world-file");
+            return Task.FromResult(ResultExt.Ok(InstanceConfigurationMapper.WithTarget(
+                setting.Configuration,
+                LaunchTarget,
+                TargetType.Jar)));
+        }
     }
 
     private sealed class TestInstance(

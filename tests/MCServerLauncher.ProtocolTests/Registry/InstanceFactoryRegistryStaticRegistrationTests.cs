@@ -2,6 +2,8 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -73,14 +75,95 @@ public class InstanceFactoryRegistryStaticRegistrationTests
         Assert.Contains("1.20.1", exception.Message);
     }
 
+    [Fact]
+    [Trait("Category", "InstanceFactoryRegistry")]
+    public async Task ResolvedFactory_PropagatesCancellationToken()
+    {
+        InstanceFactoryRegistry.Reset();
+        TokenCapturingFactory.ObservedToken = default;
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(TokenCapturingFactory));
+        var setting = InstanceFactoryRegistryHarness.CreateSetting(
+            InstanceType.MCBedrock,
+            SourceType.Core,
+            "1.20.1");
+        var factory = Assert.IsType<Func<InstanceFactoryConfiguration, CancellationToken,
+            Task<Result<InstanceConfiguration, DaemonError>>>>(
+            InstanceFactoryRegistryHarness.GetResolvedFactory(setting));
+        using var cancellationSource = new CancellationTokenSource();
+
+        try
+        {
+            var result = await factory(setting, cancellationSource.Token);
+
+            Assert.True(result.IsOk(out _));
+            Assert.Equal(cancellationSource.Token, TokenCapturingFactory.ObservedToken);
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "InstanceFactoryRegistry")]
+    public async Task ApplyInstanceFactory_FactoryNotImplementedException_ReturnsInternalError()
+    {
+        InstanceFactoryRegistry.Reset();
+        InstanceFactoryRegistry.LoadFactoryFromType(typeof(NotImplementedThrowingFactory));
+        var setting = InstanceFactoryRegistryHarness.CreateSetting(
+            InstanceType.MCBedrock,
+            SourceType.Core,
+            "1.20.1");
+
+        try
+        {
+            var result = await setting.ApplyInstanceFactory();
+
+            Assert.True(result.IsErr(out var error));
+            var internalError = Assert.IsType<InternalDaemonError>(error);
+            Assert.Equal("instance.factory.failed", internalError.Code);
+        }
+        finally
+        {
+            InstanceFactoryRegistry.Reset();
+        }
+    }
+
     [InstanceFactory(InstanceType.MCVanilla, SourceType.Core, "1.20.1", "1.20.1")]
     [InstanceFactory(InstanceType.MCVanilla, SourceType.Core, "1.20.1", "1.20.1")]
     private sealed class DuplicateVanillaCoreFactory : ICoreInstanceFactory
     {
-        public Task<Result<InstanceConfiguration, Error>> CreateInstanceFromCore(InstanceFactoryConfiguration setting)
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()
+        public Func<MinecraftInstance, Task<Result<Unit, DaemonError>>>[] GetPostProcessors()
             => [];
+    }
+
+    [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]
+    private sealed class TokenCapturingFactory : ICoreInstanceFactory
+    {
+        public static CancellationToken ObservedToken { get; set; }
+
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
+        {
+            ObservedToken = cancellationToken;
+            return Task.FromResult(ResultExt.Ok(setting.Configuration));
+        }
+    }
+
+    [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]
+    private sealed class NotImplementedThrowingFactory : ICoreInstanceFactory
+    {
+        public Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+            InstanceFactoryConfiguration setting,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("factory implementation defect");
+        }
     }
 }

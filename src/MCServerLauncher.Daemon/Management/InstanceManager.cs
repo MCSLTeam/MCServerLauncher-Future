@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using MCServerLauncher.Common.Detection;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
@@ -22,7 +23,7 @@ namespace MCServerLauncher.Daemon.Management;
 internal class InstanceManager : IInstanceManager
 {
     private readonly InstanceUpdateCoordinator _instanceUpdateCoordinator;
-    private readonly Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> _applyInstanceFactory;
+    private readonly Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>> _applyInstanceFactory;
     private readonly Func<InstanceConfig, IInstance> _instanceFactory;
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _instanceMutationGates = new();
     private readonly Lock _mutationLock = new();
@@ -51,18 +52,18 @@ internal class InstanceManager : IInstanceManager
     public InstanceManager()
         : this(
             static config => config.CreateInstance(),
-            static setting => setting.ApplyInstanceFactory())
+            static (setting, cancellationToken) => setting.ApplyInstanceFactory(cancellationToken))
     {
     }
 
     internal InstanceManager(Func<InstanceConfig, IInstance> instanceFactory)
-        : this(instanceFactory, static setting => setting.ApplyInstanceFactory())
+        : this(instanceFactory, static (setting, cancellationToken) => setting.ApplyInstanceFactory(cancellationToken))
     {
     }
 
     internal InstanceManager(
         Func<InstanceConfig, IInstance> instanceFactory,
-        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> applyInstanceFactory)
+        Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>> applyInstanceFactory)
     {
         ArgumentNullException.ThrowIfNull(instanceFactory);
         ArgumentNullException.ThrowIfNull(applyInstanceFactory);
@@ -72,7 +73,7 @@ internal class InstanceManager : IInstanceManager
         _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this, instanceFactory);
     }
 
-    public async Task<Result<InstanceConfiguration, Error>> TryAddInstance(
+    public async Task<Result<InstanceConfiguration, DaemonError>> TryAddInstance(
         InstanceFactoryConfiguration setting,
         CancellationToken ct = default)
     {
@@ -102,7 +103,10 @@ internal class InstanceManager : IInstanceManager
         }
         catch (Exception exception)
         {
-            return FailCreate(new Error("Instance manager failed to create instance directory").CauseBy(exception));
+            Log.Error(exception, "[InstanceManager] Failed to create instance directory for '{InstanceId}'", reservedConfig.InstanceId);
+            return FailCreate(new StorageDaemonError(
+                "instance.directory.create_failed",
+                "The instance directory could not be created."));
         }
 
         Log.Information(
@@ -110,10 +114,10 @@ internal class InstanceManager : IInstanceManager
             reservedConfig.InstanceType.ToString(),
             reservedConfig.Name);
 
-        Result<InstanceConfiguration, Error> appliedFactoryResult;
+        Result<InstanceConfiguration, DaemonError> appliedFactoryResult;
         try
         {
-            appliedFactoryResult = await _applyInstanceFactory(reservedSetting);
+            appliedFactoryResult = await _applyInstanceFactory(reservedSetting, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -122,11 +126,14 @@ internal class InstanceManager : IInstanceManager
         }
         catch (Exception exception)
         {
-            return FailCreate(new Error("Instance manager failed to run instance factory").CauseBy(exception));
+            Log.Error(exception, "[InstanceManager] Failed to run instance factory for '{InstanceId}'", reservedConfig.InstanceId);
+            return FailCreate(new InternalDaemonError(
+                "instance.factory.failed",
+                "The instance factory could not create the instance."));
         }
 
         if (appliedFactoryResult.IsErr(out var factoryError))
-            return FailCreate(new Error("Instance manager failed to run instance factory").WithInner(factoryError));
+            return FailCreate(factoryError!);
 
         try
         {
@@ -141,11 +148,24 @@ internal class InstanceManager : IInstanceManager
 
             var validation = reconciledConfig.ValidateConfig();
             if (validation.IsErr(out var validationError))
-                return FailCreate(new Error("Instance manager received an invalid instance config").WithInner(validationError));
+                return FailCreate(validationError!);
 
-            FileManager.WriteJsonAndBackup(
-                Path.Combine(instanceRoot, InstanceConfig.FileName),
-                reconciledConfig);
+            try
+            {
+                FileManager.WriteJsonAndBackup(
+                    Path.Combine(instanceRoot, InstanceConfig.FileName),
+                    reconciledConfig);
+            }
+            catch (Exception exception)
+            {
+                Log.Error(
+                    exception,
+                    "[InstanceManager] Failed to persist configuration for created instance '{InstanceId}'",
+                    reconciledConfig.Uuid);
+                return FailCreate(new StorageDaemonError(
+                    "instance.config.persist_failed",
+                    "The instance configuration could not be persisted."));
+            }
 
             var instance = _instanceFactory(reconciledConfig);
             try
@@ -167,12 +187,19 @@ internal class InstanceManager : IInstanceManager
         }
         catch (Exception exception)
         {
-            return FailCreate(Error.FromException(exception));
+            Log.Error(exception, "[InstanceManager] Failed to commit created instance '{InstanceId}'", reservedConfig.InstanceId);
+            return FailCreate(new InternalDaemonError(
+                "instance.create_failed",
+                "The instance could not be created."));
         }
 
-        Result<InstanceConfiguration, Error> FailCreate(Error error)
+        Result<InstanceConfiguration, DaemonError> FailCreate(DaemonError error)
         {
-            Log.Error("[InstanceManager] Failed to create instance '{0}': \n{1}", reservedConfig.Name, error);
+            Log.Error(
+                "[InstanceManager] Failed to create instance '{InstanceName}' ({ErrorCode}): {ErrorMessage}",
+                reservedConfig.Name,
+                error.Code,
+                error.Message);
             FileManager.TryRemove(instanceRoot);
             return ResultExt.Err<InstanceConfiguration>(error);
         }
@@ -364,15 +391,15 @@ internal class InstanceManager : IInstanceManager
         return false;
     }
 
-    public async Task<Result<InstanceSettingsResult, Error>> GetInstanceSettings(
+    public async Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettings(
         Guid instanceId,
         CancellationToken ct = default)
     {
         using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
-        return _instanceUpdateCoordinator.GetInstanceSettings(instanceId);
+        return _instanceUpdateCoordinator.GetInstanceSettings(instanceId, ct);
     }
 
-    public async Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
+    public async Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettings(
         UpdateInstanceSettingsRequest request,
         CancellationToken ct = default)
     {
@@ -764,7 +791,7 @@ internal class InstanceManager : IInstanceManager
                     Log.Warning(
                         "[InstanceManager] Ignored instance configuration at '{0}' with an invalid target: {1}",
                         serverConfig.FullName,
-                        targetError!.Cause);
+                        targetError!.Message);
                     continue;
                 }
 

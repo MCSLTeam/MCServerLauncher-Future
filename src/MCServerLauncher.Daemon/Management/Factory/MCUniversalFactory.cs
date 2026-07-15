@@ -1,14 +1,16 @@
 using System.Collections.Immutable;
 using System.IO.Compression;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Installer;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
-using RustyOptions.Async;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Factory;
 
@@ -47,22 +49,37 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 [InstanceFactory(InstanceType.MCSpongeNeo)]
 public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
 {
-    public async Task<Result<InstanceConfiguration, Error>> CreateInstanceFromArchive(InstanceFactoryConfiguration setting)
+    public async Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromArchive(
+        InstanceFactoryConfiguration setting,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var workingDirectory = setting.Configuration.GetWorkingDirectory();
 
-        var result = await ResultExt
-            .Try(() => ZipFile.ExtractToDirectory(setting.Source, workingDirectory, Encoding.UTF8, true)
-            ).MapAsync(_ => setting.FixEula());
+        var extract = ResultExt.Try(() =>
+            ZipFile.ExtractToDirectory(setting.Source, workingDirectory, Encoding.UTF8, true));
+        if (extract.IsErr(out var exception))
+        {
+            return ResultExt.Err<InstanceConfiguration>(MapStorageFailure(
+                exception!,
+                "instance.archive.extract_failed",
+                "Universal factory could not extract the instance archive.",
+                "extracting the instance archive"));
+        }
 
-        if (result.MapErr(Error.FromException).IsErr(out var error))
-            return ResultExt.Err<InstanceConfiguration>("Universal factory could not create instance from archive", error);
+        cancellationToken.ThrowIfCancellationRequested();
+        var fixEula = await setting.FixEula(cancellationToken);
+        if (fixEula.IsErr(out var error))
+            return ResultExt.Err<InstanceConfiguration>(error!);
 
         return ResultExt.Ok(setting.Configuration);
     }
 
-    public async Task<Result<InstanceConfiguration, Error>> CreateInstanceFromCore(InstanceFactoryConfiguration setting)
+    public async Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+        InstanceFactoryConfiguration setting,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         setting = setting with
         {
             Configuration = InstanceConfigurationMapper.WithTarget(
@@ -71,31 +88,44 @@ public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
                 TargetType.Jar)
         };
 
-        var copyAndRenameTarget = await setting.CopyAndRenameTarget();
-        var installer = InstanceInstallerResolver.Resolve(
-            setting,
-            Path.Combine(setting.Configuration.GetWorkingDirectory(), setting.Configuration.Target));
-        var install = await copyAndRenameTarget.MapAsync(_ => installer.Run(setting));
-        var fixEula = await install.MapAsync(_ => setting.FixEula());
+        var copyAndRenameTarget = await setting.CopyAndRenameTarget(cancellationToken);
+        if (copyAndRenameTarget.IsErr(out var error))
+            return ResultExt.Err<InstanceConfiguration>(error!);
 
-        return fixEula.Map(_ =>
-        {
-            var config = setting.Configuration;
-            InstanceInstallMetadataStore.Write(
-                config.GetWorkingDirectory(),
-                new InstanceInstallMetadata(
-                    config.InstanceType.ToString(),
-                    setting.Source,
-                    ImmutableArray<string>.Empty,
-                    config.Target,
-                    DateTimeOffset.UtcNow));
-            return config;
-        });
+        var installerResult = InstanceInstallerResolver.Resolve(
+            setting,
+            Path.Combine(setting.Configuration.GetWorkingDirectory(), setting.Configuration.Target),
+            cancellationToken);
+        if (installerResult.IsErr(out error))
+            return ResultExt.Err<InstanceConfiguration>(error!);
+
+        var install = await installerResult.Unwrap().Run(setting, cancellationToken);
+        if (install.IsErr(out error))
+            return ResultExt.Err<InstanceConfiguration>(error!);
+
+        var fixEula = await setting.FixEula(cancellationToken);
+        if (fixEula.IsErr(out error))
+            return ResultExt.Err<InstanceConfiguration>(error!);
+
+        var config = setting.Configuration;
+        var metadataResult = InstanceInstallMetadataStore.TryWrite(
+            config.GetWorkingDirectory(),
+            new InstanceInstallMetadata(
+                config.InstanceType.ToString(),
+                setting.Source,
+                ImmutableArray<string>.Empty,
+                config.Target,
+                DateTimeOffset.UtcNow),
+            cancellationToken);
+        if (metadataResult.IsErr(out error))
+            return ResultExt.Err<InstanceConfiguration>(error!);
+
+        return ResultExt.Ok(config);
     }
 
-    public Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()
+    public Func<MinecraftInstance, Task<Result<Unit, DaemonError>>>[] GetPostProcessors()
     {
-        return new List<Func<MinecraftInstance, Task<Result<Unit, Error>>>>
+        return new List<Func<MinecraftInstance, Task<Result<Unit, DaemonError>>>>
         {
             async instance =>
             {
@@ -108,5 +138,18 @@ public class MCUniversalFactory : ICoreInstanceFactory, IArchiveInstanceFactory
                 return ResultExt.Ok();
             }
         }.ToArray();
+    }
+
+    private static DaemonError MapStorageFailure(
+        Exception exception,
+        string code,
+        string message,
+        string operation)
+    {
+        if (exception is OperationCanceledException)
+            ExceptionDispatchInfo.Capture(exception).Throw();
+
+        Log.Error(exception, "[MCUniversalFactory] Failed while {Operation}.", operation);
+        return new StorageDaemonError(code, message);
     }
 }

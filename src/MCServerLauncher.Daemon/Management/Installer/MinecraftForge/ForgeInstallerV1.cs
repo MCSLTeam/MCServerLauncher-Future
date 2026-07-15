@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
@@ -26,7 +27,7 @@ public class ForgeInstallerV1 : ForgeInstallerBase
     public VersionInfo VersionInfo { get; }
     public override InstallV1 Install { get; }
 
-    public override async Task<Result<Unit, Error>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
+    public override async Task<Result<Unit, DaemonError>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
     {
         var workingDirectory = setting.Configuration.GetWorkingDirectory();
         var librariesDir = Path.Combine(workingDirectory, "libraries");
@@ -45,7 +46,9 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         if (!await DownloadMinecraft(serverJarPath, ct))
         {
             Log.Error("[ForgeInstaller] Failed to download vanilla server core");
-            return ResultExt.Err("Failed to download vanilla server core");
+            return ResultExt.Err(new StorageDaemonError(
+                "instance.vanilla_core.download_failed",
+                "Failed to download vanilla server core."));
         }
 
         ct.ThrowIfCancellationRequested();
@@ -66,7 +69,9 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         if (await RunInstallerOffline(workingDirectory, ct)) return ResultExt.Ok();
 
         DeleteInstaller();
-        return ResultExt.Err("Failed to apply forge post-processors");
+        return ResultExt.Err(new InternalDaemonError(
+            "instance.forge.post_process_failed",
+            "Failed to apply forge post-processors."));
     }
 
     private async Task<bool> ConsiderLibrary(LibraryInfo info, string libRoot, CancellationToken ct = default)

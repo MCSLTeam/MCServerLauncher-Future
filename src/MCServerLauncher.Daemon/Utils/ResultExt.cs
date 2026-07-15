@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using MCServerLauncher.Daemon.API.Errors;
 using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Utils;
@@ -29,43 +30,30 @@ public static class ResultExt
             : Result.Err<T2, TErr>(self.UnwrapErr());
     }
 
-    public static Error ExceptionErrorMapper<T>(Exception exception)
-        where T : notnull
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<Unit, DaemonError> Ok()
     {
-        return new Error().CauseBy(exception);
+        return Result.Ok<Unit, DaemonError>(Unit.Default);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Result<Unit, Error> Ok()
-    {
-        return Result.Ok<Unit, Error>(Unit.Default);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Result<TResult, Error> Ok<TResult>(TResult ok)
+    public static Result<TResult, DaemonError> Ok<TResult>(TResult ok)
         where TResult : notnull
     {
-        return Result.Ok<TResult, Error>(ok);
+        return Result.Ok<TResult, DaemonError>(ok);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Result<Unit, Error> Err(Error err)
+    public static Result<Unit, DaemonError> Err(DaemonError err)
     {
-        return Result.Err<Unit, Error>(err);
+        return Result.Err<Unit, DaemonError>(err);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Result<TResult, Error> Err<TResult>(Error err)
+    public static Result<TResult, DaemonError> Err<TResult>(DaemonError err)
         where TResult : notnull
     {
-        return Result.Err<TResult, Error>(err);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Result<TResult, Error> Err<TResult>(Error err, Error? innerError)
-        where TResult : notnull
-    {
-        return Result.Err<TResult, Error>(err.WithInner(innerError));
+        return Result.Err<TResult, DaemonError>(err);
     }
 
     /// <summary>

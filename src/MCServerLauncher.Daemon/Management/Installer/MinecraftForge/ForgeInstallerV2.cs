@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Utils;
@@ -51,7 +52,7 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
     private static InstallV1 DeserializeInstallerProfile(string content) =>
         JsonSerializer.Deserialize<InstallV1>(content, InstallProfileJsonSettings.Settings)!;
 
-    public override async Task<Result<Unit, Error>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
+    public override async Task<Result<Unit, DaemonError>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
     {
         var workingDirectory = setting.Configuration.GetWorkingDirectory();
         var libRoot = Path.Combine(workingDirectory, "libraries");
@@ -72,7 +73,9 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         if (!await DownloadMinecraft(serverJarPath, ct))
         {
             Log.Error("[ForgeInstaller] Failed to download vanilla server core");
-            return ResultExt.Err("Failed to download vanilla server core");
+            return ResultExt.Err(new StorageDaemonError(
+                "instance.vanilla_core.download_failed",
+                "Failed to download vanilla server core."));
         }
 
         ct.ThrowIfCancellationRequested();
@@ -93,7 +96,9 @@ public sealed class ForgeInstallerV2 : ForgeInstallerBase
         if (await RunInstallerOffline(workingDirectory, ct)) return ResultExt.Ok();
 
         DeleteInstaller();
-        return ResultExt.Err("Failed to apply forge post-processors");
+        return ResultExt.Err(new InternalDaemonError(
+            "instance.forge.post_process_failed",
+            "Failed to apply forge post-processors."));
     }
 
 

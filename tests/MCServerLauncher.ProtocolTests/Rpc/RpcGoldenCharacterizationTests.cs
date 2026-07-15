@@ -6,7 +6,6 @@ using MCServerLauncher.ProtocolTests.Fixtures.Rpc;
 using MCServerLauncher.ProtocolTests.Helpers;
 using MCServerLauncher.Common.ProtoType.Serialization;
 using System.Text.Json;
-using System.Text.Json;
 
 namespace MCServerLauncher.ProtocolTests;
 

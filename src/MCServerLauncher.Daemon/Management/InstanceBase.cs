@@ -53,7 +53,11 @@ public abstract class InstanceBase : DisposableObject, IInstance
         var startInfoResult = Config.TryGetStartInfo();
         if (startInfoResult.IsErr(out var error))
         {
-            Log.Error("[Instance] Failed to build start info for instance '{0}': {1}", Config.Uuid, error);
+            Log.Error(
+                "[Instance] Failed to build start info for instance '{InstanceId}' ({ErrorCode}): {ErrorMessage}",
+                Config.Uuid,
+                error!.Code,
+                error.Message);
             return false;
         }
 

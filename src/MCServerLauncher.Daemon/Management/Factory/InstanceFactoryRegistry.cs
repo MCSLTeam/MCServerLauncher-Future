@@ -3,6 +3,7 @@ using System.Reflection;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using Serilog;
@@ -21,7 +22,7 @@ public static class InstanceFactoryRegistry
                 SourceType,
                 Dictionary<
                     (McVersion, McVersion),
-                    Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>
+                    Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>>
                 >
             >
         > InstanceFactoryMapping = new();
@@ -67,7 +68,7 @@ public static class InstanceFactoryRegistry
                 = InstanceFactoryMapping.GetValueOrDefault(attr.InstanceType) ??
                   (InstanceFactoryMapping[attr.InstanceType] =
                       new Dictionary<SourceType, Dictionary<(McVersion, McVersion),
-                          Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>>>());
+                          Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>>>>());
 
             var allowedSourceType = attr.AllowedSourceType;
 
@@ -122,10 +123,10 @@ public static class InstanceFactoryRegistry
 
     private static void RegisterInstanceFactory(
         Dictionary<SourceType, Dictionary<(McVersion, McVersion),
-                Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>>>
+                Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>>>>
             sourceTypeMapping,
         SourceType sourceType,
-        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> instanceFactory,
+        Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>> instanceFactory,
         InstanceFactoryAttribute attribute
     )
     {
@@ -133,7 +134,7 @@ public static class InstanceFactoryRegistry
             sourceTypeMapping.GetValueOrDefault(sourceType) ??
             (sourceTypeMapping[sourceType] =
                 new Dictionary<(McVersion, McVersion),
-                    Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>>>());
+                    Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>>>());
 
         var versionRange = (McVersion.Of(attribute.MinVersion), McVersion.Of(attribute.MaxVersion));
 
@@ -151,7 +152,7 @@ public static class InstanceFactoryRegistry
     /// <param name="setting"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public static Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> GetInstanceFactory(
+    public static Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>> GetInstanceFactory(
         InstanceFactoryConfiguration setting)
     {
         var config = setting.Configuration;

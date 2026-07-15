@@ -2,22 +2,46 @@ using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Installer;
 
 public static class InstanceInstallerResolver
 {
-    public static IInstanceInstaller Resolve(InstanceFactoryConfiguration setting, string installerPath)
+    public static Result<IInstanceInstaller, DaemonError> Resolve(
+        InstanceFactoryConfiguration setting,
+        string installerPath,
+        CancellationToken cancellationToken = default)
     {
-        return setting.Configuration.InstanceType switch
+        cancellationToken.ThrowIfCancellationRequested();
+        try
         {
-            InstanceType.MCForge => ResolveForgeFamilyInstaller(setting, installerPath),
-            InstanceType.MCNeoForge => ResolveForgeFamilyInstaller(setting, installerPath),
-            InstanceType.MCCleanroom => ResolveForgeFamilyInstaller(setting, installerPath),
-            InstanceType.MCFabric => PassthroughInstaller.Instance,
-            _ => PassthroughInstaller.Instance
-        };
+            var installer = setting.Configuration.InstanceType switch
+            {
+                InstanceType.MCForge => ResolveForgeFamilyInstaller(setting, installerPath),
+                InstanceType.MCNeoForge => ResolveForgeFamilyInstaller(setting, installerPath),
+                InstanceType.MCCleanroom => ResolveForgeFamilyInstaller(setting, installerPath),
+                InstanceType.MCFabric => PassthroughInstaller.Instance,
+                _ => PassthroughInstaller.Instance
+            };
+            return ResultExt.Ok<IInstanceInstaller>(installer);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "[InstanceInstallerResolver] Failed to resolve installer for {InstanceType} {Version}.",
+                setting.Configuration.InstanceType, setting.Configuration.Version);
+            return ResultExt.Err<IInstanceInstaller>(new StorageDaemonError(
+                "instance.installer.resolve_failed",
+                "The instance installer could not be resolved."));
+        }
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",

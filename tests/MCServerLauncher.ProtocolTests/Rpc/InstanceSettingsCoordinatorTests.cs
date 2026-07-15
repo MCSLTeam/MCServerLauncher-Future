@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
 using System.Diagnostics;
@@ -47,7 +48,9 @@ public class InstanceSettingsCoordinatorTests
             false));
 
         Assert.True(result.IsErr(out var error));
-        Assert.Contains("must be stopped", error!.ToString(), StringComparison.OrdinalIgnoreCase);
+        var conflict = Assert.IsType<ConflictDaemonError>(error);
+        Assert.Equal("instance.running", conflict.Code);
+        Assert.Contains("must be stopped", conflict.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

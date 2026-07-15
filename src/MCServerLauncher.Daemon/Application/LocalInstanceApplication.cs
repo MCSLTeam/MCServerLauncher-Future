@@ -5,6 +5,7 @@ using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management;
 using RustyOptions;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.ApplicationCore;
 
@@ -16,21 +17,15 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var validation = request.Setting.ValidateSetting();
-        if (validation.IsErr(out _))
-        {
-            return Result.Err<CreateInstanceResult, DaemonError>(
-                new ValidationDaemonError("instance.invalid", "The instance configuration is invalid."));
-        }
-
         try
         {
+            var validation = request.Setting.ValidateSetting();
+            if (validation.IsErr(out var validationError))
+                return Result.Err<CreateInstanceResult, DaemonError>(validationError!);
+
             var result = await instanceManager.TryAddInstance(request.Setting, cancellationToken);
-            if (result.IsErr(out _))
-            {
-                return Result.Err<CreateInstanceResult, DaemonError>(
-                    new StorageDaemonError("instance.create_failed", "The instance could not be created."));
-            }
+            if (result.IsErr(out var createError))
+                return Result.Err<CreateInstanceResult, DaemonError>(createError!);
 
             return Result.Ok<CreateInstanceResult, DaemonError>(
                 new CreateInstanceResult(result.Unwrap()));
@@ -39,8 +34,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance creation failure.");
             return Result.Err<CreateInstanceResult, DaemonError>(
                 new InternalDaemonError("instance.create_failed", "The instance could not be created."));
         }
@@ -72,8 +68,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance removal failure for {InstanceId}.", request.InstanceId);
             return Result.Err<Unit, DaemonError>(
                 new InternalDaemonError("instance.remove_failed", "The instance could not be removed."));
         }
@@ -111,8 +108,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance start failure for {InstanceId}.", request.InstanceId);
             return Result.Err<Unit, DaemonError>(
                 new InternalDaemonError("instance.start_failed", "The instance process could not be started."));
         }
@@ -139,8 +137,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance stop failure for {InstanceId}.", request.InstanceId);
             return Result.Err<Unit, DaemonError>(
                 new InternalDaemonError("instance.stop_failed", "The instance could not be stopped."));
         }
@@ -158,8 +157,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             instanceManager.KillInstance(request.InstanceId);
             return Task.FromResult(Result.Ok<Unit, DaemonError>(Unit.Default));
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance halt failure for {InstanceId}.", request.InstanceId);
             return Task.FromResult(Result.Err<Unit, DaemonError>(
                 new InternalDaemonError("instance.halt_failed", "The instance could not be halted.")));
         }
@@ -189,8 +189,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
                 : Result.Err<Unit, DaemonError>(
                     new ConflictDaemonError("instance.not_running", "The instance is not running.")));
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance command failure for {InstanceId}.", request.InstanceId);
             return Task.FromResult(Result.Err<Unit, DaemonError>(
                 new InternalDaemonError("instance.command_failed", "The command could not be sent to the instance.")));
         }
@@ -220,8 +221,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance report failure for {InstanceId}.", request.InstanceId);
             return Result.Err<MCServerLauncher.Common.Contracts.Instances.InstanceReport, DaemonError>(
                 new InternalDaemonError("instance.report_failed", "The instance report could not be read."));
         }
@@ -245,8 +247,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected instance report-list failure.");
             return Result.Err<InstanceReportList, DaemonError>(
                 new InternalDaemonError("instance.reports_failed", "Instance reports could not be read."));
         }
@@ -275,16 +278,17 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         try
         {
             var result = await instanceManager.GetInstanceSettings(request.InstanceId, cancellationToken);
-            return result.IsErr(out _)
-                ? Result.Err<InstanceSettingsResult, DaemonError>(InstanceNotFound(request.InstanceId))
+            return result.IsErr(out var error)
+                ? Result.Err<InstanceSettingsResult, DaemonError>(error!)
                 : Result.Ok<InstanceSettingsResult, DaemonError>(result.Unwrap());
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected settings read failure for {InstanceId}.", request.InstanceId);
             return Result.Err<InstanceSettingsResult, DaemonError>(
                 new InternalDaemonError("instance.settings_failed", "The instance settings could not be read."));
         }
@@ -322,13 +326,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             var result = await instanceManager.UpdateInstanceSettings(request, cancellationToken);
             if (result.IsErr(out var updateError))
-            {
-                return updateError is InstancePathValidationError
-                    ? Result.Err<UpdateInstanceSettingsResult, DaemonError>(
-                        new ValidationDaemonError("instance.settings_invalid", "The instance settings are invalid."))
-                    : Result.Err<UpdateInstanceSettingsResult, DaemonError>(
-                        new StorageDaemonError("instance.settings_persist_failed", "The instance settings could not be updated."));
-            }
+                return Result.Err<UpdateInstanceSettingsResult, DaemonError>(updateError!);
 
             return Result.Ok<UpdateInstanceSettingsResult, DaemonError>(
                 result.Unwrap());
@@ -337,8 +335,9 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Log.Error(exception, "[LocalInstanceApplication] Unexpected settings update failure for {InstanceId}.", request.InstanceId);
             return Result.Err<UpdateInstanceSettingsResult, DaemonError>(
                 new InternalDaemonError("instance.settings_failed", "The instance settings could not be updated."));
         }

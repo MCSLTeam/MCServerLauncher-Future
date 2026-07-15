@@ -165,13 +165,17 @@ public sealed class DaemonClientFacadeTests
         var factory = new ControlledSessionFactory();
         await using var client = Client(factory);
         var states = new ConcurrentQueue<DaemonConnectionState>();
+        var readyObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         client.StateChanged += state =>
         {
             states.Enqueue(state);
+            if (state == DaemonConnectionState.Ready)
+                readyObserved.TrySetResult();
             return Task.CompletedTask;
         };
 
         var session = await MakeReadyAsync(client, factory);
+        await readyObserved.Task.WaitAsync(Timeout);
         Assert.Equal(DaemonConnectionState.Ready, client.ConnectionState);
         Assert.Null(client.LastFailure);
         Assert.Contains(DaemonConnectionState.Connecting, states);

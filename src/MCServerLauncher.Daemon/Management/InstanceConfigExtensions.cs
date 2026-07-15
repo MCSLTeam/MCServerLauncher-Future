@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -34,7 +35,7 @@ public static class InstanceConfigExtensions
     /// </summary>
     /// <param name="config"></param>
     /// <returns></returns>
-    public static Result<Unit, Error> ValidateConfig(this InstanceConfig config)
+    public static Result<Unit, DaemonError> ValidateConfig(this InstanceConfig config)
     {
         return ValidateConfigCore(
             config.InstanceType,
@@ -46,7 +47,7 @@ public static class InstanceConfigExtensions
             config.Target);
     }
 
-    public static Result<Unit, Error> ValidateConfig(this InstanceConfiguration config)
+    public static Result<Unit, DaemonError> ValidateConfig(this InstanceConfiguration config)
     {
         return ValidateConfigCore(
             config.InstanceType,
@@ -58,7 +59,7 @@ public static class InstanceConfigExtensions
             config.Target);
     }
 
-    private static Result<Unit, Error> ValidateConfigCore(
+    private static Result<Unit, DaemonError> ValidateConfigCore(
         InstanceType instanceType,
         string version,
         TargetType targetType,
@@ -68,7 +69,9 @@ public static class InstanceConfigExtensions
         string target)
     {
         if (instanceType.RequiresNumericMinecraftVersion() && string.IsNullOrWhiteSpace(version))
-            return ResultExt.Err<Unit>("mc_version could not be empty");
+            return ResultExt.Err<Unit>(new ValidationDaemonError(
+                "instance.version.required",
+                "mc_version could not be empty."));
 
         if (instanceType.RequiresNumericMinecraftVersion())
             try
@@ -77,14 +80,19 @@ public static class InstanceConfigExtensions
             }
             catch (ArgumentException)
             {
-                return ResultExt.Err<Unit>("Could not parse mc_version");
+                return ResultExt.Err<Unit>(new ValidationDaemonError(
+                    "instance.version.invalid",
+                    "Could not parse mc_version."));
             }
 
         var javaPathValidation = ValidateJavaPathExists(targetType, javaPath);
         if (javaPathValidation.IsErr(out var javaPathError) && javaPathError is not null)
             return ResultExt.Err<Unit>(javaPathError);
 
-        if (instanceId == Guid.Empty) return ResultExt.Err<Unit>("uuid should not be empty");
+        if (instanceId == Guid.Empty)
+            return ResultExt.Err<Unit>(new ValidationDaemonError(
+                "instance.id.empty",
+                "uuid should not be empty."));
 
         if (!InstanceTargetPathValidator.TryResolveTargetFile(
                 workingDirectory,
@@ -98,7 +106,7 @@ public static class InstanceConfigExtensions
         return ResultExt.Ok(Unit.Default);
     }
 
-    private static Result<Unit, Error> ValidateJavaPathExists(TargetType targetType, string javaPath)
+    private static Result<Unit, DaemonError> ValidateJavaPathExists(TargetType targetType, string javaPath)
     {
         if (
             targetType is not TargetType.Jar
@@ -109,11 +117,15 @@ public static class InstanceConfigExtensions
         {
             return File.Exists(javaPath)
                 ? ResultExt.Ok(Unit.Default)
-                : ResultExt.Err<Unit>("Could not found java in java_path");
+                : ResultExt.Err<Unit>(new ValidationDaemonError(
+                    "instance.java_path.not_found",
+                    "Could not find java in java_path."));
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            return ResultExt.Err<Unit>(new Error("Failed to inspect java_path").CauseBy(ex));
+            Log.Error(exception, "[InstanceConfig] Failed to inspect java_path.");
+            return ResultExt.Err<Unit>(
+                new InternalDaemonError("instance.java_path.inspect_failed", "Failed to inspect java_path."));
         }
     }
 
@@ -191,10 +203,16 @@ public static class InstanceConfigExtensions
         return startInfo;
     }
 
-    public static Result<ProcessStartInfo, Error> TryGetStartInfo(this InstanceConfig config)
+    public static Result<ProcessStartInfo, DaemonError> TryGetStartInfo(this InstanceConfig config)
     {
         return ResultExt.Try(static cfg => cfg.GetStartInfo(), config)
-            .MapErr(ex => new Error("Failed to build instance start info").CauseBy(ex));
+            .MapErr(static exception =>
+            {
+                Log.Error(exception, "[InstanceConfig] Failed to build instance start info.");
+                return (DaemonError)new InternalDaemonError(
+                    "instance.start_info.failed",
+                    "Failed to build instance start info.");
+            });
     }
 
     private static (string File, string ArgumentString) GetLaunchScript(this InstanceConfig config)
@@ -205,7 +223,7 @@ public static class InstanceConfigExtensions
                 out var fullPath,
                 out var targetError))
         {
-            throw new ArgumentException(targetError!.Cause, nameof(config));
+            throw new ArgumentException(targetError!.Message, nameof(config));
         }
 
         var isMcServer = config.CanSafeCastTo<MinecraftInstance>();

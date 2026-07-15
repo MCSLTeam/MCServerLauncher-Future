@@ -1,6 +1,10 @@
 using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Storage;
+using MCServerLauncher.Daemon.Utils;
+using RustyOptions;
+using Serilog;
 
 namespace MCServerLauncher.Daemon.Management;
 
@@ -44,6 +48,30 @@ internal static class InstanceInstallMetadataStore
                 ResolvedLaunchTarget = metadata.ResolvedLaunchTarget,
                 InstalledAt = metadata.InstalledAt
             });
+    }
+
+    public static Result<Unit, DaemonError> TryWrite(
+        string workingDirectory,
+        InstanceInstallMetadata metadata,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Write(workingDirectory, metadata);
+            return ResultExt.Ok();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "[InstanceInstallMetadataStore] Failed to write instance installation metadata.");
+            return ResultExt.Err<Unit>(new StorageDaemonError(
+                "instance.install_metadata.write_failed",
+                "The instance installation metadata could not be written."));
+        }
     }
 
     public static void Delete(string workingDirectory)

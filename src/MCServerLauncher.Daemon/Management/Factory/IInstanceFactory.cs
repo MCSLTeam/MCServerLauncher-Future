@@ -1,6 +1,7 @@
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Minecraft;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Minecraft;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -12,9 +13,9 @@ namespace MCServerLauncher.Daemon.Management.Factory;
 /// </summary>
 public interface IInstanceFactory
 {
-    Func<MinecraftInstance, Task<Result<Unit, Error>>>[] GetPostProcessors()
+    Func<MinecraftInstance, Task<Result<Unit, DaemonError>>>[] GetPostProcessors()
     {
-        return Array.Empty<Func<MinecraftInstance, Task<Result<Unit, Error>>>>();
+        return Array.Empty<Func<MinecraftInstance, Task<Result<Unit, DaemonError>>>>();
     }
 }
 
@@ -23,7 +24,9 @@ public interface IInstanceFactory
 /// </summary>
 public interface IArchiveInstanceFactory : IInstanceFactory
 {
-    Task<Result<InstanceConfiguration, Error>> CreateInstanceFromArchive(InstanceFactoryConfiguration setting);
+    Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromArchive(
+        InstanceFactoryConfiguration setting,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -31,7 +34,9 @@ public interface IArchiveInstanceFactory : IInstanceFactory
 /// </summary>
 public interface ICoreInstanceFactory : IInstanceFactory
 {
-    Task<Result<InstanceConfiguration, Error>> CreateInstanceFromCore(InstanceFactoryConfiguration setting);
+    Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromCore(
+        InstanceFactoryConfiguration setting,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -39,5 +44,7 @@ public interface ICoreInstanceFactory : IInstanceFactory
 /// </summary>
 public interface IScriptInstanceFactory : IInstanceFactory
 {
-    Task<Result<InstanceConfiguration, Error>> CreateInstanceFromScript(InstanceFactoryConfiguration setting);
+    Task<Result<InstanceConfiguration, DaemonError>> CreateInstanceFromScript(
+        InstanceFactoryConfiguration setting,
+        CancellationToken cancellationToken = default);
 }

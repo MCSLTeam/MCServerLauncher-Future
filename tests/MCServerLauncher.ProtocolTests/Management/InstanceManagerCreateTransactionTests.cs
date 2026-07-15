@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
@@ -173,6 +174,33 @@ public sealed class InstanceManagerCreateTransactionTests
     }
 
     [Fact]
+    public async Task TryAddInstance_PropagatesCallerCancellationTokenToFactory()
+    {
+        var requestedId = Guid.NewGuid();
+        using var cancellationSource = new CancellationTokenSource();
+        CancellationToken observedToken = default;
+        var manager = CreateManager((setting, cancellationToken) =>
+        {
+            observedToken = cancellationToken;
+            return Task.FromResult(ResultExt.Ok(setting.Configuration));
+        });
+
+        try
+        {
+            var result = await manager.TryAddInstance(
+                CreateSetting(requestedId, "token-propagation"),
+                cancellationSource.Token);
+
+            Assert.True(result.IsOk(out _));
+            Assert.Equal(cancellationSource.Token, observedToken);
+        }
+        finally
+        {
+            RemoveDirectories(requestedId, []);
+        }
+    }
+
+    [Fact]
     public async Task TryAddInstance_FailedCreate_CleansOnlyItsReservedDirectory()
     {
         var requestedId = Guid.NewGuid();
@@ -189,7 +217,9 @@ public sealed class InstanceManagerCreateTransactionTests
             {
                 firstFactoryEntered.TrySetResult(true);
                 await releaseFirstFactory.Task;
-                return ResultExt.Err<InstanceConfiguration>("expected factory failure");
+                return ResultExt.Err<InstanceConfiguration>(new InternalDaemonError(
+                    "test.factory.failed",
+                    "Expected factory failure."));
             }
 
             return ResultExt.Ok(setting.Configuration);
@@ -207,7 +237,9 @@ public sealed class InstanceManagerCreateTransactionTests
 
             releaseFirstFactory.TrySetResult(true);
             var failedResult = await failedCreate.WaitAsync(TimeSpan.FromSeconds(3));
-            Assert.True(failedResult.IsErr(out _));
+            Assert.True(failedResult.IsErr(out var failedError));
+            Assert.IsType<InternalDaemonError>(failedError);
+            Assert.Equal("test.factory.failed", failedError!.Code);
 
             Assert.True(Directory.Exists(survivingConfig.GetWorkingDirectory()));
             Assert.True(File.Exists(Path.Combine(survivingConfig.GetWorkingDirectory(), InstanceConfig.FileName)));
@@ -219,6 +251,39 @@ public sealed class InstanceManagerCreateTransactionTests
         {
             releaseFirstFactory.TrySetResult(true);
             RemoveDirectories(requestedId, observedSettings.Select(setting => setting.Configuration.InstanceId));
+        }
+    }
+
+    [Fact]
+    public async Task TryAddInstance_ConfigPersistenceFailure_ReturnsStorageErrorAndCleansReservation()
+    {
+        var requestedId = Guid.NewGuid();
+        InstanceFactoryConfiguration? observedSetting = null;
+        var manager = CreateManager(setting =>
+        {
+            observedSetting = setting;
+            Directory.CreateDirectory(Path.Combine(
+                setting.Configuration.GetWorkingDirectory(),
+                InstanceConfig.FileName));
+            return Task.FromResult(ResultExt.Ok(setting.Configuration));
+        });
+
+        try
+        {
+            var result = await manager.TryAddInstance(CreateSetting(requestedId, "persistence-failure"));
+
+            Assert.True(result.IsErr(out var error));
+            var storage = Assert.IsType<StorageDaemonError>(error);
+            Assert.Equal("instance.config.persist_failed", storage.Code);
+            Assert.NotNull(observedSetting);
+            Assert.False(Directory.Exists(observedSetting.Configuration.GetWorkingDirectory()));
+            Assert.False(manager.Instances.ContainsKey(observedSetting.Configuration.InstanceId));
+        }
+        finally
+        {
+            RemoveDirectories(
+                requestedId,
+                observedSetting is null ? [] : [observedSetting.Configuration.InstanceId]);
         }
     }
 
@@ -271,14 +336,22 @@ public sealed class InstanceManagerCreateTransactionTests
 
         var result = await manager.TryAddInstance(CreateSetting(requestedId, "unsafe", target));
 
-        Assert.True(result.IsErr(out _));
+        Assert.True(result.IsErr(out var error));
+        Assert.IsType<ValidationDaemonError>(error);
+        Assert.Equal("instance.target.invalid", error!.Code);
         Assert.False(factoryCalled);
         Assert.False(Directory.Exists(Path.Combine(FileManager.InstancesRoot, requestedId.ToString())));
         Assert.False(manager.Instances.ContainsKey(requestedId));
     }
 
     private static InstanceManager CreateManager(
-        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, Error>>> applyInstanceFactory)
+        Func<InstanceFactoryConfiguration, Task<Result<InstanceConfiguration, DaemonError>>> applyInstanceFactory)
+    {
+        return CreateManager((setting, _) => applyInstanceFactory(setting));
+    }
+
+    private static InstanceManager CreateManager(
+        Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>> applyInstanceFactory)
     {
         return new InstanceManager(
             config => new TransactionTestInstance(config),

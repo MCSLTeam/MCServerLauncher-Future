@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using InstanceConfiguration = MCServerLauncher.Common.Contracts.Instances.InstanceConfiguration;
@@ -20,7 +21,7 @@ internal interface IInstanceManager
     /// </summary>
     /// <param name="setting"></param>
     /// <returns></returns>
-    Task<Result<InstanceConfiguration, Error>> TryAddInstance(
+    Task<Result<InstanceConfiguration, DaemonError>> TryAddInstance(
         InstanceFactoryConfiguration setting,
         CancellationToken ct = default);
 
@@ -75,11 +76,11 @@ internal interface IInstanceManager
 
     bool TryGetInstanceLog(Guid instanceId, out IReadOnlyList<string> logs);
 
-    Task<Result<InstanceSettingsResult, Error>> GetInstanceSettings(
+    Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettings(
         Guid instanceId,
         CancellationToken ct = default);
 
-    Task<Result<UpdateInstanceSettingsResult, Error>> UpdateInstanceSettings(
+    Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettings(
         UpdateInstanceSettingsRequest request,
         CancellationToken ct = default);
 
