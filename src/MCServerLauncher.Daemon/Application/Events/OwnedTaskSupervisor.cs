@@ -124,11 +124,14 @@ internal sealed class OwnedTaskSupervisor(
         return completion.Task;
     }
 
-    private async Task CompleteStopAsync(TaskCompletionSource completion)
+    private Task CompleteStopAsync(TaskCompletionSource completion)
     {
         try
         {
-            await _lifetimeCancellation.CancelAsync();
+            // Prefer Cancel() over CancelAsync(): callback exceptions are aggregated into
+            // AggregateException and thrown synchronously, which DrainAsync/DisposeAsync must observe.
+            // Linked-token registrations (owned work) cancel through parent callbacks and are included.
+            _lifetimeCancellation.Cancel();
             completion.TrySetResult();
         }
         catch (Exception exception)
@@ -136,6 +139,8 @@ internal sealed class OwnedTaskSupervisor(
             logger.LogError(exception, "Canceling owned tasks for '{Owner}' failed", owner);
             completion.TrySetException(exception);
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task ExecuteAsync(
