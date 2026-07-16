@@ -595,8 +595,8 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
             return Err<FileDownloadInfo>(MapException(exception));
         }
 
-        if (_downloadSessionLimit is { } limit && _downloadSessions.Count(pair =>
-                string.Equals(pair.Value.Path, resolvedPath, GetPathComparison())) >= limit)
+        // Process-wide optional safety ceiling (tests / future). Production admission is per-connection.
+        if (_downloadSessionLimit is { } limit && _downloadSessions.Count >= limit)
             return Err<FileDownloadInfo>(new ConflictDaemonError("file.download.limit", "The file download session limit has been reached."));
 
         FileStream? stream = null;

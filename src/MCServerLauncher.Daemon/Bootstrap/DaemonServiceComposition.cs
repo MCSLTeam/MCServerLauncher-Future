@@ -47,7 +47,8 @@ internal static class DaemonServiceComposition
 
         var instanceManager = (InstanceManager)InstanceManager.Create();
         var fileSessionCoordinator = FileSessionCoordinator.Shared;
-        fileSessionCoordinator.ConfigureDownloadSessionLimit(AppConfig.Get().FileDownloadSessions);
+        // Download session caps are enforced per V2 connection (FileDownloadSessions).
+        // Coordinator limit remains optional for tests/process-wide safety only.
         var systemInfoCell = new AsyncTimedLazyCell<SystemInfo>(
             SystemInfoHelper.GetSystemInfo,
             TimeSpan.FromSeconds(2));
@@ -97,7 +98,8 @@ internal static class DaemonServiceComposition
             v2Runtime,
             services.GetRequiredService<IV2RpcDiagnosticSink>(),
             services.GetRequiredService<IV2InboundDiagnosticSink>(),
-            services.GetRequiredService<TimeProvider>()));
+            services.GetRequiredService<TimeProvider>(),
+            downloadSessionLimit: AppConfig.Get().FileDownloadSessions));
         collection.AddSingleton<IV2ConnectionAdministration>(services =>
             services.GetRequiredService<TouchSocketV2TransportPlugin>());
         a.RegisterSingleton<InstanceDomainEventBridge>();

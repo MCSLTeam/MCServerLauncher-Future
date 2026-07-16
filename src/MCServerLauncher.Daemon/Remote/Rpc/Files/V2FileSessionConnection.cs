@@ -25,6 +25,7 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
     private readonly IFileApplication _application;
     private readonly V2ConnectionOwner _owner;
     private readonly TimeProvider _timeProvider;
+    private readonly int _downloadSessionLimit;
     private readonly ImmutableArray<string> _permissionSnapshot;
     private readonly Dictionary<string, PermissionName> _permissions;
     private readonly Dictionary<Guid, Lease> _leases = [];
@@ -34,11 +35,14 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         IFileApplication application,
         FrozenProtocolCatalog catalog,
         V2ConnectionOwner owner,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        int downloadSessionLimit)
     {
         _application = application;
         _owner = owner;
         _timeProvider = timeProvider;
+        ArgumentOutOfRangeException.ThrowIfNegative(downloadSessionLimit);
+        _downloadSessionLimit = downloadSessionLimit;
         _permissionSnapshot = owner.Permissions;
         _permissions = SessionMethods.ToDictionary(
             static method => method,
@@ -52,16 +56,23 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         IFileApplication application,
         FrozenProtocolCatalog catalog,
         V2ConnectionOwner owner,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        int downloadSessionLimit = 0)
     {
         ArgumentNullException.ThrowIfNull(application);
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(owner);
-        var connection = new V2FileSessionConnection(application, catalog, owner, timeProvider ?? TimeProvider.System);
+        var connection = new V2FileSessionConnection(
+            application,
+            catalog,
+            owner,
+            timeProvider ?? TimeProvider.System,
+            downloadSessionLimit);
         return owner.TryRegisterCleanup(connection)
             ? Result.Ok<V2FileSessionConnection, DaemonError>(connection)
             : Result.Err<V2FileSessionConnection, DaemonError>(ConnectionClosed());
     }
+
 
     public async Task<Result<UploadSession, DaemonError>> OpenUploadAsync(
         UploadOpenRequest request,
@@ -355,6 +366,14 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
                 return ConnectionClosed();
             if (_timeProvider.GetUtcNow() >= lease.ExpiresAt)
                 return new InternalDaemonError("file.session.registration_failed", "The opened file session expired before registration.");
+            if (lease.Kind == SessionKind.Download &&
+                _downloadSessionLimit > 0 &&
+                _leases.Values.Count(static existing => existing.Kind == SessionKind.Download) >= _downloadSessionLimit)
+            {
+                return new ConflictDaemonError(
+                    "file.download.limit",
+                    "The file download session limit has been reached.");
+            }
             if (!_leases.TryAdd(lease.SessionId, lease))
                 return new InternalDaemonError("file.session.registration_failed", "The opened file session identifier is already registered.");
             if (_owner.State is not (V2ConnectionState.Created or V2ConnectionState.Running))

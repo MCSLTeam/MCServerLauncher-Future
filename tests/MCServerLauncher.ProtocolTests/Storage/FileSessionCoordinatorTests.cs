@@ -459,6 +459,42 @@ public sealed class FileSessionCoordinatorTests
 
     [Fact]
     [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_LimitCountsDistinctPathsAsSeparateSessions()
+    {
+        var fixture = CreateFixture("download-limit-paths");
+        var coordinator = new FileSessionCoordinator(downloadSessionLimit: 1);
+        var firstRelative = Path.Combine(fixture.RelativePath, "a.bin");
+        var secondRelative = Path.Combine(fixture.RelativePath, "b.bin");
+        var firstPath = FileManager.ResolveAndValidatePath(firstRelative);
+        var secondPath = FileManager.ResolveAndValidatePath(secondRelative);
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(firstPath, [1]);
+            await File.WriteAllBytesAsync(secondPath, [2]);
+
+            var first = AssertOk(await coordinator.OpenDownloadAsync(
+                new DownloadOpenRequest(firstRelative),
+                CancellationToken.None));
+            var second = await coordinator.OpenDownloadAsync(
+                new DownloadOpenRequest(secondRelative),
+                CancellationToken.None);
+
+            Assert.True(second.IsErr(out _));
+            Assert.Equal("file.download.limit", second.UnwrapErr().Code);
+            AssertOk(await coordinator.CloseDownloadAsync(first.SessionId, CancellationToken.None));
+        }
+        finally
+        {
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
     public async Task Download_HashFaultDisposesOpenedStream()
     {
         var fixture = CreateFixture("download-hash-fault");

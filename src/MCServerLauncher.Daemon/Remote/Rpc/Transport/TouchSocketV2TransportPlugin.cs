@@ -27,6 +27,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
     private readonly IV2RpcDiagnosticSink _rpcDiagnostics;
     private readonly IV2InboundDiagnosticSink _inboundDiagnostics;
     private readonly TimeProvider _timeProvider;
+    private readonly int _downloadSessionLimit;
     private readonly Func<Task> _beforeStartExpiry;
     private readonly ConcurrentDictionary<string, ConnectionState> _connections = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, byte> _v2Connections = new(StringComparer.Ordinal);
@@ -38,8 +39,10 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         IFrozenProtocolCatalogAccessor catalogAccessor,
         V2TransportRuntime runtime,
         IV2RpcDiagnosticSink rpcDiagnostics,
-        IV2InboundDiagnosticSink inboundDiagnostics, TimeProvider? timeProvider = null,
-        Func<Task>? beforeStartExpiry = null)
+        IV2InboundDiagnosticSink inboundDiagnostics,
+        TimeProvider? timeProvider = null,
+        Func<Task>? beforeStartExpiry = null,
+        int downloadSessionLimit = 0)
     {
         _application = application ?? throw new ArgumentNullException(nameof(application));
         _catalogAccessor = catalogAccessor ?? throw new ArgumentNullException(nameof(catalogAccessor));
@@ -47,6 +50,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         _rpcDiagnostics = rpcDiagnostics ?? throw new ArgumentNullException(nameof(rpcDiagnostics));
         _inboundDiagnostics = inboundDiagnostics ?? throw new ArgumentNullException(nameof(inboundDiagnostics));
         _timeProvider = timeProvider ?? TimeProvider.System;
+        ArgumentOutOfRangeException.ThrowIfNegative(downloadSessionLimit);
+        _downloadSessionLimit = downloadSessionLimit;
         _beforeStartExpiry = beforeStartExpiry ?? (() => Task.CompletedTask);
     }
 
@@ -57,7 +62,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         IV2RpcDiagnosticSink rpcDiagnostics,
         IV2InboundDiagnosticSink inboundDiagnostics,
         TimeProvider? timeProvider = null,
-        Func<Task>? beforeStartExpiry = null)
+        Func<Task>? beforeStartExpiry = null,
+        int downloadSessionLimit = 0)
         : this(
             application,
             PublishedAccessor(catalog),
@@ -65,7 +71,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             rpcDiagnostics,
             inboundDiagnostics,
             timeProvider,
-            beforeStartExpiry)
+            beforeStartExpiry,
+            downloadSessionLimit)
     {
     }
 
@@ -143,7 +150,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             owner = new V2ConnectionOwner(sender, permissions, _timeProvider);
             if (events.TryAttach(connectionId, owner, out var eventEntry) != V2EventConnectionAttachResult.Attached)
                 throw new InvalidOperationException("The V2 event connection could not be attached.");
-            var filesResult = V2FileSessionConnection.Attach(_application.Files, catalog, owner, _timeProvider);
+            var filesResult = V2FileSessionConnection.Attach(
+                _application.Files, catalog, owner, _timeProvider, _downloadSessionLimit);
             if (filesResult.IsErr(out _)) throw new InvalidOperationException("The V2 file connection could not be attached.");
             var files = filesResult.Unwrap();
             var context = new V2RpcConnectionContext(owner, eventEntry!.Ledger, owner.ConnectionToken, files);
