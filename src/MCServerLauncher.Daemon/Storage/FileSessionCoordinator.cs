@@ -609,6 +609,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 FileShare.Read,
                 bufferSize: 81920,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
+            EnsureOpenedStreamWithinRoot(stream, FileManager.Root);
             var length = stream.Length;
             var sha256 = await _hashAsync(stream, HashAlgorithmName.SHA256, cancellationToken);
             stream.Position = 0;
@@ -966,6 +967,43 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 throw new IOException("Invalid path: reparse points are not permitted below daemon root.");
         }
     }
+
+    /// <summary>
+    /// After opening a stream, re-verify the effective path still stays under the daemon root.
+    /// This closes the TOCTOU window between path validation and FileStream construction when a
+    /// local actor swaps a validated path for a reparse point.
+    /// </summary>
+    private static void EnsureOpenedStreamWithinRoot(FileStream stream, string? root = null)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        root ??= FileManager.Root;
+        var fullRoot = NormalizeDirectoryPath(root);
+        var openedPath = Path.GetFullPath(stream.Name);
+        if (!IsWithinRoot(openedPath, fullRoot))
+            throw new IOException("Invalid path: out of daemon root.");
+
+        EnsureExistingPathDoesNotContainReparsePoint(openedPath, fullRoot);
+
+        // If the opened entry is itself a link/junction, require the final target also stays in root.
+        FileSystemInfo? finalTarget = null;
+        try
+        {
+            finalTarget = File.ResolveLinkTarget(openedPath, returnFinalTarget: true);
+        }
+        catch (IOException)
+        {
+            throw new IOException("Invalid path: reparse points are not permitted below daemon root.");
+        }
+
+        if (finalTarget is null)
+            return;
+
+        var finalPath = Path.GetFullPath(finalTarget.FullName);
+        if (!IsWithinRoot(finalPath, fullRoot))
+            throw new IOException("Invalid path: out of daemon root.");
+        EnsureExistingPathDoesNotContainReparsePoint(finalPath, fullRoot);
+    }
+
 
     private static string NormalizeDirectoryPath(string path)
     {
