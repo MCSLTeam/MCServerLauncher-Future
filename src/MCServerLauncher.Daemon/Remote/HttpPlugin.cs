@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using Serilog;
 using TouchSocket.Core;
 using TouchSocket.Http;
@@ -9,8 +11,15 @@ using HttpMethod = TouchSocket.Http.HttpMethod;
 
 namespace MCServerLauncher.Daemon.Remote;
 
-public class HttpPlugin : PluginBase, IHttpPlugin
+internal sealed class HttpPlugin : PluginBase, IHttpPlugin
 {
+    private readonly IFrozenProtocolCatalogAccessor _catalogAccessor;
+
+    public HttpPlugin(IFrozenProtocolCatalogAccessor catalogAccessor)
+    {
+        _catalogAccessor = catalogAccessor ?? throw new ArgumentNullException(nameof(catalogAccessor));
+    }
+
     internal readonly record struct RootResponse(
         [property: JsonPropertyName("message")]
         string Message,
@@ -35,7 +44,7 @@ public class HttpPlugin : PluginBase, IHttpPlugin
         await e.InvokeNext();
     }
 
-    private static async Task HandleRequest(IHttpSessionClient client, HttpMethod method, HttpContextEventArgs e)
+    private async Task HandleRequest(IHttpSessionClient client, HttpMethod method, HttpContextEventArgs e)
     {
         var request = e.Context.Request;
         var response = e.Context.Response;
@@ -65,6 +74,15 @@ public class HttpPlugin : PluginBase, IHttpPlugin
                             .SetContent(JsonSerializer.Serialize(
                                 new InfoResponse("MCServerLauncher Future Daemon CSharp", version, "v2"),
                                 HttpPluginJsonSerializerContext.Default.InfoResponse))
+                            .AnswerAsync();
+                        break;
+
+                    case "/apifox.json":
+                        await response
+                            .SetStatus(200, "Success")
+                            .AddHeader("Content-type", "application/json; charset=utf-8")
+                            .AddHeader("Access-Control-Allow-Origin", "*")
+                            .SetContent(await BuildRuntimeApifoxAsync())
                             .AnswerAsync();
                         break;
 
@@ -140,6 +158,17 @@ public class HttpPlugin : PluginBase, IHttpPlugin
             await response.SetStatus(500, ex.Message).AnswerAsync();
         }
     }
+    private Task<byte[]> BuildRuntimeApifoxAsync()
+    {
+        if (_catalogAccessor.TryGet(out var catalog) && catalog is not null)
+        {
+            return Task.FromResult(ApifoxProjectGenerator.Generate(catalog.Document, catalog.RpcDefinitions));
+        }
+
+        // Catalog is published after plugin admission; fall back to built-in baseline.
+        return Task.FromResult(ApifoxProjectGenerator.GenerateBuiltIn());
+    }
+
 }
 
 [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.Never)]

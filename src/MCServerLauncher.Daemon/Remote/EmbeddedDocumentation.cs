@@ -8,10 +8,7 @@ internal static class EmbeddedDocumentation
     private static readonly Assembly Assembly = typeof(EmbeddedDocumentation).Assembly;
 
     private static readonly IReadOnlyDictionary<string, DocumentResource> StaticResources =
-        new Dictionary<string, DocumentResource>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["/apifox.json"] = new("apifox.json", "application/json; charset=utf-8"),
-        };
+        new Dictionary<string, DocumentResource>(StringComparer.OrdinalIgnoreCase);
 
     public static bool TryGetResource(string requestPath, out DocumentResource document)
     {

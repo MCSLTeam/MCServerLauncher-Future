@@ -7,7 +7,7 @@
   },
   "info": {
     "name": "MCServerLauncher daemon V2 protocol",
-    "description": "Generated from the frozen built-in RPC and event catalog. Connect to the selected /api/v2 WebSocket environment and pass the daemon token as the token query parameter."
+    "description": "Generated from the frozen runtime RPC and event catalog (built-in plus admitted plugins when present). Connect to the selected /api/v2 WebSocket environment and pass the daemon token as the token query parameter."
   },
   "projectSetting": {
     "id": "mcsl-daemon-v2-protocol",
@@ -5405,7 +5405,7 @@
     {
       "id": "mcsl-daemon-protocol",
       "name": "Daemon V2 protocol",
-      "description": "Generated from BuiltInProtocolDefinitions.",
+      "description": "Generated from the frozen protocol catalog.",
       "moduleVariables": [],
       "openApiInfo": {}
     }
