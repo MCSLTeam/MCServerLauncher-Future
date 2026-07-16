@@ -1123,9 +1123,20 @@ public sealed class V2ClientConnectionCoreTests
 
         public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
         {
-            using var registration = cancellationToken.Register(() => _tokenCanceled.TrySetResult());
+            // Avoid CancellationToken.WaitHandle + Register Dispose races under Cancel().
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var registration = cancellationToken.Register(() =>
+            {
+                _tokenCanceled.TrySetResult();
+                release.TrySetResult();
+            });
             _entered.TrySetResult();
-            cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
+            if (cancellationToken.IsCancellationRequested)
+                release.TrySetResult();
+
+            if (!release.Task.Wait(TimeSpan.FromSeconds(10)))
+                throw new TimeoutException("The download send did not observe connection cancellation.");
+
             cancellationToken.ThrowIfCancellationRequested();
             throw new TimeoutException("The download send did not observe connection cancellation.");
         }

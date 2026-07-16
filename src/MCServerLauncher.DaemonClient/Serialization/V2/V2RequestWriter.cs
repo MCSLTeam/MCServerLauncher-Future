@@ -33,6 +33,8 @@ internal static class V2RequestWriter
 
         writer.WriteEndObject();
         writer.Flush();
-        return ImmutableArray.CreateRange(buffer.WrittenSpan.ToArray());
+        // Own the written buffer once; avoid WrittenSpan.ToArray() + CreateRange double copy.
+        return System.Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(
+            buffer.WrittenSpan.ToArray());
     }
 }

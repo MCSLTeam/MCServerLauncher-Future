@@ -103,7 +103,7 @@ public class ProjectConfigurationTests
     }
 
     [Fact]
-    public void DaemonProject_KeepsJsonReflectionFallbackEnabled()
+    public void DaemonProject_DisablesJsonReflectionFallbackByDefault()
     {
         var projectPath = Path.Combine(
             GetRepositoryRoot(),
@@ -117,7 +117,7 @@ public class ProjectConfigurationTests
             .Select(element => element.Value.Trim())
             .Single();
 
-        Assert.Equal("true", value);
+        Assert.Equal("false", value);
     }
 
     [Fact]

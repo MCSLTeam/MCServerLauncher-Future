@@ -7,6 +7,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
+using MCServerLauncher.Daemon.Remote.Rpc;
 using MCServerLauncher.Daemon.Remote.Rpc.Files;
 using RustyOptions;
 
@@ -209,15 +210,6 @@ internal sealed class V2InboundMessagePipeline
             new JsonRpcErrorObject(code, message, data));
     }
 
-    private static DaemonErrorWireKind ToWireKind(DaemonErrorKind kind) => kind switch
-    {
-        DaemonErrorKind.Validation => DaemonErrorWireKind.Validation,
-        DaemonErrorKind.NotFound => DaemonErrorWireKind.NotFound,
-        DaemonErrorKind.Conflict => DaemonErrorWireKind.Conflict,
-        DaemonErrorKind.Permission => DaemonErrorWireKind.Permission,
-        DaemonErrorKind.Storage => DaemonErrorWireKind.Storage,
-        DaemonErrorKind.Transport => DaemonErrorWireKind.Transport,
-        DaemonErrorKind.Internal => DaemonErrorWireKind.Internal,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind))
-    };
+    private static DaemonErrorWireKind ToWireKind(DaemonErrorKind kind) =>
+        DaemonErrorWireMapping.ToWireKind(kind);
 }

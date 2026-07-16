@@ -8,6 +8,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Rpc;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 
 namespace MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
@@ -514,17 +515,8 @@ internal sealed class V2RpcDispatcher
         _ => throw new InvalidOperationException("The frozen RPC entry has an unknown execution owner.")
     };
 
-    private static DaemonErrorWireKind ToWireKind(DaemonErrorKind kind) => kind switch
-    {
-        DaemonErrorKind.Validation => DaemonErrorWireKind.Validation,
-        DaemonErrorKind.NotFound => DaemonErrorWireKind.NotFound,
-        DaemonErrorKind.Conflict => DaemonErrorWireKind.Conflict,
-        DaemonErrorKind.Permission => DaemonErrorWireKind.Permission,
-        DaemonErrorKind.Storage => DaemonErrorWireKind.Storage,
-        DaemonErrorKind.Transport => DaemonErrorWireKind.Transport,
-        DaemonErrorKind.Internal => DaemonErrorWireKind.Internal,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind))
-    };
+    private static DaemonErrorWireKind ToWireKind(DaemonErrorKind kind) =>
+        DaemonErrorWireMapping.ToWireKind(kind);
 
     private sealed record ErrorPayload(string DaemonErrorCode, JsonElement? Details);
 }

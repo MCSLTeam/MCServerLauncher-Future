@@ -165,17 +165,31 @@ internal sealed class V2EventSubscriptionLedger : IProtocolSubscriptionOperation
             return false;
         }
 
-        var exact = new SubscriptionKey(
-            binding,
-            ToFilterKind(actualMeta.Kind),
-            actualMeta.CanonicalUtf8);
-        var wildcard = new SubscriptionKey(
-            binding,
-            EventMetaFilterKind.Missing,
-            []);
-
+        var filterKind = ToFilterKind(actualMeta.Kind);
+        var actualUtf8 = actualMeta.CanonicalUtf8;
         lock (_gate)
-            return !_closed && (_subscriptions.Contains(wildcard) || _subscriptions.Contains(exact));
+        {
+            if (_closed)
+                return false;
+
+            // Avoid per-event SubscriptionKey allocations on the publish path.
+            foreach (var key in _subscriptions)
+            {
+                if (!ReferenceEquals(key.Binding, binding))
+                    continue;
+
+                if (key.FilterKind == EventMetaFilterKind.Missing)
+                    return true;
+
+                if (key.FilterKind == filterKind &&
+                    key.CanonicalUtf8.AsSpan().SequenceEqual(actualUtf8.AsSpan()))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     internal void Close()
