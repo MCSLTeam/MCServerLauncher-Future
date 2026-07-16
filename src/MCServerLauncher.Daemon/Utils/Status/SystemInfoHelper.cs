@@ -20,7 +20,16 @@ public static class SystemInfoHelper
 
     public static OsInfo GetOsInfo()
     {
-        return new OsInfo(Environment.OSVersion.ToString(), RuntimeInformation.OSArchitecture.ToString());
+        // Environment.OSVersion 在 Unix 上常为 "Unix …"，导致客户端把 macOS 误判为 Linux。
+        // 使用 RuntimeInformation 给出平台友好名称，架构仍取 OSArchitecture。
+        var arch = RuntimeInformation.OSArchitecture.ToString();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return new OsInfo($"Windows {Environment.OSVersion.Version}", arch);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            return new OsInfo($"macOS {Environment.OSVersion.Version}", arch);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            return new OsInfo($"Linux {Environment.OSVersion.Version}", arch);
+        return new OsInfo(Environment.OSVersion.ToString(), arch);
     }
 
     public static DriveInformation GetDiskInfo()
@@ -74,10 +83,13 @@ public static class SystemInfoHelper
 
     public static DriveInformation[] GetDiskInfos()
     {
+        // 按 Name+TotalSize 去重，避免 macOS 同一物理盘多挂载点导致客户端求和虚高
         return DriveInfo.GetDrives()
             .Where(d => d.IsReady)
             .Where(d => d.TotalSize > 0)
             .Where(d => d.DriveType is not DriveType.CDRom and not DriveType.NoRootDirectory and not DriveType.Ram)
+            .GroupBy(d => $"{d.Name}\0{d.TotalSize}\0{d.AvailableFreeSpace}")
+            .Select(g => g.First())
             .Select(d => new DriveInformation(
                 d.DriveFormat,
                 (ulong)d.TotalSize,
