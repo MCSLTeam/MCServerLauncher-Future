@@ -476,6 +476,16 @@ internal sealed class V2ClientConnectionCore
 
         try
         {
+            // Cancel first so a synchronously blocking transport send observes cancellation
+            // without waiting for coordinator cleanup or pending completion work.
+            try
+            {
+                _connectionCancellation.Cancel();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
             var snapshot = _pending.ToArray();
             try
             {
@@ -488,14 +498,6 @@ internal sealed class V2ClientConnectionCore
             try
             {
                 _downloadCoordinator.Close(ClosedError());
-            }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-            }
-
-            try
-            {
-                _connectionCancellation.Cancel();
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
