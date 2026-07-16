@@ -42,7 +42,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         _onUploadStagingCreatedAsync = onUploadStagingCreatedAsync;
     }
 
-    internal static FileSessionCoordinator Shared { get; } = new();
 
     internal void ConfigureDownloadSessionLimit(int downloadSessionLimit)
     {

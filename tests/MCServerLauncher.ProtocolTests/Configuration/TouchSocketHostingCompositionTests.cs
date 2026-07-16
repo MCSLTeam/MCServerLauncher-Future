@@ -171,7 +171,10 @@ public class TouchSocketHostingCompositionTests
             Assert.Same(resolver.GetRequiredService<IFileApplication>(), application.Files);
             Assert.Same(resolver.GetRequiredService<ISystemApplication>(), application.System);
             Assert.Same(resolver.GetRequiredService<IEventRuleApplication>(), application.EventRules);
-            Assert.Same(FileSessionCoordinator.Shared, resolver.GetRequiredService<FileSessionCoordinator>());
+            Assert.NotNull(resolver.GetRequiredService<FileSessionCoordinator>());
+            Assert.Same(
+                resolver.GetRequiredService<FileSessionCoordinator>(),
+                resolver.GetRequiredService<FileSessionCoordinator>());
             Assert.NotNull(resolver.GetRequiredService<IDaemonRuntimeLifecycle>());
 
             var catalogAccessor = resolver.GetRequiredService<IFrozenProtocolCatalogAccessor>();
@@ -599,19 +602,14 @@ public class TouchSocketHostingCompositionTests
     [Fact]
     [Trait("Category", "DaemonInbound")]
     [Trait("Category", "DaemonInboundStatic")]
-    public void DaemonServiceComposition_ConfiguresTheSharedFileCoordinatorBeforeStartup()
+    public void DaemonServiceComposition_RegistersHostScopedFileCoordinatorBeforeStartup()
     {
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Bootstrap/DaemonServiceComposition.cs");
-        var acquire = source.IndexOf("var fileSessionCoordinator = FileSessionCoordinator.Shared", StringComparison.Ordinal);
-        var configure = source.IndexOf(
-            "fileSessionCoordinator.ConfigureDownloadSessionLimit(AppConfig.Get().FileDownloadSessions)",
-            StringComparison.Ordinal);
-        var register = source.IndexOf("a.RegisterSingleton(fileSessionCoordinator)", StringComparison.Ordinal);
+        var register = source.IndexOf("a.RegisterSingleton<FileSessionCoordinator>()", StringComparison.Ordinal);
         var start = source.IndexOf("files.Start()", StringComparison.Ordinal);
 
-        Assert.True(acquire >= 0);
-        Assert.True(configure > acquire);
-        Assert.True(register > configure);
+        Assert.True(register >= 0);
+        Assert.DoesNotContain("FileSessionCoordinator.Shared", source, StringComparison.Ordinal);
         Assert.True(start > register);
     }
 

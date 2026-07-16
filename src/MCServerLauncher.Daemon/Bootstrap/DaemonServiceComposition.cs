@@ -46,9 +46,8 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IHttpService>(httpService);
 
         var instanceManager = (InstanceManager)InstanceManager.Create();
-        var fileSessionCoordinator = FileSessionCoordinator.Shared;
-        // Download session caps are enforced per V2 connection (FileDownloadSessions).
-        // Coordinator limit remains optional for tests/process-wide safety only.
+        // Host-scoped singleton via TouchSocket DI (not process-static Shared).
+        a.RegisterSingleton<FileSessionCoordinator>();
         var systemInfoCell = new AsyncTimedLazyCell<SystemInfo>(
             SystemInfoHelper.GetSystemInfo,
             TimeSpan.FromSeconds(2));
@@ -61,7 +60,6 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IInstanceSnapshotSource>(instanceManager.InstanceSnapshotSource);
         a.RegisterSingleton(instanceManager.CatalogCommitFeed);
         a.RegisterSingleton(instanceManager.MutationAdmission);
-        a.RegisterSingleton(fileSessionCoordinator);
         a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntime[]>>(javaRuntimeCell);
 
