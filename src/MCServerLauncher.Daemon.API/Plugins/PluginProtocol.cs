@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Protocol;
@@ -18,6 +19,8 @@ public static class PluginProtocol
         bool allowNotification = false)
     {
         ArgumentNullException.ThrowIfNull(documentation);
+        EnsureSourceGenerated(requestTypeInfo);
+        EnsureSourceGenerated(resultTypeInfo);
         requestTypeInfo.MakeReadOnly();
         resultTypeInfo.MakeReadOnly();
 
@@ -40,6 +43,9 @@ public static class PluginProtocol
         OpenRpcEventFieldPresence metaPresence = OpenRpcEventFieldPresence.Omitted)
     {
         ArgumentNullException.ThrowIfNull(documentation);
+        EnsureSourceGenerated(dataTypeInfo);
+        if (metaTypeInfo is not null)
+            EnsureSourceGenerated(metaTypeInfo);
         dataTypeInfo.MakeReadOnly();
         metaTypeInfo?.MakeReadOnly();
 
@@ -51,5 +57,18 @@ public static class PluginProtocol
             dataPresence,
             metaPresence,
             documentation);
+    }
+
+    private static void EnsureSourceGenerated<T>(JsonTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        // Source-generated contracts originate from a JsonSerializerContext resolver.
+        // Reflection-backed DefaultJsonTypeInfoResolver metadata is rejected.
+        if (typeInfo.Options.TypeInfoResolver is not JsonSerializerContext)
+        {
+            throw new ArgumentException(
+                "Plugin protocol metadata must use source-generated JsonTypeInfo from a JsonSerializerContext.",
+                nameof(typeInfo));
+        }
     }
 }
