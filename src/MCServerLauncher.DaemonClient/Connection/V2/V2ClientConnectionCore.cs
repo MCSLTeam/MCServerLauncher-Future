@@ -317,6 +317,13 @@ internal sealed class V2ClientConnectionCore
 
             send = _transport.SendBinaryAsync(frame, _connectionCancellation.Token);
         }
+        catch (OperationCanceledException) when (_connectionCancellation.IsCancellationRequested)
+        {
+            _uploadCoordinator.FailSend(pending!, ClosedError());
+            pending!.DisposeSendLifetime();
+            CompleteSendObserver();
+            return pending.Operation;
+        }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             _uploadCoordinator.FailSend(

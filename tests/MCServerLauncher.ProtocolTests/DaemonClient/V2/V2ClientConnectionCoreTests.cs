@@ -685,6 +685,39 @@ public sealed class V2ClientConnectionCoreTests
     }
 
     [Fact]
+    public async Task SynchronousUploadCancellationReleasesAdmissionBeforeCloseCanContinue()
+    {
+        var transport = new CloseBlockingCancellationBinaryTransport();
+        var core = new V2ClientConnectionCore(transport, TimeProvider.System, Timeout);
+        var upload = Task.Run(() => core.SendUploadChunkAsync(
+            new UploadChunkRequest(Guid.NewGuid(), 0, ImmutableArray.Create<byte>(1)),
+            1,
+            CancellationToken.None));
+        await transport.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var close = Task.Run(core.Close);
+        try
+        {
+            await transport.CloseBlocked.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var result = await upload.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(result.IsErr(out var error));
+            Assert.Equal("connection.closed", error!.Code);
+            Assert.False(close.IsCompleted);
+            Assert.Equal(0, core.UploadPendingCount);
+            Assert.Equal(0, core.SendObserverCount);
+            Assert.Equal(0, core.ActiveSendLifetimeCount);
+        }
+        finally
+        {
+            transport.ReleaseClose();
+        }
+
+        await close.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task AlreadyCanceledCallerRegistrationCompletesSynchronouslyAndPoisonsPending()
     {
         var time = new TrackingTimeProvider();
@@ -1279,6 +1312,36 @@ public sealed class V2ClientConnectionCoreTests
         }
 
         public void ReleaseForFailedAssertion() => _failedAssertionRelease.Set();
+    }
+
+    private sealed class CloseBlockingCancellationBinaryTransport : IV2ClientWireTransport
+    {
+        private readonly ManualResetEventSlim _releaseClose = new();
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _closeBlocked = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Entered => _entered.Task;
+        public Task CloseBlocked => _closeBlocked.Task;
+
+        public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken)
+        {
+            cancellationToken.Register(() =>
+            {
+                _closeBlocked.TrySetResult();
+                _releaseClose.Wait();
+            });
+            _entered.TrySetResult();
+
+            if (!cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(10)))
+                throw new TimeoutException("The connection token was not canceled.");
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new InvalidOperationException("The binary send completed without cancellation.");
+        }
+
+        public void ReleaseClose() => _releaseClose.Set();
     }
 
     private sealed class TrackingTimeProvider : TimeProvider
