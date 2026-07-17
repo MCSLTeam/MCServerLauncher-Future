@@ -162,9 +162,11 @@ public sealed class ProtocolRpcExecutionTests
         var catalog = CreateFrozenCatalog();
         const int readerCount = 16;
         using var start = new Barrier(readerCount + 1);
-        var readers = Enumerable.Range(0, readerCount).Select(_ => Task.Run(() =>
+        // LongRunning avoids CI thread-pool injection delays that miss a 10s Barrier rendezvous
+        // when the full protocol suite is already hot.
+        var readers = Enumerable.Range(0, readerCount).Select(_ => Task.Factory.StartNew(() =>
         {
-            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(10)));
+            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(30)));
             FrozenProtocolCatalog? observed;
             while (!accessor.TryGet(out observed))
             {
@@ -172,11 +174,11 @@ public sealed class ProtocolRpcExecutionTests
             }
 
             return observed;
-        })).ToArray();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, TaskScheduler.Default)).ToArray();
 
-        Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(10)));
+        Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(30)));
         accessor.Publish(catalog);
-        var observations = await Task.WhenAll(readers).WaitAsync(TimeSpan.FromSeconds(10));
+        var observations = await Task.WhenAll(readers).WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.All(observations, observation => Assert.Same(catalog, observation));
     }
@@ -189,9 +191,9 @@ public sealed class ProtocolRpcExecutionTests
             .Select(_ => CreateFrozenCatalog())
             .ToArray();
         using var start = new Barrier(candidates.Length + 1);
-        var publishers = candidates.Select(candidate => Task.Run(() =>
+        var publishers = candidates.Select(candidate => Task.Factory.StartNew(() =>
         {
-            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(10)));
+            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(30)));
             try
             {
                 accessor.Publish(candidate);
@@ -201,10 +203,10 @@ public sealed class ProtocolRpcExecutionTests
             {
                 return (Catalog: candidate, Published: false);
             }
-        })).ToArray();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, TaskScheduler.Default)).ToArray();
 
-        Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(10)));
-        var observations = await Task.WhenAll(publishers).WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(30)));
+        var observations = await Task.WhenAll(publishers).WaitAsync(TimeSpan.FromSeconds(30));
         var winner = Assert.Single(observations, observation => observation.Published);
 
         Assert.Same(winner.Catalog, accessor.GetRequired());
