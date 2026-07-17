@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
@@ -124,7 +125,9 @@ public sealed class SynchronouslyBlockingStartPlugin : IDaemonPlugin
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
-        Thread.Sleep(TimeSpan.FromSeconds(1));
+        // Block the LongRunning start thread indefinitely so Task.Delay-based supervision still
+        // wins under thread-pool pressure (a short Sleep can complete before a delayed timer).
+        Thread.Sleep(Timeout.InfiniteTimeSpan);
         return Task.FromResult(PluginResult.Ok());
     }
 

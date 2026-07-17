@@ -611,6 +611,10 @@ public sealed class V2ClientConnectionOwnerTests
         var first = owner.ConnectAsync();
         var second = owner.ConnectAsync();
 
+        // Both waiters must attach before the first Create throws; otherwise the lifecycle can
+        // complete the initial failure and the second ConnectAsync becomes a separate retry.
+        factory.ReleaseFirstCreate.Set();
+
         var firstResult = await first.WaitAsync(Timeout);
         var secondResult = await second.WaitAsync(Timeout);
         Assert.True(firstResult.IsErr(out var firstError));
@@ -1611,6 +1615,7 @@ public sealed class V2ClientConnectionOwnerTests
     {
         private int _createCount;
 
+        internal ManualResetEventSlim ReleaseFirstCreate { get; } = new(false);
         internal ControlledSessionFactory Sessions { get; } = new();
 
         public IV2ClientConnectionSession Create(
@@ -1619,7 +1624,13 @@ public sealed class V2ClientConnectionOwnerTests
             Action<V2ClientDiagnostic>? diagnostic = null)
         {
             if (Interlocked.Increment(ref _createCount) == 1)
+            {
+                if (!ReleaseFirstCreate.Wait(Timeout))
+                    throw new TimeoutException("The first failing factory create was not released.");
+
                 throw new InvalidOperationException("factory failed");
+            }
+
             return Sessions.Create(mirror, routeEvent, diagnostic);
         }
     }
