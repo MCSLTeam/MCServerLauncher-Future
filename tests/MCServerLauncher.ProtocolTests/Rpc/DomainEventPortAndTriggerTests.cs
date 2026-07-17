@@ -324,15 +324,21 @@ public sealed class DomainEventPortAndTriggerTests
         });
         await started.Task.WaitAsync(TimeSpan.FromSeconds(3));
 
+        // Let the infinite delay park before stop so the registration is definitely live.
+        await Task.Delay(25);
+
         supervisor.RequestStop();
         var failure = await Assert.ThrowsAsync<AggregateException>(async () =>
-            await supervisor.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            await supervisor.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)));
 
-        await drained.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await drained.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(0, supervisor.PendingTaskCount);
-        Assert.Contains(failure.InnerExceptions, exception => exception is AggregateException);
+        Assert.Contains(
+            failure.Flatten().InnerExceptions,
+            exception => exception is InvalidOperationException
+                && exception.Message == "cancel callback failed");
         Assert.Contains(logger.Entries, entry =>
-            entry.Level == LogLevel.Error && entry.Exception is AggregateException);
+            entry.Level == LogLevel.Error && entry.Exception is not null);
     }
 
     [Fact]

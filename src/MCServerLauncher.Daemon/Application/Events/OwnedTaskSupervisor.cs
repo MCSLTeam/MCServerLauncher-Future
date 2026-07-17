@@ -11,6 +11,7 @@ internal sealed class OwnedTaskSupervisor(
     private readonly HashSet<Task> _tasks = [];
     private TaskCompletionSource? _stopCompletion;
     private Task? _stopDriverTask;
+    private Exception? _cancelFailure;
     private int _accepting = 1;
     private bool _disposed;
 
@@ -59,10 +60,10 @@ internal sealed class OwnedTaskSupervisor(
         List<Exception>? failures = null;
         try
         {
-            await EnsureStopTask().WaitAsync(cancellationToken);
+            await EnsureStopTask().WaitAsync(cancellationToken).ConfigureAwait(false);
             var stopDriver = Volatile.Read(ref _stopDriverTask);
             if (stopDriver is not null)
-                await stopDriver.WaitAsync(cancellationToken);
+                await stopDriver.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -72,6 +73,10 @@ internal sealed class OwnedTaskSupervisor(
         {
             (failures ??= []).Add(exception);
         }
+
+        var cancelFailure = Volatile.Read(ref _cancelFailure);
+        if (cancelFailure is not null)
+            (failures ??= []).Add(cancelFailure);
 
         while (true)
         {
@@ -84,7 +89,7 @@ internal sealed class OwnedTaskSupervisor(
                 pending = [.. _tasks];
             }
 
-            await Task.WhenAll(pending).WaitAsync(cancellationToken);
+            await Task.WhenAll(pending).WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (failures is not null)
@@ -102,7 +107,7 @@ internal sealed class OwnedTaskSupervisor(
 
         try
         {
-            await DrainAsync();
+            await DrainAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -120,27 +125,58 @@ internal sealed class OwnedTaskSupervisor(
         var candidate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         completion = Interlocked.CompareExchange(ref _stopCompletion, candidate, null) ?? candidate;
         if (ReferenceEquals(completion, candidate))
-            Volatile.Write(ref _stopDriverTask, CompleteStopAsync(candidate));
+            Volatile.Write(ref _stopDriverTask, DriveStopAsync(candidate));
         return completion.Task;
     }
 
-    private Task CompleteStopAsync(TaskCompletionSource completion)
+    private async Task DriveStopAsync(TaskCompletionSource completion)
     {
+        // Yield so Schedule()'d work that already signalled "started" can finish installing
+        // CancellationToken registrations before Cancel runs under a loaded thread pool.
+        await Task.Yield();
+
         try
         {
-            // Prefer Cancel() over CancelAsync(): callback exceptions are aggregated into
-            // AggregateException and thrown synchronously, which DrainAsync/DisposeAsync must observe.
-            // Linked-token registrations (owned work) cancel through parent callbacks and are included.
-            _lifetimeCancellation.Cancel();
+            // Cancel() aggregates registration callback exceptions synchronously. Keep that path
+            // as the primary observation mechanism for Dispose/Drain.
+            try
+            {
+                _lifetimeCancellation.Cancel();
+            }
+            catch (Exception syncException)
+            {
+                ObserveCancelFailure(syncException);
+                completion.TrySetException(syncException);
+                return;
+            }
+
+            // Residual path: if Cancel() returned without throwing, still surface any deferred
+            // CancelAsync observation (should already be canceled and complete immediately).
+            try
+            {
+                await _lifetimeCancellation.CancelAsync().ConfigureAwait(false);
+            }
+            catch (Exception asyncException)
+            {
+                ObserveCancelFailure(asyncException);
+                completion.TrySetException(asyncException);
+                return;
+            }
+
             completion.TrySetResult();
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "Canceling owned tasks for '{Owner}' failed", owner);
+            ObserveCancelFailure(exception);
             completion.TrySetException(exception);
         }
+    }
 
-        return Task.CompletedTask;
+    private void ObserveCancelFailure(Exception exception)
+    {
+        // Keep the first failure; concurrent stop drivers should not overwrite it.
+        Interlocked.CompareExchange(ref _cancelFailure, exception, null);
+        logger.LogError(exception, "Canceling owned tasks for '{Owner}' failed", owner);
     }
 
     private async Task ExecuteAsync(
