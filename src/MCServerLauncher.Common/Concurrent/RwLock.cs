@@ -16,10 +16,19 @@ public class RwLock
         await _readerLock.WaitAsync(cancellationToken);
         try
         {
-            _readCount++;
-            if (_readCount == 1)
-                // 第一个读者需要获取写锁来阻止写操作
-                await _writerLock.WaitAsync(cancellationToken);
+            if (++_readCount == 1)
+            {
+                try
+                {
+                    // 第一个读者需要获取写锁来阻止写操作
+                    await _writerLock.WaitAsync(cancellationToken);
+                }
+                catch
+                {
+                    _readCount--;
+                    throw;
+                }
+            }
         }
         finally
         {
@@ -46,22 +55,6 @@ public class RwLock
         return new WriterLockReleaser(this);
     }
 
-    private async Task ReleaseReaderLockAsync()
-    {
-        await _readerLock.WaitAsync();
-        try
-        {
-            _readCount--;
-            if (_readCount == 0)
-                // 最后一个读者释放写锁
-                _writerLock.Release();
-        }
-        finally
-        {
-            _readerLock.Release();
-        }
-    }
-
     private void ReleaseWriterLock()
     {
         _writerLock.Release();
@@ -76,10 +69,19 @@ public class RwLock
         _readerLock.Wait(cancellationToken);
         try
         {
-            _readCount++;
-            if (_readCount == 1)
-                // 第一个读者需要获取写锁来阻止写操作
-                _writerLock.Wait(cancellationToken);
+            if (++_readCount == 1)
+            {
+                try
+                {
+                    // 第一个读者需要获取写锁来阻止写操作
+                    _writerLock.Wait(cancellationToken);
+                }
+                catch
+                {
+                    _readCount--;
+                    throw;
+                }
+            }
         }
         finally
         {
@@ -137,7 +139,7 @@ public class RwLock
             if (!_disposed)
             {
                 _disposed = true;
-                Task.Run(async () => await _lock.ReleaseReaderLockAsync()).Wait();
+                _lock.ReleaseReaderLock();
             }
         }
     }
