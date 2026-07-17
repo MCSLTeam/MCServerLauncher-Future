@@ -1,6 +1,6 @@
 # PR #52 Review Fixes Implementation Plan
 
-> **For agentic workers:** Execute task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Local commits only; push once at end.
+> **For agentic workers:** Execute task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Create local commits only; do not push unless the user explicitly asks.
 
 **Goal:** Clear PR #52 merge blockers and high-leverage Should items from `docs/review/2026-07-16-pr-52-v2-cutover-review.md` with atomic local commits.
 
@@ -8,9 +8,11 @@
 
 **Tech Stack:** .NET 10 / C# 14, System.Text.Json source-gen, xUnit ProtocolTests, conventional commits.
 
+**Status (2026-07-17):** The consolidated PR #52 review remediation is implemented and verified locally. The Release solution build is warning-clean; Daemon API tests pass `105/105`; ProtocolTests pass `923/923`; ProtocolDocs `--check` passes; and the new published-daemon hanging-plugin regression passes `1/1`. Atomic commits remain local pending an explicit user request to push.
+
 **Delivery constraints (locked with user):**
 - Scope: Must-fix + high-leverage Should
-- Local commits only until full suite green; then one push
+- Local commits only; push later as one user-authorized batch
 - Commit slicing by review theme
 
 ---
@@ -26,7 +28,37 @@
 | Path TOCTOU | Reject reparse during validate; after open re-check `GetFinalPathNameByHandle` stays under root |
 | STJ | `JsonSerializerIsReflectionEnabledByDefault=false`; `PluginProtocol` rejects non-source-gen `JsonTypeInfo` |
 | Commits | Multiple atomic conventional commits |
-| Push | Only after all work + ProtocolTests green |
+| Push | Only after all work, ProtocolTests green, and explicit user approval |
+
+## Consolidated review audit (2026-07-17)
+
+**P0:** none.
+
+**Closed P1 items:**
+
+- Connection close now cancels before coordinator cleanup, and a synchronous upload send that observes that cancellation is reported as `connection.closed` without retaining a pending observer or send lifetime.
+- Download quota is reserved before application I/O/hash work, release paths are covered for cancellation and errors, and the coordinator transfers a reservation to a registered session atomically so it cannot double-count under concurrency.
+- Plugin `StartAsync` is time-bounded and isolated; failed or late-starting plugins cannot contribute RPCs or events to the frozen catalog. Both protocol and published-daemon coverage prove this behavior.
+- Plugin protocol metadata requires a source-generated `JsonTypeInfo` originating from a `JsonSerializerContext`; reflection-backed or manually-created metadata that merely borrows source-generated options is rejected.
+- Event fan-out uses binding-indexed copy-on-write candidate snapshots, avoids a publish-path subscription-key allocation, serializes only after a matching subscriber is found, and has benchmark coverage for matching/non-matching and concurrent publishing.
+- API surface tightening makes Apifox generation internal to the daemon/tooling boundary and adds the conditional-nullability contract for snapshot lookups.
+
+**Deferred P2 follow-ups:**
+
+- General RPC `SendTextAsync` still shares its admission critical section; safely moving it requires an explicit ordered-dispatch design.
+- The event publish gate deliberately remains serial to preserve global and per-connection ordering; metadata filters still scan within each candidate ledger, and zero-subscriber typed meta is still canonicalized before the empty binding snapshot is observed.
+- There is no production-wide hash/open concurrency budget. The implementation deliberately avoids reintroducing I/O or hashing under the admission gate.
+- Startup-only trusted plugins can still consume one `LongRunning` worker and one timeout period each when permanently non-cooperative; add a total startup budget/plugin-count limit in a separate hardening plan.
+- A broader wire-error provenance and buffer ownership/pooling redesign remains separate work.
+
+**Local commit slicing:**
+
+1. `fix(client): preserve closed errors during send cancellation`
+2. `fix(files): reserve download quota before opening sessions`
+3. `fix(plugins): bound plugin startup activation`
+4. `fix(api): restrict plugin protocol metadata`
+5. `perf(events): reduce event fan-out contention`
+6. `docs(plan): record pr 52 review remediation status`
 
 ---
 
@@ -275,3 +307,4 @@ git status --short --branch
 ## Changelog
 
 - 2026-07-16: Create plan from PR #52 review grill-me decisions.
+- 2026-07-17: Consolidate three independent reviews, close the merged P1 set locally, record verified P2 follow-ups, and retain local-only atomic commits pending explicit push approval.
