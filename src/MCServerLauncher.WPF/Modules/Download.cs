@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.View.Components.Generic;
@@ -5,12 +6,16 @@ using iNKORE.UI.WPF.Modern.Controls;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using TypedDaemonClient = MCServerLauncher.DaemonClient.DaemonClient;
 
 namespace MCServerLauncher.WPF.Modules
 {
@@ -73,19 +78,31 @@ namespace MCServerLauncher.WPF.Modules
                 {
                     try
                     {
-                        var daemon = await DaemonsWsManager.Get(config);
-                        if (daemon is null)
+                        var daemonResult = await DaemonsWsManager.Get(config);
+                        if (!daemonResult.IsOk(out var daemon) || daemon is null)
                         {
-                            Log.Warning("[Download] Daemon offline, skip: {0}", config.FriendlyName ?? config.EndPoint);
+                            Log.Warning(
+                                "[Download] Daemon offline, skip: {0} ({1})",
+                                config.FriendlyName ?? config.EndPoint,
+                                daemonResult.IsErr(out var connectError) ? connectError!.Message : "unavailable");
                             continue;
                         }
 
-                        var uploadContext = await daemon.UploadFileAsync(tempPath, daemonPath, 1024 * 1024);
-                        if (uploadContext.NetworkLoadTask != null)
-                            await uploadContext.NetworkLoadTask;
-
-                        Log.Information("[Download] Pushed {0} to {1} as {2} done={3}",
-                            fileName, config.FriendlyName ?? config.EndPoint, daemonPath, uploadContext.Done);
+                        var uploaded = await UploadFileToDaemonAsync(daemon, tempPath, daemonPath, CancellationToken.None);
+                        if (uploaded)
+                        {
+                            Log.Information(
+                                "[Download] Pushed {0} to {1} as {2}",
+                                fileName,
+                                config.FriendlyName ?? config.EndPoint,
+                                daemonPath);
+                        }
+                        else
+                        {
+                            Log.Warning(
+                                "[Download] Push to daemon failed: {0}",
+                                config.FriendlyName ?? config.EndPoint);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -199,6 +216,86 @@ namespace MCServerLauncher.WPF.Modules
             await using var stream = await http.GetStreamAsync(url);
             await using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None);
             await stream.CopyToAsync(fs);
+        }
+
+        private static async Task<bool> UploadFileToDaemonAsync(
+            TypedDaemonClient daemon,
+            string sourcePath,
+            string destinationPath,
+            CancellationToken cancellationToken)
+        {
+            Guid? sessionId = null;
+            var closed = false;
+            try
+            {
+                await using var hashStream = new FileStream(
+                    sourcePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    1024 * 1024,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan);
+                var sha256 = Convert.ToHexString(await SHA256.HashDataAsync(hashStream, cancellationToken));
+
+                var openResult = await daemon.Files.OpenUploadAsync(
+                    new UploadOpenRequest(destinationPath, hashStream.Length, sha256),
+                    cancellationToken);
+                if (openResult.IsErr(out _))
+                    return false;
+
+                var session = openResult.Unwrap();
+                sessionId = session.SessionId;
+                var buffer = new byte[session.MaxChunkSize];
+                long offset = 0;
+
+                await using var uploadStream = new FileStream(
+                    sourcePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    1024 * 1024,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan);
+                while (true)
+                {
+                    var read = await uploadStream.ReadAsync(buffer.AsMemory(), cancellationToken);
+                    if (read == 0)
+                        break;
+
+                    var writeResult = await daemon.Files.WriteUploadChunkAsync(
+                        new UploadChunkRequest(
+                            session.SessionId,
+                            offset,
+                            ImmutableArray.Create(buffer, 0, read)),
+                        cancellationToken);
+                    if (writeResult.IsErr(out _))
+                        return false;
+
+                    offset += read;
+                }
+
+                var closeResult = await daemon.Files.CloseUploadAsync(session.SessionId, cancellationToken);
+                closed = closeResult.IsOk(out _);
+                return closed;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[Download] Upload helper failed for {0}", destinationPath);
+                return false;
+            }
+            finally
+            {
+                if (sessionId is Guid openedSessionId && !closed)
+                {
+                    try
+                    {
+                        await daemon.Files.CancelUploadAsync(openedSessionId, CancellationToken.None);
+                    }
+                    catch
+                    {
+                        // Best-effort cleanup must not replace the original upload failure.
+                    }
+                }
+            }
         }
 
         private async Task PreDownloadFile(string url, string savePath, string fileName)
