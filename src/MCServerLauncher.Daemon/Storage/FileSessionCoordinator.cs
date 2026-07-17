@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Daemon.API.Errors;
@@ -23,8 +24,14 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
     private readonly Func<Stream, HashAlgorithmName, CancellationToken, Task<string>> _hashAsync;
     private readonly Action<string> _deleteUploadStaging;
     private readonly Func<string, Task>? _onUploadStagingCreatedAsync;
+    // An internal test seam that runs after a download becomes visible but before its open completes.
+    // It is deliberately invoked outside the admission gate.
+    private readonly Action? _onDownloadSessionRegistered;
     private int? _downloadSessionLimit;
     private ITimer? _cleanupTimer;
+    private TaskCompletionSource _sessionOpensDrained = CompletedSessionOpensDrained();
+    private int _activeSessionOpenCount;
+    private int _pendingDownloadOpenCount;
     private int _started;
     private int _stopped;
 
@@ -33,13 +40,15 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         int? downloadSessionLimit = null,
         Func<Stream, HashAlgorithmName, CancellationToken, Task<string>>? hashAsync = null,
         Action<string>? deleteUploadStaging = null,
-        Func<string, Task>? onUploadStagingCreatedAsync = null)
+        Func<string, Task>? onUploadStagingCreatedAsync = null,
+        Action? onDownloadSessionRegistered = null)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
         _downloadSessionLimit = downloadSessionLimit;
         _hashAsync = hashAsync ?? GetHashAsync;
         _deleteUploadStaging = deleteUploadStaging ?? DeleteIfExists;
         _onUploadStagingCreatedAsync = onUploadStagingCreatedAsync;
+        _onDownloadSessionRegistered = onDownloadSessionRegistered;
     }
 
 
@@ -286,8 +295,18 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         _cleanupTimer?.Dispose();
         _cleanupTimer = null;
 
+        Task sessionOpensDrained;
         await _sessionAdmissionGate.WaitAsync();
-        _sessionAdmissionGate.Release();
+        try
+        {
+            sessionOpensDrained = _sessionOpensDrained.Task;
+        }
+        finally
+        {
+            _sessionAdmissionGate.Release();
+        }
+
+        await sessionOpensDrained.ConfigureAwait(false);
 
         foreach (var pair in _uploadSessions)
         {
@@ -327,22 +346,27 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         return candidate;
     }
 
-    private async Task<Result<UploadSession, DaemonError>> OpenUploadCoreAsync(
-        string path,
-        long length,
-        string? sha256,
-        CancellationToken cancellationToken)
+    private async Task<DaemonError?> BeginSessionOpenAsync(bool reserveDownload, CancellationToken cancellationToken)
     {
-        if (IsStopped)
-            return Err<UploadSession>(CoordinatorStopped());
-
-        await _sessionAdmissionGate.WaitAsync(cancellationToken);
+        await _sessionAdmissionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (IsStopped)
-                return Err<UploadSession>(CoordinatorStopped());
+                return CoordinatorStopped();
 
-            return await OpenUploadCoreLockedAsync(path, length, sha256, cancellationToken);
+            if (reserveDownload && _downloadSessionLimit is { } limit &&
+                _downloadSessions.Count + _pendingDownloadOpenCount >= limit)
+            {
+                return new ConflictDaemonError(
+                    "file.download.limit",
+                    "The file download session limit has been reached.");
+            }
+
+            if (_activeSessionOpenCount++ == 0)
+                _sessionOpensDrained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (reserveDownload)
+                _pendingDownloadOpenCount++;
+            return null;
         }
         finally
         {
@@ -350,7 +374,43 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         }
     }
 
-    private async Task<Result<UploadSession, DaemonError>> OpenUploadCoreLockedAsync(
+    private async Task CompleteSessionOpenAsync(bool reservedDownload)
+    {
+        await _sessionAdmissionGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (reservedDownload)
+                _pendingDownloadOpenCount--;
+            if (--_activeSessionOpenCount == 0)
+                _sessionOpensDrained.TrySetResult();
+        }
+        finally
+        {
+            _sessionAdmissionGate.Release();
+        }
+    }
+
+    private async Task<Result<UploadSession, DaemonError>> OpenUploadCoreAsync(
+        string path,
+        long length,
+        string? sha256,
+        CancellationToken cancellationToken)
+    {
+        var admissionError = await BeginSessionOpenAsync(reserveDownload: false, cancellationToken);
+        if (admissionError is not null)
+            return Err<UploadSession>(admissionError);
+
+        try
+        {
+            return await OpenUploadCoreAfterAdmissionAsync(path, length, sha256, cancellationToken);
+        }
+        finally
+        {
+            await CompleteSessionOpenAsync(reservedDownload: false);
+        }
+    }
+
+    private async Task<Result<UploadSession, DaemonError>> OpenUploadCoreAfterAdmissionAsync(
         string path,
         long length,
         string? sha256,
@@ -561,24 +621,46 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         string path,
         CancellationToken cancellationToken)
     {
-        if (IsStopped)
-            return Err<FileDownloadInfo>(CoordinatorStopped());
+        var admissionError = await BeginSessionOpenAsync(reserveDownload: true, cancellationToken);
+        if (admissionError is not null)
+            return Err<FileDownloadInfo>(admissionError);
 
-        await _sessionAdmissionGate.WaitAsync(cancellationToken);
+        var reservationHeld = true;
         try
         {
-            if (IsStopped)
-                return Err<FileDownloadInfo>(CoordinatorStopped());
+            var result = await OpenDownloadCoreAfterAdmissionAsync(path, cancellationToken);
+            if (result.IsErr(out _))
+                return result;
 
-            return await OpenDownloadCoreLockedAsync(path, cancellationToken);
+            var session = result.Unwrap();
+            if (!await TryRegisterDownloadSessionAsync(session).ConfigureAwait(false))
+            {
+                await DisposeSessionAsync(session);
+                return Err<FileDownloadInfo>(new InternalDaemonError(
+                    "file.download.session_create_failed", "The download session could not be registered."));
+            }
+
+            reservationHeld = false;
+            try
+            {
+                _onDownloadSessionRegistered?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                if (_downloadSessions.TryRemove(session.SessionId, out var removed))
+                    await DisposeSessionLockedAsync(removed);
+                return Err<FileDownloadInfo>(MapException(exception));
+            }
+
+            return result;
         }
         finally
         {
-            _sessionAdmissionGate.Release();
+            await CompleteSessionOpenAsync(reservedDownload: reservationHeld);
         }
     }
 
-    private async Task<Result<FileDownloadInfo, DaemonError>> OpenDownloadCoreLockedAsync(
+    private async Task<Result<FileDownloadInfo, DaemonError>> OpenDownloadCoreAfterAdmissionAsync(
         string path,
         CancellationToken cancellationToken)
     {
@@ -593,10 +675,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         {
             return Err<FileDownloadInfo>(MapException(exception));
         }
-
-        // Process-wide optional safety ceiling (tests / future). Production admission is per-connection.
-        if (_downloadSessionLimit is { } limit && _downloadSessions.Count >= limit)
-            return Err<FileDownloadInfo>(new ConflictDaemonError("file.download.limit", "The file download session limit has been reached."));
 
         FileStream? stream = null;
         try
@@ -621,13 +699,6 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 sha256,
                 stream,
                 _timeProvider.GetUtcNow() + SessionLifetime);
-            if (!_downloadSessions.TryAdd(sessionId, session))
-            {
-                await session.DisposeAsync();
-                stream = null;
-                return Err<FileDownloadInfo>(new InternalDaemonError("file.download.session_create_failed", "The download session could not be registered."));
-            }
-
             stream = null;
             return Ok(session);
         }
@@ -643,6 +714,25 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         {
             if (stream is not null)
                 await stream.DisposeAsync();
+        }
+    }
+
+    private async Task<bool> TryRegisterDownloadSessionAsync(FileDownloadInfo session)
+    {
+        await _sessionAdmissionGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (!_downloadSessions.TryAdd(session.SessionId, session))
+                return false;
+
+            // Transfer the pre-I/O reservation to the registered-session count atomically.
+            // The gate only covers this bookkeeping; opening and hashing stay outside it.
+            _pendingDownloadOpenCount--;
+            return true;
+        }
+        finally
+        {
+            _sessionAdmissionGate.Release();
         }
     }
 
@@ -685,9 +775,10 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
             var buffer = new byte[requested];
             var read = await RandomAccess.ReadAsync(session.Stream.SafeFileHandle, buffer.AsMemory(), offset, cancellationToken);
+            // The buffer is allocated for this read and is never reused or mutated after this point.
             var data = read == requested
-                ? ImmutableArray.CreateRange(buffer)
-                : ImmutableArray.CreateRange(buffer.AsSpan(0, read).ToArray());
+                ? ImmutableCollectionsMarshal.AsImmutableArray(buffer)
+                : ImmutableCollectionsMarshal.AsImmutableArray(buffer.AsSpan(0, read).ToArray());
             return Ok(new DownloadChunk(offset, data, IsFinal: offset + read == session.Size));
         }
         catch (OperationCanceledException)
@@ -873,6 +964,13 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         {
             Log.Warning(exception, "[FileSessionCoordinator] Failed to dispose file session stream for {Path}", session.Path);
         }
+    }
+
+    private static TaskCompletionSource CompletedSessionOpensDrained()
+    {
+        var source = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        source.SetResult();
+        return source;
     }
 
     private void ScheduleCleanup()

@@ -1,11 +1,10 @@
-using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
-using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
+using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 using MCServerLauncher.Daemon.Remote.Rpc.Transport;
 using RustyOptions;
 using Serilog;
@@ -26,9 +25,11 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
     private readonly V2ConnectionOwner _owner;
     private readonly TimeProvider _timeProvider;
     private readonly int _downloadSessionLimit;
-    private readonly ImmutableArray<string> _permissionSnapshot;
     private readonly Dictionary<string, PermissionName> _permissions;
     private readonly Dictionary<Guid, Lease> _leases = [];
+    private readonly HashSet<long> _pendingDownloadOpenReservations = [];
+    private long _nextDownloadOpenReservation;
+    private int _activeDownloadLeaseCount;
     private bool _closed;
 
     private V2FileSessionConnection(
@@ -43,7 +44,6 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         _timeProvider = timeProvider;
         ArgumentOutOfRangeException.ThrowIfNegative(downloadSessionLimit);
         _downloadSessionLimit = downloadSessionLimit;
-        _permissionSnapshot = owner.Permissions;
         _permissions = SessionMethods.ToDictionary(
             static method => method,
             method => catalog.TryGetRpc(new RpcMethod(method), out var binding)
@@ -88,7 +88,7 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
             return result;
 
         var session = result.Unwrap();
-        var lease = new Lease(session.SessionId, SessionKind.Upload, _owner, _permissionSnapshot,
+        var lease = new Lease(session.SessionId, SessionKind.Upload, _owner,
             _permissions[UploadOpenMethod], session.ExpiresAt, session.MaxChunkSize);
         var admissionError = Admit(lease);
         if (admissionError is null)
@@ -168,24 +168,34 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
     {
         if (PermissionError(DownloadOpenMethod) is { } denied)
             return Result.Err<DownloadSession, DaemonError>(denied);
-        if (IsClosed())
-            return Result.Err<DownloadSession, DaemonError>(ConnectionClosed());
+        if (ReserveDownloadOpen(out var reservation) is { } reservationError)
+            return Result.Err<DownloadSession, DaemonError>(reservationError);
 
-        var result = await _application.OpenDownloadAsync(request, cancellationToken).ConfigureAwait(false);
-        if (result.IsErr(out _))
-            return result;
+        var reservationHeld = true;
+        try
+        {
+            var result = await _application.OpenDownloadAsync(request, cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out _))
+                return result;
 
-        var session = result.Unwrap();
-        var lease = new Lease(session.SessionId, SessionKind.Download, _owner, _permissionSnapshot,
-            _permissions[DownloadOpenMethod], session.ExpiresAt, session.MaxChunkSize);
-        var admissionError = Admit(lease);
-        if (admissionError is null)
-            return result;
+            var session = result.Unwrap();
+            var lease = new Lease(session.SessionId, SessionKind.Download, _owner,
+                _permissions[DownloadOpenMethod], session.ExpiresAt, session.MaxChunkSize);
+            var admissionError = CommitReservedDownload(reservation, lease);
+            reservationHeld = false;
+            if (admissionError is null)
+                return result;
 
-        var compensationError = await CompensateRegistrationAsync(lease).ConfigureAwait(false);
-        if (compensationError is not null)
-            return Result.Err<DownloadSession, DaemonError>(compensationError);
-        return Result.Err<DownloadSession, DaemonError>(admissionError);
+            var compensationError = await CompensateRegistrationAsync(lease).ConfigureAwait(false);
+            if (compensationError is not null)
+                return Result.Err<DownloadSession, DaemonError>(compensationError);
+            return Result.Err<DownloadSession, DaemonError>(admissionError);
+        }
+        finally
+        {
+            if (reservationHeld)
+                RollbackDownloadOpenReservation(reservation);
+        }
     }
 
     public async Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
@@ -230,6 +240,8 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
             _closed = true;
             leases = _leases.Values.ToArray();
             _leases.Clear();
+            _activeDownloadLeaseCount = 0;
+            _pendingDownloadOpenReservations.Clear();
         }
 
         List<Exception>? failures = null;
@@ -314,11 +326,11 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
             }
             if (_timeProvider.GetUtcNow() >= lease.ExpiresAt)
             {
-                _leases.Remove(sessionId);
+                RemoveLeaseLocked(lease);
                 lease.AuthoritativeOpen = false;
                 return new(null, NotFound(sessionId), lease);
             }
-            if (!HasPermission(lease.PermissionSnapshot, _permissions[method]) || !HasPermission(lease.PermissionSnapshot, lease.RequiredPermission))
+            if (!HasPermission(_permissions[method]) || !HasPermission(lease.RequiredPermission))
                 return new(null, PermissionDenied(_permissions[method]), null);
             lease.State = forRead ? LeaseState.Reading : LeaseState.Ending;
             lease.Idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -343,7 +355,7 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
                 lease.AuthoritativeOpen = false;
                 return new(null, NotFound(sessionId), lease);
             }
-            if (!HasPermission(lease.PermissionSnapshot, lease.RequiredPermission))
+            if (!HasPermission(lease.RequiredPermission))
                 return new(null, PermissionDenied(lease.RequiredPermission), null);
             if (payloadLength > lease.MaxChunkSize)
             {
@@ -361,28 +373,72 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
     private DaemonError? Admit(Lease lease)
     {
         lock (_gate)
+            return AdmitLocked(lease);
+    }
+
+    private DaemonError? AdmitLocked(Lease lease)
+    {
+        if (_closed || _owner.State is not (V2ConnectionState.Created or V2ConnectionState.Running))
+            return ConnectionClosed();
+        if (_timeProvider.GetUtcNow() >= lease.ExpiresAt)
+            return new InternalDaemonError("file.session.registration_failed", "The opened file session expired before registration.");
+        if (!_leases.TryAdd(lease.SessionId, lease))
+            return new InternalDaemonError("file.session.registration_failed", "The opened file session identifier is already registered.");
+        if (lease.Kind == SessionKind.Download)
+            _activeDownloadLeaseCount++;
+        if (_owner.State is not (V2ConnectionState.Created or V2ConnectionState.Running))
         {
+            RemoveLeaseLocked(lease);
+            return ConnectionClosed();
+        }
+
+        return null;
+    }
+
+    private DaemonError? ReserveDownloadOpen(out long reservation)
+    {
+        lock (_gate)
+        {
+            reservation = 0;
             if (_closed || _owner.State is not (V2ConnectionState.Created or V2ConnectionState.Running))
                 return ConnectionClosed();
-            if (_timeProvider.GetUtcNow() >= lease.ExpiresAt)
-                return new InternalDaemonError("file.session.registration_failed", "The opened file session expired before registration.");
-            if (lease.Kind == SessionKind.Download &&
-                _downloadSessionLimit > 0 &&
-                _leases.Values.Count(static existing => existing.Kind == SessionKind.Download) >= _downloadSessionLimit)
+            if (_downloadSessionLimit > 0 &&
+                _activeDownloadLeaseCount + _pendingDownloadOpenReservations.Count >= _downloadSessionLimit)
             {
                 return new ConflictDaemonError(
                     "file.download.limit",
                     "The file download session limit has been reached.");
             }
-            if (!_leases.TryAdd(lease.SessionId, lease))
-                return new InternalDaemonError("file.session.registration_failed", "The opened file session identifier is already registered.");
-            if (_owner.State is not (V2ConnectionState.Created or V2ConnectionState.Running))
-            {
-                _leases.Remove(lease.SessionId);
-                return ConnectionClosed();
-            }
+
+            reservation = ++_nextDownloadOpenReservation;
+            if (reservation == 0)
+                reservation = ++_nextDownloadOpenReservation;
+            _pendingDownloadOpenReservations.Add(reservation);
             return null;
         }
+    }
+
+    private DaemonError? CommitReservedDownload(long reservation, Lease lease)
+    {
+        lock (_gate)
+        {
+            if (!_pendingDownloadOpenReservations.Remove(reservation))
+            {
+                return _closed
+                    ? ConnectionClosed()
+                    : new InternalDaemonError(
+                        "file.session.registration_failed",
+                        "The download session reservation was not available for registration.");
+            }
+
+            return AdmitLocked(lease);
+        }
+    }
+
+    private void RollbackDownloadOpenReservation(long reservation)
+    {
+        lock (_gate)
+            _pendingDownloadOpenReservations.Remove(reservation);
     }
 
     private bool IsClosed()
@@ -399,8 +455,7 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
             if (terminal)
             {
                 lease.AuthoritativeOpen = false;
-                if (_leases.TryGetValue(lease.SessionId, out var current) && ReferenceEquals(current, lease))
-                    _leases.Remove(lease.SessionId);
+                RemoveLeaseLocked(lease);
             }
             lease.State = LeaseState.Active;
             idle = lease.Idle;
@@ -417,6 +472,17 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         return new InternalDaemonError(
             "file.session.compensation_failed",
             $"Registration compensation failed: {error.Code}: {error.Message}");
+    }
+
+    private bool RemoveLeaseLocked(Lease lease)
+    {
+        if (!_leases.TryGetValue(lease.SessionId, out var current) || !ReferenceEquals(current, lease))
+            return false;
+
+        _leases.Remove(lease.SessionId);
+        if (lease.Kind == SessionKind.Download)
+            _activeDownloadLeaseCount--;
+        return true;
     }
 
     private async Task<bool> ClaimForCleanupAsync(Lease lease)
@@ -491,23 +557,11 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         }
     }
 
-    private DaemonError? PermissionError(string method) => HasPermission(_permissionSnapshot, _permissions[method])
+    private DaemonError? PermissionError(string method) => HasPermission(_permissions[method])
         ? null
         : PermissionDenied(_permissions[method]);
 
-    private static bool HasPermission(ImmutableArray<string> permissions, PermissionName required)
-    {
-        if (permissions.IsDefault)
-            return false;
-        try
-        {
-            return new Permissions(permissions.ToArray()).Matches(Permission.Of(required.Value));
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-    }
+    private bool HasPermission(PermissionName required) => V2RpcDispatcher.HasPermission(_owner, required);
 
     private static bool IsReadTerminal(DaemonError error) =>
         error.Code is "file.session.not_found" or "file.session.expired";
@@ -545,7 +599,6 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         Guid sessionId,
         SessionKind kind,
         V2ConnectionOwner owner,
-        ImmutableArray<string> permissionSnapshot,
         PermissionName requiredPermission,
         DateTimeOffset expiresAt,
         int maxChunkSize)
@@ -553,7 +606,6 @@ internal sealed class V2FileSessionConnection : IProtocolFileSessionOperations, 
         internal Guid SessionId { get; } = sessionId;
         internal SessionKind Kind { get; } = kind;
         internal V2ConnectionOwner Owner { get; } = owner;
-        internal ImmutableArray<string> PermissionSnapshot { get; } = permissionSnapshot;
         internal PermissionName RequiredPermission { get; } = requiredPermission;
         internal DateTimeOffset ExpiresAt { get; } = expiresAt;
         internal int MaxChunkSize { get; } = maxChunkSize;

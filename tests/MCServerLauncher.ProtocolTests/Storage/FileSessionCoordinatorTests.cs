@@ -492,6 +492,239 @@ public sealed class FileSessionCoordinatorTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_ConcurrentLimitRejectsBeforeAnotherHashStarts()
+    {
+        var fixture = CreateFixture("download-limit-reservation");
+        var firstHashEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseHash = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hashCalls = 0;
+        var coordinator = new FileSessionCoordinator(
+            downloadSessionLimit: 1,
+            hashAsync: async (_, _, cancellationToken) =>
+            {
+                Interlocked.Increment(ref hashCalls);
+                firstHashEntered.TrySetResult();
+                await releaseHash.Task.WaitAsync(cancellationToken);
+                return "hash";
+            });
+        var relativePath = Path.Combine(fixture.RelativePath, "target.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(targetPath, [1, 2, 3]);
+
+            var first = coordinator.OpenDownloadAsync(new DownloadOpenRequest(relativePath), CancellationToken.None);
+            await firstHashEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var rejected = await coordinator.OpenDownloadAsync(new DownloadOpenRequest(relativePath), CancellationToken.None);
+
+            Assert.True(rejected.IsErr(out _));
+            Assert.Equal("file.download.limit", rejected.UnwrapErr().Code);
+            Assert.Equal(1, Volatile.Read(ref hashCalls));
+
+            releaseHash.TrySetResult();
+            var opened = AssertOk(await first);
+            AssertOk(await coordinator.CloseDownloadAsync(opened.SessionId, CancellationToken.None));
+        }
+        finally
+        {
+            releaseHash.TrySetResult();
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_CancelledHashReleasesAdmissionForTheNextOpen()
+    {
+        var fixture = CreateFixture("download-cancelled-admission");
+        var firstHashEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var neverCompletes = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hashCalls = 0;
+        var coordinator = new FileSessionCoordinator(
+            downloadSessionLimit: 1,
+            hashAsync: async (_, _, cancellationToken) =>
+            {
+                if (Interlocked.Increment(ref hashCalls) == 1)
+                {
+                    firstHashEntered.TrySetResult();
+                    await neverCompletes.Task.WaitAsync(cancellationToken);
+                }
+
+                return "hash";
+            });
+        var relativePath = Path.Combine(fixture.RelativePath, "target.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+        using var cancellation = new CancellationTokenSource();
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(targetPath, [1, 2, 3]);
+
+            var cancelled = coordinator.OpenDownloadAsync(new DownloadOpenRequest(relativePath), cancellation.Token);
+            await firstHashEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled);
+
+            var reopened = AssertOk(await coordinator.OpenDownloadAsync(
+                new DownloadOpenRequest(relativePath),
+                CancellationToken.None));
+
+            Assert.Equal(2, Volatile.Read(ref hashCalls));
+            AssertOk(await coordinator.CloseDownloadAsync(reopened.SessionId, CancellationToken.None));
+        }
+        finally
+        {
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_HashingRunsOutsideSessionAdmissionGate()
+    {
+        var fixture = CreateFixture("download-admission-throughput");
+        var firstHashEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondHashEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseHash = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hashCalls = 0;
+        var coordinator = new FileSessionCoordinator(
+            downloadSessionLimit: 2,
+            hashAsync: async (_, _, cancellationToken) =>
+            {
+                if (Interlocked.Increment(ref hashCalls) == 1)
+                    firstHashEntered.TrySetResult();
+                else
+                    secondHashEntered.TrySetResult();
+                await releaseHash.Task.WaitAsync(cancellationToken);
+                return "hash";
+            });
+        var relativePath = Path.Combine(fixture.RelativePath, "target.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(targetPath, [1, 2, 3]);
+
+            var first = coordinator.OpenDownloadAsync(new DownloadOpenRequest(relativePath), CancellationToken.None);
+            await firstHashEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var second = coordinator.OpenDownloadAsync(new DownloadOpenRequest(relativePath), CancellationToken.None);
+            await secondHashEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            releaseHash.TrySetResult();
+            var sessions = await Task.WhenAll(first, second);
+            foreach (var session in sessions)
+                AssertOk(await coordinator.CloseDownloadAsync(AssertOk(session).SessionId, CancellationToken.None));
+        }
+        finally
+        {
+            releaseHash.TrySetResult();
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_RegisteredSessionDoesNotAlsoConsumePendingAdmission()
+    {
+        var fixture = CreateFixture("download-reservation-handoff");
+        var secondResult = new TaskCompletionSource<Result<DownloadSession, DaemonError>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var registrationCount = 0;
+        FileSessionCoordinator? coordinator = null;
+        var relativePath = Path.Combine(fixture.RelativePath, "target.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+        coordinator = new FileSessionCoordinator(
+            downloadSessionLimit: 2,
+            hashAsync: static (_, _, _) => Task.FromResult("hash"),
+            onDownloadSessionRegistered: () =>
+            {
+                if (Interlocked.Increment(ref registrationCount) != 1)
+                    return;
+
+                try
+                {
+                    secondResult.TrySetResult(Task.Run(() => coordinator!.OpenDownloadAsync(
+                        new DownloadOpenRequest(relativePath), CancellationToken.None)).GetAwaiter().GetResult());
+                }
+                catch (Exception exception)
+                {
+                    secondResult.TrySetException(exception);
+                }
+            });
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(targetPath, [1, 2, 3]);
+
+            var first = AssertOk(await coordinator.OpenDownloadAsync(
+                new DownloadOpenRequest(relativePath), CancellationToken.None));
+            var second = AssertOk(await secondResult.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+
+            Assert.Equal(2, Volatile.Read(ref registrationCount));
+            AssertOk(await coordinator.CloseDownloadAsync(first.SessionId, CancellationToken.None));
+            AssertOk(await coordinator.CloseDownloadAsync(second.SessionId, CancellationToken.None));
+        }
+        finally
+        {
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
+    public async Task StopAsync_WaitsForAnInFlightDownloadOpenBeforeCleanup()
+    {
+        var fixture = CreateFixture("download-stop-admission");
+        var hashEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseHash = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var coordinator = new FileSessionCoordinator(
+            hashAsync: async (_, _, cancellationToken) =>
+            {
+                hashEntered.TrySetResult();
+                await releaseHash.Task.WaitAsync(cancellationToken);
+                return "hash";
+            });
+        var relativePath = Path.Combine(fixture.RelativePath, "target.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(targetPath, [1, 2, 3]);
+
+            var opening = coordinator.OpenDownloadAsync(new DownloadOpenRequest(relativePath), CancellationToken.None);
+            await hashEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var stopping = coordinator.StopAsync();
+            Assert.False(stopping.IsCompleted);
+
+            releaseHash.TrySetResult();
+            var opened = AssertOk(await opening);
+            await stopping;
+
+            AssertSessionNotFound(await coordinator.ReadDownloadChunkAsync(
+                new DownloadChunkRequest(opened.SessionId, 0, 1),
+                CancellationToken.None));
+        }
+        finally
+        {
+            releaseHash.TrySetResult();
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
 
     [Fact]
     [Trait("Category", "FileSessionCoordinator")]

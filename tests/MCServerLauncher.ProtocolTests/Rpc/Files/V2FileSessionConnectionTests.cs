@@ -126,6 +126,101 @@ public sealed class V2FileSessionConnectionTests
     }
 
     [Fact]
+    public async Task DownloadOpen_ReservesConnectionLimitBeforeCallingApplication()
+    {
+        var application = new FakeFileApplication { BlockOpen = true };
+        await using var owner = Owner("mcsl.daemon.file.download");
+        var connection = V2FileSessionConnection.Attach(
+            application,
+            Catalog(),
+            owner,
+            downloadSessionLimit: 1).Unwrap();
+
+        var first = connection.OpenDownloadAsync(new DownloadOpenRequest("first"), CancellationToken.None);
+        await application.OpenEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var rejected = await connection.OpenDownloadAsync(new DownloadOpenRequest("second"), CancellationToken.None);
+
+        Assert.True(rejected.IsErr(out _));
+        Assert.Equal("file.download.limit", rejected.UnwrapErr().Code);
+        Assert.Equal(1, application.DownloadOpenCalls);
+
+        application.ReleaseOpen.TrySetResult();
+        var opened = (await first).Unwrap();
+        Assert.True((await connection.CloseDownloadAsync(opened.SessionId, CancellationToken.None)).IsOk(out _));
+    }
+
+    [Fact]
+    public async Task DownloadOpen_ClosedLeaseFreesConnectionReservation()
+    {
+        var application = new FakeFileApplication();
+        await using var owner = Owner("mcsl.daemon.file.download");
+        var connection = V2FileSessionConnection.Attach(
+            application,
+            Catalog(),
+            owner,
+            downloadSessionLimit: 1).Unwrap();
+
+        var first = (await connection.OpenDownloadAsync(new DownloadOpenRequest("first"), CancellationToken.None)).Unwrap();
+        Assert.True((await connection.CloseDownloadAsync(first.SessionId, CancellationToken.None)).IsOk(out _));
+
+        var second = await connection.OpenDownloadAsync(new DownloadOpenRequest("second"), CancellationToken.None);
+
+        Assert.True(second.IsOk(out _));
+        Assert.Equal(2, application.DownloadOpenCalls);
+        Assert.True((await connection.CloseDownloadAsync(second.Unwrap().SessionId, CancellationToken.None)).IsOk(out _));
+    }
+
+    [Fact]
+    public async Task DownloadOpen_CancellationRollsBackConnectionReservation()
+    {
+        var application = new FakeFileApplication { BlockOpen = true };
+        await using var owner = Owner("mcsl.daemon.file.download");
+        var connection = V2FileSessionConnection.Attach(
+            application,
+            Catalog(),
+            owner,
+            downloadSessionLimit: 1).Unwrap();
+        using var cancellationSource = new CancellationTokenSource();
+
+        var cancelled = connection.OpenDownloadAsync(new DownloadOpenRequest("cancelled"), cancellationSource.Token);
+        await application.OpenEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellationSource.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => _ = await cancelled);
+
+        application.BlockOpen = false;
+        var reopened = await connection.OpenDownloadAsync(new DownloadOpenRequest("replacement"), CancellationToken.None);
+
+        Assert.True(reopened.IsOk(out _));
+        Assert.Equal(2, application.DownloadOpenCalls);
+        Assert.True((await connection.CloseDownloadAsync(reopened.Unwrap().SessionId, CancellationToken.None)).IsOk(out _));
+    }
+
+    [Fact]
+    public async Task DownloadOpen_ErrorRollsBackConnectionReservation()
+    {
+        var application = new FakeFileApplication
+        {
+            DownloadOpenError = new StorageDaemonError("file.storage_failed", "Injected open failure.")
+        };
+        await using var owner = Owner("mcsl.daemon.file.download");
+        var connection = V2FileSessionConnection.Attach(
+            application,
+            Catalog(),
+            owner,
+            downloadSessionLimit: 1).Unwrap();
+
+        var failed = await connection.OpenDownloadAsync(new DownloadOpenRequest("failed"), CancellationToken.None);
+        application.DownloadOpenError = null;
+        var reopened = await connection.OpenDownloadAsync(new DownloadOpenRequest("replacement"), CancellationToken.None);
+
+        Assert.True(failed.IsErr(out _));
+        Assert.True(reopened.IsOk(out _));
+        Assert.Equal(2, application.DownloadOpenCalls);
+        Assert.True((await connection.CloseDownloadAsync(reopened.Unwrap().SessionId, CancellationToken.None)).IsOk(out _));
+    }
+
+    [Fact]
     public async Task OwnerDisconnect_CleansEverySessionExactlyOnce()
     {
         var application = new FakeFileApplication();
@@ -744,6 +839,7 @@ public sealed class V2FileSessionConnectionTests
         internal Result<Unit, DaemonError> UploadCloseResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
         internal Result<Unit, DaemonError> UploadCancelResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
         internal Result<Unit, DaemonError> DownloadCloseResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
+        internal DaemonError? DownloadOpenError { get; set; }
         internal Result<Unit, DaemonError> UploadWriteResult { get; set; } = Result.Ok<Unit, DaemonError>(Unit.Default);
         internal Exception? UploadWriteException { get; set; }
         internal Exception? UploadCancelException { get; set; }
@@ -802,6 +898,8 @@ public sealed class V2FileSessionConnectionTests
             OpenEntered.TrySetResult();
             if (BlockOpen)
                 await ReleaseOpen.Task.WaitAsync(cancellationToken);
+            if (DownloadOpenError is { } error)
+                return Result.Err<DownloadSession, DaemonError>(error);
             return Result.Ok<DownloadSession, DaemonError>(DownloadSession);
         }
 
