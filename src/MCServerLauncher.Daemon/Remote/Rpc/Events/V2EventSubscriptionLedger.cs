@@ -78,26 +78,27 @@ internal sealed class V2EventSubscriptionLedger : IProtocolSubscriptionOperation
     private readonly FrozenProtocolCatalog _catalog;
     private readonly Permissions _permissions;
     private readonly IV2EventMetaCanonicalizer _canonicalizer;
+    private readonly Action<FrozenEventBinding, bool>? _subscriptionChanged;
     private ImmutableHashSet<SubscriptionKey> _subscriptions =
         ImmutableHashSet.Create<SubscriptionKey>(SubscriptionKeyComparer.Instance);
     private bool _closed;
 
     internal V2EventSubscriptionLedger(FrozenProtocolCatalog catalog, V2ConnectionOwner owner)
-        : this(catalog, owner, V2EventMetaCanonicalizer.Instance)
+        : this(catalog, owner, V2EventMetaCanonicalizer.Instance, null)
     {
     }
 
     internal V2EventSubscriptionLedger(
         FrozenProtocolCatalog catalog,
         V2ConnectionOwner owner,
-        IV2EventMetaCanonicalizer canonicalizer)
+        IV2EventMetaCanonicalizer canonicalizer,
+        Action<FrozenEventBinding, bool>? subscriptionChanged = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         ArgumentNullException.ThrowIfNull(owner);
         _canonicalizer = canonicalizer ?? throw new ArgumentNullException(nameof(canonicalizer));
-        _permissions = owner.Permissions.IsDefaultOrEmpty
-            ? Permissions.Never
-            : new Permissions(owner.Permissions.ToArray());
+        _subscriptionChanged = subscriptionChanged;
+        _permissions = owner.CompiledPermissions;
     }
 
     internal int Count
@@ -126,7 +127,14 @@ internal sealed class V2EventSubscriptionLedger : IProtocolSubscriptionOperation
             if (_closed)
                 return Closed();
 
-            _subscriptions = _subscriptions.Add(prepared.Unwrap());
+            var subscription = prepared.Unwrap();
+            if (_subscriptions.Contains(subscription))
+                return Result.Ok<Unit, DaemonError>(Unit.Default);
+
+            var hasBinding = HasSubscriptionForBinding(subscription.Binding);
+            _subscriptions = _subscriptions.Add(subscription);
+            if (!hasBinding)
+                _subscriptionChanged?.Invoke(subscription.Binding, true);
             return Result.Ok<Unit, DaemonError>(Unit.Default);
         }
     }
@@ -148,7 +156,13 @@ internal sealed class V2EventSubscriptionLedger : IProtocolSubscriptionOperation
             if (_closed)
                 return Closed();
 
-            _subscriptions = _subscriptions.Remove(prepared.Unwrap());
+            var subscription = prepared.Unwrap();
+            if (!_subscriptions.Contains(subscription))
+                return Result.Ok<Unit, DaemonError>(Unit.Default);
+
+            _subscriptions = _subscriptions.Remove(subscription);
+            if (!HasSubscriptionForBinding(subscription.Binding))
+                _subscriptionChanged?.Invoke(subscription.Binding, false);
             return Result.Ok<Unit, DaemonError>(Unit.Default);
         }
     }
@@ -200,8 +214,24 @@ internal sealed class V2EventSubscriptionLedger : IProtocolSubscriptionOperation
                 return;
 
             _closed = true;
+            var bindings = new HashSet<FrozenEventBinding>(ReferenceEqualityComparer.Instance);
+            foreach (var subscription in _subscriptions)
+                bindings.Add(subscription.Binding);
             _subscriptions = ImmutableHashSet.Create<SubscriptionKey>(SubscriptionKeyComparer.Instance);
+            foreach (var binding in bindings)
+                _subscriptionChanged?.Invoke(binding, false);
         }
+    }
+
+    private bool HasSubscriptionForBinding(FrozenEventBinding binding)
+    {
+        foreach (var subscription in _subscriptions)
+        {
+            if (ReferenceEquals(subscription.Binding, binding))
+                return true;
+        }
+
+        return false;
     }
 
     private Result<SubscriptionKey, DaemonError> Prepare(EventSubscriptionRequest request)

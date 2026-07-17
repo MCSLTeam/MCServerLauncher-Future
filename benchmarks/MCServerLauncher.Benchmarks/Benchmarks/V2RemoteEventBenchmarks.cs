@@ -29,8 +29,11 @@ public class V2RemoteEventBenchmarks
     private JsonRpcRemoteEventNotification _comparisonNotification = null!;
     private SendCoordinator _sendCoordinator = null!;
 
-    [Params(1, 8, 32)]
+    [Params(0, 1, 8, 32)]
     public int MatchingConnections { get; set; }
+
+    [Params(0, 8)]
+    public int NonMatchingConnections { get; set; }
 
     [GlobalSetup]
     public void GlobalSetup()
@@ -52,7 +55,7 @@ public class V2RemoteEventBenchmarks
         var catalog = CreateCatalog();
         var registry = new V2EventConnectionRegistry(catalog);
         _sendCoordinator = new SendCoordinator();
-        _owners = new V2ConnectionOwner[MatchingConnections];
+        _owners = new V2ConnectionOwner[MatchingConnections + NonMatchingConnections];
         for (var index = 0; index < MatchingConnections; index++)
         {
             var owner = new V2ConnectionOwner(new CountingSender(_sendCoordinator), ["*"]);
@@ -60,7 +63,20 @@ public class V2RemoteEventBenchmarks
                 throw new InvalidOperationException("Benchmark connection attachment failed.");
             if (entry!.Ledger.Subscribe(new EventSubscriptionRequest("mcsl.event.instance.log")).IsErr(out _))
                 throw new InvalidOperationException("Benchmark event subscription failed.");
+            if (entry.Ledger.Subscribe(new EventSubscriptionRequest("mcsl.event.daemon.report")).IsErr(out _))
+                throw new InvalidOperationException("Benchmark event subscription failed.");
             _owners[index] = owner;
+            _ = owner.Start();
+        }
+
+        for (var index = 0; index < NonMatchingConnections; index++)
+        {
+            var owner = new V2ConnectionOwner(new CountingSender(_sendCoordinator), ["*"]);
+            if (registry.TryAttach($"benchmark-nonmatch-{index}", owner, out var entry) != V2EventConnectionAttachResult.Attached)
+                throw new InvalidOperationException("Benchmark connection attachment failed.");
+            if (entry!.Ledger.Subscribe(new EventSubscriptionRequest("mcsl.event.daemon.report")).IsErr(out _))
+                throw new InvalidOperationException("Benchmark event subscription failed.");
+            _owners[MatchingConnections + index] = owner;
             _ = owner.Start();
         }
 
@@ -85,6 +101,33 @@ public class V2RemoteEventBenchmarks
     {
         await _domainEvents.PublishAsync(_domainEvent);
         await _sendCoordinator.WaitAsync(MatchingConnections);
+    }
+
+    [Benchmark]
+    public async Task ConcurrentPublishThroughBridgeAsync()
+    {
+        // This is a contention signal, not a per-publish allocation baseline: the
+        // task scheduling and one-shot coordination are intentionally included so
+        // both publishers contend for the bridge gate on every invocation.
+        var firstReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var first = Task.Run(async () =>
+        {
+            firstReady.TrySetResult();
+            await release.Task.ConfigureAwait(false);
+            await _domainEvents.PublishAsync(_domainEvent).ConfigureAwait(false);
+        });
+        var second = Task.Run(async () =>
+        {
+            secondReady.TrySetResult();
+            await release.Task.ConfigureAwait(false);
+            await _domainEvents.PublishAsync(_domainEvent).ConfigureAwait(false);
+        });
+        await Task.WhenAll(firstReady.Task, secondReady.Task).ConfigureAwait(false);
+        release.TrySetResult();
+        await Task.WhenAll(first, second);
+        await _sendCoordinator.WaitAsync(MatchingConnections * 2);
     }
 
     [Benchmark(Baseline = true)]

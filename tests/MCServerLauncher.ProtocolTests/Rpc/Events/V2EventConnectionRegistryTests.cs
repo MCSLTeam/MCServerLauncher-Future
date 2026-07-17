@@ -50,6 +50,41 @@ public sealed class V2EventConnectionRegistryTests
     }
 
     [Fact]
+    public async Task SubscriptionSnapshotTracksBindingAndConnectionCleanup()
+    {
+        var catalog = CreateCatalog();
+        var registry = new V2EventConnectionRegistry(catalog);
+        var reportOwner = Owner();
+        var logOwner = Owner();
+        var reportRequest = new EventSubscriptionRequest("mcsl.event.daemon.report");
+        var logRequest = new EventSubscriptionRequest("mcsl.event.instance.log");
+        Assert.True(catalog.TryGetEvent(new EventName(reportRequest.Event), out var reportBinding));
+        Assert.True(catalog.TryGetEvent(new EventName(logRequest.Event), out var logBinding));
+
+        Assert.Equal(V2EventConnectionAttachResult.Attached, registry.TryAttach("report", reportOwner, out var reportEntry));
+        Assert.Equal(V2EventConnectionAttachResult.Attached, registry.TryAttach("log", logOwner, out var logEntry));
+        Assert.Empty(registry.Snapshot(reportBinding));
+        Assert.Empty(registry.Snapshot(logBinding));
+
+        Assert.True(reportEntry!.Ledger.Subscribe(reportRequest).IsOk(out _));
+        Assert.True(logEntry!.Ledger.Subscribe(logRequest).IsOk(out _));
+        Assert.Same(reportEntry, Assert.Single(registry.Snapshot(reportBinding)));
+        Assert.Same(logEntry, Assert.Single(registry.Snapshot(logBinding)));
+
+        Assert.True(reportEntry.Ledger.Unsubscribe(reportRequest).IsOk(out _));
+        Assert.Empty(registry.Snapshot(reportBinding));
+        Assert.Same(logEntry, Assert.Single(registry.Snapshot(logBinding)));
+
+        Assert.True(reportEntry.Ledger.Subscribe(reportRequest).IsOk(out _));
+        await reportOwner.AbortAsync();
+        await logOwner.AbortAsync();
+
+        Assert.Empty(registry.Snapshot(reportBinding));
+        Assert.Empty(registry.Snapshot(logBinding));
+        Assert.Empty(registry.Snapshot());
+    }
+
+    [Fact]
     public void StaleEntryCloseDoesNotRemoveReplacementWithSameConnectionId()
     {
         var catalog = CreateCatalog();
@@ -101,11 +136,16 @@ public sealed class V2EventConnectionRegistryTests
     private static FrozenProtocolCatalog CreateCatalog()
     {
         var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("registry", "1.0.0"));
-        var descriptor = BuiltInProtocolDefinitions.Events
+        var report = BuiltInProtocolDefinitions.Events
             .Single(item => item.Name.Value == "mcsl.event.daemon.report");
         builder.RegisterBuiltInEvent(
-            descriptor,
+            report,
             new EventBinding<DaemonReportEventData>(ProtocolExecutionOwner.BuiltIn));
+        var log = BuiltInProtocolDefinitions.Events
+            .Single(item => item.Name.Value == "mcsl.event.instance.log");
+        builder.RegisterBuiltInEvent(
+            log,
+            new EventBinding<InstanceLogEventData, InstanceLogEventMeta>(ProtocolExecutionOwner.BuiltIn));
         return builder.Freeze();
     }
 

@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -129,31 +128,39 @@ internal sealed class V2RemoteEventBridge : IDisposable
             _sequence = NextSequence(_sequence);
             var timestamp = GetTimestamp(_timeProvider);
 
-            var matchingOwners = _connections.Snapshot()
-                .Where(entry => entry.Ledger.Matches(binding, actualMeta))
-                .Select(static entry => entry.Owner)
-                .ToImmutableArray();
-            if (matchingOwners.IsEmpty)
-                return ValueTask.CompletedTask;
+            V2OutboundMessage? message = null;
+            foreach (var entry in _connections.Snapshot(binding))
+            {
+                if (!entry.Ledger.Matches(binding, actualMeta))
+                    continue;
 
-            var notification = new JsonRpcRemoteEventNotification(
-                binding.Descriptor.Name.Value,
-                new JsonRpcRemoteEventParameters(
-                    _sequence,
-                    timestamp,
-                    ToWireMeta(actualMeta),
-                    dataPayload));
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(
-                notification,
-                BuiltInProtocolJsonContext.Default.JsonRpcRemoteEventNotification);
-            var payload = ImmutableCollectionsMarshal.AsImmutableArray(bytes);
-            var message = V2OutboundMessage.Single(V2OutboundFrame.Text(payload));
-
-            foreach (var owner in matchingOwners)
-                owner.TryEnqueue(message);
+                message ??= CreateMessage(binding, actualMeta, dataPayload, _sequence, timestamp);
+                entry.Owner.TryEnqueue(message);
+            }
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    private static V2OutboundMessage CreateMessage(
+        FrozenEventBinding binding,
+        V2CanonicalEventMeta actualMeta,
+        JsonRpcOptionalPayload dataPayload,
+        long sequence,
+        long timestamp)
+    {
+        var notification = new JsonRpcRemoteEventNotification(
+            binding.Descriptor.Name.Value,
+            new JsonRpcRemoteEventParameters(
+                sequence,
+                timestamp,
+                ToWireMeta(actualMeta),
+                dataPayload));
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(
+            notification,
+            BuiltInProtocolJsonContext.Default.JsonRpcRemoteEventNotification);
+        var payload = ImmutableCollectionsMarshal.AsImmutableArray(bytes);
+        return V2OutboundMessage.Single(V2OutboundFrame.Text(payload));
     }
 
     internal ValueTask<Result<Unit, DaemonError>> PublishPluginAsync<TData, TMeta>(
