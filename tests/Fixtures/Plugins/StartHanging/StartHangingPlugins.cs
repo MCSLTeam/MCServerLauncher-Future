@@ -79,7 +79,9 @@ public sealed class IgnoresCancellationStartPlugin : IDaemonPlugin
     public async Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
-        await Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None);
+        // Stay incomplete forever so Task.Delay-based host supervision cannot lose to a short
+        // delayed success under timer/thread-pool pressure on CI.
+        await Task.Delay(Timeout.InfiniteTimeSpan, CancellationToken.None);
         return PluginResult.Ok();
     }
 
@@ -110,7 +112,9 @@ public sealed class DelayedRegisteredSuccessPlugin : IDaemonPlugin
     public async Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
-        await Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None);
+        // Intentionally ignores cancellation and must remain incomplete past the host deadline so
+        // late success cannot race past Task.Delay supervision under CI load.
+        await Task.Delay(Timeout.InfiniteTimeSpan, CancellationToken.None);
         return PluginResult.Ok();
     }
 

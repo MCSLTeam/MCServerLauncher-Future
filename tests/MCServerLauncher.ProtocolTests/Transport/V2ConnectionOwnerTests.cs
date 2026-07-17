@@ -434,20 +434,21 @@ public sealed class V2ConnectionOwnerTests
         _ = owner.Start();
         using var barrier = new Barrier(9);
         var accepted = new ConcurrentBag<byte>();
-        var producers = Enumerable.Range(0, 8).Select(index => Task.Run(() =>
+        var longRunning = TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach;
+        var producers = Enumerable.Range(0, 8).Select(index => Task.Factory.StartNew(() =>
         {
-            barrier.SignalAndWait();
+            Assert.True(barrier.SignalAndWait(TimeSpan.FromSeconds(30)));
             var value = (byte)index;
             if (owner.TryEnqueue(Message(value)))
                 accepted.Add(value);
-        })).ToArray();
-        var completing = Task.Run(async () =>
+        }, CancellationToken.None, longRunning, TaskScheduler.Default)).ToArray();
+        var completing = Task.Factory.StartNew(async () =>
         {
-            barrier.SignalAndWait();
+            Assert.True(barrier.SignalAndWait(TimeSpan.FromSeconds(30)));
             await owner.CompleteAsync();
-        });
+        }, CancellationToken.None, longRunning, TaskScheduler.Default).Unwrap();
 
-        await Task.WhenAll([.. producers, completing]).WaitAsync(TestTimeout);
+        await Task.WhenAll([.. producers, completing]).WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.Equal(accepted.Order(), sender.Sent.Select(static frame => frame.Payload[0]).Order());
         Assert.Equal(1, sender.CloseCount);
