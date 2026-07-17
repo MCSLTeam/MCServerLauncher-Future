@@ -148,17 +148,38 @@ internal sealed class OwnedTaskSupervisor(
         Func<CancellationToken, Task> work,
         CancellationToken callerCancellation)
     {
-        using var linkedCancellation = callerCancellation.CanBeCanceled
-            ? CancellationTokenSource.CreateLinkedTokenSource(
-                _lifetimeCancellation.Token,
-                callerCancellation)
-            : CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+        // When the caller does not supply a token, pass the lifetime token directly so
+        // CancellationToken.Register callbacks are observed by Cancel() without relying on
+        // linked-source parent/child exception propagation quirks under load.
+        if (!callerCancellation.CanBeCanceled)
+        {
+            try
+            {
+                await work(_lifetimeCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "Owned task '{Operation}' for '{Owner}' failed",
+                    operation,
+                    owner);
+            }
+
+            return;
+        }
+
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _lifetimeCancellation.Token,
+            callerCancellation);
         try
         {
-            await work(linkedCancellation.Token);
+            await work(linkedCancellation.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
-            when (linkedCancellation.IsCancellationRequested)
+        catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
         {
         }
         catch (Exception exception)

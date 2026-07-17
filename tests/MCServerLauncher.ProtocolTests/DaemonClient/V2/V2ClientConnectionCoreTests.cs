@@ -754,22 +754,34 @@ public sealed class V2ClientConnectionCoreTests
         var time = new BlockingTimerCreationTimeProvider();
         var transport = new BinaryCountingTransport();
         var core = new V2ClientConnectionCore(transport, time, Timeout);
-        var upload = Task.Run(() => core.SendUploadChunkAsync(
-            new UploadChunkRequest(Guid.NewGuid(), 0, ImmutableArray.Create<byte>(1)),
-            1,
-            CancellationToken.None));
-        await time.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+        // LongRunning: CreateTimer blocks until Close races, so avoid thread-pool starvation under
+        // the full protocol suite (Task.Run alone can miss the 5s Entered wait on a busy CI runner).
+        var upload = Task.Factory.StartNew(
+                () => core.SendUploadChunkAsync(
+                    new UploadChunkRequest(Guid.NewGuid(), 0, ImmutableArray.Create<byte>(1)),
+                    1,
+                    CancellationToken.None),
+                CancellationToken.None,
+                TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                TaskScheduler.Default)
+            .Unwrap();
+        await time.Entered.WaitAsync(TimeSpan.FromSeconds(15));
 
         try
         {
-            await Task.Run(core.Close).WaitAsync(TimeSpan.FromSeconds(5));
+            await Task.Factory.StartNew(
+                    core.Close,
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                    TaskScheduler.Default)
+                .WaitAsync(TimeSpan.FromSeconds(15));
         }
         finally
         {
             time.Release();
         }
 
-        var result = await upload.WaitAsync(TimeSpan.FromSeconds(5));
+        var result = await upload.WaitAsync(TimeSpan.FromSeconds(15));
         Assert.True(result.IsErr(out var error));
         Assert.Equal("connection.closed", error!.Code);
         Assert.Equal(0, transport.BinarySendCount);
