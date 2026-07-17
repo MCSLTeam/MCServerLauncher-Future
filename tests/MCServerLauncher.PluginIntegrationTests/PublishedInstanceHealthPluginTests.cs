@@ -8,6 +8,7 @@ using MCServerLauncher.DaemonClient;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.ReturnedError;
 using MCServerLauncher.PluginFixtures.StartReturnedError;
+using MCServerLauncher.PluginFixtures.StartHanging;
 using MCServerLauncher.PluginFixtures.StartThrowing;
 using MCServerLauncher.PluginFixtures.Throwing;
 using RustyOptions;
@@ -17,6 +18,7 @@ namespace MCServerLauncher.PluginIntegrationTests;
 public sealed class PublishedInstanceHealthPluginTests
 {
     private static readonly TimeSpan StartupTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan SupervisedStartupTimeout = TimeSpan.FromSeconds(50);
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan EventTimeout = TimeSpan.FromSeconds(75);
 
@@ -92,6 +94,45 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.Contains("fixture.instance_health.stop", logs, StringComparison.Ordinal);
     }
 
+    [Fact]
+    [Trait("Category", "PublishedPlugin")]
+    public async Task PublishedDaemon_TimesOutNonCooperativePluginAndStillServesTheListener()
+    {
+        var publishedDaemon = Environment.GetEnvironmentVariable("MCSL_PUBLISHED_DAEMON");
+        Assert.False(
+            string.IsNullOrWhiteSpace(publishedDaemon),
+            "MCSL_PUBLISHED_DAEMON must point to a published daemon executable or directory for published-plugin acceptance.");
+
+        await using var fixture = await PublishedDaemonFixture.CreateAsync(
+            publishedDaemon!,
+            includeNeverCompletingStartPlugin: true);
+        var startedAt = Stopwatch.GetTimestamp();
+        await fixture.StartAsync(SupervisedStartupTimeout);
+        var elapsed = Stopwatch.GetElapsedTime(startedAt);
+        Assert.True(
+            elapsed < SupervisedStartupTimeout,
+            $"Published daemon did not become ready within supervised startup timeout: {elapsed}.");
+
+        await using var client = new global::MCServerLauncher.DaemonClient.DaemonClient(new DaemonClientOptions(
+            fixture.EndpointUri,
+            fixture.Token,
+            RequestTimeout,
+            TimeSpan.FromMilliseconds(100)));
+        var connected = await client.ConnectAsync().WaitAsync(RequestTimeout);
+        Assert.True(connected.IsOk(out _), connected.IsErr(out var connectionError) ? connectionError!.Message : null);
+
+        var discover = await client.DiscoverAsync().WaitAsync(RequestTimeout);
+        Assert.True(discover.IsOk(out var document), discover.IsErr(out var discoverError) ? discoverError!.Message : null);
+        Assert.Contains(document!.Methods, method => method.Name == "plugin.community.instance-health.rpc.get");
+        Assert.DoesNotContain(document.Methods, method => method.Name == NeverCompletingStartProtocol.Rpc.Method.Value);
+        Assert.DoesNotContain(document.Events, @event => @event.Name == NeverCompletingStartProtocol.Changed.Name.Value);
+
+        var logs = await fixture.StopAndReadLogsAsync();
+        Assert.True(fixture.GracefulStopObserved, "Published daemon did not complete its console-driven graceful shutdown.");
+        Assert.Contains("fixture.start-never-completes", logs, StringComparison.Ordinal);
+        Assert.Contains("start_timed_out", logs, StringComparison.Ordinal);
+    }
+
     private sealed class PublishedDaemonFixture : IAsyncDisposable
     {
         private readonly string _root;
@@ -116,7 +157,9 @@ public sealed class PublishedInstanceHealthPluginTests
 
         public string Token { get; }
 
-        public static async Task<PublishedDaemonFixture> CreateAsync(string configuredPath)
+        public static async Task<PublishedDaemonFixture> CreateAsync(
+            string configuredPath,
+            bool includeNeverCompletingStartPlugin = false)
         {
             var source = ResolveDaemonPath(configuredPath);
             var root = Directory.CreateTempSubdirectory("mcsl-published-plugin-").FullName;
@@ -160,12 +203,21 @@ public sealed class PublishedInstanceHealthPluginTests
                 typeof(StartThrowingPlugin).Assembly,
                 typeof(StartThrowingPlugin).FullName!,
                 "[\"rpc.register\"]");
+            if (includeNeverCompletingStartPlugin)
+            {
+                await WritePluginAsync(
+                    Path.Combine(root, "plugins", "fixture.start-never-completes"),
+                    "fixture.start-never-completes",
+                    typeof(NeverCompletingStartPlugin).Assembly,
+                    typeof(NeverCompletingStartPlugin).FullName!,
+                    "[\"rpc.register\",\"event.publish\"]");
+            }
             await WriteDocumentedPackagePluginAsync(root);
 
             return new PublishedDaemonFixture(root, daemonPath, port, token);
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(TimeSpan? startupTimeout = null)
         {
             _process = Process.Start(new ProcessStartInfo(_daemonPath)
             {
@@ -178,7 +230,7 @@ public sealed class PublishedInstanceHealthPluginTests
             }) ?? throw new InvalidOperationException("The published daemon process could not be started.");
             _standardError = _process.StandardError.ReadToEndAsync();
 
-            using var timeout = new CancellationTokenSource(StartupTimeout);
+            using var timeout = new CancellationTokenSource(startupTimeout ?? StartupTimeout);
             while (!timeout.IsCancellationRequested)
             {
                 if (_process.HasExited)

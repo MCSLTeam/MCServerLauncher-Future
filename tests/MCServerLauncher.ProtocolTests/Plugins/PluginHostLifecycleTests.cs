@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Protocol;
@@ -9,6 +11,7 @@ using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.ReturnedError;
 using MCServerLauncher.PluginFixtures.StartReturnedError;
+using MCServerLauncher.PluginFixtures.StartHanging;
 using MCServerLauncher.PluginFixtures.StartThrowing;
 using MCServerLauncher.PluginFixtures.Throwing;
 using MCServerLauncher.ExternalCompileFixture;
@@ -21,6 +24,87 @@ namespace MCServerLauncher.ProtocolTests.Plugins;
 
 public sealed class PluginHostLifecycleTests
 {
+    [Fact]
+    public async Task StartAsync_BoundsNonCooperativeStartsAndRejectsLateCompletion()
+    {
+        using var fixture = PluginHostFixture.Create(
+            ("fixture.start-never-completes", typeof(NeverCompletingStartPlugin).Assembly, typeof(NeverCompletingStartPlugin).FullName!),
+            ("fixture.start-blocking-lifetime-cancellation", typeof(BlockingLifetimeCancellationPlugin).Assembly, typeof(BlockingLifetimeCancellationPlugin).FullName!),
+            ("fixture.start-blocking-start-cancellation", typeof(BlockingStartCancellationPlugin).Assembly, typeof(BlockingStartCancellationPlugin).FullName!),
+            ("fixture.start-ignores-cancellation", typeof(IgnoresCancellationStartPlugin).Assembly, typeof(IgnoresCancellationStartPlugin).FullName!),
+            ("fixture.start-late-success", typeof(DelayedRegisteredSuccessPlugin).Assembly, typeof(DelayedRegisteredSuccessPlugin).FullName!),
+            ("fixture.start-synchronously-blocks", typeof(SynchronouslyBlockingStartPlugin).Assembly, typeof(SynchronouslyBlockingStartPlugin).FullName!));
+        var logger = new RecordingLogger<PluginHost>();
+        var services = new ServiceCollection();
+        services.AddMessagePipe(options =>
+        {
+            options.EnableAutoRegistration = false;
+            options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+            options.InstanceLifetime = InstanceLifetime.Singleton;
+            options.EnableCaptureStackTrace = false;
+        });
+        using var provider = services.BuildServiceProvider();
+        var host = new PluginHost(
+            new SnapshotSource(new InstanceCatalogSnapshot([])),
+            new RecordingLoggerFactory(logger),
+            logger,
+            fixture.PluginsRoot,
+            new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+            TimeSpan.FromMilliseconds(250));
+
+        // Allow scheduler contention from the full protocol suite while still bounding an
+        // otherwise unbounded startup. The fixture includes permanently incomplete starts.
+        var supervisionBudget = TimeSpan.FromSeconds(8);
+        var startedAt = Stopwatch.GetTimestamp();
+        await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
+        var elapsed = Stopwatch.GetElapsedTime(startedAt);
+
+        Assert.True(elapsed < supervisionBudget, $"Plugin supervision took {elapsed}.");
+        Assert.Contains(logger.Messages, message =>
+            message.Contains("fixture.start-never-completes", StringComparison.Ordinal) &&
+            message.Contains("start_timed_out", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message =>
+            message.Contains("fixture.start-blocking-lifetime-cancellation", StringComparison.Ordinal) &&
+            message.Contains("start_timed_out", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message =>
+            message.Contains("fixture.start-blocking-start-cancellation", StringComparison.Ordinal) &&
+            message.Contains("start_timed_out", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message =>
+            message.Contains("fixture.start-ignores-cancellation", StringComparison.Ordinal) &&
+            message.Contains("start_timed_out", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message =>
+            message.Contains("fixture.start-late-success", StringComparison.Ordinal) &&
+            message.Contains("start_timed_out", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message =>
+            message.Contains("fixture.start-synchronously-blocks", StringComparison.Ordinal) &&
+            message.Contains("start_timed_out", StringComparison.Ordinal));
+        AssertStates(
+            host.States,
+            ("fixture.start-never-completes", PluginRuntimeState.Failed),
+            ("fixture.start-blocking-lifetime-cancellation", PluginRuntimeState.Failed),
+            ("fixture.start-blocking-start-cancellation", PluginRuntimeState.Failed),
+            ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
+            ("fixture.start-late-success", PluginRuntimeState.Failed),
+            ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
+
+        var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("plugin-host-timeout-test", "1.0.0"));
+        host.AddCatalogContributions(builder);
+        var catalog = builder.Freeze();
+        Assert.Empty(catalog.Rpcs);
+        Assert.Empty(catalog.Events);
+
+        await Task.Delay(TimeSpan.FromMilliseconds(1500));
+        AssertStates(
+            host.States,
+            ("fixture.start-never-completes", PluginRuntimeState.Failed),
+            ("fixture.start-blocking-lifetime-cancellation", PluginRuntimeState.Failed),
+            ("fixture.start-blocking-start-cancellation", PluginRuntimeState.Failed),
+            ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
+            ("fixture.start-late-success", PluginRuntimeState.Failed),
+            ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
+        await host.StopAsync(CancellationToken.None);
+    }
+
     [Fact]
     public async Task StartAsync_AdmitsHealthPluginCatalogAndIsolatesConfigurationFailures()
     {
@@ -148,7 +232,7 @@ public sealed class PluginHostLifecycleTests
 
         public PublishedState<InstanceCatalogSnapshot> Current => _publisher.Current;
 
-        public bool TryGet(Guid instanceId, out InstanceSnapshot instanceSnapshot) =>
+        public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? instanceSnapshot) =>
             Current.Value.TryGet(instanceId, out instanceSnapshot);
     }
 

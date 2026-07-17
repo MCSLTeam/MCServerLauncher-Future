@@ -30,6 +30,7 @@ internal enum PluginRuntimeState
 internal sealed class PluginHost
 {
     internal const string HostApiVersion = "1.0.0";
+    private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
 
     private readonly object _gate = new();
     private readonly IInstanceSnapshotSource _instances;
@@ -37,6 +38,7 @@ internal sealed class PluginHost
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
     private readonly string _pluginsRoot;
+    private readonly TimeSpan _startTimeout;
     private readonly List<PluginRuntime> _runtimes = [];
     private readonly List<PluginRuntime> _started = [];
     private readonly SemaphoreSlim _operationGate = new(1, 1);
@@ -64,13 +66,32 @@ internal sealed class PluginHost
         ILogger<PluginHost> logger,
         string pluginsRoot,
         IPluginEventBus eventBus)
+        : this(
+            instances,
+            loggerFactory,
+            logger,
+            pluginsRoot,
+            eventBus,
+            DefaultStartTimeout)
+    {
+    }
+
+    internal PluginHost(
+        IInstanceSnapshotSource instances,
+        ILoggerFactory loggerFactory,
+        ILogger<PluginHost> logger,
+        string pluginsRoot,
+        IPluginEventBus eventBus,
+        TimeSpan startTimeout)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginsRoot);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(startTimeout, TimeSpan.Zero);
         _pluginsRoot = Path.GetFullPath(pluginsRoot);
+        _startTimeout = startTimeout;
     }
 
     internal ImmutableArray<(string Id, PluginRuntimeState State)> States
@@ -211,7 +232,7 @@ internal sealed class PluginHost
                 finally
                 {
                     runtime.Activation.TrySetCanceled();
-                    runtime.Lifetime.Dispose();
+                    DisposeLifetime(runtime);
                     runtime.State = PluginRuntimeState.Stopped;
                 }
             }
@@ -222,7 +243,7 @@ internal sealed class PluginHost
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
-                runtime.Lifetime.Dispose();
+                DisposeLifetime(runtime);
                 runtime.State = PluginRuntimeState.Stopped;
             }
         }
@@ -340,9 +361,42 @@ internal sealed class PluginHost
 
     private async Task StartPluginAsync(PluginRuntime runtime, CancellationToken cancellationToken)
     {
+        var startCancellation = new CancellationTokenSource();
+        var disposeStartCancellation = true;
+        var startTask = Task.Factory.StartNew(
+                () => runtime.Plugin.StartAsync(startCancellation.Token),
+                CancellationToken.None,
+                TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning,
+                TaskScheduler.Default)
+            .Unwrap();
         try
         {
-            var result = await runtime.Plugin.StartAsync(cancellationToken).ConfigureAwait(false);
+            // Keep the supervisor timer independent from the token supplied to plugin code. A
+            // plugin can register a blocking callback on that token; CancelAsync notifies it in
+            // the background, while this deadline still returns daemon startup promptly.
+            var completed = await Task.WhenAny(
+                    startTask,
+                    Task.Delay(_startTimeout),
+                    Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken),
+                    Task.Delay(Timeout.InfiniteTimeSpan, runtime.Lifetime.Token))
+                .ConfigureAwait(false);
+            if (!ReferenceEquals(completed, startTask))
+            {
+                ObserveLateStartFault(runtime, startTask);
+                CancelStartAndDisposeLater(runtime, startCancellation);
+                disposeStartCancellation = false;
+                FailStartCancellation(runtime, cancellationToken);
+                return;
+            }
+
+            var result = await startTask.ConfigureAwait(false);
+            if (cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
+            {
+                ObserveLateStartFault(runtime, startTask);
+                FailStartCancellation(runtime, cancellationToken);
+                return;
+            }
+
             if (result.IsErr(out var error))
             {
                 Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
@@ -352,10 +406,104 @@ internal sealed class PluginHost
             runtime.State = PluginRuntimeState.Started;
             _started.Add(runtime);
         }
+        catch (OperationCanceledException) when (
+            cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
+        {
+            ObserveLateStartFault(runtime, startTask);
+            FailStartCancellation(runtime, cancellationToken);
+        }
         catch (Exception exception)
         {
             Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
         }
+        finally
+        {
+            if (disposeStartCancellation)
+                startCancellation.Dispose();
+        }
+    }
+
+    private void FailStartCancellation(PluginRuntime runtime, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            Fail(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.");
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        if (runtime.Lifetime.IsCancellationRequested)
+        {
+            Fail(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.");
+            return;
+        }
+
+        Fail(
+            runtime,
+            "start_timed_out",
+            $"Plugin StartAsync exceeded the startup deadline of {_startTimeout}.");
+    }
+
+    private void ObserveLateStartFault(PluginRuntime runtime, Task startTask)
+    {
+        _ = startTask.ContinueWith(
+            static (task, state) =>
+            {
+                var (logger, pluginId) = ((ILogger<PluginHost> Logger, string PluginId))state!;
+                logger.LogWarning(
+                    task.Exception,
+                    "Plugin {PluginId} StartAsync faulted after startup supervision had already ended.",
+                    pluginId);
+            },
+            (_logger, runtime.Manifest.Identity.Id),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private void CancelStartAndDisposeLater(PluginRuntime runtime, CancellationTokenSource startCancellation)
+    {
+        try
+        {
+            var cancellation = startCancellation.CancelAsync();
+            if (cancellation.IsCompleted)
+            {
+                LogStartCancellationFailure(runtime, cancellation);
+                startCancellation.Dispose();
+                return;
+            }
+
+            _ = cancellation.ContinueWith(
+                static (task, state) =>
+                {
+                    var (host, pluginRuntime, source) =
+                        ((PluginHost Host, PluginRuntime Runtime, CancellationTokenSource Source))state!;
+                    host.LogStartCancellationFailure(pluginRuntime, task);
+                    source.Dispose();
+                },
+                (this, runtime, startCancellation),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Plugin {PluginId} startup cancellation could not be supervised after the deadline.",
+                runtime.Manifest.Identity.Id);
+            startCancellation.Dispose();
+        }
+    }
+
+    private void LogStartCancellationFailure(PluginRuntime runtime, Task cancellation)
+    {
+        if (cancellation.Exception is not { } exception)
+            return;
+
+        _logger.LogWarning(
+            exception,
+            "Plugin {PluginId} startup cancellation callbacks failed after the deadline.",
+            runtime.Manifest.Identity.Id);
     }
 
     private void Fail(
@@ -397,7 +545,7 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
-        runtime.Lifetime.Dispose();
+        DisposeLifetime(runtime);
         runtime.State = PluginRuntimeState.Failed;
     }
 
@@ -419,7 +567,7 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
-        runtime.Lifetime.Dispose();
+        DisposeLifetime(runtime);
         runtime.State = PluginRuntimeState.Failed;
     }
 
@@ -435,9 +583,13 @@ internal sealed class PluginHost
 
     private void CancelLifetime(PluginRuntime runtime, string stage)
     {
+        if (runtime.LifetimeCancellation is not null)
+            return;
+
         try
         {
-            runtime.Lifetime.Cancel(throwOnFirstException: false);
+            runtime.LifetimeCancellationStage = stage;
+            runtime.LifetimeCancellation = runtime.Lifetime.CancelAsync();
         }
         catch (Exception exception)
         {
@@ -447,6 +599,44 @@ internal sealed class PluginHost
                 runtime.Manifest.Identity.Id,
                 stage);
         }
+    }
+
+    private void DisposeLifetime(PluginRuntime runtime)
+    {
+        if (Interlocked.Exchange(ref runtime.LifetimeDisposeScheduled, 1) != 0)
+            return;
+
+        var cancellation = runtime.LifetimeCancellation;
+        if (cancellation is null || cancellation.IsCompleted)
+        {
+            LogLifetimeCancellationFailure(runtime, cancellation, runtime.LifetimeCancellationStage);
+            runtime.Lifetime.Dispose();
+            return;
+        }
+
+        _ = cancellation.ContinueWith(
+            static (task, state) =>
+            {
+                var (host, runtime, stage) = ((PluginHost Host, PluginRuntime Runtime, string? Stage))state!;
+                host.LogLifetimeCancellationFailure(runtime, task, stage);
+                runtime.Lifetime.Dispose();
+            },
+            (this, runtime, runtime.LifetimeCancellationStage),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private void LogLifetimeCancellationFailure(PluginRuntime runtime, Task? cancellation, string? stage)
+    {
+        if (cancellation?.Exception is not { } exception)
+            return;
+
+        _logger.LogError(
+            exception,
+            "Plugin {PluginId} lifetime cancellation callbacks failed at {Stage}; cleanup continued.",
+            runtime.Manifest.Identity.Id,
+            stage ?? "cleanup");
     }
 
     private sealed class PluginRuntime(
@@ -465,6 +655,9 @@ internal sealed class PluginHost
         internal PluginContext Context { get; } = context;
         internal PluginRegistrationDraft Draft { get; } = draft;
         internal CancellationTokenSource Lifetime { get; } = lifetime;
+        internal Task? LifetimeCancellation { get; set; }
+        internal string? LifetimeCancellationStage { get; set; }
+        internal int LifetimeDisposeScheduled;
         internal TaskCompletionSource Activation { get; } = activation;
         internal PluginEventOwnerLedger EventOwner { get; } = eventOwner;
         internal PluginRuntimeState State { get; set; } = PluginRuntimeState.Discovered;

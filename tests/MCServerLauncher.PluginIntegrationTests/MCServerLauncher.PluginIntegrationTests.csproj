@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Fixtures\Plugins\Throwing\Throwing.csproj" />
     <ProjectReference Include="..\Fixtures\Plugins\StartReturnedError\StartReturnedError.csproj" />
     <ProjectReference Include="..\Fixtures\Plugins\StartThrowing\StartThrowing.csproj" />
+    <ProjectReference Include="..\Fixtures\Plugins\StartHanging\StartHanging.csproj" />
   </ItemGroup>
 
   <ItemGroup>
