@@ -7,28 +7,30 @@ using MCServerLauncher.Common.Contracts.Protocol;
 namespace MCServerLauncher.Daemon.API.Protocol;
 
 /// <summary>
-/// Builds an Apifox project document from an OpenRPC catalog snapshot.
-/// Runtime hosts should pass the frozen catalog; tooling may pass built-in definitions only.
+/// Builds an internal Apifox project document from an OpenRPC catalog snapshot.
+/// The daemon and protocol-documentation tooling pass the frozen catalog or built-in definitions.
 /// </summary>
-public static class ApifoxProjectGenerator
+internal static class ApifoxProjectGenerator
 {
     private const string ModuleId = "mcsl-daemon-protocol";
 
-    public static byte[] GenerateBuiltIn(string daemonVersion = "v2")
+    internal static byte[] GenerateBuiltIn(string daemonVersion = "v2")
     {
         var document = BuiltInProtocolDefinitions.CreateDocument(daemonVersion);
         return Generate(document, BuiltInProtocolDefinitions.Rpcs);
     }
 
-    public static byte[] Generate(OpenRpcDocument document, ImmutableArray<RpcDescriptor> rpcs)
+    internal static byte[] Generate(OpenRpcDocument document, ImmutableArray<RpcDescriptor> rpcs)
     {
         ArgumentNullException.ThrowIfNull(document);
         if (rpcs.IsDefault)
             throw new ArgumentException("RPC descriptors cannot be default.", nameof(rpcs));
 
-        var descriptorByMethod = rpcs.ToDictionary(
-            descriptor => descriptor.Method.Value,
-            StringComparer.Ordinal);
+        var descriptorByMethod = new Dictionary<string, RpcDescriptor>(rpcs.Length, StringComparer.Ordinal);
+        foreach (var descriptor in rpcs)
+        {
+            descriptorByMethod.Add(descriptor.Method.Value, descriptor);
+        }
         var root = CreateProject(document, descriptorByMethod);
         EnsureUniqueEntityIds(root);
         var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
@@ -93,20 +95,40 @@ public static class ApifoxProjectGenerator
         OpenRpcDocument document,
         IReadOnlyDictionary<string, RpcDescriptor> descriptorByMethod)
     {
-        var folders = document.Methods
-            .GroupBy(method => descriptorByMethod[method.Name].Documentation!.Category, StringComparer.Ordinal)
-            .OrderBy(group => group.Key, StringComparer.Ordinal)
-            .Select((group, folderIndex) => new JsonObject
+        var methodsByCategory = new SortedDictionary<string, List<OpenRpcMethod>>(StringComparer.Ordinal);
+        foreach (var method in document.Methods)
+        {
+            var category = descriptorByMethod[method.Name].Documentation!.Category;
+            if (!methodsByCategory.TryGetValue(category, out var methods))
             {
-                ["id"] = StableId("folder", group.Key),
-                ["name"] = group.Key,
-                ["description"] = $"{group.Key} RPC methods.",
-                ["ordering"] = folderIndex + 1,
-                ["items"] = new JsonArray(group
-                    .OrderBy(method => method.Name, StringComparer.Ordinal)
-                    .Select((method, methodIndex) => (JsonNode?)CreateRpcItem(method, methodIndex + 1))
-                    .ToArray())
+                methods = [];
+                methodsByCategory.Add(category, methods);
+            }
+
+            methods.Add(method);
+        }
+
+        var folders = new JsonArray();
+        var folderIndex = 0;
+        foreach (var (category, methods) in methodsByCategory)
+        {
+            methods.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Name, right.Name));
+
+            var items = new JsonArray();
+            for (var methodIndex = 0; methodIndex < methods.Count; methodIndex++)
+            {
+                items.Add(CreateRpcItem(methods[methodIndex], methodIndex + 1));
+            }
+
+            folders.Add(new JsonObject
+            {
+                ["id"] = StableId("folder", category),
+                ["name"] = category,
+                ["description"] = $"{category} RPC methods.",
+                ["ordering"] = ++folderIndex,
+                ["items"] = items
             });
+        }
 
         return new JsonArray
         {
@@ -115,7 +137,7 @@ public static class ApifoxProjectGenerator
                 ["id"] = StableId("root", "websocket"),
                 ["name"] = "root",
                 ["description"] = "MCServerLauncher daemon JSON-RPC 2.0 over WebSocket.",
-                ["items"] = new JsonArray(folders.Select(folder => (JsonNode?)folder).ToArray())
+                ["items"] = folders
             }
         };
     }
@@ -169,7 +191,9 @@ public static class ApifoxProjectGenerator
     private static string CreateRequestMessage(OpenRpcMethod method)
     {
         var parameters = new JsonObject();
-        foreach (var parameter in method.Params.OrderBy(parameter => parameter.Name, StringComparer.Ordinal))
+        var orderedParameters = new List<OpenRpcContentDescriptor>(method.Params);
+        orderedParameters.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Name, right.Name));
+        foreach (var parameter in orderedParameters)
         {
             parameters[parameter.Name] = CreateExample(parameter.Schema);
         }
@@ -237,27 +261,36 @@ public static class ApifoxProjectGenerator
         $"Request schema: `mcsl.schema.{method.Name}.request`.\n" +
         $"Result schema: `{GetSchemaId(method.Result.Schema)}`.";
 
-    private static JsonArray CreateEventDocumentation(OpenRpcDocument document) =>
-        new()
+    private static JsonArray CreateEventDocumentation(OpenRpcDocument document)
+    {
+        var events = new List<OpenRpcEvent>(document.Events);
+        events.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Name, right.Name));
+
+        var items = new JsonArray();
+        for (var eventIndex = 0; eventIndex < events.Count; eventIndex++)
+        {
+            var @event = events[eventIndex];
+            items.Add(new JsonObject
+            {
+                ["id"] = StableId("event-doc", @event.Name),
+                ["name"] = @event.Name,
+                ["type"] = "markdown",
+                ["content"] = CreateEventDescription(@event),
+                ["ordering"] = eventIndex + 1,
+                ["moduleId"] = ModuleId
+            });
+        }
+
+        return new JsonArray
         {
             new JsonObject
             {
                 ["id"] = StableId("docs", "events"),
                 ["name"] = "Events",
-                ["items"] = new JsonArray(document.Events
-                    .OrderBy(@event => @event.Name, StringComparer.Ordinal)
-                    .Select((@event, eventIndex) => (JsonNode?)new JsonObject
-                    {
-                        ["id"] = StableId("event-doc", @event.Name),
-                        ["name"] = @event.Name,
-                        ["type"] = "markdown",
-                        ["content"] = CreateEventDescription(@event),
-                        ["ordering"] = eventIndex + 1,
-                        ["moduleId"] = ModuleId
-                    })
-                    .ToArray())
+                ["items"] = items
             }
         };
+    }
 
     private static string CreateEventDescription(OpenRpcEvent @event)
     {
@@ -271,7 +304,18 @@ public static class ApifoxProjectGenerator
 
     private static JsonArray CreateSchemaCollection(OpenRpcDocument document)
     {
-        var errorDataSchema = document.Components.GetProperty("schemas").EnumerateObject().Single();
+        var schemaProperties = document.Components.GetProperty("schemas").EnumerateObject();
+        if (!schemaProperties.MoveNext())
+        {
+            throw new InvalidOperationException("The protocol catalog must define exactly one error data schema.");
+        }
+
+        var errorDataSchema = schemaProperties.Current;
+        if (schemaProperties.MoveNext())
+        {
+            throw new InvalidOperationException("The protocol catalog must define exactly one error data schema.");
+        }
+
         var schemas = new List<(string Id, JsonObject Schema)>
         {
             (
@@ -293,21 +337,30 @@ public static class ApifoxProjectGenerator
             }
         }
 
-        var items = schemas
-            .GroupBy(schema => schema.Id, StringComparer.Ordinal)
-            .Select(group => group.First())
-            .OrderBy(schema => schema.Id, StringComparer.Ordinal)
-            .Select((schema, schemaIndex) => (JsonNode?)new JsonObject
+        var schemaById = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+        foreach (var (id, schema) in schemas)
+        {
+            schemaById.TryAdd(id, schema);
+        }
+
+        var schemaIds = new List<string>(schemaById.Keys);
+        schemaIds.Sort(StringComparer.Ordinal);
+
+        var items = new JsonArray();
+        for (var schemaIndex = 0; schemaIndex < schemaIds.Count; schemaIndex++)
+        {
+            var id = schemaIds[schemaIndex];
+            items.Add(new JsonObject
             {
-                ["id"] = $"#/definitions/{schema.Id}",
-                ["name"] = schema.Id,
-                ["displayName"] = schema.Id,
+                ["id"] = $"#/definitions/{id}",
+                ["name"] = id,
+                ["displayName"] = id,
                 ["description"] = "Generated from the frozen protocol catalog.",
-                ["schema"] = new JsonObject { ["jsonSchema"] = schema.Schema },
+                ["schema"] = new JsonObject { ["jsonSchema"] = schemaById[id] },
                 ["ordering"] = schemaIndex + 1,
                 ["moduleId"] = ModuleId
-            })
-            .ToArray();
+            });
+        }
 
         return new JsonArray
         {
@@ -315,7 +368,7 @@ public static class ApifoxProjectGenerator
             {
                 ["id"] = StableId("schema-folder", "protocol"),
                 ["name"] = "Protocol schemas",
-                ["items"] = new JsonArray(items)
+                ["items"] = items
             }
         };
     }
@@ -324,7 +377,9 @@ public static class ApifoxProjectGenerator
     {
         var properties = new JsonObject();
         var required = new JsonArray();
-        foreach (var parameter in method.Params.OrderBy(parameter => parameter.Name, StringComparer.Ordinal))
+        var orderedParameters = new List<OpenRpcContentDescriptor>(method.Params);
+        orderedParameters.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Name, right.Name));
+        foreach (var parameter in orderedParameters)
         {
             properties[parameter.Name] = JsonNode.Parse(parameter.Schema.GetRawText());
             if (parameter.Required)

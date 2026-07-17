@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MCServerLauncher.Daemon.API.State;
 
@@ -50,5 +51,6 @@ public sealed class InstanceCatalogSnapshot
 
     public ImmutableDictionary<Guid, InstanceSnapshot> Instances => _instances;
 
-    public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot) => _instances.TryGetValue(instanceId, out snapshot!);
+    public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot) =>
+        _instances.TryGetValue(instanceId, out snapshot);
 }

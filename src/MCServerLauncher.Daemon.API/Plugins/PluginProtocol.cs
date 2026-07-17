@@ -63,8 +63,9 @@ public static class PluginProtocol
     {
         ArgumentNullException.ThrowIfNull(typeInfo);
         // Source-generated contracts originate from a JsonSerializerContext resolver.
-        // Reflection-backed DefaultJsonTypeInfoResolver metadata is rejected.
-        if (typeInfo.Options.TypeInfoResolver is not JsonSerializerContext)
+        // Check the producing resolver rather than the options configuration: callers can
+        // create reflection-backed or manually-created metadata with source-generated options.
+        if (typeInfo.OriginatingResolver is not JsonSerializerContext)
         {
             throw new ArgumentException(
                 "Plugin protocol metadata must use source-generated JsonTypeInfo from a JsonSerializerContext.",

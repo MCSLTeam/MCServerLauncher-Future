@@ -1,7 +1,9 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.State;
 using RustyOptions;
 
 namespace MCServerLauncher.Daemon.ApiTests;
@@ -81,6 +83,20 @@ public sealed class PublicSurfaceTests
         Assert.Contains(typeof(TimeSpan), exposedTypes);
         Assert.Contains(typeof(Guid), exposedTypes);
         Assert.Contains(typeof(TextReader), exposedTypes);
+    }
+
+    [Theory]
+    [InlineData(typeof(IInstanceSnapshotSource))]
+    [InlineData(typeof(InstanceCatalogSnapshot))]
+    public void SnapshotLookupUsesTheStandardConditionalNullabilityContract(Type declaringType)
+    {
+        var method = declaringType.GetMethod(nameof(IInstanceSnapshotSource.TryGet))
+                     ?? throw new InvalidOperationException("The snapshot lookup method was missing.");
+        var snapshot = method.GetParameters().Single(parameter => parameter.Name == "snapshot");
+
+        Assert.True(snapshot.IsOut);
+        Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(snapshot).WriteState);
+        Assert.True(snapshot.GetCustomAttribute<NotNullWhenAttribute>() is { ReturnValue: true });
     }
 
     [Fact]

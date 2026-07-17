@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace MCServerLauncher.Daemon.API.State;
 
 /// <summary>
@@ -7,5 +9,5 @@ public interface IInstanceSnapshotSource
 {
     PublishedState<InstanceCatalogSnapshot> Current { get; }
 
-    bool TryGet(Guid instanceId, out InstanceSnapshot snapshot);
+    bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot);
 }

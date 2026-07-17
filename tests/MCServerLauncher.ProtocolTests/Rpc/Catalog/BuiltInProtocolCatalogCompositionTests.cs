@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
+using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -148,7 +149,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     {
         private readonly StatePublisher<InstanceCatalogSnapshot> _publisher = new(InstanceCatalogSnapshot.Empty);
         public PublishedState<InstanceCatalogSnapshot> Current => _publisher.Current;
-        public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot) => Current.Value.TryGet(instanceId, out snapshot);
+        public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot) => Current.Value.TryGet(instanceId, out snapshot);
     }
 
     private sealed class ThrowingSystemApplication : ISystemApplication

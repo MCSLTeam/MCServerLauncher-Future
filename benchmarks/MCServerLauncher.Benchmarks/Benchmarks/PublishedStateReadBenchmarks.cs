@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
@@ -51,7 +52,7 @@ public class PublishedStateReadBenchmarks
     {
         public PublishedState<InstanceCatalogSnapshot> Current => publisher.Current;
 
-        public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot)
+        public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot)
         {
             var current = publisher.Current;
             return current.Value.TryGet(instanceId, out snapshot);

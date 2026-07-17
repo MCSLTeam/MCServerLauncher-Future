@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -588,7 +589,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
             }
         }
 
-        public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot) =>
+        public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot) =>
             Current.Value.TryGet(instanceId, out snapshot);
     }
 

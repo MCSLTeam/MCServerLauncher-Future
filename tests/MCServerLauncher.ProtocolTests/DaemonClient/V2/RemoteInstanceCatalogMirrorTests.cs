@@ -21,7 +21,8 @@ public sealed class RemoteInstanceCatalogMirrorTests
 
         Assert.Equal(0, mirror.Current.Version);
         Assert.Empty(mirror.Current.Value.Instances);
-        Assert.False(mirror.TryGet(FirstId, out _));
+        Assert.False(mirror.TryGet(FirstId, out var missing));
+        Assert.Null(missing);
     }
 
     [Fact]

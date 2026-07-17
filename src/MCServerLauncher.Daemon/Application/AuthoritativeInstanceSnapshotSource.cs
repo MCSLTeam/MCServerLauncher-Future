@@ -1,4 +1,5 @@
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
@@ -27,7 +28,7 @@ internal sealed class AuthoritativeInstanceSnapshotSource : IInstanceSnapshotSou
 
     public PublishedState<InstanceCatalogSnapshot> Current => _publisher.Current;
 
-    public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot) =>
+    public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot) =>
         Current.Value.TryGet(instanceId, out snapshot);
 
     internal void Upsert(IInstance instance)

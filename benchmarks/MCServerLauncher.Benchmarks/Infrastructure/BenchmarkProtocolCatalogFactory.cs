@@ -8,6 +8,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using RustyOptions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MCServerLauncher.Benchmarks.Infrastructure;
 
@@ -36,7 +37,7 @@ internal static class BenchmarkProtocolCatalogFactory
 
         public PublishedState<InstanceCatalogSnapshot> Current => _publisher.Current;
 
-        public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot) =>
+        public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot) =>
             Current.Value.TryGet(instanceId, out snapshot);
     }
 

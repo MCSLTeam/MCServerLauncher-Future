@@ -3,6 +3,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.State;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace MCServerLauncher.Daemon.Plugins;
@@ -51,10 +52,10 @@ internal sealed class CapabilityDeniedSnapshotSource : IInstanceSnapshotSource
     public PublishedState<InstanceCatalogSnapshot> Current =>
         throw new InvalidOperationException("The plugin did not declare the 'instance.query' capability.");
 
-    public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot)
+    public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot)
     {
         _ = instanceId;
-        snapshot = null!;
+        snapshot = null;
         throw new InvalidOperationException("The plugin did not declare the 'instance.query' capability.");
     }
 }

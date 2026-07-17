@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.State;
@@ -44,7 +45,7 @@ internal sealed class RemoteInstanceCatalogMirror : IInstanceSnapshotSource
         }
     }
 
-    public bool TryGet(Guid instanceId, out InstanceSnapshot snapshot)
+    public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot)
     {
         var current = Current;
         return current.Value.TryGet(instanceId, out snapshot);

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Json;
 using System.Reflection;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -23,7 +24,7 @@ public sealed class PluginContractTests
     }
 
     [Fact]
-    public void DescriptorFactoryRequiresExplicitSourceGeneratedMetadata()
+    public void DescriptorFactoryAcceptsSourceGeneratedMetadata()
     {
         var descriptor = PluginProtocol.CreateRpc(
             "plugin.community.instance-health.rpc.get",
@@ -42,7 +43,58 @@ public sealed class PluginContractTests
         Assert.Equal("plugin.community.instance-health.rpc.get", descriptor.Method.Value);
         Assert.True(descriptor.RequestTypeInfo.IsReadOnly);
         Assert.True(descriptor.ResultTypeInfo.IsReadOnly);
+        Assert.IsAssignableFrom<JsonSerializerContext>(descriptor.RequestTypeInfo.OriginatingResolver);
+        Assert.IsAssignableFrom<JsonSerializerContext>(descriptor.ResultTypeInfo.OriginatingResolver);
         Assert.NotNull(descriptor.Documentation);
+    }
+
+    [Fact]
+    public void DescriptorFactoryRejectsReflectionMetadataWithSourceGeneratedOptions()
+    {
+        var options = new JsonSerializerOptions { TypeInfoResolver = PluginJsonContext.Default };
+        var reflectionTypeInfo = (JsonTypeInfo<EmptyRequest>)new DefaultJsonTypeInfoResolver()
+            .GetTypeInfo(typeof(EmptyRequest), options);
+
+        Assert.Same(PluginJsonContext.Default, reflectionTypeInfo.Options.TypeInfoResolver);
+        Assert.IsType<DefaultJsonTypeInfoResolver>(reflectionTypeInfo.OriginatingResolver);
+
+        var exception = Assert.Throws<ArgumentException>(() => PluginProtocol.CreateRpc(
+            "plugin.community.instance-health.rpc.get",
+            "plugin.community.instance-health.rpc",
+            reflectionTypeInfo,
+            PluginJsonContext.Default.UnitResult,
+            documentation: new RpcDocumentation(
+                "health",
+                "Get health",
+                "Returns health.",
+                "health.empty-request",
+                "health.unit-result")));
+
+        Assert.Equal("typeInfo", exception.ParamName);
+    }
+
+    [Fact]
+    public void DescriptorFactoryRejectsMetadataWithoutAnOriginatingResolver()
+    {
+        var options = new JsonSerializerOptions { TypeInfoResolver = PluginJsonContext.Default };
+        var typeInfo = JsonTypeInfo.CreateJsonTypeInfo<EmptyRequest>(options);
+
+        Assert.Same(PluginJsonContext.Default, typeInfo.Options.TypeInfoResolver);
+        Assert.Null(typeInfo.OriginatingResolver);
+
+        var exception = Assert.Throws<ArgumentException>(() => PluginProtocol.CreateRpc(
+            "plugin.community.instance-health.rpc.get",
+            "plugin.community.instance-health.rpc",
+            typeInfo,
+            PluginJsonContext.Default.UnitResult,
+            documentation: new RpcDocumentation(
+                "health",
+                "Get health",
+                "Returns health.",
+                "health.empty-request",
+                "health.unit-result")));
+
+        Assert.Equal("typeInfo", exception.ParamName);
     }
 
     [Fact]
