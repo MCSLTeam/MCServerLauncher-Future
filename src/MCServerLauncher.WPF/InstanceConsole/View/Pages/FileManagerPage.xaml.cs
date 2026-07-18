@@ -58,7 +58,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private async void FileManagerPage_Loaded(object sender, RoutedEventArgs e)
         {
-            if (SettingsManager.Get?.App?.HideTips != null && 
+            if (SettingsManager.Get?.App?.HideTips != null &&
                 SettingsManager.Get.App.HideTips.TryGetValue("FileManagerMultiSelect", out var hide) && hide)
             {
                 MultiSelectTipBar.IsOpen = false;
@@ -177,11 +177,11 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         public async Task LoadChildrenAsync()
         {
             if (IsLoaded) return;
-            
+
             try
             {
                 var dirs = await _viewModel.GetDirectoriesAsync(VirtualPath);
-                
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Children.Clear();
@@ -383,10 +383,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     ShowError("连接失败", "无法获取 Daemon 连接");
                     return;
                 }
-                
+
                 _rootPath = $"/instances/{instanceId}";
                 CurrentPath = "/";
-                
+
                 TreeItems.Clear();
                 var rootItem = new TreeItem(this)
                 {
@@ -396,7 +396,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 };
                 rootItem.Children.Add(new TreeItem(this) { Name = "Loading..." });
                 TreeItems.Add(rootItem);
-                
+
                 await LoadDirectoryAsync(CurrentPath);
             }
             catch (Exception ex)
@@ -410,10 +410,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             if (string.IsNullOrEmpty(virtualPath) || virtualPath == "/")
                 return _rootPath;
-            
+
             if (!virtualPath.StartsWith("/"))
                 virtualPath = "/" + virtualPath;
-                
+
             return _rootPath + virtualPath;
         }
 
@@ -479,7 +479,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             if (TreeItems.Count == 0) return;
             var current = TreeItems[0]; // Root
-            
+
             if (virtualPath == "/")
             {
                 _isSyncingTree = true;
@@ -496,12 +496,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 {
                     await current.LoadChildrenAsync();
                 }
-                
+
                 var next = current.Children.FirstOrDefault(c => c.Name == part);
                 if (next == null) break;
                 current = next;
             }
-            
+
             if (current != null)
             {
                 _isSyncingTree = true;
@@ -517,20 +517,20 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             try
             {
                 HasError = false;
-                
+
                 var virtualPath = path;
                 if (!virtualPath.StartsWith("/")) virtualPath = "/" + virtualPath;
                 virtualPath = NormalizeVirtualPath(virtualPath);
-                
+
                 var realPath = GetRealPath(virtualPath);
                 var directoryResult = await _daemon.Files.GetDirectoryInfoAsync(new PathRequest(realPath), default);
                 if (directoryResult.IsErr(out var directoryError))
                     throw DaemonErrorLocalization.ToException(directoryError!);
 
                 var directory = directoryResult.Unwrap();
-                
+
                 Items.Clear();
-                
+
                 if (virtualPath != "/")
                 {
                     var parentVirtualPath = GetParentVirtualPath(virtualPath);
@@ -579,9 +579,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                         _historyIndex++;
                     }
                 }
-                
+
                 await SyncTreeViewAsync(virtualPath);
-                
+
                 CommandManager.InvalidateRequerySuggested();
             }
             catch (Exception ex)
@@ -605,10 +605,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 var editor = new Dialogs.FileEditorWindow();
                 var vm = new Dialogs.FileEditorViewModel(_daemon, realPath, SelectedItem.Path, SelectedItem.SizeBytes, editor);
                 editor.DataContext = vm;
-                
+
                 // Fire and forget loading
                 _ = vm.LoadFileAsync();
-                
+
                 editor.Show();
             }
         }
@@ -707,7 +707,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     var fileName = Path.GetFileName(dialog.FileName);
                     var virtualTargetPath = CurrentPath == "/" ? $"/{fileName}" : $"{CurrentPath}/{fileName}";
                     var realTargetPath = GetRealPath(virtualTargetPath);
-                    
+
                     await using var stream = File.OpenRead(dialog.FileName);
                     var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream));
                     stream.Position = 0;
@@ -750,7 +750,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                                 Log.Warning("[FileManager] Failed to cancel upload {0}: {1}", session.SessionId, cancelError!.Message);
                         }
                     }
-                    
+
                     await LoadDirectoryAsync(CurrentPath);
                     MessageBox.Show("上传完成！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -810,7 +810,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                         throw DaemonErrorLocalization.ToException(renameError!);
                 }
                 await LoadDirectoryAsync(CurrentPath);
-                
+
                 if (SelectedItem.IsDirectory)
                 {
                     var parentPath = GetParentVirtualPath(SelectedItem.Path);
@@ -847,7 +847,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                         throw DaemonErrorLocalization.ToException(deleteError!);
                 }
                 await LoadDirectoryAsync(CurrentPath);
-                
+
                 if (SelectedItem.IsDirectory)
                 {
                     var parentPath = GetParentVirtualPath(SelectedItem.Path);
@@ -889,7 +889,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         {
             if (TreeItems.Count == 0) return;
             var current = TreeItems[0]; // Root
-            
+
             if (virtualPath != "/")
             {
                 var parts = virtualPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
@@ -900,7 +900,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     current = next;
                 }
             }
-            
+
             var dirs = await GetDirectoriesAsync(virtualPath);
             Application.Current.Dispatcher.Invoke(() =>
             {

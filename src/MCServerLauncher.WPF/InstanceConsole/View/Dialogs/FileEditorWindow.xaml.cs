@@ -43,7 +43,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
         private readonly string _virtualPath;
         private readonly long _fileSize;
         private readonly System.Windows.Window _window;
-        
+
         private TextDocument _document = new TextDocument();
         private bool _isLoading;
         private string _loadingText = Lang.Tr["Loading"];
@@ -154,7 +154,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
 
             RegisterCustomHighlighting();
 
-            _selectedSyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(virtualPath)) 
+            _selectedSyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(virtualPath))
                                           ?? HighlightingManager.Instance.GetDefinition("Text");
 
             FixHighlightingColors(_selectedSyntaxHighlighting);
@@ -162,7 +162,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
             SaveCommand = new RelayCommand(async _ => await SaveFileAsync());
             ReloadCommand = new RelayCommand(async _ => await ReloadFileAsync());
             ExitCommand = new RelayCommand(_ => _window.Close());
-            InsertTimeDateCommand = new RelayCommand(o => 
+            InsertTimeDateCommand = new RelayCommand(o =>
             {
                 if (o is TextEditor editor)
                 {
@@ -174,7 +174,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
             RestoreDefaultZoomCommand = new RelayCommand(_ => FontSize = 14);
             ChangeEncodingCommand = new RelayCommand(async _ => await ShowEncodingDialogAsync());
 
-            Document.TextChanged += (s, e) => 
+            Document.TextChanged += (s, e) =>
             {
                 if (!_isLoading)
                 {
@@ -225,7 +225,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
             if (_isDirty)
             {
                 e.Cancel = true;
-                
+
                 var dialog = new ContentDialog
                 {
                     Title = Lang.Tr["Prompt"],
@@ -382,7 +382,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
             catch (Exception ex)
             {
                 Log.Error(ex, "[FileEditor] Failed to load file {0}", _realPath);
-                
+
                 var dialog = new ContentDialog
                 {
                     Title = Lang.Tr["Error"],
@@ -390,7 +390,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                     CloseButtonText = Lang.Tr["OK"]
                 };
                 await dialog.ShowAsync();
-                
+
                 StatusText = Lang.Tr["LoadFailed"];
             }
             finally
@@ -429,7 +429,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
             try
             {
                 var tempFile = Path.GetTempFileName();
-                
+
                 // Write file with selected encoding
                 using (var writer = new StreamWriter(tempFile, false, _selectedEncoding.GetEncoding()))
                 {
@@ -490,14 +490,14 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
 
                 _isDirty = false;
                 StatusText = Lang.Tr["Saved"];
-                
+
                 try { File.Delete(tempFile); } catch { }
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "[FileEditor] Failed to save file {0}", _realPath);
-                
+
                 var dialog = new ContentDialog
                 {
                     Title = Lang.Tr["Error"],
@@ -505,7 +505,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                     CloseButtonText = Lang.Tr["OK"]
                 };
                 await dialog.ShowAsync();
-                
+
                 StatusText = Lang.Tr["SaveFailed"];
                 return false;
             }
@@ -594,8 +594,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                     }
                     else
                     {
-                        Log.Error("[FileEditor] Could not find embedded resource '{0}'. Available resources: {1}", 
-                            resourceName, 
+                        Log.Error("[FileEditor] Could not find embedded resource '{0}'. Available resources: {1}",
+                            resourceName,
                             string.Join(", ", typeof(FileEditorWindow).Assembly.GetManifestResourceNames()));
                     }
                 }
@@ -636,7 +636,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
                     byte r = (byte)(_originalColor.R + (255 - _originalColor.R) * factor);
                     byte g = (byte)(_originalColor.G + (255 - _originalColor.G) * factor);
                     byte b = (byte)(_originalColor.B + (255 - _originalColor.B) * factor);
-                    
+
                     var brush = new SolidColorBrush(Color.FromArgb(_originalColor.A, r, g, b));
                     brush.Freeze();
                     _darkBrush = brush;

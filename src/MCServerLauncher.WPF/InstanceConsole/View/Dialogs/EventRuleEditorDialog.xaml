@@ -36,7 +36,7 @@
                 <CheckBox IsChecked="{Binding IsRegex}" Content="{Binding [ConsoleCommand_EventTrigger_IsRegex], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" />
             </StackPanel>
         </DataTemplate>
-        
+
         <!-- ScheduleTrigger Template -->
         <DataTemplate DataType="{x:Type local:ScheduleTriggerWrapper}">
             <StackPanel>
@@ -44,7 +44,7 @@
                 <TextBox Text="{Binding CronExpression, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_CronExpression], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" />
             </StackPanel>
         </DataTemplate>
-        
+
         <!-- InstanceStatusTrigger Template -->
         <DataTemplate DataType="{x:Type local:InstanceStatusTriggerWrapper}">
             <StackPanel>
@@ -64,7 +64,7 @@
                 <TextBox Text="{Binding Command, UpdateSourceTrigger=PropertyChanged}" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_Command], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" />
             </StackPanel>
         </DataTemplate>
-        
+
         <!-- ChangeInstanceStatusAction Template -->
         <DataTemplate DataType="{x:Type local:ChangeInstanceStatusActionWrapper}">
             <StackPanel>
@@ -77,7 +77,7 @@
                 </ComboBox>
             </StackPanel>
         </DataTemplate>
-        
+
         <!-- SendNotificationAction Template -->
         <DataTemplate DataType="{x:Type local:SendNotificationActionWrapper}">
             <StackPanel>
@@ -127,7 +127,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        
+
         <!-- Title Bar Area -->
         <Grid Grid.Row="0" Margin="10,0,0,10">
             <TextBlock Margin="15,17,0,0" FontWeight="Medium" Text="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}" HorizontalAlignment="Left" />
@@ -142,11 +142,11 @@
 
         <!-- Basic Info -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBox Text="{Binding Rule.Name, UpdateSourceTrigger=PropertyChanged}" 
-                     ui:ControlHelper.Header="{Binding [Name], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" 
+            <TextBox Text="{Binding Rule.Name, UpdateSourceTrigger=PropertyChanged}"
+                     ui:ControlHelper.Header="{Binding [Name], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}"
                      Margin="0,0,0,10" />
-            <TextBox Text="{Binding Rule.Description, UpdateSourceTrigger=PropertyChanged}" 
-                     ui:ControlHelper.Header="{Binding [Description], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" 
+            <TextBox Text="{Binding Rule.Description, UpdateSourceTrigger=PropertyChanged}"
+                     ui:ControlHelper.Header="{Binding [Description], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}"
                      TextWrapping="Wrap" AcceptsReturn="True" Height="60" />
         </StackPanel>
 
@@ -164,7 +164,7 @@
                                     <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_Any], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Any" />
                                     <ComboBoxItem Content="{Binding [ConsoleCommand_EventTrigger_All], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="All" />
                                 </ComboBox>
-                                
+
                                 <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">
                                     <ui:DropDownButton.Flyout>
                                         <ui:MenuFlyout Placement="Bottom">
@@ -186,9 +186,9 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        
+
                                         <ContentControl Content="{Binding}" Grid.Column="0" Margin="10" />
-                                        
+
                                         <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="DeleteTrigger_Click" Tag="{Binding}" VerticalAlignment="Top" Margin="0,10,10,0">
                                             <ui:FontIcon Glyph="&#xE74D;" />
                                         </Button>
@@ -206,7 +206,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_Ruleset], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
                                 <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_RulesetConditionHint], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                
+
                                 <ui:DropDownButton Content="{Binding [Add], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="20,0,0,0">
                                     <ui:DropDownButton.Flyout>
                                         <ui:MenuFlyout Placement="Bottom">
@@ -228,9 +228,9 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        
+
                                         <ContentControl Content="{Binding}" Grid.Column="0" Margin="10" />
-                                        
+
                                         <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="DeleteRuleset_Click" Tag="{Binding}" VerticalAlignment="Top" Margin="0,10,10,0">
                                             <ui:FontIcon Glyph="&#xE74D;" />
                                         </Button>
@@ -271,8 +271,8 @@
                                 <DataTemplate>
                                     <StackPanel>
                                         <!-- Separator (Hidden for the first item) -->
-                                        <TextBlock Text="{Binding DataContext.Rule.ActionExecutionMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ActionExecutionModeToTextConverter}}" 
-                                                   HorizontalAlignment="Center" FontWeight="Bold" Margin="0,5,0,5" 
+                                        <TextBlock Text="{Binding DataContext.Rule.ActionExecutionMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ActionExecutionModeToTextConverter}}"
+                                                   HorizontalAlignment="Center" FontWeight="Bold" Margin="0,5,0,5"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -291,9 +291,9 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            
+
                                             <ContentControl Content="{Binding}" Grid.Column="0" Margin="10" />
-                                            
+
                                             <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="DeleteAction_Click" Tag="{Binding}" VerticalAlignment="Top" Margin="0,10,10,0">
                                                 <ui:FontIcon Glyph="&#xE74D;" />
                                             </Button>
@@ -306,7 +306,7 @@
                 </Expander>
             </StackPanel>
         </ScrollViewer>
-        
+
         <!-- Action Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <Button Content="{Binding [Save], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Style="{StaticResource AccentButtonStyle}" Click="SaveButton_Click" Margin="0,0,10,0" Width="100" />

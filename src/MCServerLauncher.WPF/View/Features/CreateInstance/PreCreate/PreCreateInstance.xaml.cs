@@ -33,7 +33,7 @@ namespace MCServerLauncher.WPF.View.CreateInstanceProvider
             if (_creatingInstanceType == "PreCreating") return;
 
             var parent = this.TryFindParent<CreateInstancePage>();
-            
+
             while (true)
             {
                 (ContentDialogResult result, var listView) = await parent!.SelectDaemon();

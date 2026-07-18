@@ -21,18 +21,18 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Dialogs
         {
             InitializeComponent();
             Rule = rule;
-            
+
             // Load existing triggers and actions into observable collections
             foreach (var trigger in rule.Triggers)
             {
                 Triggers.Add(WrapTrigger(trigger));
             }
-            
+
             foreach (var ruleset in rule.Rulesets)
             {
                 Rulesets.Add(WrapRuleset(ruleset));
             }
-            
+
             foreach (var action in rule.Actions)
             {
                 Actions.Add(WrapAction(action));
