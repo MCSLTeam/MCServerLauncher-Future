@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Utils;
@@ -50,6 +51,10 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         _onUploadStagingCreatedAsync = onUploadStagingCreatedAsync;
         _onDownloadSessionRegistered = onDownloadSessionRegistered;
     }
+
+    internal Action? BeforeDownloadStreamOpen { get; set; }
+
+    internal Action? AfterDownloadStreamOpen { get; set; }
 
 
     internal void ConfigureDownloadSessionLimit(int downloadSessionLimit)
@@ -680,6 +685,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            BeforeDownloadStreamOpen?.Invoke();
             stream = new FileStream(
                 resolvedPath,
                 FileMode.Open,
@@ -687,6 +693,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
                 FileShare.Read,
                 bufferSize: 81920,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
+            AfterDownloadStreamOpen?.Invoke();
             EnsureOpenedStreamWithinRoot(stream, FileManager.Root);
             var length = stream.Length;
             var sha256 = await _hashAsync(stream, HashAlgorithmName.SHA256, cancellationToken);
@@ -1076,7 +1083,10 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(stream);
         root ??= FileManager.Root;
         var fullRoot = NormalizeDirectoryPath(root);
-        var openedPath = Path.GetFullPath(stream.Name);
+        var openedPath = OperatingSystem.IsMacOS()
+            ? Path.GetFullPath(stream.Name)
+            : GetOpenedPath(stream);
+        EnsureOpenedStreamMatchesPath(stream, openedPath);
         if (!IsWithinRoot(openedPath, fullRoot))
             throw new IOException("Invalid path: out of daemon root.");
 
@@ -1101,6 +1111,85 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
             throw new IOException("Invalid path: out of daemon root.");
         EnsureExistingPathDoesNotContainReparsePoint(finalPath, fullRoot);
     }
+
+    private static string GetOpenedPath(FileStream stream)
+    {
+        var handle = stream.SafeFileHandle.DangerousGetHandle();
+        string path;
+
+        if (OperatingSystem.IsWindows())
+        {
+            var buffer = new StringBuilder(32768);
+            var length = GetFinalPathNameByHandle(handle, buffer, buffer.Capacity, 0);
+            if (length == 0 || length >= buffer.Capacity)
+                throw new IOException("Unable to resolve the opened file path.");
+
+            path = buffer.ToString();
+            if (path.StartsWith("\\\\?\\UNC\\", StringComparison.OrdinalIgnoreCase))
+                path = "\\\\" + path[8..];
+            else if (path.StartsWith("\\\\?\\", StringComparison.Ordinal))
+                path = path[4..];
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            var descriptorPath = $"/proc/self/fd/{handle}";
+            path = File.ResolveLinkTarget(descriptorPath, returnFinalTarget: true)?.FullName
+                ?? throw new IOException("Unable to resolve the opened file path.");
+        }
+        else
+        {
+            throw new PlatformNotSupportedException("Handle-based file path validation is not supported on this platform.");
+        }
+
+        return Path.GetFullPath(path);
+    }
+
+    private static void EnsureOpenedStreamMatchesPath(FileStream stream, string path)
+    {
+        if (!OperatingSystem.IsMacOS())
+            return;
+
+        var streamIdentity = GetUnixFileIdentity(checked((int)stream.SafeFileHandle.DangerousGetHandle()), fromHandle: true);
+        var pathIdentity = GetUnixFileIdentity(path);
+        if (streamIdentity != pathIdentity)
+            throw new IOException("Invalid path: the opened file no longer matches the validated path.");
+    }
+
+    private static (ulong Device, ulong Inode) GetUnixFileIdentity(string path)
+    {
+        var buffer = new byte[256];
+        if (Stat(path, buffer) != 0)
+            throw new IOException("Unable to resolve the validated file path.");
+
+        return ReadUnixFileIdentity(buffer);
+    }
+
+    private static (ulong Device, ulong Inode) GetUnixFileIdentity(int fileDescriptor, bool fromHandle)
+    {
+        var buffer = new byte[256];
+        if (FStat(fileDescriptor, buffer) != 0)
+            throw new IOException("Unable to resolve the opened file identity.");
+
+        return ReadUnixFileIdentity(buffer);
+    }
+
+    private static (ulong Device, ulong Inode) ReadUnixFileIdentity(byte[] stat)
+    {
+        return (BitConverter.ToUInt64(stat, 0), BitConverter.ToUInt64(stat, 8));
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetFinalPathNameByHandle(
+        IntPtr file,
+        StringBuilder path,
+        int pathLength,
+        uint flags);
+
+    [DllImport("libc", EntryPoint = "stat", SetLastError = true)]
+    private static extern int Stat(string path, byte[] stat);
+
+    [DllImport("libc", EntryPoint = "fstat", SetLastError = true)]
+    private static extern int FStat(int fileDescriptor, byte[] stat);
 
 
     private static string NormalizeDirectoryPath(string path)

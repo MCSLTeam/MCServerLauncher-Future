@@ -351,6 +351,60 @@ public sealed class FileSessionCoordinatorTests
 
     [Fact]
     [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_RejectsStreamOpenedThroughTransientDirectoryLink()
+    {
+        var fixture = CreateFixture("download-open-link-race");
+        var outside = Path.Combine(Path.GetTempPath(), $"mcsl-outside-{Guid.NewGuid():N}");
+        var switchDirectory = Path.Combine(fixture.ResolvedPath, "switch");
+        var holdingDirectory = Path.Combine(fixture.ResolvedPath, "holding");
+        var relativePath = Path.Combine(fixture.RelativePath, "switch", "target.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+        var outsideFile = Path.Combine(outside, "target.bin");
+        var swapped = false;
+        var restored = false;
+        var coordinator = new FileSessionCoordinator
+        {
+            BeforeDownloadStreamOpen = () =>
+            {
+                Directory.Move(switchDirectory, holdingDirectory);
+                if (!TryCreateDirectorySymbolicLink(switchDirectory, outside))
+                    throw new InvalidOperationException("The test could not create a directory symbolic link.");
+
+                swapped = true;
+            },
+            AfterDownloadStreamOpen = () =>
+            {
+                Directory.Delete(switchDirectory);
+                Directory.Move(holdingDirectory, switchDirectory);
+                restored = true;
+            }
+        };
+
+        try
+        {
+            Directory.CreateDirectory(switchDirectory);
+            Directory.CreateDirectory(outside);
+            await File.WriteAllTextAsync(targetPath, "inside");
+            await File.WriteAllTextAsync(outsideFile, "outside");
+
+            var result = await coordinator.OpenDownloadAsync(
+                new DownloadOpenRequest(relativePath),
+                CancellationToken.None);
+
+            Assert.True(swapped);
+            Assert.True(restored);
+            Assert.True(result.IsErr(out _));
+        }
+        finally
+        {
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+            Cleanup(outside);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
     public async Task CopyDirectory_RejectsSourceFileReparsePoint()
     {
         var fixture = CreateFixture("copy-source-reparse");
