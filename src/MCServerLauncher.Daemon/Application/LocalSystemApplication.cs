@@ -11,12 +11,15 @@ internal sealed class LocalSystemApplication(
     IAsyncTimedLazyCell<SystemInfo> systemInfoCell,
     IAsyncTimedLazyCell<JavaRuntime[]> javaRuntimeCell) : ISystemApplication
 {
+    private JavaRuntime[]? _lastJavaArray;
+    private JavaRuntimeList? _lastJavaList;
+
     public async Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var systemInfo = await systemInfoCell.Value.AsTask().WaitAsync(cancellationToken);
+            var systemInfo = await systemInfoCell.Value.AsTask().WaitAsync(cancellationToken).ConfigureAwait(false);
             return Result.Ok<SystemInfo, DaemonError>(systemInfo);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -36,8 +39,14 @@ internal sealed class LocalSystemApplication(
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var runtimes = await javaRuntimeCell.Value.AsTask().WaitAsync(cancellationToken);
-            return Result.Ok<JavaRuntimeList, DaemonError>(new JavaRuntimeList(runtimes.ToImmutableArray()));
+            var runtimes = await javaRuntimeCell.Value.AsTask().WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (!ReferenceEquals(runtimes, _lastJavaArray) || _lastJavaList is null)
+            {
+                _lastJavaArray = runtimes;
+                _lastJavaList = new JavaRuntimeList(runtimes.ToImmutableArray());
+            }
+
+            return Result.Ok<JavaRuntimeList, DaemonError>(_lastJavaList);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

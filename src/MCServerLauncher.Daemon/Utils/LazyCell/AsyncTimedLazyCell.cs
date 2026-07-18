@@ -1,107 +1,173 @@
-using MCServerLauncher.Common.Concurrent;
-
 namespace MCServerLauncher.Daemon.Utils.LazyCell;
 
+/// <summary>
+/// Timed async cache with a lock-free hit path and single-flight refresh.
+/// When a cached value exists and the TTL expires, readers receive the stale value immediately
+/// while one background refresh updates the cell (stale-while-revalidate). Force update and the
+/// first load still await the factory.
+/// </summary>
 public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
 {
-    private readonly RwLock _lock = new();
-    private readonly SemaphoreSlim _updateLock = new(1, 1);
     private readonly Func<Task<T>> _valueFactory;
-    private volatile Task? _currentUpdateTask;
-    private DateTime _lastUpdated;
+    private readonly object _gate = new();
+    private readonly TimeSpan _cacheDuration;
     private T? _value;
+    private long _lastUpdatedUtcTicks; // 0 = never populated
+    private Task? _refreshTask;
+    private Exception? _lastFailure;
 
     public AsyncTimedLazyCell(Func<Task<T>> valueFactory, TimeSpan cacheDuration)
     {
         _valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
-        CacheDuration = cacheDuration;
+        if (cacheDuration < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(cacheDuration));
+        }
+
+        _cacheDuration = cacheDuration;
     }
 
     public DateTime LastUpdated
     {
         get
         {
-            using var readLock = _lock.AcquireReaderLock();
-            return _lastUpdated;
+            var ticks = Volatile.Read(ref _lastUpdatedUtcTicks);
+            return ticks == 0 ? DateTime.MinValue : new DateTime(ticks, DateTimeKind.Utc).ToLocalTime();
         }
     }
 
-    public TimeSpan CacheDuration { get; }
+    public TimeSpan CacheDuration => _cacheDuration;
 
-    public ValueTask<T> Value => GetValue();
+    public ValueTask<T> Value => GetValueAsync(forceUpdate: false);
 
     public bool IsExpired()
     {
-        using var readLock = _lock.AcquireReaderLock();
-        return DateTime.Now - _lastUpdated > CacheDuration;
-    }
-
-    public Task Update()
-    {
-        return GetValue(true).AsTask();
-    }
-
-    private async ValueTask<T> GetValue(bool forceUpdate = false)
-    {
-        // 首先检查是否需要更新
-        bool needsUpdate;
-        using (await _lock.AcquireReaderLockAsync())
+        var ticks = Volatile.Read(ref _lastUpdatedUtcTicks);
+        if (ticks == 0)
         {
-            needsUpdate = forceUpdate || DateTime.Now - _lastUpdated > CacheDuration;
+            return true;
         }
 
-        if (needsUpdate)
+        return DateTime.UtcNow - new DateTime(ticks, DateTimeKind.Utc) > _cacheDuration;
+    }
+
+    public Task Update() => GetValueAsync(forceUpdate: true).AsTask();
+
+    private ValueTask<T> GetValueAsync(bool forceUpdate)
+    {
+        var nowUtc = DateTime.UtcNow;
+        var lastTicks = Volatile.Read(ref _lastUpdatedUtcTicks);
+        if (!forceUpdate && lastTicks != 0)
         {
-            await _updateLock.WaitAsync();
-            try
+            var age = nowUtc - new DateTime(lastTicks, DateTimeKind.Utc);
+            if (age <= _cacheDuration)
             {
-                // 双重检查，避免在等待锁的过程中其他线程已经完成更新
-                using (await _lock.AcquireReaderLockAsync())
-                {
-                    needsUpdate = forceUpdate || DateTime.Now - _lastUpdated > CacheDuration;
-                }
-
-                if (needsUpdate)
-                {
-                    // 如果已经有更新任务在进行，直接等待其完成
-                    var existingTask = _currentUpdateTask;
-                    if (existingTask != null)
-                    {
-                        await existingTask;
-                        return _value!;
-                    }
-
-                    // 创建新的更新任务
-                    var updateTask = UpdateValueAsync();
-                    _currentUpdateTask = updateTask;
-                    try
-                    {
-                        await updateTask;
-                    }
-                    finally
-                    {
-                        _currentUpdateTask = null;
-                    }
-                }
-            }
-            finally
-            {
-                _updateLock.Release();
+                // Fast path: hot read without locks or allocations.
+                return new ValueTask<T>(_value!);
             }
         }
 
-        // 返回最新值
-        using (await _lock.AcquireReaderLockAsync())
+        return new ValueTask<T>(GetValueSlowAsync(forceUpdate, nowUtc));
+    }
+
+    private async Task<T> GetValueSlowAsync(bool forceUpdate, DateTime nowUtc)
+    {
+        Task refresh;
+        var serveStale = false;
+        T? stale = default;
+
+        lock (_gate)
         {
-            return _value!;
+            var lastTicks = _lastUpdatedUtcTicks;
+            var hasValue = lastTicks != 0;
+            var expired = !hasValue ||
+                          forceUpdate ||
+                          nowUtc - new DateTime(lastTicks, DateTimeKind.Utc) > _cacheDuration;
+
+            if (!expired)
+            {
+                return _value!;
+            }
+
+            if (_refreshTask is { IsCompleted: false })
+            {
+                refresh = _refreshTask;
+            }
+            else
+            {
+                refresh = RefreshCoreAsync();
+                _refreshTask = refresh;
+            }
+
+            // Stale-while-revalidate: concurrent readers keep the previous sample instead of
+            // serializing behind a 300ms+ factory or a full Java scan.
+            if (hasValue && !forceUpdate)
+            {
+                serveStale = true;
+                stale = _value;
+            }
+        }
+
+        if (serveStale)
+        {
+            return stale!;
+        }
+
+        try
+        {
+            await refresh.ConfigureAwait(false);
+        }
+        catch
+        {
+            // Surface failure only when no usable sample exists (first load / force).
+            lock (_gate)
+            {
+                if (_lastUpdatedUtcTicks != 0 && !forceUpdate)
+                {
+                    return _value!;
+                }
+            }
+
+            throw;
+        }
+
+        lock (_gate)
+        {
+            if (_lastUpdatedUtcTicks != 0)
+            {
+                return _value!;
+            }
+
+            if (_lastFailure is not null)
+            {
+                throw _lastFailure;
+            }
+
+            throw new InvalidOperationException("Timed lazy cell refresh completed without a value.");
         }
     }
 
-    private async Task UpdateValueAsync()
+    private async Task RefreshCoreAsync()
     {
-        var newValue = await _valueFactory();
-        using var writeLock = await _lock.AcquireWriterLockAsync();
-        _value = newValue;
-        _lastUpdated = DateTime.Now;
+        try
+        {
+            var newValue = await _valueFactory().ConfigureAwait(false);
+            lock (_gate)
+            {
+                _value = newValue;
+                _lastUpdatedUtcTicks = DateTime.UtcNow.Ticks;
+                _lastFailure = null;
+            }
+        }
+        catch (Exception exception)
+        {
+            lock (_gate)
+            {
+                // Keep any prior good sample; only surface the failure when no value exists.
+                _lastFailure = exception;
+            }
+
+            throw;
+        }
     }
 }

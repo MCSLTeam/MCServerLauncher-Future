@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -215,6 +216,29 @@ public sealed class JsonRpcObjectPayload
         var bytes = JsonSerializer.SerializeToUtf8Bytes(value, typeInfo);
         ValidateSingleObject(bytes);
         return new JsonRpcObjectPayload(bytes, 0, bytes.Length);
+    }
+
+    /// <summary>
+    /// Wrap a previously validated UTF-8 JSON object without re-walking a large object graph.
+    /// Used for frozen OpenRPC <c>rpc.discover</c> responses and similar pre-encoded results.
+    /// </summary>
+    public static JsonRpcObjectPayload FromValidatedUtf8Object(ReadOnlyMemory<byte> utf8Json)
+    {
+        if (utf8Json.IsEmpty)
+        {
+            throw new ArgumentException("A JSON-RPC object payload cannot be empty.", nameof(utf8Json));
+        }
+
+        if (!MemoryMarshal.TryGetArray(utf8Json, out ArraySegment<byte> segment) ||
+            segment.Array is null)
+        {
+            var copy = utf8Json.ToArray();
+            ValidateSingleObject(copy);
+            return new JsonRpcObjectPayload(copy, 0, copy.Length);
+        }
+
+        ValidateSingleObject(segment.Array.AsSpan(segment.Offset, segment.Count));
+        return new JsonRpcObjectPayload(segment.Array, segment.Offset, segment.Count);
     }
 
     public object Deserialize(JsonTypeInfo typeInfo)

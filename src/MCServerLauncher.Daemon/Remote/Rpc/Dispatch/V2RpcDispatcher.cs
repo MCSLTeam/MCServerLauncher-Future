@@ -327,7 +327,7 @@ internal sealed class V2RpcDispatcher
 
         try
         {
-            var payload = JsonRpcObjectPayload.From(result, entry.Descriptor.ResultTypeInfo);
+            var payload = CreateSuccessPayload(result, entry.Descriptor.ResultTypeInfo);
             var envelope = new JsonRpcSuccessResponseEnvelope(request.Id!, payload);
             return V2RpcPreparedDispatchOutcome.Success(envelope, entry.Owner, execution.DownloadAttachment);
         }
@@ -372,6 +372,25 @@ internal sealed class V2RpcDispatcher
 
             return SerializePreparedOutcome(request, UnexpectedOrSuppress(request, prepared.Owner, exception));
         }
+    }
+
+
+    private JsonRpcObjectPayload CreateSuccessPayload(object result, System.Text.Json.Serialization.Metadata.JsonTypeInfo resultTypeInfo)
+    {
+        // Frozen OpenRPC document is already UTF-8 encoded at catalog freeze time.
+        // Reusing DocumentUtf8 avoids multi-megabyte re-serialization under concurrent rpc.discover load.
+        if (result is OpenRpcDocument document &&
+            ReferenceEquals(document, _catalog.Document) &&
+            !_catalog.DocumentUtf8.IsDefaultOrEmpty)
+        {
+            var bytes = System.Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(_catalog.DocumentUtf8);
+            if (bytes is not null)
+            {
+                return JsonRpcObjectPayload.FromValidatedUtf8Object(bytes);
+            }
+        }
+
+        return JsonRpcObjectPayload.From(result, resultTypeInfo);
     }
 
     internal static object DeserializeRequest(JsonRpcObjectPayload? parameters, RpcDescriptor descriptor)

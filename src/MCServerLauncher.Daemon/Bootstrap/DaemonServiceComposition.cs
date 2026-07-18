@@ -51,9 +51,11 @@ internal static class DaemonServiceComposition
         var systemInfoCell = new AsyncTimedLazyCell<SystemInfo>(
             SystemInfoHelper.GetSystemInfo,
             TimeSpan.FromSeconds(2));
+        // Full-disk Java discovery is expensive; cache for minutes, not seconds.
+        // System info stays at 2s so dashboard usage still feels live.
         var javaRuntimeCell = new AsyncTimedLazyCell<JavaRuntime[]>(
             JavaScanner.ScanJavaAsync,
-            TimeSpan.FromSeconds(2));
+            TimeSpan.FromMinutes(5));
 
         a.RegisterSingleton(instanceManager);
         a.RegisterSingleton<IInstanceManager>(instanceManager);

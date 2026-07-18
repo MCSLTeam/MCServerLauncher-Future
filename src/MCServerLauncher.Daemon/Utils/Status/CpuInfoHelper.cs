@@ -89,20 +89,12 @@ public static class CpuInfoHelper
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
+            // Vendor/Name are static; only sample usage on the hot path.
             var cpuUsage =
                 await SystemInfoHelper.RunCommandAsync("sh",
                         "-c \"top -l 1 | grep 'CPU usage' | awk '{print $3}' | tr -d '%'\"")
                     .MapTask(ParseMacOsCpuUsage);
-
-            var name = await SystemInfoHelper.RunCommandAsync("sysctl", "-n machdep.cpu.brand_string");
-            var vendor = name.Split(' ')[0];
-            return new ProcessorInfo(
-                vendor,
-                name,
-                ThreadCount,
-                cpuUsage,
-                CoreCount,
-                ThreadCount);
+            return CreateCpuInfo(cpuUsage);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -207,30 +199,72 @@ public static class CpuInfoHelper
         return value > 0 ? value : Math.Max(1, ProcessorCount);
     }
 
-    private static Task<(ulong, ulong)> GetLinuxCpuTime()
+    private static readonly object LinuxCpuSampleGate = new();
+    private static ulong _linuxLastTotal;
+    private static ulong _linuxLastIdle;
+    private static double _linuxLastUsage;
+    private static bool _linuxHasSample;
+
+    private static (ulong Total, ulong Idle) ReadLinuxCpuTime()
     {
-        return SystemInfoHelper.RunCommandAsync(
-            "sh",
-            "-c \"cat /proc/stat | grep '^cpu ' | awk '{total=0; for(i=2;i<=NF;i++) total+=$i; idle=$5+$6; print total, idle}'\""
-        ).MapTask(x =>
+        // Avoid shelling out on every sample; parse /proc/stat directly.
+        using var reader = new StreamReader("/proc/stat");
+        var line = reader.ReadLine();
+        if (line is null || !line.StartsWith("cpu ", StringComparison.Ordinal))
         {
-            var rv = x.Split(' ').Select(ulong.Parse).ToArray();
-            return (rv[0], rv[1]);
-        });
+            throw new InvalidOperationException("Failed to read /proc/stat cpu line.");
+        }
+
+        var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        // cpu user nice system idle iowait irq softirq steal ...
+        ulong total = 0;
+        for (var i = 1; i < parts.Length; i++)
+        {
+            total += ulong.Parse(parts[i], CultureInfo.InvariantCulture);
+        }
+
+        var idle = ulong.Parse(parts[4], CultureInfo.InvariantCulture);
+        if (parts.Length > 5)
+        {
+            idle += ulong.Parse(parts[5], CultureInfo.InvariantCulture); // iowait
+        }
+
+        return (total, idle);
     }
 
     private static async Task<double> GetLinuxCpuUsage(int delay = 300)
     {
-        var (total1, idle1) = await GetLinuxCpuTime();
+        var sample = ReadLinuxCpuTime();
+        lock (LinuxCpuSampleGate)
+        {
+            if (_linuxHasSample)
+            {
+                var totalDiff = sample.Total - _linuxLastTotal;
+                var idleDiff = sample.Idle - _linuxLastIdle;
+                _linuxLastTotal = sample.Total;
+                _linuxLastIdle = sample.Idle;
+                if (totalDiff > 0)
+                {
+                    _linuxLastUsage = (1.0 - (double)idleDiff / totalDiff) * 100;
+                }
 
-        await Task.Delay(delay);
+                return _linuxLastUsage;
+            }
+        }
 
-        var (total2, idle2) = await GetLinuxCpuTime();
-
-        var totalDiff = total2 - total1;
-        var idleDiff = idle2 - idle1;
-
-        return totalDiff == 0 ? 0 : (1.0 - (double)idleDiff / totalDiff) * 100;
+        // Cold start: take a short interval so the first post-boot sample is meaningful.
+        await Task.Delay(delay).ConfigureAwait(false);
+        var second = ReadLinuxCpuTime();
+        lock (LinuxCpuSampleGate)
+        {
+            var totalDiff = second.Total - sample.Total;
+            var idleDiff = second.Idle - sample.Idle;
+            _linuxLastTotal = second.Total;
+            _linuxLastIdle = second.Idle;
+            _linuxHasSample = true;
+            _linuxLastUsage = totalDiff == 0 ? 0 : (1.0 - (double)idleDiff / totalDiff) * 100;
+            return _linuxLastUsage;
+        }
     }
 
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -238,26 +272,46 @@ public static class CpuInfoHelper
         out FILETIME lpKernelTime,
         out FILETIME lpUserTime);
 
+    private static readonly object WinCpuSampleGate = new();
+    private static ulong _winLastIdle;
+    private static ulong _winLastTotal;
+    private static double _winLastUsage;
+    private static bool _winHasSample;
+
     public static async Task<double> GetWinCpuUsage(int samplingInterval = 300)
     {
-        // 第一次采样
-        var (idleTime1, totalTime1) = GetWinCpuTime();
+        // Sliding two-sample window: after the first observation, each call is O(1) with no delay.
+        // Concurrent system_info RPC no longer serializes behind Task.Delay(300).
+        var sample = GetWinCpuTime();
+        lock (WinCpuSampleGate)
+        {
+            if (_winHasSample)
+            {
+                var idleDelta = sample.IdleTime - _winLastIdle;
+                var totalDelta = sample.TotalTime - _winLastTotal;
+                _winLastIdle = sample.IdleTime;
+                _winLastTotal = sample.TotalTime;
+                if (totalDelta > 0)
+                {
+                    _winLastUsage = 100.0 * (1.0 - (double)idleDelta / totalDelta);
+                }
 
-        // 异步等待采样间隔
-        await Task.Delay(samplingInterval);
+                return _winLastUsage;
+            }
+        }
 
-        // 第二次采样
-        var (idleTime2, totalTime2) = GetWinCpuTime();
-
-        // 计算差值
-        var idleDelta = idleTime2 - idleTime1;
-        var totalDelta = totalTime2 - totalTime1;
-
-        // 处理除零情况
-        if (totalDelta == 0) return 0;
-
-        // 计算使用率
-        return 100.0 * (1.0 - (double)idleDelta / totalDelta);
+        await Task.Delay(samplingInterval).ConfigureAwait(false);
+        var second = GetWinCpuTime();
+        lock (WinCpuSampleGate)
+        {
+            var idleDelta = second.IdleTime - sample.IdleTime;
+            var totalDelta = second.TotalTime - sample.TotalTime;
+            _winLastIdle = second.IdleTime;
+            _winLastTotal = second.TotalTime;
+            _winHasSample = true;
+            _winLastUsage = totalDelta == 0 ? 0 : 100.0 * (1.0 - (double)idleDelta / totalDelta);
+            return _winLastUsage;
+        }
     }
 
     private static (ulong IdleTime, ulong TotalTime) GetWinCpuTime()

@@ -63,15 +63,20 @@ public static class MemoryInfoHelper
         throw new PlatformNotSupportedException("Unsupported OS");
     }
 
-    public static async Task<MemoryInfo> GetMemInfo()
+    public static Task<MemoryInfo> GetMemInfo()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Session != null)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var available = await Task.Run(() =>
+            // Prefer GlobalMemoryStatusEx (no CIM thread hop per request).
+            if (TryGetWindowsAvailableMemoryKb(out var availableKb))
+            {
+                return Task.FromResult(new MemoryInfo(TotalPhysicalMemory, availableKb));
+            }
+
+            if (Session != null)
             {
                 try
                 {
-                    // 同步获取空闲物理内存KB
                     var instances = Session.QueryInstances(
                         @"root\cimv2",
                         "WQL",
@@ -79,53 +84,97 @@ public static class MemoryInfoHelper
                     ).ToArray();
                     var instance = instances.FirstOrDefault();
                     var freeKb = instance?.CimInstanceProperties["FreePhysicalMemory"]?.Value as ulong? ?? 0UL;
-
                     foreach (var queryInstance in instances) queryInstance.Dispose();
-
-                    return freeKb;
+                    return Task.FromResult(new MemoryInfo(TotalPhysicalMemory, freeKb));
                 }
                 catch (CimException ex)
                 {
                     Log.Warning($"CIM query failed: {ex.Message} ({ex.NativeErrorCode})");
                     ex.Dispose();
-                    return 0UL;
+                    return Task.FromResult(new MemoryInfo(TotalPhysicalMemory, 0UL));
                 }
-            });
+            }
 
-            return new MemoryInfo(TotalPhysicalMemory, available);
+            return Task.FromResult(new MemoryInfo(TotalPhysicalMemory, 0UL));
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            var availableMemRaw = await SystemInfoHelper.RunCommandAsync("sh",
-                    "-c \"awk '/MemAvailable/ {print $2}' /proc/meminfo\"")
-                .ConfigureAwait(false);
-            if (!ulong.TryParse(availableMemRaw.Trim(), out var availableKb))
-                throw new InvalidOperationException("Failed to parse available memory");
-            return new MemoryInfo(TotalPhysicalMemory, availableKb);
+            return Task.FromResult(ReadLinuxMemoryInfo());
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            // 获取页面大小（字节）并转换为 KB
-            var pageSize = await SystemInfoHelper.RunCommandAsync("getconf", "PAGESIZE").MapTask(ulong.Parse);
-            var pageSizeKb = pageSize / 1024; // 例如 4096 / 1024 = 4
-
-            // 获取空闲页面和非活跃页面数
-            var pagesFree = await SystemInfoHelper
-                .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages free' | awk '{print $3}'\"")
-                .MapTask(s => ulong.Parse(s.Trim('.')));
-            var pagesInactive = await SystemInfoHelper
-                .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages inactive' | awk '{print $3}'\"")
-                .MapTask(s => ulong.Parse(s.Trim('.')));
-
-            // 计算可用内存（KB）
-            var availablePages = pagesFree + pagesInactive;
-            var freeKb = availablePages * pageSizeKb;
-
-            return new MemoryInfo(TotalPhysicalMemory, freeKb);
+            return GetMacOsMemoryInfoAsync();
         }
 
         throw new PlatformNotSupportedException("Unsupported OS");
+    }
+
+    private static MemoryInfo ReadLinuxMemoryInfo()
+    {
+        ulong availableKb = 0;
+        foreach (var line in File.ReadLines("/proc/meminfo"))
+        {
+            if (!line.StartsWith("MemAvailable:", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2 || !ulong.TryParse(parts[1], out availableKb))
+            {
+                throw new InvalidOperationException("Failed to parse available memory");
+            }
+
+            return new MemoryInfo(TotalPhysicalMemory, availableKb);
+        }
+
+        throw new InvalidOperationException("Failed to parse available memory");
+    }
+
+    private static async Task<MemoryInfo> GetMacOsMemoryInfoAsync()
+    {
+        var pageSize = await SystemInfoHelper.RunCommandAsync("getconf", "PAGESIZE").MapTask(ulong.Parse);
+        var pageSizeKb = pageSize / 1024;
+        var pagesFree = await SystemInfoHelper
+            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages free' | awk '{print $3}'\"")
+            .MapTask(s => ulong.Parse(s.Trim('.')));
+        var pagesInactive = await SystemInfoHelper
+            .RunCommandAsync("sh", "-c \"vm_stat | grep 'Pages inactive' | awk '{print $3}'\"")
+            .MapTask(s => ulong.Parse(s.Trim('.')));
+        var freeKb = (pagesFree + pagesInactive) * pageSizeKb;
+        return new MemoryInfo(TotalPhysicalMemory, freeKb);
+    }
+
+    private static bool TryGetWindowsAvailableMemoryKb(out ulong availableKb)
+    {
+        availableKb = 0;
+        var status = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
+        if (!GlobalMemoryStatusEx(ref status))
+        {
+            return false;
+        }
+
+        availableKb = status.ullAvailPhys / 1024;
+        return true;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MEMORYSTATUSEX
+    {
+        public uint dwLength;
+        public uint dwMemoryLoad;
+        public ulong ullTotalPhys;
+        public ulong ullAvailPhys;
+        public ulong ullTotalPageFile;
+        public ulong ullAvailPageFile;
+        public ulong ullTotalVirtual;
+        public ulong ullAvailVirtual;
+        public ulong ullAvailExtendedVirtual;
     }
 }
