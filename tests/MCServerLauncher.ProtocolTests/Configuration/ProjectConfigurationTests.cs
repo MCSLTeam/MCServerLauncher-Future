@@ -136,7 +136,7 @@ public class ProjectConfigurationTests
     {
         var directory = AppContext.BaseDirectory;
 
-        while (directory is not null && !File.Exists(Path.Combine(directory, "MCServerLauncher.sln")))
+        while (directory is not null && !File.Exists(Path.Combine(directory, "MCServerLauncher.slnx")))
         {
             directory = Directory.GetParent(directory)?.FullName;
         }

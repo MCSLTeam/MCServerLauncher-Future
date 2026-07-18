@@ -41,7 +41,7 @@ Use `/m:1` for WPF and other build checks when the task does not require full pa
 
 ```bash
 # Build the full solution
-dotnet build MCServerLauncher.sln /m:1
+dotnet build MCServerLauncher.slnx /m:1
 
 # Build major projects
 dotnet build src/MCServerLauncher.WPF/MCServerLauncher.WPF.csproj /m:1
@@ -262,7 +262,7 @@ Choose the smallest relevant set:
 - V1 deletion: `pwsh -File tools/VerifyNoV1Runtime.ps1`
 - Plugin integration: publish daemon and fixtures, set `MCSL_PUBLISHED_DAEMON`, then run `dotnet test tests/MCServerLauncher.PluginIntegrationTests/MCServerLauncher.PluginIntegrationTests.csproj -c Release /m:1`
 - Benchmarks: `dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release`
-- Full solution: `dotnet build MCServerLauncher.sln /m:1`
+- Full solution: `dotnet build MCServerLauncher.slnx /m:1`
 - Final hygiene: `git diff --check` and `git status --short --branch`
 
 ## Documentation And Integrations

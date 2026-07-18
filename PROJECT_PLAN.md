@@ -77,7 +77,7 @@ MCServerLauncher Future, codename `mcsl-future`, is a server management suite fo
 - Plugin integration: publish the daemon and plugin fixtures, set `MCSL_PUBLISHED_DAEMON`, then run `dotnet test tests/MCServerLauncher.PluginIntegrationTests/MCServerLauncher.PluginIntegrationTests.csproj -c Release /m:1`.
 - Generated protocol docs: `dotnet run --project tools/MCServerLauncher.ProtocolDocs/MCServerLauncher.ProtocolDocs.csproj -- --check`.
 - Performance: `dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release`.
-- Full solution: `dotnet build MCServerLauncher.sln /m:1`.
+- Full solution: `dotnet build MCServerLauncher.slnx /m:1`.
 
 ## Milestones
 
