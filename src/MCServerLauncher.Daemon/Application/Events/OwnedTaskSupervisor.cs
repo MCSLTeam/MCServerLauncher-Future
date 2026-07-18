@@ -137,8 +137,9 @@ internal sealed class OwnedTaskSupervisor(
 
         try
         {
-            // Cancel() aggregates registration callback exceptions synchronously. Keep that path
-            // as the primary observation mechanism for Dispose/Drain.
+            // Cancel() aggregates registration callback exceptions synchronously. Capture them as
+            // sticky failures so DrainAsync still observes them even if the stop completion races
+            // with later residual CancelAsync observation.
             try
             {
                 _lifetimeCancellation.Cancel();
@@ -146,12 +147,10 @@ internal sealed class OwnedTaskSupervisor(
             catch (Exception syncException)
             {
                 ObserveCancelFailure(syncException);
-                completion.TrySetException(syncException);
-                return;
             }
 
-            // Residual path: if Cancel() returned without throwing, still surface any deferred
-            // CancelAsync observation (should already be canceled and complete immediately).
+            // Residual path: CancelAsync is a no-op once canceled, but still surfaces any deferred
+            // callback fault that Cancel() did not throw synchronously on some runtimes.
             try
             {
                 await _lifetimeCancellation.CancelAsync().ConfigureAwait(false);
@@ -159,16 +158,17 @@ internal sealed class OwnedTaskSupervisor(
             catch (Exception asyncException)
             {
                 ObserveCancelFailure(asyncException);
-                completion.TrySetException(asyncException);
-                return;
             }
-
-            completion.TrySetResult();
         }
         catch (Exception exception)
         {
             ObserveCancelFailure(exception);
-            completion.TrySetException(exception);
+        }
+        finally
+        {
+            // Always complete successfully; cancel-callback faults are sticky via _cancelFailure so
+            // DrainAsync can rethrow after owned tasks have drained.
+            completion.TrySetResult();
         }
     }
 

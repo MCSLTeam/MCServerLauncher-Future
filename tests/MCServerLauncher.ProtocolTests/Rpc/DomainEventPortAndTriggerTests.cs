@@ -308,37 +308,50 @@ public sealed class DomainEventPortAndTriggerTests
         var supervisor = new OwnedTaskSupervisor("throwing", logger);
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var drained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        supervisor.Schedule("wait", async token =>
+        // Keep the throwing registration alive until after Dispose. Disposing it from a `using`
+        // inside the owned task can race with Cancel on loaded thread pools and drop observation.
+        CancellationTokenRegistration throwingRegistration = default;
+        try
         {
-            using var registration = token.Register(
-                () => throw new InvalidOperationException("cancel callback failed"));
-            started.TrySetResult();
-            try
+            supervisor.Schedule("wait", async token =>
             {
-                await Task.Delay(Timeout.InfiniteTimeSpan, token);
-            }
-            finally
-            {
-                drained.TrySetResult();
-            }
-        });
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(3));
+                throwingRegistration = token.Register(
+                    () => throw new InvalidOperationException("cancel callback failed"));
+                started.TrySetResult();
+                var parked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                // Non-throwing registration completes the park when the lifetime token cancels.
+                using var parkRegistration = token.Register(() => parked.TrySetResult());
+                try
+                {
+                    await parked.Task.WaitAsync(token);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                finally
+                {
+                    drained.TrySetResult();
+                }
+            });
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(3));
 
-        // Let the infinite delay park before stop so the registration is definitely live.
-        await Task.Delay(25);
+            supervisor.RequestStop();
+            var failure = await Assert.ThrowsAsync<AggregateException>(async () =>
+                await supervisor.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)));
 
-        supervisor.RequestStop();
-        var failure = await Assert.ThrowsAsync<AggregateException>(async () =>
-            await supervisor.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)));
-
-        await drained.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(0, supervisor.PendingTaskCount);
-        Assert.Contains(
-            failure.Flatten().InnerExceptions,
-            exception => exception is InvalidOperationException
-                && exception.Message == "cancel callback failed");
-        Assert.Contains(logger.Entries, entry =>
-            entry.Level == LogLevel.Error && entry.Exception is not null);
+            await drained.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(0, supervisor.PendingTaskCount);
+            Assert.Contains(
+                failure.Flatten().InnerExceptions,
+                exception => exception is InvalidOperationException
+                    && exception.Message == "cancel callback failed");
+            Assert.Contains(logger.Entries, entry =>
+                entry.Level == LogLevel.Error && entry.Exception is not null);
+        }
+        finally
+        {
+            throwingRegistration.Dispose();
+        }
     }
 
     [Fact]
