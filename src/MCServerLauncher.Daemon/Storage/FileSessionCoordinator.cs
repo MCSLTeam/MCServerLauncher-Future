@@ -1149,33 +1149,31 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         if (!OperatingSystem.IsMacOS())
             return;
 
-        var streamIdentity = GetUnixFileIdentity(checked((int)stream.SafeFileHandle.DangerousGetHandle()), fromHandle: true);
-        var pathIdentity = GetUnixFileIdentity(path);
+        // Darwin has no /proc/self/fd equivalent that P/Invoke can call reliably (fcntl F_GETPATH is
+        // variadic). Compare typed fstat(handle) against stat(path) so a post-open path restore
+        // cannot make the stream.Name look in-root while the FD still points elsewhere.
+        var streamIdentity = GetDarwinFileIdentity(checked((int)stream.SafeFileHandle.DangerousGetHandle()));
+        var pathIdentity = GetDarwinFileIdentity(path);
         if (streamIdentity != pathIdentity)
             throw new IOException("Invalid path: the opened file no longer matches the validated path.");
     }
 
-    private static (ulong Device, ulong Inode) GetUnixFileIdentity(string path)
+    private static (int Device, ulong Inode) GetDarwinFileIdentity(string path)
     {
-        var buffer = new byte[256];
-        if (Stat(path, buffer) != 0)
+        DarwinStat stat = default;
+        if (DarwinStatByPath(path, ref stat) != 0)
             throw new IOException("Unable to resolve the validated file path.");
 
-        return ReadUnixFileIdentity(buffer);
+        return (stat.st_dev, stat.st_ino);
     }
 
-    private static (ulong Device, ulong Inode) GetUnixFileIdentity(int fileDescriptor, bool fromHandle)
+    private static (int Device, ulong Inode) GetDarwinFileIdentity(int fileDescriptor)
     {
-        var buffer = new byte[256];
-        if (FStat(fileDescriptor, buffer) != 0)
+        DarwinStat stat = default;
+        if (DarwinStatByDescriptor(fileDescriptor, ref stat) != 0)
             throw new IOException("Unable to resolve the opened file identity.");
 
-        return ReadUnixFileIdentity(buffer);
-    }
-
-    private static (ulong Device, ulong Inode) ReadUnixFileIdentity(byte[] stat)
-    {
-        return (BitConverter.ToUInt64(stat, 0), BitConverter.ToUInt64(stat, 8));
+        return (stat.st_dev, stat.st_ino);
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -1185,11 +1183,41 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         int pathLength,
         uint flags);
 
+    // Layout mirrors Darwin arm64/x64 `struct stat` (sizeof 144; st_ino at offset 8).
+    // Only used on macOS for post-open identity checks.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DarwinStat
+    {
+        public int st_dev;
+        public ushort st_mode;
+        public ushort st_nlink;
+        public ulong st_ino;
+        public uint st_uid;
+        public uint st_gid;
+        public int st_rdev;
+        public long st_atime;
+        public long st_atimensec;
+        public long st_mtime;
+        public long st_mtimensec;
+        public long st_ctime;
+        public long st_ctimensec;
+        public long st_birthtime;
+        public long st_birthtimensec;
+        public long st_size;
+        public long st_blocks;
+        public int st_blksize;
+        public uint st_flags;
+        public uint st_gen;
+        public int st_lspare;
+        public long st_qspare0;
+        public long st_qspare1;
+    }
+
     [DllImport("libc", EntryPoint = "stat", SetLastError = true)]
-    private static extern int Stat(string path, byte[] stat);
+    private static extern int DarwinStatByPath(string path, ref DarwinStat stat);
 
     [DllImport("libc", EntryPoint = "fstat", SetLastError = true)]
-    private static extern int FStat(int fileDescriptor, byte[] stat);
+    private static extern int DarwinStatByDescriptor(int fileDescriptor, ref DarwinStat stat);
 
 
     private static string NormalizeDirectoryPath(string path)

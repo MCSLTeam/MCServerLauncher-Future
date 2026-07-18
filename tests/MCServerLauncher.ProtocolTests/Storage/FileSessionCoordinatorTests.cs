@@ -405,6 +405,38 @@ public sealed class FileSessionCoordinatorTests
 
     [Fact]
     [Trait("Category", "FileSessionCoordinator")]
+    public async Task Download_AcceptsStableInRootFileAfterOpenValidation()
+    {
+        var fixture = CreateFixture("download-open-stable");
+        var coordinator = new FileSessionCoordinator();
+        var relativePath = Path.Combine(fixture.RelativePath, "stable.bin");
+        var targetPath = FileManager.ResolveAndValidatePath(relativePath);
+        var content = new byte[] { 0x4d, 0x43, 0x53, 0x4c };
+
+        try
+        {
+            Directory.CreateDirectory(fixture.ResolvedPath);
+            await File.WriteAllBytesAsync(targetPath, content);
+
+            var opened = AssertOk(await coordinator.OpenDownloadAsync(
+                new DownloadOpenRequest(relativePath),
+                CancellationToken.None));
+            var chunk = AssertOk(await coordinator.ReadDownloadChunkAsync(
+                new DownloadChunkRequest(opened.SessionId, 0, content.Length),
+                CancellationToken.None));
+
+            Assert.Equal(content, chunk.Data.ToArray());
+            Assert.Equal(Sha256(content), opened.Sha256);
+        }
+        finally
+        {
+            await coordinator.StopAsync();
+            Cleanup(fixture.ResolvedPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "FileSessionCoordinator")]
     public async Task CopyDirectory_RejectsSourceFileReparsePoint()
     {
         var fixture = CreateFixture("copy-source-reparse");
