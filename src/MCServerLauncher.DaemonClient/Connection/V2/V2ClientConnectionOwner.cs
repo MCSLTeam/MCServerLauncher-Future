@@ -273,7 +273,18 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
                     continue;
                 }
 
-                await epoch.Loss.Task.WaitAsync(_lifetimeCancellation.Token).ConfigureAwait(false);
+                // Wait for loss without abandoning cleanup when Close cancels the lifetime token.
+                // Concurrent InvalidateEpoch may already have detached this epoch from _current;
+                // Close then has no captured reference and must still rely on this worker path.
+                try
+                {
+                    await epoch.Loss.Task.WaitAsync(_lifetimeCancellation.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+                {
+                    await StartDetachedEpochLoss(epoch, ClosedError()).ConfigureAwait(false);
+                }
+
                 ReportCleanupFailures(await CleanupEpochAsync(epoch).ConfigureAwait(false));
                 if (_lifetimeCancellation.IsCancellationRequested)
                     return;

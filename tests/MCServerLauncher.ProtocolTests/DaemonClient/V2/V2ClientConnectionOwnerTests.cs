@@ -1163,6 +1163,10 @@ public sealed class V2ClientConnectionOwnerTests
         await Task.WhenAll(invalidation, closing).WaitAsync(Timeout);
         time.Advance(ReconnectDelay);
 
+        await WaitUntilAsync(() =>
+            owner.State == V2ClientConnectionOwnerState.Closed &&
+            first.CloseCount == 1 &&
+            first.DisposeCount == 1);
         Assert.Equal(V2ClientConnectionOwnerState.Closed, owner.State);
         Assert.Equal(1, factory.CreatedCount);
         Assert.Equal(1, first.CloseCount);
