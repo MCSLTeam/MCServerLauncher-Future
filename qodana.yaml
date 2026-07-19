@@ -10,6 +10,11 @@ ide: QDNET
 #Specify inspection profile for code analysis
 profile:
   name: qodana.starter
+exclude:
+  - name: All
+    paths:
+      - src/MCServerLauncher.WPF
+      - tests
 
 #Enable inspections
 #include:
