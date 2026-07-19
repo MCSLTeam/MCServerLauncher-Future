@@ -15,7 +15,7 @@ Use this skill to turn a repo into an agent-friendly project with clear product 
 4. Keep project-specific facts in `PROJECT_PLAN.md` and `RULES.md`.
 5. Keep phase and task planning in `EXECUTE_PLAN.md`; keep agent workflow in `AGENTS.md` and `CLAUDE.md`.
 6. Create one project-specific skill under `skills/{project-slug}/SKILL.md`.
-7. Add a plan under `docs/superpowers/plans` and record a changelog before finishing.
+7. Do not create `docs/superpowers/plans` history files or plan changelogs unless the user explicitly asks for a durable plan.
 
 ## Required inputs
 
@@ -45,24 +45,22 @@ Create or update these files when they fit the repo:
 - `CONTRIBUTING.md`: contributor workflow, verification, commit format.
 - `CODE_OF_CONDUCT.md`: collaboration standards.
 - `skills/{project-slug}/SKILL.md`: compact domain workflow for project-sensitive work.
-- `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`: the implementation plan for the initialization work.
 
 Do not create extra README-like files inside the skill folder. A skill should only include files that help the agent do the job.
+Do not generate `docs/superpowers/plans` history files or plan changelogs unless the user explicitly asks for a durable plan.
 
 ## Initialization workflow
 
 1. Declare touched areas. Use a default set such as `docs`, `agent-docs`, `frontend`, `backend`, `database`, `domain`, and `integrations`, then adapt it to the repo.
 2. Read existing docs and package metadata.
-3. Write or update the plan under `docs/superpowers/plans`.
-4. Draft `PROJECT_PLAN.md` first because it owns product direction.
-5. Draft `RULES.md` from the plan. Rules should be concrete and testable.
-6. Draft `EXECUTE_PLAN.md` as the project phase roadmap.
-7. Draft `AGENTS.md` as the full agent guide.
-8. Draft `CLAUDE.md` as a short index with links and the sharpest rules.
-9. Draft `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
-10. Draft the project-specific skill with only the project-sensitive workflow and invariants.
-11. Run verification based on changed files.
-12. Add a changelog to the plan with files changed, checks run, and follow-up risk.
+3. Draft `PROJECT_PLAN.md` first because it owns product direction.
+4. Draft `RULES.md` from the plan. Rules should be concrete and testable.
+5. Draft `EXECUTE_PLAN.md` as the project phase roadmap.
+6. Draft `AGENTS.md` as the full agent guide.
+7. Draft `CLAUDE.md` as a short index with links and the sharpest rules.
+8. Draft `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
+9. Draft the project-specific skill with only the project-sensitive workflow and invariants.
+10. Run verification based on changed files.
 
 ## Document rules
 
@@ -192,11 +190,8 @@ Every initialized project should get these working norms unless the user opts ou
 
 - Start AI programming tasks by declaring touched areas.
 - Apply only global rules plus rules for touched areas.
-- Use `superpowers:writing-plans` before code, runnable config, or project rule changes.
-- Store plans under `docs/superpowers/plans`.
-- Execute plans with `superpowers:subagent-driven-development` by default.
-- Keep plan task status updated.
-- Add a changelog to the plan before finishing.
+- Implement requested changes directly; keep scope tight.
+- Do not create or update `docs/superpowers/plans` history files or plan changelogs unless the user explicitly asks.
 - Use concise Conventional Commits: `type(scope): subject`.
 
 Only include external tool or skill installation rules when the project explicitly depends on installable external skills. If included, require user review before installation and prevent duplicate installs.

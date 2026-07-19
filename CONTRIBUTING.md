@@ -15,10 +15,10 @@ Use respectful, technical communication. Ground review feedback in evidence. Sta
 ## Workflow
 
 - Declare touched areas before changing code, runnable config, or project rules.
-- Use a plan under `docs/superpowers/plans` for architecture, protocol, workflow, or rule changes.
 - Keep edits scoped to the task.
 - Update docs when behavior, vocabulary, or invariants change.
 - Run the smallest relevant verification before submitting.
+- Do not create or update `docs/superpowers/plans` history files or plan changelogs unless explicitly requested.
 
 ## Commit Messages
 

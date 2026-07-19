@@ -30,7 +30,6 @@ MCServerLauncher-Future is a C#/.NET application suite for managing Minecraft se
 - `PROJECT_PLAN.md`: product purpose, audience, scope, architecture, vocabulary, and invariants.
 - `RULES.md`: activation-scoped implementation rules.
 - `EXECUTE_PLAN.md`: phases, exit criteria, cross-phase dependencies, and near-term backlog.
-- `docs/superpowers/plans/`: plans for architecture, rules, or substantial implementation work.
 - `harness.md`: agent-agnostic runtime workflow requirements (verify against `microsoft-docs` before writing .NET/Microsoft code, etc.).
 - `src/MCServerLauncher.Daemon/.Resources/Docs/`: daemon-facing protocol and manual documentation.
 - `README.md` and `README_ZH.md`: public-facing introduction; verify claims against project files before carrying them into governance docs.
@@ -157,13 +156,11 @@ MCServerLauncher-Future/
 
 ## AI Programming Workflow
 
-- Before code or project-rule changes, write or update a plan under `docs/superpowers/plans` unless the change is small and purely mechanical.
-- Keep plan task status current while working.
 - Prefer existing project patterns and helpers over new abstractions.
 - Keep edits scoped to the requested behavior and touched areas.
 - Do not revert user or teammate changes without explicit instruction.
 - When the work changes behavior, update docs and tests in the same task.
-- Before finishing, add a changelog entry to the relevant plan when one exists.
+- Do not create or update `docs/superpowers/plans` history files, plan checklists, or plan changelogs unless the user explicitly asks for a durable plan.
 - Before every commit, run `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1` and confirm the full protocol test suite passes.
 - Commit messages use `type(scope): subject`.
 

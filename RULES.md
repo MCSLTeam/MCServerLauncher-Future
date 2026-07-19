@@ -6,10 +6,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 
 ## Global Rules
 
-- Every AI programming task must have a plan under `docs/superpowers/plans`.
-- Agents must use `superpowers:writing-plans` before implementation.
-- Agents must execute implementation plans with `superpowers:subagent-driven-development` unless the user explicitly chooses a different mode.
-- Agents must write a changelog section in the plan before finishing.
+- Do not create or update `docs/superpowers/plans` history files, plan checklists, or plan changelogs unless the user explicitly asks for a durable plan.
 - Git commit messages must use concise Conventional Commits: `type(scope): subject`.
 - Commit message titles must not contain long explanations.
 - Do not revert user or teammate changes without explicit instruction.
