@@ -34,13 +34,11 @@
     <Project Path="generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj" />
   </Folder>
   <Folder Name="/Libraries/">
-    <Project Path="src/MCServerLauncher.Common/MCServerLauncher.Common.csproj">
-      <BuildType Solution="Release|x86" Project="Debug" />
-    </Project>
+    <Project Path="src/MCServerLauncher.Common/MCServerLauncher.Common.csproj" />
     <Project Path="src/MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj" />
   </Folder>
   <Folder Name="/Skills/">
-    <File Path="skills/lxhtt-init-my-project/SKILL.md" />
+    <File Path="skills/init-my-project/SKILL.md" />
     <File Path="skills/mcsl-future/SKILL.md" />
   </Folder>
   <Folder Name="/Tests/">

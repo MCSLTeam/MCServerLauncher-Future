@@ -20,10 +20,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore MCServerLauncher.sln
+        run: dotnet restore MCServerLauncher.slnx
 
       - name: Build solution (Release)
-        run: dotnet build MCServerLauncher.sln -c Release --no-restore
+        run: dotnet build MCServerLauncher.slnx -c Release --no-restore
 
       - name: Run protocol tests (Release)
         run: dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build --logger "console;verbosity=detailed"
