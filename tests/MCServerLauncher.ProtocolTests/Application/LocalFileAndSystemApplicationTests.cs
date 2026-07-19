@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Errors;
@@ -67,9 +68,10 @@ public sealed class LocalFileAndSystemApplicationTests
             new JavaRuntime("java-17", "17.0.13", "x64"),
             new JavaRuntime("java-21", "21.0.5", "arm64")
         ];
+        var runtimeList = new JavaRuntimeList(runtimes.ToImmutableArray());
         var application = new LocalSystemApplication(
             new ControlledAsyncTimedLazyCell<SystemInfo>(Task.FromResult(systemInfo)),
-            new ControlledAsyncTimedLazyCell<JavaRuntime[]>(Task.FromResult(runtimes)));
+            new ControlledAsyncTimedLazyCell<JavaRuntimeList>(Task.FromResult(runtimeList)));
 
         var systemResult = await application.GetSystemInfoAsync(CancellationToken.None);
         var javaResult = await application.ListJavaRuntimesAsync(CancellationToken.None);
@@ -82,6 +84,7 @@ public sealed class LocalFileAndSystemApplicationTests
         Assert.Equal("test-daemon", mappedSystem.DaemonVersion);
 
         Assert.True(javaResult.IsOk(out var mappedRuntimes));
+        Assert.Same(runtimeList, mappedRuntimes);
         Assert.Equal(runtimes.Select(runtime => runtime.Path), mappedRuntimes.Items.Select(runtime => runtime.Path));
         Assert.Equal(runtimes.Select(runtime => runtime.Architecture), mappedRuntimes.Items.Select(runtime => runtime.Architecture));
     }
@@ -92,7 +95,7 @@ public sealed class LocalFileAndSystemApplicationTests
         var pendingSystemInfo = new TaskCompletionSource<SystemInfo>(TaskCreationOptions.RunContinuationsAsynchronously);
         var application = new LocalSystemApplication(
             new ControlledAsyncTimedLazyCell<SystemInfo>(pendingSystemInfo.Task),
-            new ControlledAsyncTimedLazyCell<JavaRuntime[]>(Task.FromException<JavaRuntime[]>(
+            new ControlledAsyncTimedLazyCell<JavaRuntimeList>(Task.FromException<JavaRuntimeList>(
                 new IOException("Java scan failed."))));
         using var cancellationSource = new CancellationTokenSource();
 

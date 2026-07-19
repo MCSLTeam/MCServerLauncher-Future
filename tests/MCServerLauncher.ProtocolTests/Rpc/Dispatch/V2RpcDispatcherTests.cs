@@ -48,6 +48,40 @@ public sealed class V2RpcDispatcherTests
     }
 
     [Fact]
+    public async Task DiscoverDispatch_ReusesTheFrozenValidatedPayload()
+    {
+        FrozenProtocolCatalog? catalog = null;
+        var descriptor = (RpcDescriptor<EmptyRequest, OpenRpcDocument>)BuiltInProtocolDefinitions.Rpcs.Single(
+            candidate => candidate.Method.Value == "rpc.discover");
+        var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("Dispatcher tests", "1.0.0"));
+        builder.RegisterBuiltInRpc(
+            descriptor,
+            new RpcBinding<EmptyRequest, OpenRpcDocument>(
+                ProtocolExecutionOwner.BuiltIn,
+                (_, _, _) => Task.FromResult(
+                    ProtocolRpcExecution<OpenRpcDocument>.Ok(catalog!.Document))));
+        catalog = builder.Freeze();
+        var dispatcher = new V2RpcDispatcher(catalog, new RecordingDiagnosticSink());
+        var request = new JsonRpcRequestEnvelope(
+            "rpc.discover",
+            JsonRpcRequestId.FromInt64(1),
+            JsonRpcObjectPayload.From(new EmptyRequest(), ProtocolJson.EmptyRequest));
+
+        var first = await dispatcher.DispatchParsedAsync(request, Connection("*"));
+        var second = await dispatcher.DispatchParsedAsync(request, Connection("*"));
+
+        Assert.Same(catalog.DocumentPayload, first.SuccessResponse!.Result);
+        Assert.Same(first.SuccessResponse.Result, second.SuccessResponse!.Result);
+
+        var wire = await dispatcher.DispatchAsync(
+            Utf8("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"rpc.discover\"}"),
+            Connection("*"));
+        var response = JsonRpcWireParser.ParseSuccessResponse(wire.ResponseUtf8.AsSpan());
+        var document = Assert.IsType<OpenRpcDocument>(response.Result.Deserialize(ProtocolJson.OpenRpcDocument));
+        Assert.Equal(catalog.Document.Methods.Select(method => method.Name), document.Methods.Select(method => method.Name));
+    }
+
+    [Fact]
     public async Task Dispatch_MapsFileSessionOperationsAndPreservesDownloadAttachment()
     {
         var sessionId = Guid.NewGuid();

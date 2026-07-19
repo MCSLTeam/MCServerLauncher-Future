@@ -26,7 +26,9 @@ public class V2RequestDispatchBenchmarks
 {
     private V2RpcDispatcher _dispatcher = null!;
     private V2RpcConnectionContext _connection = null!;
-    private JsonRpcRequestEnvelope _request = null!;
+    private JsonRpcRequestEnvelope _pingRequest = null!;
+    private JsonRpcRequestEnvelope _discoverRequest = null!;
+    private ReadOnlyMemory<byte> _discoverRequestUtf8;
 
     [GlobalSetup]
     public void GlobalSetup()
@@ -38,24 +40,48 @@ public class V2RequestDispatchBenchmarks
             new BenchmarkPermissionView(ImmutableArray.Create("*")),
             null,
             CancellationToken.None);
-        _request = new JsonRpcRequestEnvelope(
+        _pingRequest = new JsonRpcRequestEnvelope(
             "mcsl.daemon.ping",
             JsonRpcRequestId.FromInt64(1),
             JsonRpcObjectPayload.From(new EmptyRequest(), BuiltInProtocolJsonContext.Default.EmptyRequest));
+        _discoverRequest = new JsonRpcRequestEnvelope(
+            "rpc.discover",
+            JsonRpcRequestId.FromInt64(1),
+            JsonRpcObjectPayload.From(new EmptyRequest(), BuiltInProtocolJsonContext.Default.EmptyRequest));
+        _discoverRequestUtf8 =
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"rpc.discover\",\"params\":{}}"u8.ToArray();
 
         var validation = _dispatcher
-            .DispatchParsedAsync(_request, _connection, CancellationToken.None)
+            .DispatchParsedAsync(_pingRequest, _connection, CancellationToken.None)
             .GetAwaiter()
             .GetResult();
         if (validation.SuccessResponse?.Result.Deserialize(BuiltInProtocolJsonContext.Default.PingResult) is not PingResult)
         {
             throw new InvalidOperationException("The benchmark dispatch did not produce a typed ping success response.");
         }
+
+        var discoverValidation = _dispatcher
+            .DispatchParsedAsync(_discoverRequest, _connection, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
+        if (discoverValidation.SuccessResponse?.Result.Deserialize(
+                BuiltInProtocolJsonContext.Default.OpenRpcDocument) is not OpenRpcDocument)
+        {
+            throw new InvalidOperationException("The benchmark dispatch did not produce a typed discover success response.");
+        }
     }
 
     [Benchmark]
     public Task DispatchPing() =>
-        _dispatcher.DispatchParsedAsync(_request, _connection, CancellationToken.None);
+        _dispatcher.DispatchParsedAsync(_pingRequest, _connection, CancellationToken.None);
+
+    [Benchmark]
+    public Task DispatchDiscover() =>
+        _dispatcher.DispatchParsedAsync(_discoverRequest, _connection, CancellationToken.None);
+
+    [Benchmark]
+    public Task DispatchDiscoverWire() =>
+        _dispatcher.DispatchAsync(_discoverRequestUtf8, _connection, CancellationToken.None);
 
     private sealed class BenchmarkPermissionView : ICompiledProtocolPermissionView
     {

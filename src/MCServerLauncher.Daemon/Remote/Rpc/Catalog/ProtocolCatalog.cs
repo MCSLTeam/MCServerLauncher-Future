@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -633,9 +634,14 @@ internal sealed class ProtocolCatalogBuilder
                 _documentInfo,
                 rpcs.Select(static registration => registration.Descriptor).ToImmutableArray(),
                 events.Select(static registration => registration.Descriptor).ToImmutableArray());
-            var documentUtf8 = JsonSerializer
-                .SerializeToUtf8Bytes(document, BuiltInProtocolJsonContext.Default.OpenRpcDocument)
-                .ToImmutableArray();
+            var documentBytes = JsonSerializer.SerializeToUtf8Bytes(
+                document,
+                BuiltInProtocolJsonContext.Default.OpenRpcDocument);
+            var documentPayload = JsonRpcObjectPayload.FromOwnedValidatedUtf8Object(
+                documentBytes,
+                0,
+                documentBytes.Length);
+            var documentUtf8 = ImmutableCollectionsMarshal.AsImmutableArray(documentBytes);
 
             var frozenRpcs = rpcs
                 .Select(registration => new KeyValuePair<RpcMethod, FrozenRpcBinding>(
@@ -654,7 +660,8 @@ internal sealed class ProtocolCatalogBuilder
                 rpcs.Select(static registration => registration.Descriptor).ToImmutableArray(),
                 events.Select(static registration => registration.Descriptor).ToImmutableArray(),
                 document,
-                documentUtf8);
+                documentUtf8,
+                documentPayload);
             Volatile.Write(ref _catalog, catalog);
             return catalog;
         }
@@ -875,7 +882,8 @@ internal sealed class FrozenProtocolCatalog(
     ImmutableArray<RpcDescriptor> rpcDefinitions,
     ImmutableArray<EventDescriptor> eventDefinitions,
     OpenRpcDocument document,
-    ImmutableArray<byte> documentUtf8)
+    ImmutableArray<byte> documentUtf8,
+    JsonRpcObjectPayload documentPayload)
 {
     public FrozenDictionary<RpcMethod, FrozenRpcBinding> Rpcs { get; } = rpcs ?? throw new ArgumentNullException(nameof(rpcs));
 
@@ -894,6 +902,9 @@ internal sealed class FrozenProtocolCatalog(
     public ImmutableArray<byte> DocumentUtf8 { get; } = documentUtf8.IsDefault
         ? throw new ArgumentException("OpenRPC UTF-8 bytes cannot be default.", nameof(documentUtf8))
         : documentUtf8;
+
+    public JsonRpcObjectPayload DocumentPayload { get; } = documentPayload ??
+                                                            throw new ArgumentNullException(nameof(documentPayload));
 
     public bool TryGetRpc(RpcMethod method, out FrozenRpcBinding binding)
     {

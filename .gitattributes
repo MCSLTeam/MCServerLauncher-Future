@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# ProtocolDocs compares the generated artifact byte-for-byte.
+src/MCServerLauncher.Daemon/.Resources/Docs/apifox.json text eol=lf
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

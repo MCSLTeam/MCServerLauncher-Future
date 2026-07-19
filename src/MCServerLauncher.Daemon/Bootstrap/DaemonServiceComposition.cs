@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
@@ -51,11 +52,11 @@ internal static class DaemonServiceComposition
         var systemInfoCell = new AsyncTimedLazyCell<SystemInfo>(
             SystemInfoHelper.GetSystemInfo,
             TimeSpan.FromSeconds(2));
-        // Full-disk Java discovery is expensive; cache for minutes, not seconds.
-        // System info stays at 2s so dashboard usage still feels live.
-        var javaRuntimeCell = new AsyncTimedLazyCell<JavaRuntime[]>(
-            JavaScanner.ScanJavaAsync,
-            TimeSpan.FromMinutes(5));
+        // Full-disk Java discovery is expensive, but newly installed runtimes should appear promptly.
+        var javaRuntimeCell = new AsyncTimedLazyCell<JavaRuntimeList>(
+            async () => new JavaRuntimeList(
+                (await JavaScanner.ScanJavaAsync().ConfigureAwait(false)).ToImmutableArray()),
+            TimeSpan.FromSeconds(5));
 
         a.RegisterSingleton(instanceManager);
         a.RegisterSingleton<IInstanceManager>(instanceManager);
@@ -63,7 +64,7 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton(instanceManager.CatalogCommitFeed);
         a.RegisterSingleton(instanceManager.MutationAdmission);
         a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
-        a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntime[]>>(javaRuntimeCell);
+        a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntimeList>>(javaRuntimeCell);
 
         a.RegisterSingleton(DomainEventDispatchPolicy.Default);
         a.RegisterSingleton<IDomainEventPort, DomainEventPort>();

@@ -383,11 +383,7 @@ internal sealed class V2RpcDispatcher
             ReferenceEquals(document, _catalog.Document) &&
             !_catalog.DocumentUtf8.IsDefaultOrEmpty)
         {
-            var bytes = System.Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(_catalog.DocumentUtf8);
-            if (bytes is not null)
-            {
-                return JsonRpcObjectPayload.FromValidatedUtf8Object(bytes);
-            }
+            return _catalog.DocumentPayload;
         }
 
         return JsonRpcObjectPayload.From(result, resultTypeInfo);

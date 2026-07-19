@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -219,7 +218,7 @@ public sealed class JsonRpcObjectPayload
     }
 
     /// <summary>
-    /// Wrap a previously validated UTF-8 JSON object without re-walking a large object graph.
+    /// Copy a previously encoded UTF-8 JSON object into an immutable payload.
     /// Used for frozen OpenRPC <c>rpc.discover</c> responses and similar pre-encoded results.
     /// </summary>
     public static JsonRpcObjectPayload FromValidatedUtf8Object(ReadOnlyMemory<byte> utf8Json)
@@ -229,16 +228,9 @@ public sealed class JsonRpcObjectPayload
             throw new ArgumentException("A JSON-RPC object payload cannot be empty.", nameof(utf8Json));
         }
 
-        if (!MemoryMarshal.TryGetArray(utf8Json, out ArraySegment<byte> segment) ||
-            segment.Array is null)
-        {
-            var copy = utf8Json.ToArray();
-            ValidateSingleObject(copy);
-            return new JsonRpcObjectPayload(copy, 0, copy.Length);
-        }
-
-        ValidateSingleObject(segment.Array.AsSpan(segment.Offset, segment.Count));
-        return new JsonRpcObjectPayload(segment.Array, segment.Offset, segment.Count);
+        var copy = utf8Json.ToArray();
+        ValidateSingleObject(copy);
+        return new JsonRpcObjectPayload(copy, 0, copy.Length);
     }
 
     public object Deserialize(JsonTypeInfo typeInfo)
@@ -301,6 +293,13 @@ public sealed class JsonRpcObjectPayload
     internal static JsonRpcObjectPayload FromOwnedBuffer(byte[] utf8Json, int offset, int length)
         => new(utf8Json, offset, length);
 
+    internal static JsonRpcObjectPayload FromOwnedValidatedUtf8Object(byte[] utf8Json, int offset, int length)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Json);
+        ValidateSingleObject(utf8Json.AsSpan(offset, length));
+        return new JsonRpcObjectPayload(utf8Json, offset, length);
+    }
+
     internal bool IsEmptyObject
     {
         get
@@ -314,7 +313,7 @@ public sealed class JsonRpcObjectPayload
     }
 
     internal void WriteTo(Utf8JsonWriter writer) =>
-        writer.WriteRawValue(_utf8Json.AsSpan(_offset, _length), skipInputValidation: false);
+        writer.WriteRawValue(_utf8Json.AsSpan(_offset, _length), skipInputValidation: true);
 
     private static void ValidateSingleObject(ReadOnlySpan<byte> utf8Json)
     {

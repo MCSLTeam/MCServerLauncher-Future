@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
@@ -9,11 +8,8 @@ namespace MCServerLauncher.Daemon.ApplicationCore;
 
 internal sealed class LocalSystemApplication(
     IAsyncTimedLazyCell<SystemInfo> systemInfoCell,
-    IAsyncTimedLazyCell<JavaRuntime[]> javaRuntimeCell) : ISystemApplication
+    IAsyncTimedLazyCell<JavaRuntimeList> javaRuntimeCell) : ISystemApplication
 {
-    private JavaRuntime[]? _lastJavaArray;
-    private JavaRuntimeList? _lastJavaList;
-
     public async Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -40,13 +36,7 @@ internal sealed class LocalSystemApplication(
         try
         {
             var runtimes = await javaRuntimeCell.Value.AsTask().WaitAsync(cancellationToken).ConfigureAwait(false);
-            if (!ReferenceEquals(runtimes, _lastJavaArray) || _lastJavaList is null)
-            {
-                _lastJavaArray = runtimes;
-                _lastJavaList = new JavaRuntimeList(runtimes.ToImmutableArray());
-            }
-
-            return Result.Ok<JavaRuntimeList, DaemonError>(_lastJavaList);
+            return Result.Ok<JavaRuntimeList, DaemonError>(runtimes);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

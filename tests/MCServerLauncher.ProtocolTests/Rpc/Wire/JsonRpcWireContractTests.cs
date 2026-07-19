@@ -177,6 +177,21 @@ public sealed class JsonRpcWireContractTests
     }
 
     [Fact]
+    public void PreEncodedObjectPayload_OwnsValidatedInputBeforeSkippingWriterValidation()
+    {
+        var source = System.Text.Encoding.UTF8.GetBytes("{\"value\":1}");
+        var payload = JsonRpcObjectPayload.FromValidatedUtf8Object(source);
+        source.AsSpan().Fill((byte)' ');
+        var response = new JsonRpcSuccessResponseEnvelope(JsonRpcRequestId.FromInt64(1), payload);
+
+        Assert.Equal(
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"value\":1}}",
+            JsonSerializer.Serialize(response, Json.JsonRpcSuccessResponseEnvelope));
+        Assert.Throws<ArgumentException>(() =>
+            JsonRpcObjectPayload.FromValidatedUtf8Object("[]"u8.ToArray()));
+    }
+
+    [Fact]
     public void StrictResponseParsersRejectProfileShapeAndExclusivityViolations()
     {
         foreach (var invalid in new[]
