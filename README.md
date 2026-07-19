@@ -19,7 +19,7 @@ The plugin-enabled daemon is an untrimmed JIT single-file host with sidecar plug
 The repository targets .NET 10.
 
 ```powershell
-dotnet build MCServerLauncher.sln /m:1
+dotnet build MCServerLauncher.slnx /m:1
 dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release /m:1
 dotnet test tests/MCServerLauncher.Daemon.ApiTests/MCServerLauncher.Daemon.ApiTests.csproj -c Release /m:1
 ```

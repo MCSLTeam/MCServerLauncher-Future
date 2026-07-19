@@ -30,11 +30,9 @@
     <File Path="README_ZH.md" />
     <File Path="RULES.md" />
   </Folder>
-  <Folder Name="/Generators/">
-    <Project Path="generators/MCServerLauncher.Daemon.Generators/MCServerLauncher.Daemon.Generators.csproj" />
-  </Folder>
   <Folder Name="/Libraries/">
     <Project Path="src/MCServerLauncher.Common/MCServerLauncher.Common.csproj" />
+    <Project Path="src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj" />
     <Project Path="src/MCServerLauncher.DaemonClient/MCServerLauncher.DaemonClient.csproj" />
   </Folder>
   <Folder Name="/Skills/">
@@ -42,6 +40,13 @@
     <File Path="skills/mcsl-future/SKILL.md" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/MCServerLauncher.Daemon.ApiTests/MCServerLauncher.Daemon.ApiTests.csproj" />
+    <Project Path="tests/MCServerLauncher.PluginIntegrationTests/MCServerLauncher.PluginIntegrationTests.csproj" />
     <Project Path="tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj" />
+    <Project Path="tests/MCServerLauncher.WPF.Tests/MCServerLauncher.WPF.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj" />
+    <Project Path="tools/MCServerLauncher.ProtocolDocs/MCServerLauncher.ProtocolDocs.csproj" />
   </Folder>
 </Solution>

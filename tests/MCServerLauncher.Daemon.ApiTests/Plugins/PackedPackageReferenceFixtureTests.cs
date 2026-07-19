@@ -91,7 +91,7 @@ public sealed class PackedPackageReferenceFixtureTests
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            if (File.Exists(Path.Combine(current.FullName, "MCServerLauncher.sln")))
+            if (File.Exists(Path.Combine(current.FullName, "MCServerLauncher.slnx")))
             {
                 return current.FullName;
             }

@@ -19,7 +19,7 @@ MCServerLauncher Future 用守护进程管理 Minecraft 服务器和其他控制
 项目目标框架为 .NET 10：
 
 ```powershell
-dotnet build MCServerLauncher.sln /m:1
+dotnet build MCServerLauncher.slnx /m:1
 dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release /m:1
 dotnet test tests/MCServerLauncher.Daemon.ApiTests/MCServerLauncher.Daemon.ApiTests.csproj -c Release /m:1
 ```

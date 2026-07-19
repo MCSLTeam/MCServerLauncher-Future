@@ -42,7 +42,7 @@ internal static class Program
         {
             for (var directory = new DirectoryInfo(start); directory is not null; directory = directory.Parent)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "MCServerLauncher.sln")))
+                if (File.Exists(Path.Combine(directory.FullName, "MCServerLauncher.slnx")))
                 {
                     return directory.FullName;
                 }

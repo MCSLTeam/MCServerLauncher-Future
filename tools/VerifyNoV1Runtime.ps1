@@ -63,7 +63,7 @@ foreach ($removedPath in $removedPaths) {
     Assert-PathAbsent $removedPath
 }
 
-$solutionMatches = @(Invoke-RgSearch @('-n', 'MCServerLauncher\.Daemon\.Generators|7CC6FA63-C9AE-4D25-B551-433AEFD3DBE4', 'MCServerLauncher.sln'))
+$solutionMatches = @(Invoke-RgSearch @('-n', 'MCServerLauncher\.Daemon\.Generators|7CC6FA63-C9AE-4D25-B551-433AEFD3DBE4', 'MCServerLauncher.slnx'))
 if ($solutionMatches.Count -ne 0) {
     throw "V1 deletion gate failed: the generator remains in the solution.`n$($solutionMatches -join [Environment]::NewLine)"
 }
@@ -101,7 +101,7 @@ $searchTargets = @(
     'tests',
     'benchmarks',
     'tools',
-    'MCServerLauncher.sln',
+    'MCServerLauncher.slnx',
     'CONTRIBUTING.md',
     'README.md',
     'README_ZH.md'

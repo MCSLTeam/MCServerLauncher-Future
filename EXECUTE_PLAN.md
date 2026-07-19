@@ -119,7 +119,7 @@ After the first plugin milestone is accepted, create a separate plan for manifes
 - Plugin integration: publish the daemon and fixtures, set `MCSL_PUBLISHED_DAEMON`, then run `dotnet test tests/MCServerLauncher.PluginIntegrationTests/MCServerLauncher.PluginIntegrationTests.csproj -c Release /m:1`.
 - V1 deletion: `pwsh -File tools/VerifyNoV1Runtime.ps1`.
 - Benchmarks: `dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --exporters json` plus the performance gate.
-- Full solution: `dotnet build MCServerLauncher.sln /m:1`.
+- Full solution: `dotnet build MCServerLauncher.slnx /m:1`.
 - Final hygiene: `git diff --check` and `git status --short --branch`.
 
 ## Near-Term Backlog
