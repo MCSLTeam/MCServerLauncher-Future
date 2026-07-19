@@ -338,11 +338,45 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
 
         var fullRoot = NormalizeDirectoryPath(root);
         var normalizedPath = path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+
+        // Protocol paths are relative to the daemon data root. Clients (WPF/Web) send
+        // root-relative forms like "/instances/{id}/mods". On Windows a leading separator is
+        // not fully qualified; on Unix Path.IsPathFullyQualified treats it as OS-absolute and
+        // would escape the daemon root. Accept:
+        // 1) OS-absolute paths that already resolve under the daemon root
+        // 2) existing OS-absolute paths outside the root → reject (no escape)
+        // 3) otherwise treat as daemon-root-relative (strip leading separators)
         var hasDriveQualifiedPath = normalizedPath.Length >= 2 && normalizedPath[1] == Path.VolumeSeparatorChar;
-        var hasFullyQualifiedPath = Path.IsPathFullyQualified(normalizedPath);
-        var candidate = hasDriveQualifiedPath || hasFullyQualifiedPath
-            ? Path.GetFullPath(normalizedPath)
-            : Path.GetFullPath(Path.Combine(fullRoot, normalizedPath.TrimStart(Path.DirectorySeparatorChar)));
+        var isUncPath = normalizedPath.StartsWith(
+            $"{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}",
+            StringComparison.Ordinal);
+        var relativeUnderRoot = Path.GetFullPath(
+            Path.Combine(fullRoot, normalizedPath.TrimStart(Path.DirectorySeparatorChar)));
+
+        string candidate;
+        if (hasDriveQualifiedPath || isUncPath || Path.IsPathFullyQualified(normalizedPath))
+        {
+            var absolute = Path.GetFullPath(normalizedPath);
+            if (IsWithinRoot(absolute, fullRoot))
+            {
+                candidate = absolute;
+            }
+            else if (Path.Exists(absolute))
+            {
+                // Real filesystem path outside the daemon root — never reinterpret.
+                throw new IOException("Invalid path: out of daemon root.");
+            }
+            else
+            {
+                // Protocol root-relative path that only looks OS-absolute on Unix
+                // (e.g. "/instances/{id}/mods").
+                candidate = relativeUnderRoot;
+            }
+        }
+        else
+        {
+            candidate = relativeUnderRoot;
+        }
 
         if (!IsWithinRoot(candidate, fullRoot))
             throw new IOException("Invalid path: out of daemon root.");

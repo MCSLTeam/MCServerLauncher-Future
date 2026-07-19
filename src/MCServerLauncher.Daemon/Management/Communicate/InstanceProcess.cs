@@ -272,8 +272,9 @@ public class InstanceProcess : DisposableObject
 
     public class ProcessMonitor
     {
+        // Vanilla/Paper logs may append ` or "?"` after help; keep the Done(...)! core mandatory.
         public static readonly Regex DonePattern = new(
-            "Done \\(\\d+\\.\\d{1,3}s\\)! For help, type [\"']help[\"']$",
+            @"Done \(\d+\.\d{1,3}s\)! For help, type [""']help[""'](?:\s+or\s+[""']\?[""'])?$",
             RegexOptions.Compiled);
 
         private readonly IAsyncLazyCell<(long Memory, double Cpu)> _monitor;
