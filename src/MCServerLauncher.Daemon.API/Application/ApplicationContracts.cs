@@ -33,6 +33,23 @@ public interface IInstanceApplication
         InstanceCommandRequest request,
         CancellationToken cancellationToken);
 
+    Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(
+        ConsoleOpenRequest request,
+        CancellationToken cancellationToken);
+
+    Task<Result<Unit, DaemonError>> ResizeConsoleAsync(
+        ConsoleResizeRequest request,
+        CancellationToken cancellationToken);
+
+    Task<Result<Unit, DaemonError>> CloseConsoleAsync(
+        ConsoleSessionReference request,
+        CancellationToken cancellationToken);
+
+    Task<Result<Unit, DaemonError>> WriteConsoleAsync(
+        Guid sessionId,
+        ReadOnlyMemory<byte> data,
+        CancellationToken cancellationToken);
+
     Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(
         InstanceReference request,
         CancellationToken cancellationToken);

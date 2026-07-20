@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.System;
 using ContractDriveInfo = MCServerLauncher.Common.Contracts.System.DriveInfo;
+using InstanceConsoleMode = MCServerLauncher.Common.ProtoType.Instance.ConsoleMode;
 
 namespace MCServerLauncher.Common.Contracts.Serialization;
 
@@ -21,7 +22,8 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(TargetTypeJsonConverter),
         typeof(SourceTypeJsonConverter),
         typeof(InstanceFactoryMirrorJsonConverter),
-        typeof(InstanceStatusJsonConverter)
+        typeof(InstanceStatusJsonConverter),
+        typeof(ConsoleModeJsonConverter)
     ])]
 [JsonSerializable(typeof(EventRuleQuery))]
 [JsonSerializable(typeof(EventRuleSet))]
@@ -63,6 +65,11 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(CreateInstanceResult))]
 [JsonSerializable(typeof(InstanceReference))]
 [JsonSerializable(typeof(InstanceCommandRequest))]
+[JsonSerializable(typeof(ConsoleOpenRequest))]
+[JsonSerializable(typeof(ConsoleSession))]
+[JsonSerializable(typeof(ConsoleSessionReference))]
+[JsonSerializable(typeof(ConsoleResizeRequest))]
+[JsonSerializable(typeof(InstanceConsoleMode), TypeInfoPropertyName = "InstanceConsoleMode")]
 [JsonSerializable(typeof(InstanceCoreReplacementRequest))]
 [JsonSerializable(typeof(UpdateInstanceSettingsRequest))]
 [JsonSerializable(typeof(InstanceInstallMetadata))]

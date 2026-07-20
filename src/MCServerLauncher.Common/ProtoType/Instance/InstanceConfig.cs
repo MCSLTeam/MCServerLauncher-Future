@@ -130,6 +130,12 @@ public record InstanceConfig
     public string[] Arguments { get; init; } = Array.Empty<string>();
 
     /// <summary>
+    ///     控制台 I/O 模式。pipe 为默认行缓冲重定向；pty 为伪终端（Unix PTY / Windows ConPTY）。
+    /// </summary>
+    [SysTextJsonPropertyName("console_mode")]
+    public ConsoleMode ConsoleMode { get; init; } = ConsoleMode.Pipe;
+
+    /// <summary>
     ///     环境变量
     /// </summary>
     public Dictionary<string, PlaceHolderString> Env { get; init; } = new();

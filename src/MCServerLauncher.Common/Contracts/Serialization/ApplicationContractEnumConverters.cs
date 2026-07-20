@@ -40,3 +40,6 @@ internal sealed class BuiltInProtocolInstanceTypeJsonConverter()
 
 internal sealed class BuiltInProtocolInstanceStatusJsonConverter()
     : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class ConsoleModeJsonConverter()
+    : JsonStringEnumConverter<MCServerLauncher.Common.ProtoType.Instance.ConsoleMode>(JsonNamingPolicy.SnakeCaseLower);

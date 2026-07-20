@@ -5,7 +5,9 @@ namespace MCServerLauncher.Common.Contracts.Protocol;
 public enum BinaryFrameKind : byte
 {
     UploadChunk = 1,
-    DownloadChunk = 2
+    DownloadChunk = 2,
+    ConsoleInput = 3,
+    ConsoleOutput = 4
 }
 
 public sealed record BinaryFrameHeader

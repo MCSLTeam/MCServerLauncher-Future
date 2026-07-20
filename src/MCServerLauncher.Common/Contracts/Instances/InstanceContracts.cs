@@ -18,7 +18,8 @@ public sealed record InstanceConfiguration
         string javaPath,
         ImmutableArray<string> arguments,
         ImmutableDictionary<string, string> environmentVariables,
-        JsonElement eventRules)
+        JsonElement eventRules,
+        ConsoleMode consoleMode = ConsoleMode.Pipe)
     {
         InstanceId = instanceId;
         Name = name;
@@ -32,6 +33,7 @@ public sealed record InstanceConfiguration
         Arguments = arguments;
         EnvironmentVariables = environmentVariables;
         EventRules = eventRules.Clone();
+        ConsoleMode = consoleMode;
     }
 
     public Guid InstanceId { get; }
@@ -57,6 +59,8 @@ public sealed record InstanceConfiguration
     public ImmutableDictionary<string, string> EnvironmentVariables { get; }
 
     public JsonElement EventRules { get; }
+
+    public ConsoleMode ConsoleMode { get; }
 }
 
 public sealed record InstanceFactoryConfiguration(
@@ -84,7 +88,9 @@ public sealed record UpdateInstanceSettingsRequest(
     ImmutableArray<string> Arguments,
     string? Version,
     InstanceCoreReplacementRequest? ReplacementCore,
-    bool ForceRerunInstaller);
+    bool ForceRerunInstaller,
+    /// <summary>Null keeps the current instance console mode.</summary>
+    ConsoleMode? ConsoleMode = null);
 
 public sealed record InstanceInstallMetadata(
     string InstallerKind,

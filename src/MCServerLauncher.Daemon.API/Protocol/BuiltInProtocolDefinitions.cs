@@ -45,6 +45,9 @@ public static class BuiltInProtocolDefinitions
     public static RpcDescriptor<UploadOpenRequest, UploadSession> OpenUpload { get; } = Rpc("mcsl.file.upload.open", new("mcsl.daemon.file.upload"), Application.UploadOpenRequest, Application.UploadSession, "files", "Open upload", "Opens a bounded binary upload session.");
     public static RpcDescriptor<EmptyRequest, InstanceCatalogResult> GetInstanceCatalog { get; } = Rpc("mcsl.instance.catalog.get", Authenticated, Protocol.EmptyRequest, Protocol.InstanceCatalogResult, "instances", "Get instance catalog", "Gets the current immutable instance catalog snapshot.");
     public static RpcDescriptor<InstanceCommandRequest, UnitResult> SendInstanceCommand { get; } = Rpc("mcsl.instance.command.send", Authenticated, Application.InstanceCommandRequest, Protocol.UnitResult, "instances", "Send instance command", "Sends a command to a running instance.");
+    public static RpcDescriptor<ConsoleOpenRequest, ConsoleSession> OpenConsole { get; } = Rpc("mcsl.instance.console.open", Authenticated, Application.ConsoleOpenRequest, Application.ConsoleSession, "instances", "Open console", "Opens a binary console session for a running instance.");
+    public static RpcDescriptor<ConsoleResizeRequest, UnitResult> ResizeConsole { get; } = Rpc("mcsl.instance.console.resize", Authenticated, Application.ConsoleResizeRequest, Protocol.UnitResult, "instances", "Resize console", "Resizes an open console session.");
+    public static RpcDescriptor<ConsoleSessionReference, UnitResult> CloseConsole { get; } = Rpc("mcsl.instance.console.close", Authenticated, Application.ConsoleSessionReference, Protocol.UnitResult, "instances", "Close console", "Closes an open console session.");
     public static RpcDescriptor<CreateInstanceRequest, CreateInstanceResult> CreateInstance { get; } = Rpc("mcsl.instance.create", Authenticated, Application.CreateInstanceRequest, Application.CreateInstanceResult, "instances", "Create instance", "Creates and persists a new instance.");
     public static RpcDescriptor<EventRuleQuery, EventRuleSet> GetInstanceEventRules { get; } = Rpc("mcsl.instance.event-rules.get", Authenticated, Application.EventRuleQuery, Application.EventRuleSet, "events", "Get event rules", "Gets persisted event rules for an instance.");
     public static RpcDescriptor<EventRuleUpdateRequest, UnitResult> UpdateInstanceEventRules { get; } = Rpc("mcsl.instance.event-rules.update", Authenticated, Application.EventRuleUpdateRequest, Protocol.UnitResult, "events", "Update event rules", "Persists and replaces event rules for an instance.");
@@ -84,7 +87,7 @@ public static class BuiltInProtocolDefinitions
         ImmutableArray.Create<RpcDescriptor>(
             GetAuthPermissions, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
             SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
-            CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, CreateInstance, GetInstanceEventRules,
+            CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
             UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
             UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, GetSystemInfo, DiscoverRpc)
         .Sort(CompareRpcs);
