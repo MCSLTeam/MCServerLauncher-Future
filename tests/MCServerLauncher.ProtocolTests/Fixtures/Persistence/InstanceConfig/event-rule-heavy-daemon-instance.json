@@ -71,5 +71,6 @@
         }
       ]
     }
-  ]
+  ],
+  "console_mode": "pipe"
 }

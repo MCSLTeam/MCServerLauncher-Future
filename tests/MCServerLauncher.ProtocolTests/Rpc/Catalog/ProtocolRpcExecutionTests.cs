@@ -257,7 +257,7 @@ public sealed class ProtocolRpcExecutionTests
     public void InvocationContextAndCapabilities_HaveExactSeparatedMemberSets()
     {
         Assert.Equal(
-            [nameof(ProtocolInvocationContext.ExecutionOwner), nameof(ProtocolInvocationContext.FileSessionOperations), nameof(ProtocolInvocationContext.PermissionView), nameof(ProtocolInvocationContext.SubscriptionOperations)],
+            [nameof(ProtocolInvocationContext.ConsoleSessionOperations), nameof(ProtocolInvocationContext.ExecutionOwner), nameof(ProtocolInvocationContext.FileSessionOperations), nameof(ProtocolInvocationContext.PermissionView), nameof(ProtocolInvocationContext.SubscriptionOperations)],
             typeof(ProtocolInvocationContext)
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Select(property => property.Name)

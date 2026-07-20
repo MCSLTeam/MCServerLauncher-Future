@@ -36,6 +36,11 @@ public sealed class BuiltInFileInstanceEventRuleBindingTests
         "mcsl.instance.settings.get", "mcsl.instance.settings.update", "mcsl.instance.start", "mcsl.instance.stop"
     ];
 
+    private static readonly ImmutableArray<string> ConsoleMethods =
+    [
+        "mcsl.instance.console.close", "mcsl.instance.console.open", "mcsl.instance.console.resize"
+    ];
+
     private static readonly ImmutableArray<string> EventRuleMethods =
     ["mcsl.instance.event-rules.get", "mcsl.instance.event-rules.update"];
 
@@ -318,7 +323,7 @@ public sealed class BuiltInFileInstanceEventRuleBindingTests
             field.FieldType.FullName?.Contains("WsContext", StringComparison.Ordinal) == true));
     }
 
-    private static ImmutableArray<string> AllMethods => FileMethods.AddRange(InstanceMethods).AddRange(EventRuleMethods);
+    private static ImmutableArray<string> AllMethods => FileMethods.AddRange(InstanceMethods).AddRange(ConsoleMethods).AddRange(EventRuleMethods);
 
     private static ProtocolCatalogBuilder CreateBuilder() => new(new OpenRpcInfo("Binding tests", "1.0.0"));
 
@@ -464,6 +469,10 @@ public sealed class BuiltInFileInstanceEventRuleBindingTests
         public Task<Result<Unit, DaemonError>> StopInstanceAsync(InstanceReference r, CancellationToken t) => Respond("mcsl.instance.stop", r, t, Unit.Default);
         public Task<Result<Unit, DaemonError>> HaltInstanceAsync(InstanceReference r, CancellationToken t) => Respond("mcsl.instance.halt", r, t, Unit.Default);
         public Task<Result<Unit, DaemonError>> SendCommandAsync(InstanceCommandRequest r, CancellationToken t) => Respond("mcsl.instance.command.send", r, t, Unit.Default);
+        public Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(ConsoleOpenRequest r, CancellationToken t) => Respond("mcsl.instance.console.open", r, t, new ConsoleSession(Guid.NewGuid(), InstanceId, DateTimeOffset.UnixEpoch, 1024, 120, 40));
+        public Task<Result<Unit, DaemonError>> ResizeConsoleAsync(ConsoleResizeRequest r, CancellationToken t) => Respond("mcsl.instance.console.resize", r, t, Unit.Default);
+        public Task<Result<Unit, DaemonError>> CloseConsoleAsync(ConsoleSessionReference r, CancellationToken t) => Respond("mcsl.instance.console.close", r, t, Unit.Default);
+        public Task<Result<Unit, DaemonError>> WriteConsoleAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken t) => Respond("mcsl.instance.console.write", sessionId, t, Unit.Default);
         public Task<Result<ContractInstanceReport, DaemonError>> GetInstanceReportAsync(InstanceReference r, CancellationToken t) => Respond("mcsl.instance.report.get", r, t, Report);
         public Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(CancellationToken t) => Respond("mcsl.instance.report.list", null, t, ReportList);
         public Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(InstanceLogQuery r, CancellationToken t) => Respond("mcsl.instance.log.get", r, t, LogResult);

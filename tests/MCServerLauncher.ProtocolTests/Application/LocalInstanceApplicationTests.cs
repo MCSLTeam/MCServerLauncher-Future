@@ -1983,6 +1983,8 @@ public sealed class LocalInstanceApplicationTests
             stop?.Invoke();
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory()
         {
             return [];
@@ -2047,6 +2049,8 @@ public sealed class LocalInstanceApplicationTests
         public void Stop()
         {
         }
+
+        public void ForceKillAndClear() { }
 
         public IReadOnlyList<string> GetLogHistory() => _logs;
 
@@ -2127,6 +2131,8 @@ public sealed class LocalInstanceApplicationTests
         {
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory()
         {
             return [];
@@ -2166,6 +2172,8 @@ public sealed class LocalInstanceApplicationTests
             throw new NotSupportedException();
 
         public void Stop() => throw new NotSupportedException();
+
+        public void ForceKillAndClear() { }
 
         public IReadOnlyList<string> GetLogHistory() => [];
 

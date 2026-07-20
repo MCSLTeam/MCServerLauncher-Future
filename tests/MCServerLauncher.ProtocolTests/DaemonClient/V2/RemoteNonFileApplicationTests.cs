@@ -96,7 +96,8 @@ public sealed class RemoteNonFileApplicationTests
     }
 
     private static bool IsNonFileApplicationDescriptor(RpcDescriptor descriptor) =>
-        IsApplicationContract(descriptor.RequestTypeInfo.Type) || IsApplicationContract(descriptor.ResultTypeInfo.Type);
+        (IsApplicationContract(descriptor.RequestTypeInfo.Type) || IsApplicationContract(descriptor.ResultTypeInfo.Type)) &&
+        !descriptor.Method.Value.StartsWith("mcsl.instance.console.", StringComparison.Ordinal);
 
     private static bool IsApplicationContract(Type type) => type.Namespace is string ns &&
         (ns.StartsWith("MCServerLauncher.Common.Contracts.Instances", StringComparison.Ordinal) ||

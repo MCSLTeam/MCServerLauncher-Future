@@ -125,6 +125,8 @@ public sealed class DaemonRuntimeLifecycleTests
         {
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory() => [];
 
         public void Dispose()

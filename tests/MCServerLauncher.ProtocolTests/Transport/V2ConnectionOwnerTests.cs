@@ -40,7 +40,9 @@ public sealed class V2ConnectionOwnerTests
         Assert.Equal(new byte[] { 1, 2, 3 }, copied.Payload.ToArray());
         Assert.Throws<ArgumentException>(() => V2OutboundMessage.Single(default));
         Assert.Throws<ArgumentException>(() => V2OutboundMessage.Single(V2OutboundFrame.CopyText([])));
-        Assert.Throws<ArgumentException>(() => V2OutboundMessage.Single(V2OutboundFrame.CopyBinary([1])));
+        Assert.Throws<ArgumentException>(() => V2OutboundMessage.Single(V2OutboundFrame.CopyBinary([])));
+        // Single binary frames are valid (console ConsoleOutput fan-out).
+        _ = V2OutboundMessage.Single(V2OutboundFrame.CopyBinary([1]));
         Assert.Throws<ArgumentException>(() => V2OutboundMessage.TextThenBinary(
             V2OutboundFrame.CopyBinary([1]),
             V2OutboundFrame.CopyText([2])));

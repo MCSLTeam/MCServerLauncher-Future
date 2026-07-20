@@ -16,5 +16,6 @@
     "JAVA_HOME": "{JAVA_HOME}",
     "XMS": "1G"
   },
-  "event_rules": []
+  "event_rules": [],
+  "console_mode": "pipe"
 }

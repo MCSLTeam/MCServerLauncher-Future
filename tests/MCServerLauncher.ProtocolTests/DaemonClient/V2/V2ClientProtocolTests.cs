@@ -76,6 +76,9 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.OpenUpload, "mcsl.file.upload.open"),
             Accessor(V2ClientProtocol.GetInstanceCatalog, "mcsl.instance.catalog.get"),
             Accessor(V2ClientProtocol.SendInstanceCommand, "mcsl.instance.command.send"),
+            Accessor(V2ClientProtocol.CloseConsole, "mcsl.instance.console.close"),
+            Accessor(V2ClientProtocol.OpenConsole, "mcsl.instance.console.open"),
+            Accessor(V2ClientProtocol.ResizeConsole, "mcsl.instance.console.resize"),
             Accessor(V2ClientProtocol.CreateInstance, "mcsl.instance.create"),
             Accessor(V2ClientProtocol.GetInstanceEventRules, "mcsl.instance.event-rules.get"),
             Accessor(V2ClientProtocol.UpdateInstanceEventRules, "mcsl.instance.event-rules.update"),
@@ -136,7 +139,9 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.CloseDownload), Case(V2ClientProtocol.OpenDownload), Case(V2ClientProtocol.ReadDownload),
             Case(V2ClientProtocol.GetFileInfo), Case(V2ClientProtocol.MoveFile), Case(V2ClientProtocol.RenameFile),
             Case(V2ClientProtocol.CancelUpload), Case(V2ClientProtocol.CloseUpload), Case(V2ClientProtocol.OpenUpload),
-            Case(V2ClientProtocol.GetInstanceCatalog), Case(V2ClientProtocol.SendInstanceCommand), Case(V2ClientProtocol.CreateInstance),
+            Case(V2ClientProtocol.GetInstanceCatalog), Case(V2ClientProtocol.SendInstanceCommand),
+            Case(V2ClientProtocol.CloseConsole), Case(V2ClientProtocol.OpenConsole), Case(V2ClientProtocol.ResizeConsole),
+            Case(V2ClientProtocol.CreateInstance),
             Case(V2ClientProtocol.GetInstanceEventRules), Case(V2ClientProtocol.UpdateInstanceEventRules),
             Case(V2ClientProtocol.HaltInstance), Case(V2ClientProtocol.GetInstanceLog), Case(V2ClientProtocol.RemoveInstance),
             Case(V2ClientProtocol.GetInstanceReport), Case(V2ClientProtocol.ListInstanceReports),
@@ -274,7 +279,7 @@ public sealed class V2ClientProtocolTests
     {
         private const string Id = "11111111-1111-1111-1111-111111111111";
         private const string RuleId = "22222222-2222-2222-2222-222222222222";
-        private const string Config = "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"target\":\"server.jar\",\"instance_type\":\"universal\",\"target_type\":\"jar\",\"version\":\"1\",\"input_encoding\":\"utf-8\",\"output_encoding\":\"utf-8\",\"java_path\":\"java\",\"arguments\":[\"-Xmx2G\"],\"environment_variables\":{\"ENV\":\"value\"},\"event_rules\":{\"enabled\":true}}";
+        private const string Config = "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"target\":\"server.jar\",\"instance_type\":\"universal\",\"target_type\":\"jar\",\"version\":\"1\",\"input_encoding\":\"utf-8\",\"output_encoding\":\"utf-8\",\"java_path\":\"java\",\"arguments\":[\"-Xmx2G\"],\"environment_variables\":{\"ENV\":\"value\"},\"event_rules\":{\"enabled\":true},\"console_mode\":\"pipe\"}";
         private const string FileMeta = "{\"creation_time\":\"2026-01-01T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-02T00:00:00+00:00\",\"last_write_time\":\"2026-01-03T00:00:00+00:00\",\"read_only\":true,\"size\":7}";
         private const string DirectoryMeta = "{\"creation_time\":\"2026-01-04T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-05T00:00:00+00:00\",\"last_write_time\":\"2026-01-06T00:00:00+00:00\"}";
         private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234}";
@@ -293,6 +298,10 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(UploadOpenRequest)) return "{\"path\":\"world\",\"length\":0,\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"}";
             if (type == typeof(InstanceReference) || type == typeof(InstanceLogQuery) || type == typeof(EventRuleQuery)) return "{\"instance_id\":\"" + Id + "\"}";
             if (type == typeof(InstanceCommandRequest)) return "{\"instance_id\":\"" + Id + "\",\"command\":\"say hi\"}";
+            if (type == typeof(ConsoleOpenRequest)) return "{\"instance_id\":\"" + Id + "\",\"columns\":120,\"rows\":40}";
+            if (type == typeof(ConsoleSessionReference)) return "{\"session_id\":\"" + Id + "\"}";
+            if (type == typeof(ConsoleResizeRequest)) return "{\"session_id\":\"" + Id + "\",\"columns\":120,\"rows\":40}";
+            if (type == typeof(ConsoleSession)) return "{\"session_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\",\"expires_at\":\"2026-01-01T00:00:00+00:00\",\"max_chunk_size\":4,\"columns\":120,\"rows\":40}";
             if (type == typeof(CreateInstanceRequest)) return "{\"setting\":{\"configuration\":" + Config + ",\"source\":\"server.jar\",\"source_type\":\"core\",\"mirror\":\"none\",\"use_post_process\":false}}";
             if (type == typeof(EventRuleUpdateRequest)) return "{\"instance_id\":\"" + Id + "\",\"rules\":{}}";
             if (type == typeof(UpdateInstanceSettingsRequest)) return "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"java_path\":null,\"arguments\":[],\"version\":null,\"replacement_core\":null,\"force_rerun_installer\":false}";

@@ -124,6 +124,8 @@ public sealed class InstanceDomainEventBridgeTests
         {
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory() => [];
 
         public void Dispose()

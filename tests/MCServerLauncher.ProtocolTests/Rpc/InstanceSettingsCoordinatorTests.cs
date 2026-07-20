@@ -206,6 +206,8 @@ public class InstanceSettingsCoordinatorTests
         {
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory()
         {
             return Array.Empty<string>();

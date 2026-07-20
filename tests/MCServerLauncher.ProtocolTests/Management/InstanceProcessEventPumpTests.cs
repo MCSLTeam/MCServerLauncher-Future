@@ -333,8 +333,9 @@ public sealed class InstanceProcessEventPumpTests
             instance.ReplaceConfig(config with { Target = retryTarget, TargetType = TargetType.Script });
 
             Assert.True(await instance.StartAsync(delayToCheck: 20));
+            var managed1 = instance.Process!;
             instance.Stop();
-            await instance.Process!.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+            await managed1.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
         }
         finally
         {
@@ -362,8 +363,9 @@ public sealed class InstanceProcessEventPumpTests
         try
         {
             Assert.True(await instance.StartAsync(delayToCheck: 20));
+            var managed2 = instance.Process!;
             instance.Stop();
-            await instance.Process!.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+            await managed2.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
 
             instance.ReplaceConfig(config with { Target = string.Empty });
             Assert.False(await instance.StartAsync(delayToCheck: 20));
@@ -379,8 +381,9 @@ public sealed class InstanceProcessEventPumpTests
             instance.ReplaceConfig(config with { Target = retryTarget });
 
             Assert.True(await instance.StartAsync(delayToCheck: 20));
+            var managed3 = instance.Process!;
             instance.Stop();
-            await instance.Process!.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+            await managed3.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
         }
         finally
         {
@@ -587,6 +590,8 @@ public sealed class InstanceProcessEventPumpTests
         }
 
         public void Stop() => _process.KillProcess();
+
+        public void ForceKillAndClear() => _process.KillProcess();
         public IReadOnlyList<string> GetLogHistory() => _process.GetLogHistory();
         public void Dispose()
         {

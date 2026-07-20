@@ -335,6 +335,8 @@ public sealed class InstanceCatalogCommitFeedTests
         {
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory() => [];
 
         public void Dispose()
@@ -363,6 +365,8 @@ public sealed class InstanceCatalogCommitFeedTests
         public void Stop()
         {
         }
+
+        public void ForceKillAndClear() { }
 
         public IReadOnlyList<string> GetLogHistory() => [];
 

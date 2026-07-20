@@ -449,6 +449,8 @@ public sealed class InstanceManagerCreateTransactionTests
         {
         }
 
+        public void ForceKillAndClear() { }
+
         public IReadOnlyList<string> GetLogHistory() => [];
 
         public void Dispose()

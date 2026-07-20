@@ -111,14 +111,17 @@ public class InstanceManagerKillTests
     }
 
     [Fact]
-    public void KillInstance_ProcessFailure_Propagates()
+    public void KillInstance_ProcessFailure_IsSwallowed()
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
-        using var process = new InstanceProcess(CreateLongRunningProcessStartInfo(), isMcServer: false);
-        manager.Instances[config.Uuid] = new TestInstance(config, InstanceStatus.Stopped, () => process);
+        manager.Instances[config.Uuid] = new TestInstance(
+            config,
+            InstanceStatus.Stopped,
+            () => throw new InvalidOperationException("process accessor failed"));
 
-        Assert.Throws<InvalidOperationException>(() => manager.KillInstance(config.Uuid));
+        var exception = Record.Exception(() => manager.KillInstance(config.Uuid));
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -208,6 +211,8 @@ public class InstanceManagerKillTests
         public void Stop()
         {
         }
+
+        public void ForceKillAndClear() { Process?.KillProcess(); }
 
         public IReadOnlyList<string> GetLogHistory()
         {
