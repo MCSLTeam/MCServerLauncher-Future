@@ -47,8 +47,11 @@ internal sealed class V2OutboundMessage
 
     internal static V2OutboundMessage Single(V2OutboundFrame frame)
     {
-        if (frame.Payload.IsDefaultOrEmpty || frame.Kind != V2OutboundFrameKind.Text)
-            throw new ArgumentException("A single outbound message must contain one non-empty text frame.", nameof(frame));
+        if (frame.Payload.IsDefaultOrEmpty)
+            throw new ArgumentException("A single outbound message must contain one non-empty frame.", nameof(frame));
+
+        if (frame.Kind is not (V2OutboundFrameKind.Text or V2OutboundFrameKind.Binary))
+            throw new ArgumentException("A single outbound message must be text or binary.", nameof(frame));
 
         return new V2OutboundMessage([frame]);
     }

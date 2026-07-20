@@ -1056,6 +1056,120 @@
               "moduleId": "mcsl-daemon-protocol"
             },
             {
+              "id": "mcsl-rpc-item-5471defa",
+              "name": "mcsl.instance.console.close",
+              "api": {
+                "id": "mcsl-rpc-5471defa",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-e7406415",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.instance.console.close\u0022,\n  \u0022params\u0022: {\n    \u0022session_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Closes an open console session.\n\nPermission: \u0060*\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.instance.console.close.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.instance.console.close.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 3,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-96695e8e",
+              "name": "mcsl.instance.console.open",
+              "api": {
+                "id": "mcsl-rpc-96695e8e",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-43f34199",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.instance.console.open\u0022,\n  \u0022params\u0022: {\n    \u0022columns\u0022: 0,\n    \u0022instance_id\u0022: \u0022\u0022,\n    \u0022rows\u0022: 0\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Opens a binary console session for a running instance.\n\nPermission: \u0060*\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.instance.console.open.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.instance.console.open.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 4,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-40462902",
+              "name": "mcsl.instance.console.resize",
+              "api": {
+                "id": "mcsl-rpc-40462902",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-67245d7d",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.instance.console.resize\u0022,\n  \u0022params\u0022: {\n    \u0022columns\u0022: 0,\n    \u0022rows\u0022: 0,\n    \u0022session_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Resizes an open console session.\n\nPermission: \u0060*\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.instance.console.resize.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.instance.console.resize.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 5,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
               "id": "mcsl-rpc-item-221762f7",
               "name": "mcsl.instance.create",
               "api": {
@@ -1087,7 +1201,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 3,
+                "ordering": 6,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1125,7 +1239,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 4,
+                "ordering": 7,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1163,7 +1277,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 5,
+                "ordering": 8,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1201,7 +1315,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 6,
+                "ordering": 9,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1239,7 +1353,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 7,
+                "ordering": 10,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1277,7 +1391,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 8,
+                "ordering": 11,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1315,7 +1429,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 9,
+                "ordering": 12,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1353,7 +1467,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 10,
+                "ordering": 13,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1391,7 +1505,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 11,
+                "ordering": 14,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -1429,7 +1543,7 @@
                   "built-in"
                 ],
                 "status": "released",
-                "ordering": 12,
+                "ordering": 15,
                 "advancedSettings": {},
                 "moduleId": "mcsl-daemon-protocol"
               },
@@ -3329,6 +3443,172 @@
           "moduleId": "mcsl-daemon-protocol"
         },
         {
+          "id": "#/definitions/mcsl.schema.mcsl.instance.console.close.request",
+          "name": "mcsl.schema.mcsl.instance.console.close.request",
+          "displayName": "mcsl.schema.mcsl.instance.console.close.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.instance.console.close.request",
+              "type": "object",
+              "properties": {
+                "session_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "session_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 54,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.instance.console.close.result",
+          "name": "mcsl.schema.mcsl.instance.console.close.result",
+          "displayName": "mcsl.schema.mcsl.instance.console.close.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.instance.console.close.result"
+            }
+          },
+          "ordering": 55,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.instance.console.open.request",
+          "name": "mcsl.schema.mcsl.instance.console.open.request",
+          "displayName": "mcsl.schema.mcsl.instance.console.open.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.instance.console.open.request",
+              "type": "object",
+              "properties": {
+                "columns": {
+                  "type": "integer",
+                  "default": 120
+                },
+                "instance_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rows": {
+                  "type": "integer",
+                  "default": 40
+                }
+              },
+              "required": [
+                "instance_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 56,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.instance.console.open.result",
+          "name": "mcsl.schema.mcsl.instance.console.open.result",
+          "displayName": "mcsl.schema.mcsl.instance.console.open.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "session_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "instance_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "max_chunk_size": {
+                  "type": "integer"
+                },
+                "columns": {
+                  "type": "integer"
+                },
+                "rows": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "session_id",
+                "instance_id",
+                "expires_at",
+                "max_chunk_size",
+                "columns",
+                "rows"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.instance.console.open.result"
+            }
+          },
+          "ordering": 57,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.instance.console.resize.request",
+          "name": "mcsl.schema.mcsl.instance.console.resize.request",
+          "displayName": "mcsl.schema.mcsl.instance.console.resize.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.instance.console.resize.request",
+              "type": "object",
+              "properties": {
+                "columns": {
+                  "type": "integer"
+                },
+                "rows": {
+                  "type": "integer"
+                },
+                "session_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "columns",
+                "rows",
+                "session_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 58,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.instance.console.resize.result",
+          "name": "mcsl.schema.mcsl.instance.console.resize.result",
+          "displayName": "mcsl.schema.mcsl.instance.console.resize.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.instance.console.resize.result"
+            }
+          },
+          "ordering": 59,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
           "id": "#/definitions/mcsl.schema.mcsl.instance.create.request",
           "name": "mcsl.schema.mcsl.instance.create.request",
           "displayName": "mcsl.schema.mcsl.instance.create.request",
@@ -3437,6 +3717,13 @@
                           "not": {
                             "type": "null"
                           }
+                        },
+                        "console_mode": {
+                          "enum": [
+                            "pipe",
+                            "pty"
+                          ],
+                          "default": "pipe"
                         }
                       },
                       "required": [
@@ -3492,7 +3779,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 54,
+          "ordering": 60,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3600,6 +3887,13 @@
                       "not": {
                         "type": "null"
                       }
+                    },
+                    "console_mode": {
+                      "enum": [
+                        "pipe",
+                        "pty"
+                      ],
+                      "default": "pipe"
                     }
                   },
                   "required": [
@@ -3626,7 +3920,7 @@
               "$id": "mcsl.schema.mcsl.instance.create.result"
             }
           },
-          "ordering": 55,
+          "ordering": 61,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3650,7 +3944,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 56,
+          "ordering": 62,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3680,7 +3974,7 @@
               "$id": "mcsl.schema.mcsl.instance.event-rules.get.result"
             }
           },
-          "ordering": 57,
+          "ordering": 63,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3710,7 +4004,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 58,
+          "ordering": 64,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3726,7 +4020,7 @@
               "$id": "mcsl.schema.mcsl.instance.event-rules.update.result"
             }
           },
-          "ordering": 59,
+          "ordering": 65,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3750,7 +4044,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 60,
+          "ordering": 66,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3766,7 +4060,7 @@
               "$id": "mcsl.schema.mcsl.instance.halt.result"
             }
           },
-          "ordering": 61,
+          "ordering": 67,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3790,7 +4084,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 62,
+          "ordering": 68,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3816,7 +4110,7 @@
               "$id": "mcsl.schema.mcsl.instance.log.get.result"
             }
           },
-          "ordering": 63,
+          "ordering": 69,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3840,7 +4134,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 64,
+          "ordering": 70,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3856,7 +4150,7 @@
               "$id": "mcsl.schema.mcsl.instance.remove.result"
             }
           },
-          "ordering": 65,
+          "ordering": 71,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3880,7 +4174,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 66,
+          "ordering": 72,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3995,6 +4289,13 @@
                       "not": {
                         "type": "null"
                       }
+                    },
+                    "console_mode": {
+                      "enum": [
+                        "pipe",
+                        "pty"
+                      ],
+                      "default": "pipe"
                     }
                   },
                   "required": [
@@ -4074,7 +4375,7 @@
               "$id": "mcsl.schema.mcsl.instance.report.get.result"
             }
           },
-          "ordering": 67,
+          "ordering": 73,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4091,7 +4392,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 68,
+          "ordering": 74,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4211,6 +4512,13 @@
                             "not": {
                               "type": "null"
                             }
+                          },
+                          "console_mode": {
+                            "enum": [
+                              "pipe",
+                              "pty"
+                            ],
+                            "default": "pipe"
                           }
                         },
                         "required": [
@@ -4297,7 +4605,7 @@
               "$id": "mcsl.schema.mcsl.instance.report.list.result"
             }
           },
-          "ordering": 69,
+          "ordering": 75,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4321,7 +4629,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 70,
+          "ordering": 76,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4429,6 +4737,13 @@
                       "not": {
                         "type": "null"
                       }
+                    },
+                    "console_mode": {
+                      "enum": [
+                        "pipe",
+                        "pty"
+                      ],
+                      "default": "pipe"
                     }
                   },
                   "required": [
@@ -4516,7 +4831,7 @@
               "$id": "mcsl.schema.mcsl.instance.settings.get.result"
             }
           },
-          "ordering": 71,
+          "ordering": 77,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4641,7 +4956,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 72,
+          "ordering": 78,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4749,6 +5064,13 @@
                       "not": {
                         "type": "null"
                       }
+                    },
+                    "console_mode": {
+                      "enum": [
+                        "pipe",
+                        "pty"
+                      ],
+                      "default": "pipe"
                     }
                   },
                   "required": [
@@ -4797,7 +5119,7 @@
               "$id": "mcsl.schema.mcsl.instance.settings.update.result"
             }
           },
-          "ordering": 73,
+          "ordering": 79,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4821,7 +5143,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 74,
+          "ordering": 80,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4837,7 +5159,7 @@
               "$id": "mcsl.schema.mcsl.instance.start.result"
             }
           },
-          "ordering": 75,
+          "ordering": 81,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4861,7 +5183,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 76,
+          "ordering": 82,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4877,7 +5199,7 @@
               "$id": "mcsl.schema.mcsl.instance.stop.result"
             }
           },
-          "ordering": 77,
+          "ordering": 83,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4894,7 +5216,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 78,
+          "ordering": 84,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4937,7 +5259,7 @@
               "$id": "mcsl.schema.mcsl.java.list.result"
             }
           },
-          "ordering": 79,
+          "ordering": 85,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4954,7 +5276,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 80,
+          "ordering": 86,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5100,7 +5422,7 @@
               "$id": "mcsl.schema.mcsl.system.info.get.result"
             }
           },
-          "ordering": 81,
+          "ordering": 87,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5117,7 +5439,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 82,
+          "ordering": 88,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5358,7 +5680,7 @@
               "$id": "mcsl.schema.rpc.discover.result"
             }
           },
-          "ordering": 83,
+          "ordering": 89,
           "moduleId": "mcsl-daemon-protocol"
         }
       ]

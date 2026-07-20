@@ -41,6 +41,7 @@ internal sealed class V2InboundMessagePipeline
     private readonly V2RpcConnectionContext _context;
     private readonly V2ConnectionOwner _owner;
     private readonly V2FileSessionConnection _files;
+    private readonly IProtocolConsoleSessionOperations? _consoles;
     private readonly IV2InboundDiagnosticSink _diagnostics;
 
     internal V2InboundMessagePipeline(
@@ -49,7 +50,8 @@ internal sealed class V2InboundMessagePipeline
         V2RpcConnectionContext context,
         V2ConnectionOwner owner,
         V2FileSessionConnection files,
-        IV2InboundDiagnosticSink diagnostics)
+        IV2InboundDiagnosticSink diagnostics,
+        IProtocolConsoleSessionOperations? consoles = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -57,6 +59,7 @@ internal sealed class V2InboundMessagePipeline
         _owner = owner ?? throw new ArgumentNullException(nameof(owner));
         _files = files ?? throw new ArgumentNullException(nameof(files));
         _diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+        _consoles = consoles;
     }
 
     internal async Task<V2InboundOutcome> ReceiveTextAsync(
@@ -115,6 +118,34 @@ internal sealed class V2InboundMessagePipeline
         }
 
         var header = read.Header!;
+        if (header.Kind == BinaryFrameKind.ConsoleInput)
+        {
+            if (_consoles is null)
+            {
+                BeginAbort();
+                return new(V2InboundDisposition.ConnectionAborted, read);
+            }
+
+            try
+            {
+                using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken,
+                    _context.ConnectionCancellationToken);
+                var consoleResult = await _consoles.ReceiveConsoleInputAsync(
+                    header.SessionId,
+                    frame[BinaryFrameCodec.HeaderSize..],
+                    linkedCancellation.Token).ConfigureAwait(false);
+                return new(
+                    consoleResult.IsOk(out _) ? V2InboundDisposition.Queued : V2InboundDisposition.Rejected,
+                    read);
+            }
+            catch (OperationCanceledException) when (_context.ConnectionCancellationToken.IsCancellationRequested)
+            {
+                BeginAbort();
+                return new(V2InboundDisposition.ConnectionClosing, read);
+            }
+        }
+
         if (header.Kind != BinaryFrameKind.UploadChunk)
         {
             BeginAbort();

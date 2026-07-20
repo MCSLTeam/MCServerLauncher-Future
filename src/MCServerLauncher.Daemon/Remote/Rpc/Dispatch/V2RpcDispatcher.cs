@@ -17,19 +17,23 @@ internal sealed class V2RpcConnectionContext(
     IProtocolPermissionView? permissionView,
     IProtocolSubscriptionOperations? subscriptionOperations,
     CancellationToken connectionCancellationToken,
-    IProtocolFileSessionOperations? fileSessionOperations = null)
+    IProtocolFileSessionOperations? fileSessionOperations = null,
+    IProtocolConsoleSessionOperations? consoleSessionOperations = null)
 {
     private readonly ProtocolInvocationContext _builtInInvocationContext = new(
         ProtocolExecutionOwner.BuiltIn,
         permissionView,
         subscriptionOperations,
-        fileSessionOperations);
+        fileSessionOperations,
+        consoleSessionOperations);
 
     internal IProtocolPermissionView? PermissionView { get; } = permissionView;
 
     internal IProtocolSubscriptionOperations? SubscriptionOperations { get; } = subscriptionOperations;
 
     internal IProtocolFileSessionOperations? FileSessionOperations { get; } = fileSessionOperations;
+
+    internal IProtocolConsoleSessionOperations? ConsoleSessionOperations { get; } = consoleSessionOperations;
 
     internal CancellationToken ConnectionCancellationToken { get; } = connectionCancellationToken;
 
@@ -40,7 +44,8 @@ internal sealed class V2RpcConnectionContext(
                 owner,
                 PermissionView,
                 SubscriptionOperations,
-                FileSessionOperations);
+                FileSessionOperations,
+                ConsoleSessionOperations);
 }
 
 internal sealed class V2RpcDispatchOutcome

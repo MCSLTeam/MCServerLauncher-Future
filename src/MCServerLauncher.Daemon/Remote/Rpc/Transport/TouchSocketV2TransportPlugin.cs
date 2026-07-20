@@ -9,6 +9,8 @@ using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Files;
+using MCServerLauncher.Daemon.Remote.Rpc.Console;
+using MCServerLauncher.Daemon.ApplicationCore;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
@@ -154,8 +156,21 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
                 _application.Files, catalog, owner, _timeProvider, _downloadSessionLimit);
             if (filesResult.IsErr(out _)) throw new InvalidOperationException("The V2 file connection could not be attached.");
             var files = filesResult.Unwrap();
-            var context = new V2RpcConnectionContext(owner, eventEntry!.Ledger, owner.ConnectionToken, files);
-            var pipeline = new V2InboundMessagePipeline(catalog, new V2RpcDispatcher(catalog, _rpcDiagnostics), context, owner, files, _inboundDiagnostics);
+            V2ConsoleSessionConnection? consoles = null;
+            try
+            {
+                if (_application.Instances is LocalInstanceApplication localInstances)
+                {
+                    var consoleResult = V2ConsoleSessionConnection.Attach(localInstances.Consoles, owner);
+                    if (consoleResult.IsOk(out var attached) && attached is not null)
+                        consoles = attached;
+                }
+            }
+            catch (NotSupportedException)
+            {
+            }
+            var context = new V2RpcConnectionContext(owner, eventEntry!.Ledger, owner.ConnectionToken, files, consoles);
+            var pipeline = new V2InboundMessagePipeline(catalog, new V2RpcDispatcher(catalog, _rpcDiagnostics), context, owner, files, _inboundDiagnostics, consoles);
             state = new ConnectionState(
                 owner,
                 pipeline,

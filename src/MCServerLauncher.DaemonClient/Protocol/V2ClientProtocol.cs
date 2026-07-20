@@ -33,6 +33,9 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<UploadOpenRequest, UploadSession> OpenUpload => BuiltInProtocolDefinitions.OpenUpload;
     internal static RpcDescriptor<EmptyRequest, InstanceCatalogResult> GetInstanceCatalog => BuiltInProtocolDefinitions.GetInstanceCatalog;
     internal static RpcDescriptor<InstanceCommandRequest, UnitResult> SendInstanceCommand => BuiltInProtocolDefinitions.SendInstanceCommand;
+    internal static RpcDescriptor<ConsoleOpenRequest, ConsoleSession> OpenConsole => BuiltInProtocolDefinitions.OpenConsole;
+    internal static RpcDescriptor<ConsoleResizeRequest, UnitResult> ResizeConsole => BuiltInProtocolDefinitions.ResizeConsole;
+    internal static RpcDescriptor<ConsoleSessionReference, UnitResult> CloseConsole => BuiltInProtocolDefinitions.CloseConsole;
     internal static RpcDescriptor<CreateInstanceRequest, CreateInstanceResult> CreateInstance => BuiltInProtocolDefinitions.CreateInstance;
     internal static RpcDescriptor<EventRuleQuery, EventRuleSet> GetInstanceEventRules => BuiltInProtocolDefinitions.GetInstanceEventRules;
     internal static RpcDescriptor<EventRuleUpdateRequest, UnitResult> UpdateInstanceEventRules => BuiltInProtocolDefinitions.UpdateInstanceEventRules;
@@ -58,7 +61,7 @@ internal static class V2ClientProtocol
     [
         GetAuthPermissions, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
-        CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, CreateInstance, GetInstanceEventRules,
+        CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
         UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, GetSystemInfo, DiscoverRpc
     ];

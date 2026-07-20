@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Files;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Application;
@@ -148,11 +149,20 @@ internal interface IProtocolFileSessionOperations
     Task<Result<Unit, DaemonError>> CloseDownloadAsync(Guid sessionId, CancellationToken cancellationToken);
 }
 
+internal interface IProtocolConsoleSessionOperations
+{
+    Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(ConsoleOpenRequest request, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> ResizeConsoleAsync(ConsoleResizeRequest request, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> CloseConsoleAsync(ConsoleSessionReference request, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> ReceiveConsoleInputAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken);
+}
+
 internal sealed class ProtocolInvocationContext(
     ProtocolExecutionOwner executionOwner,
     IProtocolPermissionView? permissionView = null,
     IProtocolSubscriptionOperations? subscriptionOperations = null,
-    IProtocolFileSessionOperations? fileSessionOperations = null)
+    IProtocolFileSessionOperations? fileSessionOperations = null,
+    IProtocolConsoleSessionOperations? consoleSessionOperations = null)
 {
     public ProtocolExecutionOwner ExecutionOwner { get; } = executionOwner ?? throw new ArgumentNullException(nameof(executionOwner));
 
@@ -161,6 +171,8 @@ internal sealed class ProtocolInvocationContext(
     public IProtocolSubscriptionOperations? SubscriptionOperations { get; } = subscriptionOperations;
 
     public IProtocolFileSessionOperations? FileSessionOperations { get; } = fileSessionOperations;
+
+    public IProtocolConsoleSessionOperations? ConsoleSessionOperations { get; } = consoleSessionOperations;
 }
 
 internal sealed class ProtocolDownloadAttachment

@@ -32,6 +32,18 @@ internal sealed class RemoteInstanceApplication(IRemoteApplicationInvoker invoke
     public Task<Result<Unit, DaemonError>> SendCommandAsync(InstanceCommandRequest request, CancellationToken cancellationToken) =>
         _invoker.InvokeUnitAsync(BuiltInProtocolDefinitions.SendInstanceCommand, request, cancellationToken);
 
+    public Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(ConsoleOpenRequest request, CancellationToken cancellationToken) =>
+        _invoker.InvokeAsync(BuiltInProtocolDefinitions.OpenConsole, request, cancellationToken);
+
+    public Task<Result<Unit, DaemonError>> ResizeConsoleAsync(ConsoleResizeRequest request, CancellationToken cancellationToken) =>
+        _invoker.InvokeUnitAsync(BuiltInProtocolDefinitions.ResizeConsole, request, cancellationToken);
+
+    public Task<Result<Unit, DaemonError>> CloseConsoleAsync(ConsoleSessionReference request, CancellationToken cancellationToken) =>
+        _invoker.InvokeUnitAsync(BuiltInProtocolDefinitions.CloseConsole, request, cancellationToken);
+
+    public Task<Result<Unit, DaemonError>> WriteConsoleAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("Console binary input must be sent through the V2 client binary frame path.");
+
     public Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(InstanceReference request, CancellationToken cancellationToken) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.GetInstanceReport, request, cancellationToken);
 
