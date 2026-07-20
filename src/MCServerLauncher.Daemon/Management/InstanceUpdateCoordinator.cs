@@ -186,7 +186,8 @@ internal sealed class InstanceUpdateCoordinator
             JavaPath = request.JavaPath ?? currentConfig.JavaPath,
             Arguments = request.Arguments.ToArray(),
             Version = version,
-            Target = target
+            Target = target,
+            ConsoleMode = request.ConsoleMode ?? currentConfig.ConsoleMode
         };
 
         var validation = newConfig.ValidateConfig();

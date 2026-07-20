@@ -29,7 +29,8 @@ internal static class InstanceConfigurationMapper
                 static pair => pair.Key,
                 static pair => pair.Value.Pattern,
                 StringComparer.Ordinal),
-            EventRuleDocumentCodec.SerializeToElement(config.EventRules));
+            EventRuleDocumentCodec.SerializeToElement(config.EventRules),
+            config.ConsoleMode);
     }
 
     public static InstanceConfig ToInstanceConfig(InstanceConfiguration config)
@@ -52,7 +53,8 @@ internal static class InstanceConfigurationMapper
                 static pair => pair.Key,
                 static pair => new PlaceHolderString(pair.Value),
                 StringComparer.Ordinal),
-            EventRules = EventRuleDocumentCodec.DeserializeRequired(config.EventRules)
+            EventRules = EventRuleDocumentCodec.DeserializeRequired(config.EventRules),
+            ConsoleMode = config.ConsoleMode
         };
     }
 
@@ -107,6 +109,7 @@ internal static class InstanceConfigurationMapper
             config.JavaPath,
             config.Arguments,
             config.EnvironmentVariables,
-            config.EventRules);
+            config.EventRules,
+            config.ConsoleMode);
     }
 }

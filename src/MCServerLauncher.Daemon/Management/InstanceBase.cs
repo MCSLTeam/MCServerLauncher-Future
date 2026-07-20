@@ -41,14 +41,11 @@ public abstract class InstanceBase : DisposableObject, IInstance
     public async Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
+        // Always clear any previous InstanceProcess before a new start. Unix PTY children are
+        // attached via Process.GetProcessById; after Kill/halt HasExited may stay false, which
+        // previously made the next StartAsync return false permanently until daemon restart.
         if (Process is not null)
-        {
-            if (!Process.HasExit)
-                return false;
-
-            await Process.WaitForExitAsync(ct);
-            ResetProcess(Process);
-        }
+            await DisposeManagedProcessAsync(Process, ct).ConfigureAwait(false);
 
         var startInfoResult = Config.TryGetStartInfo();
         if (startInfoResult.IsErr(out var error))
@@ -62,7 +59,10 @@ public abstract class InstanceBase : DisposableObject, IInstance
         }
 
         var startInfo = startInfoResult.Unwrap();
-        var process = new InstanceProcess(startInfo, Config.CanSafeCastTo<MinecraftInstance>());
+        var process = new InstanceProcess(
+            startInfo,
+            Config.CanSafeCastTo<MinecraftInstance>(),
+            Config.ConsoleMode);
         Process = process;
         process.OnStatusChanged += OnProcessStatusChangedAsync;
         process.OnLog += OnProcessLogAsync;
@@ -72,11 +72,23 @@ public abstract class InstanceBase : DisposableObject, IInstance
             ct.ThrowIfCancellationRequested();
             var started = await process.StartAsync(delayToCheck, ct);
             if (!started)
+            {
+                Log.Error(
+                    "[Instance] Process exited immediately after start for '{InstanceId}' (console_mode={ConsoleMode})",
+                    Config.Uuid,
+                    Config.ConsoleMode);
                 ResetProcess(process);
+            }
+
             return started;
         }
-        catch
+        catch (Exception exception)
         {
+            Log.Error(
+                exception,
+                "[Instance] Start threw for '{InstanceId}' (console_mode={ConsoleMode})",
+                Config.Uuid,
+                Config.ConsoleMode);
             ResetProcess(process);
             throw;
         }
@@ -84,7 +96,30 @@ public abstract class InstanceBase : DisposableObject, IInstance
 
     public virtual void Stop()
     {
-        Process?.KillProcess();
+        // Default stop is hard-kill + clear handle. MinecraftInstance overrides to send "stop".
+        ForceKillAndClear();
+    }
+
+    /// <summary>
+    /// Immediately kills the managed process and drops <see cref="Process"/> so a later
+    /// <see cref="StartAsync"/> cannot be blocked by a stale HasExited=false handle.
+    /// </summary>
+    public void ForceKillAndClear()
+    {
+        var process = Process;
+        if (process is null)
+            return;
+
+        try
+        {
+            process.KillProcess();
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "[Instance] KillProcess failed for '{InstanceId}'", Config.Uuid);
+        }
+
+        ResetProcess(process);
     }
 
     public IReadOnlyList<string> GetLogHistory()
@@ -103,12 +138,62 @@ public abstract class InstanceBase : DisposableObject, IInstance
         return InvokeAsync(OnLog, Config.Uuid, message, cancellationToken);
     }
 
+    private async Task DisposeManagedProcessAsync(InstanceProcess process, CancellationToken ct)
+    {
+        try
+        {
+            if (!process.HasExit)
+                process.KillProcess();
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(
+                exception,
+                "[Instance] Failed to force-stop stale process before restart for '{InstanceId}'",
+                Config.Uuid);
+        }
+
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(
+                exception,
+                "[Instance] WaitForExit before restart failed for '{InstanceId}'",
+                Config.Uuid);
+        }
+
+        ResetProcess(process);
+    }
+
     private void ResetProcess(InstanceProcess process)
     {
         process.OnStatusChanged -= OnProcessStatusChangedAsync;
         process.OnLog -= OnProcessLogAsync;
-        process.Close();
-        process.Dispose();
+        try
+        {
+            process.Close();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            process.Dispose();
+        }
+        catch
+        {
+        }
+
         if (ReferenceEquals(Process, process))
             Process = null;
     }

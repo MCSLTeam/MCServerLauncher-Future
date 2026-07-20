@@ -19,5 +19,10 @@ public interface IInstance : IDisposable
 
     void Stop();
 
+    /// <summary>
+    /// Hard-kill the managed process and clear the process handle for a clean restart.
+    /// </summary>
+    void ForceKillAndClear();
+
     IReadOnlyList<string> GetLogHistory();
 }

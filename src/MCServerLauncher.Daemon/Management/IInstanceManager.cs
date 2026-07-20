@@ -54,6 +54,14 @@ internal interface IInstanceManager
     /// <param name="message">消息</param>
     bool SendToInstance(Guid instanceId, string message);
 
+    bool TryWriteConsole(Guid instanceId, ReadOnlyMemory<byte> data);
+
+    bool TryResizeConsole(Guid instanceId, ushort columns, ushort rows);
+
+    Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler);
+
+    void DetachConsole(Guid instanceId, Guid subscriberId);
+
     /// <summary>
     ///     杀死服务器进程
     /// </summary>

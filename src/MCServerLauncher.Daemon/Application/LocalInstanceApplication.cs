@@ -11,6 +11,10 @@ namespace MCServerLauncher.Daemon.ApplicationCore;
 
 internal sealed class LocalInstanceApplication(IInstanceManager instanceManager) : IInstanceApplication
 {
+    private readonly ConsoleSessionCoordinator _consoles = new(instanceManager);
+
+    internal ConsoleSessionCoordinator Consoles => _consoles;
+
     public async Task<Result<CreateInstanceResult, DaemonError>> CreateInstanceAsync(
         CreateInstanceRequest request,
         CancellationToken cancellationToken)
@@ -195,6 +199,40 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             return Task.FromResult(Result.Err<Unit, DaemonError>(
                 new InternalDaemonError("instance.command_failed", "The command could not be sent to the instance.")));
         }
+    }
+
+    public Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(
+        ConsoleOpenRequest request,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        // Default open without connection fan-out; connection layer should call Consoles.Open with a handler.
+        return Task.FromResult(_consoles.Open(request, static (_, _, _) => Task.CompletedTask));
+    }
+
+    public Task<Result<Unit, DaemonError>> ResizeConsoleAsync(
+        ConsoleResizeRequest request,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_consoles.Resize(request));
+    }
+
+    public Task<Result<Unit, DaemonError>> CloseConsoleAsync(
+        ConsoleSessionReference request,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_consoles.Close(request));
+    }
+
+    public Task<Result<Unit, DaemonError>> WriteConsoleAsync(
+        Guid sessionId,
+        ReadOnlyMemory<byte> data,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_consoles.Write(sessionId, data));
     }
 
     public async Task<Result<MCServerLauncher.Common.Contracts.Instances.InstanceReport, DaemonError>> GetInstanceReportAsync(

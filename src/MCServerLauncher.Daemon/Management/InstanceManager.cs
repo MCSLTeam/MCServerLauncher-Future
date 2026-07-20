@@ -352,14 +352,75 @@ internal class InstanceManager : IInstanceManager
         return true;
     }
 
+    public bool TryWriteConsole(Guid instanceId, ReadOnlyMemory<byte> data)
+    {
+        if (!RunningInstances.TryGetValue(instanceId, out var instance))
+            return false;
+        var process = instance.Process;
+        if (process is null)
+            return false;
+        process.WriteRaw(data);
+        return true;
+    }
+
+    public bool TryResizeConsole(Guid instanceId, ushort columns, ushort rows)
+    {
+        if (!RunningInstances.TryGetValue(instanceId, out var instance))
+            return false;
+        var process = instance.Process;
+        if (process is null)
+            return false;
+        process.ResizeConsole(columns, rows);
+        return true;
+    }
+
+    public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler)
+    {
+        if (!RunningInstances.TryGetValue(instanceId, out var instance))
+            return null;
+        var process = instance.Process;
+        if (process is null)
+            return null;
+        return process.AttachConsoleSubscriber(handler);
+    }
+
+    public void DetachConsole(Guid instanceId, Guid subscriberId)
+    {
+        if (!RunningInstances.TryGetValue(instanceId, out var instance))
+            return;
+        instance.Process?.DetachConsoleSubscriber(subscriberId);
+    }
+
     public void KillInstance(Guid instanceId)
     {
         using var admission = _mutationAdmission.EnterExternal();
         if (!Instances.TryGetValue(instanceId, out var instance))
             return;
 
-        var process = instance.Process;
-        process?.KillProcess();
+        try
+        {
+            instance.ForceKillAndClear();
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(
+                exception,
+                "[InstanceManager] ForceKillAndClear failed for instance '{InstanceId}'",
+                instanceId);
+        }
+
+        RunningInstances.TryRemove(instanceId, out _);
+        try
+        {
+            _snapshotSource.Upsert(instance);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(
+                exception,
+                "[InstanceManager] Snapshot upsert after kill failed for '{InstanceId}'",
+                instanceId);
+        }
     }
 
     public async Task<InstanceReport?> GetInstanceReport(Guid instanceId, CancellationToken ct = default)
