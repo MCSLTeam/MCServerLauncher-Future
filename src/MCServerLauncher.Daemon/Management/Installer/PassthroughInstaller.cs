@@ -1,4 +1,5 @@
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
@@ -13,8 +14,13 @@ public sealed class PassthroughInstaller : IInstanceInstaller
     {
     }
 
-    public Task<Result<Unit, DaemonError>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
+    public Task<Result<Unit, DaemonError>> Run(
+        InstanceFactoryConfiguration setting,
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
+        _ = setting;
+        _ = operation;
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(ResultExt.Ok());
     }
