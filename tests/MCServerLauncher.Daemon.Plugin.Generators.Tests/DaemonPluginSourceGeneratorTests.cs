@@ -77,6 +77,8 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains("ConfigureServices", generated, StringComparison.Ordinal);
         Assert.Contains("BuildServiceProvider", generated, StringComparison.Ordinal);
         Assert.Contains("AttachServices", generated, StringComparison.Ordinal);
+        Assert.Contains("DetachServices", generated, StringComparison.Ordinal);
+        Assert.Contains("IAsyncDisposable", generated, StringComparison.Ordinal);
         Assert.Contains("ManifestDigest", generated, StringComparison.Ordinal);
         Assert.Contains("community.example.health", generated, StringComparison.Ordinal);
     }
