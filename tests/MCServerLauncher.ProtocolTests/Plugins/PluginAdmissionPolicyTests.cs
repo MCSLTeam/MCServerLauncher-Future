@@ -28,24 +28,27 @@ public sealed class PluginAdmissionPolicyTests
         var config = DaemonPluginsConfig.Default; // Medium
         var allowed = PluginAdmissionPolicy.FeaturesAllowedByLevel(PluginGrantLevel.Medium, config);
 
-        // Only rpc.register/event.publish/instance.query are IsImplemented this host.
-        Assert.Equal(3, allowed.Length);
-        Assert.Contains(allowed, f => f == PluginFeature.RpcRegister);       // Medium, implemented
-        Assert.Contains(allowed, f => f == PluginFeature.EventPublish);      // Medium, implemented
-        Assert.Contains(allowed, f => f == PluginFeature.InstanceQuery);      // None, implemented
+        // Implemented host features at risk <= Medium:
+        // rpc.register, event.publish, instance.query, system.query, storage.private, auth.verify.
+        Assert.Equal(6, allowed.Length);
+        Assert.Contains(allowed, f => f == PluginFeature.RpcRegister);
+        Assert.Contains(allowed, f => f == PluginFeature.EventPublish);
+        Assert.Contains(allowed, f => f == PluginFeature.InstanceQuery);
+        Assert.Contains(allowed, f => f == PluginFeature.SystemQuery);
+        Assert.Contains(allowed, f => f == PluginFeature.StoragePrivate);
+        Assert.Contains(allowed, f => f == PluginFeature.AuthVerify);
         // Unimplemented features are never admitted regardless of risk/level.
-        Assert.DoesNotContain(allowed, f => f == PluginFeature.InstanceManage);     // implemented=false
-        Assert.DoesNotContain(allowed, f => f == PluginFeature.NetworkHttpListen);  // High + implemented=false
+        Assert.DoesNotContain(allowed, f => f == PluginFeature.InstanceManage);
+        // High-risk implemented features require High grant level.
+        Assert.DoesNotContain(allowed, f => f == PluginFeature.NetworkHttpListen);
     }
 
     [Fact]
     public void HighLevelAdmitsImplementedNetworkHttpListen()
     {
         var config = DaemonPluginsConfig.Default;
-        // network.http.listen is High risk but IsImplemented=false in this host, so it is NOT
-        // admitted even at High level: the implemented gate is independent of risk.
         var allowed = PluginAdmissionPolicy.FeaturesAllowedByLevel(PluginGrantLevel.High, config);
-        Assert.DoesNotContain(allowed, f => f == PluginFeature.NetworkHttpListen);
+        Assert.Contains(allowed, f => f == PluginFeature.NetworkHttpListen);
     }
 
     [Fact]
@@ -75,7 +78,7 @@ public sealed class PluginAdmissionPolicyTests
     [Fact]
     public void DecideDeniesRequiredFeaturesOutsideCeiling()
     {
-        // network.http.listen is High risk + unimplemented; Medium ceiling denies it.
+        // network.http.listen is High risk; Medium ceiling denies it without plugin_grants.
         var manifest = Manifest("mcp", [PluginFeature.InstanceQuery, PluginFeature.NetworkHttpListen]);
         var grant = PluginAdmissionPolicy.Decide(manifest, DaemonPluginsConfig.Default);
 
