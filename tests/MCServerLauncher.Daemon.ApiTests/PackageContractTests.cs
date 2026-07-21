@@ -129,6 +129,73 @@ public sealed class PackageContractTests
     }
 
     [Fact]
+    public async Task PackedPluginSdkArtifactPinsDaemonApiExactlyAndEmbedsGenerator()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var packageOutput = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-sdk-package-{Guid.NewGuid():N}");
+
+        try
+        {
+            Directory.CreateDirectory(packageOutput);
+            var projectPath = Path.Combine(
+                repositoryRoot,
+                "src",
+                "MCServerLauncher.Daemon.Plugin.Sdk",
+                "MCServerLauncher.Daemon.Plugin.Sdk.csproj");
+
+            var packResult = await RunDotNetAsync(
+                repositoryRoot,
+                "pack",
+                projectPath,
+                "--configuration",
+                "Release",
+                "--output",
+                packageOutput,
+                "/m:1");
+
+            Assert.True(packResult.ExitCode == 0, $"dotnet pack failed:{Environment.NewLine}{packResult.Output}");
+
+            var packagePath = Assert.Single(Directory.GetFiles(packageOutput, "MCServerLauncher.Daemon.Plugin.Sdk.*.nupkg"));
+            using var package = ZipFile.OpenRead(packagePath);
+
+            var nuspecEntry = Assert.Single(package.Entries, entry => entry.FullName.EndsWith(".nuspec", StringComparison.Ordinal));
+            using var nuspecStream = nuspecEntry.Open();
+            var nuspec = XDocument.Load(nuspecStream);
+            var ns = nuspec.Root?.Name.Namespace ?? throw new InvalidOperationException("The packed nuspec had no root element.");
+
+            var dependencies = nuspec
+                .Descendants(ns + "dependency")
+                .ToDictionary(
+                    element => (string?)element.Attribute("id") ?? throw new InvalidOperationException("A dependency had no id."),
+                    element => (string?)element.Attribute("version") ?? throw new InvalidOperationException("A dependency had no version."),
+                    StringComparer.Ordinal);
+
+            Assert.Equal(2, dependencies.Count);
+            Assert.Equal("[2.0.0-preview.1]", dependencies["MCServerLauncher.Daemon.API"]);
+            Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.DependencyInjection"]);
+
+            var metadata = nuspec.Descendants(ns + "metadata").Single();
+            Assert.Equal("MCServerLauncher.Daemon.Plugin.Sdk", (string?)metadata.Element(ns + "id"));
+            Assert.Equal("2.0.0-preview.1", (string?)metadata.Element(ns + "version"));
+            Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll");
+            Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
+            Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props");
+            Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets");
+            Assert.Contains(
+                package.Entries,
+                entry => entry.FullName == "analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll");
+            Assert.DoesNotContain(package.Entries, entry => entry.FullName.EndsWith("MCServerLauncher.Daemon.API.dll", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (Directory.Exists(packageOutput))
+            {
+                Directory.Delete(packageOutput, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void RestoreGraphContainsOnlyTheApprovedDaemonApiPackageClosure()
     {
         var assetsPath = Path.Combine(

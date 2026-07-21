@@ -16,16 +16,23 @@ provisioning, auth verification, and HTTP listen; those surfaces land with the P
 
 ## Project reference
 
-Reference the packable API package (and Common only when the public DTO contract requires it):
+Prefer the Plugin SDK package for generated modules:
+
+```xml
+<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.1" />
+```
+
+Reference the packable API package directly only when the public DTO contract requires it without generation:
 
 ```xml
 <PackageReference Include="MCServerLauncher.Daemon.API" Version="2.0.0-preview.1" />
 ```
 
-Each tagged GitHub release attaches matching `MCServerLauncher.Common.<version>.nupkg` and
-`MCServerLauncher.Daemon.API.<version>.nupkg` assets. Download both into a configured NuGet source
-before restore when a package feed is not available; the Daemon API package pins its Common
-dependency to that same release version.
+Each tagged GitHub release attaches matching `MCServerLauncher.Common.<version>.nupkg`,
+`MCServerLauncher.Daemon.API.<version>.nupkg`, and `MCServerLauncher.Daemon.Plugin.Sdk.<version>.nupkg`
+assets. Download them into a configured NuGet source before restore when a package feed is not
+available. Exact Preview-1 versions and SHA-256 hashes are recorded in
+`docs/preview1-package-pin.md`.
 
 The API package does not expose TouchSocket, MessagePipe, Serilog, daemon DI, mutable runtime
 collections, or disposable resource handles.
