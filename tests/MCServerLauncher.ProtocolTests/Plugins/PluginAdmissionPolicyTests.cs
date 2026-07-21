@@ -182,6 +182,23 @@ public sealed class PluginAdmissionPolicyTests
         Assert.True(registry.TryRegister("other", ep, out _));
     }
 
+    [Fact]
+    public void HttpEndpointRegistryRejectsSamePortAcrossDifferentAddresses()
+    {
+        // A daemon binding 0.0.0.0:port occupies the port on every address, so a plugin binding
+        // 127.0.0.1:port must be rejected too. The conflict key is the PORT, not the IP.
+        var registry = new PluginHttpEndpointRegistry();
+        Assert.True(registry.TryRegister(
+            "mcsl.daemon",
+            new System.Net.IPEndPoint(System.Net.IPAddress.Any, 11452),
+            out _));
+        Assert.False(registry.TryRegister(
+            "mcp",
+            new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 11452),
+            out var conflict));
+        Assert.Equal("mcsl.daemon", conflict);
+    }
+
     private static PluginManifest Manifest(string id, PluginFeature[] features)
     {
         var frozen = features.ToFrozenSet();

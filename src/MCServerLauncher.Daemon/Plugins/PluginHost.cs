@@ -159,6 +159,14 @@ internal sealed class PluginHost
             // not a subset of the effective grant set, or which is disabled, is skipped atomically
             // with a warning rather than loaded. This runs before TryLoad so high-risk features
             // (e.g. network.http.listen) cannot execute before the policy is evaluated.
+            //
+            // SDK-1 scope (decision spec §4/§10): this is the non-interactive decision gate.
+            // The interactive TTY preflight (Deny/Approve/Approve Permanent that persists
+            // plugin_grants + admissions and revalidates manifest digest on change) is an SDK-2
+            // product UX layer that consumes PluginAdmissionPolicy. SDK-1 admission authority is
+            // grant_level + plugin_grants only; permanent admissions are a cache of a prior
+            // interactive decision and do not relax the ceiling, so a changed manifest is still
+            // re-judged against the current ceiling here.
             var admitted = new List<PluginManifest>();
             foreach (var manifest in discovery.Plugins)
             {
@@ -457,11 +465,11 @@ internal sealed class PluginHost
                 ObserveLateStartFault(runtime, startTask);
                 CancelStartAndDisposeLater(runtime, startCancellation);
                 disposeStartCancellation = false;
-                FailStartCancellation(runtime, cancellationToken);
                 // Roll back plugin-owned resources (e.g. a Kestrel listener bound during Start)
-                // before declaring failure, so a timed-out plugin cannot leave a listener serving
-                // after the host reports it skipped.
+                // BEFORE declaring failure: Fail sets the state to Failed, and the rollback guard
+                // would otherwise return immediately, leaving the listener serving.
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
+                FailStartCancellation(runtime, cancellationToken);
                 return;
             }
 
@@ -469,15 +477,15 @@ internal sealed class PluginHost
             if (cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
             {
                 ObserveLateStartFault(runtime, startTask);
-                FailStartCancellation(runtime, cancellationToken);
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
+                FailStartCancellation(runtime, cancellationToken);
                 return;
             }
 
             if (result.IsErr(out var error))
             {
-                Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
+                Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
                 return;
             }
 
@@ -488,13 +496,13 @@ internal sealed class PluginHost
             cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
         {
             ObserveLateStartFault(runtime, startTask);
-            FailStartCancellation(runtime, cancellationToken);
             await StopRollbackAsync(runtime).ConfigureAwait(false);
+            FailStartCancellation(runtime, cancellationToken);
         }
         catch (Exception exception)
         {
-            Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
             await StopRollbackAsync(runtime).ConfigureAwait(false);
+            Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
         }
         finally
         {
@@ -681,6 +689,7 @@ internal sealed class PluginHost
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
         DisposeLifetime(runtime);
+        _httpEndpoints.Release(runtime.Manifest.Identity.Id);
         runtime.State = PluginRuntimeState.Failed;
     }
 
