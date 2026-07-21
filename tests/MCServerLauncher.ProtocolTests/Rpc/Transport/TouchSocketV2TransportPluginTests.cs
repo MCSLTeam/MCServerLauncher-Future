@@ -629,6 +629,7 @@ public sealed class TouchSocketV2TransportPluginTests
         public IEventRuleApplication EventRules => throw new NotSupportedException();
 
         public IOperationApplication Operations { get; } = null!;
+        public IProvisioningApplication Provisioning { get; } = null!;
     }
 
     private sealed class FakeFiles : IFileApplication

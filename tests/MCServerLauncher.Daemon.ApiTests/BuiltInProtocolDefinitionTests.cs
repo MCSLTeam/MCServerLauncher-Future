@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Protocol;
 using InstanceStatus = MCServerLauncher.Common.ProtoType.Instance.InstanceStatus;
@@ -41,6 +42,8 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolDefinitions.StopInstance, BuiltInProtocolDefinitions.ListJavaRuntimes,
             BuiltInProtocolDefinitions.ListOperations, BuiltInProtocolDefinitions.GetOperation,
             BuiltInProtocolDefinitions.CancelOperation,
+            BuiltInProtocolDefinitions.ResolveProvisioning, BuiltInProtocolDefinitions.GetProvisioningPlan,
+            BuiltInProtocolDefinitions.ExecuteProvisioning,
             BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
         ];
         EventDescriptor[] namedEvents =
@@ -73,6 +76,7 @@ public sealed class BuiltInProtocolDefinitionTests
             "mcsl.instance.report.get", "mcsl.instance.report.list", "mcsl.instance.settings.get", "mcsl.instance.settings.update",
             "mcsl.instance.start", "mcsl.instance.stop", "mcsl.java.list",
             "mcsl.operation.cancel", "mcsl.operation.get", "mcsl.operation.list",
+            "mcsl.provisioning.execute", "mcsl.provisioning.get", "mcsl.provisioning.resolve",
             "mcsl.system.info.get", "rpc.discover"
         };
         var expectedEvents = new[]
@@ -134,6 +138,9 @@ public sealed class BuiltInProtocolDefinitionTests
             ["mcsl.operation.cancel"] = ("mcsl.operation.cancel", typeof(OperationCancelRequest), typeof(OperationCancelResult)),
             ["mcsl.operation.get"] = ("mcsl.operation.get", typeof(OperationReference), typeof(OperationSnapshot)),
             ["mcsl.operation.list"] = ("mcsl.operation.list", typeof(OperationListQuery), typeof(OperationListResult)),
+            ["mcsl.provisioning.execute"] = ("mcsl.provisioning.execute", typeof(ProvisioningExecuteRequest), typeof(ProvisioningExecuteResult)),
+            ["mcsl.provisioning.get"] = ("mcsl.provisioning.get", typeof(ProvisioningPlanReference), typeof(ProvisioningPlanSnapshot)),
+            ["mcsl.provisioning.resolve"] = ("mcsl.provisioning.resolve", typeof(ProvisioningResolveRequest), typeof(ProvisioningPlanSnapshot)),
             ["mcsl.system.info.get"] = ("*", typeof(EmptyRequest), typeof(SystemInfo)),
             ["rpc.discover"] = ("*", typeof(EmptyRequest), typeof(OpenRpcDocument))
         };

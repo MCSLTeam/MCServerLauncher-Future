@@ -85,7 +85,7 @@ public sealed class DaemonClientFacadeTests
             type.GetConstructors().Single().GetParameters().Select(static parameter => parameter.ParameterType));
 
         Assert.Equal(
-            ["ConnectionState", "EventRules", "Files", "InstanceCatalog", "Instances", "LastFailure", "Operations", "System"],
+            ["ConnectionState", "EventRules", "Files", "InstanceCatalog", "Instances", "LastFailure", "Operations", "Provisioning", "System"],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Select(static property => property.Name)
                 .Order());

@@ -10,7 +10,7 @@ namespace MCServerLauncher.Daemon.ApiTests;
 public sealed class ApplicationContractTests
 {
     [Fact]
-    public void DaemonApplicationComposesTheFiveDomainServices()
+    public void DaemonApplicationComposesTheSixDomainServices()
     {
         var properties = typeof(IDaemonApplication).GetProperties();
 
@@ -20,6 +20,7 @@ public sealed class ApplicationContractTests
             property => Assert.Equal(typeof(IFileApplication), property.PropertyType),
             property => Assert.Equal(typeof(IInstanceApplication), property.PropertyType),
             property => Assert.Equal(typeof(IOperationApplication), property.PropertyType),
+            property => Assert.Equal(typeof(IProvisioningApplication), property.PropertyType),
             property => Assert.Equal(typeof(ISystemApplication), property.PropertyType));
     }
 
@@ -32,7 +33,8 @@ public sealed class ApplicationContractTests
             typeof(IFileApplication),
             typeof(ISystemApplication),
             typeof(IEventRuleApplication),
-            typeof(IOperationApplication)
+            typeof(IOperationApplication),
+            typeof(IProvisioningApplication)
         };
 
         foreach (var method in applicationInterfaces.SelectMany(type => type.GetMethods()))

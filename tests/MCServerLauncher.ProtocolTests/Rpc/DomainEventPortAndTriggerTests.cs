@@ -601,6 +601,7 @@ public sealed class DomainEventPortAndTriggerTests
         public IEventRuleApplication EventRules { get; } = eventRules;
 
         public IOperationApplication Operations { get; } = null!;
+        public IProvisioningApplication Provisioning { get; } = null!;
     }
 
     private class InterfaceDispatchProxy : DispatchProxy

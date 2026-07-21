@@ -3,6 +3,7 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using ContractDriveInfo = MCServerLauncher.Common.Contracts.System.DriveInfo;
 using InstanceConsoleMode = MCServerLauncher.Common.ProtoType.Instance.ConsoleMode;
@@ -26,6 +27,9 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(InstanceStatusJsonConverter),
         typeof(OperationStatusJsonConverter),
         typeof(OperationStageJsonConverter),
+        typeof(PlanStatusJsonConverter),
+        typeof(PlanRiskClassJsonConverter),
+        typeof(ProvisioningProviderKindJsonConverter),
         typeof(ConsoleModeJsonConverter)
     ])]
 [JsonSerializable(typeof(EventRuleQuery))]
@@ -98,4 +102,13 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(OperationListResult))]
 [JsonSerializable(typeof(OperationCancelRequest))]
 [JsonSerializable(typeof(OperationCancelResult))]
+[JsonSerializable(typeof(ProvisioningProviderKind))]
+[JsonSerializable(typeof(PlanRiskClass))]
+[JsonSerializable(typeof(PlanStatus))]
+[JsonSerializable(typeof(ProvisioningExecuteResult))]
+[JsonSerializable(typeof(ProvisioningExecuteRequest))]
+[JsonSerializable(typeof(ProvisioningPlanReference))]
+[JsonSerializable(typeof(ProvisioningResolveRequest))]
+[JsonSerializable(typeof(ProvisioningPlanSnapshot))]
+[JsonSerializable(typeof(ProvisioningUnresolvedFact))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;
