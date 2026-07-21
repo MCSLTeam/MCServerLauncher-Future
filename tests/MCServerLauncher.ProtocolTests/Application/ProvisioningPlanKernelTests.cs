@@ -56,9 +56,13 @@ public sealed class ProvisioningPlanKernelTests
             Assert.True(again.IsOk(out var same));
             Assert.Equal(readyPlan.PlanId, same!.PlanId);
 
-            var got = await app.GetPlanAsync(new ProvisioningPlanReference(readyPlan.PlanId), CancellationToken.None);
+            var got = await app.GetPlanAsync(new ProvisioningPlanReference(readyPlan.PlanId, OwnerPrincipal: "owner-a"), CancellationToken.None);
             Assert.True(got.IsOk(out var loaded));
             Assert.Equal(readyPlan.PlanHash, loaded!.PlanHash);
+
+            var foreign = await app.GetPlanAsync(new ProvisioningPlanReference(readyPlan.PlanId, OwnerPrincipal: "owner-b"), CancellationToken.None);
+            Assert.True(foreign.IsErr(out var forbidden));
+            Assert.Equal("plan.forbidden", forbidden!.Code);
         }
         finally
         {

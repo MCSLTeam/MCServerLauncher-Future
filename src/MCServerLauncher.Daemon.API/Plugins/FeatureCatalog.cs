@@ -61,6 +61,27 @@ public static class FeatureCatalog
         return builder.ToImmutable();
     }
 
+    /// <summary>
+    /// Expands granted feature ids into the union of implemented host method permissions.
+    /// Unknown or unimplemented features contribute nothing.
+    /// </summary>
+    public static ImmutableArray<string> ExpandMethodPermissions(IEnumerable<string> grantedFeatureIds)
+    {
+        ArgumentNullException.ThrowIfNull(grantedFeatureIds);
+        var set = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var featureId in grantedFeatureIds)
+        {
+            if (string.IsNullOrWhiteSpace(featureId))
+                continue;
+            if (!Lookup.TryGetValue(featureId, out var descriptor) || !descriptor.IsImplemented)
+                continue;
+            foreach (var method in descriptor.Methods)
+                set.Add(method);
+        }
+
+        return set.ToImmutableArray();
+    }
+
     private static ImmutableArray<PluginFeatureDescriptor> CreateAll() =>
     [
         Descriptor(PluginFeature.RpcRegister, "Register typed RPC methods into the daemon catalog.", PluginFeatureRisk.Medium, [], implemented: true),
@@ -96,7 +117,7 @@ public static class FeatureCatalog
                 "mcsl.instance.command.send",
                 "mcsl.instance.settings.update",
             ],
-            implemented: false),
+            implemented: true),
         Descriptor(PluginFeature.FileRead, "Read contained instance filesystem metadata and file contents.", PluginFeatureRisk.Low, [], implemented: false),
         Descriptor(PluginFeature.FileWrite, "Create, upload, move, rename, or delete contained instance paths.", PluginFeatureRisk.Medium, [], implemented: false),
         Descriptor(

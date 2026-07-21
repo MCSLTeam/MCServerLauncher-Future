@@ -100,7 +100,7 @@ public sealed class V2RpcDispatcherTests
             });
         using var requestCancellation = new CancellationTokenSource();
         var connection = new V2RpcConnectionContext(
-            new TestPermissionView(ImmutableArray.Create("mcsl.daemon.file.download")),
+            new TestPermissionView(ImmutableArray.Create("mcsl.file.download")),
             null,
             CancellationToken.None,
             operations);
@@ -202,7 +202,7 @@ public sealed class V2RpcDispatcherTests
         var missing = await dispatcher.DispatchAsync(
             request,
             new V2RpcConnectionContext(null, null, CancellationToken.None));
-        var wildcard = await dispatcher.DispatchAsync(request, Connection("mcsl.daemon.file.**"));
+        var wildcard = await dispatcher.DispatchAsync(request, Connection("mcsl.directory.**"));
 
         Assert.Equal(-32001, ParseError(missing).Error.Code);
         Assert.True(wildcard.HasResponse);
@@ -229,10 +229,10 @@ public sealed class V2RpcDispatcherTests
             Connection("*"));
         var missingRequiredParams = await directory.DispatchAsync(
             Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.directory.create\",\"id\":3}"),
-            Connection("mcsl.daemon.file.create.directory"));
+            Connection("mcsl.directory.create"));
         var emptyRequiredParams = await directory.DispatchAsync(
             Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.directory.create\",\"id\":4,\"params\":{}}"),
-            Connection("mcsl.daemon.file.create.directory"));
+            Connection("mcsl.directory.create"));
         Assert.Equal(-32602, ParseError(unknownMember).Error.Code);
         Assert.Equal(-32600, ParseError(wrongEnvelopeShape).Error.Code);
         Assert.Equal(-32602, ParseError(missingRequiredParams).Error.Code);
@@ -254,7 +254,7 @@ public sealed class V2RpcDispatcherTests
 
         var outcome = await dispatcher.DispatchAsync(
             Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.file.download.close\",\"id\":1,\"params\":{\"session_id\":\"00000000-0000-0000-0000-000000000000\"}}"),
-            Connection("mcsl.daemon.file.download"));
+            Connection("mcsl.file.download"));
 
         Assert.Equal(-32602, ParseError(outcome).Error.Code);
         Assert.Equal(0, executions);
@@ -386,7 +386,7 @@ public sealed class V2RpcDispatcherTests
 
         var outcome = await dispatcher.DispatchAsync(
             Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.directory.create\",\"id\":1,\"params\":{\"path\":\"folder\"}}"),
-            Connection("mcsl.daemon.file.**"));
+            Connection("mcsl.directory.**"));
 
         Assert.Equal(
             "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}",
@@ -784,7 +784,7 @@ public sealed class V2RpcDispatcherTests
 
         var outcome = await dispatcher.DispatchAsync(
             Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.file.download.read\",\"id\":1,\"params\":{{\"session_id\":\"{sessionId}\",\"offset\":7,\"maximum_length\":3}}}}"),
-            Connection("mcsl.daemon.file.download"));
+            Connection("mcsl.file.download"));
 
         Assert.True(outcome.HasResponse);
         Assert.Same(attachment, outcome.DownloadAttachment);
@@ -1170,7 +1170,7 @@ public sealed class V2RpcDispatcherTests
         return JsonRpcWireParser.ParseErrorResponse(outcome.ResponseUtf8.AsSpan());
     }
 
-    private sealed record TestPermissionView(ImmutableArray<string> Permissions) : IProtocolPermissionView;
+    private sealed record TestPermissionView(ImmutableArray<string> Permissions, string Subject = "test-user", bool IsMainToken = false) : IProtocolPermissionView;
 
     private sealed class RecordingFileSessionOperations(DownloadChunk chunk) : IProtocolFileSessionOperations
     {

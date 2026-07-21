@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.DaemonClient.Connection.V2;
@@ -56,6 +57,7 @@ public sealed class V2ClientProtocolTests
         RpcAccessorCase[] rpcCases =
         [
             Accessor(V2ClientProtocol.GetAuthPermissions, "mcsl.auth.permissions.get"),
+            Accessor(V2ClientProtocol.IssueToken, "mcsl.auth.token.issue"),
             Accessor(V2ClientProtocol.PingDaemon, "mcsl.daemon.ping"),
             Accessor(V2ClientProtocol.CopyDirectory, "mcsl.directory.copy"),
             Accessor(V2ClientProtocol.CreateDirectory, "mcsl.directory.create"),
@@ -140,7 +142,7 @@ public sealed class V2ClientProtocolTests
     {
         IRpcGoldenCase[] cases =
         [
-            Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.CopyDirectory),
+            Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.IssueToken), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.CopyDirectory),
             Case(V2ClientProtocol.CreateDirectory), Case(V2ClientProtocol.DeleteDirectory), Case(V2ClientProtocol.GetDirectoryInfo),
             Case(V2ClientProtocol.MoveDirectory), Case(V2ClientProtocol.RenameDirectory), Case(V2ClientProtocol.SubscribeEvent),
             Case(V2ClientProtocol.UnsubscribeEvent), Case(V2ClientProtocol.CopyFile), Case(V2ClientProtocol.DeleteFile),
@@ -316,6 +318,8 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(EventRuleUpdateRequest)) return "{\"instance_id\":\"" + Id + "\",\"rules\":{}}";
             if (type == typeof(UpdateInstanceSettingsRequest)) return "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"java_path\":null,\"arguments\":[],\"version\":null,\"replacement_core\":null,\"force_rerun_installer\":false}";
 
+            if (type == typeof(TokenIssueRequest)) return "{\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"ttl_seconds\":3600}";
+            if (type == typeof(TokenIssueResult)) return "{\"token\":\"jwt\",\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"expires_at\":\"2026-01-01T01:00:00+00:00\",\"token_id\":\"abc\"}";
             if (type == typeof(PermissionsResult)) return "{\"permissions\":[\"mcsl.daemon.read\"]}";
             if (type == typeof(PingResult)) return "{\"time\":42}";
             if (type == typeof(DirectoryDetails)) return "{\"parent\":\"instances\",\"files\":[{\"name\":\"server.jar\",\"meta\":" + FileMeta + "}],\"directories\":[{\"name\":\"plugins\",\"meta\":" + DirectoryMeta + "}]}";
@@ -338,7 +342,7 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(OperationCancelResult)) return "{\"operation_id\":\"" + Id + "\",\"cancel_requested\":true}";
             if (type == typeof(OperationSnapshot)) return "{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}";
             if (type == typeof(ProvisioningResolveRequest)) return "{\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"creator_principal\":\"owner-a\",\"idempotency_key\":\"idem-1\",\"expiry\":null}";
-            if (type == typeof(ProvisioningPlanReference)) return "{\"plan_id\":\"" + Id + "\"}";
+            if (type == typeof(ProvisioningPlanReference)) return "{\"plan_id\":\"" + Id + "\",\"owner_principal\":null}";
             if (type == typeof(ProvisioningExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
             if (type == typeof(ProvisioningExecuteResult)) return "{\"plan_id\":\"" + Id + "\",\"operation_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\"}";
             if (type == typeof(ProvisioningPlanSnapshot)) return "{\"plan_id\":\"" + Id + "\",\"plan_hash\":\"abc\",\"kind\":\"provisioning.instance\",\"status\":\"ready\",\"risk_class\":\"routine\",\"required_permissions\":[\"mcsl.provisioning.resolve\"],\"requires_confirmation\":false,\"creator_principal\":\"owner-a\",\"created_at\":\"2026-01-01T00:00:00+00:00\",\"expires_at\":\"2026-01-01T00:15:00+00:00\",\"unresolved\":[],\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"idempotency_key\":\"idem-1\",\"payload\":{}}";

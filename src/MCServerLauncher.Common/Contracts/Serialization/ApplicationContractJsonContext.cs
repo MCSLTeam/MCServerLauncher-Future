@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -32,6 +33,8 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(ProvisioningProviderKindJsonConverter),
         typeof(ConsoleModeJsonConverter)
     ])]
+[JsonSerializable(typeof(TokenIssueRequest))]
+[JsonSerializable(typeof(TokenIssueResult))]
 [JsonSerializable(typeof(EventRuleQuery))]
 [JsonSerializable(typeof(EventRuleSet))]
 [JsonSerializable(typeof(EventRuleUpdateRequest))]

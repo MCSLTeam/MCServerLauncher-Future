@@ -84,7 +84,26 @@ internal sealed class LocalProvisioningApplication(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(planKernel.Get(request.PlanId));
+        if (string.IsNullOrWhiteSpace(request.OwnerPrincipal))
+        {
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                new PermissionDaemonError(
+                    "auth.subject_required",
+                    "Connection subject is required for provisioning ownership binding.")));
+        }
+
+        var got = planKernel.Get(request.PlanId);
+        if (got.IsErr(out var error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+
+        var snapshot = got.Unwrap();
+        if (!string.Equals(snapshot.CreatorPrincipal, request.OwnerPrincipal, StringComparison.Ordinal))
+        {
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                new PermissionDaemonError("plan.forbidden", "The caller cannot read this plan.")));
+        }
+
+        return Task.FromResult(Result.Ok<ProvisioningPlanSnapshot, DaemonError>(snapshot));
     }
 
     public async Task<Result<ProvisioningExecuteResult, DaemonError>> ExecuteAsync(

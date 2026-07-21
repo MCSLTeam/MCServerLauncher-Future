@@ -125,6 +125,11 @@ internal enum ProtocolCatalogEntryKind
 internal interface IProtocolPermissionView
 {
     ImmutableArray<string> Permissions { get; }
+
+    /// <summary>Verified token subject; empty when unknown/legacy.</summary>
+    string Subject { get; }
+
+    bool IsMainToken { get; }
 }
 
 internal interface ICompiledProtocolPermissionView : IProtocolPermissionView

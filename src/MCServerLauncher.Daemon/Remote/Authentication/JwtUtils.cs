@@ -75,6 +75,10 @@ public static class JwtUtils
 
         try
         {
+            var config = AppConfig.Get();
+            var apiCanonical = string.IsNullOrWhiteSpace(config.Security.ApiCanonicalUri)
+                ? "mcsl://daemon/api/v2"
+                : config.Security.ApiCanonicalUri;
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -82,7 +86,8 @@ public static class JwtUtils
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secret)),
                 ValidIssuer = "MCServerLauncher.Daemon",
-                ValidAudience = "MCServerLauncher.Daemon",
+                // Preview-1 dual-accept: resource audience + legacy audience.
+                ValidAudiences = new[] { "MCServerLauncher.Daemon", apiCanonical },
                 ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
             };
             var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);

@@ -524,7 +524,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         TestSnapshotSource SnapshotSource,
         FrozenProtocolCatalogAccessor CatalogAccessor);
 
-    private sealed record TestPermissionView(ImmutableArray<string> Permissions) : IProtocolPermissionView;
+    private sealed record TestPermissionView(ImmutableArray<string> Permissions, string Subject = "test-user", bool IsMainToken = false) : IProtocolPermissionView;
 
     private sealed class TestSubscriptions(DaemonError? error = null) : IProtocolSubscriptionOperations
     {

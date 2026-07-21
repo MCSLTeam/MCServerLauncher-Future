@@ -42,12 +42,19 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
         IV2OutboundSender sender,
         IEnumerable<string>? permissions = null,
         TimeProvider? timeProvider = null,
-        CancellationToken connectionCancellation = default)
+        CancellationToken connectionCancellation = default,
+        string? subject = null,
+        bool isMainToken = false)
     {
         _sender = sender ?? throw new ArgumentNullException(nameof(sender));
         _timeProvider = timeProvider ?? TimeProvider.System;
         Permissions = NormalizePermissions(permissions);
         CompiledPermissions = CompilePermissions(Permissions);
+        Subject = string.IsNullOrWhiteSpace(subject)
+            ? (isMainToken ? "daemon-main" : "anonymous")
+            : subject;
+        // IsMainToken is identity, not permission breadth. Bare "*" grants still match all methods.
+        IsMainToken = isMainToken;
         _connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(connectionCancellation);
         _connectionToken = _connectionLifetime.Token;
         _outbound = Channel.CreateBounded<V2OutboundMessage>(
@@ -61,6 +68,10 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
     }
 
     public ImmutableArray<string> Permissions { get; }
+
+    public string Subject { get; }
+
+    public bool IsMainToken { get; }
 
     public Permissions CompiledPermissions { get; }
 
