@@ -1,0 +1,28 @@
+<Project>
+  <!--
+    When publishing a plugin bundle, exclude shared host/contract assemblies so the
+    daemon load context preserves a single contract identity.
+  -->
+  <Target Name="MCServerLauncherFilterPluginBundlePublishFiles"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(MCSLPluginBundle)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Daemon.API' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Common' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Daemon.Plugin.Sdk' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'RustyOptions' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Extensions.Logging.Abstractions' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Extensions.DependencyInjection.Abstractions'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Copy mcsl-plugin.json next to the published plugin entry assembly. -->
+  <Target Name="MCServerLauncherCopyPluginManifest"
+          AfterTargets="Publish"
+          Condition="'$(MCSLPluginBundle)' == 'true' And Exists('$(MSBuildProjectDirectory)\mcsl-plugin.json')">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\mcsl-plugin.json"
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

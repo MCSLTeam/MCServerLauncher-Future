@@ -1,0 +1,172 @@
+using System.Collections.Immutable;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using MCServerLauncher.Daemon.Plugin.Generators;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
+using Xunit;
+
+namespace MCServerLauncher.Daemon.Plugin.Generators.Tests;
+
+public sealed class DaemonPluginSourceGeneratorTests
+{
+    private const string ManifestJson = """
+        {
+          "package": {
+            "id": "community.example.health",
+            "version": "1.0.0"
+          },
+          "entry": {
+            "assembly": "Example.Plugin.dll",
+            "type": "Example.Plugin.Generated.DaemonPluginAdapter"
+          },
+          "requires": {
+            "api": "[2.0.0,3.0.0)",
+            "features": ["event.publish", "instance.query", "rpc.register"]
+          }
+        }
+        """;
+
+    private const string ModuleSource = """
+        using System.Threading;
+        using System.Threading.Tasks;
+        using MCServerLauncher.Daemon.API.Errors;
+        using MCServerLauncher.Daemon.API.Plugins;
+        using MCServerLauncher.Daemon.Plugin.Sdk;
+        using RustyOptions;
+
+        namespace Example.Plugin;
+
+        [DaemonPluginModule]
+        public partial class HealthPlugin
+        {
+            public Result<Unit, DaemonError> Configure(IPluginContext context, HealthPluginFeatures features)
+            {
+                _ = features.Rpc;
+                _ = features.Events;
+                _ = features.Instances;
+                return PluginResult.Ok();
+            }
+
+            public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
+                => Task.FromResult(PluginResult.Ok());
+
+            public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
+                => Task.FromResult(PluginResult.Ok());
+        }
+        """;
+
+    [Fact]
+    public void GeneratesAdapterMetadataAndFeatureSurface()
+    {
+        var (diagnostics, generated) = RunGenerator(ModuleSource, ManifestJson);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("class DaemonPluginAdapter", generated, StringComparison.Ordinal);
+        Assert.Contains("class HealthPluginFeatures", generated, StringComparison.Ordinal);
+        Assert.Contains("class HealthPluginMetadata", generated, StringComparison.Ordinal);
+        Assert.Contains("IPluginRpcRegistrar Rpc", generated, StringComparison.Ordinal);
+        Assert.Contains("IPluginEventRegistrar Events", generated, StringComparison.Ordinal);
+        Assert.Contains("IInstanceSnapshotSource Instances", generated, StringComparison.Ordinal);
+        Assert.Contains("ManifestDigest", generated, StringComparison.Ordinal);
+        Assert.Contains("community.example.health", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReportsMissingManifestWhenModulePresent()
+    {
+        var (diagnostics, _) = RunGenerator(ModuleSource, manifestJson: null);
+        Assert.Contains(diagnostics, d => d.Id == "MCSLPLG001");
+    }
+
+    [Fact]
+    public void ReportsManualIDaemonPluginWhenManifestPresent()
+    {
+        const string manual = """
+            using System.Threading;
+            using System.Threading.Tasks;
+            using MCServerLauncher.Daemon.API.Errors;
+            using MCServerLauncher.Daemon.API.Plugins;
+            using RustyOptions;
+
+            namespace Example.Plugin;
+
+            public sealed class ManualPlugin : IDaemonPlugin
+            {
+                public Result<Unit, DaemonError> Configure(IPluginContext context) => PluginResult.Ok();
+                public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
+                    => Task.FromResult(PluginResult.Ok());
+                public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
+                    => Task.FromResult(PluginResult.Ok());
+            }
+            """;
+
+        var (diagnostics, _) = RunGenerator(manual, ManifestJson);
+        Assert.Contains(diagnostics, d => d.Id == "MCSLPLG009");
+    }
+
+    private static (ImmutableArray<Diagnostic> Diagnostics, string Generated) RunGenerator(
+        string source,
+        string? manifestJson)
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(source);
+        var references = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Select(a => MetadataReference.CreateFromFile(a.Location))
+            .Cast<MetadataReference>()
+            .ToList();
+
+        // Ensure API + Sdk attribute assemblies are referenced.
+        references.Add(MetadataReference.CreateFromFile(
+            typeof(MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(
+            typeof(MCServerLauncher.Daemon.Plugin.Sdk.DaemonPluginModuleAttribute).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(
+            typeof(RustyOptions.Result<,>).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(
+            typeof(Microsoft.Extensions.Logging.ILogger).Assembly.Location));
+
+        var compilation = CSharpCompilation.Create(
+            "GeneratorTests",
+            new[] { syntaxTree },
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var generator = new DaemonPluginSourceGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
+
+        if (manifestJson is not null)
+        {
+            var additional = new InMemoryAdditionalText("mcsl-plugin.json", manifestJson);
+            driver = driver.AddAdditionalTexts(ImmutableArray.Create<AdditionalText>(additional));
+        }
+
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+        var runResult = driver.GetRunResult();
+
+        var generated = string.Join("\n", runResult.GeneratedTrees.Select(t => t.ToString()));
+        var allDiagnostics = diagnostics
+            .Concat(runResult.Diagnostics)
+            .Concat(outputCompilation.GetDiagnostics().Where(d => d.Severity >= DiagnosticSeverity.Warning))
+            .ToImmutableArray();
+
+        return (allDiagnostics, generated);
+    }
+
+    private sealed class InMemoryAdditionalText : AdditionalText
+    {
+        private readonly SourceText _text;
+
+        public InMemoryAdditionalText(string path, string content)
+        {
+            Path = path;
+            _text = SourceText.From(content, Encoding.UTF8);
+        }
+
+        public override string Path { get; }
+
+        public override SourceText GetText(CancellationToken cancellationToken = default) => _text;
+    }
+}
