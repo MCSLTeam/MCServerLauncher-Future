@@ -193,6 +193,10 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var hasRpc = manifest.Features.Contains("rpc.register");
         var hasEvents = manifest.Features.Contains("event.publish");
         var hasInstanceQuery = manifest.Features.Contains("instance.query");
+        var hasStorage = manifest.Features.Contains("storage.private");
+        var hasHttp = manifest.Features.Contains("network.http.listen");
+        var hasAuth = manifest.Features.Contains("auth.verify");
+        var hasSystem = manifest.Features.Contains("system.query");
 
         var featureProperties = new StringBuilder();
         if (hasRpc)
@@ -212,6 +216,24 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource Instances { get; }");
         }
+        if (hasStorage)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginPrivateStorage Storage { get; }");
+        }
+
+        if (hasHttp)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginHttpEndpointPolicy HttpEndpoints { get; }");
+        }
+
+        if (hasAuth)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginAuthentication Authentication { get; }");
+        }
+
 
         var featureCtorAssignments = new StringBuilder();
         featureCtorAssignments.AppendLine("            Context = context;");
@@ -221,6 +243,12 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureCtorAssignments.AppendLine("            Events = context.Events;");
         if (hasInstanceQuery)
             featureCtorAssignments.AppendLine("            Instances = context.Instances;");
+        if (hasStorage)
+            featureCtorAssignments.AppendLine("            Storage = context.Storage;");
+        if (hasHttp)
+            featureCtorAssignments.AppendLine("            HttpEndpoints = context.HttpEndpoints;");
+        if (hasAuth)
+            featureCtorAssignments.AppendLine("            Authentication = context.Authentication;");
 
         var featuresLiteral = string.Join(", ",
             manifest.Features.Select(static f => "\"" + f.Replace("\"", "\\\"") + "\""));

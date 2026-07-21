@@ -1,8 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Plugins;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RustyOptions;
 
@@ -52,6 +53,9 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         "MCServerLauncher.Common" => typeof(JsonRpcRequestEnvelope).Assembly,
         "RustyOptions" => typeof(Result<,>).Assembly,
         "Microsoft.Extensions.Logging.Abstractions" => typeof(ILogger).Assembly,
+        // Shared DI abstractions preserve IServiceCollection type identity across ALCs.
+        // DI implementation assemblies remain private to the plugin bundle.
+        "Microsoft.Extensions.DependencyInjection.Abstractions" => typeof(IServiceCollection).Assembly,
         _ => throw new InvalidOperationException($"Unsupported shared plugin assembly '{name}'.")
     };
 }
