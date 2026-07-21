@@ -5,6 +5,7 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
@@ -122,6 +123,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
             new ThrowingSystemApplication(),
             new ThrowingEventRuleApplication(),
             new ThrowingOperationApplication(),
+            new ThrowingProvisioningApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
             accessor,
@@ -164,6 +166,14 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     {
         public Task<Result<EventRuleSet, DaemonError>> GetEventRulesAsync(EventRuleQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<Unit, DaemonError>> UpdateEventRulesAsync(EventRuleUpdateRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    
+    private sealed class ThrowingProvisioningApplication : IProvisioningApplication
+    {
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ResolveAsync(ProvisioningResolveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> GetPlanAsync(ProvisioningPlanReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningExecuteResult, DaemonError>> ExecuteAsync(ProvisioningExecuteRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingOperationApplication : IOperationApplication

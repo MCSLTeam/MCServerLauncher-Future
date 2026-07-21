@@ -8,6 +8,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.DaemonClient.Connection.V2;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
@@ -96,6 +97,9 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.CancelOperation, "mcsl.operation.cancel"),
             Accessor(V2ClientProtocol.GetOperation, "mcsl.operation.get"),
             Accessor(V2ClientProtocol.ListOperations, "mcsl.operation.list"),
+            Accessor(V2ClientProtocol.ResolveProvisioning, "mcsl.provisioning.resolve"),
+            Accessor(V2ClientProtocol.GetProvisioningPlan, "mcsl.provisioning.get"),
+            Accessor(V2ClientProtocol.ExecuteProvisioning, "mcsl.provisioning.execute"),
             Accessor(V2ClientProtocol.GetSystemInfo, "mcsl.system.info.get"),
             Accessor(V2ClientProtocol.DiscoverRpc, "rpc.discover")
         ];
@@ -152,6 +156,7 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.GetInstanceSettings), Case(V2ClientProtocol.UpdateInstanceSettings),
             Case(V2ClientProtocol.StartInstance), Case(V2ClientProtocol.StopInstance), Case(V2ClientProtocol.ListJavaRuntimes),
             Case(V2ClientProtocol.CancelOperation), Case(V2ClientProtocol.GetOperation), Case(V2ClientProtocol.ListOperations),
+            Case(V2ClientProtocol.ResolveProvisioning), Case(V2ClientProtocol.GetProvisioningPlan), Case(V2ClientProtocol.ExecuteProvisioning),
             Case(V2ClientProtocol.GetSystemInfo), Case(V2ClientProtocol.DiscoverRpc)
         ];
 
@@ -332,6 +337,11 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(OperationCancelRequest)) return "{\"operation_id\":\"" + Id + "\",\"owner_principal\":\"owner-a\"}";
             if (type == typeof(OperationCancelResult)) return "{\"operation_id\":\"" + Id + "\",\"cancel_requested\":true}";
             if (type == typeof(OperationSnapshot)) return "{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}";
+            if (type == typeof(ProvisioningResolveRequest)) return "{\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"creator_principal\":\"owner-a\",\"idempotency_key\":\"idem-1\",\"expiry\":null}";
+            if (type == typeof(ProvisioningPlanReference)) return "{\"plan_id\":\"" + Id + "\"}";
+            if (type == typeof(ProvisioningExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
+            if (type == typeof(ProvisioningExecuteResult)) return "{\"plan_id\":\"" + Id + "\",\"operation_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\"}";
+            if (type == typeof(ProvisioningPlanSnapshot)) return "{\"plan_id\":\"" + Id + "\",\"plan_hash\":\"abc\",\"kind\":\"provisioning.instance\",\"status\":\"ready\",\"risk_class\":\"routine\",\"required_permissions\":[\"mcsl.provisioning.resolve\"],\"requires_confirmation\":false,\"creator_principal\":\"owner-a\",\"created_at\":\"2026-01-01T00:00:00+00:00\",\"expires_at\":\"2026-01-01T00:15:00+00:00\",\"unresolved\":[],\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"idempotency_key\":\"idem-1\",\"payload\":{}}";
             if (type == typeof(OperationListResult)) return "{\"operations\":[{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}]}";
             if (type == typeof(SystemInfo)) return System;
             if (type == typeof(OpenRpcDocument)) return "{\"openrpc\":\"1.3.2\",\"info\":{\"title\":\"daemon\",\"version\":\"2\"},\"methods\":[],\"x-mcsl-events\":[],\"components\":{\"schemas\":{}}}";

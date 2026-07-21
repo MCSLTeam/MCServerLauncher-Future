@@ -8,6 +8,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
 
@@ -65,6 +66,9 @@ public static class BuiltInProtocolDefinitions
     public static RpcDescriptor<OperationListQuery, OperationListResult> ListOperations { get; } = Rpc("mcsl.operation.list", new("mcsl.operation.list"), Application.OperationListQuery, Application.OperationListResult, "operations", "List operations", "Lists retained long-running operations visible to the caller.");
     public static RpcDescriptor<OperationReference, OperationSnapshot> GetOperation { get; } = Rpc("mcsl.operation.get", new("mcsl.operation.get"), Application.OperationReference, Application.OperationSnapshot, "operations", "Get operation", "Gets an immutable snapshot of a long-running operation.");
     public static RpcDescriptor<OperationCancelRequest, OperationCancelResult> CancelOperation { get; } = Rpc("mcsl.operation.cancel", new("mcsl.operation.cancel"), Application.OperationCancelRequest, Application.OperationCancelResult, "operations", "Cancel operation", "Requests cooperative cancellation of a long-running operation.");
+    public static RpcDescriptor<ProvisioningResolveRequest, ProvisioningPlanSnapshot> ResolveProvisioning { get; } = Rpc("mcsl.provisioning.resolve", new("mcsl.provisioning.resolve"), Application.ProvisioningResolveRequest, Application.ProvisioningPlanSnapshot, "provisioning", "Resolve provisioning plan", "Resolves an immutable provisioning plan for automatic providers.");
+    public static RpcDescriptor<ProvisioningPlanReference, ProvisioningPlanSnapshot> GetProvisioningPlan { get; } = Rpc("mcsl.provisioning.get", new("mcsl.provisioning.get"), Application.ProvisioningPlanReference, Application.ProvisioningPlanSnapshot, "provisioning", "Get provisioning plan", "Gets an immutable provisioning plan snapshot.");
+    public static RpcDescriptor<ProvisioningExecuteRequest, ProvisioningExecuteResult> ExecuteProvisioning { get; } = Rpc("mcsl.provisioning.execute", new("mcsl.provisioning.execute"), Application.ProvisioningExecuteRequest, Application.ProvisioningExecuteResult, "provisioning", "Execute provisioning plan", "Executes a ready provisioning plan as a long-running operation.");
     public static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo { get; } = Rpc("mcsl.system.info.get", Authenticated, Protocol.EmptyRequest, Application.SystemInfo, "system", "Get system information", "Gets daemon host system information.");
     public static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc { get; } = Rpc("rpc.discover", Authenticated, Protocol.EmptyRequest, Protocol.OpenRpcDocument, "discovery", "Discover protocol", "Gets the frozen runtime OpenRPC protocol document.");
 
@@ -93,7 +97,7 @@ public static class BuiltInProtocolDefinitions
             SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
             CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
             UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
-            UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, ListOperations, GetOperation, CancelOperation, GetSystemInfo, DiscoverRpc)
+            UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, ListOperations, GetOperation, CancelOperation, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning, GetSystemInfo, DiscoverRpc)
         .Sort(CompareRpcs);
 
     private static ImmutableArray<EventDescriptor> CreateEvents() =>

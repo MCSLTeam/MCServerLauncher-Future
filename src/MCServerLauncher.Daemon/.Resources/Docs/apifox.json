@@ -1674,10 +1674,132 @@
           ]
         },
         {
+          "id": "mcsl-folder-41ad1948",
+          "name": "provisioning",
+          "description": "provisioning RPC methods.",
+          "ordering": 8,
+          "items": [
+            {
+              "id": "mcsl-rpc-item-9bfd0278",
+              "name": "mcsl.provisioning.execute",
+              "api": {
+                "id": "mcsl-rpc-9bfd0278",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-4253e233",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.provisioning.execute\u0022,\n  \u0022params\u0022: {\n    \u0022executor_principal\u0022: \u0022\u0022,\n    \u0022plan_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Executes a ready provisioning plan as a long-running operation.\n\nPermission: \u0060mcsl.provisioning.execute\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.provisioning.execute.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.provisioning.execute.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 1,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-47541837",
+              "name": "mcsl.provisioning.get",
+              "api": {
+                "id": "mcsl-rpc-47541837",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-8ba9bbac",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.provisioning.get\u0022,\n  \u0022params\u0022: {\n    \u0022plan_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Gets an immutable provisioning plan snapshot.\n\nPermission: \u0060mcsl.provisioning.get\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.provisioning.get.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.provisioning.get.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 2,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-2b13ad43",
+              "name": "mcsl.provisioning.resolve",
+              "api": {
+                "id": "mcsl-rpc-2b13ad43",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-2ddd2418",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.provisioning.resolve\u0022,\n  \u0022params\u0022: {\n    \u0022creator_principal\u0022: \u0022\u0022,\n    \u0022expiry\u0022: {},\n    \u0022idempotency_key\u0022: {},\n    \u0022instance_name\u0022: \u0022\u0022,\n    \u0022java_path\u0022: {},\n    \u0022minecraft_version\u0022: \u0022\u0022,\n    \u0022mirror\u0022: \u0022none\u0022,\n    \u0022provider\u0022: \u0022vanilla\u0022,\n    \u0022source\u0022: {}\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Resolves an immutable provisioning plan for automatic providers.\n\nPermission: \u0060mcsl.provisioning.resolve\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.provisioning.resolve.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.provisioning.resolve.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 3,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            }
+          ]
+        },
+        {
           "id": "mcsl-folder-491e0a9c",
           "name": "system",
           "description": "system RPC methods.",
-          "ordering": 8,
+          "ordering": 9,
           "items": [
             {
               "id": "mcsl-rpc-item-dc1d30c6",
@@ -5858,6 +5980,484 @@
           "moduleId": "mcsl-daemon-protocol"
         },
         {
+          "id": "#/definitions/mcsl.schema.mcsl.provisioning.execute.request",
+          "name": "mcsl.schema.mcsl.provisioning.execute.request",
+          "displayName": "mcsl.schema.mcsl.provisioning.execute.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.provisioning.execute.request",
+              "type": "object",
+              "properties": {
+                "executor_principal": {
+                  "type": "string"
+                },
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "executor_principal",
+                "plan_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 86,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.provisioning.execute.result",
+          "name": "mcsl.schema.mcsl.provisioning.execute.result",
+          "displayName": "mcsl.schema.mcsl.provisioning.execute.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "instance_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "plan_id",
+                "operation_id",
+                "instance_id"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.provisioning.execute.result"
+            }
+          },
+          "ordering": 87,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.provisioning.get.request",
+          "name": "mcsl.schema.mcsl.provisioning.get.request",
+          "displayName": "mcsl.schema.mcsl.provisioning.get.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.provisioning.get.request",
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "plan_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 88,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.provisioning.get.result",
+          "name": "mcsl.schema.mcsl.provisioning.get.result",
+          "displayName": "mcsl.schema.mcsl.provisioning.get.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "plan_hash": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "ready",
+                    "blocked",
+                    "executing",
+                    "consumed",
+                    "expired"
+                  ]
+                },
+                "risk_class": {
+                  "enum": [
+                    "routine",
+                    "sensitive",
+                    "destructive"
+                  ]
+                },
+                "required_permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requires_confirmation": {
+                  "type": "boolean"
+                },
+                "creator_principal": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "field": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "provider": {
+                  "enum": [
+                    "vanilla",
+                    "paper",
+                    "fabric",
+                    "forge",
+                    "neo_forge",
+                    "quilt"
+                  ]
+                },
+                "instance_name": {
+                  "type": "string"
+                },
+                "minecraft_version": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "mirror": {
+                  "enum": [
+                    "none",
+                    "bmcl_api"
+                  ]
+                },
+                "java_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "idempotency_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "payload": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
+              "required": [
+                "plan_id",
+                "plan_hash",
+                "kind",
+                "status",
+                "risk_class",
+                "required_permissions",
+                "requires_confirmation",
+                "creator_principal",
+                "created_at",
+                "expires_at",
+                "unresolved",
+                "provider",
+                "instance_name",
+                "minecraft_version",
+                "source",
+                "mirror",
+                "java_path",
+                "idempotency_key",
+                "payload"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.provisioning.get.result"
+            }
+          },
+          "ordering": 89,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.provisioning.resolve.request",
+          "name": "mcsl.schema.mcsl.provisioning.resolve.request",
+          "displayName": "mcsl.schema.mcsl.provisioning.resolve.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.provisioning.resolve.request",
+              "type": "object",
+              "properties": {
+                "creator_principal": {
+                  "type": "string"
+                },
+                "expiry": {
+                  "$comment": "Represents a System.TimeSpan value.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^-?(\\d\u002B\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+                  "default": null
+                },
+                "idempotency_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "instance_name": {
+                  "type": "string"
+                },
+                "java_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "minecraft_version": {
+                  "type": "string"
+                },
+                "mirror": {
+                  "enum": [
+                    "none",
+                    "bmcl_api"
+                  ]
+                },
+                "provider": {
+                  "enum": [
+                    "vanilla",
+                    "paper",
+                    "fabric",
+                    "forge",
+                    "neo_forge",
+                    "quilt"
+                  ]
+                },
+                "source": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "creator_principal",
+                "instance_name",
+                "java_path",
+                "minecraft_version",
+                "mirror",
+                "provider",
+                "source"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 90,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.provisioning.resolve.result",
+          "name": "mcsl.schema.mcsl.provisioning.resolve.result",
+          "displayName": "mcsl.schema.mcsl.provisioning.resolve.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "plan_hash": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "ready",
+                    "blocked",
+                    "executing",
+                    "consumed",
+                    "expired"
+                  ]
+                },
+                "risk_class": {
+                  "enum": [
+                    "routine",
+                    "sensitive",
+                    "destructive"
+                  ]
+                },
+                "required_permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requires_confirmation": {
+                  "type": "boolean"
+                },
+                "creator_principal": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "field": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "provider": {
+                  "enum": [
+                    "vanilla",
+                    "paper",
+                    "fabric",
+                    "forge",
+                    "neo_forge",
+                    "quilt"
+                  ]
+                },
+                "instance_name": {
+                  "type": "string"
+                },
+                "minecraft_version": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "mirror": {
+                  "enum": [
+                    "none",
+                    "bmcl_api"
+                  ]
+                },
+                "java_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "idempotency_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "payload": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
+              "required": [
+                "plan_id",
+                "plan_hash",
+                "kind",
+                "status",
+                "risk_class",
+                "required_permissions",
+                "requires_confirmation",
+                "creator_principal",
+                "created_at",
+                "expires_at",
+                "unresolved",
+                "provider",
+                "instance_name",
+                "minecraft_version",
+                "source",
+                "mirror",
+                "java_path",
+                "idempotency_key",
+                "payload"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.provisioning.resolve.result"
+            }
+          },
+          "ordering": 91,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
           "id": "#/definitions/mcsl.schema.mcsl.system.info.get.request",
           "name": "mcsl.schema.mcsl.system.info.get.request",
           "displayName": "mcsl.schema.mcsl.system.info.get.request",
@@ -5871,7 +6471,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 86,
+          "ordering": 92,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6017,7 +6617,7 @@
               "$id": "mcsl.schema.mcsl.system.info.get.result"
             }
           },
-          "ordering": 87,
+          "ordering": 93,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6034,7 +6634,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 88,
+          "ordering": 94,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6275,7 +6875,7 @@
               "$id": "mcsl.schema.rpc.discover.result"
             }
           },
-          "ordering": 89,
+          "ordering": 95,
           "moduleId": "mcsl-daemon-protocol"
         }
       ]

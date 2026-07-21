@@ -11,4 +11,6 @@ public interface IDaemonApplication
     IEventRuleApplication EventRules { get; }
 
     IOperationApplication Operations { get; }
+
+    IProvisioningApplication Provisioning { get; }
 }

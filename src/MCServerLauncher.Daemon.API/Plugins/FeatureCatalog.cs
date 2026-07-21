@@ -123,7 +123,7 @@ public static class FeatureCatalog
             "Resolve and execute immutable provisioning plans.",
             PluginFeatureRisk.Medium,
             ["mcsl.provisioning.resolve", "mcsl.provisioning.get", "mcsl.provisioning.execute"],
-            implemented: false),
+            implemented: true),
         Descriptor(PluginFeature.BackupManage, "List, create, prune, and restore cold backups.", PluginFeatureRisk.Medium, [], implemented: false),
         Descriptor(PluginFeature.MonitoringQuery, "Read retained system and instance metrics.", PluginFeatureRisk.None, [], implemented: false),
         Descriptor(PluginFeature.AutomationManage, "Validate, test, apply, and enable typed automation policies.", PluginFeatureRisk.Medium, [], implemented: false),

@@ -5,6 +5,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Daemon.API.Protocol;
 
 namespace MCServerLauncher.DaemonClient.Protocol;
@@ -53,6 +54,9 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<OperationCancelRequest, OperationCancelResult> CancelOperation => BuiltInProtocolDefinitions.CancelOperation;
     internal static RpcDescriptor<OperationReference, OperationSnapshot> GetOperation => BuiltInProtocolDefinitions.GetOperation;
     internal static RpcDescriptor<OperationListQuery, OperationListResult> ListOperations => BuiltInProtocolDefinitions.ListOperations;
+    internal static RpcDescriptor<ProvisioningResolveRequest, ProvisioningPlanSnapshot> ResolveProvisioning => BuiltInProtocolDefinitions.ResolveProvisioning;
+    internal static RpcDescriptor<ProvisioningPlanReference, ProvisioningPlanSnapshot> GetProvisioningPlan => BuiltInProtocolDefinitions.GetProvisioningPlan;
+    internal static RpcDescriptor<ProvisioningExecuteRequest, ProvisioningExecuteResult> ExecuteProvisioning => BuiltInProtocolDefinitions.ExecuteProvisioning;
     internal static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo => BuiltInProtocolDefinitions.GetSystemInfo;
     internal static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc => BuiltInProtocolDefinitions.DiscoverRpc;
 
@@ -67,7 +71,7 @@ internal static class V2ClientProtocol
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
-        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, GetSystemInfo,
+        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning, GetSystemInfo,
         DiscoverRpc
     ];
 
