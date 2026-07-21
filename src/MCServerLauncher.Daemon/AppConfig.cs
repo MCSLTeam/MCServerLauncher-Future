@@ -1,3 +1,4 @@
+using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
@@ -26,13 +27,19 @@ internal class AppConfig
         string secret,
         string mainToken,
         int fileDownloadSessions = 3,
-        bool verbose = false)
+        bool verbose = false,
+        DaemonSecurityConfig? security = null,
+        DaemonPluginsConfig? plugins = null)
     {
         Port = port;
         Secret = secret;
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
         Verbose = verbose;
+        // Cold-merge defaults for missing security/plugins sections so existing config.json
+        // files keep working without forcing a first-run Q&A.
+        Security = security ?? new DaemonSecurityConfig();
+        Plugins = plugins ?? DaemonPluginsConfig.Default;
         Log.Information("[AppConfig] Loaded configuration for port {Port}.", port);
     }
 
@@ -53,6 +60,10 @@ internal class AppConfig
     public string Secret { get; private set; }
 
     public int FileDownloadSessions { get; private set; }
+
+    public DaemonSecurityConfig Security { get; private set; }
+
+    public DaemonPluginsConfig Plugins { get; private set; }
 
     internal static JsonTypeInfo<AppConfig> PersistenceWriteIndentedTypeInfo { get; } = ResolvePersistenceWriteIndentedTypeInfo();
 

@@ -7,6 +7,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ namespace MCServerLauncher.Daemon.Plugins;
 internal enum PluginRuntimeState
 {
     Discovered,
+    Admitted,
     Configured,
     Validated,
     Started,
@@ -39,6 +41,8 @@ internal sealed class PluginHost
     private readonly IPluginEventBus _eventBus;
     private readonly string _pluginsRoot;
     private readonly TimeSpan _startTimeout;
+    private readonly DaemonPluginsConfig _pluginsConfig;
+    private readonly PluginHttpEndpointRegistry _httpEndpoints;
     private readonly List<PluginRuntime> _runtimes = [];
     private readonly List<PluginRuntime> _started = [];
     private readonly SemaphoreSlim _operationGate = new(1, 1);
@@ -56,7 +60,10 @@ internal sealed class PluginHost
             loggerFactory,
             logger,
             Path.Combine(AppContext.BaseDirectory, "plugins"),
-            eventBus)
+            eventBus,
+            DefaultStartTimeout,
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry())
     {
     }
 
@@ -72,7 +79,9 @@ internal sealed class PluginHost
             logger,
             pluginsRoot,
             eventBus,
-            DefaultStartTimeout)
+            DefaultStartTimeout,
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry())
     {
     }
 
@@ -83,6 +92,27 @@ internal sealed class PluginHost
         string pluginsRoot,
         IPluginEventBus eventBus,
         TimeSpan startTimeout)
+        : this(
+            instances,
+            loggerFactory,
+            logger,
+            pluginsRoot,
+            eventBus,
+            startTimeout,
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry())
+    {
+    }
+
+    internal PluginHost(
+        IInstanceSnapshotSource instances,
+        ILoggerFactory loggerFactory,
+        ILogger<PluginHost> logger,
+        string pluginsRoot,
+        IPluginEventBus eventBus,
+        TimeSpan startTimeout,
+        DaemonPluginsConfig pluginsConfig,
+        PluginHttpEndpointRegistry httpEndpoints)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -92,7 +122,16 @@ internal sealed class PluginHost
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(startTimeout, TimeSpan.Zero);
         _pluginsRoot = Path.GetFullPath(pluginsRoot);
         _startTimeout = startTimeout;
+        _pluginsConfig = pluginsConfig ?? DaemonPluginsConfig.Default;
+        _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
     }
+
+    /// <summary>
+    /// HTTP endpoint registry shared with the daemon listener setup so plugin listeners can
+    /// reserve IP:port against the daemon's own /api/v2 port before any plugin opens a socket.
+    /// </summary>
+    internal PluginHttpEndpointRegistry HttpEndpoints => _httpEndpoints;
+
 
     internal ImmutableArray<(string Id, PluginRuntimeState State)> States
     {
@@ -115,13 +154,44 @@ internal sealed class PluginHost
             foreach (var failure in discovery.Failures)
                 _logger.LogError(failure.Exception, "Skipping plugin bundle {Bundle}: {Code} {Message}", failure.BundleDirectory, failure.Code, failure.Message);
 
+            // Admission gate (SDK-1): apply the frozen grant_level + plugin_grants policy to each
+            // discovered manifest before any plugin code runs. A plugin whose required features are
+            // not a subset of the effective grant set, or which is disabled, is skipped atomically
+            // with a warning rather than loaded. This runs before TryLoad so high-risk features
+            // (e.g. network.http.listen) cannot execute before the policy is evaluated.
+            var admitted = new List<PluginManifest>();
             foreach (var manifest in discovery.Plugins)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var grant = PluginAdmissionPolicy.Decide(manifest, _pluginsConfig);
+                if (!grant.Enabled)
+                {
+                    _logger.LogWarning("Plugin {PluginId} is disabled by config; skipping.", manifest.Identity.Id);
+                    continue;
+                }
+
+                if (grant.Denied.Length > 0)
+                {
+                    var denied = string.Join(", ", grant.Denied.Select(static f => f.Value));
+                    _logger.LogWarning(
+                        "Plugin {PluginId} requires features not granted by the current policy ({Denied}); skipping. "
+                        + "Adjust plugins.grant_level / plugin_grants / entries in config.json to admit it.",
+                        manifest.Identity.Id,
+                        denied);
+                    continue;
+                }
+
+                admitted.Add(manifest);
+            }
+
+            foreach (var manifest in admitted)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var runtime = TryLoad(manifest);
                 if (runtime is null)
                     continue;
 
+                runtime.State = PluginRuntimeState.Admitted;
                 _runtimes.Add(runtime);
                 Configure(runtime);
             }
@@ -233,17 +303,19 @@ internal sealed class PluginHost
                 {
                     runtime.Activation.TrySetCanceled();
                     DisposeLifetime(runtime);
+                    _httpEndpoints.Release(runtime.Manifest.Identity.Id);
                     runtime.State = PluginRuntimeState.Stopped;
                 }
             }
 
-            foreach (var runtime in _runtimes.Where(static runtime => runtime.State is PluginRuntimeState.Configured or PluginRuntimeState.Validated))
+            foreach (var runtime in _runtimes.Where(static runtime => runtime.State is PluginRuntimeState.Configured or PluginRuntimeState.Validated or PluginRuntimeState.Admitted))
             {
                 CancelLifetime(runtime, "cleanup");
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
                 DisposeLifetime(runtime);
+                _httpEndpoints.Release(runtime.Manifest.Identity.Id);
                 runtime.State = PluginRuntimeState.Stopped;
             }
         }
@@ -386,6 +458,10 @@ internal sealed class PluginHost
                 CancelStartAndDisposeLater(runtime, startCancellation);
                 disposeStartCancellation = false;
                 FailStartCancellation(runtime, cancellationToken);
+                // Roll back plugin-owned resources (e.g. a Kestrel listener bound during Start)
+                // before declaring failure, so a timed-out plugin cannot leave a listener serving
+                // after the host reports it skipped.
+                await StopRollbackAsync(runtime).ConfigureAwait(false);
                 return;
             }
 
@@ -394,12 +470,14 @@ internal sealed class PluginHost
             {
                 ObserveLateStartFault(runtime, startTask);
                 FailStartCancellation(runtime, cancellationToken);
+                await StopRollbackAsync(runtime).ConfigureAwait(false);
                 return;
             }
 
             if (result.IsErr(out var error))
             {
                 Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
+                await StopRollbackAsync(runtime).ConfigureAwait(false);
                 return;
             }
 
@@ -411,10 +489,12 @@ internal sealed class PluginHost
         {
             ObserveLateStartFault(runtime, startTask);
             FailStartCancellation(runtime, cancellationToken);
+            await StopRollbackAsync(runtime).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
             Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
+            await StopRollbackAsync(runtime).ConfigureAwait(false);
         }
         finally
         {
@@ -506,6 +586,38 @@ internal sealed class PluginHost
             runtime.Manifest.Identity.Id);
     }
 
+    private async Task StopRollbackAsync(PluginRuntime runtime)
+    {
+        // Best-effort: give the plugin a bounded chance to StopAsync so it can release plugin-owned
+        // resources (Kestrel, file handles) before the host marks it failed. A plugin that ignores
+        // cancellation is bounded by the stop deadline; failures here are logged, never rethrown.
+        if (runtime.State is PluginRuntimeState.Stopped or PluginRuntimeState.Failed)
+            return;
+
+        using var stopTimeout = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
+        stopTimeout.CancelAfter(TimeSpan.FromSeconds(30));
+        try
+        {
+            var result = await runtime.Plugin.StopAsync(stopTimeout.Token)
+                .WaitAsync(stopTimeout.Token)
+                .ConfigureAwait(false);
+            if (result.IsErr(out var error))
+                LogReturnedError(runtime, "rollback", error!);
+        }
+        catch (OperationCanceledException) when (stopTimeout.IsCancellationRequested)
+        {
+            _logger.LogWarning("Plugin {PluginId} rollback stop timed out.", runtime.Manifest.Identity.Id);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Plugin {PluginId} rollback stop threw; continuing cleanup.", runtime.Manifest.Identity.Id);
+        }
+        finally
+        {
+            _httpEndpoints.Release(runtime.Manifest.Identity.Id);
+        }
+    }
+
     private void Fail(
         PluginRuntime runtime,
         string stage,
@@ -546,6 +658,7 @@ internal sealed class PluginHost
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
         DisposeLifetime(runtime);
+        _httpEndpoints.Release(runtime.Manifest.Identity.Id);
         runtime.State = PluginRuntimeState.Failed;
     }
 

@@ -8,6 +8,7 @@ using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Plugins;
+using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -75,7 +76,29 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
         a.RegisterSingleton<IPluginEventBus, PluginEventBus>();
-        a.RegisterSingleton<PluginHost>();
+
+        // SDK-1 admission: config-sourced start timeout, grant policy, and a shared HTTP endpoint
+        // registry so plugin listeners reserve IP:port against the daemon's own /api/v2 port.
+        var appConfig = AppConfig.Get();
+        var startTimeoutSeconds = appConfig.Plugins.StartTimeoutSeconds is > 0
+            ? appConfig.Plugins.StartTimeoutSeconds
+            : 30;
+        var startTimeout = TimeSpan.FromSeconds(startTimeoutSeconds);
+        var httpEndpoints = new PluginHttpEndpointRegistry();
+        // Reserve the daemon's own /api/v2 port before any plugin can claim it.
+        _ = httpEndpoints.TryRegister("mcsl.daemon", new System.Net.IPEndPoint(System.Net.IPAddress.Any, appConfig.Port), out _);
+        a.RegisterSingleton(httpEndpoints);
+        collection.AddSingleton(appConfig.Plugins);
+        collection.AddSingleton(httpEndpoints);
+        collection.AddSingleton(serviceProvider => new PluginHost(
+            serviceProvider.GetRequiredService<IInstanceSnapshotSource>(),
+            serviceProvider.GetRequiredService<ILoggerFactory>(),
+            serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<PluginHost>(),
+            System.IO.Path.Combine(AppContext.BaseDirectory, "plugins"),
+            serviceProvider.GetRequiredService<IPluginEventBus>(),
+            startTimeout,
+            appConfig.Plugins,
+            httpEndpoints));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);

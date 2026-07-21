@@ -64,7 +64,8 @@ internal sealed record PluginManifest(
     VersionRange ApiVersionRange,
     FrozenSet<PluginFeature> Features,
     string BundleDirectory,
-    string EntryAssemblyPath)
+    string EntryAssemblyPath,
+    string ManifestDigest)
 {
     public bool HasFeature(PluginFeature feature) => Features.Contains(feature);
 }
@@ -163,6 +164,23 @@ internal static class PluginManifestReader
             throw new PluginManifestException("entry_missing", $"The plugin entry assembly '{entryAssembly}' does not exist.");
 
         var features = ParseFeatures(document.Requires.Features);
+
+        // Canonical digest over the on-disk manifest JSON bytes. Runtime admission compares it
+        // against the stored permanent admission; a mismatch forces re-review. Computed from
+        // the raw file bytes (not a re-serialization) so it is stable across host JSON option
+        // drift.
+        string manifestDigest;
+        try
+        {
+            using var digestStream = File.OpenRead(manifestPath);
+            var hash = System.Security.Cryptography.SHA256.HashData(digestStream);
+            manifestDigest = Convert.ToHexString(hash).ToLowerInvariant();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new PluginManifestException("manifest_invalid", "The plugin manifest digest could not be computed.", exception);
+        }
+
         return new PluginManifest(
             identity,
             entryAssembly,
@@ -171,7 +189,8 @@ internal static class PluginManifestReader
             apiVersionRange,
             features,
             fullBundleDirectory,
-            entryAssemblyPath);
+            entryAssemblyPath,
+            manifestDigest);
     }
 
     private static string Require(string? value, string field)
