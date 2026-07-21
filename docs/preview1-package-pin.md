@@ -38,6 +38,9 @@ Repo build settings stabilize package payload assemblies:
 
 Normal daemon/WPF builds keep referenced-project PDBs so release `include_pdb=true` archives stay complete. The pin property is pack-only.
 
+Reproducibility requires .NET SDK `10.0.201` (`global.json` + release workflow
+`setup-dotnet`). Payload fingerprints are only guaranteed under that SDK.
+
 Acceptance fingerprints are SHA-256 of payload entries from:
 
 ```powershell
@@ -45,6 +48,12 @@ dotnet pack src/MCServerLauncher.Common/MCServerLauncher.Common.csproj -c Releas
 dotnet pack src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj -c Release -o artifacts/preview1-packages /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true
 dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj -c Release -o artifacts/preview1-packages /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true
 ```
+
+The GitHub release NuGet job, when the release tag is `2.0.0-preview.1` /
+`v2.0.0-preview.1`, packs Common / Daemon.API / Plugin.Sdk with
+`-p:MCSL_PIN_PACKAGE_PAYLOAD=true` and each project's declared PackageVersion
+(`Common 1.0.0`, `Daemon.API` / `Plugin.Sdk 2.0.0-preview.1`). Other tags keep
+the historical tag-derived version override for Common + Daemon.API only.
 
 ### `MCServerLauncher.Common.1.0.0.nupkg`
 
