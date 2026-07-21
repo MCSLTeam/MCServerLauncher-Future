@@ -6,6 +6,8 @@ using Downloader;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V2Json;
 using MCServerLauncher.Daemon.Storage;
@@ -36,9 +38,26 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
     protected string InstallerPath { get; }
 
     protected InstanceFactoryMirror MirrorType { get; }
+    protected IOperationContext Operation { get; private set; } = NoOpOperationContext.Instance;
+    private IOperationContext? _activeDownloadContext;
     protected static string LibraryCacheRoot => Path.Combine(FileManager.CacheRoot, "libraries");
     public abstract InstallV1 Install { get; }
-    public abstract Task<Result<Unit, DaemonError>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default);
+    public abstract Task<Result<Unit, DaemonError>> Run(
+        InstanceFactoryConfiguration setting,
+        CancellationToken ct = default,
+        IOperationContext? operation = null);
+
+    protected void BindOperation(IOperationContext? operation) =>
+        Operation = operation ?? NoOpOperationContext.Instance;
+
+    protected IDisposable UseDownloadContext(IOperationContext context)
+    {
+        var previous = _activeDownloadContext;
+        _activeDownloadContext = context;
+        return new RestoreDownloadContext(this, previous);
+    }
+
+    private IOperationContext CurrentDownloadContext => _activeDownloadContext ?? Operation;
 
     protected static async Task<List<TLibrary>> ParallelProcessLibraries<TLibrary>(
         List<TLibrary> libraries,
@@ -111,29 +130,33 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
         Justification = "Forge metadata download selection intentionally enters localized manifest parsing boundaries for third-party installer metadata.")]
     protected async Task<bool> DownloadMinecraft(string targetPath,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
+        operation ??= CurrentDownloadContext;
         var success = MirrorType switch
         {
             InstanceFactoryMirror.BmclApi => await DownloadMinecraft(await Install.GetMcDownloadFromBmclApi(ct),
-                targetPath, ct),
+                targetPath, ct, operation),
             InstanceFactoryMirror.None => false,
             _ => throw new NotImplementedException()
         };
 
         if (success) return true;
-        return await DownloadMinecraft(await Install.GetMcDownload(ct), targetPath, ct);
+        return await DownloadMinecraft(await Install.GetMcDownload(ct), targetPath, ct, operation);
     }
 
     private static async Task<bool> DownloadMinecraft(Version.Download? dl, string targetPath,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
         if (string.IsNullOrEmpty(dl?.Url)) return false;
-        return await Download(dl.Url, targetPath, dl.Sha1, ct);
+        return await Download(dl.Url, targetPath, dl.Sha1, ct, operation);
     }
 
     protected static Task<bool> Download(string url, string target, string? sha1 = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
         return DownloadCore(url, target, async downloadedFilename =>
         {
@@ -149,11 +172,12 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
             }
 
             return true;
-        }, ct);
+        }, ct, operation);
     }
 
     protected static Task<bool> Download(string url, string target, IEnumerable<string> checksums,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
         return DownloadCore(url, target, async downloadedFilename =>
         {
@@ -164,7 +188,7 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
             if (checksumList.Any(checksum => Sha1Equals(fileSha1, checksum))) return true;
             File.Delete(downloadedFilename);
             return false;
-        }, ct);
+        }, ct, operation);
     }
 
     protected static async Task<bool> TryCopyLibraryFromCache(
@@ -210,29 +234,31 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
         return true;
     }
 
-    protected static async Task<bool> DownloadLibraryWithCache(
+    protected async Task<bool> DownloadLibraryWithCache(
         Artifact artifact,
         string url,
         string target,
         string? sha1,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
         if (await TryCopyLibraryFromCache(artifact, target, sha1, ct)) return true;
-        if (!await Download(url, target, sha1, ct)) return false;
+        if (!await Download(url, target, sha1, ct, operation ?? CurrentDownloadContext)) return false;
         await StoreLibraryInCache(artifact, target, sha1, ct);
         return true;
     }
 
-    protected static async Task<bool> DownloadLibraryWithCache(
+    protected async Task<bool> DownloadLibraryWithCache(
         Artifact artifact,
         string url,
         string target,
         IEnumerable<string> checksums,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
         var checksumList = checksums.ToArray();
         if (await TryCopyLibraryFromCache(artifact, target, checksumList, ct)) return true;
-        if (!await Download(url, target, checksumList, ct)) return false;
+        if (!await Download(url, target, checksumList, ct, operation ?? CurrentDownloadContext)) return false;
         await StoreLibraryInCache(artifact, target, checksumList, ct);
         return true;
     }
@@ -281,6 +307,11 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
         File.Copy(source, cachePath, true);
     }
 
+    private sealed class RestoreDownloadContext(ForgeInstallerBase owner, IOperationContext? previous) : IDisposable
+    {
+        public void Dispose() => owner._activeDownloadContext = previous;
+    }
+
     private static bool Sha1Equals(string actual, string expected)
     {
         return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
@@ -290,9 +321,12 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
         string url,
         string target,
         Func<string, Task<bool>> predicate,
-        CancellationToken ct = default
+        CancellationToken ct = default,
+        IOperationContext? operation = null
     )
     {
+        operation ??= NoOpOperationContext.Instance;
+
         // 下载
         var dl = new DownloadBuilder()
             .WithUrl(url)
@@ -308,6 +342,21 @@ public abstract class ForgeInstallerBase : IInstanceInstaller
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0"
                 }
             }).Build();
+
+        dl.DownloadProgressChanged += (_, args) =>
+        {
+            var total = args.TotalBytesToReceive > 0 ? args.TotalBytesToReceive : (long?)null;
+            var received = args.ReceivedBytesSize;
+            operation.ReportProgress(new OperationProgress(
+                Indeterminate: total is null,
+                Completed: received,
+                Total: total,
+                Unit: "bytes",
+                BytesTransferred: received,
+                BytesTotal: total,
+                Rate: args.BytesPerSecondSpeed));
+        };
+
         await dl.StartAsync(ct);
         if (dl.Status == DownloadStatus.Failed)
         {
