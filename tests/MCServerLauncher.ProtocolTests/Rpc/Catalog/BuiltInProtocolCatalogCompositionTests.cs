@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -124,6 +125,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
             new ThrowingEventRuleApplication(),
             new ThrowingOperationApplication(),
             new ThrowingProvisioningApplication(),
+            new ThrowingTokenIssueApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
             accessor,
@@ -168,7 +170,12 @@ public sealed class BuiltInProtocolCatalogCompositionTests
         public Task<Result<Unit, DaemonError>> UpdateEventRulesAsync(EventRuleUpdateRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
-    
+
+    private sealed class ThrowingTokenIssueApplication : ITokenIssueApplication
+    {
+        public Task<Result<TokenIssueResult, DaemonError>> IssueTokenAsync(TokenIssueRequest request, ICallerContext caller, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
     private sealed class ThrowingProvisioningApplication : IProvisioningApplication
     {
         public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ResolveAsync(ProvisioningResolveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();

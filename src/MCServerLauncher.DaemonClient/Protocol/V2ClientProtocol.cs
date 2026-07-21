@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Daemon.API.Protocol;
@@ -13,6 +14,7 @@ namespace MCServerLauncher.DaemonClient.Protocol;
 internal static class V2ClientProtocol
 {
     internal static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions => BuiltInProtocolDefinitions.GetAuthPermissions;
+    internal static RpcDescriptor<TokenIssueRequest, TokenIssueResult> IssueToken => BuiltInProtocolDefinitions.IssueToken;
     internal static RpcDescriptor<EmptyRequest, PingResult> PingDaemon => BuiltInProtocolDefinitions.PingDaemon;
     internal static RpcDescriptor<PathTransferRequest, UnitResult> CopyDirectory => BuiltInProtocolDefinitions.CopyDirectory;
     internal static RpcDescriptor<PathRequest, UnitResult> CreateDirectory => BuiltInProtocolDefinitions.CreateDirectory;
@@ -67,7 +69,7 @@ internal static class V2ClientProtocol
 
     internal static ImmutableArray<RpcDescriptor> Rpcs { get; } =
     [
-        GetAuthPermissions, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
+        GetAuthPermissions, IssueToken, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,

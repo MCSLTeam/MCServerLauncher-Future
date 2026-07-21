@@ -267,7 +267,7 @@ public sealed class ProtocolRpcExecutionTests
         var subscriptionMembers = InterfaceMemberNames(typeof(IProtocolSubscriptionOperations));
         var fileSessionMembers = InterfaceMemberNames(typeof(IProtocolFileSessionOperations));
 
-        Assert.Equal([nameof(IProtocolPermissionView.Permissions)], permissionMembers);
+        Assert.Equal([nameof(IProtocolPermissionView.IsMainToken), nameof(IProtocolPermissionView.Permissions), nameof(IProtocolPermissionView.Subject)], permissionMembers);
         Assert.Equal(
             [nameof(IProtocolSubscriptionOperations.Subscribe), nameof(IProtocolSubscriptionOperations.Unsubscribe)],
             subscriptionMembers);
@@ -359,7 +359,7 @@ public sealed class ProtocolRpcExecutionTests
                type.FullName?.Contains("IServiceProvider", StringComparison.Ordinal) == true;
     }
 
-    private sealed record TestPermissionView(ImmutableArray<string> Permissions) : IProtocolPermissionView;
+    private sealed record TestPermissionView(ImmutableArray<string> Permissions, string Subject = "test-user", bool IsMainToken = false) : IProtocolPermissionView;
 
     private sealed class TestSubscriptionOperations : IProtocolSubscriptionOperations
     {

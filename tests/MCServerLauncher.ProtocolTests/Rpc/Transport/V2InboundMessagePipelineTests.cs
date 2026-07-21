@@ -266,7 +266,7 @@ public sealed class V2InboundMessagePipelineTests
             BuiltInFileRpcRegistrar.Register(builder, application);
             var catalog = builder.Freeze();
             var sender = new RecordingSender();
-            var owner = new V2ConnectionOwner(sender, ["mcsl.daemon.file.**"], connectionCancellation: connectionToken);
+            var owner = new V2ConnectionOwner(sender, ["mcsl.file.**"], connectionCancellation: connectionToken);
             var files = V2FileSessionConnection.Attach(application, catalog, owner).Unwrap();
             var context = new V2RpcConnectionContext(owner, null, connectionToken, files);
             var dispatcher = new V2RpcDispatcher(catalog, new RpcDiagnostics());

@@ -16,10 +16,10 @@ public sealed class V2ConnectionOwnerTests
     {
         await using var valid = new V2ConnectionOwner(
             new RecordingSender(),
-            ["mcsl.daemon.file.**"]);
+            ["mcsl.file.**"]);
         Assert.True(V2RpcDispatcher.HasPermission(
             valid,
-            new PermissionName("mcsl.daemon.file.download")));
+            new PermissionName("mcsl.file.download")));
 
         await using var invalid = new V2ConnectionOwner(
             new RecordingSender(),
@@ -27,7 +27,7 @@ public sealed class V2ConnectionOwnerTests
         Assert.Empty(invalid.CompiledPermissions.PermissionList);
         Assert.False(V2RpcDispatcher.HasPermission(
             invalid,
-            new PermissionName("mcsl.daemon.file.download")));
+            new PermissionName("mcsl.file.download")));
     }
 
     [Fact]

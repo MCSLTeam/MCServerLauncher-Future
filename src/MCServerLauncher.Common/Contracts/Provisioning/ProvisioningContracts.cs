@@ -68,7 +68,7 @@ public sealed record ProvisioningResolveRequest(
     string? IdempotencyKey = null,
     TimeSpan? Expiry = null);
 
-public sealed record ProvisioningPlanReference(Guid PlanId);
+public sealed record ProvisioningPlanReference(Guid PlanId, string? OwnerPrincipal = null);
 
 public sealed record ProvisioningExecuteRequest(Guid PlanId, string ExecutorPrincipal);
 

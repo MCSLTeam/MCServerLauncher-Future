@@ -129,7 +129,7 @@ public sealed class TouchSocketV2TransportPluginTests
     public async Task V2Connected_BuildsOneStateWithImmutablePermissionSnapshotAndSuppressesNext()
     {
         await using var fixture = Fixture.Create();
-        var permissions = new[] { "mcsl.daemon.file.upload" };
+        var permissions = new[] { "mcsl.file.upload" };
         var nextCalls = 0;
 
         await fixture.Plugin.HandleConnectedAsync(TouchSocketV2TransportPlugin.Endpoint, "v2", permissions,
@@ -140,7 +140,7 @@ public sealed class TouchSocketV2TransportPluginTests
         Assert.Equal(1, fixture.Plugin.ConnectionCount);
         Assert.True(fixture.Events.TryGet("v2", out var entry));
         Assert.Single(entry!.Owner.Permissions);
-        Assert.Equal("mcsl.daemon.file.upload", entry.Owner.Permissions[0]);
+        Assert.Equal("mcsl.file.upload", entry.Owner.Permissions[0]);
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public sealed class TouchSocketV2TransportPluginTests
         await fixture.Plugin.HandleConnectedAsync(
             TouchSocketV2TransportPlugin.Endpoint,
             "b-connection",
-            ["mcsl.daemon.file.upload"],
+            ["mcsl.file.upload"],
             second,
             Never,
             Never,
