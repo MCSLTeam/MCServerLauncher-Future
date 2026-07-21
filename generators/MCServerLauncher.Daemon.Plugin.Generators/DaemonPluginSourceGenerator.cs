@@ -351,6 +351,8 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
 
         public void AttachServices(global::System.IServiceProvider services) =>
             _services = services ?? throw new global::System.ArgumentNullException(nameof(services));
+
+        public void DetachServices() => _services = null;
 {{featureProperties}}    }
 
     /// <summary>
@@ -390,7 +392,7 @@ namespace {{adapterNs}}
     /// Generated <see cref="global::MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin"/> adapter.
     /// Point mcsl-plugin.json entry.type at this type.
     /// </summary>
-    public sealed class DaemonPluginAdapter : global::MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin, global::System.IDisposable
+    public sealed class DaemonPluginAdapter : global::MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin, global::System.IAsyncDisposable, global::System.IDisposable
     {
         private readonly {{moduleFullName}} _module = new {{moduleFullName}}();
         private {{featuresFullName}}? _features;
@@ -451,11 +453,26 @@ namespace {{adapterNs}}
 
         public void Dispose()
         {
+            DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+
+        public async global::System.Threading.Tasks.ValueTask DisposeAsync()
+        {
             if (_disposed)
                 return;
             _disposed = true;
-            _services?.Dispose();
-            _services = null;
+
+            try
+            {
+                _features?.DetachServices();
+                if (_services is not null)
+                    await _services.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _services = null;
+                _features = null;
+            }
         }
     }
 }

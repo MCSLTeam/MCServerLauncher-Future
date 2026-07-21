@@ -775,8 +775,15 @@ internal sealed class PluginHost
     {
         try
         {
-            if (runtime.Plugin is IDisposable disposable)
-                disposable.Dispose();
+            switch (runtime.Plugin)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
         }
         catch (Exception exception)
         {
