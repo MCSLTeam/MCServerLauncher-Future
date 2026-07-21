@@ -71,4 +71,20 @@
     </ItemGroup>
   </Target>
 
+  <!--
+    Pin the Daemon API dependency to the exact Preview-1 version so MCP and
+    external plugin consumers cannot float across incompatible prereleases.
+  -->
+  <Target Name="PinPluginSdkProjectReferenceVersions"
+          AfterTargets="_GetProjectReferenceVersions"
+          BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_ProjectReferencesWithVersions
+          Update="@(_ProjectReferencesWithVersions)"
+          Condition="'%(_ProjectReferencesWithVersions.Filename)' == 'MCServerLauncher.Daemon.API'">
+        <ProjectVersion>[%(_ProjectReferencesWithVersions.ProjectVersion)]</ProjectVersion>
+      </_ProjectReferencesWithVersions>
+    </ItemGroup>
+  </Target>
+
 </Project>
