@@ -129,6 +129,14 @@ internal static class PluginAdmissionPolicy
     /// <summary>
     /// Returns true if the on-disk permanent admission still matches the current manifest
     /// digest and required feature set. A mismatch forces re-preflight (TTY) or skip (no TTY).
+    ///
+    /// SDK-1 scope: this is the decision API consumed by the future TTY preflight (Approve
+    /// Permanent writes a matching PluginAdmissionConfig). The SDK-1 PluginHost admission gate
+    /// uses <see cref="Decide"/> (grant_level + plugin_grants) only; permanent admissions do
+    /// not grant features beyond the effective set - they are a cache of a prior interactive
+    /// decision, not an authority. So an admission record that disagrees with the current
+    /// ceiling does not relax admission; it is simply ignored until the interactive preflight
+    /// re-runs.
     /// </summary>
     internal static bool AdmissionMatches(PluginAdmissionConfig admission, string manifestDigest, FrozenSet<PluginFeature> features)
     {

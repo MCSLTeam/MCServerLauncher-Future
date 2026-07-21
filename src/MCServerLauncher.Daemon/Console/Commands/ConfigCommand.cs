@@ -8,8 +8,6 @@ namespace MCServerLauncher.Daemon.Console.Commands;
 
 public static class ConfigCommand
 {
-    private const string Redacted = "<redacted>";
-
     public static LiteralCommandNode<TSource> Register<TSource>(this CommandDispatcher<TSource> dispatcher)
         where TSource : ConsoleCommandSource
     {
@@ -18,18 +16,14 @@ public static class ConfigCommand
                 .Then(ctx.Literal("json")
                     .Executes(cmd =>
                     {
-                        // Never serialize secrets through Serilog sinks. Print a redacted view
-                        // to the interactive console only.
+                        // Never serialize secrets through Serilog sinks. Render the real config
+                        // shape (so operators see security/plugins sections) but redact secret
+                        // material before it leaves the console-only channel.
                         var config = AppConfig.Get();
-                        var redacted = $$"""
-                            {
-                              "port": {{config.Port}},
-                              "secret": "{{Redacted}}",
-                              "main_token": "{{Redacted}}",
-                              "file_download_sessions": {{config.FileDownloadSessions}},
-                              "verbose": {{config.Verbose.ToString().ToLowerInvariant()}}
-                            }
-                            """;
+                        var json = JsonSerializer.Serialize(config, AppConfig.PersistenceWriteIndentedTypeInfo);
+                        var redacted = json
+                            .Replace($"\"secret\": \"{config.Secret}\"", "\"secret\": \"<redacted>\"", StringComparison.Ordinal)
+                            .Replace($"\"main_token\": \"{config.MainToken}\"", "\"main_token\": \"<redacted>\"", StringComparison.Ordinal);
                         cmd.Source.SendSecret(redacted);
                         return 0;
                     }))
