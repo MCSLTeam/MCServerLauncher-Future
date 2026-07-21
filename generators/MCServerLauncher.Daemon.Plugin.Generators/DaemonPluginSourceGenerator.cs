@@ -197,10 +197,15 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var hasRpc = manifest.Features.Contains("rpc.register");
         var hasEvents = manifest.Features.Contains("event.publish");
         var hasInstanceQuery = manifest.Features.Contains("instance.query");
+        var hasInstanceManage = manifest.Features.Contains("instance.manage");
+        var hasOperationQuery = manifest.Features.Contains("operation.query");
+        var hasOperationCancel = manifest.Features.Contains("operation.cancel");
+        var hasProvisioning = manifest.Features.Contains("provisioning.manage");
         var hasStorage = manifest.Features.Contains("storage.private");
         var hasHttp = manifest.Features.Contains("network.http.listen");
         var hasAuth = manifest.Features.Contains("auth.verify");
         var hasSystem = manifest.Features.Contains("system.query");
+        var hasAuthorizedApps = hasInstanceManage || hasOperationQuery || hasOperationCancel || hasProvisioning;
 
         var featureProperties = new StringBuilder();
         if (hasRpc)
@@ -245,8 +250,34 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginAuthentication Authentication { get; }");
         }
 
+        if (hasInstanceManage)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IInstanceApplication InstanceManagement { get; }");
+        }
+
+        if (hasOperationQuery || hasOperationCancel)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IOperationApplication Operations { get; }");
+        }
+
+        if (hasProvisioning)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IProvisioningApplication Provisioning { get; }");
+        }
+
         var featureCtorAssignments = new StringBuilder();
         featureCtorAssignments.AppendLine("            Context = context;");
+        if (hasAuthorizedApps)
+        {
+            featureCtorAssignments.AppendLine(
+                "            _hostCaller = context.CallerContexts.CreateHost(new string[] { " +
+                string.Join(", ", manifest.Features.Select(static f => "\"" + f.Replace("\"", "\\\"") + "\"")) +
+                " });");
+        }
+
         if (hasRpc)
             featureCtorAssignments.AppendLine("            Rpc = context.Rpc;");
         if (hasEvents)
@@ -261,6 +292,15 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureCtorAssignments.AppendLine("            HttpEndpoints = context.HttpEndpoints;");
         if (hasAuth)
             featureCtorAssignments.AppendLine("            Authentication = context.Authentication;");
+        if (hasInstanceManage)
+            featureCtorAssignments.AppendLine(
+                "            InstanceManagement = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceApplication(_hostCaller!, context.InstanceManagement);");
+        if (hasOperationQuery || hasOperationCancel)
+            featureCtorAssignments.AppendLine(
+                "            Operations = new global::MCServerLauncher.Daemon.API.Application.AuthorizedOperationApplication(_hostCaller!, context.Operations);");
+        if (hasProvisioning)
+            featureCtorAssignments.AppendLine(
+                "            Provisioning = new global::MCServerLauncher.Daemon.API.Application.AuthorizedProvisioningApplication(_hostCaller!, context.Provisioning);");
 
         var registrationBody = new StringBuilder();
         registrationBody.AppendLine(
@@ -334,6 +374,8 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
     /// </summary>
     public sealed class {{featuresTypeName}}
     {
+        private readonly global::MCServerLauncher.Daemon.API.Application.ICallerContext? _hostCaller;
+
         public {{featuresTypeName}}(global::MCServerLauncher.Daemon.API.Plugins.IPluginContext context)
         {
 {{featureCtorAssignments}}        }
@@ -353,7 +395,34 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             _services = services ?? throw new global::System.ArgumentNullException(nameof(services));
 
         public void DetachServices() => _services = null;
-{{featureProperties}}    }
+{{featureProperties}}{{(hasAuthorizedApps ? $@"
+        /// <summary>
+        /// Builds permission-checked application facades for a verified user principal.
+        /// MCP tools must use this path; never silently fall back to Host.
+        /// </summary>
+        public {module.Name}AuthorizedFeatures ForPrincipal(global::MCServerLauncher.Daemon.API.Plugins.VerifiedPrincipal principal)
+        {{
+            var caller = Context.CallerContexts.ForPrincipal(principal);
+            return new {module.Name}AuthorizedFeatures(caller, Context);
+        }}
+" : string.Empty)}}    }
+
+{{(hasAuthorizedApps ? $@"
+    /// <summary>
+    /// Permission-checked application surfaces bound to a verified principal.
+    /// </summary>
+    public sealed class {module.Name}AuthorizedFeatures
+    {{
+        public {module.Name}AuthorizedFeatures(
+            global::MCServerLauncher.Daemon.API.Application.ICallerContext caller,
+            global::MCServerLauncher.Daemon.API.Plugins.IPluginContext context)
+        {{
+            Caller = caller ?? throw new global::System.ArgumentNullException(nameof(caller));
+{(hasInstanceManage ? "            InstanceManagement = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceApplication(caller, context.InstanceManagement);\n" : string.Empty)}{(hasOperationQuery || hasOperationCancel ? "            Operations = new global::MCServerLauncher.Daemon.API.Application.AuthorizedOperationApplication(caller, context.Operations);\n" : string.Empty)}{(hasProvisioning ? "            Provisioning = new global::MCServerLauncher.Daemon.API.Application.AuthorizedProvisioningApplication(caller, context.Provisioning);\n" : string.Empty)}        }}
+
+        public global::MCServerLauncher.Daemon.API.Application.ICallerContext Caller {{ get; }}
+{(hasInstanceManage ? "        public global::MCServerLauncher.Daemon.API.Application.IInstanceApplication InstanceManagement { get; }\n" : string.Empty)}{(hasOperationQuery || hasOperationCancel ? "        public global::MCServerLauncher.Daemon.API.Application.IOperationApplication Operations { get; }\n" : string.Empty)}{(hasProvisioning ? "        public global::MCServerLauncher.Daemon.API.Application.IProvisioningApplication Provisioning { get; }\n" : string.Empty)}    }}
+" : string.Empty)}}
 
     /// <summary>
     /// Registers base services and declared feature facades into a plugin-private DI container.

@@ -38,6 +38,10 @@ internal sealed class PluginHost
     private readonly object _gate = new();
     private readonly IInstanceSnapshotSource _instances;
     private readonly ISystemApplication? _system;
+    private readonly ICallerContextFactory? _callerContexts;
+    private readonly IInstanceApplication? _instanceApplication;
+    private readonly IOperationApplication? _operationApplication;
+    private readonly IProvisioningApplication? _provisioningApplication;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -118,7 +122,11 @@ internal sealed class PluginHost
         TimeSpan startTimeout,
         DaemonPluginsConfig pluginsConfig,
         PluginHttpEndpointRegistry httpEndpoints,
-        ISystemApplication? system = null)
+        ISystemApplication? system = null,
+        ICallerContextFactory? callerContexts = null,
+        IInstanceApplication? instanceApplication = null,
+        IOperationApplication? operationApplication = null,
+        IProvisioningApplication? provisioningApplication = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -131,6 +139,10 @@ internal sealed class PluginHost
         _pluginsConfig = pluginsConfig ?? DaemonPluginsConfig.Default;
         _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
         _system = system;
+        _callerContexts = callerContexts;
+        _instanceApplication = instanceApplication;
+        _operationApplication = operationApplication;
+        _provisioningApplication = provisioningApplication;
     }
 
     /// <summary>
@@ -415,6 +427,12 @@ internal sealed class PluginHost
                 httpPolicy,
                 authentication,
                 system,
+                _callerContexts ?? new MCServerLauncher.Daemon.ApplicationCore.Auth.CallerContextFactory(),
+                manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
+                manifest.HasFeature(PluginFeature.OperationQuery) || manifest.HasFeature(PluginFeature.OperationCancel)
+                    ? _operationApplication
+                    : null,
+                manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null,
                 activation.Task,
                 lifetime.Token);
             return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);

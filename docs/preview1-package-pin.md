@@ -21,23 +21,46 @@ MCP and external consumers MUST pin exact versions (no floating ranges) and pref
 - `MCServerLauncher.Daemon.Plugin.Sdk` embeds `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll`
 - `MCServerLauncher.Daemon.Plugin.Sdk` carries `buildTransitive` props/targets for `mcsl-plugin.json` + `MCSLPluginBundle`
 
-## SHA-256 (Release pack)
+## Content fingerprints (stable)
 
-Produced by:
+Whole-nupkg SHA-256 is **not** used as the acceptance pin: NuGet embeds
+`RepositoryCommit` and package metadata timestamps, so outer package hashes
+change across commits/repacks even when package code is identical.
 
-```powershell
-dotnet pack src/MCServerLauncher.Common/MCServerLauncher.Common.csproj -c Release -o artifacts/preview1-packages /m:1
-dotnet pack src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj -c Release -o artifacts/preview1-packages /m:1
-dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj -c Release -o artifacts/preview1-packages /m:1
-```
+Acceptance fingerprints are SHA-256 of payload entries:
 
-| File | SHA-256 | Bytes |
-|---|---|---|
-| `MCServerLauncher.Common.1.0.0.nupkg` | `bbb6613c0fcd7e2c85ee5f188b67140515832477ddb12b498d87a184c23e6d5f` | 268977 |
-| `MCServerLauncher.Daemon.API.2.0.0-preview.1.nupkg` | `a271f5e3289f54c974c2c4ceb60fe4ca8f8b1de9c2e99052b0a9d0a8f37313fb` | 43414 |
-| `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.1.nupkg` | `91b55d3ceebb344ab4b4ea0c839177310ba74d2216b2c844de677ce9fb2992a1` | 19077 |
+### `MCServerLauncher.Common.1.0.0.nupkg`
 
-Hashes above were computed from a Release pack after exact Daemon.API dependency pinning. Re-pack and replace hashes only when package contents or package metadata intentionally change.
+| Entry | SHA-256 |
+|---|---|
+| `lib/net10.0/MCServerLauncher.Common.dll` | `ca21afac9868f48b47f4b845de4b114ede790816f9892dd63410678d4fb9ed2f` |
+
+### `MCServerLauncher.Daemon.API.2.0.0-preview.1.nupkg`
+
+| Entry | SHA-256 |
+|---|---|
+| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `31c0168d6d2bc742d60d15ed88ee78650573a73dea7de8673f76dd25de88200b` |
+| `buildTransitive/MCServerLauncher.Daemon.API.targets` | `24aa062b14faccf3c2fbf74346716462bbbfe2f68a21bdb31d158a0831381d49` |
+
+Nuspec dependencies (exact):
+
+- `MCServerLauncher.Common = [1.0.0]`
+- `RustyOptions = [0.10.1]`
+- `Microsoft.Extensions.Logging.Abstractions = [10.0.9]`
+
+### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.1.nupkg`
+
+| Entry | SHA-256 |
+|---|---|
+| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `77bf5868c50eacec2a26fcac8ce41f1ffea5336c17430307b29e93d7df7b8f40` |
+| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `62bae4cc4fa8038974fd21f78bea57db825ae7eb3cce75ad1c5e9f134f1423c1` |
+| `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `c0dd9844c62950e9cf678c9bb067dd030876afa4d263eedd0d146ce52e5eb895` |
+| `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |
+
+Nuspec dependencies (exact):
+
+- `MCServerLauncher.Daemon.API = [2.0.0-preview.1]`
+- `Microsoft.Extensions.DependencyInjection = [10.0.9]`
 
 ## Preview-1 implemented FeatureCatalog freeze
 
@@ -53,7 +76,7 @@ Grantable/implemented for admission (decision §2):
 - `auth.verify`
 - `storage.private`
 
-Also implemented host infrastructure features (not business MCP tools, but generator/host surfaces):
+Also implemented host infrastructure features:
 
 - `rpc.register`
 - `event.publish`
@@ -66,7 +89,7 @@ Unimplemented features remain catalog vocabulary only; declaring them causes ato
 <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.1" />
 ```
 
-Local feed restore requires the three nupkgs above plus nuget.org for transitive BCL packages (`RustyOptions`, `Microsoft.Extensions.*`).
+Local feed restore requires the three nupkgs above plus nuget.org for transitive BCL packages.
 
 ## Verification
 

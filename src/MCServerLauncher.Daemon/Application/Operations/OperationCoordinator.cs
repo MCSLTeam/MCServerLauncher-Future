@@ -46,10 +46,9 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
     {
         cancellationToken.ThrowIfCancellationRequested();
         // OwnerPrincipal is the authenticated caller subject.
-        // "*" is reserved for a future verified admin/main-token binding and is rejected here
-        // until ProtocolInvocationContext exposes a trusted subject (SDK-4 CallerContext).
+        // Trusted admin marker "*" (main token / full grant) sees all operations.
         var owner = request.OwnerPrincipal;
-        if (string.IsNullOrWhiteSpace(owner) || string.Equals(owner, "*", StringComparison.Ordinal))
+        if (string.IsNullOrWhiteSpace(owner))
         {
             return Task.FromResult(Result.Ok<OperationListResult, DaemonError>(
                 new OperationListResult(ImmutableArray<OperationSnapshot>.Empty)));
@@ -57,7 +56,9 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
 
         var items = _operations.Values
             .Select(static runtime => runtime.Snapshot)
-            .Where(snapshot => string.Equals(snapshot.OwnerPrincipal, owner, StringComparison.Ordinal))
+            .Where(snapshot =>
+                string.Equals(owner, "*", StringComparison.Ordinal) ||
+                string.Equals(snapshot.OwnerPrincipal, owner, StringComparison.Ordinal))
             .OrderByDescending(static snapshot => snapshot.CreatedAt)
             .ToImmutableArray();
         return Task.FromResult(Result.Ok<OperationListResult, DaemonError>(new OperationListResult(items)));
@@ -389,15 +390,15 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         status is OperationStatus.Succeeded or OperationStatus.Failed or OperationStatus.Cancelled or OperationStatus.Interrupted;
 
     /// <summary>
-    /// Visibility rule until CallerContext binds the verified subject automatically:
-    /// empty owner is denied; "*" is rejected (not trusted from clients); otherwise exact subject match.
+    /// Owner-only by default. Trusted admin principal "*" (main token) sees all.
+    /// Empty owner is denied.
     /// </summary>
     private static bool IsVisibleTo(string? callerPrincipal, string ownerPrincipal)
     {
         if (string.IsNullOrWhiteSpace(callerPrincipal))
             return false;
         if (string.Equals(callerPrincipal, "*", StringComparison.Ordinal))
-            return false;
+            return true;
         return string.Equals(callerPrincipal, ownerPrincipal, StringComparison.Ordinal);
     }
 

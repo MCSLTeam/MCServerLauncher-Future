@@ -23,6 +23,9 @@ internal sealed class PluginContext : IPluginContext
     private readonly IPluginHttpEndpointPolicy? _httpEndpoints;
     private readonly IPluginAuthentication? _authentication;
     private readonly ISystemQueryApplication? _system;
+    private readonly IInstanceApplication? _instanceManagement;
+    private readonly IOperationApplication? _operations;
+    private readonly IProvisioningApplication? _provisioning;
 
     internal PluginContext(
         PluginIdentity identity,
@@ -36,6 +39,10 @@ internal sealed class PluginContext : IPluginContext
         IPluginHttpEndpointPolicy? httpEndpoints,
         IPluginAuthentication? authentication,
         ISystemQueryApplication? system,
+        ICallerContextFactory callerContexts,
+        IInstanceApplication? instanceManagement,
+        IOperationApplication? operations,
+        IProvisioningApplication? provisioning,
         Task activation,
         CancellationToken lifetimeToken)
     {
@@ -52,6 +59,10 @@ internal sealed class PluginContext : IPluginContext
         _httpEndpoints = httpEndpoints;
         _authentication = authentication;
         _system = system;
+        CallerContexts = callerContexts ?? throw new ArgumentNullException(nameof(callerContexts));
+        _instanceManagement = instanceManagement;
+        _operations = operations;
+        _provisioning = provisioning;
         Activation = activation ?? throw new ArgumentNullException(nameof(activation));
         LifetimeToken = lifetimeToken;
     }
@@ -70,6 +81,8 @@ internal sealed class PluginContext : IPluginContext
 
     public IPluginConfiguration Configuration { get; }
 
+    public ICallerContextFactory CallerContexts { get; }
+
     public IPluginPrivateStorage Storage =>
         _storage ?? throw new InvalidOperationException("The plugin did not declare the 'storage.private' feature.");
 
@@ -81,6 +94,15 @@ internal sealed class PluginContext : IPluginContext
 
     public ISystemQueryApplication System =>
         _system ?? throw new InvalidOperationException("The plugin did not declare the 'system.query' feature.");
+
+    public IInstanceApplication InstanceManagement =>
+        _instanceManagement ?? throw new InvalidOperationException("The plugin did not declare the 'instance.manage' feature.");
+
+    public IOperationApplication Operations =>
+        _operations ?? throw new InvalidOperationException("The plugin did not declare an operation feature.");
+
+    public IProvisioningApplication Provisioning =>
+        _provisioning ?? throw new InvalidOperationException("The plugin did not declare the 'provisioning.manage' feature.");
 
     public Task Activation { get; }
 

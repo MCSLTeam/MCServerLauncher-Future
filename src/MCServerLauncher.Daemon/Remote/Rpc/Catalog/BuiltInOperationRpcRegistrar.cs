@@ -33,8 +33,10 @@ internal static class BuiltInOperationRpcRegistrar
         var view = context.PermissionView;
         if (view is null)
             return string.Empty;
+        // Decision §7: main token / * sees all operations. Use trusted admin marker only when
+        // the connection is the raw main token (IsMainToken), never from client-supplied fields.
         if (view.IsMainToken)
-            return view.Subject; // still exact owner match for self-owned ops; admin wildcard remains disabled until dedicated admin binding
+            return "*";
         return string.IsNullOrWhiteSpace(view.Subject) ? string.Empty : view.Subject;
     }
 

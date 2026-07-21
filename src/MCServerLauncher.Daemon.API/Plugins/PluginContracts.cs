@@ -78,6 +78,29 @@ public interface IPluginContext
     /// </summary>
     IPluginAuthentication Authentication { get; }
 
+    /// <summary>
+    /// Builds Host and ForPrincipal caller contexts (base API; not a feature).
+    /// </summary>
+    ICallerContextFactory CallerContexts { get; }
+
+    /// <summary>
+    /// Instance lifecycle and settings mutations. Throws if the plugin did not declare <c>instance.manage</c>.
+    /// Prefer generated authorized proxies for permission-checked calls.
+    /// </summary>
+    IInstanceApplication InstanceManagement { get; }
+
+    /// <summary>
+    /// Operation list/get/cancel. Throws if the plugin declared neither <c>operation.query</c> nor <c>operation.cancel</c>.
+    /// Prefer generated authorized proxies for permission-checked calls.
+    /// </summary>
+    IOperationApplication Operations { get; }
+
+    /// <summary>
+    /// Provisioning resolve/get/execute. Throws if the plugin did not declare <c>provisioning.manage</c>.
+    /// Prefer generated authorized proxies for permission-checked calls.
+    /// </summary>
+    IProvisioningApplication Provisioning { get; }
+
     Task Activation { get; }
 
     CancellationToken LifetimeToken { get; }
