@@ -7,7 +7,8 @@
                              Condition="'%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Daemon.API' Or
                                         '%(ResolvedFileToPublish.Filename)' == 'MCServerLauncher.Common' Or
                                         '%(ResolvedFileToPublish.Filename)' == 'RustyOptions' Or
-                                        '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Extensions.Logging.Abstractions'" />
+                                        '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Extensions.Logging.Abstractions' Or
+                                        '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Extensions.DependencyInjection.Abstractions'" />
     </ItemGroup>
   </Target>
 </Project>

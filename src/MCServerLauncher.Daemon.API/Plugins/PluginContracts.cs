@@ -53,6 +53,26 @@ public interface IPluginContext
 
     IInstanceSnapshotSource Instances { get; }
 
+    /// <summary>
+    /// Cold-start configuration reader (base API; not a feature).
+    /// </summary>
+    IPluginConfiguration Configuration { get; }
+
+    /// <summary>
+    /// Plugin-private storage. Throws if the plugin did not declare <c>storage.private</c>.
+    /// </summary>
+    IPluginPrivateStorage Storage { get; }
+
+    /// <summary>
+    /// HTTP endpoint policy. Throws if the plugin did not declare <c>network.http.listen</c>.
+    /// </summary>
+    IPluginHttpEndpointPolicy HttpEndpoints { get; }
+
+    /// <summary>
+    /// Token verification. Throws if the plugin did not declare <c>auth.verify</c>.
+    /// </summary>
+    IPluginAuthentication Authentication { get; }
+
     Task Activation { get; }
 
     CancellationToken LifetimeToken { get; }

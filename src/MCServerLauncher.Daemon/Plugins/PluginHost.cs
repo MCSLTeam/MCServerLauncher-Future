@@ -362,6 +362,27 @@ internal sealed class PluginHost
             var lifetime = new CancellationTokenSource();
             var activation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var eventOwner = new PluginEventOwnerLedger();
+
+            PluginConfiguration configuration;
+            try
+            {
+                configuration = new PluginConfiguration(manifest.BundleDirectory, errors);
+            }
+            catch (PluginManifestException exception)
+            {
+                throw new InvalidOperationException(exception.Message, exception);
+            }
+
+            IPluginPrivateStorage? storage = manifest.HasFeature(PluginFeature.StoragePrivate)
+                ? new PluginPrivateStorage(manifest.Identity, _pluginsConfig, errors)
+                : null;
+            IPluginHttpEndpointPolicy? httpPolicy = manifest.HasFeature(PluginFeature.NetworkHttpListen)
+                ? new PluginHttpEndpointPolicy(manifest.Identity.Id, _httpEndpoints, errors)
+                : null;
+            IPluginAuthentication? authentication = manifest.HasFeature(PluginFeature.AuthVerify)
+                ? new PluginAuthentication(errors)
+                : null;
+
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,
@@ -369,6 +390,10 @@ internal sealed class PluginHost
                 draft,
                 _instances,
                 manifest.HasFeature(PluginFeature.InstanceQuery),
+                configuration,
+                storage,
+                httpPolicy,
+                authentication,
                 activation.Task,
                 lifetime.Token);
             return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);

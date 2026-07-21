@@ -104,7 +104,7 @@ public static class FeatureCatalog
             "Read host system facts and discovered Java runtimes.",
             PluginFeatureRisk.None,
             ["mcsl.system.info.get", "mcsl.java.list"],
-            implemented: false),
+            implemented: true),
         Descriptor(PluginFeature.EventRuleManage, "Read, validate, test, and update event rules.", PluginFeatureRisk.Medium, [], implemented: false),
         Descriptor(
             PluginFeature.OperationQuery,
@@ -128,9 +128,9 @@ public static class FeatureCatalog
         Descriptor(PluginFeature.MonitoringQuery, "Read retained system and instance metrics.", PluginFeatureRisk.None, [], implemented: false),
         Descriptor(PluginFeature.AutomationManage, "Validate, test, apply, and enable typed automation policies.", PluginFeatureRisk.Medium, [], implemented: false),
         Descriptor(PluginFeature.AuditQuery, "Query bounded structured audit records.", PluginFeatureRisk.None, [], implemented: false),
-        Descriptor(PluginFeature.StoragePrivate, "Read and write plugin-private bounded storage.", PluginFeatureRisk.Low, [], implemented: false),
-        Descriptor(PluginFeature.NetworkHttpListen, "Validate and open plugin-owned HTTP listeners.", PluginFeatureRisk.High, [], implemented: false),
-        Descriptor(PluginFeature.AuthVerify, "Verify audience-bound daemon tokens into principals.", PluginFeatureRisk.Medium, [], implemented: false),
+        Descriptor(PluginFeature.StoragePrivate, "Read and write plugin-private bounded storage.", PluginFeatureRisk.Low, [], implemented: true),
+        Descriptor(PluginFeature.NetworkHttpListen, "Validate and open plugin-owned HTTP listeners.", PluginFeatureRisk.High, [], implemented: true),
+        Descriptor(PluginFeature.AuthVerify, "Verify audience-bound daemon tokens into principals.", PluginFeatureRisk.Medium, [], implemented: true),
     ];
 
     private static ImmutableDictionary<string, PluginFeatureDescriptor> CreateLookup(
