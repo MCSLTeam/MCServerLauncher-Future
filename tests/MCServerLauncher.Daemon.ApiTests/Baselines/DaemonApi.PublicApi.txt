@@ -140,6 +140,7 @@ property MCServerLauncher.Daemon.API.Plugins.IPluginContext.LifetimeToken[] : Sy
 property MCServerLauncher.Daemon.API.Plugins.IPluginContext.Logger[] : Microsoft.Extensions.Logging.ILogger | get=public | set=-
 property MCServerLauncher.Daemon.API.Plugins.IPluginContext.Rpc[] : MCServerLauncher.Daemon.API.Plugins.IPluginRpcRegistrar | get=public | set=-
 property MCServerLauncher.Daemon.API.Plugins.IPluginContext.Storage[] : MCServerLauncher.Daemon.API.Plugins.IPluginPrivateStorage | get=public | set=-
+property MCServerLauncher.Daemon.API.Plugins.IPluginContext.System[] : MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication | get=public | set=-
 type MCServerLauncher.Daemon.API.Plugins.IPluginErrorFactory | kind=interface | visibility=public | abstract=True | sealed=False | base=- | interfaces=- | constraints=-
 method MCServerLauncher.Daemon.API.Plugins.IPluginErrorFactory.Create(System.String code optional=False default=-,System.String message optional=False default=-,System.Nullable<System.Text.Json.JsonElement> details optional=True default=null) -> MCServerLauncher.Daemon.API.Plugins.PluginError | visibility=public | static=False | abstract=True | virtual=True | constraints=-
 type MCServerLauncher.Daemon.API.Plugins.IPluginEventPublisher<TData,TMeta> | kind=interface | visibility=public | abstract=True | sealed=False | base=- | interfaces=- | constraints=TData:[];TMeta:[]

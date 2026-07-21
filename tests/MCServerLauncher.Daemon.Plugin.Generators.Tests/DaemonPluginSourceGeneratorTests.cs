@@ -24,7 +24,7 @@ public sealed class DaemonPluginSourceGeneratorTests
           },
           "requires": {
             "api": "[2.0.0,3.0.0)",
-            "features": ["event.publish", "instance.query", "rpc.register"]
+            "features": ["event.publish", "instance.query", "rpc.register", "system.query"]
           }
         }
         """;
@@ -35,6 +35,7 @@ public sealed class DaemonPluginSourceGeneratorTests
         using MCServerLauncher.Daemon.API.Errors;
         using MCServerLauncher.Daemon.API.Plugins;
         using MCServerLauncher.Daemon.Plugin.Sdk;
+        using Microsoft.Extensions.DependencyInjection;
         using RustyOptions;
 
         namespace Example.Plugin;
@@ -42,12 +43,13 @@ public sealed class DaemonPluginSourceGeneratorTests
         [DaemonPluginModule]
         public partial class HealthPlugin
         {
-            public Result<Unit, DaemonError> Configure(IPluginContext context, HealthPluginFeatures features)
+            public void ConfigureServices(IServiceCollection services, HealthPluginFeatures features)
             {
+                _ = services;
                 _ = features.Rpc;
                 _ = features.Events;
                 _ = features.Instances;
-                return PluginResult.Ok();
+                _ = features.System;
             }
 
             public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
@@ -67,9 +69,14 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains("class DaemonPluginAdapter", generated, StringComparison.Ordinal);
         Assert.Contains("class HealthPluginFeatures", generated, StringComparison.Ordinal);
         Assert.Contains("class HealthPluginMetadata", generated, StringComparison.Ordinal);
+        Assert.Contains("class HealthPluginServiceRegistration", generated, StringComparison.Ordinal);
         Assert.Contains("IPluginRpcRegistrar Rpc", generated, StringComparison.Ordinal);
         Assert.Contains("IPluginEventRegistrar Events", generated, StringComparison.Ordinal);
         Assert.Contains("IInstanceSnapshotSource Instances", generated, StringComparison.Ordinal);
+        Assert.Contains("ISystemQueryApplication System", generated, StringComparison.Ordinal);
+        Assert.Contains("ConfigureServices", generated, StringComparison.Ordinal);
+        Assert.Contains("BuildServiceProvider", generated, StringComparison.Ordinal);
+        Assert.Contains("AttachServices", generated, StringComparison.Ordinal);
         Assert.Contains("ManifestDigest", generated, StringComparison.Ordinal);
         Assert.Contains("community.example.health", generated, StringComparison.Ordinal);
     }
@@ -127,6 +134,12 @@ public sealed class DaemonPluginSourceGeneratorTests
             typeof(RustyOptions.Result<,>).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(
             typeof(Microsoft.Extensions.Logging.ILogger).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(
+            Assembly.Load("Microsoft.Extensions.DependencyInjection.Abstractions").Location));
+        references.Add(MetadataReference.CreateFromFile(
+            Assembly.Load("Microsoft.Extensions.DependencyInjection").Location));
+        references.Add(MetadataReference.CreateFromFile(
+            typeof(System.Text.Json.JsonElement).Assembly.Location));
 
         var compilation = CSharpCompilation.Create(
             "GeneratorTests",

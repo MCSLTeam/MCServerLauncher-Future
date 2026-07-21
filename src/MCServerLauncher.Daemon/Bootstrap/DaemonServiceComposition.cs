@@ -98,7 +98,8 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<IPluginEventBus>(),
             startTimeout,
             appConfig.Plugins,
-            httpEndpoints));
+            httpEndpoints,
+            serviceProvider.GetRequiredService<ISystemApplication>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);

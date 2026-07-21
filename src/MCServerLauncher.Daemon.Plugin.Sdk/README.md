@@ -16,17 +16,16 @@ Place `mcsl-plugin.json` beside the project (or under the project directory) and
 using MCServerLauncher.Daemon.Plugin.Sdk;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Errors;
+using Microsoft.Extensions.DependencyInjection;
 using RustyOptions;
 
 [DaemonPluginModule]
 public partial class HealthPlugin
 {
-    public Result<Unit, DaemonError> Configure(
-        IPluginContext context,
-        HealthPluginFeatures features)
+    public void ConfigureServices(IServiceCollection services, HealthPluginFeatures features)
     {
         // features only exposes surfaces declared in mcsl-plugin.json
-        return PluginResult.Ok();
+        // register plugin-owned services into the private container
     }
 
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)

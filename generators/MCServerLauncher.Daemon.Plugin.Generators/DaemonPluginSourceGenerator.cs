@@ -187,9 +187,13 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var moduleFullName = module.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var featuresTypeName = module.Name + "Features";
         var metadataTypeName = module.Name + "Metadata";
+        var registrationTypeName = module.Name + "ServiceRegistration";
         var featuresFullName = moduleNs is null
             ? "global::" + featuresTypeName
             : "global::" + moduleNs + "." + featuresTypeName;
+        var registrationFullName = moduleNs is null
+            ? "global::" + registrationTypeName
+            : "global::" + moduleNs + "." + registrationTypeName;
         var hasRpc = manifest.Features.Contains("rpc.register");
         var hasEvents = manifest.Features.Contains("event.publish");
         var hasInstanceQuery = manifest.Features.Contains("instance.query");
@@ -216,6 +220,13 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource Instances { get; }");
         }
+
+        if (hasSystem)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication System { get; }");
+        }
+
         if (hasStorage)
         {
             featureProperties.AppendLine(
@@ -234,7 +245,6 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginAuthentication Authentication { get; }");
         }
 
-
         var featureCtorAssignments = new StringBuilder();
         featureCtorAssignments.AppendLine("            Context = context;");
         if (hasRpc)
@@ -243,12 +253,69 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureCtorAssignments.AppendLine("            Events = context.Events;");
         if (hasInstanceQuery)
             featureCtorAssignments.AppendLine("            Instances = context.Instances;");
+        if (hasSystem)
+            featureCtorAssignments.AppendLine("            System = context.System;");
         if (hasStorage)
             featureCtorAssignments.AppendLine("            Storage = context.Storage;");
         if (hasHttp)
             featureCtorAssignments.AppendLine("            HttpEndpoints = context.HttpEndpoints;");
         if (hasAuth)
             featureCtorAssignments.AppendLine("            Authentication = context.Authentication;");
+
+        var registrationBody = new StringBuilder();
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginContext), context));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(" + featuresFullName + "), features));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.PluginIdentity), context.Identity));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::Microsoft.Extensions.Logging.ILogger), context.Logger));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginErrorFactory), context.Errors));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginConfiguration), context.Configuration));");
+        if (hasRpc)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginRpcRegistrar), context.Rpc));");
+        }
+
+        if (hasEvents)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginEventRegistrar), context.Events));");
+        }
+
+        if (hasInstanceQuery)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource), context.Instances));");
+        }
+
+        if (hasSystem)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication), context.System));");
+        }
+
+        if (hasStorage)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginPrivateStorage), context.Storage));");
+        }
+
+        if (hasHttp)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginHttpEndpointPolicy), context.HttpEndpoints));");
+        }
+
+        if (hasAuth)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginAuthentication), context.Authentication));");
+        }
 
         var featuresLiteral = string.Join(", ",
             manifest.Features.Select(static f => "\"" + f.Replace("\"", "\\\"") + "\""));
@@ -272,7 +339,35 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
 {{featureCtorAssignments}}        }
 
         public global::MCServerLauncher.Daemon.API.Plugins.IPluginContext Context { get; }
+
+        private global::System.IServiceProvider? _services;
+
+        /// <summary>
+        /// Plugin-private service provider. Available after ConfigureServices and provider build complete.
+        /// </summary>
+        public global::System.IServiceProvider Services =>
+            _services ?? throw new global::System.InvalidOperationException(
+                "Plugin private services are available only after ConfigureServices completes.");
+
+        public void AttachServices(global::System.IServiceProvider services) =>
+            _services = services ?? throw new global::System.ArgumentNullException(nameof(services));
 {{featureProperties}}    }
+
+    /// <summary>
+    /// Registers base services and declared feature facades into a plugin-private DI container.
+    /// </summary>
+    public static class {{registrationTypeName}}
+    {
+        public static void AddFeatureServices(
+            global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,
+            global::MCServerLauncher.Daemon.API.Plugins.IPluginContext context,
+            {{featuresFullName}} features)
+        {
+            if (services is null) throw new global::System.ArgumentNullException(nameof(services));
+            if (context is null) throw new global::System.ArgumentNullException(nameof(context));
+            if (features is null) throw new global::System.ArgumentNullException(nameof(features));
+{{registrationBody}}        }
+    }
 
     /// <summary>
     /// Normalized identity/metadata embedded from mcsl-plugin.json.
@@ -295,16 +390,55 @@ namespace {{adapterNs}}
     /// Generated <see cref="global::MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin"/> adapter.
     /// Point mcsl-plugin.json entry.type at this type.
     /// </summary>
-    public sealed class DaemonPluginAdapter : global::MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin
+    public sealed class DaemonPluginAdapter : global::MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin, global::System.IDisposable
     {
         private readonly {{moduleFullName}} _module = new {{moduleFullName}}();
         private {{featuresFullName}}? _features;
+        private global::Microsoft.Extensions.DependencyInjection.ServiceProvider? _services;
+        private bool _disposed;
 
         public global::RustyOptions.Result<global::RustyOptions.Unit, global::MCServerLauncher.Daemon.API.Errors.DaemonError> Configure(
             global::MCServerLauncher.Daemon.API.Plugins.IPluginContext context)
         {
+            if (_disposed)
+                throw new global::System.ObjectDisposedException(nameof(DaemonPluginAdapter));
+
             _features = new {{featuresFullName}}(context);
-            return _module.Configure(context, _features);
+            var services = new global::Microsoft.Extensions.DependencyInjection.ServiceCollection();
+            {{registrationFullName}}.AddFeatureServices(services, context, _features);
+            try
+            {
+                _module.ConfigureServices(services, _features);
+            }
+            catch (global::System.Exception exception)
+            {
+                return global::RustyOptions.Result.Err<global::RustyOptions.Unit, global::MCServerLauncher.Daemon.API.Errors.DaemonError>(
+                    context.Errors.Create(
+                        "plugin_configure_services_failed",
+                        "Plugin ConfigureServices threw: " + exception.Message));
+            }
+
+            try
+            {
+                _services = global::Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(
+                    services,
+                    new global::Microsoft.Extensions.DependencyInjection.ServiceProviderOptions
+                    {
+                        ValidateScopes = true,
+                        ValidateOnBuild = true,
+                    });
+                _features.AttachServices(_services);
+            }
+            catch (global::System.Exception exception)
+            {
+                return global::RustyOptions.Result.Err<global::RustyOptions.Unit, global::MCServerLauncher.Daemon.API.Errors.DaemonError>(
+                    context.Errors.Create(
+                        "plugin_service_provider_failed",
+                        "Plugin private service provider failed to build: " + exception.Message));
+            }
+
+            return global::RustyOptions.Result.Ok<global::RustyOptions.Unit, global::MCServerLauncher.Daemon.API.Errors.DaemonError>(
+                global::RustyOptions.Unit.Default);
         }
 
         public global::System.Threading.Tasks.Task<global::RustyOptions.Result<global::RustyOptions.Unit, global::MCServerLauncher.Daemon.API.Errors.DaemonError>> StartAsync(
@@ -314,6 +448,15 @@ namespace {{adapterNs}}
         public global::System.Threading.Tasks.Task<global::RustyOptions.Result<global::RustyOptions.Unit, global::MCServerLauncher.Daemon.API.Errors.DaemonError>> StopAsync(
             global::System.Threading.CancellationToken cancellationToken)
             => _module.StopAsync(cancellationToken);
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            _services?.Dispose();
+            _services = null;
+        }
     }
 }
 """;

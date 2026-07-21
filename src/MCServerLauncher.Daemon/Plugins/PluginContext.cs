@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.State;
@@ -21,6 +22,7 @@ internal sealed class PluginContext : IPluginContext
     private readonly IPluginPrivateStorage? _storage;
     private readonly IPluginHttpEndpointPolicy? _httpEndpoints;
     private readonly IPluginAuthentication? _authentication;
+    private readonly ISystemQueryApplication? _system;
 
     internal PluginContext(
         PluginIdentity identity,
@@ -33,6 +35,7 @@ internal sealed class PluginContext : IPluginContext
         IPluginPrivateStorage? storage,
         IPluginHttpEndpointPolicy? httpEndpoints,
         IPluginAuthentication? authentication,
+        ISystemQueryApplication? system,
         Task activation,
         CancellationToken lifetimeToken)
     {
@@ -48,6 +51,7 @@ internal sealed class PluginContext : IPluginContext
         _storage = storage;
         _httpEndpoints = httpEndpoints;
         _authentication = authentication;
+        _system = system;
         Activation = activation ?? throw new ArgumentNullException(nameof(activation));
         LifetimeToken = lifetimeToken;
     }
@@ -74,6 +78,9 @@ internal sealed class PluginContext : IPluginContext
 
     public IPluginAuthentication Authentication =>
         _authentication ?? throw new InvalidOperationException("The plugin did not declare the 'auth.verify' feature.");
+
+    public ISystemQueryApplication System =>
+        _system ?? throw new InvalidOperationException("The plugin did not declare the 'system.query' feature.");
 
     public Task Activation { get; }
 
