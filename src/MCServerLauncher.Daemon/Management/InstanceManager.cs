@@ -335,11 +335,12 @@ internal class InstanceManager : IInstanceManager
     {
         using var admission = _mutationAdmission.EnterExternal();
         using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
-        if (!RunningInstances.TryRemove(instanceId, out var instance))
+        if (!RunningInstances.TryGetValue(instanceId, out var instance))
             return false;
 
-        instance.Stop();
-        // Graceful shutdown is intentionally asynchronous and status is updated by the process hook.
+        // Keep the instance in RunningInstances while Stopping so intermediate status is visible.
+        // Terminal Stopped/Crashed removes it from OnInstanceStatusChangedAsync.
+        await instance.StopAsync(ct).ConfigureAwait(false);
         return true;
     }
 

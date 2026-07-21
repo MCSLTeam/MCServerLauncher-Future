@@ -445,8 +445,9 @@ public sealed class InstanceManagerCreateTransactionTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { }

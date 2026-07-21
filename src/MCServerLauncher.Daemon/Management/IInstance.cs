@@ -17,7 +17,7 @@ public interface IInstance : IDisposable
 
     Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default);
 
-    void Stop();
+    Task StopAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Hard-kill the managed process and clear the process handle for a clean restart.

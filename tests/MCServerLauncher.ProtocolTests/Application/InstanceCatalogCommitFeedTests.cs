@@ -331,8 +331,9 @@ public sealed class InstanceCatalogCommitFeedTests
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) => Task.FromResult(false);
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { }
@@ -362,8 +363,9 @@ public sealed class InstanceCatalogCommitFeedTests
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) => Task.FromResult(false);
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { }

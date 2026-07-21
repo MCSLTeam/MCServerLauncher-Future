@@ -68,8 +68,14 @@ public class MinecraftInstance : InstanceBase
         );
     }
 
-    public override void Stop()
+    public override async Task StopAsync(CancellationToken ct = default)
     {
-        Process?.WriteLine("stop");
+        var process = Process;
+        if (process is null)
+            return;
+
+        // Return after Stopping succeeds; terminal Stopped comes from process finalizer.
+        await process.RequestStoppingAsync(ct).ConfigureAwait(false);
+        process.WriteLine("stop");
     }
 }
