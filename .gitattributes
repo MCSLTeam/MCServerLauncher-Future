@@ -6,6 +6,10 @@
 # ProtocolDocs compares the generated artifact byte-for-byte.
 src/MCServerLauncher.Daemon/.Resources/Docs/apifox.json text eol=lf
 
+# Package payload text assets are content-fingerprinted for Preview-1 pins.
+src/MCServerLauncher.Daemon.API/buildTransitive/** text eol=lf
+src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/** text eol=lf
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

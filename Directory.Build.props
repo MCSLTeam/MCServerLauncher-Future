@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    Keep assembly builds deterministic and free of git-revision-stamped
+    informational versions. Package-payload-only settings live in
+    Directory.Build.targets so daemon/WPF release PDB options remain intact.
+  -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+</Project>
