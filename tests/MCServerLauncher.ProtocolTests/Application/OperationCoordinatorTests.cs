@@ -54,6 +54,34 @@ public sealed class OperationCoordinatorTests
     }
 
     [Fact]
+    public async Task MainTokenAdminPrincipal_SeesAllOperations()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-ops-admin-").FullName;
+        try
+        {
+            await using var coordinator = new OperationCoordinator(rootDirectory: root);
+            var owned = await coordinator.ExecuteAsync(
+                kind: "test.work",
+                target: "t1",
+                ownerPrincipal: "owner-a",
+                executor: static (_, _) => Task.FromResult(Result.Ok<string, DaemonError>("ok")),
+                cancellationToken: CancellationToken.None);
+            Assert.True(owned.IsOk(out var snapshot));
+
+            var list = await coordinator.ListOperationsAsync(new OperationListQuery("*"), CancellationToken.None);
+            Assert.True(list.IsOk(out var listed));
+            Assert.Contains(listed!.Operations, item => item.OperationId == snapshot!.OperationId);
+
+            var get = await coordinator.GetOperationAsync(new OperationReference(snapshot!.OperationId, "*"), CancellationToken.None);
+            Assert.True(get.IsOk(out _));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Cancel_CooperativelyStopsRunningWork()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-ops-cancel-").FullName;
