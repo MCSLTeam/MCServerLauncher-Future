@@ -7,7 +7,7 @@
     <LangVersion>14</LangVersion>
     <IsPackable>true</IsPackable>
     <PackageId>MCServerLauncher.Daemon.API</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>2.0.0-preview.1</PackageVersion>
     <Authors>MCSLTeam</Authors>
     <Description>Transport-neutral application and startup-plugin contracts for MCServerLauncher Future.</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>

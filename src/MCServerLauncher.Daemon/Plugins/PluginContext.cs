@@ -38,24 +38,24 @@ internal sealed class PluginContext(
 
     public IInstanceSnapshotSource Instances { get; } = canQueryInstances
         ? instances ?? throw new ArgumentNullException(nameof(instances))
-        : CapabilityDeniedSnapshotSource.Instance;
+        : FeatureDeniedSnapshotSource.Instance;
 
     public Task Activation { get; } = activation ?? throw new ArgumentNullException(nameof(activation));
 
     public CancellationToken LifetimeToken { get; } = lifetimeToken;
 }
 
-internal sealed class CapabilityDeniedSnapshotSource : IInstanceSnapshotSource
+internal sealed class FeatureDeniedSnapshotSource : IInstanceSnapshotSource
 {
-    internal static CapabilityDeniedSnapshotSource Instance { get; } = new();
+    internal static FeatureDeniedSnapshotSource Instance { get; } = new();
 
     public PublishedState<InstanceCatalogSnapshot> Current =>
-        throw new InvalidOperationException("The plugin did not declare the 'instance.query' capability.");
+        throw new InvalidOperationException("The plugin did not declare the 'instance.query' feature.");
 
     public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot)
     {
         _ = instanceId;
         snapshot = null;
-        throw new InvalidOperationException("The plugin did not declare the 'instance.query' capability.");
+        throw new InvalidOperationException("The plugin did not declare the 'instance.query' feature.");
     }
 }

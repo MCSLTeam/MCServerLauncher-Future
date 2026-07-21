@@ -1,6 +1,7 @@
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -32,7 +33,7 @@ internal class AppConfig
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
         Verbose = verbose;
-        Log.Information("[AppConfig] Main token: {0}", mainToken);
+        Log.Information("[AppConfig] Loaded configuration for port {Port}.", port);
     }
 
     /// <summary>
@@ -62,10 +63,12 @@ internal class AppConfig
 
     private static string GenerateRandomString(int length = 32)
     {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        var random = new Random();
-        return new string(Enumerable.Repeat(chars, length)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
+        // 32 bytes -> 64 hex chars when length is 32; keep length as character count.
+        var byteCount = Math.Max(1, (length + 1) / 2);
+        Span<byte> bytes = stackalloc byte[byteCount];
+        RandomNumberGenerator.Fill(bytes);
+        var hex = Convert.ToHexString(bytes).ToLowerInvariant();
+        return hex.Length <= length ? hex : hex[..length];
     }
 
     public bool ResetSecret()
@@ -76,7 +79,7 @@ internal class AppConfig
 
     public bool ResetMainToken()
     {
-        Secret = GenerateRandomString();
+        MainToken = GenerateRandomString();
         return TrySave();
     }
 

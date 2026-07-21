@@ -17,14 +17,14 @@ public sealed class ProtocolContractTests
         Assert.Throws<ArgumentException>(() => new EventName("mcsl.event.changed_"));
         Assert.Throws<ArgumentException>(() => new PermissionName("instance read"));
         Assert.Throws<ArgumentException>(() => new PermissionName("mcsl.**"));
-        Assert.Throws<ArgumentException>(() => new PluginCapability("RPC.register"));
-        Assert.Throws<ArgumentException>(() => new PluginCapability("rpc/register"));
+        Assert.Throws<ArgumentException>(() => new PluginFeature("RPC.register"));
+        Assert.Throws<ArgumentException>(() => new PluginFeature("rpc/register"));
 
         Assert.Equal("mcsl.instance.start", new RpcMethod("mcsl.instance.start").Value);
         Assert.Equal("mcsl.event.instance-log", new EventName("mcsl.event.instance-log").Value);
         Assert.Equal("*", new PermissionName("*").Value);
         Assert.Equal("instance.read", new PermissionName("instance.read").Value);
-        Assert.Equal("rpc.register", new PluginCapability("rpc.register").Value);
+        Assert.Equal("rpc.register", new PluginFeature("rpc.register").Value);
     }
 
     [Fact]
@@ -33,12 +33,12 @@ public sealed class ProtocolContractTests
         Assert.DoesNotContain(typeof(RpcMethod).GetConstructors(), constructor => constructor.GetParameters().Length == 0);
         Assert.DoesNotContain(typeof(EventName).GetConstructors(), constructor => constructor.GetParameters().Length == 0);
         Assert.DoesNotContain(typeof(PermissionName).GetConstructors(), constructor => constructor.GetParameters().Length == 0);
-        Assert.DoesNotContain(typeof(PluginCapability).GetConstructors(), constructor => constructor.GetParameters().Length == 0);
+        Assert.DoesNotContain(typeof(PluginFeature).GetConstructors(), constructor => constructor.GetParameters().Length == 0);
 
         Assert.ThrowsAny<ArgumentException>(() => new RpcMethod(null!));
         Assert.ThrowsAny<ArgumentException>(() => new EventName(null!));
         Assert.ThrowsAny<ArgumentException>(() => new PermissionName(null!));
-        Assert.ThrowsAny<ArgumentException>(() => new PluginCapability(null!));
+        Assert.ThrowsAny<ArgumentException>(() => new PluginFeature(null!));
 
         Assert.Equal(new RpcMethod("mcsl.instance.start"), new RpcMethod("mcsl.instance.start"));
         Assert.NotEqual(new RpcMethod("mcsl.instance.start"), new RpcMethod("mcsl.instance.stop"));
@@ -69,11 +69,13 @@ public sealed class ProtocolContractTests
     }
 
     [Fact]
-    public void PluginCapabilitiesHaveTheFixedPhaseOneValues()
+    public void PluginFeaturesIncludePhaseOneAndPreviewVocabulary()
     {
-        Assert.Equal("rpc.register", PluginCapability.RpcRegister.Value);
-        Assert.Equal("event.publish", PluginCapability.EventPublish.Value);
-        Assert.Equal("instance.query", PluginCapability.InstanceQuery.Value);
+        Assert.Equal("rpc.register", PluginFeature.RpcRegister.Value);
+        Assert.Equal("event.publish", PluginFeature.EventPublish.Value);
+        Assert.Equal("instance.query", PluginFeature.InstanceQuery.Value);
+        Assert.Equal("network.http.listen", PluginFeature.NetworkHttpListen.Value);
+        Assert.Equal("auth.verify", PluginFeature.AuthVerify.Value);
     }
 
     public sealed record SampleRequest(string Value);

@@ -55,9 +55,9 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 ## Plugin Rules
 
 - First-milestone plugins are trusted, startup-only, and loaded in one non-collectible `AssemblyLoadContext` per plugin bundle.
-- Public plugin capabilities are limited to typed RPC registration, typed event publication, and immutable instance queries until a later approved plan adds real consumers.
+- Public plugin features are declared in `mcsl-plugin.json`. The host currently implements `rpc.register`, `event.publish`, and `instance.query`; Preview-1 expands the vocabulary (operations/provisioning/auth/HTTP) under the approved SDK 2.0 plan.
 - Do not expose root `IServiceProvider`, TouchSocket, MessagePipe, Serilog, daemon implementation types, mutable instance collections, hooks, factory/installer extension points, or plugin filesystem writes.
-- Plugin manifest identity and capability declarations are authoritative; invalid or conflicting plugins log an Error and are skipped atomically without preventing daemon startup.
+- Plugin manifest identity and feature declarations are authoritative; invalid or conflicting plugins log an Error and are skipped atomically without preventing daemon startup.
 - Plugin failures must not leave RPC definitions, event slots, cancellation sources, or catalog metadata behind. Successful plugins stop in reverse startup order.
 
 ## WPF Rules

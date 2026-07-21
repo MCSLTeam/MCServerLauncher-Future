@@ -29,7 +29,7 @@ internal enum PluginRuntimeState
 
 internal sealed class PluginHost
 {
-    internal const string HostApiVersion = "1.0.0";
+    internal const string HostApiVersion = "2.0.0";
     private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
 
     private readonly object _gate = new();
@@ -288,7 +288,7 @@ internal sealed class PluginHost
                 errors,
                 draft,
                 _instances,
-                manifest.HasCapability(PluginCapability.InstanceQuery),
+                manifest.HasFeature(PluginFeature.InstanceQuery),
                 activation.Task,
                 lifetime.Token);
             return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);
