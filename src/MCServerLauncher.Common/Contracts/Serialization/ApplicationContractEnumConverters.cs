@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.Contracts.Operations;
 
 namespace MCServerLauncher.Common.Contracts.Serialization;
 
@@ -19,6 +20,12 @@ internal sealed class InstanceFactoryMirrorJsonConverter()
 
 internal sealed class InstanceStatusJsonConverter()
     : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class OperationStatusJsonConverter()
+    : JsonStringEnumConverter<OperationStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class OperationStageJsonConverter()
+    : JsonStringEnumConverter<OperationStage>(JsonNamingPolicy.SnakeCaseLower);
 
 internal sealed class EventMetaFilterKindJsonConverter()
     : JsonStringEnumConverter<EventMetaFilterKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);

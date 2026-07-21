@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Daemon.API.Protocol;
 
 namespace MCServerLauncher.DaemonClient.Protocol;
@@ -49,6 +50,9 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<InstanceReference, UnitResult> StartInstance => BuiltInProtocolDefinitions.StartInstance;
     internal static RpcDescriptor<InstanceReference, UnitResult> StopInstance => BuiltInProtocolDefinitions.StopInstance;
     internal static RpcDescriptor<EmptyRequest, JavaRuntimeList> ListJavaRuntimes => BuiltInProtocolDefinitions.ListJavaRuntimes;
+    internal static RpcDescriptor<OperationCancelRequest, OperationCancelResult> CancelOperation => BuiltInProtocolDefinitions.CancelOperation;
+    internal static RpcDescriptor<OperationReference, OperationSnapshot> GetOperation => BuiltInProtocolDefinitions.GetOperation;
+    internal static RpcDescriptor<OperationListQuery, OperationListResult> ListOperations => BuiltInProtocolDefinitions.ListOperations;
     internal static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo => BuiltInProtocolDefinitions.GetSystemInfo;
     internal static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc => BuiltInProtocolDefinitions.DiscoverRpc;
 
@@ -63,7 +67,8 @@ internal static class V2ClientProtocol
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
-        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, GetSystemInfo, DiscoverRpc
+        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, GetSystemInfo,
+        DiscoverRpc
     ];
 
     internal static ImmutableArray<EventDescriptor> Events { get; } =

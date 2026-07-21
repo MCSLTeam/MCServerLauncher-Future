@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.DaemonClient.Connection.V2;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
@@ -92,6 +93,9 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.StartInstance, "mcsl.instance.start"),
             Accessor(V2ClientProtocol.StopInstance, "mcsl.instance.stop"),
             Accessor(V2ClientProtocol.ListJavaRuntimes, "mcsl.java.list"),
+            Accessor(V2ClientProtocol.CancelOperation, "mcsl.operation.cancel"),
+            Accessor(V2ClientProtocol.GetOperation, "mcsl.operation.get"),
+            Accessor(V2ClientProtocol.ListOperations, "mcsl.operation.list"),
             Accessor(V2ClientProtocol.GetSystemInfo, "mcsl.system.info.get"),
             Accessor(V2ClientProtocol.DiscoverRpc, "rpc.discover")
         ];
@@ -147,6 +151,7 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.GetInstanceReport), Case(V2ClientProtocol.ListInstanceReports),
             Case(V2ClientProtocol.GetInstanceSettings), Case(V2ClientProtocol.UpdateInstanceSettings),
             Case(V2ClientProtocol.StartInstance), Case(V2ClientProtocol.StopInstance), Case(V2ClientProtocol.ListJavaRuntimes),
+            Case(V2ClientProtocol.CancelOperation), Case(V2ClientProtocol.GetOperation), Case(V2ClientProtocol.ListOperations),
             Case(V2ClientProtocol.GetSystemInfo), Case(V2ClientProtocol.DiscoverRpc)
         ];
 
@@ -322,6 +327,12 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(InstanceSettingsResult)) return "{\"config\":" + Config + ",\"working_directory\":\"world\",\"current_target_exists\":true,\"can_edit\":false,\"edit_blocked_reason\":\"running\",\"install_metadata\":{\"installer_kind\":\"forge\",\"installer_source_path\":\"forge.jar\",\"generated_paths\":[\"libraries\"],\"resolved_launch_target\":\"run.jar\",\"installed_at\":\"2026-01-01T00:00:00+00:00\"}}";
             if (type == typeof(UpdateInstanceSettingsResult)) return "{\"config\":" + Config + ",\"requires_restart\":true,\"reinstalled\":true,\"deleted_generated_paths\":[\"old.jar\"],\"preserved_original_paths\":[\"backup.jar\"]}";
             if (type == typeof(JavaRuntimeList)) return "{\"items\":[{\"path\":\"C:/Java/bin/java.exe\",\"version\":\"21.0.7\",\"architecture\":\"x64\"}]}";
+            if (type == typeof(OperationReference)) return "{\"operation_id\":\"" + Id + "\",\"owner_principal\":null}";
+            if (type == typeof(OperationListQuery)) return "{\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(OperationCancelRequest)) return "{\"operation_id\":\"" + Id + "\",\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(OperationCancelResult)) return "{\"operation_id\":\"" + Id + "\",\"cancel_requested\":true}";
+            if (type == typeof(OperationSnapshot)) return "{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}";
+            if (type == typeof(OperationListResult)) return "{\"operations\":[{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}]}";
             if (type == typeof(SystemInfo)) return System;
             if (type == typeof(OpenRpcDocument)) return "{\"openrpc\":\"1.3.2\",\"info\":{\"title\":\"daemon\",\"version\":\"2\"},\"methods\":[],\"x-mcsl-events\":[],\"components\":{\"schemas\":{}}}";
 

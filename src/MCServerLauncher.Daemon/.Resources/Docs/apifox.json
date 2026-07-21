@@ -1552,10 +1552,132 @@
           ]
         },
         {
+          "id": "mcsl-folder-8065cb2f",
+          "name": "operations",
+          "description": "operations RPC methods.",
+          "ordering": 7,
+          "items": [
+            {
+              "id": "mcsl-rpc-item-3ff92f2b",
+              "name": "mcsl.operation.cancel",
+              "api": {
+                "id": "mcsl-rpc-3ff92f2b",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-4776a900",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.operation.cancel\u0022,\n  \u0022params\u0022: {\n    \u0022operation_id\u0022: \u0022\u0022,\n    \u0022owner_principal\u0022: {}\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Requests cooperative cancellation of a long-running operation.\n\nPermission: \u0060mcsl.operation.cancel\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.operation.cancel.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.operation.cancel.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 1,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-c587f3e7",
+              "name": "mcsl.operation.get",
+              "api": {
+                "id": "mcsl-rpc-c587f3e7",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-cf6bd81c",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.operation.get\u0022,\n  \u0022params\u0022: {\n    \u0022operation_id\u0022: \u0022\u0022,\n    \u0022owner_principal\u0022: {}\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Gets an immutable snapshot of a long-running operation.\n\nPermission: \u0060mcsl.operation.get\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.operation.get.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.operation.get.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 2,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-2214acd1",
+              "name": "mcsl.operation.list",
+              "api": {
+                "id": "mcsl-rpc-2214acd1",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-230c4746",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.operation.list\u0022,\n  \u0022params\u0022: {\n    \u0022owner_principal\u0022: {}\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Lists retained long-running operations visible to the caller.\n\nPermission: \u0060mcsl.operation.list\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.operation.list.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.operation.list.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 3,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            }
+          ]
+        },
+        {
           "id": "mcsl-folder-491e0a9c",
           "name": "system",
           "description": "system RPC methods.",
-          "ordering": 7,
+          "ordering": 8,
           "items": [
             {
               "id": "mcsl-rpc-item-dc1d30c6",
@@ -2445,7 +2567,9 @@
                       "enum": [
                         "running",
                         "stopped",
-                        "crashed"
+                        "crashed",
+                        "starting",
+                        "stopping"
                       ]
                     }
                   },
@@ -3372,7 +3496,9 @@
                         "enum": [
                           "running",
                           "stopped",
-                          "crashed"
+                          "crashed",
+                          "starting",
+                          "stopping"
                         ]
                       }
                     },
@@ -4190,7 +4316,9 @@
                   "enum": [
                     "running",
                     "stopped",
-                    "crashed"
+                    "crashed",
+                    "starting",
+                    "stopping"
                   ]
                 },
                 "config": {
@@ -4413,7 +4541,9 @@
                         "enum": [
                           "running",
                           "stopped",
-                          "crashed"
+                          "crashed",
+                          "starting",
+                          "stopping"
                         ]
                       },
                       "config": {
@@ -5257,6 +5387,471 @@
               ],
               "additionalProperties": false,
               "$id": "mcsl.schema.mcsl.java.list.result"
+            }
+          },
+          "ordering": 85,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.operation.cancel.request",
+          "name": "mcsl.schema.mcsl.operation.cancel.request",
+          "displayName": "mcsl.schema.mcsl.operation.cancel.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.operation.cancel.request",
+              "type": "object",
+              "properties": {
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "owner_principal": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "operation_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 80,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.operation.cancel.result",
+          "name": "mcsl.schema.mcsl.operation.cancel.result",
+          "displayName": "mcsl.schema.mcsl.operation.cancel.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "cancel_requested": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "operation_id",
+                "cancel_requested"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.operation.cancel.result"
+            }
+          },
+          "ordering": 81,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.operation.get.request",
+          "name": "mcsl.schema.mcsl.operation.get.request",
+          "displayName": "mcsl.schema.mcsl.operation.get.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.operation.get.request",
+              "type": "object",
+              "properties": {
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "owner_principal": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "operation_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 82,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.operation.get.result",
+          "name": "mcsl.schema.mcsl.operation.get.result",
+          "displayName": "mcsl.schema.mcsl.operation.get.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "owner_principal": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                },
+                "stage": {
+                  "enum": [
+                    "queued",
+                    "resolving",
+                    "downloading",
+                    "verifying",
+                    "extracting",
+                    "installing",
+                    "configuring",
+                    "finalizing",
+                    "succeeded",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                },
+                "progress": {
+                  "type": "object",
+                  "properties": {
+                    "indeterminate": {
+                      "type": "boolean"
+                    },
+                    "completed": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "total": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "unit": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bytes_transferred": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "bytes_total": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "rate": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "indeterminate",
+                    "completed",
+                    "total",
+                    "unit",
+                    "bytes_transferred",
+                    "bytes_total",
+                    "rate"
+                  ],
+                  "additionalProperties": false
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "completed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "cancellable": {
+                  "type": "boolean"
+                },
+                "error_code": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "error_message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "result_reference": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "operation_id",
+                "kind",
+                "target",
+                "owner_principal",
+                "status",
+                "stage",
+                "progress",
+                "version",
+                "created_at",
+                "updated_at",
+                "completed_at",
+                "cancellable",
+                "error_code",
+                "error_message",
+                "result_reference"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.operation.get.result"
+            }
+          },
+          "ordering": 83,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.operation.list.request",
+          "name": "mcsl.schema.mcsl.operation.list.request",
+          "displayName": "mcsl.schema.mcsl.operation.list.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.operation.list.request",
+              "type": "object",
+              "properties": {
+                "owner_principal": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 84,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.operation.list.result",
+          "name": "mcsl.schema.mcsl.operation.list.result",
+          "displayName": "mcsl.schema.mcsl.operation.list.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "operations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "operation_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "kind": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "owner_principal": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "enum": [
+                          "queued",
+                          "running",
+                          "succeeded",
+                          "failed",
+                          "cancelled",
+                          "interrupted"
+                        ]
+                      },
+                      "stage": {
+                        "enum": [
+                          "queued",
+                          "resolving",
+                          "downloading",
+                          "verifying",
+                          "extracting",
+                          "installing",
+                          "configuring",
+                          "finalizing",
+                          "succeeded",
+                          "failed",
+                          "cancelled",
+                          "interrupted"
+                        ]
+                      },
+                      "progress": {
+                        "type": "object",
+                        "properties": {
+                          "indeterminate": {
+                            "type": "boolean"
+                          },
+                          "completed": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "total": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "unit": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "bytes_transferred": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "bytes_total": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "rate": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "indeterminate",
+                          "completed",
+                          "total",
+                          "unit",
+                          "bytes_transferred",
+                          "bytes_total",
+                          "rate"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "version": {
+                        "type": "integer"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
+                      "cancellable": {
+                        "type": "boolean"
+                      },
+                      "error_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "error_message": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "result_reference": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "operation_id",
+                      "kind",
+                      "target",
+                      "owner_principal",
+                      "status",
+                      "stage",
+                      "progress",
+                      "version",
+                      "created_at",
+                      "updated_at",
+                      "completed_at",
+                      "cancellable",
+                      "error_code",
+                      "error_message",
+                      "result_reference"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "operations"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.operation.list.result"
             }
           },
           "ordering": 85,

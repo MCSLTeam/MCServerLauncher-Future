@@ -41,6 +41,7 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
         Files = new RemoteFileApplication(_invoker, owner);
         System = new RemoteSystemApplication(_invoker);
         EventRules = new RemoteEventRuleApplication(_invoker);
+        Operations = new RemoteOperationApplication(_invoker);
         InstanceCatalog = owner.Mirror;
     }
 
@@ -51,6 +52,8 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
     public ISystemApplication System { get; }
 
     public IEventRuleApplication EventRules { get; }
+
+    public IOperationApplication Operations { get; }
 
     public IInstanceSnapshotSource InstanceCatalog { get; }
 

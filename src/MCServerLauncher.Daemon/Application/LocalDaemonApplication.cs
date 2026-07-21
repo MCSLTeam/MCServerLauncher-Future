@@ -6,7 +6,8 @@ internal sealed class LocalDaemonApplication(
     IInstanceApplication instances,
     IFileApplication files,
     ISystemApplication system,
-    IEventRuleApplication eventRules) : IDaemonApplication
+    IEventRuleApplication eventRules,
+    IOperationApplication operations) : IDaemonApplication
 {
     public IInstanceApplication Instances { get; } = instances;
 
@@ -15,4 +16,6 @@ internal sealed class LocalDaemonApplication(
     public ISystemApplication System { get; } = system;
 
     public IEventRuleApplication EventRules { get; } = eventRules;
+
+    public IOperationApplication Operations { get; } = operations;
 }

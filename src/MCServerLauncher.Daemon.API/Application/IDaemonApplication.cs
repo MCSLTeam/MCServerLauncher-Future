@@ -9,4 +9,6 @@ public interface IDaemonApplication
     ISystemApplication System { get; }
 
     IEventRuleApplication EventRules { get; }
+
+    IOperationApplication Operations { get; }
 }

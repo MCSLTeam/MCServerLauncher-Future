@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
@@ -120,6 +121,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
             new ThrowingFileApplication(),
             new ThrowingSystemApplication(),
             new ThrowingEventRuleApplication(),
+            new ThrowingOperationApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
             accessor,
@@ -162,6 +164,13 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     {
         public Task<Result<EventRuleSet, DaemonError>> GetEventRulesAsync(EventRuleQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<Unit, DaemonError>> UpdateEventRulesAsync(EventRuleUpdateRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingOperationApplication : IOperationApplication
+    {
+        public Task<Result<OperationListResult, DaemonError>> ListOperationsAsync(OperationListQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationSnapshot, DaemonError>> GetOperationAsync(OperationReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationCancelResult, DaemonError>> CancelOperationAsync(OperationCancelRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingInstanceApplication : IInstanceApplication

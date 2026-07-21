@@ -599,6 +599,8 @@ public sealed class DomainEventPortAndTriggerTests
         public IFileApplication Files => throw new NotSupportedException();
         public ISystemApplication System => throw new NotSupportedException();
         public IEventRuleApplication EventRules { get; } = eventRules;
+
+        public IOperationApplication Operations { get; } = null!;
     }
 
     private class InterfaceDispatchProxy : DispatchProxy
