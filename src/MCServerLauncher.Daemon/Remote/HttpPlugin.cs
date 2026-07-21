@@ -141,8 +141,7 @@ internal sealed class HttpPlugin : PluginBase, IHttpPlugin
                         }
 
                         var jwt = JwtUtils.GenerateToken(permissions, expires);
-                        Log.Debug("[Authenticator] Sub-token {0} generated, expiring in {1} seconds", jwt,
-                            expires);
+                        Log.Debug("[Authenticator] Sub-token generated, expiring in {0} seconds", expires);
                         await response
                             .SetStatus(200, "Success")
                             .AddHeader("Content-type", "text/plain")

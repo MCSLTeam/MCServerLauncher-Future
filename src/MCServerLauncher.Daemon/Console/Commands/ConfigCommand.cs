@@ -8,6 +8,8 @@ namespace MCServerLauncher.Daemon.Console.Commands;
 
 public static class ConfigCommand
 {
+    private const string Redacted = "<redacted>";
+
     public static LiteralCommandNode<TSource> Register<TSource>(this CommandDispatcher<TSource> dispatcher)
         where TSource : ConsoleCommandSource
     {
@@ -16,18 +18,28 @@ public static class ConfigCommand
                 .Then(ctx.Literal("json")
                     .Executes(cmd =>
                     {
+                        // Never serialize secrets through Serilog sinks. Print a redacted view
+                        // to the interactive console only.
                         var config = AppConfig.Get();
-                        cmd.Source.SendFeedback(
-                            "config.json: {0}",
-                            JsonSerializer.Serialize(config, AppConfig.PersistenceWriteIndentedTypeInfo)
-                        );
+                        var redacted = $$"""
+                            {
+                              "port": {{config.Port}},
+                              "secret": "{{Redacted}}",
+                              "main_token": "{{Redacted}}",
+                              "file_download_sessions": {{config.FileDownloadSessions}},
+                              "verbose": {{config.Verbose.ToString().ToLowerInvariant()}}
+                            }
+                            """;
+                        cmd.Source.SendSecret(redacted);
                         return 0;
                     }))
                 .Then(ctx.Literal("token")
                     .Executes(cmd =>
                     {
+                        // Reveal the main token to the interactive console only; it must not be
+                        // persisted to file or network Serilog sinks. Use `cfg reset token` to rotate.
                         var config = AppConfig.Get();
-                        cmd.Source.SendFeedback("MainToken: {0}", config.MainToken);
+                        cmd.Source.SendSecret($"MainToken: {config.MainToken}");
                         return 0;
                     })
                 ).Then(ctx.Literal("port")

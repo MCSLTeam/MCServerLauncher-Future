@@ -27,13 +27,29 @@ public sealed record PermissionName
     public override string ToString() => Value;
 }
 
-public sealed record PluginCapability
+public sealed record PluginFeature
 {
-    public static readonly PluginCapability RpcRegister = new("rpc.register");
-    public static readonly PluginCapability EventPublish = new("event.publish");
-    public static readonly PluginCapability InstanceQuery = new("instance.query");
+    public static readonly PluginFeature RpcRegister = new("rpc.register");
+    public static readonly PluginFeature EventPublish = new("event.publish");
+    public static readonly PluginFeature EventSubscribe = new("event.subscribe");
+    public static readonly PluginFeature InstanceQuery = new("instance.query");
+    public static readonly PluginFeature InstanceManage = new("instance.manage");
+    public static readonly PluginFeature FileRead = new("file.read");
+    public static readonly PluginFeature FileWrite = new("file.write");
+    public static readonly PluginFeature SystemQuery = new("system.query");
+    public static readonly PluginFeature EventRuleManage = new("event-rule.manage");
+    public static readonly PluginFeature OperationQuery = new("operation.query");
+    public static readonly PluginFeature OperationCancel = new("operation.cancel");
+    public static readonly PluginFeature ProvisioningManage = new("provisioning.manage");
+    public static readonly PluginFeature BackupManage = new("backup.manage");
+    public static readonly PluginFeature MonitoringQuery = new("monitoring.query");
+    public static readonly PluginFeature AutomationManage = new("automation.manage");
+    public static readonly PluginFeature AuditQuery = new("audit.query");
+    public static readonly PluginFeature StoragePrivate = new("storage.private");
+    public static readonly PluginFeature NetworkHttpListen = new("network.http.listen");
+    public static readonly PluginFeature AuthVerify = new("auth.verify");
 
-    public PluginCapability(string value) => Value = ProtocolIdentifier.ValidatePluginCapability(value, nameof(value));
+    public PluginFeature(string value) => Value = ProtocolIdentifier.ValidatePluginFeature(value, nameof(value));
 
     public string Value { get; }
 
@@ -60,8 +76,8 @@ internal static class ProtocolIdentifier
             : ValidateDottedIdentifier(value, parameterName, "Permission name");
     }
 
-    public static string ValidatePluginCapability(string value, string parameterName) =>
-        ValidateDottedIdentifier(value, parameterName, "Plugin capability");
+    public static string ValidatePluginFeature(string value, string parameterName) =>
+        ValidateDottedIdentifier(value, parameterName, "Plugin feature");
 
     private static string ValidateDottedIdentifier(
         string value,

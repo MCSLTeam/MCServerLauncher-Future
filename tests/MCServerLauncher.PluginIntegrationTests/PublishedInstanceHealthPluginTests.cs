@@ -178,7 +178,7 @@ public sealed class PublishedInstanceHealthPluginTests
                 "community.instance-health",
                 typeof(InstanceHealthPlugin).Assembly,
                 typeof(InstanceHealthPlugin).FullName!,
-                "[\"rpc.register\",\"event.publish\",\"instance.query\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.returned-error"),
                 "fixture.returned-error",
@@ -210,7 +210,7 @@ public sealed class PublishedInstanceHealthPluginTests
                     "fixture.start-never-completes",
                     typeof(NeverCompletingStartPlugin).Assembly,
                     typeof(NeverCompletingStartPlugin).FullName!,
-                    "[\"rpc.register\",\"event.publish\"]");
+                    "[\"event.publish\",\"rpc.register\"]");
             }
             await WriteDocumentedPackagePluginAsync(root);
 
@@ -404,20 +404,26 @@ public sealed class PublishedInstanceHealthPluginTests
             string id,
             Assembly assembly,
             string entryType,
-            string capabilities)
+            string features)
         {
             Directory.CreateDirectory(pluginDirectory);
             File.Copy(assembly.Location, Path.Combine(pluginDirectory, "PluginEntry.dll"));
             await File.WriteAllTextAsync(
-                Path.Combine(pluginDirectory, "plugin.json"),
+                Path.Combine(pluginDirectory, "mcsl-plugin.json"),
                 $$"""
                 {
-                  "id": "{{id}}",
-                  "version": "1.0.0",
-                  "entry_assembly": "PluginEntry.dll",
-                  "entry_type": "{{entryType}}",
-                  "api_version": "[1.0.0,2.0.0)",
-                  "capabilities": {{capabilities}}
+                  "package": {
+                    "id": "{{id}}",
+                    "version": "1.0.0"
+                  },
+                  "entry": {
+                    "assembly": "PluginEntry.dll",
+                    "type": "{{entryType}}"
+                  },
+                  "requires": {
+                    "api": "[2.0.0,3.0.0)",
+                    "features": {{features}}
+                  }
                 }
                 """);
         }
@@ -456,15 +462,21 @@ public sealed class PublishedInstanceHealthPluginTests
             Directory.CreateDirectory(pluginDirectory);
             CopyDirectory(publishDirectory, pluginDirectory);
             await File.WriteAllTextAsync(
-                Path.Combine(pluginDirectory, "plugin.json"),
+                Path.Combine(pluginDirectory, "mcsl-plugin.json"),
                 """
                 {
-                  "id": "fixture.package-reference-consumer",
-                  "version": "1.0.0",
-                  "entry_assembly": "PackageReferenceConsumer.dll",
-                  "entry_type": "MCServerLauncher.PackageReferenceConsumer.PackageReferenceConsumerPlugin",
-                  "api_version": "[1.0.0,2.0.0)",
-                  "capabilities": []
+                  "package": {
+                    "id": "fixture.package-reference-consumer",
+                    "version": "1.0.0"
+                  },
+                  "entry": {
+                    "assembly": "PackageReferenceConsumer.dll",
+                    "type": "MCServerLauncher.PackageReferenceConsumer.PackageReferenceConsumerPlugin"
+                  },
+                  "requires": {
+                    "api": "[2.0.0,3.0.0)",
+                    "features": []
+                  }
                 }
                 """);
 

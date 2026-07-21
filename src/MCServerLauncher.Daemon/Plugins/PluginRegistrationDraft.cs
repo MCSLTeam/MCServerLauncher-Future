@@ -42,11 +42,11 @@ internal sealed class PluginRegistrationDraft(
         ArgumentNullException.ThrowIfNull(handler);
         if (!EnsureWritable(out var stateError))
             return Result.Err<Unit, DaemonError>(stateError!);
-        if (!Manifest.HasCapability(PluginCapability.RpcRegister))
+        if (!Manifest.HasFeature(PluginFeature.RpcRegister))
         {
             return Error(
-                "plugin_capability_required",
-                $"Plugin '{Manifest.Identity.Id}' must declare capability 'rpc.register' before registering an RPC.");
+                "plugin_feature_required",
+                $"Plugin '{Manifest.Identity.Id}' must declare feature 'rpc.register' before registering an RPC.");
         }
 
         try
@@ -75,11 +75,11 @@ internal sealed class PluginRegistrationDraft(
         ArgumentNullException.ThrowIfNull(descriptor);
         if (!EnsureWritable(out var stateError))
             return Result.Err<IPluginEventPublisher<TData, TMeta>, DaemonError>(stateError!);
-        if (!Manifest.HasCapability(PluginCapability.EventPublish))
+        if (!Manifest.HasFeature(PluginFeature.EventPublish))
         {
             return Error<IPluginEventPublisher<TData, TMeta>>(
-                "plugin_capability_required",
-                $"Plugin '{Manifest.Identity.Id}' must declare capability 'event.publish' before registering an event.");
+                "plugin_feature_required",
+                $"Plugin '{Manifest.Identity.Id}' must declare feature 'event.publish' before registering an event.");
         }
 
         var publisher = new PluginEventPublisher<TData, TMeta>(

@@ -37,4 +37,14 @@ public class ConsoleCommandSource
     {
         Log.Error("[Console] " + messageTemplate, propertyValues);
     }
+
+    /// <summary>
+    /// Writes sensitive output directly to the interactive console without routing it through
+    /// Serilog sinks, so file/network sinks never persist secrets such as the main token.
+    /// Only meaningful for an interactive console session.
+    /// </summary>
+    public void SendSecret(string value)
+    {
+        System.Console.WriteLine(value);
+    }
 }

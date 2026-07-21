@@ -277,15 +277,21 @@ public sealed class PluginHostLifecycleTests
             Directory.CreateDirectory(bundle);
             File.Copy(assembly.Location, Path.Combine(bundle, "PluginEntry.dll"));
             File.WriteAllText(
-                Path.Combine(bundle, "plugin.json"),
+                Path.Combine(bundle, "mcsl-plugin.json"),
                 $$"""
                 {
-                  "id": "{{id}}",
-                  "version": "1.0.0",
-                  "entry_assembly": "PluginEntry.dll",
-                  "entry_type": "{{entryType}}",
-                  "api_version": "[1.0.0,2.0.0)",
-                  "capabilities": ["rpc.register", "event.publish", "instance.query"]
+                  "package": {
+                    "id": "{{id}}",
+                    "version": "1.0.0"
+                  },
+                  "entry": {
+                    "assembly": "PluginEntry.dll",
+                    "type": "{{entryType}}"
+                  },
+                  "requires": {
+                    "api": "[2.0.0,3.0.0)",
+                    "features": ["event.publish", "instance.query", "rpc.register"]
+                  }
                 }
                 """);
         }
