@@ -33,6 +33,8 @@ public partial class InstanceCardModel : ObservableObject
         InstanceStatus.Running => Lang.Tr["Running"],
         InstanceStatus.Stopped => Lang.Tr["Stopped"],
         InstanceStatus.Crashed => Lang.Tr["Crashed"],
+        InstanceStatus.Starting => Lang.Tr["Starting"],
+        InstanceStatus.Stopping => Lang.Tr["Stopping"],
         _ => Status.ToString()
     };
     public string CpuUsageText => $"{CpuUsageProgress:F2}%";
@@ -42,12 +44,12 @@ public partial class InstanceCardModel : ObservableObject
             ? FormatSize(MemoryUsage)
             : $"{MemoryUsageProgress:F2}% ({FormatSize(MemoryUsage)} / {FormatSize(MemoryTotalBytes.Value)})";
 
-    public bool IsActive => Status == InstanceStatus.Running;
+    public bool IsActive => Status is InstanceStatus.Running or InstanceStatus.Starting or InstanceStatus.Stopping;
     public bool CanStart => Status is InstanceStatus.Stopped or InstanceStatus.Crashed;
-    public bool CanStop => Status == InstanceStatus.Running;
-    public bool CanRestart => Status == InstanceStatus.Running;
-    public bool CanKill => Status == InstanceStatus.Running;
-    public bool CanDelete => Status == InstanceStatus.Stopped;
+    public bool CanStop => Status is InstanceStatus.Running or InstanceStatus.Starting;
+    public bool CanRestart => Status is InstanceStatus.Running or InstanceStatus.Starting;
+    public bool CanKill => Status is InstanceStatus.Running or InstanceStatus.Starting or InstanceStatus.Stopping;
+    public bool CanDelete => Status is InstanceStatus.Stopped or InstanceStatus.Crashed;
 
     partial void OnStatusChanged(InstanceStatus value)
     {

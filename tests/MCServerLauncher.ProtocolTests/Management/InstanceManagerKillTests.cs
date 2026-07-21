@@ -27,7 +27,8 @@ public class InstanceManagerKillTests
             manager.RunningInstances[config.Uuid] = instance;
 
             Assert.True(await manager.TryStopInstance(config.Uuid));
-            Assert.False(manager.RunningInstances.ContainsKey(config.Uuid));
+            // Intermediate Stopping keeps the instance mapped until a terminal status arrives.
+            Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
             Assert.False(process.HasExit);
 
             manager.KillInstance(config.Uuid);
@@ -208,8 +209,9 @@ public class InstanceManagerKillTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { Process?.KillProcess(); }

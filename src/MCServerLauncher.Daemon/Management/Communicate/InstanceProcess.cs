@@ -87,6 +87,10 @@ public class InstanceProcess : DisposableObject
 
             Volatile.Write(ref _processStarted, 1);
 
+// Spec §6: process spawned → Starting before any output pump can race.
+            // Use None so a cancelled start wait cannot leave catalog stuck at Starting.
+            await PublishStatusAsync(InstanceStatus.Starting, CancellationToken.None);
+
             if (host.IsPty && host.OutputStream is not null)
             {
                 _ptyPumpTask = PumpPtyAsync(host.OutputStream);
@@ -122,10 +126,13 @@ public class InstanceProcess : DisposableObject
             }
 
             ServerProcessId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? ProcessTreeHelper.FindSubProcessPid(process.Id, fileName)
+? ProcessTreeHelper.FindSubProcessPid(process.Id, fileName)
                 : process.Id;
+
+            // Non-Minecraft process-ready advances on a true async hop so Start returns at Starting.
             if (!_isMcServer)
-                await PublishRunningAsync(ct);
+                _ = TransitionToRunningAfterStartAsync();
+
             return true;
         }
         catch
@@ -133,6 +140,46 @@ public class InstanceProcess : DisposableObject
             await TerminateAndDrainAsync();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Transitions to Stopping when a cooperative stop is requested.
+    /// Halt/kill paths may skip this and go straight to a terminal status.
+    /// No-ops when already terminal or already Stopping.
+    /// </summary>
+    public async Task RequestStoppingAsync(CancellationToken cancellationToken = default)
+    {
+        // Honor pre-flight cancellation, but once we decide to stop, commit Stopping without a
+        // cancellable handler path so kill/stop write always runs after intermediate success.
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await _statusGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            if (Volatile.Read(ref _finalized) != 0)
+                return;
+
+            // Preserve Crashed/Stopped; do not rewrite terminal detection.
+            if (Status is InstanceStatus.Crashed or InstanceStatus.Stopped or InstanceStatus.Stopping)
+                return;
+
+            if (Status is not (InstanceStatus.Starting or InstanceStatus.Running))
+                return;
+
+            // Commit with none so status-change handlers cannot cancel the stop sequence.
+            await ChangeStatusAsync(InstanceStatus.Stopping, CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            _statusGate.Release();
+        }
+    }
+
+    private async Task TransitionToRunningAfterStartAsync()
+    {
+        // Yield so StartAsync can return while status is still Starting.
+        await Task.Yield();
+        await PublishRunningAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     public async Task WaitForExitAsync(CancellationToken ct = default)
@@ -158,9 +205,9 @@ public class InstanceProcess : DisposableObject
         return _logHistory.ToArray();
     }
 
-    public void KillProcess()
+    public void KillProcess(bool waitForExit = true)
     {
-        // Unblock PumpPtyAsync and release master FDs before/while killing so halt
+// Unblock PumpPtyAsync and release master FDs before/while killing so halt
         // does not hang the RPC thread. Always force-publish Stopped so UI does not
         // stick on running/starting if FinalizeProcessAsync is delayed.
         try
@@ -215,7 +262,7 @@ public class InstanceProcess : DisposableObject
             }
         }
 
-// Clear status immediately so reports / UI do not stick on running while
+        // Clear status immediately so reports / UI do not stick on running while
         // FinalizeProcessAsync may still be waiting on WaitForExitAsync.
         // Also mark lifecycle finished so HasExit becomes true even when
         // Process.HasExited stays false for GetProcessById-backed PTY children.
@@ -536,6 +583,10 @@ public class InstanceProcess : DisposableObject
             if (Volatile.Read(ref _finalized) != 0 || HasExit || Interlocked.Exchange(ref _runningPublished, 1) != 0)
                 return;
 
+// Allow Running only from Starting (or direct if Starting was skipped by race).
+            if (Status is not (InstanceStatus.Starting or InstanceStatus.Stopped))
+                return;
+
             await ChangeStatusAsync(InstanceStatus.Running, cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -553,8 +604,13 @@ public class InstanceProcess : DisposableObject
                                Status == InstanceStatus.Stopped &&
                                ServerProcessId < 0;
             Volatile.Write(ref _finalized, 1);
-            // Clear PID so clients do not treat a stopped instance as still alive.
+// Clear PID so clients do not treat a stopped instance as still alive.
             ServerProcessId = -1;
+
+            // Crashed is terminal when the type observer detected it; do not rewrite to Stopped.
+            if (Status == InstanceStatus.Crashed)
+                return;
+
             if (alreadyFinal)
                 return;
 

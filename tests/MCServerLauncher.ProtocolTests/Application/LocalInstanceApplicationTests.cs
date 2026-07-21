@@ -119,7 +119,8 @@ public sealed class LocalInstanceApplicationTests
         Assert.Same(instance, await startTask.WaitAsync(TimeSpan.FromSeconds(3)));
         Assert.True(await stopTask.WaitAsync(TimeSpan.FromSeconds(3)));
         Assert.Equal(1, Volatile.Read(ref stopCalls));
-        Assert.False(manager.RunningInstances.ContainsKey(config.Uuid));
+        // Stub Stop does not publish a terminal status; the instance remains mapped until one does.
+        Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
     }
 
     [Fact]
@@ -1978,9 +1979,10 @@ public sealed class LocalInstanceApplicationTests
             return startAsync?.Invoke(ct) ?? Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
             stop?.Invoke();
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { }
@@ -2046,8 +2048,9 @@ public sealed class LocalInstanceApplicationTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { }
@@ -2127,8 +2130,9 @@ public sealed class LocalInstanceApplicationTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task StopAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
         public void ForceKillAndClear() { }
@@ -2171,7 +2175,7 @@ public sealed class LocalInstanceApplicationTests
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) =>
             throw new NotSupportedException();
 
-        public void Stop() => throw new NotSupportedException();
+        public Task StopAsync(CancellationToken ct = default) => throw new NotSupportedException();
 
         public void ForceKillAndClear() { }
 

@@ -94,10 +94,16 @@ public abstract class InstanceBase : DisposableObject, IInstance
         }
     }
 
-    public virtual void Stop()
+    public virtual async Task StopAsync(CancellationToken ct = default)
     {
-        // Default stop is hard-kill + clear handle. MinecraftInstance overrides to send "stop".
-        ForceKillAndClear();
+        // Default stop is RequestStopping + non-blocking kill. MinecraftInstance overrides to send "stop".
+        var stopProcess = Process;
+        if (stopProcess is null)
+            return;
+
+        // Return after Stopping succeeds; do not wait for OS exit.
+        await stopProcess.RequestStoppingAsync(ct).ConfigureAwait(false);
+        stopProcess.KillProcess(waitForExit: false);
     }
 
     /// <summary>

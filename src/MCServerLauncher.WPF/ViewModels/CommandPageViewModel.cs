@@ -38,9 +38,9 @@ public partial class CommandPageViewModel : ObservableObject
 
     public bool CanSendCommand => Status == InstanceStatus.Running;
     public bool CanStart => Status is InstanceStatus.Stopped or InstanceStatus.Crashed;
-    public bool CanStop => Status == InstanceStatus.Running;
-    public bool CanRestart => Status == InstanceStatus.Running;
-    public bool CanKill => Status == InstanceStatus.Running;
+    public bool CanStop => Status is InstanceStatus.Running or InstanceStatus.Starting;
+    public bool CanRestart => Status is InstanceStatus.Running or InstanceStatus.Starting;
+    public bool CanKill => Status is InstanceStatus.Running or InstanceStatus.Starting or InstanceStatus.Stopping;
 
     partial void OnStatusChanged(InstanceStatus value)
     {
