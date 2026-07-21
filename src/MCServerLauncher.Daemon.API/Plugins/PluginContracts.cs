@@ -54,6 +54,11 @@ public interface IPluginContext
     IInstanceSnapshotSource Instances { get; }
 
     /// <summary>
+    /// System facts and Java discovery. Throws if the plugin did not declare <c>system.query</c>.
+    /// </summary>
+    ISystemQueryApplication System { get; }
+
+    /// <summary>
     /// Cold-start configuration reader (base API; not a feature).
     /// </summary>
     IPluginConfiguration Configuration { get; }

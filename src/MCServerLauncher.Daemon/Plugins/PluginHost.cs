@@ -7,6 +7,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
@@ -36,6 +37,7 @@ internal sealed class PluginHost
 
     private readonly object _gate = new();
     private readonly IInstanceSnapshotSource _instances;
+    private readonly ISystemApplication? _system;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -63,7 +65,8 @@ internal sealed class PluginHost
             eventBus,
             DefaultStartTimeout,
             DaemonPluginsConfig.Default,
-            new PluginHttpEndpointRegistry())
+            new PluginHttpEndpointRegistry(),
+            system: null)
     {
     }
 
@@ -81,7 +84,8 @@ internal sealed class PluginHost
             eventBus,
             DefaultStartTimeout,
             DaemonPluginsConfig.Default,
-            new PluginHttpEndpointRegistry())
+            new PluginHttpEndpointRegistry(),
+            system: null)
     {
     }
 
@@ -100,7 +104,8 @@ internal sealed class PluginHost
             eventBus,
             startTimeout,
             DaemonPluginsConfig.Default,
-            new PluginHttpEndpointRegistry())
+            new PluginHttpEndpointRegistry(),
+            system: null)
     {
     }
 
@@ -112,7 +117,8 @@ internal sealed class PluginHost
         IPluginEventBus eventBus,
         TimeSpan startTimeout,
         DaemonPluginsConfig pluginsConfig,
-        PluginHttpEndpointRegistry httpEndpoints)
+        PluginHttpEndpointRegistry httpEndpoints,
+        ISystemApplication? system = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -124,6 +130,7 @@ internal sealed class PluginHost
         _startTimeout = startTimeout;
         _pluginsConfig = pluginsConfig ?? DaemonPluginsConfig.Default;
         _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
+        _system = system;
     }
 
     /// <summary>
@@ -310,6 +317,7 @@ internal sealed class PluginHost
                 finally
                 {
                     runtime.Activation.TrySetCanceled();
+                    DisposePlugin(runtime);
                     DisposeLifetime(runtime);
                     _httpEndpoints.Release(runtime.Manifest.Identity.Id);
                     runtime.State = PluginRuntimeState.Stopped;
@@ -322,6 +330,7 @@ internal sealed class PluginHost
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
+                DisposePlugin(runtime);
                 DisposeLifetime(runtime);
                 _httpEndpoints.Release(runtime.Manifest.Identity.Id);
                 runtime.State = PluginRuntimeState.Stopped;
@@ -382,6 +391,17 @@ internal sealed class PluginHost
             IPluginAuthentication? authentication = manifest.HasFeature(PluginFeature.AuthVerify)
                 ? new PluginAuthentication(errors)
                 : null;
+            ISystemQueryApplication? system = null;
+            if (manifest.HasFeature(PluginFeature.SystemQuery))
+            {
+                if (_system is null)
+                {
+                    throw new InvalidOperationException(
+                        "Plugin declared system.query but the host was constructed without ISystemApplication.");
+                }
+
+                system = new PluginSystemQueryApplication(_system);
+            }
 
             var context = new PluginContext(
                 manifest.Identity,
@@ -394,6 +414,7 @@ internal sealed class PluginHost
                 storage,
                 httpPolicy,
                 authentication,
+                system,
                 activation.Task,
                 lifetime.Token);
             return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);
@@ -690,6 +711,7 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
+        DisposePlugin(runtime);
         DisposeLifetime(runtime);
         _httpEndpoints.Release(runtime.Manifest.Identity.Id);
         runtime.State = PluginRuntimeState.Failed;
@@ -713,6 +735,7 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
+        DisposePlugin(runtime);
         DisposeLifetime(runtime);
         _httpEndpoints.Release(runtime.Manifest.Identity.Id);
         runtime.State = PluginRuntimeState.Failed;
@@ -745,6 +768,22 @@ internal sealed class PluginHost
                 "Plugin {PluginId} lifetime cancellation callbacks failed at {Stage}; continuing cleanup.",
                 runtime.Manifest.Identity.Id,
                 stage);
+        }
+    }
+
+    private void DisposePlugin(PluginRuntime runtime)
+    {
+        try
+        {
+            if (runtime.Plugin is IDisposable disposable)
+                disposable.Dispose();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Plugin {PluginId} dispose threw an unexpected exception.",
+                runtime.Manifest.Identity.Id);
         }
     }
 
