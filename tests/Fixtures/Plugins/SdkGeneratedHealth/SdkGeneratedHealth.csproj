@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\MCServerLauncher.Daemon.Plugin.Sdk\MCServerLauncher.Daemon.Plugin.Sdk.csproj" />
+    <ProjectReference Include="..\..\..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="mcsl-plugin.json" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,9 @@
+<Project>
+  <!-- Wire mcsl-plugin.json as an AdditionalFile for the SDK source generator. -->
+  <ItemGroup>
+    <AdditionalFiles Include="mcsl-plugin.json"
+                     Condition="Exists('$(MSBuildProjectDirectory)\mcsl-plugin.json')" />
+    <AdditionalFiles Include="**\mcsl-plugin.json"
+                     Condition="!Exists('$(MSBuildProjectDirectory)\mcsl-plugin.json')" />
+  </ItemGroup>
+</Project>

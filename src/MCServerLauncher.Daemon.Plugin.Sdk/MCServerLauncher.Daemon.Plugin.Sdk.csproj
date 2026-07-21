@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>14</LangVersion>
+    <IsPackable>true</IsPackable>
+    <PackageId>MCServerLauncher.Daemon.Plugin.Sdk</PackageId>
+    <PackageVersion>2.0.0-preview.1</PackageVersion>
+    <Authors>MCSLTeam</Authors>
+    <Description>
+      Developer SDK for MCServerLauncher Future plugins: feature-gated source generation,
+      Daemon.API contracts, and MCSLPluginBundle publish targets.
+    </Description>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/MCSLTeam/MCServerLauncher-Future</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MCSLTeam/MCServerLauncher-Future.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>mcsl;daemon;plugin;sdk;source-generator</PackageTags>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <DevelopmentDependency>false</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MCServerLauncher.Daemon.API\MCServerLauncher.Daemon.API.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="[10.0.9]" />
+  </ItemGroup>
+
+  <!-- Analyzer/generator is packed into analyzers/dotnet/cs and does not flow as a compile asset. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="README.md" />
+    <None Include="buildTransitive\MCServerLauncher.Daemon.Plugin.Sdk.props"
+          Pack="true"
+          PackagePath="buildTransitive\MCServerLauncher.Daemon.Plugin.Sdk.props" />
+    <None Include="buildTransitive\MCServerLauncher.Daemon.Plugin.Sdk.targets"
+          Pack="true"
+          PackagePath="buildTransitive\MCServerLauncher.Daemon.Plugin.Sdk.targets" />
+  </ItemGroup>
+
+  <!--
+    Build the generator, then add it to the package under analyzers/dotnet/cs.
+    The None item is created in a target so the path is resolved after the build
+    (project-evaluation-time Exists() would miss a fresh build output).
+  -->
+  <Target Name="PackPluginGeneratorAsAnalyzer"
+          BeforeTargets="GenerateNuspec;_GetPackageFiles"
+          DependsOnTargets="ResolveProjectReferences">
+    <MSBuild Projects="..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0" />
+    <PropertyGroup>
+      <_PluginGeneratorOutput>$(MSBuildThisFileDirectory)..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\bin\$(Configuration)\netstandard2.0\MCServerLauncher.Daemon.Plugin.Generators.dll</_PluginGeneratorOutput>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_PluginGeneratorOutput)')"
+           Text="Plugin generator DLL was not found at $(_PluginGeneratorOutput)." />
+    <ItemGroup>
+      <None Include="$(_PluginGeneratorOutput)"
+            Pack="true"
+            PackagePath="analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
+
+</Project>
