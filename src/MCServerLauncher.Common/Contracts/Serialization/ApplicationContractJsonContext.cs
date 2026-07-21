@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.System;
 using ContractDriveInfo = MCServerLauncher.Common.Contracts.System.DriveInfo;
 using InstanceConsoleMode = MCServerLauncher.Common.ProtoType.Instance.ConsoleMode;
@@ -23,6 +24,8 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(SourceTypeJsonConverter),
         typeof(InstanceFactoryMirrorJsonConverter),
         typeof(InstanceStatusJsonConverter),
+        typeof(OperationStatusJsonConverter),
+        typeof(OperationStageJsonConverter),
         typeof(ConsoleModeJsonConverter)
     ])]
 [JsonSerializable(typeof(EventRuleQuery))]
@@ -88,4 +91,11 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(SystemInfo))]
 [JsonSerializable(typeof(JavaRuntime))]
 [JsonSerializable(typeof(JavaRuntimeList))]
+[JsonSerializable(typeof(OperationReference))]
+[JsonSerializable(typeof(OperationListQuery))]
+[JsonSerializable(typeof(OperationProgress))]
+[JsonSerializable(typeof(OperationSnapshot))]
+[JsonSerializable(typeof(OperationListResult))]
+[JsonSerializable(typeof(OperationCancelRequest))]
+[JsonSerializable(typeof(OperationCancelResult))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;

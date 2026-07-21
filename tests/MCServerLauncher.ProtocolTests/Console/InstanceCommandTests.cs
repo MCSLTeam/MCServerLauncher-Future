@@ -268,6 +268,8 @@ public class InstanceCommandTests
         public IFileApplication Files => throw new NotSupportedException();
         public ISystemApplication System => throw new NotSupportedException();
         public IEventRuleApplication EventRules => throw new NotSupportedException();
+
+        public IOperationApplication Operations { get; } = null!;
     }
 
     private sealed class CommandHarness(

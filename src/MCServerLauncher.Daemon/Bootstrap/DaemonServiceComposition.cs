@@ -5,6 +5,7 @@ using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Plugins;
@@ -72,6 +73,7 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
         a.RegisterSingleton<IFileApplication, LocalFileApplication>();
         a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
+        a.RegisterSingleton<IOperationApplication, OperationCoordinator>();
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();

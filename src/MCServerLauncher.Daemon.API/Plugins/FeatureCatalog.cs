@@ -111,13 +111,13 @@ public static class FeatureCatalog
             "List and read immutable long-running operation snapshots.",
             PluginFeatureRisk.None,
             ["mcsl.operation.list", "mcsl.operation.get"],
-            implemented: false),
+            implemented: true),
         Descriptor(
             PluginFeature.OperationCancel,
             "Request cooperative cancellation of long-running operations.",
             PluginFeatureRisk.Medium,
             ["mcsl.operation.cancel"],
-            implemented: false),
+            implemented: true),
         Descriptor(
             PluginFeature.ProvisioningManage,
             "Resolve and execute immutable provisioning plans.",
