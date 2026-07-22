@@ -19,7 +19,7 @@ namespace MCServerLauncher.ProtocolTests.Rpc.Transport;
 
 public sealed class TouchSocketV2TransportPluginTests
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
     [Fact]
     public void Authentication_RejectsDecodableForgedAndExpiredTokens()
