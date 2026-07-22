@@ -8,8 +8,17 @@ using RustyOptions;
 
 namespace MCServerLauncher.ExternalCompileFixture;
 
-public sealed class ExternalCompilePlugin : IDaemonPlugin
+public sealed class ExternalCompilePlugin : IGeneratedDaemonPluginAdapter
 {
+    public static PluginAdapterMetadata Metadata { get; } = new(
+        "external-compile",
+        "1.0.0",
+        "PluginEntry.dll",
+        "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+        "[2.0.0, 3.0.0)",
+        ["event.publish", "instance.query", "rpc.register"],
+        "72359393f00a7d0bfbed2f1b684a8583146b0212c1ac29bc8477f37af1815d61");
+
     private IPluginContext? _context;
 
     public Result<Unit, DaemonError> Configure(IPluginContext context)

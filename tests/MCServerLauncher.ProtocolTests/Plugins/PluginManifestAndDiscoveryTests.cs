@@ -32,6 +32,78 @@ public sealed class PluginManifestAndDiscoveryTests
     }
 
     [Fact]
+    public void NormalizesSemanticManifestDigestAcrossEquivalentJson()
+    {
+        using var first = PluginFixture.Create("first");
+        using var second = PluginFixture.Create("second");
+        first.WriteRawManifest(
+            """
+            {
+              "package": { "id": "community.instance-health", "version": "01.02" },
+              "entry": {
+                "assembly": "PluginEntry.dll",
+                "type": "Community.InstanceHealth.InstanceHealthPlugin"
+              },
+              "requires": {
+                "api": "[2.0,3.0)",
+                "features": ["rpc.register", "event.publish", "instance.query"]
+              }
+            }
+            """);
+        second.WriteRawManifest(
+            """
+            {
+              "$schema": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",
+              "requires": {
+                "features": ["event.publish", "instance.query", "rpc.register"],
+                "api": "[2.0.0, 3.0.0)"
+              },
+              "entry": {
+                "type": "Community.InstanceHealth.InstanceHealthPlugin",
+                "assembly": "PluginEntry.dll"
+              },
+              "package": { "version": "1.2.0", "id": "community.instance-health" }
+            }
+            """);
+
+        var firstManifest = PluginManifestReader.ReadAndValidate(first.BundleDirectory, "2.0.0");
+        var secondManifest = PluginManifestReader.ReadAndValidate(second.BundleDirectory, "2.0.0");
+
+        Assert.Equal("1.2.0", firstManifest.Identity.Version);
+        Assert.Equal("[2.0.0, 3.0.0)", firstManifest.ApiVersionRange.ToNormalizedString());
+        Assert.Equal(firstManifest.ManifestDigest, secondManifest.ManifestDigest);
+    }
+
+    [Fact]
+    public void RejectsDuplicateJsonProperties()
+    {
+        using var fixture = PluginFixture.Create("duplicate-json");
+        fixture.WriteRawManifest(
+            """
+            {
+              "package": {
+                "id": "community.instance-health",
+                "version": "1.0.0",
+                "version": "1.0.1"
+              },
+              "entry": {
+                "assembly": "PluginEntry.dll",
+                "type": "Community.InstanceHealth.InstanceHealthPlugin"
+              },
+              "requires": {
+                "api": "[2.0.0,3.0.0)",
+                "features": ["rpc.register"]
+              }
+            }
+            """);
+
+        var exception = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));
+
+        Assert.Equal("manifest_invalid", exception.Code);
+    }
+
+    [Fact]
     public void RejectsUnsupportedApiRangeAndUnknownFeature()
     {
         using var fixture = PluginFixture.Create("community.instance-health");
@@ -244,6 +316,9 @@ public sealed class PluginManifestAndDiscoveryTests
         {
             WriteManifest(id, version, entryAssembly, entryType, apiVersion, features, string.Empty);
         }
+
+        public void WriteRawManifest(string json) =>
+            File.WriteAllText(Path.Combine(BundleDirectory, "mcsl-plugin.json"), json);
 
         public void WriteManifest(
             string id,

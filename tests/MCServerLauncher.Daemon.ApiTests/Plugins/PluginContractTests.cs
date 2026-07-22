@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json;
@@ -21,6 +22,50 @@ public sealed class PluginContractTests
         Assert.Equal("1.0.0", identity.Version);
         Assert.Throws<ArgumentException>(() => new PluginIdentity("Community.InstanceHealth", "1.0.0"));
         Assert.Throws<ArgumentException>(() => new PluginIdentity("community._health", "1.0.0"));
+    }
+
+    [Fact]
+    public void AdapterMetadataIsNormalizedImmutableAndSelfConsistent()
+    {
+        var features = ImmutableArray.Create("event.publish", "instance.query", "rpc.register");
+        var digest = new string('a', 64);
+
+        var metadata = new PluginAdapterMetadata(
+            "community.instance-health",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.InstanceHealth.Generated.DaemonPluginAdapter",
+            "[2.0.0, 3.0.0)",
+            features,
+            digest);
+
+        Assert.Equal("community.instance-health", metadata.PackageId);
+        Assert.Equal(features, metadata.Features);
+        Assert.Equal(digest, metadata.ManifestDigest);
+        Assert.Throws<ArgumentException>(() => new PluginAdapterMetadata(
+            "community.instance-health",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.InstanceHealth.Generated.DaemonPluginAdapter",
+            "[2.0.0, 3.0.0)",
+            default,
+            digest));
+        Assert.Throws<ArgumentException>(() => new PluginAdapterMetadata(
+            "community.instance-health",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.InstanceHealth.Generated.DaemonPluginAdapter",
+            "[2.0.0, 3.0.0)",
+            ["rpc.register", "event.publish"],
+            digest));
+        Assert.Throws<ArgumentException>(() => new PluginAdapterMetadata(
+            "community.instance-health",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.InstanceHealth.Generated.DaemonPluginAdapter",
+            "[2.0.0, 3.0.0)",
+            features,
+            digest.ToUpperInvariant()));
     }
 
     [Fact]

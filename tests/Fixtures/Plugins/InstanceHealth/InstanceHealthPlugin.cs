@@ -9,8 +9,17 @@ using RustyOptions;
 
 namespace MCServerLauncher.PluginFixtures.InstanceHealth;
 
-public sealed class InstanceHealthPlugin : IDaemonPlugin
+public sealed class InstanceHealthPlugin : IGeneratedDaemonPluginAdapter
 {
+    public static PluginAdapterMetadata Metadata { get; } = new(
+        "community.instance-health",
+        "1.0.0",
+        "PluginEntry.dll",
+        "MCServerLauncher.PluginFixtures.InstanceHealth.InstanceHealthPlugin",
+        "[2.0.0, 3.0.0)",
+        ["event.publish", "instance.query", "rpc.register"],
+        "5f5f79456836caee99486555451f837f41d156288b60cbb7bd53d9e65dd6e08c");
+
     private IPluginContext? _context;
     private IPluginEventPublisher<InstanceHealthChanged, Unit>? _publisher;
     private Task? _backgroundTask;

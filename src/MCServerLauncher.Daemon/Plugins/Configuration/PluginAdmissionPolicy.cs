@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Security.Cryptography;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 
@@ -36,15 +35,16 @@ internal static class PluginAdmissionPolicy
 {
     internal static PluginGrantLevel ParseGrantLevel(string? value)
     {
-        return value?.Trim().ToLowerInvariant() switch
+        return value?.ToLowerInvariant() switch
         {
             "none" => PluginGrantLevel.None,
             "low" => PluginGrantLevel.Low,
             "medium" => PluginGrantLevel.Medium,
             "high" => PluginGrantLevel.High,
             "custom" => PluginGrantLevel.Custom,
-            null or "" => PluginGrantLevel.Medium,
-            _ => PluginGrantLevel.Medium,
+            _ => throw new ArgumentException(
+                "plugins.grant_level must be one of None, Low, Medium, High, or Custom.",
+                nameof(value)),
         };
     }
 
@@ -68,7 +68,7 @@ internal static class PluginAdmissionPolicy
             PluginGrantLevel.Low => PluginFeatureRisk.Low,
             PluginGrantLevel.Medium or PluginGrantLevel.Custom => PluginFeatureRisk.Medium,
             PluginGrantLevel.High => PluginFeatureRisk.High,
-            _ => PluginFeatureRisk.Medium,
+            _ => throw new ArgumentOutOfRangeException(nameof(level), level, "Unknown plugin grant level."),
         };
 
         return FeatureCatalog.FeaturesAllowedByRisk(risk);
@@ -115,28 +115,13 @@ internal static class PluginAdmissionPolicy
     }
 
     /// <summary>
-    /// SHA-256 digest of the canonical manifest JSON. Stored in admissions and compared on
-    /// cold restart to force re-review when the manifest feature set or identity changes.
-    /// </summary>
-    internal static string ComputeDigest(string canonicalManifestJson)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(canonicalManifestJson);
-        var bytes = System.Text.Encoding.UTF8.GetBytes(canonicalManifestJson);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToHexString(hash).ToLowerInvariant();
-    }
-
-    /// <summary>
     /// Returns true if the on-disk permanent admission still matches the current manifest
     /// digest and required feature set. A mismatch forces re-preflight (TTY) or skip (no TTY).
     ///
-    /// SDK-1 scope: this is the decision API consumed by the future TTY preflight (Approve
-    /// Permanent writes a matching PluginAdmissionConfig). The SDK-1 PluginHost admission gate
-    /// uses <see cref="Decide"/> (grant_level + plugin_grants) only; permanent admissions do
-    /// not grant features beyond the effective set - they are a cache of a prior interactive
-    /// decision, not an authority. So an admission record that disagrees with the current
-    /// ceiling does not relax admission; it is simply ignored until the interactive preflight
-    /// re-runs.
+    /// Permanent admissions are a cache of prior interactive approval, not an independent
+    /// authority. <see cref="PluginAdmissionPreflight"/> reuses a matching record only when
+    /// <see cref="Decide"/> also grants the current feature set; drift is reviewed again in an
+    /// interactive process and fails closed in a non-interactive process.
     /// </summary>
     internal static bool AdmissionMatches(PluginAdmissionConfig admission, string manifestDigest, FrozenSet<PluginFeature> features)
     {

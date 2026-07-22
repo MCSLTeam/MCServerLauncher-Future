@@ -40,6 +40,7 @@ internal class AppConfig
         // files keep working without forcing a first-run Q&A.
         Security = security ?? new DaemonSecurityConfig();
         Plugins = plugins ?? DaemonPluginsConfig.Default;
+        _ = PluginAdmissionPolicy.ParseGrantLevel(Plugins.GrantLevel);
         Log.Information("[AppConfig] Loaded configuration for port {Port}.", port);
     }
 
@@ -108,13 +109,12 @@ internal class AppConfig
         path ??= ConfigPath;
         try
         {
-            File.WriteAllText(path,
-                JsonSerializer.Serialize(this, PersistenceWriteIndentedTypeInfo));
+            FileManager.WriteJsonAndBackup(path, this);
             return true;
         }
         catch (Exception e)
         {
-            Log.Fatal($"Failed to save config file: {e.Message}");
+            Log.Error("Failed to save config file: {Message}", e.Message);
             return false;
         }
     }

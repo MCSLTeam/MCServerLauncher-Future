@@ -85,4 +85,52 @@ internal static class PluginSdkDiagnostics
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor ConflictingFeature = new(
+        id: "MCSLPLG011",
+        title: "Conflicting plugin features",
+        messageFormat: "Plugin features '{0}' and '{1}' cannot be declared together",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor EntryMismatch = new(
+        id: "MCSLPLG012",
+        title: "Plugin entry mismatch",
+        messageFormat: "Manifest entry '{0}' does not match generated entry '{1}'",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor UnsupportedApiRange = new(
+        id: "MCSLPLG013",
+        title: "Unsupported plugin API range",
+        messageFormat: "Manifest API range '{0}' does not include Plugin API 2.0.0",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor RawHostContextUse = new(
+        id: "MCSLPLG014",
+        title: "Raw plugin context use",
+        messageFormat: "Plugin module '{0}' references raw IPluginContext; use the generated feature surface",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor MissingExplicitJsonMetadata = new(
+        id: "MCSLPLG015",
+        title: "Missing explicit JSON metadata",
+        messageFormat: "Call to '{0}' passes null or default for required JsonTypeInfo parameter '{1}'",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor UndeclaredFeatureSurface = new(
+        id: "MCSLPLG016",
+        title: "Undeclared plugin feature surface",
+        messageFormat: "Feature surface '{0}' requires manifest feature '{1}'",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }
