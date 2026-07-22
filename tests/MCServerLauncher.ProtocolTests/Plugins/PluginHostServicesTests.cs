@@ -1,5 +1,8 @@
-using System.Text.Json.Serialization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
@@ -7,6 +10,8 @@ using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Remote.Authentication;
+using MCServerLauncher.Daemon.Remote.Rpc.Transport;
+using Microsoft.IdentityModel.Tokens;
 
 namespace MCServerLauncher.ProtocolTests.Plugins;
 
@@ -302,6 +307,73 @@ public sealed class PluginHostServicesTests
     }
 
     [Fact]
+    public void HttpEndpointPolicy_ReleaseAllClosesRegistrationAndIsIdempotent()
+    {
+        var registry = new PluginHttpEndpointRegistry();
+        var identity = new PluginIdentity("fixture.http.closed", "1.0.0");
+        var owner = new PluginHttpEndpointPolicy(identity.Id, registry, new PluginErrorFactory(identity));
+        Assert.True(owner.ValidateAndRegister("127.0.0.1", 18100).IsOk(out _));
+
+        owner.Close();
+        owner.Release("127.0.0.1", 18100);
+
+        var competitorIdentity = new PluginIdentity("fixture.http.competitor", "1.0.0");
+        var competitor = new PluginHttpEndpointPolicy(
+            competitorIdentity.Id,
+            registry,
+            new PluginErrorFactory(competitorIdentity));
+        var retained = competitor.ValidateAndRegister("127.0.0.1", 18100);
+        Assert.True(retained.IsErr(out var conflictError));
+        Assert.Equal("plugin_http_port_conflict", conflictError!.Code);
+
+        var rejected = owner.ValidateAndRegister("127.0.0.1", 18101);
+        Assert.True(rejected.IsErr(out var closedError));
+        Assert.Equal("plugin_http_policy_closed", closedError!.Code);
+
+        owner.ReleaseAll();
+        owner.ReleaseAll();
+
+        Assert.True(competitor.ValidateAndRegister("127.0.0.1", 18100).IsOk(out _));
+        Assert.True(competitor.ValidateAndRegister("127.0.0.1", 18101).IsOk(out _));
+    }
+
+    [Fact]
+    public async Task HttpEndpointPolicy_ReleaseAllRacingRegistrationsLeavesNoResidue()
+    {
+        var registry = new PluginHttpEndpointRegistry();
+        var identity = new PluginIdentity("fixture.http.race", "1.0.0");
+        var owner = new PluginHttpEndpointPolicy(identity.Id, registry, new PluginErrorFactory(identity));
+        using var start = new ManualResetEventSlim();
+        var registrations = Enumerable.Range(18110, 16)
+            .Select(port => Task.Run(() =>
+            {
+                start.Wait();
+                return owner.ValidateAndRegister("127.0.0.1", port);
+            }))
+            .ToArray();
+        var cleanup = Task.Run(() =>
+        {
+            start.Wait();
+            owner.ReleaseAll();
+        });
+
+        start.Set();
+        await Task.WhenAll(registrations.Cast<Task>().Append(cleanup));
+
+        var competitorIdentity = new PluginIdentity("fixture.http.race-competitor", "1.0.0");
+        var competitor = new PluginHttpEndpointPolicy(
+            competitorIdentity.Id,
+            registry,
+            new PluginErrorFactory(competitorIdentity));
+        foreach (var port in Enumerable.Range(18110, 16))
+            Assert.True(competitor.ValidateAndRegister("127.0.0.1", port).IsOk(out _));
+
+        var rejected = owner.ValidateAndRegister("127.0.0.1", 18130);
+        Assert.True(rejected.IsErr(out var closedError));
+        Assert.Equal("plugin_http_policy_closed", closedError!.Code);
+    }
+
+    [Fact]
     public async Task Authentication_VerifiesMainTokenAndJwtAudience()
     {
         var identity = new PluginIdentity("fixture.auth", "1.0.0");
@@ -329,6 +401,9 @@ public sealed class PluginHostServicesTests
         // when expectedAudience is the V2 API canonical URI.
         var apiAudience = AppConfig.Get().Security.ApiCanonicalUri;
         var jwt = JwtUtils.GenerateToken("mcsl.instance.catalog.get", 3600);
+        var parsedJwt = new JwtSecurityTokenHandler().ReadJwtToken(jwt);
+        Assert.False(string.IsNullOrWhiteSpace(parsedJwt.Id));
+        Assert.Equal($"token:{parsedJwt.Id}", parsedJwt.Subject);
         var jwtResult = await auth.VerifyAsync(
             jwt,
             apiAudience,
@@ -337,6 +412,21 @@ public sealed class PluginHostServicesTests
         Assert.True(jwtResult.IsOk(out var jwtPrincipal));
         Assert.False(jwtPrincipal!.IsMainToken);
         Assert.Contains("mcsl.instance.catalog.get", jwtPrincipal.Permissions);
+        Assert.Equal($"token:{jwtPrincipal.TokenId}", jwtPrincipal.Subject);
+        Assert.True(TouchSocketV2TransportPlugin.TryAuthenticateToken(
+            jwt,
+            TimeProvider.System,
+            out var v2Principal));
+        Assert.Equal(jwtPrincipal.Subject, v2Principal.Subject);
+
+        var repeated = await auth.VerifyAsync(
+            jwt,
+            apiAudience,
+            new PluginAuthenticationOptions(AllowMainToken: false),
+            CancellationToken.None);
+        Assert.True(repeated.IsOk(out var repeatedPrincipal));
+        Assert.Equal(jwtPrincipal.TokenId, repeatedPrincipal!.TokenId);
+        Assert.Equal(jwtPrincipal.Subject, repeatedPrincipal.Subject);
 
         // MCP audience must NOT dual-accept legacy aud=MCServerLauncher.Daemon.
         var mcpAudience = "http://127.0.0.1:11453/mcp";
@@ -346,6 +436,87 @@ public sealed class PluginHostServicesTests
             new PluginAuthenticationOptions(AllowMainToken: false),
             CancellationToken.None);
         Assert.True(mcpRejected.IsErr(out _));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public async Task Authentication_RejectsJwtMissingSubjectOrTokenId(
+        bool includeSubject,
+        bool includeTokenId)
+    {
+        var audience = AppConfig.Get().Security.ApiCanonicalUri;
+        var claims = new List<Claim>
+        {
+            new("permissions", "mcsl.instance.catalog.get"),
+        };
+        if (includeSubject)
+            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, "user-a"));
+        if (includeTokenId)
+            claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")));
+
+        var now = DateTime.UtcNow;
+        var token = new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
+            issuer: "MCServerLauncher.Daemon",
+            audience: audience,
+            claims: claims,
+            notBefore: now.AddMinutes(-1),
+            expires: now.AddMinutes(5),
+            signingCredentials: new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AppConfig.Get().Secret)),
+                SecurityAlgorithms.HmacSha256)));
+
+        Assert.False(JwtUtils.ValidateToken(token));
+        Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken(
+            token,
+            TimeProvider.System,
+            out _));
+
+        var identity = new PluginIdentity("fixture.auth.claims", "1.0.0");
+        var authentication = new PluginAuthentication(new PluginErrorFactory(identity));
+        var result = await authentication.VerifyAsync(
+            token,
+            audience,
+            new PluginAuthenticationOptions(AllowMainToken: false),
+            CancellationToken.None);
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("plugin_auth_invalid", error!.Code);
+    }
+
+    [Fact]
+    public async Task Authentication_RejectsJwtWithMultipleAudiences()
+    {
+        var expectedAudience = AppConfig.Get().Security.ApiCanonicalUri;
+        var now = DateTime.UtcNow;
+        var claims = new[]
+        {
+            new Claim("permissions", "mcsl.instance.catalog.get"),
+            new Claim(JwtRegisteredClaimNames.Sub, "user-a"),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new Claim(JwtRegisteredClaimNames.Aud, expectedAudience),
+            new Claim(JwtRegisteredClaimNames.Aud, "https://example.invalid/other"),
+        };
+        var token = new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
+            issuer: "MCServerLauncher.Daemon",
+            audience: null,
+            claims: claims,
+            notBefore: now.AddMinutes(-1),
+            expires: now.AddMinutes(5),
+            signingCredentials: new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AppConfig.Get().Secret)),
+                SecurityAlgorithms.HmacSha256)));
+
+        var identity = new PluginIdentity("fixture.auth.audience", "1.0.0");
+        var authentication = new PluginAuthentication(new PluginErrorFactory(identity));
+        var result = await authentication.VerifyAsync(
+            token,
+            expectedAudience,
+            new PluginAuthenticationOptions(AllowMainToken: false),
+            CancellationToken.None);
+
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("plugin_auth_invalid", error!.Code);
     }
 
     public sealed record SampleConfig(string Name, int Count);

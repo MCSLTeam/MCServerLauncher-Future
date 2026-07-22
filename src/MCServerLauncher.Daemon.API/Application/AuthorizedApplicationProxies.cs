@@ -158,8 +158,11 @@ public sealed class AuthorizedOperationQueryApplication(
         var permission = _caller.EnsurePermission("mcsl.operation.list");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<OperationListResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: true);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<OperationListResult, DaemonError>(error!));
         return _inner.ListOperationsAsync(
-            request with { OwnerPrincipal = ResolveOwnerPrincipal() },
+            request with { OwnerPrincipal = owner.Unwrap() },
             cancellationToken);
     }
 
@@ -170,13 +173,13 @@ public sealed class AuthorizedOperationQueryApplication(
         var permission = _caller.EnsurePermission("mcsl.operation.get");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<OperationSnapshot, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: true);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<OperationSnapshot, DaemonError>(error!));
         return _inner.GetOperationAsync(
-            request with { OwnerPrincipal = ResolveOwnerPrincipal() },
+            request with { OwnerPrincipal = owner.Unwrap() },
             cancellationToken);
     }
-
-    private string ResolveOwnerPrincipal() =>
-        _caller.IsMainToken ? "*" : _caller.Subject;
 }
 
 public sealed class AuthorizedOperationControlApplication(
@@ -193,8 +196,11 @@ public sealed class AuthorizedOperationControlApplication(
         var permission = _caller.EnsurePermission("mcsl.operation.cancel");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<OperationCancelResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: true);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<OperationCancelResult, DaemonError>(error!));
         return _inner.CancelOperationAsync(
-            request with { OwnerPrincipal = _caller.IsMainToken ? "*" : _caller.Subject },
+            request with { OwnerPrincipal = owner.Unwrap() },
             cancellationToken);
     }
 }
@@ -213,8 +219,11 @@ public sealed class AuthorizedProvisioningApplication(
         var permission = _caller.EnsurePermission("mcsl.provisioning.resolve");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
         return _inner.ResolveAsync(
-            request with { CreatorPrincipal = _caller.Subject },
+            request with { CreatorPrincipal = owner.Unwrap() },
             cancellationToken);
     }
 
@@ -225,8 +234,11 @@ public sealed class AuthorizedProvisioningApplication(
         var permission = _caller.EnsurePermission("mcsl.provisioning.get");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
         return _inner.GetPlanAsync(
-            request with { OwnerPrincipal = _caller.Subject },
+            request with { OwnerPrincipal = owner.Unwrap() },
             cancellationToken);
     }
 
@@ -237,14 +249,49 @@ public sealed class AuthorizedProvisioningApplication(
         var permission = _caller.EnsurePermission("mcsl.provisioning.execute");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<ProvisioningExecuteResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<ProvisioningExecuteResult, DaemonError>(error!));
         return _inner.ExecuteAsync(
-            request with { ExecutorPrincipal = _caller.Subject },
+            request with { ExecutorPrincipal = owner.Unwrap() },
             cancellationToken);
     }
 }
 
 internal static class AuthorizedApplicationGuard
 {
+    internal static Result<string, DaemonError> ResolveOwnershipSubject(
+        ICallerContext caller,
+        bool useGlobalOwnerForMainToken)
+    {
+        ArgumentNullException.ThrowIfNull(caller);
+        if (caller.IsMainToken)
+        {
+            if (!PrincipalIdentityPolicy.IsMainTokenSubject(caller.Subject))
+            {
+                return Result.Err<string, DaemonError>(
+                    new PermissionDaemonError(
+                        "auth.subject_invalid",
+                        "The main-token caller subject is invalid."));
+            }
+
+            return Result.Ok<string, DaemonError>(
+                useGlobalOwnerForMainToken
+                    ? PrincipalIdentityPolicy.GlobalOwnerPrincipal
+                    : PrincipalIdentityPolicy.MainTokenSubject);
+        }
+
+        if (!PrincipalIdentityPolicy.IsValidOwnershipSubject(caller.Subject))
+        {
+            return Result.Err<string, DaemonError>(
+                new PermissionDaemonError(
+                    "auth.subject_reserved",
+                    "The caller subject is reserved for a daemon-owned identity."));
+        }
+
+        return Result.Ok<string, DaemonError>(caller.Subject);
+    }
+
     internal static Task<Result<T, DaemonError>> Invoke<T>(
         ICallerContext caller,
         string method,

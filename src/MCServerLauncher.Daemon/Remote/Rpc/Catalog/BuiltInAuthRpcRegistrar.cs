@@ -35,9 +35,25 @@ internal static class BuiltInAuthRpcRegistrar
             return new CallerContext("anonymous", System.Collections.Immutable.ImmutableArray<string>.Empty, isMainToken: false);
         }
 
+        if (view.IsMainToken && PrincipalIdentityPolicy.IsMainTokenSubject(view.Subject))
+        {
+            return new CallerContext(
+                subject: PrincipalIdentityPolicy.MainTokenSubject,
+                permissions: view.Permissions,
+                isMainToken: true);
+        }
+
+        if (!view.IsMainToken && PrincipalIdentityPolicy.IsValidExternalSubject(view.Subject))
+        {
+            return new CallerContext(
+                subject: view.Subject,
+                permissions: view.Permissions,
+                isMainToken: false);
+        }
+
         return new CallerContext(
-            subject: string.IsNullOrWhiteSpace(view.Subject) ? "anonymous" : view.Subject,
-            permissions: view.Permissions,
-            isMainToken: view.IsMainToken);
+            "anonymous",
+            System.Collections.Immutable.ImmutableArray<string>.Empty,
+            isMainToken: false);
     }
 }

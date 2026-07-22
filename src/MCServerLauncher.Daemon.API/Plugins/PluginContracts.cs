@@ -18,8 +18,12 @@ public delegate Task<Result<TResult, DaemonError>> PluginRpcHandler<TRequest, TR
 public interface IPluginRpcRegistrar
 {
     Result<Unit, DaemonError> Register<TRequest, TResult>(
-        RpcDescriptor<TRequest, TResult> descriptor,
-        PluginRpcHandler<TRequest, TResult> handler)
+        string relativeMethod,
+        JsonTypeInfo<TRequest> requestTypeInfo,
+        JsonTypeInfo<TResult> resultTypeInfo,
+        RpcDocumentation documentation,
+        PluginRpcHandler<TRequest, TResult> handler,
+        bool allowNotification = false)
         where TResult : notnull;
 }
 
@@ -39,7 +43,30 @@ public interface IPluginEventPublisher<TData, TMeta>
         CancellationToken cancellationToken = default);
 }
 
-public interface IPluginContext
+/// <summary>
+/// Granted application surfaces bound to one explicit caller. Every property returns an
+/// authorization proxy; the host never exposes the underlying application implementation.
+/// </summary>
+public interface IPluginAuthorizedApplications
+{
+    ICallerContext Caller { get; }
+
+    IInstanceSnapshotSource InstanceCatalog { get; }
+
+    IInstanceQueryApplication InstanceQueries { get; }
+
+    ISystemQueryApplication System { get; }
+
+    IInstanceManagementApplication InstanceManagement { get; }
+
+    IOperationQueryApplication OperationQueries { get; }
+
+    IOperationControlApplication OperationControl { get; }
+
+    IProvisioningApplication Provisioning { get; }
+}
+
+public interface IPluginContext : IPluginAuthorizedApplications
 {
     PluginIdentity Identity { get; }
 
@@ -50,15 +77,6 @@ public interface IPluginContext
     IPluginRpcRegistrar Rpc { get; }
 
     IPluginEventRegistrar Events { get; }
-
-    IInstanceSnapshotSource InstanceCatalog { get; }
-
-    IInstanceQueryApplication InstanceQueries { get; }
-
-    /// <summary>
-    /// System facts and Java discovery. Throws if the plugin did not declare <c>system.query</c>.
-    /// </summary>
-    ISystemQueryApplication System { get; }
 
     /// <summary>
     /// Cold-start configuration reader (base API; not a feature).
@@ -81,29 +99,10 @@ public interface IPluginContext
     IPluginAuthentication Authentication { get; }
 
     /// <summary>
-    /// Builds Host and ForPrincipal caller contexts (base API; not a feature).
+    /// Returns the same granted feature set bound to a verified user principal.
+    /// The returned applications remain authorization proxies and never expose host internals.
     /// </summary>
-    ICallerContextFactory CallerContexts { get; }
-
-    /// <summary>
-    /// Instance lifecycle and settings mutations. Throws if the plugin did not declare <c>instance.manage</c>.
-    /// </summary>
-    IInstanceApplication InstanceManagement { get; }
-
-    /// <summary>
-    /// Operation list/get. Throws if the plugin did not declare <c>operation.query</c>.
-    /// </summary>
-    IOperationQueryApplication OperationQueries { get; }
-
-    /// <summary>
-    /// Operation cancellation. Throws if the plugin did not declare <c>operation.cancel</c>.
-    /// </summary>
-    IOperationControlApplication OperationControl { get; }
-
-    /// <summary>
-    /// Provisioning resolve/get/execute. Throws if the plugin did not declare <c>provisioning.manage</c>.
-    /// </summary>
-    IProvisioningApplication Provisioning { get; }
+    IPluginAuthorizedApplications ForPrincipal(VerifiedPrincipal principal);
 
     Task Activation { get; }
 
@@ -120,10 +119,9 @@ public interface IDaemonPlugin
 }
 
 /// <summary>
-/// Marker contract for source-generated daemon plugin adapters. The host reads metadata
-/// before constructing the adapter or developer module.
+/// Marker contract for source-generated daemon plugin adapters. The host reads the generated
+/// assembly metadata before loading or constructing the adapter or developer module.
 /// </summary>
 public interface IGeneratedDaemonPluginAdapter : IDaemonPlugin
 {
-    static abstract PluginAdapterMetadata Metadata { get; }
 }

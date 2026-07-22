@@ -18,6 +18,8 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
     private readonly PluginErrorFactory _errors;
     private readonly object _gate = new();
     private readonly HashSet<IPEndPoint> _ownedEndpoints = [];
+    private bool _closed;
+    private bool _released;
 
     internal PluginHttpEndpointPolicy(
         string pluginId,
@@ -44,6 +46,13 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
 
         lock (_gate)
         {
+            if (_closed)
+            {
+                return Result.Err<Unit, DaemonError>(_errors.Create(
+                    "plugin_http_policy_closed",
+                    "Plugin HTTP endpoint registration is closed because plugin cleanup has started."));
+            }
+
             if (!_registry.TryRegister(_pluginId, endpoint, out var conflictOwner))
             {
                 return Result.Err<Unit, DaemonError>(_errors.Create(
@@ -62,6 +71,9 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
             return;
         lock (_gate)
         {
+            if (_closed)
+                return;
+
             if (_ownedEndpoints.Remove(endpoint))
                 _registry.Release(_pluginId, endpoint);
         }
@@ -71,11 +83,20 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
     {
         lock (_gate)
         {
-            if (_ownedEndpoints.Count == 0)
+            _closed = true;
+            if (_released)
                 return;
+
+            _released = true;
             _ownedEndpoints.Clear();
             _registry.ReleaseAll(_pluginId);
         }
+    }
+
+    internal void Close()
+    {
+        lock (_gate)
+            _closed = true;
     }
 
     private bool TryParseEndpoint(string address, int port, out IPEndPoint endpoint, out DaemonError? error)

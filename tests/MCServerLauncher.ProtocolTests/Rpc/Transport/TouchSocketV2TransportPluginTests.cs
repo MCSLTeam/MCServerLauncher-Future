@@ -32,7 +32,26 @@ public sealed class TouchSocketV2TransportPluginTests
         Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken(forged, time, out _));
         Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken("expired", time,
             static _ => true,
-            static _ => (Guid.NewGuid(), "*", DateTime.Parse("2029-12-31T23:59:59Z").ToUniversalTime()), out _));
+            static _ => (Guid.NewGuid(), "user-a", "*", DateTime.Parse("2029-12-31T23:59:59Z").ToUniversalTime()), out _));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void Authentication_InjectedClaimsRejectMissingSubjectOrTokenId(
+        bool hasSubject,
+        bool hasTokenId)
+    {
+        var tokenId = hasTokenId ? Guid.NewGuid() : Guid.Empty;
+        var subject = hasSubject ? "user-a" : null;
+
+        Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken(
+            "signed-jwt",
+            TimeProvider.System,
+            static _ => true,
+            _ => (tokenId, subject, "mcsl.instance.catalog.get", DateTime.UtcNow.AddMinutes(5)),
+            out _));
     }
 
     [Theory]

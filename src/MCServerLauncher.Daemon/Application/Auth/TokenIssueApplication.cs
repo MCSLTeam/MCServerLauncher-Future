@@ -46,6 +46,14 @@ internal sealed class TokenIssueApplication : ITokenIssueApplication
                 new ValidationDaemonError("auth.token_issue.subject_required", "Token subject is required.")));
         }
 
+        if (!PrincipalIdentityPolicy.IsValidExternalSubject(request.Subject))
+        {
+            return Task.FromResult(Result.Err<TokenIssueResult, DaemonError>(
+                new ValidationDaemonError(
+                    "auth.token_issue.subject_reserved",
+                    "Token subject is reserved for a daemon-owned identity.")));
+        }
+
         if (string.IsNullOrWhiteSpace(request.Audience) ||
             !Uri.TryCreate(request.Audience, UriKind.Absolute, out _))
         {

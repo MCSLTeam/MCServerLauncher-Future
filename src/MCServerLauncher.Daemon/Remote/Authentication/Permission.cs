@@ -103,7 +103,7 @@ public sealed class Permission : IMatchable
 
     private static bool IsCanonicalSegment(string segment)
     {
-        if (!IsLowerAsciiLetter(segment[0]) ||
+        if (!IsLowerAsciiLetterOrDigit(segment[0]) ||
             !IsLowerAsciiLetterOrDigit(segment[^1]))
         {
             return false;
@@ -120,10 +120,6 @@ public sealed class Permission : IMatchable
 
     private static bool IsLowerAsciiLetterOrDigit(char character) =>
         character is >= 'a' and <= 'z' or >= '0' and <= '9';
-
-    private static bool IsLowerAsciiLetter(char character) =>
-        character is >= 'a' and <= 'z';
-
     public sealed class PermissionJsonConverter : JsonConverter<Permission>
     {
         public override Permission? Read(

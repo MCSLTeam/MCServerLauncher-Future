@@ -3,14 +3,20 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
+using MCServerLauncher.PluginFixtures.MetadataImposter;
+using MCServerLauncher.PluginFixtures.MetadataMalformed;
 using MCServerLauncher.PluginFixtures.ReturnedError;
 using MCServerLauncher.PluginFixtures.SdkGeneratedHealth;
 using MCServerLauncher.PluginFixtures.StartReturnedError;
@@ -22,6 +28,7 @@ using MessagePipe;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using RustyOptions;
 using SdkGeneratedAdapter = MCServerLauncher.PluginFixtures.SdkGeneratedHealth.Generated.DaemonPluginAdapter;
 
 namespace MCServerLauncher.ProtocolTests.Plugins;
@@ -221,7 +228,7 @@ public sealed class PluginHostLifecycleTests
     }
 
     [Fact]
-    public async Task StartAsync_RejectsMetadataDriftAndManualAdaptersBeforeConstruction()
+    public async Task StartAsync_RejectsMissingDuplicateMalformedAndDriftedMetadataBeforePluginCode()
     {
         var sentinelPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-metadata-{Guid.NewGuid():N}.sentinel");
         var previousSentinel = Environment.GetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH");
@@ -233,7 +240,10 @@ public sealed class PluginHostLifecycleTests
                 ("fixture.metadata-api", typeof(ApiMetadataMismatchPlugin).Assembly, typeof(ApiMetadataMismatchPlugin).FullName!),
                 ("fixture.metadata-features", typeof(FeatureMetadataMismatchPlugin).Assembly, typeof(FeatureMetadataMismatchPlugin).FullName!),
                 ("fixture.metadata-digest", typeof(DigestMetadataMismatchPlugin).Assembly, typeof(DigestMetadataMismatchPlugin).FullName!),
-                ("fixture.metadata-manual", typeof(ManualMetadataProbePlugin).Assembly, typeof(ManualMetadataProbePlugin).FullName!));
+                ("fixture.metadata-manual", typeof(ManualMetadataProbePlugin).Assembly, typeof(ManualMetadataProbePlugin).FullName!),
+                ("fixture.metadata-duplicate", typeof(DuplicateMetadataPlugin).Assembly, typeof(DuplicateMetadataPlugin).FullName!),
+                ("fixture.metadata-malformed", typeof(MetadataMalformedPlugin).Assembly, typeof(MetadataMalformedPlugin).FullName!),
+                ("fixture.metadata-imposter", typeof(MetadataImposterPlugin).Assembly, typeof(MetadataImposterPlugin).FullName!));
             var logger = new RecordingLogger<PluginHost>();
             var services = new ServiceCollection();
             services.AddMessagePipe(options =>
@@ -259,7 +269,12 @@ public sealed class PluginHostLifecycleTests
             Assert.Contains(logger.Messages, message => message.Contains("'requires.api'", StringComparison.Ordinal));
             Assert.Contains(logger.Messages, message => message.Contains("'requires.features'", StringComparison.Ordinal));
             Assert.Contains(logger.Messages, message => message.Contains("'manifest digest'", StringComparison.Ordinal));
-            Assert.Contains(logger.Messages, message => message.Contains("generated adapter contract", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("'entry.type'", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("generated_metadata_duplicate", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("generated_metadata_invalid", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.metadata-imposter", StringComparison.Ordinal) &&
+                message.Contains("does not contain generated plugin metadata", StringComparison.Ordinal));
 
             await host.StopAsync(CancellationToken.None);
         }
@@ -268,6 +283,204 @@ public sealed class PluginHostLifecycleTests
             Environment.SetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH", previousSentinel);
             if (File.Exists(sentinelPath))
                 File.Delete(sentinelPath);
+        }
+    }
+
+    [Fact]
+    public async Task StartAsync_RejectsMetadataMismatchBeforePromptOrPermanentAdmissionWrite()
+    {
+        using var fixture = PluginHostFixture.CreateWithFeatures(
+            (
+                "fixture.metadata-identity",
+                typeof(IdentityMetadataMismatchPlugin).Assembly,
+                typeof(IdentityMetadataMismatchPlugin).FullName!,
+                ["network.http.listen"]));
+        var logger = new RecordingLogger<PluginHost>();
+        var console = new RecordingPreflightConsole(PluginPreflightDecision.ApprovePermanent);
+        var store = new RecordingAdmissionStore();
+        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console, store);
+        var services = new ServiceCollection();
+        services.AddMessagePipe(options =>
+        {
+            options.EnableAutoRegistration = false;
+            options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+            options.InstanceLifetime = InstanceLifetime.Singleton;
+            options.EnableCaptureStackTrace = false;
+        });
+        using var provider = services.BuildServiceProvider();
+        var host = new PluginHost(
+            new SnapshotSource(new InstanceCatalogSnapshot([])),
+            new RecordingLoggerFactory(logger),
+            logger,
+            fixture.PluginsRoot,
+            new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+            TimeSpan.FromSeconds(1),
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry(),
+            preflight: preflight);
+
+        await host.StartAsync(CancellationToken.None);
+
+        Assert.Equal(0, console.PromptCount);
+        Assert.Equal(0, store.CallCount);
+        Assert.Empty(host.States);
+        Assert.Contains(logger.Messages, message => message.Contains("'package.id'", StringComparison.Ordinal));
+        await host.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public void ValidatedEntryAssemblySnapshotLoadsOriginalBytesAfterPathIsOverwritten()
+    {
+        const string pluginId = "fixture.handwritten-adapter";
+        const string entryType =
+            "MCServerLauncher.PluginFixtures.HandwrittenAdapterProbe.HandwrittenAdapterProbePlugin";
+        using var fixture = PluginHostFixture.CreateFromPath(
+            pluginId,
+            GetHandwrittenAdapterProbeAssemblyPath(),
+            entryType,
+            ["instance.query"],
+            copyPrivateDiDependency: false);
+        var bundle = Path.Combine(fixture.PluginsRoot, pluginId);
+        var manifest = PluginManifestReader.ReadAndValidate(bundle, PluginHost.HostApiVersion);
+        var validatedImage = GeneratedPluginMetadataReader.ReadValidatedImage(manifest);
+        var loadContext = new PluginLoadContext(manifest.EntryAssemblyPath, pluginId);
+
+        File.Copy(
+            typeof(MetadataImposterPlugin).Assembly.Location,
+            manifest.EntryAssemblyPath,
+            overwrite: true);
+        var assembly = loadContext.LoadEntryAssembly(validatedImage);
+
+        Assert.Equal("HandwrittenAdapterProbe", assembly.GetName().Name);
+        Assert.NotNull(assembly.GetType(entryType, throwOnError: false, ignoreCase: false));
+        Assert.Null(assembly.GetType(typeof(MetadataImposterPlugin).FullName!, throwOnError: false, ignoreCase: false));
+    }
+
+    [Fact]
+    public async Task StartAsync_HandwrittenAdapterReceivesOnlyAuthorizedGrantedApplications()
+    {
+        var assemblyPath = GetHandwrittenAdapterProbeAssemblyPath();
+        var probePath = Path.Combine(Path.GetTempPath(), $"mcsl-handwritten-adapter-{Guid.NewGuid():N}.probe");
+        var moduleSentinelPath = Path.Combine(Path.GetTempPath(), $"mcsl-handwritten-adapter-{Guid.NewGuid():N}.module");
+        var previousProbe = Environment.GetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_PROBE_PATH");
+        var previousModuleSentinel = Environment.GetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_MODULE_SENTINEL");
+        Environment.SetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_PROBE_PATH", probePath);
+        Environment.SetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_MODULE_SENTINEL", moduleSentinelPath);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateFromPath(
+                "fixture.handwritten-adapter",
+                assemblyPath,
+                "MCServerLauncher.PluginFixtures.HandwrittenAdapterProbe.HandwrittenAdapterProbePlugin",
+                ["instance.query"],
+                copyPrivateDiDependency: true);
+            var logger = new RecordingLogger<PluginHost>();
+            var rawApplication = new RecordingRawInstanceApplication();
+            var rawOperations = new RecordingRawOperationApplication();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromSeconds(1),
+                DaemonPluginsConfig.Default,
+                new PluginHttpEndpointRegistry(),
+                instanceApplication: rawApplication,
+                operationApplication: rawOperations);
+
+            await host.StartAsync(CancellationToken.None);
+
+            AssertStates(host.States, ("fixture.handwritten-adapter", PluginRuntimeState.Started));
+            Assert.True(File.Exists(moduleSentinelPath));
+            Assert.Equal("module-initializer", File.ReadAllText(moduleSentinelPath));
+            var probe = File.ReadAllLines(probePath)
+                .Select(static line => line.Split('=', 2))
+                .ToDictionary(static parts => parts[0], static parts => parts[1], StringComparer.Ordinal);
+            Assert.Equal(
+                "MCServerLauncher.Daemon.API.Application.AuthorizedInstanceQueryApplication",
+                probe["contextQueries"]);
+            Assert.Equal(
+                "MCServerLauncher.Daemon.API.Application.AuthorizedInstanceQueryApplication",
+                probe["privateQueries"]);
+            Assert.Equal("False", probe["contextRawInstance"]);
+            Assert.Equal("False", probe["privateRawInstance"]);
+            Assert.Equal("False", probe["privateRawContext"]);
+            Assert.Equal("True", probe["undeclaredContextDenied"]);
+            Assert.Equal("False", probe["privateUndeclared"]);
+            Assert.Equal("fixture.raw-instance", probe["contextResult"]);
+            Assert.Equal("fixture.raw-instance", probe["privateResult"]);
+            Assert.Equal(2, rawApplication.QueryCallCount);
+            Assert.Equal(0, rawOperations.CancelCallCount);
+
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_PROBE_PATH", previousProbe);
+            Environment.SetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_MODULE_SENTINEL", previousModuleSentinel);
+            if (File.Exists(probePath))
+                File.Delete(probePath);
+            if (File.Exists(moduleSentinelPath))
+                File.Delete(moduleSentinelPath);
+        }
+    }
+
+    [Fact]
+    public async Task StartAsync_RejectsHandwrittenMetadataBeforeModuleInitializerRuns()
+    {
+        var assemblyPath = GetHandwrittenAdapterProbeAssemblyPath();
+        var moduleSentinelPath = Path.Combine(Path.GetTempPath(), $"mcsl-handwritten-adapter-{Guid.NewGuid():N}.module");
+        var previousModuleSentinel = Environment.GetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_MODULE_SENTINEL");
+        Environment.SetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_MODULE_SENTINEL", moduleSentinelPath);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateFromPath(
+                "fixture.handwritten-adapter-mismatch",
+                assemblyPath,
+                "MCServerLauncher.PluginFixtures.HandwrittenAdapterProbe.MetadataRejectedProbePlugin",
+                ["instance.query"],
+                copyPrivateDiDependency: false);
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()));
+
+            await host.StartAsync(CancellationToken.None);
+
+            Assert.False(File.Exists(moduleSentinelPath));
+            Assert.Empty(host.States);
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.handwritten-adapter-mismatch", StringComparison.Ordinal) &&
+                message.Contains("'package.id'", StringComparison.Ordinal));
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_HANDWRITTEN_ADAPTER_MODULE_SENTINEL", previousModuleSentinel);
+            if (File.Exists(moduleSentinelPath))
+                File.Delete(moduleSentinelPath);
         }
     }
 
@@ -281,9 +494,9 @@ public sealed class PluginHostLifecycleTests
         {
             using var fixture = PluginHostFixture.CreateWithFeatures(
                 (
-                    "fixture.preflight-high-risk",
-                    typeof(DigestMetadataMismatchPlugin).Assembly,
-                    typeof(DigestMetadataMismatchPlugin).FullName!,
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
                     ["network.http.listen"]));
             var logger = new RecordingLogger<PluginHost>();
             var services = new ServiceCollection();
@@ -312,7 +525,7 @@ public sealed class PluginHostLifecycleTests
             Assert.False(File.Exists(sentinelPath));
             Assert.Empty(host.States);
             Assert.Contains(logger.Messages, message =>
-                message.Contains("fixture.preflight-high-risk", StringComparison.Ordinal) &&
+                message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
                 message.Contains("approval_required_non_interactive", StringComparison.Ordinal));
             Assert.DoesNotContain(logger.Messages, message =>
                 message.Contains("metadata mismatch", StringComparison.OrdinalIgnoreCase));
@@ -335,18 +548,22 @@ public sealed class PluginHostLifecycleTests
     }
 
     [Theory]
+    [InlineData("success")]
     [InlineData("throw")]
     [InlineData("timeout")]
-    public async Task StartAsync_FailureReleasesGeneratedProviderAndEveryEndpointExactlyOnce(string mode)
+    public async Task CleanupReleasesGeneratedProviderAndEveryEndpointExactlyOnce(string mode)
     {
         var probePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-provider-{Guid.NewGuid():N}.log");
+        var disposeReleasePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-provider-release-{Guid.NewGuid():N}.signal");
         const int port = 18123;
         var previousMode = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_MODE");
         var previousPort = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PORT");
         var previousProbe = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH");
+        var previousDisposeRelease = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_DISPOSE_RELEASE_PATH");
         Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_MODE", mode);
         Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH", probePath);
+        Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_DISPOSE_RELEASE_PATH", disposeReleasePath);
         try
         {
             var adapterType = typeof(SdkGeneratedAdapter);
@@ -379,9 +596,33 @@ public sealed class PluginHostLifecycleTests
                 endpoints,
                 preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
 
-            await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+            Task cleanupTask;
+            PluginRuntimeState expectedState;
+            if (mode.Equals("success", StringComparison.Ordinal))
+            {
+                await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                AssertStates(host.States, ("fixture.sdk-generated-health", PluginRuntimeState.Started));
+                cleanupTask = host.StopAsync(CancellationToken.None);
+                expectedState = PluginRuntimeState.Stopped;
+            }
+            else
+            {
+                cleanupTask = host.StartAsync(CancellationToken.None);
+                expectedState = PluginRuntimeState.Failed;
+            }
 
-            AssertStates(host.States, ("fixture.sdk-generated-health", PluginRuntimeState.Failed));
+            await WaitForProbeLineAsync(probePath, "disposing", TimeSpan.FromSeconds(5));
+
+            Assert.False(endpoints.TryRegister(
+                "fixture.during-provider-dispose",
+                new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, port),
+                out var conflictOwner));
+            Assert.Equal("fixture.sdk-generated-health", conflictOwner);
+
+            File.WriteAllText(disposeReleasePath, string.Empty);
+            await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            AssertStates(host.States, ("fixture.sdk-generated-health", expectedState));
             var lines = File.ReadAllLines(probePath);
             Assert.Equal(1, lines.Count(static line => line == "created"));
             Assert.Equal(1, lines.Count(static line => line == "disposed"));
@@ -400,8 +641,363 @@ public sealed class PluginHostLifecycleTests
             Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_MODE", previousMode);
             Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PORT", previousPort);
             Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH", previousProbe);
+            Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_DISPOSE_RELEASE_PATH", previousDisposeRelease);
+            File.WriteAllText(disposeReleasePath, string.Empty);
             if (File.Exists(probePath))
                 File.Delete(probePath);
+            if (File.Exists(disposeReleasePath))
+                File.Delete(disposeReleasePath);
+        }
+    }
+
+    [Theory]
+    [InlineData("configure-failure")]
+    [InlineData("start-timeout")]
+    [InlineData("shutdown")]
+    public async Task CleanupClosesHttpPolicyAgainstLateRegistrations(string mode)
+    {
+        var signalPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-late-http-{Guid.NewGuid():N}.signal");
+        var resultPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-late-http-{Guid.NewGuid():N}.result");
+        var disposeEnteredPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-late-http-{Guid.NewGuid():N}.disposing");
+        var disposeReleasePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-late-http-{Guid.NewGuid():N}.release");
+        const int ownedPort = 18124;
+        const int latePort = 18125;
+        var previousMode = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_MODE");
+        var previousPort = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_PORT");
+        var previousOwnedPort = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT");
+        var previousSignal = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH");
+        var previousResult = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH");
+        var previousDisposeEntered = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH");
+        var previousDisposeRelease = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH");
+        var previousResource = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", mode);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_PORT", latePort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT", ownedPort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH", signalPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH", resultPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", disposeEnteredPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", disposeReleasePath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", null);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateWithFeatures(
+                (
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
+                    ["network.http.listen"]));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var endpoints = new PluginHttpEndpointRegistry();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromMilliseconds(150),
+                config,
+                endpoints,
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+
+            Task cleanupTask;
+            PluginRuntimeState expectedState;
+            if (mode.Equals("shutdown", StringComparison.Ordinal))
+            {
+                await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                AssertStates(host.States, ("fixture.late-http-cleanup", PluginRuntimeState.Started));
+                cleanupTask = host.StopAsync(CancellationToken.None);
+                expectedState = PluginRuntimeState.Stopped;
+            }
+            else
+            {
+                cleanupTask = host.StartAsync(CancellationToken.None);
+                expectedState = PluginRuntimeState.Failed;
+            }
+
+            await WaitForFileAsync(disposeEnteredPath, TimeSpan.FromSeconds(5));
+
+            var ownedEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, ownedPort);
+            Assert.False(endpoints.TryRegister("fixture.during-dispose", ownedEndpoint, out var conflictOwner));
+            Assert.Equal("fixture.late-http-cleanup", conflictOwner);
+
+            File.WriteAllText(signalPath, string.Empty);
+            await WaitForFileTextAsync(resultPath, "plugin_http_policy_closed", TimeSpan.FromSeconds(5));
+
+            var lateEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, latePort);
+            Assert.True(endpoints.TryRegister("fixture.late-http-competitor", lateEndpoint, out _));
+
+            File.WriteAllText(disposeReleasePath, string.Empty);
+            await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
+            AssertStates(host.States, ("fixture.late-http-cleanup", expectedState));
+            Assert.True(endpoints.TryRegister("fixture.after-dispose", ownedEndpoint, out _));
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", previousMode);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_PORT", previousPort);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT", previousOwnedPort);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH", previousSignal);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH", previousResult);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", previousDisposeEntered);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", previousDisposeRelease);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", previousResource);
+            File.WriteAllText(signalPath, string.Empty);
+            File.WriteAllText(disposeReleasePath, string.Empty);
+            if (File.Exists(signalPath))
+                File.Delete(signalPath);
+            if (File.Exists(resultPath))
+                File.Delete(resultPath);
+            if (File.Exists(disposeEnteredPath))
+                File.Delete(disposeEnteredPath);
+            if (File.Exists(disposeReleasePath))
+                File.Delete(disposeReleasePath);
+        }
+    }
+
+    [Fact]
+    public async Task DisposeFailureKeepsClosedEndpointOwnershipFailClosed()
+    {
+        var signalPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-dispose-fault-{Guid.NewGuid():N}.signal");
+        var resultPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-dispose-fault-{Guid.NewGuid():N}.result");
+        const int ownedPort = 18126;
+        const int latePort = 18127;
+        var previousMode = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_MODE");
+        var previousPort = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_PORT");
+        var previousOwnedPort = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT");
+        var previousSignal = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH");
+        var previousResult = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH");
+        var previousDisposeEntered = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH");
+        var previousDisposeRelease = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH");
+        var previousResource = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", "dispose-fault");
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_PORT", latePort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT", ownedPort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH", signalPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH", resultPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", null);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", null);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", null);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateWithFeatures(
+                (
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
+                    ["network.http.listen"]));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var endpoints = new PluginHttpEndpointRegistry();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromSeconds(1),
+                config,
+                endpoints,
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+
+            await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+            await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+            AssertStates(host.States, ("fixture.late-http-cleanup", PluginRuntimeState.Stopped));
+            File.WriteAllText(signalPath, string.Empty);
+            await WaitForFileTextAsync(resultPath, "plugin_http_policy_closed", TimeSpan.FromSeconds(5));
+
+            var ownedEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, ownedPort);
+            Assert.False(endpoints.TryRegister("fixture.after-dispose-fault", ownedEndpoint, out var conflictOwner));
+            Assert.Equal("fixture.late-http-cleanup", conflictOwner);
+            var lateEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, latePort);
+            Assert.True(endpoints.TryRegister("fixture.after-dispose-fault", lateEndpoint, out _));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
+                message.Contains("dispose threw", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", previousMode);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_PORT", previousPort);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT", previousOwnedPort);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH", previousSignal);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH", previousResult);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", previousDisposeEntered);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", previousDisposeRelease);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", previousResource);
+            File.WriteAllText(signalPath, string.Empty);
+            if (File.Exists(signalPath))
+                File.Delete(signalPath);
+            if (File.Exists(resultPath))
+                File.Delete(resultPath);
+        }
+    }
+
+    [Fact]
+    public async Task LoadFailureAfterAdapterConstructionDisposesOwnedResources()
+    {
+        var resourcePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-load-cleanup-{Guid.NewGuid():N}.lock");
+        var disposedPath = resourcePath + ".disposed";
+        var previousMode = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_MODE");
+        var previousResource = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH");
+        var previousDisposeEntered = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH");
+        var previousDisposeRelease = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", "construction-failure");
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", resourcePath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", null);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", null);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateWithFeatures(
+                (
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
+                    ["network.http.listen"]));
+            File.WriteAllText(
+                Path.Combine(fixture.PluginsRoot, "fixture.late-http-cleanup", "config.json"),
+                "{ invalid-json");
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromSeconds(1),
+                config,
+                new PluginHttpEndpointRegistry(),
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+
+            await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Empty(host.States);
+            Assert.True(File.Exists(disposedPath));
+            using (new FileStream(resourcePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+            }
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
+                message.Contains("Failed to load plugin", StringComparison.Ordinal));
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", previousMode);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", previousResource);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", previousDisposeEntered);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", previousDisposeRelease);
+            if (File.Exists(resourcePath))
+                File.Delete(resourcePath);
+            if (File.Exists(disposedPath))
+                File.Delete(disposedPath);
+        }
+    }
+
+    private static async Task WaitForProbeLineAsync(string path, string expected, TimeSpan timeout)
+    {
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            while (true)
+            {
+                if (File.Exists(path) && File.ReadAllLines(path).Contains(expected, StringComparer.Ordinal))
+                    return;
+                await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+
+        throw new TimeoutException($"Probe line '{expected}' was not observed before the deadline.");
+    }
+
+    private static async Task WaitForFileTextAsync(string path, string expected, TimeSpan timeout)
+    {
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            while (true)
+            {
+                if (TryReadAllText(path, out var contents) &&
+                    string.Equals(contents, expected, StringComparison.Ordinal))
+                {
+                    return;
+                }
+                await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+
+        var actual = TryReadAllText(path, out var lastContents)
+            ? lastContents
+            : "<missing or temporarily unavailable>";
+        throw new TimeoutException($"File '{path}' contained '{actual}' instead of '{expected}' before the deadline.");
+    }
+
+    private static bool TryReadAllText(string path, out string? contents)
+    {
+        try
+        {
+            contents = File.ReadAllText(path);
+            return true;
+        }
+        catch (IOException)
+        {
+            contents = null;
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            contents = null;
+            return false;
+        }
+    }
+
+    private static async Task WaitForFileAsync(string path, TimeSpan timeout)
+    {
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            while (!File.Exists(path))
+                await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            throw new TimeoutException($"File '{path}' was not created before the deadline.");
         }
     }
 
@@ -413,6 +1009,58 @@ public sealed class PluginHostLifecycleTests
         Assert.Equal(expected.Length, actual.Count);
         foreach (var (id, state) in expected)
             Assert.Equal(state, actual[id]);
+    }
+
+    private static string GetHandwrittenAdapterProbeAssemblyPath()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "HandwrittenAdapterProbe.dll");
+        Assert.True(File.Exists(path), $"Handwritten adapter fixture was not built at '{path}'.");
+        return path;
+    }
+
+    private sealed class RecordingRawInstanceApplication : IInstanceApplication
+    {
+        internal int QueryCallCount { get; private set; }
+
+        public Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(
+            CancellationToken cancellationToken)
+        {
+            QueryCallCount++;
+            return Task.FromResult(Result.Err<InstanceReportList, DaemonError>(
+                new ValidationDaemonError("fixture.raw-instance", "The raw application was invoked.")));
+        }
+
+        public Task<Result<MCServerLauncher.Common.Contracts.Instances.InstanceReport, DaemonError>> GetInstanceReportAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(InstanceLogQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettingsAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<CreateInstanceResult, DaemonError>> CreateInstanceAsync(CreateInstanceRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> RemoveInstanceAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> StartInstanceAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> StopInstanceAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> HaltInstanceAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> SendCommandAsync(InstanceCommandRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettingsAsync(UpdateInstanceSettingsRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(ConsoleOpenRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> ResizeConsoleAsync(ConsoleResizeRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> CloseConsoleAsync(ConsoleSessionReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> WriteConsoleAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class RecordingRawOperationApplication : IOperationApplication
+    {
+        internal int CancelCallCount { get; private set; }
+
+        public Task<Result<OperationCancelResult, DaemonError>> CancelOperationAsync(
+            OperationCancelRequest request,
+            CancellationToken cancellationToken)
+        {
+            CancelCallCount++;
+            return Task.FromResult(Result.Err<OperationCancelResult, DaemonError>(
+                new ValidationDaemonError("fixture.raw-operation", "The raw operation application was invoked.")));
+        }
+
+        public Task<Result<OperationListResult, DaemonError>> ListOperationsAsync(OperationListQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationSnapshot, DaemonError>> GetOperationAsync(OperationReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class SnapshotSource(InstanceCatalogSnapshot snapshot) : IInstanceSnapshotSource
@@ -467,6 +1115,18 @@ public sealed class PluginHostLifecycleTests
             return fixture;
         }
 
+        public static PluginHostFixture CreateFromPath(
+            string id,
+            string assemblyPath,
+            string entryType,
+            string[] features,
+            bool copyPrivateDiDependency)
+        {
+            var fixture = new PluginHostFixture(Directory.CreateTempSubdirectory("mcsl-plugin-host-").FullName);
+            fixture.AddFromPath(id, assemblyPath, entryType, features, copyPrivateDiDependency);
+            return fixture;
+        }
+
         public void Dispose()
         {
             try
@@ -497,6 +1157,37 @@ public sealed class PluginHostLifecycleTests
                 CopyDependency(assembly, bundle, "MCServerLauncher.Daemon.Plugin.Sdk.dll");
                 CopyDependency(assembly, bundle, "Microsoft.Extensions.DependencyInjection.dll");
             }
+            WriteManifest(bundle, id, entryAssembly, entryType, features);
+        }
+
+        private void AddFromPath(
+            string id,
+            string assemblyPath,
+            string entryType,
+            string[] features,
+            bool copyPrivateDiDependency)
+        {
+            var bundle = Path.Combine(PluginsRoot, id);
+            Directory.CreateDirectory(bundle);
+            File.Copy(assemblyPath, Path.Combine(bundle, "PluginEntry.dll"));
+            if (copyPrivateDiDependency)
+            {
+                var dependency = Path.Combine(
+                    Path.GetDirectoryName(assemblyPath)!,
+                    "Microsoft.Extensions.DependencyInjection.dll");
+                File.Copy(dependency, Path.Combine(bundle, Path.GetFileName(dependency)));
+            }
+
+            WriteManifest(bundle, id, "PluginEntry.dll", entryType, features);
+        }
+
+        private static void WriteManifest(
+            string bundle,
+            string id,
+            string entryAssembly,
+            string entryType,
+            string[]? features)
+        {
             var serializedFeatures = JsonSerializer.Serialize(
                 features ?? ["event.publish", "instance.query", "rpc.register"]);
             File.WriteAllText(
@@ -570,6 +1261,37 @@ public sealed class PluginHostLifecycleTests
 
         public void Dispose()
         {
+        }
+    }
+
+    private sealed class RecordingPreflightConsole(PluginPreflightDecision decision) : IPluginPreflightConsole
+    {
+        internal int PromptCount { get; private set; }
+
+        public bool IsInteractive => true;
+
+        public PluginPreflightDecision Prompt(PluginPreflightRequest request)
+        {
+            _ = request;
+            PromptCount++;
+            return decision;
+        }
+    }
+
+    private sealed class RecordingAdmissionStore : IPluginAdmissionStore
+    {
+        internal int CallCount { get; private set; }
+
+        public bool TryPersistPermanent(
+            PluginManifest manifest,
+            ImmutableArray<MCServerLauncher.Daemon.API.Protocol.PluginFeature> expandedGrants,
+            DateTimeOffset decidedAt)
+        {
+            _ = manifest;
+            _ = expandedGrants;
+            _ = decidedAt;
+            CallCount++;
+            return true;
         }
     }
 }

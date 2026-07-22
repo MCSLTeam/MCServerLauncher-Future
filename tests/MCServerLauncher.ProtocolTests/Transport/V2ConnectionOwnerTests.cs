@@ -23,11 +23,16 @@ public sealed class V2ConnectionOwnerTests
 
         await using var invalid = new V2ConnectionOwner(
             new RecordingSender(),
-            ["123"]);
+            ["123."]);
         Assert.Empty(invalid.CompiledPermissions.PermissionList);
         Assert.False(V2RpcDispatcher.HasPermission(
             invalid,
             new PermissionName("mcsl.file.download")));
+
+        await using var digitLeading = new V2ConnectionOwner(
+            new RecordingSender(),
+            ["123"]);
+        Assert.Equal("123", Assert.Single(digitLeading.CompiledPermissions.PermissionList).ToString());
     }
 
     [Fact]

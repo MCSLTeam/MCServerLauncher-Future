@@ -1,13 +1,12 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.Loader;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.ApplicationCore.Auth;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
@@ -38,7 +37,8 @@ internal sealed class PluginHost
     private readonly object _gate = new();
     private readonly IInstanceSnapshotSource _instances;
     private readonly ISystemApplication? _system;
-    private readonly ICallerContextFactory? _callerContexts;
+    private readonly CallerContextFactory _callerContexts;
+    private readonly VerifiedPrincipalAuthority _verifiedPrincipals;
     private readonly IInstanceApplication? _instanceApplication;
     private readonly IOperationApplication? _operationApplication;
     private readonly IProvisioningApplication? _provisioningApplication;
@@ -128,7 +128,8 @@ internal sealed class PluginHost
         IInstanceApplication? instanceApplication = null,
         IOperationApplication? operationApplication = null,
         IProvisioningApplication? provisioningApplication = null,
-        PluginAdmissionPreflight? preflight = null)
+        PluginAdmissionPreflight? preflight = null,
+        VerifiedPrincipalAuthority? verifiedPrincipals = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -142,7 +143,26 @@ internal sealed class PluginHost
         _preflight = preflight ?? PluginAdmissionPreflight.CreateNonInteractive(_pluginsConfig);
         _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
         _system = system;
-        _callerContexts = callerContexts;
+        if (callerContexts is not null && callerContexts is not CallerContextFactory)
+        {
+            throw new ArgumentException(
+                "PluginHost requires the daemon caller-context factory so verified principal provenance remains enforceable.",
+                nameof(callerContexts));
+        }
+
+        var daemonCallerContexts = (CallerContextFactory?)callerContexts;
+        _verifiedPrincipals = verifiedPrincipals
+            ?? daemonCallerContexts?.VerifiedPrincipals
+            ?? new VerifiedPrincipalAuthority();
+        if (daemonCallerContexts is not null &&
+            !ReferenceEquals(daemonCallerContexts.VerifiedPrincipals, _verifiedPrincipals))
+        {
+            throw new ArgumentException(
+                "The caller-context factory and principal authority must belong to the same host.",
+                nameof(callerContexts));
+        }
+
+        _callerContexts = daemonCallerContexts ?? new CallerContextFactory(_verifiedPrincipals);
         _instanceApplication = instanceApplication;
         _operationApplication = operationApplication;
         _provisioningApplication = provisioningApplication;
@@ -182,6 +202,23 @@ internal sealed class PluginHost
             foreach (var manifest in discovery.Plugins)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    // Generated metadata agreement precedes policy prompts and permanent admission
+                    // writes. PE metadata decoding does not load the assembly or execute plugin IL.
+                    GeneratedPluginMetadataReader.Validate(manifest);
+                }
+                catch (PluginManifestException exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "Plugin {PluginId} failed generated metadata preflight ({Code}): {Message} Skipping bundle.",
+                        manifest.Identity.Id,
+                        exception.Code,
+                        exception.Message);
+                    continue;
+                }
+
                 var outcome = _preflight.Evaluate(manifest);
                 if (!outcome.IsAdmitted)
                 {
@@ -199,16 +236,16 @@ internal sealed class PluginHost
             foreach (var manifest in admitted)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var runtime = TryLoad(manifest);
+                var runtime = await TryLoadAsync(manifest).ConfigureAwait(false);
                 if (runtime is null)
                     continue;
 
                 runtime.State = PluginRuntimeState.Admitted;
                 _runtimes.Add(runtime);
-                Configure(runtime);
+                await ConfigureAsync(runtime).ConfigureAwait(false);
             }
 
-            ValidateGlobalDrafts();
+            await ValidateGlobalDraftsAsync().ConfigureAwait(false);
             foreach (var runtime in _runtimes.Where(static runtime => runtime.State == PluginRuntimeState.Validated))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -289,6 +326,7 @@ internal sealed class PluginHost
                     continue;
 
                 runtime.State = PluginRuntimeState.Stopping;
+                CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "stop");
                 // Stop accepting plugin-originated events before invoking plugin code.
                 runtime.Draft.Clear();
@@ -314,8 +352,8 @@ internal sealed class PluginHost
                 finally
                 {
                     runtime.Activation.TrySetCanceled();
-                    ReleaseHttpEndpoints(runtime);
-                    DisposePlugin(runtime);
+                    if (await DisposePluginAsync(runtime).ConfigureAwait(false))
+                        ReleaseHttpEndpoints(runtime);
                     DisposeLifetime(runtime);
                     runtime.State = PluginRuntimeState.Stopped;
                 }
@@ -323,12 +361,13 @@ internal sealed class PluginHost
 
             foreach (var runtime in _runtimes.Where(static runtime => runtime.State is PluginRuntimeState.Configured or PluginRuntimeState.Validated or PluginRuntimeState.Admitted))
             {
+                CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "cleanup");
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
-                ReleaseHttpEndpoints(runtime);
-                DisposePlugin(runtime);
+                if (await DisposePluginAsync(runtime).ConfigureAwait(false))
+                    ReleaseHttpEndpoints(runtime);
                 DisposeLifetime(runtime);
                 runtime.State = PluginRuntimeState.Stopped;
             }
@@ -347,12 +386,19 @@ internal sealed class PluginHost
         "Trimming",
         "IL2072",
         Justification = "The daemon plugin product is an untrimmed JIT host and requires a public parameterless plugin constructor.")]
-    private PluginRuntime? TryLoad(PluginManifest manifest)
+    private async Task<PluginRuntime?> TryLoadAsync(PluginManifest manifest)
     {
+        IDaemonPlugin? plugin = null;
+        CancellationTokenSource? lifetime = null;
+        PluginHttpEndpointPolicy? httpPolicy = null;
+        var ownershipTransferred = false;
         try
         {
+            // Load only the immutable bytes whose metadata was validated. Dependency resolution
+            // remains rooted at the bundle path, but replacing that path cannot change entry IL.
+            var entryAssemblyImage = GeneratedPluginMetadataReader.ReadValidatedImage(manifest);
             var loadContext = new PluginLoadContext(manifest.EntryAssemblyPath, manifest.Identity.Id);
-            var assembly = loadContext.LoadEntryAssembly(manifest.EntryAssemblyPath);
+            var assembly = loadContext.LoadEntryAssembly(entryAssemblyImage);
             var pluginType = assembly.GetType(manifest.EntryType, throwOnError: true, ignoreCase: false);
             if (pluginType is null || !typeof(IGeneratedDaemonPluginAdapter).IsAssignableFrom(pluginType))
             {
@@ -360,17 +406,16 @@ internal sealed class PluginHost
                     $"Entry type '{manifest.EntryType}' does not implement the generated adapter contract.");
             }
 
-            ValidateAdapterMetadata(pluginType, manifest);
-
-            if (Activator.CreateInstance(pluginType) is not IDaemonPlugin plugin)
+            if (Activator.CreateInstance(pluginType) is not IDaemonPlugin createdPlugin)
                 throw new InvalidOperationException($"Entry type '{manifest.EntryType}' could not be constructed.");
+            plugin = createdPlugin;
 
             var owner = ProtocolExecutionOwner.ForPlugin(
                 new ProtocolOwnerIdentity(manifest.Identity.Id, manifest.Identity.Version));
             var errors = new PluginErrorFactory(manifest.Identity);
             var pluginLogger = _loggerFactory.CreateLogger($"Plugin.{manifest.Identity.Id}");
             var draft = new PluginRegistrationDraft(manifest, owner, errors, _eventBus, pluginLogger);
-            var lifetime = new CancellationTokenSource();
+            lifetime = new CancellationTokenSource();
             var activation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var eventOwner = new PluginEventOwnerLedger();
 
@@ -387,11 +432,11 @@ internal sealed class PluginHost
             IPluginPrivateStorage? storage = manifest.HasFeature(PluginFeature.StoragePrivate)
                 ? new PluginPrivateStorage(manifest.Identity, _pluginsConfig, errors)
                 : null;
-            PluginHttpEndpointPolicy? httpPolicy = manifest.HasFeature(PluginFeature.NetworkHttpListen)
+            httpPolicy = manifest.HasFeature(PluginFeature.NetworkHttpListen)
                 ? new PluginHttpEndpointPolicy(manifest.Identity.Id, _httpEndpoints, errors)
                 : null;
             IPluginAuthentication? authentication = manifest.HasFeature(PluginFeature.AuthVerify)
-                ? new PluginAuthentication(errors)
+                ? new PluginAuthentication(errors, _verifiedPrincipals)
                 : null;
             ISystemQueryApplication? system = null;
             if (manifest.HasFeature(PluginFeature.SystemQuery))
@@ -405,26 +450,30 @@ internal sealed class PluginHost
                 system = new PluginSystemQueryApplication(_system);
             }
 
+            var applications = new PluginApplicationAuthorizer(
+                manifest.Identity,
+                manifest.Features.Select(static feature => feature.Value),
+                _callerContexts,
+                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instances : null,
+                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instanceApplication : null,
+                system,
+                manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
+                manifest.HasFeature(PluginFeature.OperationQuery) ? _operationApplication : null,
+                manifest.HasFeature(PluginFeature.OperationCancel) ? _operationApplication : null,
+                manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,
                 errors,
                 draft,
-                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instances : null,
-                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instanceApplication : null,
+                applications,
                 configuration,
                 storage,
                 httpPolicy,
                 authentication,
-                system,
-                _callerContexts ?? new MCServerLauncher.Daemon.ApplicationCore.Auth.CallerContextFactory(),
-                manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
-                manifest.HasFeature(PluginFeature.OperationQuery) ? _operationApplication : null,
-                manifest.HasFeature(PluginFeature.OperationCancel) ? _operationApplication : null,
-                manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null,
                 activation.Task,
                 lifetime.Token);
-            return new PluginRuntime(
+            var runtime = new PluginRuntime(
                 manifest,
                 loadContext,
                 plugin,
@@ -434,67 +483,74 @@ internal sealed class PluginHost
                 activation,
                 eventOwner,
                 httpPolicy);
+            ownershipTransferred = true;
+            return runtime;
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Failed to load plugin {PluginId}; skipping bundle.", manifest.Identity.Id);
             return null;
         }
+        finally
+        {
+            if (!ownershipTransferred)
+                await CleanupFailedLoadAsync(manifest, plugin, lifetime, httpPolicy).ConfigureAwait(false);
+        }
     }
 
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2070",
-        Justification = "The untrimmed JIT plugin host reads the generated adapter's public static metadata property.")]
-    private static void ValidateAdapterMetadata(Type pluginType, PluginManifest manifest)
+    private async Task CleanupFailedLoadAsync(
+        PluginManifest manifest,
+        IDaemonPlugin? plugin,
+        CancellationTokenSource? lifetime,
+        PluginHttpEndpointPolicy? httpPolicy)
     {
-        var property = pluginType.GetProperty(
-            nameof(IGeneratedDaemonPluginAdapter.Metadata),
-            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-        if (property is null ||
-            property.PropertyType != typeof(PluginAdapterMetadata) ||
-            property.GetMethod is null ||
-            property.GetIndexParameters().Length != 0)
+        httpPolicy?.Close();
+        if (lifetime is not null)
         {
-            throw new InvalidOperationException(
-                $"Entry type '{manifest.EntryType}' does not expose generated adapter metadata.");
+            try
+            {
+                await lifetime.CancelAsync().ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "Plugin {PluginId} lifetime cancellation failed during load cleanup; continuing cleanup.",
+                    manifest.Identity.Id);
+            }
         }
 
-        if (property.GetValue(null) is not PluginAdapterMetadata metadata)
+        var disposeCompleted = true;
+        if (plugin is not null)
         {
-            throw new InvalidOperationException(
-                $"Entry type '{manifest.EntryType}' returned invalid generated adapter metadata.");
+            try
+            {
+                switch (plugin)
+                {
+                    case IAsyncDisposable asyncDisposable:
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        break;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                }
+            }
+            catch (Exception exception)
+            {
+                disposeCompleted = false;
+                _logger.LogError(
+                    exception,
+                    "Plugin {PluginId} dispose threw during load cleanup; continuing cleanup.",
+                    manifest.Identity.Id);
+            }
         }
 
-        RequireMetadataMatch("package.id", manifest.Identity.Id, metadata.PackageId);
-        RequireMetadataMatch("package.version", manifest.Identity.Version, metadata.PackageVersion);
-        RequireMetadataMatch("entry.assembly", manifest.EntryAssembly, metadata.EntryAssembly);
-        RequireMetadataMatch("entry.type", manifest.EntryType, metadata.EntryType);
-        RequireMetadataMatch("requires.api", manifest.ApiVersionRange.ToNormalizedString(), metadata.ApiRange);
-
-        var manifestFeatures = manifest.Features
-            .Select(static feature => feature.Value)
-            .Order(StringComparer.Ordinal)
-            .ToImmutableArray();
-        if (!manifestFeatures.SequenceEqual(metadata.Features, StringComparer.Ordinal))
-        {
-            throw new InvalidOperationException(
-                $"Generated adapter metadata mismatch for 'requires.features' in plugin '{manifest.Identity.Id}'.");
-        }
-
-        RequireMetadataMatch("manifest digest", manifest.ManifestDigest, metadata.ManifestDigest);
+        if (disposeCompleted)
+            httpPolicy?.ReleaseAll();
+        lifetime?.Dispose();
     }
 
-    private static void RequireMetadataMatch(string field, string manifestValue, string metadataValue)
-    {
-        if (!string.Equals(manifestValue, metadataValue, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException(
-                $"Generated adapter metadata mismatch for '{field}': manifest '{manifestValue}', adapter '{metadataValue}'.");
-        }
-    }
-
-    private void Configure(PluginRuntime runtime)
+    private async Task ConfigureAsync(PluginRuntime runtime)
     {
         try
         {
@@ -502,7 +558,8 @@ internal sealed class PluginHost
             runtime.Draft.Close();
             if (result.IsErr(out var error))
             {
-                Fail(runtime, "configure_returned_error", "Plugin Configure returned an error.", error!);
+                await FailAsync(runtime, "configure_returned_error", "Plugin Configure returned an error.", error!)
+                    .ConfigureAwait(false);
                 return;
             }
 
@@ -512,7 +569,8 @@ internal sealed class PluginHost
         }
         catch (Exception exception)
         {
-            Fail(runtime, "configure_threw", "Plugin Configure threw an unexpected exception.", exception);
+            await FailAsync(runtime, "configure_threw", "Plugin Configure threw an unexpected exception.", exception)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -520,7 +578,7 @@ internal sealed class PluginHost
         }
     }
 
-    private void ValidateGlobalDrafts()
+    private async Task ValidateGlobalDraftsAsync()
     {
         var candidates = _runtimes
             .Where(static runtime => runtime.State == PluginRuntimeState.Validated)
@@ -546,10 +604,11 @@ internal sealed class PluginHost
 
         foreach (var runtime in conflicts.OrderBy(static runtime => runtime.Manifest.Identity.Id, StringComparer.Ordinal))
         {
-            Fail(
+            await FailAsync(
                 runtime,
                 "catalog_conflict",
-                "The plugin registration draft conflicts with a built-in or another plugin protocol name.");
+                "The plugin registration draft conflicts with a built-in or another plugin protocol name.")
+                .ConfigureAwait(false);
         }
     }
 
@@ -583,7 +642,7 @@ internal sealed class PluginHost
                 // BEFORE declaring failure: Fail sets the state to Failed, and the rollback guard
                 // would otherwise return immediately, leaving the listener serving.
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
-                FailStartCancellation(runtime, cancellationToken);
+                await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -592,14 +651,15 @@ internal sealed class PluginHost
             {
                 ObserveLateStartFault(runtime, startTask);
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
-                FailStartCancellation(runtime, cancellationToken);
+                await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
             if (result.IsErr(out var error))
             {
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
-                Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
+                await FailAsync(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!)
+                    .ConfigureAwait(false);
                 return;
             }
 
@@ -611,12 +671,13 @@ internal sealed class PluginHost
         {
             ObserveLateStartFault(runtime, startTask);
             await StopRollbackAsync(runtime).ConfigureAwait(false);
-            FailStartCancellation(runtime, cancellationToken);
+            await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
             await StopRollbackAsync(runtime).ConfigureAwait(false);
-            Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
+            await FailAsync(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -625,24 +686,27 @@ internal sealed class PluginHost
         }
     }
 
-    private void FailStartCancellation(PluginRuntime runtime, CancellationToken cancellationToken)
+    private async Task FailStartCancellationAsync(PluginRuntime runtime, CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            Fail(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.");
+            await FailAsync(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.")
+                .ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
         }
 
         if (runtime.Lifetime.IsCancellationRequested)
         {
-            Fail(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.");
+            await FailAsync(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.")
+                .ConfigureAwait(false);
             return;
         }
 
-        Fail(
+        await FailAsync(
             runtime,
             "start_timed_out",
-            $"Plugin StartAsync exceeded the startup deadline of {_startTimeout}.");
+            $"Plugin StartAsync exceeded the startup deadline of {_startTimeout}.")
+            .ConfigureAwait(false);
     }
 
     private void ObserveLateStartFault(PluginRuntime runtime, Task startTask)
@@ -716,6 +780,7 @@ internal sealed class PluginHost
         if (runtime.State is PluginRuntimeState.Stopped or PluginRuntimeState.Failed)
             return;
 
+        CloseHttpEndpointAdmission(runtime);
         using var stopTimeout = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         stopTimeout.CancelAfter(TimeSpan.FromSeconds(30));
         try
@@ -734,13 +799,9 @@ internal sealed class PluginHost
         {
             _logger.LogWarning(exception, "Plugin {PluginId} rollback stop threw; continuing cleanup.", runtime.Manifest.Identity.Id);
         }
-        finally
-        {
-            ReleaseHttpEndpoints(runtime);
-        }
     }
 
-    private void Fail(
+    private async Task FailAsync(
         PluginRuntime runtime,
         string stage,
         string message,
@@ -749,6 +810,7 @@ internal sealed class PluginHost
         if (runtime.State is PluginRuntimeState.Failed or PluginRuntimeState.Stopped)
             return;
 
+        CloseHttpEndpointAdmission(runtime);
         if (exception is PluginErrorException pluginErrorException)
             _logger.LogError(
                 exception,
@@ -779,18 +841,19 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
-        ReleaseHttpEndpoints(runtime);
-        DisposePlugin(runtime);
+        if (await DisposePluginAsync(runtime).ConfigureAwait(false))
+            ReleaseHttpEndpoints(runtime);
         DisposeLifetime(runtime);
         runtime.State = PluginRuntimeState.Failed;
     }
 
-    private void Fail(
+    private async Task FailAsync(
         PluginRuntime runtime,
         string stage,
         string message,
         DaemonError error)
     {
+        CloseHttpEndpointAdmission(runtime);
         _logger.LogError(
             "Plugin {PluginId} version {PluginVersion} returned error at {Stage}: {Code} {Message} Details={Details}",
             runtime.Manifest.Identity.Id,
@@ -803,8 +866,8 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
-        ReleaseHttpEndpoints(runtime);
-        DisposePlugin(runtime);
+        if (await DisposePluginAsync(runtime).ConfigureAwait(false))
+            ReleaseHttpEndpoints(runtime);
         DisposeLifetime(runtime);
         runtime.State = PluginRuntimeState.Failed;
     }
@@ -839,19 +902,20 @@ internal sealed class PluginHost
         }
     }
 
-    private void DisposePlugin(PluginRuntime runtime)
+    private async Task<bool> DisposePluginAsync(PluginRuntime runtime)
     {
         try
         {
             switch (runtime.Plugin)
             {
                 case IAsyncDisposable asyncDisposable:
-                    asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     break;
                 case IDisposable disposable:
                     disposable.Dispose();
                     break;
             }
+            return true;
         }
         catch (Exception exception)
         {
@@ -859,8 +923,12 @@ internal sealed class PluginHost
                 exception,
                 "Plugin {PluginId} dispose threw an unexpected exception.",
                 runtime.Manifest.Identity.Id);
+            return false;
         }
     }
+
+    private static void CloseHttpEndpointAdmission(PluginRuntime runtime) =>
+        runtime.HttpEndpointPolicy?.Close();
 
     private static void ReleaseHttpEndpoints(PluginRuntime runtime) =>
         runtime.HttpEndpointPolicy?.ReleaseAll();

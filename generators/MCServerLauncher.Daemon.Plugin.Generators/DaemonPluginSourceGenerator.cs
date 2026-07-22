@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text;
 using MCServerLauncher.Daemon.Plugin.Generators.Diagnostics;
@@ -19,11 +20,15 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
     private const string ModuleAttributeMetadataName = "MCServerLauncher.Daemon.Plugin.Sdk.DaemonPluginModuleAttribute";
     private const string IDaemonPluginMetadataName = "MCServerLauncher.Daemon.API.Plugins.IDaemonPlugin";
     private const string IPluginContextMetadataName = "MCServerLauncher.Daemon.API.Plugins.IPluginContext";
+    private const string ManifestFileName = "mcsl-plugin.json";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var manifests = context.AdditionalTextsProvider
-            .Where(static text => text.Path.EndsWith("mcsl-plugin.json", System.StringComparison.OrdinalIgnoreCase))
+            .Where(static text => string.Equals(
+                Path.GetFileName(text.Path),
+                ManifestFileName,
+                StringComparison.Ordinal))
             .Select(static (text, cancellationToken) =>
             {
                 var content = text.GetText(cancellationToken)?.ToString() ?? string.Empty;
@@ -40,7 +45,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
 
         var manualPlugins = context.SyntaxProvider
             .CreateSyntaxProvider(
-                static (node, _) => node is ClassDeclarationSyntax { BaseList: not null },
+                static (node, _) => node is TypeDeclarationSyntax { BaseList: not null },
                 static (ctx, _) =>
                 {
                     var symbol = ctx.SemanticModel.GetDeclaredSymbol(ctx.Node) as INamedTypeSymbol;
@@ -463,7 +468,6 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var adapterNs = moduleNs is null ? "Generated" : moduleNs + ".Generated";
         var moduleFullName = module.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var featuresTypeName = module.Name + "Features";
-        var metadataTypeName = module.Name + "Metadata";
         var registrationTypeName = module.Name + "ServiceRegistration";
         var featuresFullName = moduleNs is null
             ? "global::" + featuresTypeName
@@ -471,9 +475,6 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var registrationFullName = moduleNs is null
             ? "global::" + registrationTypeName
             : "global::" + moduleNs + "." + registrationTypeName;
-        var metadataFullName = moduleNs is null
-            ? "global::" + metadataTypeName
-            : "global::" + moduleNs + "." + metadataTypeName;
         var hasRpc = manifest.Features.Contains("rpc.register");
         var hasEvents = manifest.Features.Contains("event.publish");
         var hasInstanceQuery = manifest.Features.Contains("instance.query");
@@ -562,12 +563,8 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         if (hasAuthorizedApps)
         {
             featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Application.ICallerContextFactory _callerContexts;");
-            featureCtorAssignments.AppendLine("            _callerContexts = context.CallerContexts;");
-            featureCtorAssignments.AppendLine(
-                "            _hostCaller = context.CallerContexts.CreateHost(context.Identity, new string[] { " +
-                string.Join(", ", manifest.Features.Select(static f => "\"" + f.Replace("\"", "\\\"") + "\"")) +
-                " });");
+                "        private readonly global::System.Func<global::MCServerLauncher.Daemon.API.Plugins.VerifiedPrincipal, global::MCServerLauncher.Daemon.API.Plugins.IPluginAuthorizedApplications> _forPrincipal;");
+            featureCtorAssignments.AppendLine("            _forPrincipal = context.ForPrincipal;");
         }
 
         if (hasRpc)
@@ -576,24 +573,12 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureCtorAssignments.AppendLine("            Events = context.Events;");
         if (hasInstanceQuery)
         {
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource _instanceCatalog;");
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Application.IInstanceQueryApplication _instanceQueries;");
-            featureCtorAssignments.AppendLine("            _instanceCatalog = context.InstanceCatalog;");
-            featureCtorAssignments.AppendLine("            _instanceQueries = context.InstanceQueries;");
-            featureCtorAssignments.AppendLine(
-                "            InstanceCatalog = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceCatalog(_hostCaller!, _instanceCatalog);");
-            featureCtorAssignments.AppendLine(
-                "            InstanceQueries = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceQueryApplication(_hostCaller!, _instanceQueries);");
+            featureCtorAssignments.AppendLine("            InstanceCatalog = context.InstanceCatalog;");
+            featureCtorAssignments.AppendLine("            InstanceQueries = context.InstanceQueries;");
         }
         if (hasSystem)
         {
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication _system;");
-            featureCtorAssignments.AppendLine("            _system = context.System;");
-            featureCtorAssignments.AppendLine(
-                "            System = new global::MCServerLauncher.Daemon.API.Application.AuthorizedSystemQueryApplication(_hostCaller!, _system);");
+            featureCtorAssignments.AppendLine("            System = context.System;");
         }
         if (hasStorage)
             featureCtorAssignments.AppendLine("            Storage = context.Storage;");
@@ -603,35 +588,19 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureCtorAssignments.AppendLine("            Authentication = context.Authentication;");
         if (hasInstanceManage)
         {
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Application.IInstanceManagementApplication _instanceManagement;");
-            featureCtorAssignments.AppendLine("            _instanceManagement = context.InstanceManagement;");
-            featureCtorAssignments.AppendLine(
-                "            InstanceManagement = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceManagementApplication(_hostCaller!, _instanceManagement);");
+            featureCtorAssignments.AppendLine("            InstanceManagement = context.InstanceManagement;");
         }
         if (hasOperationQuery)
         {
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Application.IOperationQueryApplication _operationQueries;");
-            featureCtorAssignments.AppendLine("            _operationQueries = context.OperationQueries;");
-            featureCtorAssignments.AppendLine(
-                "            OperationQueries = new global::MCServerLauncher.Daemon.API.Application.AuthorizedOperationQueryApplication(_hostCaller!, _operationQueries);");
+            featureCtorAssignments.AppendLine("            OperationQueries = context.OperationQueries;");
         }
         if (hasOperationCancel)
         {
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Application.IOperationControlApplication _operationControl;");
-            featureCtorAssignments.AppendLine("            _operationControl = context.OperationControl;");
-            featureCtorAssignments.AppendLine(
-                "            OperationControl = new global::MCServerLauncher.Daemon.API.Application.AuthorizedOperationControlApplication(_hostCaller!, _operationControl);");
+            featureCtorAssignments.AppendLine("            OperationControl = context.OperationControl;");
         }
         if (hasProvisioning)
         {
-            featureBackingFields.AppendLine(
-                "        private readonly global::MCServerLauncher.Daemon.API.Application.IProvisioningApplication _provisioning;");
-            featureCtorAssignments.AppendLine("            _provisioning = context.Provisioning;");
-            featureCtorAssignments.AppendLine(
-                "            Provisioning = new global::MCServerLauncher.Daemon.API.Application.AuthorizedProvisioningApplication(_hostCaller!, _provisioning);");
+            featureCtorAssignments.AppendLine("            Provisioning = context.Provisioning;");
         }
 
         var registrationBody = new StringBuilder();
@@ -679,7 +648,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             "global::MCServerLauncher.Daemon.API.Application.ICallerContext caller"
         };
-        var authorizedArguments = new List<string> { "caller" };
+        var authorizedArguments = new List<string> { "applications.Caller" };
         var authorizedAssignments = new StringBuilder();
         var authorizedProperties = new StringBuilder();
 
@@ -689,12 +658,12 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource instanceCatalog");
             authorizedParameters.Add(
                 "global::MCServerLauncher.Daemon.API.Application.IInstanceQueryApplication instanceQueries");
-            authorizedArguments.Add("_instanceCatalog");
-            authorizedArguments.Add("_instanceQueries");
+            authorizedArguments.Add("applications.InstanceCatalog");
+            authorizedArguments.Add("applications.InstanceQueries");
             authorizedAssignments.AppendLine(
-                "            InstanceCatalog = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceCatalog(caller, instanceCatalog);");
+                "            InstanceCatalog = instanceCatalog ?? throw new global::System.ArgumentNullException(nameof(instanceCatalog));");
             authorizedAssignments.AppendLine(
-                "            InstanceQueries = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceQueryApplication(caller, instanceQueries);");
+                "            InstanceQueries = instanceQueries ?? throw new global::System.ArgumentNullException(nameof(instanceQueries));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource InstanceCatalog { get; }");
             authorizedProperties.AppendLine(
@@ -705,9 +674,9 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             authorizedParameters.Add(
                 "global::MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication system");
-            authorizedArguments.Add("_system");
+            authorizedArguments.Add("applications.System");
             authorizedAssignments.AppendLine(
-                "            System = new global::MCServerLauncher.Daemon.API.Application.AuthorizedSystemQueryApplication(caller, system);");
+                "            System = system ?? throw new global::System.ArgumentNullException(nameof(system));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication System { get; }");
         }
@@ -716,9 +685,9 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             authorizedParameters.Add(
                 "global::MCServerLauncher.Daemon.API.Application.IInstanceManagementApplication instanceManagement");
-            authorizedArguments.Add("_instanceManagement");
+            authorizedArguments.Add("applications.InstanceManagement");
             authorizedAssignments.AppendLine(
-                "            InstanceManagement = new global::MCServerLauncher.Daemon.API.Application.AuthorizedInstanceManagementApplication(caller, instanceManagement);");
+                "            InstanceManagement = instanceManagement ?? throw new global::System.ArgumentNullException(nameof(instanceManagement));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Application.IInstanceManagementApplication InstanceManagement { get; }");
         }
@@ -727,9 +696,9 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             authorizedParameters.Add(
                 "global::MCServerLauncher.Daemon.API.Application.IOperationQueryApplication operationQueries");
-            authorizedArguments.Add("_operationQueries");
+            authorizedArguments.Add("applications.OperationQueries");
             authorizedAssignments.AppendLine(
-                "            OperationQueries = new global::MCServerLauncher.Daemon.API.Application.AuthorizedOperationQueryApplication(caller, operationQueries);");
+                "            OperationQueries = operationQueries ?? throw new global::System.ArgumentNullException(nameof(operationQueries));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Application.IOperationQueryApplication OperationQueries { get; }");
         }
@@ -738,9 +707,9 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             authorizedParameters.Add(
                 "global::MCServerLauncher.Daemon.API.Application.IOperationControlApplication operationControl");
-            authorizedArguments.Add("_operationControl");
+            authorizedArguments.Add("applications.OperationControl");
             authorizedAssignments.AppendLine(
-                "            OperationControl = new global::MCServerLauncher.Daemon.API.Application.AuthorizedOperationControlApplication(caller, operationControl);");
+                "            OperationControl = operationControl ?? throw new global::System.ArgumentNullException(nameof(operationControl));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Application.IOperationControlApplication OperationControl { get; }");
         }
@@ -749,9 +718,9 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             authorizedParameters.Add(
                 "global::MCServerLauncher.Daemon.API.Application.IProvisioningApplication provisioning");
-            authorizedArguments.Add("_provisioning");
+            authorizedArguments.Add("applications.Provisioning");
             authorizedAssignments.AppendLine(
-                "            Provisioning = new global::MCServerLauncher.Daemon.API.Application.AuthorizedProvisioningApplication(caller, provisioning);");
+                "            Provisioning = provisioning ?? throw new global::System.ArgumentNullException(nameof(provisioning));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Application.IProvisioningApplication Provisioning { get; }");
         }
@@ -759,11 +728,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var authorizedParameterLiteral = string.Join(",\n            ", authorizedParameters);
         var authorizedArgumentLiteral = string.Join(", ", authorizedArguments);
 
-        var featuresLiteral = string.Join(", ",
-            manifest.Features.Select(static f => "\"" + f.Replace("\"", "\\\"") + "\""));
-        var immutableFeaturesLiteral = manifest.Features.Count == 0
-            ? "global::System.Collections.Immutable.ImmutableArray<string>.Empty"
-            : "global::System.Collections.Immutable.ImmutableArray.Create<string>(" + featuresLiteral + ")";
+        var encodedFeatures = string.Join("\n", manifest.Features);
 
         var moduleNamespaceOpen = moduleNs is null ? string.Empty : "namespace " + moduleNs + "\n{\n";
         var moduleNamespaceClose = moduleNs is null ? string.Empty : "\n}\n";
@@ -773,13 +738,22 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
 #nullable enable
 #pragma warning disable CS1591
 
+[assembly: global::MCServerLauncher.Daemon.API.Plugins.GeneratedDaemonPluginMetadataAttribute(
+    "{{Escape(manifest.PackageId)}}",
+    "{{Escape(manifest.PackageVersion)}}",
+    "{{Escape(manifest.EntryAssembly)}}",
+    "{{Escape(manifest.EntryType)}}",
+    "{{Escape(manifest.ApiRange)}}",
+    "{{Escape(encodedFeatures)}}",
+    "{{Escape(manifest.Digest)}}")]
+
 {{moduleNamespaceOpen}}    /// <summary>
     /// Feature surfaces declared by mcsl-plugin.json for {{module.Name}}.
     /// Only features listed in the manifest are present.
     /// </summary>
     public sealed class {{featuresTypeName}}
     {
-{{featureBackingFields}}{{(hasAuthorizedApps ? "        private readonly global::MCServerLauncher.Daemon.API.Application.ICallerContext _hostCaller;\n" : string.Empty)}}
+{{featureBackingFields}}
 
         public {{featuresTypeName}}(global::MCServerLauncher.Daemon.API.Plugins.IPluginContext context)
         {
@@ -805,7 +779,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         /// </summary>
         public {module.Name}AuthorizedFeatures ForPrincipal(global::MCServerLauncher.Daemon.API.Plugins.VerifiedPrincipal principal)
         {{
-            var caller = _callerContexts.ForPrincipal(principal);
+            var applications = _forPrincipal(principal);
             return new {module.Name}AuthorizedFeatures({authorizedArgumentLiteral});
         }}
 " : string.Empty)}}    }
@@ -842,20 +816,6 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
 {{registrationBody}}        }
     }
 
-    /// <summary>
-    /// Normalized identity/metadata embedded from mcsl-plugin.json.
-    /// Runtime admission compares the digest with the on-disk manifest.
-    /// </summary>
-    public static class {{metadataTypeName}}
-    {
-        public const string PackageId = "{{Escape(manifest.PackageId)}}";
-        public const string PackageVersion = "{{Escape(manifest.PackageVersion)}}";
-        public const string EntryAssembly = "{{Escape(manifest.EntryAssembly)}}";
-        public const string EntryType = "{{Escape(manifest.EntryType)}}";
-        public const string ApiRange = "{{Escape(manifest.ApiRange)}}";
-        public const string ManifestDigest = "{{Escape(manifest.Digest)}}";
-        public static global::System.Collections.Immutable.ImmutableArray<string> Features { get; } = {{immutableFeaturesLiteral}};
-    }
 {{moduleNamespaceClose}}
 namespace {{adapterNs}}
 {
@@ -865,15 +825,6 @@ namespace {{adapterNs}}
     /// </summary>
     public sealed class DaemonPluginAdapter : global::MCServerLauncher.Daemon.API.Plugins.IGeneratedDaemonPluginAdapter, global::System.IAsyncDisposable, global::System.IDisposable
     {
-        public static global::MCServerLauncher.Daemon.API.Plugins.PluginAdapterMetadata Metadata { get; } = new(
-            {{metadataFullName}}.PackageId,
-            {{metadataFullName}}.PackageVersion,
-            {{metadataFullName}}.EntryAssembly,
-            {{metadataFullName}}.EntryType,
-            {{metadataFullName}}.ApiRange,
-            {{metadataFullName}}.Features,
-            {{metadataFullName}}.ManifestDigest);
-
         private readonly {{moduleFullName}} _module = new {{moduleFullName}}();
         private {{featuresFullName}}? _features;
         private global::Microsoft.Extensions.DependencyInjection.ServiceProvider? _services;
@@ -959,5 +910,32 @@ namespace {{adapterNs}}
 """;
     }
 
-    private static string Escape(string value) => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    private static string Escape(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var character in value)
+        {
+            switch (character)
+            {
+                case '\\': builder.Append("\\\\"); break;
+                case '"': builder.Append("\\\""); break;
+                case '\0': builder.Append("\\0"); break;
+                case '\a': builder.Append("\\a"); break;
+                case '\b': builder.Append("\\b"); break;
+                case '\f': builder.Append("\\f"); break;
+                case '\n': builder.Append("\\n"); break;
+                case '\r': builder.Append("\\r"); break;
+                case '\t': builder.Append("\\t"); break;
+                case '\v': builder.Append("\\v"); break;
+                default:
+                    if (char.IsControl(character))
+                        builder.Append("\\u").Append(((int)character).ToString("x4"));
+                    else
+                        builder.Append(character);
+                    break;
+            }
+        }
+
+        return builder.ToString();
+    }
 }

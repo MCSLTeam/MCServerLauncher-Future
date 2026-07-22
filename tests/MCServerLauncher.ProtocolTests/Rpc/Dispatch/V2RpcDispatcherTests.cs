@@ -210,6 +210,36 @@ public sealed class V2RpcDispatcherTests
     }
 
     [Fact]
+    public async Task DigitLeadingPluginIdUsesTheSameCanonicalGrammarForDispatchPermission()
+    {
+        var descriptor = PluginProtocol.CreateRpc(
+            "1plugin",
+            "get",
+            ProtocolJson.EmptyRequest,
+            ProtocolJson.PingResult,
+            new RpcDocumentation("test", "Get", "Gets plugin state.", "test.request", "test.result"));
+        var owner = ProtocolExecutionOwner.ForPlugin(new ProtocolOwnerIdentity("1plugin", "1.0.0"));
+        var executions = 0;
+        var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("Dispatcher tests", "1.0.0"));
+        builder.AddRpcDefinition(owner, descriptor);
+        builder.AddRpcBinding(
+            descriptor.Method,
+            new RpcBinding<EmptyRequest, PingResult>(owner, (_, _, _) =>
+            {
+                executions++;
+                return Task.FromResult(ProtocolRpcExecution<PingResult>.Ok(new PingResult(1)));
+            }));
+        var dispatcher = new V2RpcDispatcher(builder.Freeze(), new RecordingDiagnosticSink());
+
+        var outcome = await dispatcher.DispatchAsync(
+            Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"plugin.1plugin.rpc.get\",\"id\":1,\"params\":{}}"),
+            Connection("plugin.1plugin.rpc.get"));
+
+        Assert.True(outcome.HasResponse);
+        Assert.Equal(1, executions);
+    }
+
+    [Fact]
     public async Task ParamsFollowEnvelopeAndDescriptorStrictness()
     {
         var directoryExecutions = 0;

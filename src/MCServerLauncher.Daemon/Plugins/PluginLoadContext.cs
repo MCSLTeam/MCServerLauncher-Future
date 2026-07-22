@@ -37,7 +37,12 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         "Trimming",
         "IL2026",
         Justification = "The daemon plugin product is an untrimmed JIT host; sidecar plugin assemblies are loaded intentionally at startup.")]
-    internal Assembly LoadEntryAssembly(string entryAssemblyPath) => LoadFromAssemblyPath(entryAssemblyPath);
+    internal Assembly LoadEntryAssembly(GeneratedPluginMetadataReader.ValidatedPluginAssemblyImage image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        using var stream = image.OpenReadStream();
+        return LoadFromStream(stream);
+    }
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {

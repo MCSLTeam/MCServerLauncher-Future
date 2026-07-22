@@ -6,27 +6,26 @@ using MCServerLauncher.Daemon.API.Protocol;
 using Microsoft.Extensions.Logging;
 using RustyOptions;
 
+[assembly: GeneratedDaemonPluginMetadata(
+    "external-compile",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "72359393f00a7d0bfbed2f1b684a8583146b0212c1ac29bc8477f37af1815d61")]
+
 namespace MCServerLauncher.ExternalCompileFixture;
 
 public sealed class ExternalCompilePlugin : IGeneratedDaemonPluginAdapter
 {
-    public static PluginAdapterMetadata Metadata { get; } = new(
-        "external-compile",
-        "1.0.0",
-        "PluginEntry.dll",
-        "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
-        "[2.0.0, 3.0.0)",
-        ["event.publish", "instance.query", "rpc.register"],
-        "72359393f00a7d0bfbed2f1b684a8583146b0212c1ac29bc8477f37af1815d61");
-
     private IPluginContext? _context;
 
     public Result<Unit, DaemonError> Configure(IPluginContext context)
     {
         _context = context;
-        var rpc = PluginProtocol.CreateRpc(
-            "plugin.external-compile.rpc.ping",
-            "plugin.external-compile.rpc",
+        var rpcResult = context.Rpc.Register(
+            "ping",
             FixtureJsonContext.Default.EmptyRequest,
             FixtureJsonContext.Default.UnitResult,
             documentation: new RpcDocumentation(
@@ -34,9 +33,8 @@ public sealed class ExternalCompilePlugin : IGeneratedDaemonPluginAdapter
                 "Ping",
                 "Returns a unit result.",
                 "fixture.empty-request",
-                "fixture.unit-result"));
-        var rpcResult = context.Rpc.Register(rpc, static (_, _) =>
-            Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())));
+                "fixture.unit-result"),
+            handler: static (_, _) => Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())));
         _ = rpcResult;
 
         Result<UnitResult, DaemonError> errorResult = context.Errors.Fail<UnitResult>(

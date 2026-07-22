@@ -219,7 +219,8 @@ internal static class PluginManifestReader
     {
         if (!entryAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
             !StringComparer.Ordinal.Equals(Path.GetFileName(entryAssembly), entryAssembly) ||
-            Path.IsPathRooted(entryAssembly))
+            Path.IsPathRooted(entryAssembly) ||
+            entryAssembly.Any(char.IsControl))
         {
             throw new PluginManifestException("entry_invalid", $"The manifest field '{field}' must be a file name ending in .dll.");
         }
@@ -229,7 +230,8 @@ internal static class PluginManifestReader
     {
         if (entryType.Contains(',', StringComparison.Ordinal) ||
             entryType.Contains('/', StringComparison.Ordinal) ||
-            entryType.Contains('\\', StringComparison.Ordinal))
+            entryType.Contains('\\', StringComparison.Ordinal) ||
+            entryType.Any(char.IsControl))
         {
             throw new PluginManifestException("entry_type_invalid", "The plugin entry type must be an unqualified CLR type name.");
         }

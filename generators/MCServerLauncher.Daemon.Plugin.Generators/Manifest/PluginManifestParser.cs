@@ -332,7 +332,8 @@ internal static class PluginManifestParser
     {
         if (!value.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
             Path.IsPathRooted(value) ||
-            !string.Equals(Path.GetFileName(value), value, StringComparison.Ordinal))
+            !string.Equals(Path.GetFileName(value), value, StringComparison.Ordinal) ||
+            HasControlCharacter(value))
         {
             throw new InvalidOperationException(
                 "Field 'entry.assembly' must be a relative file name ending in .dll.");
@@ -341,8 +342,20 @@ internal static class PluginManifestParser
 
     private static void ValidateEntryType(string value)
     {
-        if (value.IndexOf(',') >= 0 || value.IndexOf('/') >= 0 || value.IndexOf('\\') >= 0)
+        if (value.IndexOf(',') >= 0 || value.IndexOf('/') >= 0 || value.IndexOf('\\') >= 0 ||
+            HasControlCharacter(value))
             throw new InvalidOperationException("Field 'entry.type' must be a non-assembly-qualified CLR type name.");
+    }
+
+    private static bool HasControlCharacter(string value)
+    {
+        foreach (var character in value)
+        {
+            if (char.IsControl(character))
+                return true;
+        }
+
+        return false;
     }
 
     private static void ValidateFeatureValue(string value)
