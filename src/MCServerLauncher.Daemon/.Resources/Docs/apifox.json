@@ -6154,19 +6154,11 @@
                 "operation_id": {
                   "type": "string",
                   "format": "uuid"
-                },
-                "instance_id": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "uuid"
                 }
               },
               "required": [
                 "plan_id",
-                "operation_id",
-                "instance_id"
+                "operation_id"
               ],
               "additionalProperties": false,
               "$id": "mcsl.schema.mcsl.provisioning.execute.result"

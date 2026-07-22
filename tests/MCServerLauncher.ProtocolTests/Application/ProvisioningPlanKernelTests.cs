@@ -1,4 +1,5 @@
 using MCServerLauncher.Common.Contracts.Provisioning;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.ApplicationCore.Provisioning;
@@ -70,6 +71,123 @@ public sealed class ProvisioningPlanKernelTests
         }
     }
 
+    [Fact]
+    public async Task Execute_ReturnsOperationHandleBeforeProvisioningCompletes()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-immediate-").FullName;
+        try
+        {
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var instances = new StubInstances(async (request, cancellationToken) =>
+            {
+                entered.TrySetResult();
+                await release.Task.WaitAsync(cancellationToken);
+                return Result.Ok<MCServerLauncher.Common.Contracts.Instances.CreateInstanceResult, DaemonError>(
+                    new MCServerLauncher.Common.Contracts.Instances.CreateInstanceResult(request.Setting.Configuration));
+            });
+            var kernel = new PlanKernel(rootDirectory: root);
+            await using var operations = new MCServerLauncher.Daemon.ApplicationCore.Operations.OperationCoordinator(
+                rootDirectory: Path.Combine(root, "ops"));
+            var app = new LocalProvisioningApplication(kernel, instances, operations);
+            var resolved = await app.ResolveAsync(new ProvisioningResolveRequest(
+                Provider: ProvisioningProviderKind.Vanilla,
+                InstanceName: "demo",
+                MinecraftVersion: "1.21",
+                Source: "server.jar",
+                Mirror: InstanceFactoryMirror.None,
+                JavaPath: "java",
+                CreatorPrincipal: "owner-a"), CancellationToken.None);
+            Assert.True(resolved.IsOk(out var plan));
+
+            using var requestCancellation = new CancellationTokenSource();
+            var execute = await app.ExecuteAsync(
+                new ProvisioningExecuteRequest(plan!.PlanId, "owner-a"),
+                requestCancellation.Token);
+
+            Assert.True(execute.IsOk(out var handle));
+            Assert.Equal(plan.PlanId, handle!.PlanId);
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            requestCancellation.Cancel();
+
+            var running = await operations.GetOperationAsync(
+                new OperationReference(handle.OperationId, "owner-a"),
+                CancellationToken.None);
+            Assert.True(running.IsOk(out var runningSnapshot));
+            Assert.Equal(OperationStatus.Running, runningSnapshot!.Status);
+
+            release.TrySetResult();
+            OperationSnapshot? completed = null;
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+            {
+                while (true)
+                {
+                    var current = await operations.GetOperationAsync(
+                        new OperationReference(handle.OperationId, "owner-a"),
+                        CancellationToken.None);
+                    Assert.True(current.IsOk(out completed));
+                    if (completed!.Status == OperationStatus.Succeeded)
+                        break;
+                    await Task.Delay(10, timeout.Token);
+                }
+            }
+
+            Assert.True(Guid.TryParse(completed!.ResultReference, out _));
+            var consumed = kernel.Get(plan.PlanId);
+            Assert.True(consumed.IsOk(out var consumedPlan));
+            Assert.Equal(PlanStatus.Consumed, consumedPlan!.Status);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Execute_RequestCancellationBeforeOperationAcceptanceRestoresReadyPlan()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-cancel-admission-").FullName;
+        try
+        {
+            using var cancellation = new CancellationTokenSource();
+            var time = new CallbackTimeProvider(DateTimeOffset.Parse("2026-07-22T00:00:00Z"));
+            var kernel = new PlanKernel(timeProvider: time, rootDirectory: root);
+            await using var operations = new MCServerLauncher.Daemon.ApplicationCore.Operations.OperationCoordinator(
+                rootDirectory: Path.Combine(root, "ops"));
+            var app = new LocalProvisioningApplication(kernel, new StubInstances(), operations);
+            var resolved = await app.ResolveAsync(new ProvisioningResolveRequest(
+                Provider: ProvisioningProviderKind.Vanilla,
+                InstanceName: "demo",
+                MinecraftVersion: "1.21",
+                Source: "server.jar",
+                Mirror: InstanceFactoryMirror.None,
+                JavaPath: "java",
+                CreatorPrincipal: "owner-a"), CancellationToken.None);
+            Assert.True(resolved.IsOk(out var plan));
+
+            // TryBeginExecute reads the clock before it commits Executing. Cancel there so the
+            // subsequent operation admission observes cancellation deterministically.
+            time.OnNextRead(cancellation.Cancel);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => app.ExecuteAsync(
+                new ProvisioningExecuteRequest(plan!.PlanId, "owner-a"),
+                cancellation.Token));
+
+            var restored = kernel.Get(plan!.PlanId);
+            Assert.True(restored.IsOk(out var restoredPlan));
+            Assert.Equal(PlanStatus.Ready, restoredPlan!.Status);
+
+            var operationList = await operations.ListOperationsAsync(
+                new OperationListQuery("owner-a"),
+                CancellationToken.None);
+            Assert.True(operationList.IsOk(out var operationsForOwner));
+            Assert.Empty(operationsForOwner!.Operations);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
 
     [Fact]
     public void BeginExecute_IsSingleUseAndOwnerBound()
@@ -115,12 +233,16 @@ public sealed class ProvisioningPlanKernelTests
         }
     }
 
-    private sealed class StubInstances : MCServerLauncher.Daemon.API.Application.IInstanceApplication
+    private sealed class StubInstances(
+        Func<MCServerLauncher.Common.Contracts.Instances.CreateInstanceRequest,
+            CancellationToken,
+            Task<Result<MCServerLauncher.Common.Contracts.Instances.CreateInstanceResult, DaemonError>>>? create = null)
+        : MCServerLauncher.Daemon.API.Application.IInstanceApplication
     {
         public Task<Result<MCServerLauncher.Common.Contracts.Instances.CreateInstanceResult, DaemonError>> CreateInstanceAsync(
             MCServerLauncher.Common.Contracts.Instances.CreateInstanceRequest request,
-            CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
+            CancellationToken cancellationToken) => create?.Invoke(request, cancellationToken)
+            ?? throw new NotSupportedException();
 
         public Task<Result<Unit, DaemonError>> RemoveInstanceAsync(MCServerLauncher.Common.Contracts.Instances.InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<Unit, DaemonError>> StartInstanceAsync(MCServerLauncher.Common.Contracts.Instances.InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
@@ -132,5 +254,19 @@ public sealed class ProvisioningPlanKernelTests
         public Task<Result<MCServerLauncher.Common.Contracts.Instances.InstanceLogResult, DaemonError>> GetInstanceLogAsync(MCServerLauncher.Common.Contracts.Instances.InstanceLogQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<MCServerLauncher.Common.Contracts.Instances.InstanceSettingsResult, DaemonError>> GetInstanceSettingsAsync(MCServerLauncher.Common.Contracts.Instances.InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettingsAsync(MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class CallbackTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        private Action? _nextRead;
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            Interlocked.Exchange(ref _nextRead, null)?.Invoke();
+            return now;
+        }
+
+        internal void OnNextRead(Action callback) =>
+            Interlocked.Exchange(ref _nextRead, callback);
     }
 }
