@@ -72,4 +72,4 @@ public sealed record ProvisioningPlanReference(Guid PlanId, string? OwnerPrincip
 
 public sealed record ProvisioningExecuteRequest(Guid PlanId, string ExecutorPrincipal);
 
-public sealed record ProvisioningExecuteResult(Guid PlanId, Guid OperationId, Guid? InstanceId);
+public sealed record ProvisioningExecuteResult(Guid PlanId, Guid OperationId);

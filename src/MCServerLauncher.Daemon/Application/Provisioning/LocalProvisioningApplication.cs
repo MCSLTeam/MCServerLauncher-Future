@@ -131,26 +131,41 @@ internal sealed class LocalProvisioningApplication(
         }
 
         var factory = BuildFactoryConfiguration(plan, instanceType);
-        var execute = await Coordinator.ExecuteAsync(
-            kind: "provisioning.execute",
-            target: plan.PlanId.ToString("D"),
-            ownerPrincipal: request.ExecutorPrincipal,
-            executor: async (context, ct) =>
-            {
-                context.SetStage(OperationStage.Resolving);
-                context.ReportProgress(new OperationProgress(false, 0, 1, "steps", null, null, null));
+        Result<OperationSnapshot, DaemonError> execute;
+        try
+        {
+            execute = await Coordinator.StartAsync(
+                kind: "provisioning.execute",
+                target: plan.PlanId.ToString("D"),
+                ownerPrincipal: request.ExecutorPrincipal,
+                executor: async (_, context, ct) =>
+                {
+                    context.SetStage(OperationStage.Resolving);
+                    context.ReportProgress(new OperationProgress(false, 0, 1, "steps", null, null, null));
 
-                // CreateInstance dual-path remains the authoritative installer boundary for P1.
-                // Provisioning wraps it as the only Operation-creating entrypoint.
-                var created = await instances.CreateInstanceAsync(new CreateInstanceRequest(factory), ct).ConfigureAwait(false);
-                if (created.IsErr(out var createError))
-                    return Result.Err<string, DaemonError>(createError!);
+                    // CreateInstance dual-path remains the authoritative installer boundary for P1.
+                    // Provisioning wraps it as the only Operation-creating entrypoint.
+                    var created = await instances.CreateInstanceAsync(new CreateInstanceRequest(factory), ct)
+                        .ConfigureAwait(false);
+                    if (created.IsErr(out var createError))
+                        return Result.Err<string, DaemonError>(createError!);
 
-                context.SetStage(OperationStage.Finalizing);
-                context.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
-                return Result.Ok<string, DaemonError>(created.Unwrap().Config.InstanceId.ToString("D"));
-            },
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+                    context.SetStage(OperationStage.Finalizing);
+                    context.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
+                    return Result.Ok<string, DaemonError>(created.Unwrap().Config.InstanceId.ToString("D"));
+                },
+                cancellationToken: cancellationToken,
+                completionCallback: completed => planKernel.CompleteExecute(
+                    plan.PlanId,
+                    completed.Status == OperationStatus.Succeeded)).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // StartAsync throws only before durable operation acceptance. Re-open the plan because
+            // no executor can now consume the Executing claim.
+            planKernel.CompleteExecute(plan.PlanId, success: false);
+            throw;
+        }
 
         if (execute.IsErr(out var executeError))
         {
@@ -158,11 +173,9 @@ internal sealed class LocalProvisioningApplication(
             return Result.Err<ProvisioningExecuteResult, DaemonError>(executeError!);
         }
 
-        planKernel.CompleteExecute(plan.PlanId, success: true);
         var snapshot = execute.Unwrap();
-        Guid? instanceId = Guid.TryParse(snapshot.ResultReference, out var parsed) ? parsed : null;
         return Result.Ok<ProvisioningExecuteResult, DaemonError>(
-            new ProvisioningExecuteResult(plan.PlanId, snapshot.OperationId, instanceId));
+            new ProvisioningExecuteResult(plan.PlanId, snapshot.OperationId));
     }
 
     private static InstanceFactoryConfiguration BuildFactoryConfiguration(
