@@ -313,10 +313,15 @@ public sealed class InstanceProcessEventPumpTests
     [Fact]
     public async Task InstanceBase_FailedOsStartResetsProcessAndCanRetry()
     {
-        var config = CreateConfig() with { InstanceType = InstanceType.Universal, Target = "broken.exe", TargetType = TargetType.Executable };
+        var config = CreateConfig() with
+        {
+            InstanceType = InstanceType.Universal,
+            // Use a missing path so the OS start fails immediately (no antivirus/image parse delay).
+            Target = "missing-binary.exe",
+            TargetType = TargetType.Executable
+        };
         var workingDirectory = config.GetWorkingDirectory();
         Directory.CreateDirectory(workingDirectory);
-        await File.WriteAllTextAsync(Path.Combine(workingDirectory, config.Target), "not an executable");
         var instance = new ResettableInstance(config);
 
         try
@@ -334,7 +339,7 @@ public sealed class InstanceProcessEventPumpTests
             instance.ReplaceConfig(config with { Target = retryTarget, TargetType = TargetType.Script });
 
             Assert.True(await instance.StartAsync(delayToCheck: 20));
-await instance.StopAsync();
+            await instance.StopAsync();
             await instance.Process!.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
         }
         finally
@@ -363,7 +368,7 @@ await instance.StopAsync();
         try
         {
             Assert.True(await instance.StartAsync(delayToCheck: 20));
-await instance.StopAsync();
+            await instance.StopAsync();
             await instance.Process!.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
 
             instance.ReplaceConfig(config with { Target = string.Empty });
@@ -380,7 +385,7 @@ await instance.StopAsync();
             instance.ReplaceConfig(config with { Target = retryTarget });
 
             Assert.True(await instance.StartAsync(delayToCheck: 20));
-await instance.StopAsync();
+            await instance.StopAsync();
             await instance.Process!.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
         }
         finally
