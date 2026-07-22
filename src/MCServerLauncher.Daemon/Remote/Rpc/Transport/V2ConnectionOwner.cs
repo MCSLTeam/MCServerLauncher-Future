@@ -459,7 +459,7 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
             .Select(static permission =>
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(permission);
-                return permission.Trim().ToLowerInvariant();
+                return permission;
             })
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)

@@ -87,4 +87,21 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventSubscribe));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventRuleManage));
     }
+
+    [Fact]
+    public void ImplementedFeatureMethodsMatchFrozenDescriptorPermissions()
+    {
+        var descriptors = BuiltInProtocolDefinitions.Rpcs.ToDictionary(
+            static descriptor => descriptor.Method.Value,
+            StringComparer.Ordinal);
+
+        foreach (var method in FeatureCatalog.All
+                     .Where(static feature => feature.IsImplemented)
+                     .SelectMany(static feature => feature.Methods)
+                     .Distinct(StringComparer.Ordinal))
+        {
+            Assert.True(descriptors.TryGetValue(method, out var descriptor), $"Missing RPC descriptor for {method}.");
+            Assert.Equal(method, descriptor!.Permission.Value);
+        }
+    }
 }

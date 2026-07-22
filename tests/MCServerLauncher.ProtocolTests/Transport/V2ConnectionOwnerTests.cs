@@ -700,14 +700,32 @@ public sealed class V2ConnectionOwnerTests
     }
 
     [Fact]
-    public async Task Permissions_AreNormalizedAndImmutable()
+    public async Task Permissions_AreCaseSensitiveAndMalformedSetsFailClosed()
     {
-        var input = new List<string> { " Instance.Read ", "instance.read", "FILE.READ" };
+        var input = new List<string> { "mcsl.instance.start" };
         var sender = new RecordingSender();
         await using var owner = new V2ConnectionOwner(sender, input);
         input.Clear();
 
-        Assert.Equal(new[] { "file.read", "instance.read" }, owner.Permissions.ToArray());
+        Assert.Equal(new[] { "mcsl.instance.start" }, owner.Permissions.ToArray());
+        Assert.True(V2RpcDispatcher.HasPermission(
+            owner,
+            new PermissionName("mcsl.instance.start")));
+
+        await using var uppercase = new V2ConnectionOwner(
+            new RecordingSender(),
+            ["MCSL.instance.start"]);
+        Assert.False(V2RpcDispatcher.HasPermission(
+            uppercase,
+            new PermissionName("mcsl.instance.start")));
+
+        await using var padded = new V2ConnectionOwner(
+            new RecordingSender(),
+            [" mcsl.instance.start "]);
+        Assert.False(V2RpcDispatcher.HasPermission(
+            padded,
+            new PermissionName("mcsl.instance.start")));
+
         await owner.AbortAsync().WaitAsync(TestTimeout);
     }
 

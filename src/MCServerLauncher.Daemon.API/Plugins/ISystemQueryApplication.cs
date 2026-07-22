@@ -1,4 +1,6 @@
-using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Daemon.API.Errors;
+using RustyOptions;
 
 namespace MCServerLauncher.Daemon.API.Plugins;
 
@@ -7,5 +9,9 @@ namespace MCServerLauncher.Daemon.API.Plugins;
 /// </summary>
 public interface ISystemQueryApplication
 {
-    ISystemApplication System { get; }
+    Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(
+        CancellationToken cancellationToken);
+
+    Task<Result<JavaRuntimeList, DaemonError>> ListJavaRuntimesAsync(
+        CancellationToken cancellationToken);
 }

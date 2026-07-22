@@ -100,7 +100,7 @@ public sealed class V2RpcDispatcherTests
             });
         using var requestCancellation = new CancellationTokenSource();
         var connection = new V2RpcConnectionContext(
-            new TestPermissionView(ImmutableArray.Create("mcsl.file.download")),
+            new TestPermissionView(ImmutableArray.Create("mcsl.file.download.**")),
             null,
             CancellationToken.None,
             operations);
@@ -254,7 +254,7 @@ public sealed class V2RpcDispatcherTests
 
         var outcome = await dispatcher.DispatchAsync(
             Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.file.download.close\",\"id\":1,\"params\":{\"session_id\":\"00000000-0000-0000-0000-000000000000\"}}"),
-            Connection("mcsl.file.download"));
+            Connection("mcsl.file.download.**"));
 
         Assert.Equal(-32602, ParseError(outcome).Error.Code);
         Assert.Equal(0, executions);
@@ -784,7 +784,7 @@ public sealed class V2RpcDispatcherTests
 
         var outcome = await dispatcher.DispatchAsync(
             Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.file.download.read\",\"id\":1,\"params\":{{\"session_id\":\"{sessionId}\",\"offset\":7,\"maximum_length\":3}}}}"),
-            Connection("mcsl.file.download"));
+            Connection("mcsl.file.download.**"));
 
         Assert.True(outcome.HasResponse);
         Assert.Same(attachment, outcome.DownloadAttachment);

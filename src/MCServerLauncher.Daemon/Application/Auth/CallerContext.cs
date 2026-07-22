@@ -56,12 +56,15 @@ internal sealed class CallerContext : ICallerContext
 
 internal sealed class CallerContextFactory : ICallerContextFactory
 {
-    public ICallerContext CreateHost(IEnumerable<string> grantedFeatureIds)
+    public ICallerContext CreateHost(
+        PluginIdentity plugin,
+        IEnumerable<string> grantedFeatureIds)
     {
+        ArgumentNullException.ThrowIfNull(plugin);
         ArgumentNullException.ThrowIfNull(grantedFeatureIds);
         var methods = FeatureCatalog.ExpandMethodPermissions(grantedFeatureIds);
         return new CallerContext(
-            subject: "plugin-host",
+            subject: $"plugin:{plugin.Id}",
             permissions: methods,
             isMainToken: false);
     }

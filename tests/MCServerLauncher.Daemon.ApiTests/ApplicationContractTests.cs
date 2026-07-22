@@ -88,7 +88,11 @@ public sealed class ApplicationContractTests
     [Fact]
     public void InstanceApplicationReturnsParityCompleteCreateAndSettingsResults()
     {
-        var methods = typeof(IInstanceApplication).GetMethods().ToDictionary(method => method.Name);
+        var methods = typeof(IInstanceApplication)
+            .GetInterfaces()
+            .Append(typeof(IInstanceApplication))
+            .SelectMany(static contract => contract.GetMethods())
+            .ToDictionary(method => method.Name);
 
         AssertResultType<CreateInstanceResult>(methods[nameof(IInstanceApplication.CreateInstanceAsync)]);
         AssertResultType<InstanceSettingsResult>(methods[nameof(IInstanceApplication.GetInstanceSettingsAsync)]);

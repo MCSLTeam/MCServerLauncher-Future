@@ -83,7 +83,7 @@ public sealed class V2FileSessionConnectionTests
         {
             UploadSession = new UploadSession(Guid.NewGuid(), 1024, time.GetUtcNow().AddMinutes(1))
         };
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner, time).Unwrap();
         var opened = await connection.OpenUploadAsync(new UploadOpenRequest("x", 1, "hash"), CancellationToken.None);
         Assert.True(opened.IsOk(out _));
@@ -102,7 +102,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task DownloadRead_RejectsConcurrentReadAndCloseWithoutCallingApplication()
     {
         var application = new FakeFileApplication();
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var opened = await connection.OpenDownloadAsync(new DownloadOpenRequest("x"), CancellationToken.None);
         Assert.True(opened.IsOk(out _));
@@ -129,7 +129,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task DownloadOpen_ReservesConnectionLimitBeforeCallingApplication()
     {
         var application = new FakeFileApplication { BlockOpen = true };
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(
             application,
             Catalog(),
@@ -154,7 +154,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task DownloadOpen_ClosedLeaseFreesConnectionReservation()
     {
         var application = new FakeFileApplication();
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(
             application,
             Catalog(),
@@ -175,7 +175,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task DownloadOpen_CancellationRollsBackConnectionReservation()
     {
         var application = new FakeFileApplication { BlockOpen = true };
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(
             application,
             Catalog(),
@@ -203,7 +203,7 @@ public sealed class V2FileSessionConnectionTests
         {
             DownloadOpenError = new StorageDaemonError("file.storage_failed", "Injected open failure.")
         };
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(
             application,
             Catalog(),
@@ -239,7 +239,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task UploadWrite_RejectsSecondChunkBeforeCopyOrApplication()
     {
         var application = new FakeFileApplication { BlockWrite = true };
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
 
@@ -257,7 +257,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task UploadWrite_RejectsConcurrentCloseUntilWriteCompletes()
     {
         var application = new FakeFileApplication { BlockWrite = true };
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(
             new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
@@ -282,7 +282,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task UploadWrite_RejectsConcurrentCancelUntilWriteCompletes()
     {
         var application = new FakeFileApplication { BlockWrite = true };
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(
             new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
@@ -320,7 +320,7 @@ public sealed class V2FileSessionConnectionTests
                     new ValidationDaemonError("file.chunk.offset.invalid", "bad offset"))
                 : Result.Ok<Unit, DaemonError>(Unit.Default)
         };
-        var owner = Owner("mcsl.file.upload");
+        var owner = Owner("mcsl.file.upload.**");
         application.UploadWriteException = cancelWrite
             ? new OperationCanceledException(owner.ConnectionToken)
             : null;
@@ -369,7 +369,7 @@ public sealed class V2FileSessionConnectionTests
             UploadWriteResult = Result.Err<Unit, DaemonError>(
                 new ValidationDaemonError("file.chunk.offset.invalid", "bad offset"))
         };
-        var owner = Owner("mcsl.file.upload");
+        var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
 
@@ -388,7 +388,7 @@ public sealed class V2FileSessionConnectionTests
         {
             UploadSession = new UploadSession(Guid.NewGuid(), 1, DateTimeOffset.MaxValue)
         };
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
 
@@ -449,7 +449,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task DuplicateRegistration_IsRejectedAndCompensated()
     {
         var application = new FakeFileApplication();
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
 
         Assert.True((await connection.OpenUploadAsync(new UploadOpenRequest("one", 1, "hash"), CancellationToken.None)).IsOk(out _));
@@ -464,8 +464,8 @@ public sealed class V2FileSessionConnectionTests
     {
         var firstApplication = new FakeFileApplication();
         var secondApplication = new FakeFileApplication();
-        await using var firstOwner = Owner("mcsl.file.upload");
-        await using var secondOwner = Owner("mcsl.file.upload");
+        await using var firstOwner = Owner("mcsl.file.upload.**");
+        await using var secondOwner = Owner("mcsl.file.upload.**");
         var first = V2FileSessionConnection.Attach(firstApplication, Catalog(), firstOwner).Unwrap();
         var second = V2FileSessionConnection.Attach(secondApplication, Catalog(), secondOwner).Unwrap();
         var session = (await first.OpenUploadAsync(new UploadOpenRequest("u", 1, "hash"), CancellationToken.None)).Unwrap();
@@ -479,7 +479,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task EndInFlight_RejectsReadAndSecondEndThenCompletesOnce()
     {
         var application = new FakeFileApplication { BlockDownloadClose = true };
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenDownloadAsync(new DownloadOpenRequest("d"), CancellationToken.None)).Unwrap();
         var ending = connection.CloseDownloadAsync(session.SessionId, CancellationToken.None);
@@ -506,7 +506,7 @@ public sealed class V2FileSessionConnectionTests
             BlockUploadClose = !cancelUpload,
             BlockUploadCancel = cancelUpload
         };
-        var owner = Owner("mcsl.file.upload");
+        var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(
             new UploadOpenRequest("u", 10, "hash"), CancellationToken.None)).Unwrap();
@@ -543,7 +543,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task CancelledRead_RestoresActiveLeaseForRetry()
     {
         var application = new FakeFileApplication { BlockRead = true };
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenDownloadAsync(new DownloadOpenRequest("d"), CancellationToken.None)).Unwrap();
         using var cancellation = new CancellationTokenSource();
@@ -562,7 +562,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task ExplicitEndAndDirectCleanup_WaitsForIdleAndCallsApplicationExactlyOnce()
     {
         var application = new FakeFileApplication { BlockDownloadClose = true };
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenDownloadAsync(new DownloadOpenRequest("d"), CancellationToken.None)).Unwrap();
         var ending = connection.CloseDownloadAsync(session.SessionId, CancellationToken.None);
@@ -590,7 +590,7 @@ public sealed class V2FileSessionConnectionTests
         var application = new FakeFileApplication();
         application.DownloadReadResults.Enqueue(Result.Err<DownloadChunk, DaemonError>(
             new NotFoundDaemonError(code, "terminal")));
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenDownloadAsync(new DownloadOpenRequest("d"), CancellationToken.None)).Unwrap();
         var request = new DownloadChunkRequest(session.SessionId, 0, 1);
@@ -612,7 +612,7 @@ public sealed class V2FileSessionConnectionTests
         application.DownloadReadResults.Enqueue(Result.Err<DownloadChunk, DaemonError>(error));
         application.DownloadReadResults.Enqueue(Result.Ok<DownloadChunk, DaemonError>(
             new DownloadChunk(0, ImmutableArray.Create((byte)7), true)));
-        await using var owner = Owner("mcsl.file.download");
+        await using var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenDownloadAsync(new DownloadOpenRequest("d"), CancellationToken.None)).Unwrap();
         var request = new DownloadChunkRequest(session.SessionId, 0, 1);
@@ -628,11 +628,11 @@ public sealed class V2FileSessionConnectionTests
         var catalog = Catalog();
         Assert.Equal("mcsl.file.upload.open", catalog.Rpcs[new RpcMethod("mcsl.file.upload.open")].Descriptor.Permission.Value);
         Assert.Equal("mcsl.file.download.open", catalog.Rpcs[new RpcMethod("mcsl.file.download.open")].Descriptor.Permission.Value);
-        var permissions = new List<string> { "mcsl.file.upload" };
+        var permissions = new List<string> { "mcsl.file.upload.**" };
         await using var owner = new V2ConnectionOwner(new NoOpSender(), permissions);
         permissions.Clear();
-        permissions.Add("mcsl.file.download");
-        Assert.Equal("mcsl.file.upload", Assert.Single(owner.Permissions));
+        permissions.Add("mcsl.file.download.**");
+        Assert.Equal("mcsl.file.upload.**", Assert.Single(owner.Permissions));
         var application = new FakeFileApplication();
         var connection = V2FileSessionConnection.Attach(application, catalog, owner).Unwrap();
 
@@ -655,7 +655,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task OwnerCleanupWinningRace_DetachesBeforeCallingApplication()
     {
         var application = new FakeFileApplication { BlockDownloadClose = true };
-        var owner = Owner("mcsl.file.download");
+        var owner = Owner("mcsl.file.download.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenDownloadAsync(new DownloadOpenRequest("d"), CancellationToken.None)).Unwrap();
 
@@ -678,7 +678,7 @@ public sealed class V2FileSessionConnectionTests
             UploadCloseResult = Result.Err<Unit, DaemonError>(
                 new ConflictDaemonError("file.upload.incomplete", "incomplete"))
         };
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(new UploadOpenRequest("u", 1, "hash"), CancellationToken.None)).Unwrap();
 
@@ -695,7 +695,7 @@ public sealed class V2FileSessionConnectionTests
     public async Task UploadCloseException_CancellationRetainsButUnexpectedThrowTerminates(bool cancellation)
     {
         var application = new FakeFileApplication();
-        await using var owner = Owner("mcsl.file.upload");
+        await using var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         var session = (await connection.OpenUploadAsync(new UploadOpenRequest("u", 1, "hash"), CancellationToken.None)).Unwrap();
         application.UploadCloseException = cancellation
@@ -783,7 +783,7 @@ public sealed class V2FileSessionConnectionTests
         {
             UploadCancelResult = Result.Err<Unit, DaemonError>(new NotFoundDaemonError("file.session.not_found", "gone"))
         };
-        var owner = Owner("mcsl.file.upload");
+        var owner = Owner("mcsl.file.upload.**");
         var connection = V2FileSessionConnection.Attach(application, Catalog(), owner).Unwrap();
         Assert.True((await connection.OpenUploadAsync(new UploadOpenRequest("u", 1, "hash"), CancellationToken.None)).IsOk(out _));
 

@@ -51,7 +51,9 @@ public interface IPluginContext
 
     IPluginEventRegistrar Events { get; }
 
-    IInstanceSnapshotSource Instances { get; }
+    IInstanceSnapshotSource InstanceCatalog { get; }
+
+    IInstanceQueryApplication InstanceQueries { get; }
 
     /// <summary>
     /// System facts and Java discovery. Throws if the plugin did not declare <c>system.query</c>.
@@ -85,19 +87,21 @@ public interface IPluginContext
 
     /// <summary>
     /// Instance lifecycle and settings mutations. Throws if the plugin did not declare <c>instance.manage</c>.
-    /// Prefer generated authorized proxies for permission-checked calls.
     /// </summary>
     IInstanceApplication InstanceManagement { get; }
 
     /// <summary>
-    /// Operation list/get/cancel. Throws if the plugin declared neither <c>operation.query</c> nor <c>operation.cancel</c>.
-    /// Prefer generated authorized proxies for permission-checked calls.
+    /// Operation list/get. Throws if the plugin did not declare <c>operation.query</c>.
     /// </summary>
-    IOperationApplication Operations { get; }
+    IOperationQueryApplication OperationQueries { get; }
+
+    /// <summary>
+    /// Operation cancellation. Throws if the plugin did not declare <c>operation.cancel</c>.
+    /// </summary>
+    IOperationControlApplication OperationControl { get; }
 
     /// <summary>
     /// Provisioning resolve/get/execute. Throws if the plugin did not declare <c>provisioning.manage</c>.
-    /// Prefer generated authorized proxies for permission-checked calls.
     /// </summary>
     IProvisioningApplication Provisioning { get; }
 

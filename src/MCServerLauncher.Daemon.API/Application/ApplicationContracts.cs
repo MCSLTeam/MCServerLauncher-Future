@@ -7,7 +7,25 @@ using RustyOptions;
 
 namespace MCServerLauncher.Daemon.API.Application;
 
-public interface IInstanceApplication
+public interface IInstanceQueryApplication
+{
+    Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(
+        InstanceReference request,
+        CancellationToken cancellationToken);
+
+    Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(
+        CancellationToken cancellationToken);
+
+    Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(
+        InstanceLogQuery request,
+        CancellationToken cancellationToken);
+
+    Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettingsAsync(
+        InstanceReference request,
+        CancellationToken cancellationToken);
+}
+
+public interface IInstanceManagementApplication
 {
     Task<Result<CreateInstanceResult, DaemonError>> CreateInstanceAsync(
         CreateInstanceRequest request,
@@ -33,6 +51,14 @@ public interface IInstanceApplication
         InstanceCommandRequest request,
         CancellationToken cancellationToken);
 
+    Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettingsAsync(
+        UpdateInstanceSettingsRequest request,
+        CancellationToken cancellationToken);
+}
+
+public interface IInstanceApplication : IInstanceQueryApplication, IInstanceManagementApplication
+{
+
     Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(
         ConsoleOpenRequest request,
         CancellationToken cancellationToken);
@@ -50,24 +76,6 @@ public interface IInstanceApplication
         ReadOnlyMemory<byte> data,
         CancellationToken cancellationToken);
 
-    Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(
-        InstanceReference request,
-        CancellationToken cancellationToken);
-
-    Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(
-        CancellationToken cancellationToken);
-
-    Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(
-        InstanceLogQuery request,
-        CancellationToken cancellationToken);
-
-    Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettingsAsync(
-        InstanceReference request,
-        CancellationToken cancellationToken);
-
-    Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettingsAsync(
-        UpdateInstanceSettingsRequest request,
-        CancellationToken cancellationToken);
 }
 
 public interface IFileApplication

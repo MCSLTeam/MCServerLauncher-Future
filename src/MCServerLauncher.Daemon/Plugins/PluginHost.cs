@@ -420,8 +420,8 @@ internal sealed class PluginHost
                 pluginLogger,
                 errors,
                 draft,
-                _instances,
-                manifest.HasFeature(PluginFeature.InstanceQuery),
+                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instances : null,
+                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instanceApplication : null,
                 configuration,
                 storage,
                 httpPolicy,
@@ -429,9 +429,8 @@ internal sealed class PluginHost
                 system,
                 _callerContexts ?? new MCServerLauncher.Daemon.ApplicationCore.Auth.CallerContextFactory(),
                 manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
-                manifest.HasFeature(PluginFeature.OperationQuery) || manifest.HasFeature(PluginFeature.OperationCancel)
-                    ? _operationApplication
-                    : null,
+                manifest.HasFeature(PluginFeature.OperationQuery) ? _operationApplication : null,
+                manifest.HasFeature(PluginFeature.OperationCancel) ? _operationApplication : null,
                 manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null,
                 activation.Task,
                 lifetime.Token);
