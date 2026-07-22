@@ -48,6 +48,7 @@ internal sealed class PluginHost
     private readonly string _pluginsRoot;
     private readonly TimeSpan _startTimeout;
     private readonly DaemonPluginsConfig _pluginsConfig;
+    private readonly PluginAdmissionPreflight _preflight;
     private readonly PluginHttpEndpointRegistry _httpEndpoints;
     private readonly List<PluginRuntime> _runtimes = [];
     private readonly List<PluginRuntime> _started = [];
@@ -126,7 +127,8 @@ internal sealed class PluginHost
         ICallerContextFactory? callerContexts = null,
         IInstanceApplication? instanceApplication = null,
         IOperationApplication? operationApplication = null,
-        IProvisioningApplication? provisioningApplication = null)
+        IProvisioningApplication? provisioningApplication = null,
+        PluginAdmissionPreflight? preflight = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -137,6 +139,7 @@ internal sealed class PluginHost
         _pluginsRoot = Path.GetFullPath(pluginsRoot);
         _startTimeout = startTimeout;
         _pluginsConfig = pluginsConfig ?? DaemonPluginsConfig.Default;
+        _preflight = preflight ?? PluginAdmissionPreflight.CreateNonInteractive(_pluginsConfig);
         _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
         _system = system;
         _callerContexts = callerContexts;
@@ -173,38 +176,20 @@ internal sealed class PluginHost
             foreach (var failure in discovery.Failures)
                 _logger.LogError(failure.Exception, "Skipping plugin bundle {Bundle}: {Code} {Message}", failure.BundleDirectory, failure.Code, failure.Message);
 
-            // Admission gate (SDK-1): apply the frozen grant_level + plugin_grants policy to each
-            // discovered manifest before any plugin code runs. A plugin whose required features are
-            // not a subset of the effective grant set, or which is disabled, is skipped atomically
-            // with a warning rather than loaded. This runs before TryLoad so high-risk features
-            // (e.g. network.http.listen) cannot execute before the policy is evaluated.
-            //
-            // SDK-1 scope (decision spec §4/§10): this is the non-interactive decision gate.
-            // The interactive TTY preflight (Deny/Approve/Approve Permanent that persists
-            // plugin_grants + admissions and revalidates manifest digest on change) is an SDK-2
-            // product UX layer that consumes PluginAdmissionPolicy. SDK-1 admission authority is
-            // grant_level + plugin_grants only; permanent admissions are a cache of a prior
-            // interactive decision and do not relax the ceiling, so a changed manifest is still
-            // re-judged against the current ceiling here.
+            // Complete admission for every bundle before loading any entry assembly. This keeps
+            // policy prompts and permanent-decision persistence independent from plugin DI and code.
             var admitted = new List<PluginManifest>();
             foreach (var manifest in discovery.Plugins)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var grant = PluginAdmissionPolicy.Decide(manifest, _pluginsConfig);
-                if (!grant.Enabled)
+                var outcome = _preflight.Evaluate(manifest);
+                if (!outcome.IsAdmitted)
                 {
-                    _logger.LogWarning("Plugin {PluginId} is disabled by config; skipping.", manifest.Identity.Id);
-                    continue;
-                }
-
-                if (grant.Denied.Length > 0)
-                {
-                    var denied = string.Join(", ", grant.Denied.Select(static f => f.Value));
                     _logger.LogWarning(
-                        "Plugin {PluginId} requires features not granted by the current policy ({Denied}); skipping. "
-                        + "Adjust plugins.grant_level / plugin_grants / entries in config.json to admit it.",
+                        "Plugin {PluginId} failed preflight ({Code}): {Message} Skipping bundle.",
                         manifest.Identity.Id,
-                        denied);
+                        outcome.Code,
+                        outcome.Message);
                     continue;
                 }
 
@@ -369,8 +354,13 @@ internal sealed class PluginHost
             var loadContext = new PluginLoadContext(manifest.EntryAssemblyPath, manifest.Identity.Id);
             var assembly = loadContext.LoadEntryAssembly(manifest.EntryAssemblyPath);
             var pluginType = assembly.GetType(manifest.EntryType, throwOnError: true, ignoreCase: false);
-            if (pluginType is null || !typeof(IDaemonPlugin).IsAssignableFrom(pluginType))
-                throw new InvalidOperationException($"Entry type '{manifest.EntryType}' does not implement IDaemonPlugin.");
+            if (pluginType is null || !typeof(IGeneratedDaemonPluginAdapter).IsAssignableFrom(pluginType))
+            {
+                throw new InvalidOperationException(
+                    $"Entry type '{manifest.EntryType}' does not implement the generated adapter contract.");
+            }
+
+            ValidateAdapterMetadata(pluginType, manifest);
 
             if (Activator.CreateInstance(pluginType) is not IDaemonPlugin plugin)
                 throw new InvalidOperationException($"Entry type '{manifest.EntryType}' could not be constructed.");
@@ -440,6 +430,58 @@ internal sealed class PluginHost
         {
             _logger.LogError(exception, "Failed to load plugin {PluginId}; skipping bundle.", manifest.Identity.Id);
             return null;
+        }
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2070",
+        Justification = "The untrimmed JIT plugin host reads the generated adapter's public static metadata property.")]
+    private static void ValidateAdapterMetadata(Type pluginType, PluginManifest manifest)
+    {
+        var property = pluginType.GetProperty(
+            nameof(IGeneratedDaemonPluginAdapter.Metadata),
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        if (property is null ||
+            property.PropertyType != typeof(PluginAdapterMetadata) ||
+            property.GetMethod is null ||
+            property.GetIndexParameters().Length != 0)
+        {
+            throw new InvalidOperationException(
+                $"Entry type '{manifest.EntryType}' does not expose generated adapter metadata.");
+        }
+
+        if (property.GetValue(null) is not PluginAdapterMetadata metadata)
+        {
+            throw new InvalidOperationException(
+                $"Entry type '{manifest.EntryType}' returned invalid generated adapter metadata.");
+        }
+
+        RequireMetadataMatch("package.id", manifest.Identity.Id, metadata.PackageId);
+        RequireMetadataMatch("package.version", manifest.Identity.Version, metadata.PackageVersion);
+        RequireMetadataMatch("entry.assembly", manifest.EntryAssembly, metadata.EntryAssembly);
+        RequireMetadataMatch("entry.type", manifest.EntryType, metadata.EntryType);
+        RequireMetadataMatch("requires.api", manifest.ApiVersionRange.ToNormalizedString(), metadata.ApiRange);
+
+        var manifestFeatures = manifest.Features
+            .Select(static feature => feature.Value)
+            .Order(StringComparer.Ordinal)
+            .ToImmutableArray();
+        if (!manifestFeatures.SequenceEqual(metadata.Features, StringComparer.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Generated adapter metadata mismatch for 'requires.features' in plugin '{manifest.Identity.Id}'.");
+        }
+
+        RequireMetadataMatch("manifest digest", manifest.ManifestDigest, metadata.ManifestDigest);
+    }
+
+    private static void RequireMetadataMatch(string field, string manifestValue, string metadataValue)
+    {
+        if (!string.Equals(manifestValue, metadataValue, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Generated adapter metadata mismatch for '{field}': manifest '{manifestValue}', adapter '{metadataValue}'.");
         }
     }
 

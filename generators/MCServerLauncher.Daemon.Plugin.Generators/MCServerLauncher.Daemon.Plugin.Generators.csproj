@@ -12,11 +12,14 @@
     <NoWarn>$(NoWarn);RS2008</NoWarn>
     <RootNamespace>MCServerLauncher.Daemon.Plugin.Generators</RootNamespace>
     <AssemblyName>MCServerLauncher.Daemon.Plugin.Generators</AssemblyName>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+    <PackageReference Include="NuGet.Versioning" Version="6.14.3" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="10.0.0" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

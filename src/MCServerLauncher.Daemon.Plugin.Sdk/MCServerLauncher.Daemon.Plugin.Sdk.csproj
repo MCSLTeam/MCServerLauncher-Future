@@ -60,13 +60,20 @@
              Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0" />
     <PropertyGroup>
       <_PluginGeneratorOutput>$(MSBuildThisFileDirectory)..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\bin\$(Configuration)\netstandard2.0\MCServerLauncher.Daemon.Plugin.Generators.dll</_PluginGeneratorOutput>
+      <_PluginGeneratorVersioningOutput>$(MSBuildThisFileDirectory)..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\bin\$(Configuration)\netstandard2.0\NuGet.Versioning.dll</_PluginGeneratorVersioningOutput>
     </PropertyGroup>
     <Error Condition="!Exists('$(_PluginGeneratorOutput)')"
            Text="Plugin generator DLL was not found at $(_PluginGeneratorOutput)." />
+    <Error Condition="!Exists('$(_PluginGeneratorVersioningOutput)')"
+           Text="Plugin generator dependency was not found at $(_PluginGeneratorVersioningOutput)." />
     <ItemGroup>
       <None Include="$(_PluginGeneratorOutput)"
             Pack="true"
             PackagePath="analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll"
+            Visible="false" />
+      <None Include="$(_PluginGeneratorVersioningOutput)"
+            Pack="true"
+            PackagePath="analyzers/dotnet/cs/NuGet.Versioning.dll"
             Visible="false" />
     </ItemGroup>
   </Target>

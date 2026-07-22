@@ -2,11 +2,13 @@ using System.Reflection;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.Plugins;
+using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.ReturnedError;
@@ -216,6 +218,120 @@ public sealed class PluginHostLifecycleTests
         Assert.Equal(["fixture.external_compile.stop", "fixture.instance_health.stop"], stopMessages);
     }
 
+    [Fact]
+    public async Task StartAsync_RejectsMetadataDriftAndManualAdaptersBeforeConstruction()
+    {
+        var sentinelPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-metadata-{Guid.NewGuid():N}.sentinel");
+        var previousSentinel = Environment.GetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH", sentinelPath);
+        try
+        {
+            using var fixture = PluginHostFixture.Create(
+                ("fixture.metadata-identity", typeof(IdentityMetadataMismatchPlugin).Assembly, typeof(IdentityMetadataMismatchPlugin).FullName!),
+                ("fixture.metadata-api", typeof(ApiMetadataMismatchPlugin).Assembly, typeof(ApiMetadataMismatchPlugin).FullName!),
+                ("fixture.metadata-features", typeof(FeatureMetadataMismatchPlugin).Assembly, typeof(FeatureMetadataMismatchPlugin).FullName!),
+                ("fixture.metadata-digest", typeof(DigestMetadataMismatchPlugin).Assembly, typeof(DigestMetadataMismatchPlugin).FullName!),
+                ("fixture.metadata-manual", typeof(ManualMetadataProbePlugin).Assembly, typeof(ManualMetadataProbePlugin).FullName!));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()));
+
+            await host.StartAsync(CancellationToken.None);
+
+            Assert.False(File.Exists(sentinelPath));
+            Assert.Empty(host.States);
+            Assert.Contains(logger.Messages, message => message.Contains("'package.id'", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("'requires.api'", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("'requires.features'", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("'manifest digest'", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message => message.Contains("generated adapter contract", StringComparison.Ordinal));
+
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH", previousSentinel);
+            if (File.Exists(sentinelPath))
+                File.Delete(sentinelPath);
+        }
+    }
+
+    [Fact]
+    public async Task StartAsync_RejectsHighRiskPreflightBeforeConstructionWithoutRuntimeResidue()
+    {
+        var sentinelPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-preflight-{Guid.NewGuid():N}.sentinel");
+        var previousSentinel = Environment.GetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH", sentinelPath);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateWithFeatures(
+                (
+                    "fixture.preflight-high-risk",
+                    typeof(DigestMetadataMismatchPlugin).Assembly,
+                    typeof(DigestMetadataMismatchPlugin).FullName!,
+                    ["network.http.listen"]));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var config = DaemonPluginsConfig.Default;
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromSeconds(1),
+                config,
+                new PluginHttpEndpointRegistry(),
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+
+            await host.StartAsync(CancellationToken.None);
+
+            Assert.False(File.Exists(sentinelPath));
+            Assert.Empty(host.States);
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.preflight-high-risk", StringComparison.Ordinal) &&
+                message.Contains("approval_required_non_interactive", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Messages, message =>
+                message.Contains("metadata mismatch", StringComparison.OrdinalIgnoreCase));
+
+            var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("plugin-preflight-test", "1.0.0"));
+            host.AddCatalogContributions(builder);
+            var catalog = builder.Freeze();
+            Assert.Empty(catalog.Rpcs);
+            Assert.Empty(catalog.Events);
+
+            await host.StopAsync(CancellationToken.None);
+            Assert.Empty(host.States);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_PLUGIN_METADATA_PROBE_PATH", previousSentinel);
+            if (File.Exists(sentinelPath))
+                File.Delete(sentinelPath);
+        }
+    }
+
     private static void AssertStates(
         ImmutableArray<(string Id, PluginRuntimeState State)> states,
         params (string Id, PluginRuntimeState State)[] expected)
@@ -257,6 +373,15 @@ public sealed class PluginHostLifecycleTests
             return fixture;
         }
 
+        public static PluginHostFixture CreateWithFeatures(
+            params (string Id, Assembly Assembly, string EntryType, string[] Features)[] plugins)
+        {
+            var fixture = new PluginHostFixture(Directory.CreateTempSubdirectory("mcsl-plugin-host-").FullName);
+            foreach (var plugin in plugins)
+                fixture.Add(plugin.Id, plugin.Assembly, plugin.EntryType, plugin.Features);
+            return fixture;
+        }
+
         public void Dispose()
         {
             try
@@ -271,11 +396,17 @@ public sealed class PluginHostLifecycleTests
             }
         }
 
-        private void Add(string id, Assembly assembly, string entryType)
+        private void Add(
+            string id,
+            Assembly assembly,
+            string entryType,
+            string[]? features = null)
         {
             var bundle = Path.Combine(PluginsRoot, id);
             Directory.CreateDirectory(bundle);
             File.Copy(assembly.Location, Path.Combine(bundle, "PluginEntry.dll"));
+            var serializedFeatures = JsonSerializer.Serialize(
+                features ?? ["event.publish", "instance.query", "rpc.register"]);
             File.WriteAllText(
                 Path.Combine(bundle, "mcsl-plugin.json"),
                 $$"""
@@ -290,7 +421,7 @@ public sealed class PluginHostLifecycleTests
                   },
                   "requires": {
                     "api": "[2.0.0,3.0.0)",
-                    "features": ["event.publish", "instance.query", "rpc.register"]
+                    "features": {{serializedFeatures}}
                   }
                 }
                 """);
@@ -312,7 +443,10 @@ public sealed class PluginHostLifecycleTests
             Exception? exception,
             Func<TState, Exception?, string> formatter)
         {
-            Messages.Add(formatter(state, exception));
+            var message = formatter(state, exception);
+            if (exception is not null)
+                message += " | " + exception.GetBaseException().Message;
+            Messages.Add(message);
         }
 
         private sealed class NullScope : IDisposable

@@ -118,3 +118,12 @@ public interface IDaemonPlugin
 
     Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// Marker contract for source-generated daemon plugin adapters. The host reads metadata
+/// before constructing the adapter or developer module.
+/// </summary>
+public interface IGeneratedDaemonPluginAdapter : IDaemonPlugin
+{
+    static abstract PluginAdapterMetadata Metadata { get; }
+}

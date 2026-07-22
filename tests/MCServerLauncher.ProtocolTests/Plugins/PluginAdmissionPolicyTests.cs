@@ -1,7 +1,10 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Globalization;
+using System.Text.Json;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using NuGet.Versioning;
@@ -11,15 +14,16 @@ namespace MCServerLauncher.ProtocolTests.Plugins;
 public sealed class PluginAdmissionPolicyTests
 {
     [Fact]
-    public void ParseGrantLevelAcceptsKnownValuesAndDefaultsToMedium()
+    public void ParseGrantLevelAcceptsKnownValuesAndRejectsInvalidValues()
     {
         Assert.Equal(PluginGrantLevel.None, PluginAdmissionPolicy.ParseGrantLevel("none"));
         Assert.Equal(PluginGrantLevel.Low, PluginAdmissionPolicy.ParseGrantLevel("Low"));
         Assert.Equal(PluginGrantLevel.Medium, PluginAdmissionPolicy.ParseGrantLevel("MEDIUM"));
         Assert.Equal(PluginGrantLevel.High, PluginAdmissionPolicy.ParseGrantLevel("high"));
         Assert.Equal(PluginGrantLevel.Custom, PluginAdmissionPolicy.ParseGrantLevel("custom"));
-        Assert.Equal(PluginGrantLevel.Medium, PluginAdmissionPolicy.ParseGrantLevel(null));
-        Assert.Equal(PluginGrantLevel.Medium, PluginAdmissionPolicy.ParseGrantLevel("garbage"));
+        Assert.Throws<ArgumentException>(() => PluginAdmissionPolicy.ParseGrantLevel(null));
+        Assert.Throws<ArgumentException>(() => PluginAdmissionPolicy.ParseGrantLevel("garbage"));
+        Assert.Throws<ArgumentException>(() => PluginAdmissionPolicy.ParseGrantLevel(" Medium "));
     }
 
     [Fact]
@@ -127,20 +131,9 @@ public sealed class PluginAdmissionPolicyTests
     }
 
     [Fact]
-    public void ComputeDigestIsDeterministicForSameContent()
-    {
-        var a = PluginAdmissionPolicy.ComputeDigest("{\"a\":1}");
-        var b = PluginAdmissionPolicy.ComputeDigest("{\"a\":1}");
-        var c = PluginAdmissionPolicy.ComputeDigest("{\"a\":2}");
-        Assert.Equal(a, b);
-        Assert.NotEqual(a, c);
-        Assert.Equal(64, a.Length); // SHA-256 hex
-    }
-
-    [Fact]
     public void AdmissionMatchesReturnsFalseOnDigestOrFeatureDrift()
     {
-        var digest = PluginAdmissionPolicy.ComputeDigest("{}");
+        const string digest = "current-digest";
         var features = new HashSet<PluginFeature> { PluginFeature.InstanceQuery };
 
         var matching = new PluginAdmissionConfig
@@ -177,6 +170,215 @@ public sealed class PluginAdmissionPolicyTests
     }
 
     [Fact]
+    public void PreflightSilentlyAdmitsFeaturesWithinCeiling()
+    {
+        var console = new FakePreflightConsole(isInteractive: true, PluginPreflightDecision.Deny);
+        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console);
+
+        var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.InstanceQuery]));
+
+        Assert.True(outcome.IsAdmitted);
+        Assert.Equal("within_ceiling", outcome.Code);
+        Assert.Equal(0, console.PromptCount);
+    }
+
+    [Theory]
+    [InlineData((int)PluginPreflightDecision.Deny, false, "approval_denied", 0)]
+    [InlineData((int)PluginPreflightDecision.Approve, true, "approved_for_process", 0)]
+    [InlineData((int)PluginPreflightDecision.ApprovePermanent, true, "approved_permanently", 1)]
+    public void InteractivePreflightAppliesAllThreeDecisions(
+        int decisionValue,
+        bool admitted,
+        string expectedCode,
+        int expectedStoreCalls)
+    {
+        var console = new FakePreflightConsole(isInteractive: true, (PluginPreflightDecision)decisionValue);
+        var store = new FakeAdmissionStore(succeeds: true);
+        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console, store);
+
+        var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.NetworkHttpListen]));
+
+        Assert.Equal(admitted, outcome.IsAdmitted);
+        Assert.Equal(expectedCode, outcome.Code);
+        Assert.Equal(1, console.PromptCount);
+        Assert.Equal(expectedStoreCalls, store.CallCount);
+    }
+
+    [Fact]
+    public void NonInteractivePreflightSkipsFeaturesOutsideCeiling()
+    {
+        var console = new FakePreflightConsole(isInteractive: false, PluginPreflightDecision.Approve);
+        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console);
+
+        var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.NetworkHttpListen]));
+
+        Assert.False(outcome.IsAdmitted);
+        Assert.Equal("approval_required_non_interactive", outcome.Code);
+        Assert.Equal(0, console.PromptCount);
+    }
+
+    [Fact]
+    public void MatchingPermanentAdmissionIsReusedWithoutPrompt()
+    {
+        var manifest = Manifest("mcp", [PluginFeature.NetworkHttpListen], "digest-current");
+        var config = new DaemonPluginsConfig
+        {
+            PluginGrants = { ["mcp"] = ["network.http.listen"] },
+            Admissions =
+            {
+                ["mcp"] = new PluginAdmissionConfig
+                {
+                    Decision = "allow",
+                    ManifestDigest = manifest.ManifestDigest,
+                    Features = ["network.http.listen"],
+                    DecidedAt = "2026-07-22T00:00:00.0000000+00:00",
+                },
+            },
+        };
+        var console = new FakePreflightConsole(isInteractive: true, PluginPreflightDecision.Deny);
+        var preflight = new PluginAdmissionPreflight(config, console);
+
+        var outcome = preflight.Evaluate(manifest);
+
+        Assert.True(outcome.IsAdmitted);
+        Assert.Equal("permanent_admission_reused", outcome.Code);
+        Assert.Equal(0, console.PromptCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PermanentAdmissionDigestOrFeatureDriftRequiresReview(bool driftDigest)
+    {
+        var manifest = Manifest(
+            "mcp",
+            [PluginFeature.InstanceQuery, PluginFeature.NetworkHttpListen],
+            "digest-current");
+        var config = new DaemonPluginsConfig
+        {
+            PluginGrants = { ["mcp"] = ["network.http.listen"] },
+            Admissions =
+            {
+                ["mcp"] = new PluginAdmissionConfig
+                {
+                    Decision = "allow",
+                    ManifestDigest = driftDigest ? "digest-stale" : manifest.ManifestDigest,
+                    Features = driftDigest
+                        ? ["instance.query", "network.http.listen"]
+                        : ["network.http.listen"],
+                },
+            },
+        };
+        var console = new FakePreflightConsole(isInteractive: false, PluginPreflightDecision.Approve);
+        var preflight = new PluginAdmissionPreflight(config, console);
+
+        var outcome = preflight.Evaluate(manifest);
+
+        Assert.False(outcome.IsAdmitted);
+        Assert.Equal("admission_drift_non_interactive", outcome.Code);
+        Assert.Equal(0, console.PromptCount);
+    }
+
+    [Fact]
+    public void PermanentAdmissionDigestDriftWithinCeilingStillRequiresReview()
+    {
+        var manifest = Manifest("mcp", [PluginFeature.InstanceQuery], "digest-current");
+        var config = new DaemonPluginsConfig
+        {
+            Admissions =
+            {
+                ["mcp"] = new PluginAdmissionConfig
+                {
+                    Decision = "allow",
+                    ManifestDigest = "digest-stale",
+                    Features = ["instance.query"],
+                },
+            },
+        };
+        var console = new FakePreflightConsole(isInteractive: false, PluginPreflightDecision.Approve);
+        var preflight = new PluginAdmissionPreflight(config, console);
+
+        var outcome = preflight.Evaluate(manifest);
+
+        Assert.False(outcome.IsAdmitted);
+        Assert.Equal("admission_drift_non_interactive", outcome.Code);
+        Assert.Equal(0, console.PromptCount);
+    }
+
+    [Fact]
+    public void PermanentApprovalPersistenceFailureSkipsPlugin()
+    {
+        var console = new FakePreflightConsole(isInteractive: true, PluginPreflightDecision.ApprovePermanent);
+        var store = new FakeAdmissionStore(succeeds: false);
+        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console, store);
+
+        var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.NetworkHttpListen]));
+
+        Assert.False(outcome.IsAdmitted);
+        Assert.Equal("permanent_admission_persist_failed", outcome.Code);
+        Assert.Equal(1, store.CallCount);
+    }
+
+    [Fact]
+    public void AppConfigPermanentAdmissionPersistsAtomicallyAndRollsBackOnFailure()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plugin-admission-").FullName;
+        try
+        {
+            var config = new DaemonPluginsConfig();
+            var appConfig = new AppConfig(11452, "secret", "main-token", plugins: config);
+            var configPath = Path.Combine(root, "config.json");
+            Assert.True(appConfig.TrySave(configPath));
+            var manifest = Manifest("mcp", [PluginFeature.NetworkHttpListen], "digest-current");
+            var store = new AppConfigPluginAdmissionStore(appConfig, configPath);
+
+            Assert.True(store.TryPersistPermanent(
+                manifest,
+                [PluginFeature.NetworkHttpListen],
+                DateTimeOffset.Parse("2026-07-22T01:02:03Z", CultureInfo.InvariantCulture)));
+
+            using (var document = JsonDocument.Parse(File.ReadAllText(configPath)))
+            {
+                var plugins = document.RootElement.GetProperty("plugins");
+                Assert.Equal(
+                    "network.http.listen",
+                    plugins.GetProperty("plugin_grants").GetProperty("mcp")[0].GetString());
+                Assert.Equal(
+                    manifest.ManifestDigest,
+                    plugins.GetProperty("admissions").GetProperty("mcp").GetProperty("manifest_digest").GetString());
+            }
+
+            Assert.True(File.Exists(configPath + ".bak"));
+            Assert.Empty(Directory.GetFiles(root, "*.tmp", SearchOption.TopDirectoryOnly));
+
+            var failingConfig = new DaemonPluginsConfig();
+            var failingAppConfig = new AppConfig(11452, "secret", "main-token", plugins: failingConfig);
+            var failingStore = new AppConfigPluginAdmissionStore(
+                failingAppConfig,
+                Path.Combine(root, "missing", "config.json"));
+            Assert.False(failingStore.TryPersistPermanent(
+                manifest,
+                [PluginFeature.NetworkHttpListen],
+                DateTimeOffset.UtcNow));
+            Assert.Empty(failingConfig.PluginGrants);
+            Assert.Empty(failingConfig.Admissions);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AppConfigRejectsInvalidGrantLevelDuringColdValidation()
+    {
+        var plugins = new DaemonPluginsConfig { GrantLevel = "garbage" };
+
+        Assert.Throws<ArgumentException>(() =>
+            new AppConfig(11452, "secret", "main-token", plugins: plugins));
+    }
+
+    [Fact]
     public void HttpEndpointRegistryRejectsDuplicateIpPortAndReleasesOnStop()
     {
         var registry = new PluginHttpEndpointRegistry();
@@ -207,7 +409,10 @@ public sealed class PluginAdmissionPolicyTests
         Assert.Equal("mcsl.daemon", conflict);
     }
 
-    private static PluginManifest Manifest(string id, PluginFeature[] features)
+    private static PluginManifest Manifest(
+        string id,
+        PluginFeature[] features,
+        string manifestDigest = "digest")
     {
         var frozen = features.ToFrozenSet();
         return new PluginManifest(
@@ -219,6 +424,39 @@ public sealed class PluginAdmissionPolicyTests
             frozen,
             "/bundle",
             "/bundle/PluginEntry.dll",
-            "digest");
+            manifestDigest);
+    }
+
+    private sealed class FakePreflightConsole(
+        bool isInteractive,
+        PluginPreflightDecision decision) : IPluginPreflightConsole
+    {
+        internal int PromptCount { get; private set; }
+
+        public bool IsInteractive { get; } = isInteractive;
+
+        public PluginPreflightDecision Prompt(PluginPreflightRequest request)
+        {
+            _ = request;
+            PromptCount++;
+            return decision;
+        }
+    }
+
+    private sealed class FakeAdmissionStore(bool succeeds) : IPluginAdmissionStore
+    {
+        internal int CallCount { get; private set; }
+
+        public bool TryPersistPermanent(
+            PluginManifest manifest,
+            ImmutableArray<PluginFeature> expandedGrants,
+            DateTimeOffset decidedAt)
+        {
+            _ = manifest;
+            _ = expandedGrants;
+            _ = decidedAt;
+            CallCount++;
+            return succeeds;
+        }
     }
 }

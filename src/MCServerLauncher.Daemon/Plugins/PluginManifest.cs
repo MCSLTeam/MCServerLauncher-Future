@@ -83,6 +83,8 @@ internal sealed record PluginDiscoveryResult(
 internal static class PluginManifestReader
 {
     internal const string ManifestFileName = "mcsl-plugin.json";
+    internal const string CanonicalSchemaUri =
+        "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json";
 
     internal static PluginManifest ReadAndValidate(
         string bundleDirectory,
@@ -103,7 +105,16 @@ internal static class PluginManifestReader
         try
         {
             using var stream = File.OpenRead(manifestPath);
-            document = JsonSerializer.Deserialize(stream, PluginHostJsonContext.Default.PluginManifestDocument);
+            using var json = JsonDocument.Parse(
+                stream,
+                new JsonDocumentOptions
+                {
+                    AllowDuplicateProperties = false,
+                    AllowTrailingCommas = false,
+                    CommentHandling = JsonCommentHandling.Disallow,
+                    MaxDepth = 32,
+                });
+            document = json.RootElement.Deserialize(PluginHostJsonContext.Default.PluginManifestDocument);
         }
         catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -119,6 +130,12 @@ internal static class PluginManifestReader
             throw new PluginManifestException("manifest_field_missing", "The plugin manifest field 'entry' is required.");
         if (document.Requires is null)
             throw new PluginManifestException("manifest_field_missing", "The plugin manifest field 'requires' is required.");
+        if (document.Schema is not null && !string.Equals(document.Schema, CanonicalSchemaUri, StringComparison.Ordinal))
+        {
+            throw new PluginManifestException(
+                "manifest_schema_invalid",
+                $"The plugin manifest field '$schema' must be '{CanonicalSchemaUri}' when present.");
+        }
 
         var id = Require(document.Package.Id, "package.id");
         var versionText = Require(document.Package.Version, "package.version");
@@ -131,9 +148,9 @@ internal static class PluginManifestReader
         VersionRange apiVersionRange;
         try
         {
-            identity = new PluginIdentity(id, versionText);
             version = NuGetVersion.Parse(versionText);
             apiVersionRange = VersionRange.Parse(apiVersionText);
+            identity = new PluginIdentity(id, version.ToNormalizedString());
         }
         catch (Exception exception) when (exception is ArgumentException or FormatException)
         {
@@ -165,21 +182,17 @@ internal static class PluginManifestReader
 
         var features = ParseFeatures(document.Requires.Features);
 
-        // Canonical digest over the on-disk manifest JSON bytes. Runtime admission compares it
-        // against the stored permanent admission; a mismatch forces re-review. Computed from
-        // the raw file bytes (not a re-serialization) so it is stable across host JSON option
-        // drift.
-        string manifestDigest;
-        try
-        {
-            using var digestStream = File.OpenRead(manifestPath);
-            var hash = System.Security.Cryptography.SHA256.HashData(digestStream);
-            manifestDigest = Convert.ToHexString(hash).ToLowerInvariant();
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            throw new PluginManifestException("manifest_invalid", "The plugin manifest digest could not be computed.", exception);
-        }
+        var normalizedFeatures = features
+            .Select(static feature => feature.Value)
+            .Order(StringComparer.Ordinal)
+            .ToImmutableArray();
+        var manifestDigest = PluginManifestDigest.Compute(
+            identity.Id,
+            identity.Version,
+            entryAssembly,
+            entryType,
+            apiVersionRange.ToNormalizedString(),
+            normalizedFeatures);
 
         return new PluginManifest(
             identity,
@@ -197,8 +210,9 @@ internal static class PluginManifestReader
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new PluginManifestException("manifest_field_missing", $"The plugin manifest field '{field}' is required.");
-
-        return value.Trim();
+        if (!string.Equals(value, value.Trim(), StringComparison.Ordinal))
+            throw new PluginManifestException("manifest_field_invalid", $"The plugin manifest field '{field}' must not contain surrounding whitespace.");
+        return value;
     }
 
     private static void ValidateEntryName(string entryAssembly, string field)
@@ -262,8 +276,8 @@ internal static class PluginManifestReader
                 throw new PluginManifestException("feature_duplicate", $"Plugin feature '{value}' is declared more than once.");
         }
 
-        // FrozenSet is unordered; the build-time ordering diagnostic belongs to the SDK-2
-        // generator/digest path (not yet landed). Runtime accepts any post-dedup order.
+        // FrozenSet is unordered. The generator reports source ordering while both generator
+        // metadata and runtime digest normalize the semantic feature set independently.
         return features.ToFrozenSet();
     }
 }

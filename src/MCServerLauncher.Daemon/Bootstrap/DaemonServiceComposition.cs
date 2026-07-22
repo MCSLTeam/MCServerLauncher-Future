@@ -93,11 +93,17 @@ internal static class DaemonServiceComposition
             : 30;
         var startTimeout = TimeSpan.FromSeconds(startTimeoutSeconds);
         var httpEndpoints = new PluginHttpEndpointRegistry();
+        var pluginPreflight = new PluginAdmissionPreflight(
+            appConfig.Plugins,
+            SystemPluginPreflightConsole.Instance,
+            new AppConfigPluginAdmissionStore(appConfig),
+            TimeProvider.System);
         // Reserve the daemon's own /api/v2 port before any plugin can claim it.
         _ = httpEndpoints.TryRegister("mcsl.daemon", new System.Net.IPEndPoint(System.Net.IPAddress.Any, appConfig.Port), out _);
         a.RegisterSingleton(httpEndpoints);
         collection.AddSingleton(appConfig.Plugins);
         collection.AddSingleton(httpEndpoints);
+        collection.AddSingleton(pluginPreflight);
         collection.AddSingleton(serviceProvider => new PluginHost(
             serviceProvider.GetRequiredService<IInstanceSnapshotSource>(),
             serviceProvider.GetRequiredService<ILoggerFactory>(),
@@ -111,7 +117,8 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<ICallerContextFactory>(),
             serviceProvider.GetRequiredService<IInstanceApplication>(),
             serviceProvider.GetRequiredService<IOperationApplication>(),
-            serviceProvider.GetRequiredService<IProvisioningApplication>()));
+            serviceProvider.GetRequiredService<IProvisioningApplication>(),
+            serviceProvider.GetRequiredService<PluginAdmissionPreflight>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);
