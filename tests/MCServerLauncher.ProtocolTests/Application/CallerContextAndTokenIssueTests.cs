@@ -11,6 +11,45 @@ namespace MCServerLauncher.ProtocolTests;
 
 public sealed class CallerContextAndTokenIssueTests
 {
+    [Theory]
+    [InlineData("mcsl.instance.start", "mcsl.instance.start", true)]
+    [InlineData("mcsl.instance.start", "mcsl.instance.start.child", false)]
+    [InlineData("mcsl.instance.*", "mcsl.instance.start", true)]
+    [InlineData("mcsl.instance.*", "mcsl.instance.settings.get", false)]
+    [InlineData("mcsl.instance.*", "mcsl.instance", false)]
+    [InlineData("mcsl.instance.**", "mcsl.instance.start", true)]
+    [InlineData("mcsl.instance.**", "mcsl.instance.settings.get", true)]
+    [InlineData("mcsl.instance.**", "mcsl.instance", false)]
+    [InlineData("*", "mcsl.instance.settings.get", true)]
+    public void Permission_UsesCaseSensitiveCompleteSegmentMatching(
+        string grant,
+        string required,
+        bool expected)
+    {
+        var permissions = new Permissions(grant);
+
+        Assert.Equal(expected, permissions.Matches(Permission.Of(required)));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(".mcsl.instance.start")]
+    [InlineData("mcsl.instance.start.")]
+    [InlineData("mcsl..instance.start")]
+    [InlineData("mcsl.**.start")]
+    [InlineData("mcsl.in*stance.start")]
+    [InlineData("mcsl.instance.st**")]
+    [InlineData("mcsl.Instance.start")]
+    [InlineData("mcsl.instance-")]
+    [InlineData(" mcsl.instance.start")]
+    [InlineData("mcsl.instance.start ")]
+    public void Permission_RejectsMalformedOrNonCanonicalNames(string value)
+    {
+        Assert.False(Permission.IsValid(value));
+        Assert.Throws<ArgumentException>(() => Permission.Of(value));
+    }
+
     [Fact]
     public void CallerContext_MatchesSegmentWildcardsAndMainToken()
     {
@@ -37,8 +76,10 @@ public sealed class CallerContextAndTokenIssueTests
     public void HostFactory_ExpandsImplementedFeatureMethodsOnly()
     {
         var factory = new CallerContextFactory();
-        var host = factory.CreateHost(["instance.manage", "operation.query", "backup.manage"]);
-        Assert.Equal("plugin-host", host.Subject);
+        var host = factory.CreateHost(
+            new PluginIdentity("community.example.health", "1.0.0"),
+            ["instance.manage", "operation.query", "backup.manage"]);
+        Assert.Equal("plugin:community.example.health", host.Subject);
         Assert.True(host.HasPermission("mcsl.instance.start"));
         Assert.True(host.HasPermission("mcsl.operation.get"));
         Assert.False(host.HasPermission("mcsl.backup.create")); // unimplemented feature contributes nothing

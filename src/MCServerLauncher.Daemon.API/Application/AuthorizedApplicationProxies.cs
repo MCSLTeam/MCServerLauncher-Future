@@ -1,19 +1,84 @@
+using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
+using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.State;
 using RustyOptions;
 
 namespace MCServerLauncher.Daemon.API.Application;
 
-/// <summary>
-/// Permission-checking proxy for instance application methods.
-/// Holds an <see cref="ICallerContext"/>; public app methods do not take the context as a parameter.
-/// </summary>
-public sealed class AuthorizedInstanceApplication(ICallerContext caller, IInstanceApplication inner) : IInstanceApplication
+public sealed class AuthorizedInstanceCatalog(
+    ICallerContext caller,
+    IInstanceSnapshotSource inner) : IInstanceSnapshotSource
 {
     private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
-    private readonly IInstanceApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+    private readonly IInstanceSnapshotSource _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public PublishedState<InstanceCatalogSnapshot> Current
+    {
+        get
+        {
+            EnsurePermission("mcsl.instance.catalog.get");
+            return _inner.Current;
+        }
+    }
+
+    public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot)
+    {
+        EnsurePermission("mcsl.instance.catalog.get");
+        return _inner.TryGet(instanceId, out snapshot);
+    }
+
+    private void EnsurePermission(string method)
+    {
+        var permission = _caller.EnsurePermission(method);
+        if (permission.IsErr(out var error))
+            throw new UnauthorizedAccessException(error!.Message);
+    }
+}
+
+public sealed class AuthorizedInstanceQueryApplication(
+    ICallerContext caller,
+    IInstanceQueryApplication inner) : IInstanceQueryApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IInstanceQueryApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(
+        InstanceReference request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.instance.report.get", () => _inner.GetInstanceReportAsync(request, cancellationToken));
+
+    public Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.instance.report.list", () => _inner.ListInstanceReportsAsync(cancellationToken));
+
+    public Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(
+        InstanceLogQuery request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.instance.log.get", () => _inner.GetInstanceLogAsync(request, cancellationToken));
+
+    public Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettingsAsync(
+        InstanceReference request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.instance.settings.get", () => _inner.GetInstanceSettingsAsync(request, cancellationToken));
+
+    private Task<Result<T, DaemonError>> Guard<T>(
+        string method,
+        Func<Task<Result<T, DaemonError>>> action)
+        where T : notnull =>
+        AuthorizedApplicationGuard.Invoke(_caller, method, action);
+}
+
+public sealed class AuthorizedInstanceManagementApplication(
+    ICallerContext caller,
+    IInstanceManagementApplication inner) : IInstanceManagementApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IInstanceManagementApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
     public Task<Result<CreateInstanceResult, DaemonError>> CreateInstanceAsync(
         CreateInstanceRequest request,
@@ -45,47 +110,46 @@ public sealed class AuthorizedInstanceApplication(ICallerContext caller, IInstan
         CancellationToken cancellationToken) =>
         Guard("mcsl.instance.command.send", () => _inner.SendCommandAsync(request, cancellationToken));
 
-    public Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(
-        InstanceReference request,
-        CancellationToken cancellationToken) =>
-        Guard("mcsl.instance.report.get", () => _inner.GetInstanceReportAsync(request, cancellationToken));
-
-    public Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(
-        CancellationToken cancellationToken) =>
-        Guard("mcsl.instance.report.list", () => _inner.ListInstanceReportsAsync(cancellationToken));
-
-    public Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(
-        InstanceLogQuery request,
-        CancellationToken cancellationToken) =>
-        Guard("mcsl.instance.log.get", () => _inner.GetInstanceLogAsync(request, cancellationToken));
-
-    public Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettingsAsync(
-        InstanceReference request,
-        CancellationToken cancellationToken) =>
-        Guard("mcsl.instance.settings.get", () => _inner.GetInstanceSettingsAsync(request, cancellationToken));
-
     public Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettingsAsync(
         UpdateInstanceSettingsRequest request,
         CancellationToken cancellationToken) =>
         Guard("mcsl.instance.settings.update", () => _inner.UpdateInstanceSettingsAsync(request, cancellationToken));
 
-    private Task<Result<T, DaemonError>> Guard<T>(string method, Func<Task<Result<T, DaemonError>>> action)
-        where T : notnull
-    {
-        var permission = _caller.EnsurePermission(method);
-        if (permission.IsErr(out var error))
-            return Task.FromResult(Result.Err<T, DaemonError>(error!));
-        return action();
-    }
+    private Task<Result<T, DaemonError>> Guard<T>(
+        string method,
+        Func<Task<Result<T, DaemonError>>> action)
+        where T : notnull =>
+        AuthorizedApplicationGuard.Invoke(_caller, method, action);
 }
 
-/// <summary>
-/// Permission-checking proxy for operation query/control methods.
-/// </summary>
-public sealed class AuthorizedOperationApplication(ICallerContext caller, IOperationApplication inner) : IOperationApplication
+public sealed class AuthorizedSystemQueryApplication(
+    ICallerContext caller,
+    ISystemQueryApplication inner) : ISystemQueryApplication
 {
     private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
-    private readonly IOperationApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+    private readonly ISystemQueryApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.system.info.get", () => _inner.GetSystemInfoAsync(cancellationToken));
+
+    public Task<Result<JavaRuntimeList, DaemonError>> ListJavaRuntimesAsync(
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.java.list", () => _inner.ListJavaRuntimesAsync(cancellationToken));
+
+    private Task<Result<T, DaemonError>> Guard<T>(
+        string method,
+        Func<Task<Result<T, DaemonError>>> action)
+        where T : notnull =>
+        AuthorizedApplicationGuard.Invoke(_caller, method, action);
+}
+
+public sealed class AuthorizedOperationQueryApplication(
+    ICallerContext caller,
+    IOperationQueryApplication inner) : IOperationQueryApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IOperationQueryApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
     public Task<Result<OperationListResult, DaemonError>> ListOperationsAsync(
         OperationListQuery request,
@@ -94,8 +158,9 @@ public sealed class AuthorizedOperationApplication(ICallerContext caller, IOpera
         var permission = _caller.EnsurePermission("mcsl.operation.list");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<OperationListResult, DaemonError>(error!));
-        var bound = BindOwner(request with { });
-        return _inner.ListOperationsAsync(bound, cancellationToken);
+        return _inner.ListOperationsAsync(
+            request with { OwnerPrincipal = ResolveOwnerPrincipal() },
+            cancellationToken);
     }
 
     public Task<Result<OperationSnapshot, DaemonError>> GetOperationAsync(
@@ -105,9 +170,21 @@ public sealed class AuthorizedOperationApplication(ICallerContext caller, IOpera
         var permission = _caller.EnsurePermission("mcsl.operation.get");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<OperationSnapshot, DaemonError>(error!));
-        var bound = request with { OwnerPrincipal = ResolveOwnerPrincipal() };
-        return _inner.GetOperationAsync(bound, cancellationToken);
+        return _inner.GetOperationAsync(
+            request with { OwnerPrincipal = ResolveOwnerPrincipal() },
+            cancellationToken);
     }
+
+    private string ResolveOwnerPrincipal() =>
+        _caller.IsMainToken ? "*" : _caller.Subject;
+}
+
+public sealed class AuthorizedOperationControlApplication(
+    ICallerContext caller,
+    IOperationControlApplication inner) : IOperationControlApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IOperationControlApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
     public Task<Result<OperationCancelResult, DaemonError>> CancelOperationAsync(
         OperationCancelRequest request,
@@ -116,22 +193,15 @@ public sealed class AuthorizedOperationApplication(ICallerContext caller, IOpera
         var permission = _caller.EnsurePermission("mcsl.operation.cancel");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<OperationCancelResult, DaemonError>(error!));
-        var bound = request with { OwnerPrincipal = ResolveOwnerPrincipal() };
-        return _inner.CancelOperationAsync(bound, cancellationToken);
+        return _inner.CancelOperationAsync(
+            request with { OwnerPrincipal = _caller.IsMainToken ? "*" : _caller.Subject },
+            cancellationToken);
     }
-
-    private OperationListQuery BindOwner(OperationListQuery request) =>
-        request with { OwnerPrincipal = ResolveOwnerPrincipal() };
-
-    private string ResolveOwnerPrincipal() =>
-        _caller.IsMainToken ? "*" : _caller.Subject;
 }
 
-/// <summary>
-/// Permission-checking proxy for provisioning methods.
-/// </summary>
-public sealed class AuthorizedProvisioningApplication(ICallerContext caller, IProvisioningApplication inner)
-    : IProvisioningApplication
+public sealed class AuthorizedProvisioningApplication(
+    ICallerContext caller,
+    IProvisioningApplication inner) : IProvisioningApplication
 {
     private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
     private readonly IProvisioningApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -143,8 +213,9 @@ public sealed class AuthorizedProvisioningApplication(ICallerContext caller, IPr
         var permission = _caller.EnsurePermission("mcsl.provisioning.resolve");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
-        var bound = request with { CreatorPrincipal = _caller.Subject };
-        return _inner.ResolveAsync(bound, cancellationToken);
+        return _inner.ResolveAsync(
+            request with { CreatorPrincipal = _caller.Subject },
+            cancellationToken);
     }
 
     public Task<Result<ProvisioningPlanSnapshot, DaemonError>> GetPlanAsync(
@@ -154,8 +225,9 @@ public sealed class AuthorizedProvisioningApplication(ICallerContext caller, IPr
         var permission = _caller.EnsurePermission("mcsl.provisioning.get");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
-        var bound = request with { OwnerPrincipal = _caller.Subject };
-        return _inner.GetPlanAsync(bound, cancellationToken);
+        return _inner.GetPlanAsync(
+            request with { OwnerPrincipal = _caller.Subject },
+            cancellationToken);
     }
 
     public Task<Result<ProvisioningExecuteResult, DaemonError>> ExecuteAsync(
@@ -165,7 +237,23 @@ public sealed class AuthorizedProvisioningApplication(ICallerContext caller, IPr
         var permission = _caller.EnsurePermission("mcsl.provisioning.execute");
         if (permission.IsErr(out var error))
             return Task.FromResult(Result.Err<ProvisioningExecuteResult, DaemonError>(error!));
-        var bound = request with { ExecutorPrincipal = _caller.Subject };
-        return _inner.ExecuteAsync(bound, cancellationToken);
+        return _inner.ExecuteAsync(
+            request with { ExecutorPrincipal = _caller.Subject },
+            cancellationToken);
+    }
+}
+
+internal static class AuthorizedApplicationGuard
+{
+    internal static Task<Result<T, DaemonError>> Invoke<T>(
+        ICallerContext caller,
+        string method,
+        Func<Task<Result<T, DaemonError>>> action)
+        where T : notnull
+    {
+        var permission = caller.EnsurePermission(method);
+        return permission.IsErr(out var error)
+            ? Task.FromResult(Result.Err<T, DaemonError>(error!))
+            : action();
     }
 }

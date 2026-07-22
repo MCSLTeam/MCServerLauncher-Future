@@ -32,7 +32,9 @@ public interface ICallerContextFactory
     /// Builds a Host principal from the union of methods of granted implemented features.
     /// Host is not automatically `*`.
     /// </summary>
-    ICallerContext CreateHost(IEnumerable<string> grantedFeatureIds);
+    ICallerContext CreateHost(
+        PluginIdentity plugin,
+        IEnumerable<string> grantedFeatureIds);
 
     /// <summary>
     /// Builds a user principal view from a verified token principal.

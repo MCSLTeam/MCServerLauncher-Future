@@ -84,7 +84,7 @@ public sealed class InstanceHealthPlugin : IDaemonPlugin
 
     private static InstanceHealthResult CreateResult(IPluginContext context)
     {
-        var snapshots = context.Instances.Current.Value.Instances.Values;
+        var snapshots = context.InstanceCatalog.Current.Value.Instances.Values;
         return new InstanceHealthResult(
             snapshots.Count(),
             snapshots.Count(static snapshot => snapshot.Status == MCServerLauncher.Common.ProtoType.Instance.InstanceStatus.Running));

@@ -48,8 +48,37 @@ public sealed class DaemonPluginSourceGeneratorTests
                 _ = services;
                 _ = features.Rpc;
                 _ = features.Events;
-                _ = features.Instances;
+                _ = features.InstanceCatalog;
+                _ = features.InstanceQueries;
                 _ = features.System;
+            }
+
+            public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
+                => Task.FromResult(PluginResult.Ok());
+
+            public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
+                => Task.FromResult(PluginResult.Ok());
+        }
+        """;
+
+    private const string MinimalModuleSource = """
+        using System.Threading;
+        using System.Threading.Tasks;
+        using MCServerLauncher.Daemon.API.Errors;
+        using MCServerLauncher.Daemon.API.Plugins;
+        using MCServerLauncher.Daemon.Plugin.Sdk;
+        using Microsoft.Extensions.DependencyInjection;
+        using RustyOptions;
+
+        namespace Example.Plugin;
+
+        [DaemonPluginModule]
+        public partial class MinimalPlugin
+        {
+            public void ConfigureServices(IServiceCollection services, MinimalPluginFeatures features)
+            {
+                _ = services;
+                _ = features;
             }
 
             public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
@@ -72,8 +101,10 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains("class HealthPluginServiceRegistration", generated, StringComparison.Ordinal);
         Assert.Contains("IPluginRpcRegistrar Rpc", generated, StringComparison.Ordinal);
         Assert.Contains("IPluginEventRegistrar Events", generated, StringComparison.Ordinal);
-        Assert.Contains("IInstanceSnapshotSource Instances", generated, StringComparison.Ordinal);
+        Assert.Contains("IInstanceSnapshotSource InstanceCatalog", generated, StringComparison.Ordinal);
+        Assert.Contains("IInstanceQueryApplication InstanceQueries", generated, StringComparison.Ordinal);
         Assert.Contains("ISystemQueryApplication System", generated, StringComparison.Ordinal);
+        Assert.Contains("HealthPluginAuthorizedFeatures ForPrincipal", generated, StringComparison.Ordinal);
         Assert.Contains("ConfigureServices", generated, StringComparison.Ordinal);
         Assert.Contains("BuildServiceProvider", generated, StringComparison.Ordinal);
         Assert.Contains("AttachServices", generated, StringComparison.Ordinal);
@@ -81,6 +112,17 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains("IAsyncDisposable", generated, StringComparison.Ordinal);
         Assert.Contains("ManifestDigest", generated, StringComparison.Ordinal);
         Assert.Contains("community.example.health", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IPluginContext Context { get; }", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginContext)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IInstanceApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IInstanceQueryApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IInstanceManagementApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Plugins.ISystemQueryApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IOperationApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IOperationQueryApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IOperationControlApplication)", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IProvisioningApplication)", generated, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -114,6 +156,43 @@ public sealed class DaemonPluginSourceGeneratorTests
 
         var (diagnostics, _) = RunGenerator(manual, ManifestJson);
         Assert.Contains(diagnostics, d => d.Id == "MCSLPLG009");
+    }
+
+    [Fact]
+    public void OperationQueryDoesNotExposeControlOrRawContext()
+    {
+        var manifest = ManifestJson.Replace(
+            "[\"event.publish\", \"instance.query\", \"rpc.register\", \"system.query\"]",
+            "[\"operation.query\"]",
+            StringComparison.Ordinal);
+
+        var (diagnostics, generated) = RunGenerator(MinimalModuleSource, manifest);
+
+        Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("IOperationQueryApplication OperationQueries", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOperationControlApplication OperationControl", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOperationApplication", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IPluginContext Context { get; }", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginContext)",
+            generated,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OperationCancelDoesNotExposeQuery()
+    {
+        var manifest = ManifestJson.Replace(
+            "[\"event.publish\", \"instance.query\", \"rpc.register\", \"system.query\"]",
+            "[\"operation.cancel\"]",
+            StringComparison.Ordinal);
+
+        var (diagnostics, generated) = RunGenerator(MinimalModuleSource, manifest);
+
+        Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("IOperationControlApplication OperationControl", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOperationQueryApplication OperationQueries", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOperationApplication", generated, StringComparison.Ordinal);
     }
 
     private static (ImmutableArray<Diagnostic> Diagnostics, string Generated) RunGenerator(

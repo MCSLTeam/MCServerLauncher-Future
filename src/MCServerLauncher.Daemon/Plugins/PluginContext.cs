@@ -22,9 +22,12 @@ internal sealed class PluginContext : IPluginContext
     private readonly IPluginPrivateStorage? _storage;
     private readonly IPluginHttpEndpointPolicy? _httpEndpoints;
     private readonly IPluginAuthentication? _authentication;
+    private readonly IInstanceSnapshotSource? _instanceCatalog;
+    private readonly IInstanceQueryApplication? _instanceQueries;
     private readonly ISystemQueryApplication? _system;
     private readonly IInstanceApplication? _instanceManagement;
-    private readonly IOperationApplication? _operations;
+    private readonly IOperationQueryApplication? _operationQueries;
+    private readonly IOperationControlApplication? _operationControl;
     private readonly IProvisioningApplication? _provisioning;
 
     internal PluginContext(
@@ -32,8 +35,8 @@ internal sealed class PluginContext : IPluginContext
         ILogger logger,
         PluginErrorFactory errors,
         PluginRegistrationDraft registrations,
-        IInstanceSnapshotSource instances,
-        bool canQueryInstances,
+        IInstanceSnapshotSource? instanceCatalog,
+        IInstanceQueryApplication? instanceQueries,
         IPluginConfiguration configuration,
         IPluginPrivateStorage? storage,
         IPluginHttpEndpointPolicy? httpEndpoints,
@@ -41,7 +44,8 @@ internal sealed class PluginContext : IPluginContext
         ISystemQueryApplication? system,
         ICallerContextFactory callerContexts,
         IInstanceApplication? instanceManagement,
-        IOperationApplication? operations,
+        IOperationQueryApplication? operationQueries,
+        IOperationControlApplication? operationControl,
         IProvisioningApplication? provisioning,
         Task activation,
         CancellationToken lifetimeToken)
@@ -51,9 +55,8 @@ internal sealed class PluginContext : IPluginContext
         Errors = errors ?? throw new ArgumentNullException(nameof(errors));
         Rpc = registrations ?? throw new ArgumentNullException(nameof(registrations));
         Events = registrations;
-        Instances = canQueryInstances
-            ? instances ?? throw new ArgumentNullException(nameof(instances))
-            : FeatureDeniedSnapshotSource.Instance;
+        _instanceCatalog = instanceCatalog;
+        _instanceQueries = instanceQueries;
         Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _storage = storage;
         _httpEndpoints = httpEndpoints;
@@ -61,7 +64,8 @@ internal sealed class PluginContext : IPluginContext
         _system = system;
         CallerContexts = callerContexts ?? throw new ArgumentNullException(nameof(callerContexts));
         _instanceManagement = instanceManagement;
-        _operations = operations;
+        _operationQueries = operationQueries;
+        _operationControl = operationControl;
         _provisioning = provisioning;
         Activation = activation ?? throw new ArgumentNullException(nameof(activation));
         LifetimeToken = lifetimeToken;
@@ -77,7 +81,11 @@ internal sealed class PluginContext : IPluginContext
 
     public IPluginEventRegistrar Events { get; }
 
-    public IInstanceSnapshotSource Instances { get; }
+    public IInstanceSnapshotSource InstanceCatalog =>
+        _instanceCatalog ?? throw new InvalidOperationException("The plugin did not declare the 'instance.query' feature.");
+
+    public IInstanceQueryApplication InstanceQueries =>
+        _instanceQueries ?? throw new InvalidOperationException("The plugin did not declare the 'instance.query' feature.");
 
     public IPluginConfiguration Configuration { get; }
 
@@ -98,8 +106,11 @@ internal sealed class PluginContext : IPluginContext
     public IInstanceApplication InstanceManagement =>
         _instanceManagement ?? throw new InvalidOperationException("The plugin did not declare the 'instance.manage' feature.");
 
-    public IOperationApplication Operations =>
-        _operations ?? throw new InvalidOperationException("The plugin did not declare an operation feature.");
+    public IOperationQueryApplication OperationQueries =>
+        _operationQueries ?? throw new InvalidOperationException("The plugin did not declare the 'operation.query' feature.");
+
+    public IOperationControlApplication OperationControl =>
+        _operationControl ?? throw new InvalidOperationException("The plugin did not declare the 'operation.cancel' feature.");
 
     public IProvisioningApplication Provisioning =>
         _provisioning ?? throw new InvalidOperationException("The plugin did not declare the 'provisioning.manage' feature.");
@@ -107,19 +118,4 @@ internal sealed class PluginContext : IPluginContext
     public Task Activation { get; }
 
     public CancellationToken LifetimeToken { get; }
-}
-
-internal sealed class FeatureDeniedSnapshotSource : IInstanceSnapshotSource
-{
-    internal static FeatureDeniedSnapshotSource Instance { get; } = new();
-
-    public PublishedState<InstanceCatalogSnapshot> Current =>
-        throw new InvalidOperationException("The plugin did not declare the 'instance.query' feature.");
-
-    public bool TryGet(Guid instanceId, [NotNullWhen(true)] out InstanceSnapshot? snapshot)
-    {
-        _ = instanceId;
-        snapshot = null;
-        throw new InvalidOperationException("The plugin did not declare the 'instance.query' feature.");
-    }
 }

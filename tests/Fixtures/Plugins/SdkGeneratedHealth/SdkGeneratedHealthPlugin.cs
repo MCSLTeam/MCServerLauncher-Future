@@ -12,10 +12,10 @@ public partial class SdkGeneratedHealthPlugin
     public void ConfigureServices(IServiceCollection services, SdkGeneratedHealthPluginFeatures features)
     {
         _ = services;
-        _ = features.Context;
         _ = features.Rpc;
         _ = features.Events;
-        _ = features.Instances;
+        _ = features.InstanceCatalog;
+        _ = features.InstanceQueries;
     }
 
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
