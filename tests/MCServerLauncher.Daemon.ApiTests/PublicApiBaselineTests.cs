@@ -49,6 +49,27 @@ public sealed class PublicApiBaselineTests
         Assert.NotEqual(completeSurface, surfaceWithoutProcessId);
     }
 
+    [Fact]
+    public void InstanceReportReadyTimedOutAdditionOrRemovalChangesTheCommonContractsBaseline()
+    {
+        var assembly = typeof(InstanceReport).Assembly;
+        var completeSurface = PublicApiText.Render(assembly, "MCServerLauncher.Common.Contracts");
+        var surfaceWithoutReadyTimedOut = PublicApiText.Render(
+            assembly,
+            "MCServerLauncher.Common.Contracts",
+            member => member is not PropertyInfo
+            {
+                DeclaringType: not null,
+                Name: nameof(InstanceReport.ReadyTimedOut)
+            } property || property.DeclaringType != typeof(InstanceReport));
+        const string readyTimedOutProperty =
+            "property MCServerLauncher.Common.Contracts.Instances.InstanceReport.ReadyTimedOut[] : System.Boolean | get=public | set=public";
+
+        Assert.Contains(readyTimedOutProperty, completeSurface.Split('\n'));
+        Assert.DoesNotContain(readyTimedOutProperty, surfaceWithoutReadyTimedOut.Split('\n'));
+        Assert.NotEqual(completeSurface, surfaceWithoutReadyTimedOut);
+    }
+
     private static string ReadBaseline(string fileName)
     {
         var baselinePath = Path.Combine(AppContext.BaseDirectory, "Baselines", fileName);

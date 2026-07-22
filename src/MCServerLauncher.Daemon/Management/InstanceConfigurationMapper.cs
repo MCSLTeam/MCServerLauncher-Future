@@ -88,7 +88,8 @@ internal static class InstanceConfigurationMapper
                 StringComparer.Ordinal),
             report.Players.Select(static player => new InstancePlayer(player.Name, player.Uuid)).ToImmutableArray(),
             new InstancePerformance(report.PerformanceCounter.Cpu, report.PerformanceCounter.Memory),
-            processId < 0 ? null : processId);
+            processId < 0 ? null : processId,
+            report.ReadyTimedOut);
     }
 
     private static InstanceConfiguration Copy(

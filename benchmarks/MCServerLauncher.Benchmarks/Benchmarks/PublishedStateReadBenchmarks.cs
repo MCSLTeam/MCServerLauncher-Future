@@ -31,7 +31,8 @@ public class PublishedStateReadBenchmarks
             "Benchmark instance",
             InstanceType.MCJava,
             "1.21.8",
-            InstanceStatus.Running);
+            InstanceStatus.Running,
+            ReadyTimedOut: false);
         var catalog = new InstanceCatalogSnapshot(
             ImmutableDictionary<Guid, InstanceSnapshot>.Empty.Add(InstanceId, snapshot));
 

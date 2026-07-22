@@ -493,7 +493,8 @@ public sealed record InstanceCatalogItem
         string name,
         InstanceType instanceType,
         string version,
-        InstanceStatus status)
+        InstanceStatus status,
+        bool readyTimedOut)
     {
         if (!Enum.IsDefined(instanceType))
         {
@@ -510,6 +511,7 @@ public sealed record InstanceCatalogItem
         InstanceType = instanceType;
         Version = version;
         Status = status;
+        ReadyTimedOut = readyTimedOut;
     }
 
     public Guid InstanceId { get; init; }
@@ -521,6 +523,8 @@ public sealed record InstanceCatalogItem
     public string Version { get; init; }
 
     public InstanceStatus Status { get; init; }
+
+    public bool ReadyTimedOut { get; init; }
 }
 
 public sealed class InstanceCatalogResult

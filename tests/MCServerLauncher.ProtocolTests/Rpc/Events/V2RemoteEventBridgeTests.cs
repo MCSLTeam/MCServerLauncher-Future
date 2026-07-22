@@ -33,7 +33,13 @@ public sealed class V2RemoteEventBridgeTests
 
         var instanceId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var ruleId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        var snapshot = new InstanceCatalogItem(instanceId, "test", InstanceType.MCJava, "1.21.8", InstanceStatus.Running);
+        var snapshot = new InstanceCatalogItem(
+            instanceId,
+            "test",
+            InstanceType.MCJava,
+            "1.21.8",
+            InstanceStatus.Running,
+            readyTimedOut: false);
         await host.Port.PublishAsync(new InstanceCatalogChangedDomainEvent(
             new InstanceCatalogChangedEventData(7, InstanceCatalogChangeOperation.Upsert, instanceId, snapshot)));
         await host.Port.PublishAsync(new DaemonReportDomainEvent(CreateSystemInfo(), 123));

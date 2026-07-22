@@ -22,6 +22,10 @@ internal sealed class PipeConsoleHost : IInstanceConsoleHost
 
     private StreamWriter Stdin => _stdin ??= _process.StandardInput;
 
+    public void NotifyProcessExited()
+    {
+    }
+
     public void Resize(ushort columns, ushort rows)
     {
     }

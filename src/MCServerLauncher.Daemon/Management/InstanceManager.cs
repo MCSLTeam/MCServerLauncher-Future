@@ -26,6 +26,8 @@ internal class InstanceManager : IInstanceManager
     private readonly Func<InstanceFactoryConfiguration, CancellationToken, Task<Result<InstanceConfiguration, DaemonError>>> _applyInstanceFactory;
     private readonly Func<InstanceConfig, IInstance> _instanceFactory;
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _instanceMutationGates = new();
+    private readonly ConcurrentDictionary<IInstance, Func<Guid, InstanceStatus, CancellationToken, Task>>
+        _instanceStatusHandlers = new(ReferenceEqualityComparer.Instance);
     private readonly Lock _mutationLock = new();
     private readonly Dictionary<Guid, InstanceCreationReservation> _creationReservations = [];
     private readonly InstanceCatalogCommitFeed _catalogCommitFeed = new();
@@ -340,8 +342,7 @@ internal class InstanceManager : IInstanceManager
 
         // Keep the instance in RunningInstances while Stopping so intermediate status is visible.
         // Terminal Stopped/Crashed removes it from OnInstanceStatusChangedAsync.
-        await instance.StopAsync(ct).ConfigureAwait(false);
-        return true;
+        return await instance.StopAsync(ct).ConfigureAwait(false);
     }
 
     public bool SendToInstance(Guid instanceId, string message)
@@ -392,23 +393,17 @@ internal class InstanceManager : IInstanceManager
         instance.Process?.DetachConsoleSubscriber(subscriberId);
     }
 
-    public void KillInstance(Guid instanceId)
+    public async Task KillInstanceAsync(Guid instanceId, CancellationToken ct = default)
     {
         using var admission = _mutationAdmission.EnterExternal();
+        ct.ThrowIfCancellationRequested();
+        using var mutation = await AcquireInstanceMutationAsync(instanceId, ct);
         if (!Instances.TryGetValue(instanceId, out var instance))
             return;
 
-        try
-        {
-            instance.ForceKillAndClear();
-        }
-        catch (Exception exception)
-        {
-            Log.Warning(
-                exception,
-                "[InstanceManager] ForceKillAndClear failed for instance '{InstanceId}'",
-                instanceId);
-        }
+        // Keep the per-instance mutation gate until the old process tree, output pumps,
+        // and lifecycle publication tail are fully drained. A failed OS kill propagates.
+        await instance.ForceKillAndClearAsync(ct).ConfigureAwait(false);
 
         RunningInstances.TryRemove(instanceId, out _);
         try
@@ -488,12 +483,39 @@ internal class InstanceManager : IInstanceManager
         {
             try
             {
-                process.WriteLine("stop");
+                if (await process.RequestStoppingAsync(CancellationToken.None).ConfigureAwait(false))
+                {
+                    try
+                    {
+                        process.WriteLine("stop");
+                    }
+                    catch (Exception exception) when (
+                        (exception is InvalidOperationException or IOException or ObjectDisposedException) &&
+                        (process.HasExit || process.Status is InstanceStatus.Stopped or InstanceStatus.Crashed))
+                    {
+                        // Stopping was committed and the process won the race to exit.
+                    }
+                }
+                else if (!process.HasExit &&
+                         process.Status is (InstanceStatus.Stopped or InstanceStatus.Crashed))
+                {
+                    process.KillProcess(waitForExit: false);
+                }
             }
             catch (Exception exception)
             {
                 failures.Add(exception);
                 Log.Warning(exception, "[InstanceManager] Failed to signal instance process shutdown");
+                try
+                {
+                    if (!process.HasExit)
+                        process.KillProcess(waitForExit: false);
+                }
+                catch (Exception killException)
+                {
+                    failures.Add(killException);
+                    Log.Warning(killException, "[InstanceManager] Failed to force instance process shutdown");
+                }
             }
         }
 
@@ -713,16 +735,47 @@ internal class InstanceManager : IInstanceManager
 
     private void AttachInstance(IInstance instance)
     {
+        if (instance is IInstanceProcessGenerationSource generationSource)
+        {
+            generationSource.ProcessLogReceived -= OnGenerationLogAsync;
+            generationSource.ProcessLogReceived += OnGenerationLogAsync;
+            generationSource.ProcessStatusChanged -= OnGenerationStatusChangedAsync;
+            generationSource.ProcessStatusChanged += OnGenerationStatusChangedAsync;
+            generationSource.ProcessReportFactChanged -= OnGenerationReportFactChangedAsync;
+            generationSource.ProcessReportFactChanged += OnGenerationReportFactChangedAsync;
+            return;
+        }
+
         instance.OnLog -= OnInstanceLogAsync;
         instance.OnLog += OnInstanceLogAsync;
-        instance.OnStatusChanged -= OnInstanceStatusChangedAsync;
-        instance.OnStatusChanged += OnInstanceStatusChangedAsync;
+        var statusHandler = _instanceStatusHandlers.GetOrAdd(
+            instance,
+            source => (_, status, cancellationToken) =>
+                OnInstanceStatusChangedAsync(source, status, cancellationToken));
+        instance.OnStatusChanged -= statusHandler;
+        instance.OnStatusChanged += statusHandler;
+        if (instance is IInstanceReportFactSource reportFactSource)
+        {
+            reportFactSource.ReportFactChanged -= OnInstanceReportFactChangedAsync;
+            reportFactSource.ReportFactChanged += OnInstanceReportFactChangedAsync;
+        }
     }
 
     private void DetachInstance(IInstance instance)
     {
+        if (instance is IInstanceProcessGenerationSource generationSource)
+        {
+            generationSource.ProcessLogReceived -= OnGenerationLogAsync;
+            generationSource.ProcessStatusChanged -= OnGenerationStatusChangedAsync;
+            generationSource.ProcessReportFactChanged -= OnGenerationReportFactChangedAsync;
+            return;
+        }
+
         instance.OnLog -= OnInstanceLogAsync;
-        instance.OnStatusChanged -= OnInstanceStatusChangedAsync;
+        if (_instanceStatusHandlers.TryRemove(instance, out var statusHandler))
+            instance.OnStatusChanged -= statusHandler;
+        if (instance is IInstanceReportFactSource reportFactSource)
+            reportFactSource.ReportFactChanged -= OnInstanceReportFactChangedAsync;
     }
 
     private Task OnInstanceLogAsync(Guid instanceId, string log, CancellationToken cancellationToken)
@@ -730,8 +783,44 @@ internal class InstanceManager : IInstanceManager
         return InvokeAsync(InstanceLogReceived, instanceId, log, cancellationToken);
     }
 
+    private async Task OnGenerationLogAsync(
+        IInstance source,
+        long generation,
+        string log,
+        CancellationToken cancellationToken)
+    {
+        if (!_mutationAdmission.TryEnterProducer(out var admission))
+            return;
+
+        using (admission)
+        {
+            await InvokeCurrentSourceAsync(
+                    InstanceLogReceived,
+                    source,
+                    generation,
+                    log,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private Task OnGenerationStatusChangedAsync(
+        IInstance source,
+        long generation,
+        InstanceStatus status,
+        CancellationToken cancellationToken) =>
+        OnInstanceStatusChangedAsync(source, generation, status, cancellationToken);
+
     private async Task OnInstanceStatusChangedAsync(
-        Guid instanceId,
+        IInstance source,
+        InstanceStatus status,
+        CancellationToken cancellationToken) =>
+        await OnInstanceStatusChangedAsync(source, generation: null, status, cancellationToken)
+            .ConfigureAwait(false);
+
+    private async Task OnInstanceStatusChangedAsync(
+        IInstance source,
+        long? generation,
         InstanceStatus status,
         CancellationToken cancellationToken)
     {
@@ -739,18 +828,116 @@ internal class InstanceManager : IInstanceManager
             return;
         using (admission)
         {
+            var instanceId = source.Config.Uuid;
             Log.Debug("[InstanceManager] Instance '{0}' status changed to {1}", instanceId, status.ToString());
 
             lock (_mutationLock)
             {
+                if (!Instances.TryGetValue(instanceId, out var current) ||
+                    !ReferenceEquals(current, source) ||
+                    (generation is { } value && !IsCurrentGeneration(source, value)))
+                    return;
+
                 if (status.IsStoppedOrCrashed())
                     RunningInstances.TryRemove(instanceId, out _);
 
-                if (Instances.TryGetValue(instanceId, out var instance))
-                    _snapshotSource.Upsert(instance);
+                _snapshotSource.Upsert(source, new InstanceReportFact(status, ReadyTimedOut: false));
             }
 
-            await InvokeAsync(InstanceStatusChanged, instanceId, status, cancellationToken);
+            await InvokeCurrentSourceAsync(
+                    InstanceStatusChanged,
+                    source,
+                    generation,
+                    status,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private Task OnInstanceReportFactChangedAsync(
+        IInstance source,
+        InstanceReportFact fact,
+        CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+        if (!_mutationAdmission.TryEnterProducer(out var admission))
+            return Task.CompletedTask;
+
+        using (admission)
+        {
+            lock (_mutationLock)
+            {
+                if (Instances.TryGetValue(source.Config.Uuid, out var current) && ReferenceEquals(current, source))
+                    _snapshotSource.Upsert(source, fact);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnGenerationReportFactChangedAsync(
+        IInstance source,
+        long generation,
+        InstanceReportFact fact,
+        CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+        if (!_mutationAdmission.TryEnterProducer(out var admission))
+            return Task.CompletedTask;
+
+        using (admission)
+        {
+            lock (_mutationLock)
+            {
+                if (IsCurrentGeneration(source, generation))
+                    _snapshotSource.Upsert(source, fact);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private bool IsCurrentGeneration(IInstance source, long generation)
+    {
+        return Instances.TryGetValue(source.Config.Uuid, out var current) &&
+               ReferenceEquals(current, source) &&
+               source is IInstanceProcessGenerationSource generationSource &&
+               generationSource.CurrentProcessGeneration == generation;
+    }
+
+    private async Task InvokeCurrentSourceAsync<T>(
+        Func<Guid, T, CancellationToken, Task>? handlers,
+        IInstance source,
+        long? generation,
+        T value,
+        CancellationToken cancellationToken)
+    {
+        if (handlers is null)
+            return;
+
+        var instanceId = source.Config.Uuid;
+        var subscribers = handlers.GetInvocationList()
+            .Cast<Func<Guid, T, CancellationToken, Task>>()
+            .ToArray();
+        foreach (var subscriber in subscribers)
+        {
+            Task publication;
+            lock (_mutationLock)
+            {
+                if (!Instances.TryGetValue(instanceId, out var current) ||
+                    !ReferenceEquals(current, source) ||
+                    (generation is { } valueGeneration && !IsCurrentGeneration(source, valueGeneration)))
+                {
+                    return;
+                }
+
+                // Starting the callback while the source check is still protected makes
+                // replacement and publication linearizable. The callback itself is awaited
+                // outside the lock so asynchronous consumers cannot block instance mutation.
+                publication = subscriber(instanceId, value, cancellationToken);
+            }
+
+            await publication.ConfigureAwait(false);
         }
     }
 

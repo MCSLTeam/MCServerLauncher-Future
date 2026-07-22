@@ -456,7 +456,7 @@ public sealed class DomainEventPortAndTriggerTests
         };
         using var process = new MCServerLauncher.Daemon.Management.Communicate.InstanceProcess(
             CreateReadyThenLongRunningStartInfo(),
-            isMcServer: false);
+            MCServerLauncher.Common.ProtoType.Instance.InstanceType.Universal);
         var restartCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var application = CreateApplication(
             getRules: id => Result.Ok<EventRuleSet, DaemonError>(CreateRuleSet(id, [rule])),

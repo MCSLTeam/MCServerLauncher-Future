@@ -85,8 +85,20 @@ public sealed class NeverCompletingStartPlugin : IGeneratedDaemonPluginAdapter
             TaskCreationOptions.RunContinuationsAsynchronously).Task;
     }
 
-    public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(PluginResult.Ok());
+    public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
+    {
+        if (string.Equals(
+                Environment.GetEnvironmentVariable("MCSL_PLUGIN_HANG_STOP"),
+                "1",
+                StringComparison.Ordinal))
+        {
+            _ = cancellationToken;
+            return new TaskCompletionSource<Result<Unit, DaemonError>>(
+                TaskCreationOptions.RunContinuationsAsynchronously).Task;
+        }
+
+        return Task.FromResult(PluginResult.Ok());
+    }
 }
 
 public sealed class BlockingLifetimeCancellationPlugin : IGeneratedDaemonPluginAdapter

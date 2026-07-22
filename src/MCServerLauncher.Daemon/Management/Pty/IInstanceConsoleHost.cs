@@ -14,6 +14,8 @@ internal interface IInstanceConsoleHost : IAsyncDisposable, IDisposable
 
     bool OwnsProcessLifecycle { get; }
 
+    void NotifyProcessExited();
+
     void Resize(ushort columns, ushort rows);
 
     Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken);

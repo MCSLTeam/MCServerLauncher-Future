@@ -70,6 +70,8 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntimeList>>(javaRuntimeCell);
 
+        var appConfig = AppConfig.Get();
+        a.RegisterSingleton(appConfig.Operations);
         a.RegisterSingleton(DomainEventDispatchPolicy.Default);
         a.RegisterSingleton<IDomainEventPort, DomainEventPort>();
         a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
@@ -77,6 +79,7 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
         a.RegisterSingleton<IOperationApplication, OperationCoordinator>();
         a.RegisterSingleton<PlanKernel>();
+        a.RegisterSingleton<OperationStartupRecovery>();
         a.RegisterSingleton<IProvisioningApplication, LocalProvisioningApplication>();
         var verifiedPrincipals = new VerifiedPrincipalAuthority();
         var callerContextFactory = new CallerContextFactory(verifiedPrincipals);
@@ -90,7 +93,6 @@ internal static class DaemonServiceComposition
 
         // SDK-1 admission: config-sourced start timeout, grant policy, and a shared HTTP endpoint
         // registry so plugin listeners reserve IP:port against the daemon's own /api/v2 port.
-        var appConfig = AppConfig.Get();
         var startTimeoutSeconds = appConfig.Plugins.StartTimeoutSeconds is > 0
             ? appConfig.Plugins.StartTimeoutSeconds
             : 30;
@@ -171,6 +173,8 @@ internal static class DaemonServiceComposition
 
     internal static DaemonLifecycleAttachment AttachDaemonLifecycle(HttpService httpService)
     {
+        httpService.Resolver.GetRequiredService<OperationStartupRecovery>().Recover();
+
         var pluginHost = httpService.Resolver.GetRequiredService<PluginHost>();
         pluginHost.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
 

@@ -32,7 +32,8 @@ public class ProtocolEventFanOutSerializationBenchmarks
             "Benchmark instance",
             InstanceType.MCJava,
             "1.21.8",
-            InstanceStatus.Running);
+            InstanceStatus.Running,
+            readyTimedOut: false);
         _eventData = new InstanceCatalogChangedEventData(
             1,
             InstanceCatalogChangeOperation.Upsert,

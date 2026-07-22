@@ -29,6 +29,11 @@ public sealed class PackedPackageReferenceFixtureTests
                 "pack",
                 Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.API", "MCServerLauncher.Daemon.API.csproj"),
                 "--configuration", "Release", "--output", packageSource, "/m:1");
+            await AssertDotNetSucceedsAsync(
+                repositoryRoot,
+                "pack",
+                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.Plugin.Sdk", "MCServerLauncher.Daemon.Plugin.Sdk.csproj"),
+                "--configuration", "Release", "--output", packageSource, "/m:1");
 
             await AssertDotNetSucceedsAsync(
                 repositoryRoot,

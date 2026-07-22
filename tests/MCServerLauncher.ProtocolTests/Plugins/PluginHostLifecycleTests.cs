@@ -117,6 +117,53 @@ public sealed class PluginHostLifecycleTests
     }
 
     [Fact]
+    public async Task StartAsync_DoesNotAwaitNonCooperativeRollbackAfterDeadline()
+    {
+        var previousHangStop = Environment.GetEnvironmentVariable("MCSL_PLUGIN_HANG_STOP");
+        Environment.SetEnvironmentVariable("MCSL_PLUGIN_HANG_STOP", "1");
+        try
+        {
+            using var fixture = PluginHostFixture.Create(
+                ("fixture.start-never-completes", typeof(NeverCompletingStartPlugin).Assembly, typeof(NeverCompletingStartPlugin).FullName!));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromMilliseconds(150));
+
+            var startedAt = Stopwatch.GetTimestamp();
+            await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2));
+            var elapsed = Stopwatch.GetElapsedTime(startedAt);
+
+            Assert.True(
+                elapsed < TimeSpan.FromSeconds(2),
+                $"Startup waited for rollback cleanup after the 150 ms deadline: {elapsed}.");
+            AssertStates(host.States, ("fixture.start-never-completes", PluginRuntimeState.Failed));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-never-completes", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_PLUGIN_HANG_STOP", previousHangStop);
+        }
+    }
+
+    [Fact]
     public async Task StartAsync_AdmitsHealthPluginCatalogAndIsolatesConfigurationFailures()
     {
         using var fixture = PluginHostFixture.Create(
@@ -135,7 +182,8 @@ public sealed class PluginHostLifecycleTests
                     "running",
                     InstanceType.MCJava,
                     "1.21.8",
-                    InstanceStatus.Running)),
+                    InstanceStatus.Running,
+                    ReadyTimedOut: false)),
             new KeyValuePair<Guid, InstanceSnapshot>(
                 Guid.Parse("22222222-2222-2222-2222-222222222222"),
                 new InstanceSnapshot(
@@ -143,7 +191,8 @@ public sealed class PluginHostLifecycleTests
                     "stopped",
                     InstanceType.MCJava,
                     "1.21.8",
-                    InstanceStatus.Stopped))
+                    InstanceStatus.Stopped,
+                    ReadyTimedOut: false))
         ]));
         var logger = new RecordingLogger<PluginHost>();
         var loggerFactory = new RecordingLoggerFactory(logger);
@@ -619,17 +668,24 @@ public sealed class PluginHostLifecycleTests
                 out var conflictOwner));
             Assert.Equal("fixture.sdk-generated-health", conflictOwner);
 
+            if (mode.Equals("timeout", StringComparison.Ordinal))
+                await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
             File.WriteAllText(disposeReleasePath, string.Empty);
-            await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
+            if (!mode.Equals("timeout", StringComparison.Ordinal))
+                await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
 
             AssertStates(host.States, ("fixture.sdk-generated-health", expectedState));
             var lines = File.ReadAllLines(probePath);
+            if (mode.Equals("timeout", StringComparison.Ordinal))
+                await WaitForProbeLineAsync(probePath, "disposed", TimeSpan.FromSeconds(5));
+            lines = File.ReadAllLines(probePath);
             Assert.Equal(1, lines.Count(static line => line == "created"));
             Assert.Equal(1, lines.Count(static line => line == "disposed"));
-            Assert.True(endpoints.TryRegister(
+            await WaitForEndpointRegistrationAsync(
+                endpoints,
                 "fixture.after-failure",
                 new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, port),
-                out _));
+                TimeSpan.FromSeconds(5));
 
             await host.StopAsync(CancellationToken.None);
             lines = File.ReadAllLines(probePath);
@@ -736,10 +792,17 @@ public sealed class PluginHostLifecycleTests
             var lateEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, latePort);
             Assert.True(endpoints.TryRegister("fixture.late-http-competitor", lateEndpoint, out _));
 
+            if (mode.Equals("start-timeout", StringComparison.Ordinal))
+                await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
             File.WriteAllText(disposeReleasePath, string.Empty);
-            await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
+            if (!mode.Equals("start-timeout", StringComparison.Ordinal))
+                await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
             AssertStates(host.States, ("fixture.late-http-cleanup", expectedState));
-            Assert.True(endpoints.TryRegister("fixture.after-dispose", ownedEndpoint, out _));
+            await WaitForEndpointRegistrationAsync(
+                endpoints,
+                "fixture.after-dispose",
+                ownedEndpoint,
+                TimeSpan.FromSeconds(5));
             await host.StopAsync(CancellationToken.None);
         }
         finally
@@ -998,6 +1061,30 @@ public sealed class PluginHostLifecycleTests
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
             throw new TimeoutException($"File '{path}' was not created before the deadline.");
+        }
+    }
+
+    private static async Task WaitForEndpointRegistrationAsync(
+        PluginHttpEndpointRegistry endpoints,
+        string owner,
+        System.Net.IPEndPoint endpoint,
+        TimeSpan timeout)
+    {
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            while (true)
+            {
+                if (endpoints.TryRegister(owner, endpoint, out _))
+                    return;
+
+                await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Endpoint '{endpoint}' was not released for owner '{owner}' before the deadline.");
         }
     }
 

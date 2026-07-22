@@ -299,7 +299,13 @@ public sealed class StatePublisherTests
     public void InstanceSnapshots_AreImmutableAndCatalogUpdatesReturnNewCatalogs()
     {
         var instanceId = Guid.NewGuid();
-        var snapshot = new InstanceSnapshot(instanceId, "Example", InstanceType.MCJava, "1.21.8", InstanceStatus.Stopped);
+        var snapshot = new InstanceSnapshot(
+            instanceId,
+            "Example",
+            InstanceType.MCJava,
+            "1.21.8",
+            InstanceStatus.Stopped,
+            ReadyTimedOut: false);
         var mutableSource = new Dictionary<Guid, InstanceSnapshot> { [instanceId] = snapshot };
         var catalog = new InstanceCatalogSnapshot(mutableSource);
 
@@ -318,7 +324,13 @@ public sealed class StatePublisherTests
     public void InstanceCatalogSnapshot_RejectsInvalidEntries()
     {
         var instanceId = Guid.NewGuid();
-        var snapshot = new InstanceSnapshot(instanceId, "Example", InstanceType.MCJava, "1.21.8", InstanceStatus.Stopped);
+        var snapshot = new InstanceSnapshot(
+            instanceId,
+            "Example",
+            InstanceType.MCJava,
+            "1.21.8",
+            InstanceStatus.Stopped,
+            ReadyTimedOut: false);
 
         Assert.Throws<ArgumentException>(() => new InstanceCatalogSnapshot([
             new KeyValuePair<Guid, InstanceSnapshot>(instanceId, null!)

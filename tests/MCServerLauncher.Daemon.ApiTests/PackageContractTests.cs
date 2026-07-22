@@ -51,7 +51,7 @@ public sealed class PackageContractTests
                     StringComparer.Ordinal);
 
             Assert.Equal(3, dependencies.Count);
-            Assert.Equal("[1.0.0]", dependencies["MCServerLauncher.Common"]);
+            Assert.Equal("[2.0.0-preview.2]", dependencies["MCServerLauncher.Common"]);
             Assert.Equal("[0.10.1]", dependencies["RustyOptions"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.Logging.Abstractions"]);
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.API.dll");
@@ -112,7 +112,7 @@ public sealed class PackageContractTests
             var metadata = nuspec.Descendants(ns + "metadata").Single();
 
             Assert.Equal("MCServerLauncher.Common", (string?)metadata.Element(ns + "id"));
-            Assert.Equal("1.0.0", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("2.0.0-preview.2", (string?)metadata.Element(ns + "version"));
             Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
             Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
             Assert.Equal("GPL-3.0-only", metadata.Element(ns + "license")?.Value);
@@ -171,12 +171,12 @@ public sealed class PackageContractTests
                     StringComparer.Ordinal);
 
             Assert.Equal(2, dependencies.Count);
-            Assert.Equal("[2.0.0-preview.1]", dependencies["MCServerLauncher.Daemon.API"]);
+            Assert.Equal("[2.0.0-preview.2]", dependencies["MCServerLauncher.Daemon.API"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.DependencyInjection"]);
 
             var metadata = nuspec.Descendants(ns + "metadata").Single();
             Assert.Equal("MCServerLauncher.Daemon.Plugin.Sdk", (string?)metadata.Element(ns + "id"));
-            Assert.Equal("2.0.0-preview.1", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("2.0.0-preview.2", (string?)metadata.Element(ns + "version"));
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll");
             Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
             Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props");

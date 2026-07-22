@@ -258,7 +258,8 @@ public sealed class BuiltInProtocolDefinitionTests
             "first",
             InstanceType.MCJava,
             "1.21.5",
-            InstanceStatus.Running);
+            InstanceStatus.Running,
+            readyTimedOut: true);
         var upsertJson = JsonSerializer.Serialize(
             new InstanceCatalogChangedEventData(1, InstanceCatalogChangeOperation.Upsert, snapshot.InstanceId, snapshot),
             BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
@@ -267,6 +268,7 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
         Assert.Contains("\"operation\":\"upsert\"", upsertJson, StringComparison.Ordinal);
         Assert.Contains("\"snapshot\":", upsertJson, StringComparison.Ordinal);
+        Assert.Contains("\"ready_timed_out\":true", upsertJson, StringComparison.Ordinal);
         Assert.Contains("\"operation\":\"remove\"", removeJson, StringComparison.Ordinal);
         Assert.DoesNotContain("\"snapshot\":", removeJson, StringComparison.Ordinal);
 

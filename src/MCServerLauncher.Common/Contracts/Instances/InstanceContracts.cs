@@ -124,7 +124,8 @@ public sealed record InstanceReport(
     ImmutableDictionary<string, string> Properties,
     ImmutableArray<InstancePlayer> Players,
     InstancePerformance PerformanceCounter,
-    int? ProcessId);
+    int? ProcessId,
+    bool ReadyTimedOut = false);
 
 public sealed record InstanceReportList(ImmutableDictionary<Guid, InstanceReport> Reports);
 

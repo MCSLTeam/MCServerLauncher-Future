@@ -128,7 +128,8 @@ internal static class BuiltInConnectionDiscoverySystemRpcRegistrar
                 snapshot.Name,
                 snapshot.InstanceType,
                 snapshot.Version,
-                snapshot.Status))
+                snapshot.Status,
+                snapshot.ReadyTimedOut))
             .ToImmutableArray();
         return ProtocolRpcExecution<InstanceCatalogResult>.Ok(
             new InstanceCatalogResult(published.Version, items));

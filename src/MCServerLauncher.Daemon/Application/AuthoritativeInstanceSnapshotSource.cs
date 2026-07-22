@@ -34,8 +34,14 @@ internal sealed class AuthoritativeInstanceSnapshotSource : IInstanceSnapshotSou
     internal void Upsert(IInstance instance)
     {
         ArgumentNullException.ThrowIfNull(instance);
+        Upsert(instance, new InstanceReportFact(instance.Status, instance.ReadyTimedOut));
+    }
 
-        var snapshot = CreateSnapshot(instance);
+    internal void Upsert(IInstance instance, InstanceReportFact fact)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+
+        var snapshot = CreateSnapshot(instance, fact);
         lock (_publicationLock)
         {
             var current = _publisher.Current.Value;
@@ -84,12 +90,18 @@ internal sealed class AuthoritativeInstanceSnapshotSource : IInstanceSnapshotSou
 
     private static InstanceSnapshot CreateSnapshot(IInstance instance)
     {
+        return CreateSnapshot(instance, new InstanceReportFact(instance.Status, instance.ReadyTimedOut));
+    }
+
+    private static InstanceSnapshot CreateSnapshot(IInstance instance, InstanceReportFact fact)
+    {
         var config = instance.Config;
         return new InstanceSnapshot(
             config.Uuid,
             config.Name,
             config.InstanceType,
             config.Version,
-            instance.Status);
+            fact.Status,
+            fact.ReadyTimedOut);
     }
 }

@@ -3,7 +3,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Reflection;
+using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Events;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.ReturnedError;
@@ -21,6 +25,18 @@ public sealed class PublishedInstanceHealthPluginTests
     private static readonly TimeSpan SupervisedStartupTimeout = TimeSpan.FromSeconds(50);
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan EventTimeout = TimeSpan.FromSeconds(75);
+    private static readonly RpcDescriptor<EmptyRequest, UnitResult> PackageReferenceConsumerPing =
+        PluginProtocol.CreateRpc(
+            "fixture.package-reference-consumer",
+            "ping",
+            BuiltInProtocolJsonContext.Default.EmptyRequest,
+            BuiltInProtocolJsonContext.Default.UnitResult,
+            new RpcDocumentation(
+                "fixture.package-reference-consumer",
+                "Package reference ping",
+                "Verifies the published package consumer's generated Plugin.Sdk adapter is active.",
+                "fixture.empty-request",
+                "fixture.unit-result"));
 
     [Fact]
     [Trait("Category", "PublishedPlugin")]
@@ -46,6 +62,8 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.True(discover.IsOk(out var document), discover.IsErr(out var discoverError) ? discoverError!.Message : null);
         Assert.Contains(document!.Methods, method =>
             method.Name == "plugin.community.instance-health.rpc.get");
+        Assert.Contains(document.Methods, method =>
+            method.Name == PackageReferenceConsumerPing.Method.Value);
 
         var health = await client.InvokeAsync(
             InstanceHealthProtocol.Rpc,
@@ -59,6 +77,13 @@ public sealed class PublishedInstanceHealthPluginTests
             new InstanceHealthRequest { Scope = "unsupported" }).WaitAsync(RequestTimeout);
         Assert.True(invalidHealth.IsErr(out var invalidHealthError));
         Assert.Equal("plugin_scope_unsupported", invalidHealthError!.Code);
+
+        var packageReferencePing = await client.InvokeAsync(
+            PackageReferenceConsumerPing,
+            new EmptyRequest()).WaitAsync(RequestTimeout);
+        Assert.True(
+            packageReferencePing.IsOk(out _),
+            packageReferencePing.IsErr(out var packageReferenceError) ? packageReferenceError!.Message : null);
 
         var changed = new TaskCompletionSource<DaemonEvent<InstanceHealthChanged, Unit>>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -90,7 +115,6 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.Contains("fixture_start_returned_error", logs, StringComparison.Ordinal);
         Assert.Contains("fixture.start-throwing", logs, StringComparison.Ordinal);
         Assert.Contains("start_threw", logs, StringComparison.Ordinal);
-        Assert.Contains("fixture.package_reference_consumer.configure", logs, StringComparison.Ordinal);
         Assert.Contains("fixture.instance_health.stop", logs, StringComparison.Ordinal);
     }
 
@@ -184,25 +208,25 @@ public sealed class PublishedInstanceHealthPluginTests
                 "fixture.returned-error",
                 typeof(ReturnedErrorPlugin).Assembly,
                 typeof(ReturnedErrorPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.throwing"),
                 "fixture.throwing",
                 typeof(ThrowingPlugin).Assembly,
                 typeof(ThrowingPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.start-returned-error"),
                 "fixture.start-returned-error",
                 typeof(StartReturnedErrorPlugin).Assembly,
                 typeof(StartReturnedErrorPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.start-throwing"),
                 "fixture.start-throwing",
                 typeof(StartThrowingPlugin).Assembly,
                 typeof(StartThrowingPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             if (includeNeverCompletingStartPlugin)
             {
                 await WritePluginAsync(
@@ -210,7 +234,7 @@ public sealed class PublishedInstanceHealthPluginTests
                     "fixture.start-never-completes",
                     typeof(NeverCompletingStartPlugin).Assembly,
                     typeof(NeverCompletingStartPlugin).FullName!,
-                    "[\"event.publish\",\"rpc.register\"]");
+                    "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             }
             await WriteDocumentedPackagePluginAsync(root);
 
@@ -449,6 +473,11 @@ public sealed class PublishedInstanceHealthPluginTests
                 "--configuration", "Release", "--output", packageSource, "/m:1");
             await RunDotNetAsync(
                 repositoryRoot,
+                "pack",
+                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.Plugin.Sdk", "MCServerLauncher.Daemon.Plugin.Sdk.csproj"),
+                "--configuration", "Release", "--output", packageSource, "/m:1");
+            await RunDotNetAsync(
+                repositoryRoot,
                 "publish",
                 Path.Combine(repositoryRoot, "tests", "Fixtures", "Plugins", "PackageReferenceConsumer", "PackageReferenceConsumer.csproj"),
                 "--configuration", "Release",
@@ -461,24 +490,11 @@ public sealed class PublishedInstanceHealthPluginTests
             var pluginDirectory = Path.Combine(daemonRoot, "plugins", "fixture.package-reference-consumer");
             Directory.CreateDirectory(pluginDirectory);
             CopyDirectory(publishDirectory, pluginDirectory);
-            await File.WriteAllTextAsync(
-                Path.Combine(pluginDirectory, "mcsl-plugin.json"),
-                """
-                {
-                  "package": {
-                    "id": "fixture.package-reference-consumer",
-                    "version": "1.0.0"
-                  },
-                  "entry": {
-                    "assembly": "PackageReferenceConsumer.dll",
-                    "type": "MCServerLauncher.PackageReferenceConsumer.PackageReferenceConsumerPlugin"
-                  },
-                  "requires": {
-                    "api": "[2.0.0,3.0.0)",
-                    "features": []
-                  }
-                }
-                """);
+            if (!File.Exists(Path.Combine(pluginDirectory, "mcsl-plugin.json")))
+            {
+                throw new InvalidDataException(
+                    "The Plugin.Sdk package consumer publish did not include mcsl-plugin.json.");
+            }
 
             Directory.Delete(buildRoot, recursive: true);
         }

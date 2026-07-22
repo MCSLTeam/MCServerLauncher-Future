@@ -14,6 +14,8 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
     private readonly Process _process;
     private readonly Stream _input;
     private readonly Stream _output;
+    private readonly SafeFileHandle? _pseudoConsoleInputRead;
+    private readonly SafeFileHandle? _pseudoConsoleOutputWrite;
     private IntPtr _pseudoConsole;
     private readonly bool _isPty;
 
@@ -22,11 +24,15 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
         Stream input,
         Stream output,
         IntPtr pseudoConsole,
-        bool isPty)
+        bool isPty,
+        SafeFileHandle? pseudoConsoleInputRead = null,
+        SafeFileHandle? pseudoConsoleOutputWrite = null)
     {
         _process = process;
         _input = input;
         _output = output;
+        _pseudoConsoleInputRead = pseudoConsoleInputRead;
+        _pseudoConsoleOutputWrite = pseudoConsoleOutputWrite;
         _pseudoConsole = pseudoConsole;
         _isPty = isPty;
         InputStream = input;
@@ -85,11 +91,9 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
         if (hr != 0)
             throw new Win32Exception(hr);
 
-        CloseHandle(inputRead);
-        CloseHandle(outputWrite);
-
         var startupInfo = new StartupInfoEx();
         startupInfo.StartupInfo.cb = Marshal.SizeOf<StartupInfoEx>();
+        startupInfo.StartupInfo.dwFlags = 0x00000100; // STARTF_USESTDHANDLES
 
         var attrSize = IntPtr.Zero;
         InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attrSize);
@@ -111,29 +115,59 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
             ? $"\"{startInfo.FileName}\""
             : $"\"{startInfo.FileName}\" {startInfo.Arguments}";
 
-        var creationFlags = 0x00080000; // EXTENDED_STARTUPINFO_PRESENT
+        var processSecurity = new SecurityAttributes
+        {
+            Length = Marshal.SizeOf<SecurityAttributes>(),
+        };
+        var threadSecurity = new SecurityAttributes
+        {
+            Length = Marshal.SizeOf<SecurityAttributes>(),
+        };
+        const uint creationFlags = 0x00080000; // EXTENDED_STARTUPINFO_PRESENT
         if (!CreateProcess(
                 null,
                 cmd,
-                IntPtr.Zero,
-                IntPtr.Zero,
+                ref processSecurity,
+                ref threadSecurity,
                 false,
                 creationFlags,
                 IntPtr.Zero,
                 string.IsNullOrEmpty(startInfo.WorkingDirectory) ? null : startInfo.WorkingDirectory,
                 ref startupInfo,
                 out var processInfo))
+        {
+            CloseHandle(inputRead);
+            CloseHandle(outputWrite);
             throw new Win32Exception(Marshal.GetLastPInvokeError());
+        }
 
         DeleteProcThreadAttributeList(startupInfo.lpAttributeList);
         Marshal.FreeHGlobal(startupInfo.lpAttributeList);
         CloseHandle(processInfo.hThread);
 
         var process = Process.GetProcessById(processInfo.dwProcessId);
-            // process id stored below
-        var inputStream = new FileStream(new SafeFileHandle(inputWrite, ownsHandle: true), FileAccess.Write);
-        var outputStream = new FileStream(new SafeFileHandle(outputRead, ownsHandle: true), FileAccess.Read);
-        return new WindowsConPtyConsoleHost(process, inputStream, outputStream, hPC, isPty: true);
+        // Keep the pseudoconsole-side handles through process startup. ConPTY owns their
+        // active endpoints, while these handles keep the host channels valid until teardown.
+        var pseudoConsoleInputRead = new SafeFileHandle(inputRead, ownsHandle: true);
+        var pseudoConsoleOutputWrite = new SafeFileHandle(outputWrite, ownsHandle: true);
+        var inputStream = new FileStream(
+            new SafeFileHandle(inputWrite, ownsHandle: true),
+            FileAccess.Write,
+            bufferSize: 1,
+            isAsync: false);
+        var outputStream = new FileStream(
+            new SafeFileHandle(outputRead, ownsHandle: true),
+            FileAccess.Read,
+            bufferSize: 4096,
+            isAsync: false);
+        return new WindowsConPtyConsoleHost(
+            process,
+            inputStream,
+            outputStream,
+            hPC,
+            isPty: true,
+            pseudoConsoleInputRead: pseudoConsoleInputRead,
+            pseudoConsoleOutputWrite: pseudoConsoleOutputWrite);
     }
 
     public Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
@@ -147,7 +181,12 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
 
     public void WriteLine(string line, Encoding encoding)
     {
-        var bytes = encoding.GetBytes(line.EndsWith("\n", StringComparison.Ordinal) ? line : line + "\n");
+        var terminatedLine = line.EndsWith("\r\n", StringComparison.Ordinal)
+            ? line
+            : line.EndsWith("\n", StringComparison.Ordinal)
+                ? line[..^1] + "\r\n"
+                : line + "\r\n";
+        var bytes = encoding.GetBytes(terminatedLine);
         Write(bytes);
     }
 
@@ -165,13 +204,18 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
         _ = ResizePseudoConsole(_pseudoConsole, new Coord(columns, rows));
     }
 
+    public void NotifyProcessExited()
+    {
+        _pseudoConsoleInputRead?.Dispose();
+        var pseudoConsole = Interlocked.Exchange(ref _pseudoConsole, IntPtr.Zero);
+        if (pseudoConsole != IntPtr.Zero)
+            ClosePseudoConsole(pseudoConsole);
+        _pseudoConsoleOutputWrite?.Dispose();
+    }
+
     public void Dispose()
     {
-        if (_pseudoConsole != IntPtr.Zero)
-        {
-            ClosePseudoConsole(_pseudoConsole);
-            _pseudoConsole = IntPtr.Zero;
-        }
+        NotifyProcessExited();
 
         _input.Dispose();
         _output.Dispose();
@@ -219,7 +263,7 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
         public IntPtr hStdError;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct StartupInfoEx
     {
         public StartupInfo StartupInfo;
@@ -233,6 +277,14 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
         public IntPtr hThread;
         public int dwProcessId;
         public int dwThreadId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SecurityAttributes
+    {
+        public int Length;
+        public IntPtr SecurityDescriptor;
+        public int InheritHandle;
     }
 
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -270,12 +322,12 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
     private static extern bool CreateProcess(
         string? lpApplicationName,
         string lpCommandLine,
-        IntPtr lpProcessAttributes,
-        IntPtr lpThreadAttributes,
+        ref SecurityAttributes lpProcessAttributes,
+        ref SecurityAttributes lpThreadAttributes,
         bool bInheritHandles,
-        int dwCreationFlags,
+        uint dwCreationFlags,
         IntPtr lpEnvironment,
         string? lpCurrentDirectory,
-        ref StartupInfoEx lpStartupInfo,
+        [In] ref StartupInfoEx lpStartupInfo,
         out ProcessInformation lpProcessInformation);
 }

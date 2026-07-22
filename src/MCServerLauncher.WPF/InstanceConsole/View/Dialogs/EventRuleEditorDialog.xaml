@@ -50,9 +50,11 @@
             <StackPanel>
                 <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_InstanceStatusTrigger], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
                 <ComboBox SelectedValue="{Binding TargetStatus}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_TargetStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
-                    <ComboBoxItem Content="{Binding [Status_Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
-                    <ComboBoxItem Content="{Binding [Status_Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
-                    <ComboBoxItem Content="{Binding [Status_Crashed], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Crashed" />
+                    <ComboBoxItem Content="{Binding [Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
+                    <ComboBoxItem Content="{Binding [Starting], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Starting" />
+                    <ComboBoxItem Content="{Binding [Stopping], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopping" />
+                    <ComboBoxItem Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
+                    <ComboBoxItem Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Crashed" />
                 </ComboBox>
             </StackPanel>
         </DataTemplate>
@@ -114,9 +116,11 @@
             <StackPanel>
                 <TextBlock Text="{Binding [ConsoleCommand_EventTrigger_InstanceStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" FontWeight="SemiBold" Margin="0,0,0,5" />
                 <ComboBox SelectedValue="{Binding TargetStatus}" SelectedValuePath="Tag" ui:ControlHelper.Header="{Binding [ConsoleCommand_EventTrigger_TargetStatus], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="200">
-                    <ComboBoxItem Content="{Binding [Status_Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
-                    <ComboBoxItem Content="{Binding [Status_Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
-                    <ComboBoxItem Content="{Binding [Status_Crashed], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Crashed" />
+                    <ComboBoxItem Content="{Binding [Running], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Running" />
+                    <ComboBoxItem Content="{Binding [Starting], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Starting" />
+                    <ComboBoxItem Content="{Binding [Stopping], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopping" />
+                    <ComboBoxItem Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Stopped" />
+                    <ComboBoxItem Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Tag="Crashed" />
                 </ComboBox>
             </StackPanel>
         </DataTemplate>

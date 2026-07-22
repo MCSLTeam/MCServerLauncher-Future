@@ -445,12 +445,12 @@ public sealed class InstanceManagerCreateTransactionTests
             return Task.FromResult(false);
         }
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => [];
 

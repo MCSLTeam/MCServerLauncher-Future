@@ -15,7 +15,7 @@ public sealed partial class V2ClientEventMaterializerTests
 {
     private const string InstanceId = "11111111-1111-1111-1111-111111111111";
     private const string RuleId = "22222222-2222-2222-2222-222222222222";
-    private const string CatalogItemJson = "{\"instance_id\":\"" + InstanceId + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\"}";
+    private const string CatalogItemJson = "{\"instance_id\":\"" + InstanceId + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\",\"ready_timed_out\":false}";
     private const string SystemJson = "{\"os\":{\"name\":\"Windows\",\"architecture\":\"x64\"},\"cpu\":{\"vendor\":\"vendor\",\"name\":\"cpu\",\"count\":16,\"usage\":5.5,\"core_count\":8,\"thread_count\":16},\"mem\":{\"total_kilobytes\":32768,\"free_kilobytes\":16384},\"drive\":{\"drive_format\":\"NTFS\",\"total_bytes\":1024,\"free_bytes\":512,\"name\":\"C\"},\"drives\":[],\"daemon_version\":\"2.0.0\"}";
 
     [Fact]

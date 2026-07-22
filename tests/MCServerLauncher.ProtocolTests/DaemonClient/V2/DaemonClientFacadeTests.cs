@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Events;
@@ -239,7 +240,7 @@ public sealed class DaemonClientFacadeTests
     }
 
     [Fact]
-    public async Task RestartStopsWaitsOneSecondThenStarts()
+    public async Task RestartPollsReportAcrossSlowStopAndStartsOnlyAfterTerminal()
     {
         var factory = new ControlledSessionFactory();
         var time = new ManualTimeProvider();
@@ -252,14 +253,24 @@ public sealed class DaemonClientFacadeTests
         Assert.Equal(BuiltInProtocolDefinitions.StopInstance.Method.Value, stop.Method);
         session.RouteSuccess(stop);
 
-        await time.TimerCreated.Task.WaitAsync(Timeout);
+        var firstReport = await session.Transport.NextAsync();
+        Assert.Equal(BuiltInProtocolDefinitions.GetInstanceReport.Method.Value, firstReport.Method);
+        session.RouteSuccess(firstReport, ReportJson(instanceId, InstanceStatus.Stopping));
+        await time.WaitForTimerCountAsync(2).WaitAsync(Timeout);
         Assert.False(restarting.IsCompleted);
         Assert.Equal(TimeSpan.FromSeconds(1), time.LastDueTime);
-        time.Advance(TimeSpan.FromMilliseconds(999));
-        Assert.False(restarting.IsCompleted);
-        Assert.Equal(0, session.Transport.PendingCount);
 
-        time.Advance(TimeSpan.FromMilliseconds(1));
+        time.Advance(TimeSpan.FromSeconds(1));
+        var secondReport = await session.Transport.NextAsync();
+        Assert.Equal(BuiltInProtocolDefinitions.GetInstanceReport.Method.Value, secondReport.Method);
+        session.RouteSuccess(secondReport, ReportJson(instanceId, InstanceStatus.Stopping));
+        await time.WaitForTimerCountAsync(3).WaitAsync(Timeout);
+        Assert.False(restarting.IsCompleted);
+
+        time.Advance(TimeSpan.FromSeconds(1));
+        var terminalReport = await session.Transport.NextAsync();
+        Assert.Equal(BuiltInProtocolDefinitions.GetInstanceReport.Method.Value, terminalReport.Method);
+        session.RouteSuccess(terminalReport, ReportJson(instanceId, InstanceStatus.Stopped));
         var start = await session.Transport.NextAsync();
         Assert.Equal(BuiltInProtocolDefinitions.StartInstance.Method.Value, start.Method);
         session.RouteSuccess(start);
@@ -268,7 +279,7 @@ public sealed class DaemonClientFacadeTests
     }
 
     [Fact]
-    public async Task RestartStopAndStartErrorsRemainTyped()
+    public async Task RestartStopReportAndStartErrorsRemainTyped()
     {
         var stopFactory = new ControlledSessionFactory();
         var stopTime = new ManualTimeProvider();
@@ -284,6 +295,20 @@ public sealed class DaemonClientFacadeTests
         Assert.Equal(0, stopTime.TimerCount);
         Assert.Equal(0, stopSession.Transport.PendingCount);
 
+        var reportFactory = new ControlledSessionFactory();
+        await using var reportClient = Client(reportFactory, new ManualTimeProvider());
+        var reportSession = await MakeReadyAsync(reportClient, reportFactory);
+
+        var reported = reportClient.RestartInstanceAsync(Guid.NewGuid());
+        var reportStop = await reportSession.Transport.NextAsync();
+        reportSession.RouteSuccess(reportStop);
+        var failedReport = await reportSession.Transport.NextAsync();
+        reportSession.RouteError(failedReport, "instance.report_failed", "internal");
+        var reportResult = await reported.WaitAsync(Timeout);
+        Assert.True(reportResult.IsErr(out var reportError));
+        Assert.Equal("instance.report_failed", reportError!.Code);
+        Assert.Equal(0, reportSession.Transport.PendingCount);
+
         var startFactory = new ControlledSessionFactory();
         var startTime = new ManualTimeProvider();
         await using var startClient = Client(startFactory, startTime);
@@ -292,8 +317,10 @@ public sealed class DaemonClientFacadeTests
         var started = startClient.RestartInstanceAsync(Guid.NewGuid());
         var successfulStop = await startSession.Transport.NextAsync();
         startSession.RouteSuccess(successfulStop);
-        await startTime.TimerCreated.Task.WaitAsync(Timeout);
-        startTime.Advance(TimeSpan.FromSeconds(1));
+        var terminalReport = await startSession.Transport.NextAsync();
+        startSession.RouteSuccess(
+            terminalReport,
+            ReportJson(Guid.NewGuid(), InstanceStatus.Crashed));
         var start = await startSession.Transport.NextAsync();
         startSession.RouteError(start, "instance.start_failed", "conflict");
         var startResult = await started.WaitAsync(Timeout);
@@ -302,7 +329,7 @@ public sealed class DaemonClientFacadeTests
     }
 
     [Fact]
-    public async Task RestartDelayCancellationPreservesTokenAndDoesNotStart()
+    public async Task RestartPollingCancellationPreservesTokenAndDoesNotStart()
     {
         var factory = new ControlledSessionFactory();
         var time = new ManualTimeProvider();
@@ -313,11 +340,38 @@ public sealed class DaemonClientFacadeTests
         var restarting = client.RestartInstanceAsync(Guid.NewGuid(), cancellation.Token);
         var stop = await session.Transport.NextAsync();
         session.RouteSuccess(stop);
-        await time.TimerCreated.Task.WaitAsync(Timeout);
+        var report = await session.Transport.NextAsync();
+        session.RouteSuccess(report, ReportJson(Guid.NewGuid(), InstanceStatus.Stopping));
+        await time.WaitForTimerCountAsync(2).WaitAsync(Timeout);
 
         cancellation.Cancel();
         var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => restarting);
         Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(0, session.Transport.PendingCount);
+    }
+
+    [Fact]
+    public async Task RestartTerminalWaitIsBoundedAndDoesNotStartAfterTimeout()
+    {
+        var factory = new ControlledSessionFactory();
+        var time = new ManualTimeProvider();
+        await using var client = Client(factory, time);
+        var session = await MakeReadyAsync(client, factory);
+        var instanceId = Guid.NewGuid();
+
+        var restarting = client.RestartInstanceAsync(instanceId);
+        var stop = await session.Transport.NextAsync();
+        session.RouteSuccess(stop);
+        var report = await session.Transport.NextAsync();
+        session.RouteSuccess(report, ReportJson(instanceId, InstanceStatus.Stopping));
+        await time.WaitForTimerCountAsync(2).WaitAsync(Timeout);
+
+        time.Advance(TimeSpan.FromSeconds(30));
+        var result = await restarting.WaitAsync(Timeout);
+
+        Assert.True(result.IsErr(out var error));
+        Assert.IsType<ConflictDaemonError>(error);
+        Assert.Equal("instance.restart_timeout", error.Code);
         Assert.Equal(0, session.Transport.PendingCount);
     }
 
@@ -350,6 +404,11 @@ public sealed class DaemonClientFacadeTests
     }
 
     private static Uri Endpoint() => new("ws://daemon.example/api/v2");
+
+    private static string ReportJson(Guid instanceId, InstanceStatus status) =>
+        "{\"status\":\"" + status.ToString().ToLowerInvariant() +
+        "\",\"config\":{\"instance_id\":\"" + instanceId +
+        "\",\"name\":\"demo\",\"target\":\"server.jar\",\"instance_type\":\"universal\",\"target_type\":\"jar\",\"version\":\"1\",\"input_encoding\":\"utf-8\",\"output_encoding\":\"utf-8\",\"java_path\":\"java\",\"arguments\":[],\"environment_variables\":{},\"event_rules\":{},\"console_mode\":\"pipe\"},\"properties\":{},\"players\":[],\"performance_counter\":{\"cpu\":0,\"memory_bytes\":0},\"process_id\":null,\"ready_timed_out\":false}";
 
     private static MCServerLauncher.DaemonClient.DaemonClient Client(
         ControlledSessionFactory factory,
@@ -524,6 +583,12 @@ public sealed class DaemonClientFacadeTests
         internal int TimerCount => Volatile.Read(ref _timerCount);
 
         internal TimeSpan LastDueTime { get; private set; }
+
+        internal async Task WaitForTimerCountAsync(int expected)
+        {
+            while (TimerCount < expected)
+                await Task.Yield();
+        }
 
         public override ITimer CreateTimer(
             TimerCallback callback,

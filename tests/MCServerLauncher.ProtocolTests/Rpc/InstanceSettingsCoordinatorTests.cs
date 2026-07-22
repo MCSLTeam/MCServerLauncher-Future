@@ -91,10 +91,10 @@ public class InstanceSettingsCoordinatorTests
     }
 
     [Fact]
-    public async Task InstanceProcess_MinecraftProcessStaysStoppedBeforeDoneLog()
+    public async Task InstanceProcess_MinecraftProcessStaysStartingBeforeDoneLog()
     {
         var startInfo = CreateShortLivedProcessStartInfo();
-        using var process = new InstanceProcess(startInfo, isMcServer: true);
+        using var process = new InstanceProcess(startInfo, InstanceType.MCJava);
 
         var started = await process.StartAsync(delayToCheck: 100);
 
@@ -202,12 +202,12 @@ public class InstanceSettingsCoordinatorTests
             return Task.FromResult(true);
         }
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory()
         {

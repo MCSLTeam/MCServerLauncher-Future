@@ -347,6 +347,39 @@ public sealed class RemoteInstanceCatalogMirrorTests
     }
 
     [Fact]
+    public void FullAndDeltaSnapshots_PreserveEveryLifecycleStatusAndReadyTimeout()
+    {
+        var statuses = Enum.GetValues<InstanceStatus>();
+        var mirror = new RemoteInstanceCatalogMirror();
+        var generation = mirror.BeginReconciliation();
+
+        Assert.Equal(
+            RemoteInstanceCatalogTransition.Ready,
+            mirror.ApplyFullSnapshot(
+                generation,
+                Full(1, Item(FirstId, "status", status: statuses[0], readyTimedOut: true))));
+        Assert.Equal(statuses[0], mirror.Current.Value.Instances[FirstId].Status);
+        Assert.True(mirror.Current.Value.Instances[FirstId].ReadyTimedOut);
+
+        for (var index = 1; index < statuses.Length; index++)
+        {
+            Assert.Equal(
+                RemoteInstanceCatalogTransition.Applied,
+                mirror.ReceiveChange(
+                    generation,
+                    Upsert(
+                        index + 1,
+                        FirstId,
+                        "status",
+                        status: statuses[index],
+                        readyTimedOut: index % 2 == 0)));
+            var snapshot = mirror.Current.Value.Instances[FirstId];
+            Assert.Equal(statuses[index], snapshot.Status);
+            Assert.Equal(index % 2 == 0, snapshot.ReadyTimedOut);
+        }
+    }
+
+    [Fact]
     public void BufferOverflow_NeedsResyncAndRejectsFurtherChanges()
     {
         var mirror = new RemoteInstanceCatalogMirror();
@@ -427,6 +460,7 @@ public sealed class RemoteInstanceCatalogMirrorTests
             Upsert(1, FirstId, "name", "version", InstanceType.Universal, InstanceStatus.Stopped),
             Upsert(1, FirstId, "name", "different-version", InstanceType.MCJava, InstanceStatus.Stopped),
             Upsert(1, FirstId, "name", "version", InstanceType.MCJava, InstanceStatus.Running),
+            Upsert(1, FirstId, "name", "version", InstanceType.MCJava, InstanceStatus.Stopped, readyTimedOut: true),
             Upsert(1, SecondId, "name", "version", InstanceType.MCJava, InstanceStatus.Stopped)
         };
 
@@ -468,8 +502,8 @@ public sealed class RemoteInstanceCatalogMirrorTests
     {
         var malformedItems = new[]
         {
-            new InstanceCatalogItem(SecondId, null!, InstanceType.MCJava, "1", InstanceStatus.Stopped),
-            new InstanceCatalogItem(SecondId, "name", InstanceType.MCJava, null!, InstanceStatus.Stopped)
+            new InstanceCatalogItem(SecondId, null!, InstanceType.MCJava, "1", InstanceStatus.Stopped, readyTimedOut: false),
+            new InstanceCatalogItem(SecondId, "name", InstanceType.MCJava, null!, InstanceStatus.Stopped, readyTimedOut: false)
         };
 
         foreach (var malformed in malformedItems)
@@ -488,7 +522,7 @@ public sealed class RemoteInstanceCatalogMirrorTests
             1,
             InstanceCatalogChangeOperation.Upsert,
             FirstId,
-            new InstanceCatalogItem(FirstId, null!, InstanceType.MCJava, "1", InstanceStatus.Stopped));
+            new InstanceCatalogItem(FirstId, null!, InstanceType.MCJava, "1", InstanceStatus.Stopped, readyTimedOut: false));
         Assert.Equal(RemoteInstanceCatalogTransition.NeedsResync,
             malformedEventMirror.ReceiveChange(eventGeneration, malformedEvent));
 
@@ -849,8 +883,9 @@ public sealed class RemoteInstanceCatalogMirrorTests
         string name,
         string version = "1",
         InstanceType instanceType = InstanceType.MCJava,
-        InstanceStatus status = InstanceStatus.Stopped) =>
-        new(id, name, instanceType, version, status);
+        InstanceStatus status = InstanceStatus.Stopped,
+        bool readyTimedOut = false) =>
+        new(id, name, instanceType, version, status, readyTimedOut);
 
     private static InstanceCatalogChangedEventData Upsert(
         long version,
@@ -858,9 +893,10 @@ public sealed class RemoteInstanceCatalogMirrorTests
         string name,
         string itemVersion = "1",
         InstanceType instanceType = InstanceType.MCJava,
-        InstanceStatus status = InstanceStatus.Stopped) =>
+        InstanceStatus status = InstanceStatus.Stopped,
+        bool readyTimedOut = false) =>
         new(version, InstanceCatalogChangeOperation.Upsert, id,
-            Item(id, name, itemVersion, instanceType, status));
+            Item(id, name, itemVersion, instanceType, status, readyTimedOut));
 
     private static InstanceCatalogChangedEventData Remove(long version, Guid id) =>
         new(version, InstanceCatalogChangeOperation.Remove, id, null);

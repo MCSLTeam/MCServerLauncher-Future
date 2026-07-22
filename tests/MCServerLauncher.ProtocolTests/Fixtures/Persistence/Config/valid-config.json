@@ -20,5 +20,9 @@
     "plugin_grants": {},
     "admissions": {},
     "entries": {}
+  },
+  "operations": {
+    "retention_days": 7,
+    "maximum_bytes": 268435456
   }
 }
