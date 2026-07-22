@@ -388,12 +388,12 @@ public sealed class PluginAdmissionPolicyTests
         Assert.False(registry.TryRegister("other", ep, out var conflict));
         Assert.Equal("mcp", conflict);
 
-        registry.Release("mcp");
+        registry.Release("mcp", ep);
         Assert.True(registry.TryRegister("other", ep, out _));
     }
 
     [Fact]
-    public void HttpEndpointRegistryRejectsSamePortAcrossDifferentAddresses()
+    public void HttpEndpointRegistryTreatsWildcardAsOverlappingConcreteAddress()
     {
         // A daemon binding 0.0.0.0:port occupies the port on every address, so a plugin binding
         // 127.0.0.1:port must be rejected too. The conflict key is the PORT, not the IP.
@@ -407,6 +407,27 @@ public sealed class PluginAdmissionPolicyTests
             new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 11452),
             out var conflict));
         Assert.Equal("mcsl.daemon", conflict);
+    }
+
+    [Fact]
+    public void HttpEndpointRegistryUsesNormalizedExactIpPortKeys()
+    {
+        var registry = new PluginHttpEndpointRegistry();
+        var ipv4 = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 11453);
+        var mappedIpv4 = new System.Net.IPEndPoint(
+            System.Net.IPAddress.Parse("::ffff:127.0.0.1"),
+            11453);
+        var ipv6 = new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Loopback, 11453);
+
+        Assert.True(registry.TryRegister("mcp", mappedIpv4, out _));
+        Assert.False(registry.TryRegister("other", ipv4, out var conflict));
+        Assert.Equal("mcp", conflict);
+        Assert.True(registry.TryRegister("ipv6", ipv6, out _));
+
+        registry.Release("mcp", ipv4);
+        Assert.True(registry.TryRegister("other", mappedIpv4, out _));
+        Assert.False(registry.TryRegister("other", ipv6, out var ipv6Conflict));
+        Assert.Equal("ipv6", ipv6Conflict);
     }
 
     private static PluginManifest Manifest(

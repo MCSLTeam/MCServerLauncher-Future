@@ -314,9 +314,9 @@ internal sealed class PluginHost
                 finally
                 {
                     runtime.Activation.TrySetCanceled();
+                    ReleaseHttpEndpoints(runtime);
                     DisposePlugin(runtime);
                     DisposeLifetime(runtime);
-                    _httpEndpoints.Release(runtime.Manifest.Identity.Id);
                     runtime.State = PluginRuntimeState.Stopped;
                 }
             }
@@ -327,9 +327,9 @@ internal sealed class PluginHost
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
+                ReleaseHttpEndpoints(runtime);
                 DisposePlugin(runtime);
                 DisposeLifetime(runtime);
-                _httpEndpoints.Release(runtime.Manifest.Identity.Id);
                 runtime.State = PluginRuntimeState.Stopped;
             }
         }
@@ -387,7 +387,7 @@ internal sealed class PluginHost
             IPluginPrivateStorage? storage = manifest.HasFeature(PluginFeature.StoragePrivate)
                 ? new PluginPrivateStorage(manifest.Identity, _pluginsConfig, errors)
                 : null;
-            IPluginHttpEndpointPolicy? httpPolicy = manifest.HasFeature(PluginFeature.NetworkHttpListen)
+            PluginHttpEndpointPolicy? httpPolicy = manifest.HasFeature(PluginFeature.NetworkHttpListen)
                 ? new PluginHttpEndpointPolicy(manifest.Identity.Id, _httpEndpoints, errors)
                 : null;
             IPluginAuthentication? authentication = manifest.HasFeature(PluginFeature.AuthVerify)
@@ -424,7 +424,16 @@ internal sealed class PluginHost
                 manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null,
                 activation.Task,
                 lifetime.Token);
-            return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);
+            return new PluginRuntime(
+                manifest,
+                loadContext,
+                plugin,
+                context,
+                draft,
+                lifetime,
+                activation,
+                eventOwner,
+                httpPolicy);
         }
         catch (Exception exception)
         {
@@ -727,7 +736,7 @@ internal sealed class PluginHost
         }
         finally
         {
-            _httpEndpoints.Release(runtime.Manifest.Identity.Id);
+            ReleaseHttpEndpoints(runtime);
         }
     }
 
@@ -770,9 +779,9 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
+        ReleaseHttpEndpoints(runtime);
         DisposePlugin(runtime);
         DisposeLifetime(runtime);
-        _httpEndpoints.Release(runtime.Manifest.Identity.Id);
         runtime.State = PluginRuntimeState.Failed;
     }
 
@@ -794,9 +803,9 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
+        ReleaseHttpEndpoints(runtime);
         DisposePlugin(runtime);
         DisposeLifetime(runtime);
-        _httpEndpoints.Release(runtime.Manifest.Identity.Id);
         runtime.State = PluginRuntimeState.Failed;
     }
 
@@ -853,6 +862,9 @@ internal sealed class PluginHost
         }
     }
 
+    private static void ReleaseHttpEndpoints(PluginRuntime runtime) =>
+        runtime.HttpEndpointPolicy?.ReleaseAll();
+
     private void DisposeLifetime(PluginRuntime runtime)
     {
         if (Interlocked.Exchange(ref runtime.LifetimeDisposeScheduled, 1) != 0)
@@ -899,7 +911,8 @@ internal sealed class PluginHost
         PluginRegistrationDraft draft,
         CancellationTokenSource lifetime,
         TaskCompletionSource activation,
-        PluginEventOwnerLedger eventOwner)
+        PluginEventOwnerLedger eventOwner,
+        PluginHttpEndpointPolicy? httpEndpointPolicy)
     {
         internal PluginManifest Manifest { get; } = manifest;
         internal PluginLoadContext LoadContext { get; } = loadContext;
@@ -912,6 +925,7 @@ internal sealed class PluginHost
         internal int LifetimeDisposeScheduled;
         internal TaskCompletionSource Activation { get; } = activation;
         internal PluginEventOwnerLedger EventOwner { get; } = eventOwner;
+        internal PluginHttpEndpointPolicy? HttpEndpointPolicy { get; } = httpEndpointPolicy;
         internal PluginRuntimeState State { get; set; } = PluginRuntimeState.Discovered;
     }
 }

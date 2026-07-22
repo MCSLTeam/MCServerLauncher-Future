@@ -16,7 +16,8 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
     private readonly string _pluginId;
     private readonly PluginHttpEndpointRegistry _registry;
     private readonly PluginErrorFactory _errors;
-    private readonly HashSet<int> _ownedPorts = [];
+    private readonly object _gate = new();
+    private readonly HashSet<IPEndPoint> _ownedEndpoints = [];
 
     internal PluginHttpEndpointPolicy(
         string pluginId,
@@ -41,14 +42,17 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
                 "Plugin HTTP listeners must bind loopback in Preview-1. Public exposure requires an external reverse proxy."));
         }
 
-        if (!_registry.TryRegister(_pluginId, endpoint, out var conflictOwner))
+        lock (_gate)
         {
-            return Result.Err<Unit, DaemonError>(_errors.Create(
-                "plugin_http_port_conflict",
-                $"HTTP port {endpoint.Port} is already owned by '{conflictOwner}'."));
-        }
+            if (!_registry.TryRegister(_pluginId, endpoint, out var conflictOwner))
+            {
+                return Result.Err<Unit, DaemonError>(_errors.Create(
+                    "plugin_http_port_conflict",
+                    $"HTTP endpoint {endpoint} is already owned by '{conflictOwner}'."));
+            }
 
-        _ownedPorts.Add(endpoint.Port);
+            _ownedEndpoints.Add(endpoint);
+        }
         return Result.Ok<Unit, DaemonError>(Unit.Default);
     }
 
@@ -56,16 +60,22 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
     {
         if (!TryParseEndpoint(address, port, out var endpoint, out _))
             return;
-        if (_ownedPorts.Remove(endpoint.Port))
-            _registry.Release(_pluginId);
+        lock (_gate)
+        {
+            if (_ownedEndpoints.Remove(endpoint))
+                _registry.Release(_pluginId, endpoint);
+        }
     }
 
     internal void ReleaseAll()
     {
-        if (_ownedPorts.Count == 0)
-            return;
-        _ownedPorts.Clear();
-        _registry.Release(_pluginId);
+        lock (_gate)
+        {
+            if (_ownedEndpoints.Count == 0)
+                return;
+            _ownedEndpoints.Clear();
+            _registry.ReleaseAll(_pluginId);
+        }
     }
 
     private bool TryParseEndpoint(string address, int port, out IPEndPoint endpoint, out DaemonError? error)
@@ -84,7 +94,7 @@ internal sealed class PluginHttpEndpointPolicy : IPluginHttpEndpointPolicy
             return false;
         }
 
-        endpoint = new IPEndPoint(ip, port);
+        endpoint = PluginHttpEndpointRegistry.Normalize(new IPEndPoint(ip, port));
         return true;
     }
 }
