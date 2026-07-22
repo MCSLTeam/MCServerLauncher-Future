@@ -300,28 +300,27 @@ jobs:
           $packageRoot = Join-Path $env:GITHUB_WORKSPACE 'artifacts/nuget'
           New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 
-          # Preview-1 accepted pin keeps Common at its declared 1.0.0 while
-          # Daemon.API / Plugin.Sdk ship as 2.0.0-preview.1. Other tags keep the
-          # historical tag-derived PackageVersion override for Common + Daemon.API.
-          $isPreview1Pin = [string]::Equals($packageVersion, '2.0.0-preview.1', [System.StringComparison]::Ordinal)
+          # The remediated SDK Preview-1 package closure ships under the fresh
+          # 2.0.0-preview.2 version. Other tags retain tag-derived package versions.
+          $isPreview1Pin = [string]::Equals($packageVersion, '2.0.0-preview.2', [System.StringComparison]::Ordinal)
 
           if ($isPreview1Pin) {
             $packages = @(
               @{
                 Project = 'src/MCServerLauncher.Common/MCServerLauncher.Common.csproj'
-                Expected = 'MCServerLauncher.Common.1.0.0.nupkg'
+                Expected = 'MCServerLauncher.Common.2.0.0-preview.2.nupkg'
                 Label = 'Common'
                 OverrideVersion = $false
               },
               @{
                 Project = 'src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj'
-                Expected = 'MCServerLauncher.Daemon.API.2.0.0-preview.1.nupkg'
+                Expected = 'MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg'
                 Label = 'Daemon API'
                 OverrideVersion = $false
               },
               @{
                 Project = 'src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj'
-                Expected = 'MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.1.nupkg'
+                Expected = 'MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg'
                 Label = 'Plugin SDK'
                 OverrideVersion = $false
               }

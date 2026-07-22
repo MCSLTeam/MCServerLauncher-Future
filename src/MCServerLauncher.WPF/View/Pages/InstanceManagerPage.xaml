@@ -35,6 +35,12 @@
                                         <DataTrigger Binding="{Binding Status}" Value="Running">
                                             <Setter Property="Background" Value="#FF107C10" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="Starting">
+                                            <Setter Property="Background" Value="#FF0078D4" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="Stopping">
+                                            <Setter Property="Background" Value="#FFF7630C" />
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Status}" Value="Stopped">
                                             <Setter Property="Background" Value="#FF999999" />
                                         </DataTrigger>
@@ -186,6 +192,8 @@
                           VerticalAlignment="Top" HorizontalAlignment="Left" SelectionChanged="RunningStatusFilterChanged">
                     <ComboBoxItem Tag="All" IsSelected="True" Content="{Binding [AllRunningStatus], Source={x:Static i18n:Lang.Tr}}" />
                     <ComboBoxItem Tag="Running" Content="{Binding [Running], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Starting" Content="{Binding [Starting], Source={x:Static i18n:Lang.Tr}}" />
+                    <ComboBoxItem Tag="Stopping" Content="{Binding [Stopping], Source={x:Static i18n:Lang.Tr}}" />
                     <ComboBoxItem Tag="Stopped" Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}}" />
                     <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
                 </ComboBox>

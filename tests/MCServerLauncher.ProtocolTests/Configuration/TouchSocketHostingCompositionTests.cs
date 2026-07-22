@@ -5,6 +5,8 @@ using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.ApplicationCore.Operations;
+using MCServerLauncher.Daemon.ApplicationCore.Provisioning;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Remote.Event;
@@ -121,13 +123,22 @@ public class TouchSocketHostingCompositionTests
     [Fact]
     [Trait("Category", "DaemonInbound")]
     [Trait("Category", "DaemonInboundStatic")]
-    public void HttpMetadata_ReportsV2AsTheOnlyProductionApiVersion()
+    public void HttpMetadataAndEmbeddedDocs_ExposeOnlyTheV2TokenIssueRpc()
     {
         var source = ReadSourceFile("src/MCServerLauncher.Daemon/Remote/HttpPlugin.cs");
+        var docsRoot = Path.Combine(
+            ResolveRepoRoot(),
+            "src/MCServerLauncher.Daemon/.Resources/Docs");
+        var staleDocument = Directory
+            .EnumerateFiles(docsRoot, "*", SearchOption.AllDirectories)
+            .FirstOrDefault(path => File.ReadAllText(path).Contains("/subtoken", StringComparison.Ordinal));
 
         Assert.Contains("version, \"ok\", \"v2\"", source, StringComparison.Ordinal);
         Assert.Contains("version, \"v2\"", source, StringComparison.Ordinal);
         Assert.DoesNotContain("\"v1\"", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("/subtoken", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("JwtUtils.GenerateToken", source, StringComparison.Ordinal);
+        Assert.Null(staleDocument);
     }
 
     [Fact]
@@ -171,6 +182,13 @@ public class TouchSocketHostingCompositionTests
             Assert.Same(resolver.GetRequiredService<IFileApplication>(), application.Files);
             Assert.Same(resolver.GetRequiredService<ISystemApplication>(), application.System);
             Assert.Same(resolver.GetRequiredService<IEventRuleApplication>(), application.EventRules);
+            var operationCoordinator = Assert.IsType<OperationCoordinator>(
+                resolver.GetRequiredService<IOperationApplication>());
+            var planKernel = resolver.GetRequiredService<PlanKernel>();
+            var startupRecovery = resolver.GetRequiredService<OperationStartupRecovery>();
+            Assert.Same(operationCoordinator, startupRecovery.Operations);
+            Assert.Same(planKernel, startupRecovery.Plans);
+            Assert.False(startupRecovery.IsCompleted);
             Assert.NotNull(resolver.GetRequiredService<FileSessionCoordinator>());
             Assert.Same(
                 resolver.GetRequiredService<FileSessionCoordinator>(),
@@ -182,6 +200,8 @@ public class TouchSocketHostingCompositionTests
             var transportPlugin = resolver.GetRequiredService<TouchSocketV2TransportPlugin>();
             Assert.Same(transportPlugin, resolver.GetRequiredService<IV2ConnectionAdministration>());
             attachment = DaemonServiceComposition.AttachDaemonLifecycle(httpService);
+            Assert.True(startupRecovery.IsCompleted);
+            Assert.Same(startupRecovery, resolver.GetRequiredService<OperationStartupRecovery>());
 
             Assert.True(catalogAccessor.TryGet(out var attachedCatalog));
             var catalogComposition = resolver.GetRequiredService<BuiltInProtocolCatalogComposition>();

@@ -271,6 +271,141 @@ public sealed class InstanceCatalogCommitFeedTests
     }
 
     [Fact]
+    public async Task ReadyTimeoutFact_PublishesCatalogChangeWithoutDuplicateStatusEvent()
+    {
+        using var domainEvents = DomainEventPortTestHost.Create();
+        var manager = new InstanceManager();
+        var instance = new ControlledStatusInstance(CreateConfig(1));
+        using var statusBridge = new MCServerLauncher.Daemon.Bootstrap.InstanceDomainEventBridge(
+            manager,
+            domainEvents.Port);
+        var catalogBridge = new InstanceCatalogDomainEventBridge(manager.CatalogCommitFeed, domainEvents.Port);
+        var catalogEvents = new ConcurrentQueue<InstanceCatalogChangedEventData>();
+        var statusEvents = new ConcurrentQueue<InstanceStatusChangedDomainEvent>();
+        using var catalogSignal = new SemaphoreSlim(0);
+        var owner = domainEvents.Port.CreateOwner(nameof(ReadyTimeoutFact_PublishesCatalogChangeWithoutDuplicateStatusEvent));
+        domainEvents.Port.Subscribe<InstanceCatalogChangedDomainEvent>(owner, (domainEvent, _) =>
+        {
+            catalogEvents.Enqueue(domainEvent.Data);
+            catalogSignal.Release();
+            return ValueTask.CompletedTask;
+        });
+        domainEvents.Port.Subscribe<InstanceStatusChangedDomainEvent>(owner, (domainEvent, _) =>
+        {
+            statusEvents.Enqueue(domainEvent);
+            return ValueTask.CompletedTask;
+        });
+        catalogBridge.Start();
+
+        manager.ReplaceInstance(instance.Config.Uuid, instance);
+        Assert.True(await catalogSignal.WaitAsync(TimeSpan.FromSeconds(10)));
+        await instance.RaiseStatusAsync(InstanceStatus.Starting);
+        Assert.True(await catalogSignal.WaitAsync(TimeSpan.FromSeconds(10)));
+
+        var versionBeforeTimeout = manager.InstanceSnapshotSource.Current.Version;
+        await instance.RaiseReportFactAsync(
+            new InstanceReportFact(InstanceStatus.Starting, ReadyTimedOut: true));
+        Assert.True(await catalogSignal.WaitAsync(TimeSpan.FromSeconds(10)));
+
+        Assert.Equal(versionBeforeTimeout + 1, manager.InstanceSnapshotSource.Current.Version);
+        Assert.True(manager.InstanceSnapshotSource.TryGet(instance.Config.Uuid, out var timedOutSnapshot));
+        Assert.Equal(InstanceStatus.Starting, timedOutSnapshot.Status);
+        Assert.True(timedOutSnapshot.ReadyTimedOut);
+        var timeoutChange = catalogEvents.Last();
+        Assert.Equal(InstanceStatus.Starting, timeoutChange.Snapshot!.Status);
+        Assert.True(timeoutChange.Snapshot.ReadyTimedOut);
+        Assert.Equal([InstanceStatus.Starting], statusEvents.Select(static item => item.Status).ToArray());
+
+        await instance.RaiseStatusAsync(InstanceStatus.Running);
+        Assert.True(await catalogSignal.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.True(manager.InstanceSnapshotSource.TryGet(instance.Config.Uuid, out var runningSnapshot));
+        Assert.Equal(InstanceStatus.Running, runningSnapshot.Status);
+        Assert.False(runningSnapshot.ReadyTimedOut);
+        Assert.Equal(
+            [InstanceStatus.Starting, InstanceStatus.Running],
+            statusEvents.Select(static item => item.Status).ToArray());
+
+        manager.CatalogCommitFeed.CompleteProduction();
+        await catalogBridge.DrainAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        domainEvents.Port.DisposeOwner(owner);
+    }
+
+    [Fact]
+    public async Task DelayedReportFact_FromReplacedInstanceCannotMutateCurrentCatalog()
+    {
+        var manager = new InstanceManager();
+        var config = CreateConfig(1);
+        var replaced = new ControlledStatusInstance(config);
+        var callbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCallback = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ((IInstanceReportFactSource)replaced).ReportFactChanged += async (_, _, _) =>
+        {
+            callbackEntered.TrySetResult();
+            await releaseCallback.Task;
+        };
+        manager.ReplaceInstance(config.Uuid, replaced);
+
+        var delayedFact = replaced.RaiseReportFactAsync(
+            new InstanceReportFact(InstanceStatus.Starting, ReadyTimedOut: true));
+        await callbackEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var replacement = new ControlledStatusInstance(config with { Name = "replacement" });
+        manager.ReplaceInstance(config.Uuid, replacement);
+        var replacementVersion = manager.InstanceSnapshotSource.Current.Version;
+        releaseCallback.TrySetResult();
+        await delayedFact.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(replacementVersion, manager.InstanceSnapshotSource.Current.Version);
+        Assert.True(manager.InstanceSnapshotSource.TryGet(config.Uuid, out var snapshot));
+        Assert.Equal("replacement", snapshot.Name);
+        Assert.Equal(InstanceStatus.Stopped, snapshot.Status);
+        Assert.False(snapshot.ReadyTimedOut);
+    }
+
+    [Fact]
+    public async Task DelayedStatus_FromReplacedInstanceCannotMutateCurrentCatalogOrDomainEvents()
+    {
+        using var domainEvents = DomainEventPortTestHost.Create();
+        var manager = new InstanceManager();
+        var config = CreateConfig(1);
+        var replaced = new ControlledStatusInstance(config);
+        var callbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCallback = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        replaced.OnStatusChanged += async (_, _, _) =>
+        {
+            callbackEntered.TrySetResult();
+            await releaseCallback.Task;
+        };
+        manager.ReplaceInstance(config.Uuid, replaced);
+        using var statusBridge = new MCServerLauncher.Daemon.Bootstrap.InstanceDomainEventBridge(
+            manager,
+            domainEvents.Port);
+        var statusEvents = new ConcurrentQueue<InstanceStatusChangedDomainEvent>();
+        var owner = domainEvents.Port.CreateOwner(nameof(DelayedStatus_FromReplacedInstanceCannotMutateCurrentCatalogOrDomainEvents));
+        domainEvents.Port.Subscribe<InstanceStatusChangedDomainEvent>(owner, (domainEvent, _) =>
+        {
+            statusEvents.Enqueue(domainEvent);
+            return ValueTask.CompletedTask;
+        });
+
+        var delayedStatus = replaced.RaiseStatusAsync(InstanceStatus.Running);
+        await callbackEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var replacement = new ControlledStatusInstance(config with { Name = "replacement" });
+        manager.ReplaceInstance(config.Uuid, replacement);
+        var replacementVersion = manager.InstanceSnapshotSource.Current.Version;
+        releaseCallback.TrySetResult();
+        await delayedStatus.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(replacementVersion, manager.InstanceSnapshotSource.Current.Version);
+        Assert.Empty(statusEvents);
+        Assert.True(manager.InstanceSnapshotSource.TryGet(config.Uuid, out var snapshot));
+        Assert.Equal("replacement", snapshot.Name);
+        Assert.Equal(InstanceStatus.Stopped, snapshot.Status);
+        domainEvents.Port.DisposeOwner(owner);
+    }
+
+    [Fact]
     public void BuiltInProtocolEventInventory_MapsExactlyFourAuthoritativeSources()
     {
         var inventory = BuiltInProtocolEventSourceInventory.All;
@@ -331,12 +466,12 @@ public sealed class InstanceCatalogCommitFeedTests
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) => Task.FromResult(false);
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => [];
 
@@ -345,11 +480,14 @@ public sealed class InstanceCatalogCommitFeedTests
         }
     }
 
-    private sealed class ControlledStatusInstance(InstanceConfig config) : IInstance
+    private sealed class ControlledStatusInstance(InstanceConfig config) : IInstance, IInstanceReportFactSource
     {
+        private event Func<IInstance, InstanceReportFact, CancellationToken, Task>? ReportFactChanged;
+
         public InstanceConfig Config { get; } = config;
         public InstanceProcess? Process => null;
         public InstanceStatus Status { get; private set; } = InstanceStatus.Stopped;
+        public bool ReadyTimedOut { get; private set; }
         public int ServerProcessId => -1;
         public event Func<Guid, string, CancellationToken, Task>? OnLog
         {
@@ -357,18 +495,23 @@ public sealed class InstanceCatalogCommitFeedTests
             remove { }
         }
         public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged;
+        event Func<IInstance, InstanceReportFact, CancellationToken, Task>? IInstanceReportFactSource.ReportFactChanged
+        {
+            add => ReportFactChanged += value;
+            remove => ReportFactChanged -= value;
+        }
 
         public Task<LegacyInstanceReport> GetReportAsync(CancellationToken ct = default) =>
             Task.FromResult(new LegacyInstanceReport(Status, Config, [], [], default));
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) => Task.FromResult(false);
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => [];
 
@@ -376,10 +519,32 @@ public sealed class InstanceCatalogCommitFeedTests
         {
         }
 
-        internal Task RaiseStatusAsync(InstanceStatus status)
+        internal async Task RaiseStatusAsync(InstanceStatus status)
         {
             Status = status;
-            return OnStatusChanged?.Invoke(Config.Uuid, status, CancellationToken.None) ?? Task.CompletedTask;
+            ReadyTimedOut = false;
+            if (OnStatusChanged is null)
+                return;
+
+            foreach (var handler in OnStatusChanged.GetInvocationList()
+                         .Cast<Func<Guid, InstanceStatus, CancellationToken, Task>>())
+            {
+                await handler(Config.Uuid, status, CancellationToken.None);
+            }
+        }
+
+        internal async Task RaiseReportFactAsync(InstanceReportFact fact)
+        {
+            Status = fact.Status;
+            ReadyTimedOut = fact.ReadyTimedOut;
+            if (ReportFactChanged is null)
+                return;
+
+            foreach (var handler in ReportFactChanged.GetInvocationList()
+                         .Cast<Func<IInstance, InstanceReportFact, CancellationToken, Task>>())
+            {
+                await handler(this, fact, CancellationToken.None);
+            }
         }
     }
 }

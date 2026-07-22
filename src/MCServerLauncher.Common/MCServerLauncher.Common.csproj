@@ -8,7 +8,7 @@
         <LangVersion>14</LangVersion>
         <IsPackable>true</IsPackable>
         <PackageId>MCServerLauncher.Common</PackageId>
-        <PackageVersion>1.0.0</PackageVersion>
+        <PackageVersion>2.0.0-preview.2</PackageVersion>
         <Authors>MCSLTeam</Authors>
         <Description>Shared wire contracts and serialization models for MCServerLauncher Future.</Description>
         <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>

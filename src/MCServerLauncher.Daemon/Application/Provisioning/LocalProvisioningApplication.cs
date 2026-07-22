@@ -118,14 +118,14 @@ internal sealed class LocalProvisioningApplication(
         var plan = begin.Unwrap();
         if (!TryMapProvider(plan.Provider, out var instanceType))
         {
-            planKernel.CompleteExecute(plan.PlanId, success: false);
+            planKernel.AbortExecuteAdmission(plan.PlanId);
             return Result.Err<ProvisioningExecuteResult, DaemonError>(
                 new ValidationDaemonError("provisioning.provider.unsupported", "The plan provider is unsupported."));
         }
 
         if (string.IsNullOrWhiteSpace(plan.Source))
         {
-            planKernel.CompleteExecute(plan.PlanId, success: false);
+            planKernel.AbortExecuteAdmission(plan.PlanId);
             return Result.Err<ProvisioningExecuteResult, DaemonError>(
                 new ValidationDaemonError("provisioning.source.required", "The plan source is missing."));
         }
@@ -155,21 +155,19 @@ internal sealed class LocalProvisioningApplication(
                     return Result.Ok<string, DaemonError>(created.Unwrap().Config.InstanceId.ToString("D"));
                 },
                 cancellationToken: cancellationToken,
-                completionCallback: completed => planKernel.CompleteExecute(
-                    plan.PlanId,
-                    completed.Status == OperationStatus.Succeeded)).ConfigureAwait(false);
+                terminalCommit: _ => planKernel.CompleteAcceptedExecute(plan.PlanId)).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // StartAsync throws only before durable operation acceptance. Re-open the plan because
             // no executor can now consume the Executing claim.
-            planKernel.CompleteExecute(plan.PlanId, success: false);
+            planKernel.AbortExecuteAdmission(plan.PlanId);
             throw;
         }
 
         if (execute.IsErr(out var executeError))
         {
-            planKernel.CompleteExecute(plan.PlanId, success: false);
+            planKernel.AbortExecuteAdmission(plan.PlanId);
             return Result.Err<ProvisioningExecuteResult, DaemonError>(executeError!);
         }
 

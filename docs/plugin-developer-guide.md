@@ -1,99 +1,123 @@
 # Startup Plugin Developer Guide
 
-## Scope
+## SDK model
 
-Plugin API **2.0** uses feature-gated admission. A first-milestone plugin may declare
-`rpc.register`, `event.publish`, and `instance.query`, then use the corresponding typed API:
+Plugin API 2.0 plugins reference only the SDK package:
 
-- register typed RPC descriptors with source-generated `JsonTypeInfo`;
-- publish typed events with missing, explicit-null, or value metadata;
-- read immutable `IInstanceSnapshotSource` state.
+    <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.2" />
 
-Plugins are trusted in-process code. Features are admission and audit boundaries, not a sandbox.
-Hooks, hot unload, factory/store/control/filesystem capabilities, and plugin-to-plugin dependency
-services are outside this milestone. Preview-1 expands the feature vocabulary for operations,
-provisioning, auth verification, and HTTP listen; those surfaces land with the Plugin SDK 2.0 plan.
+The SDK carries the exact Daemon API/Common dependency chain, the source generator, and
+the buildTransitive publish targets. Do not add a direct Daemon API package reference.
+Do not implement IDaemonPlugin; the SDK generates that adapter and treats a handwritten
+adapter as a diagnostic error.
 
-## Project reference
-
-Prefer the Plugin SDK package for generated modules:
-
-```xml
-<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.1" />
-```
-
-Reference the packable API package directly only when the public DTO contract requires it without generation:
-
-```xml
-<PackageReference Include="MCServerLauncher.Daemon.API" Version="2.0.0-preview.1" />
-```
-
-Each tagged GitHub release attaches matching `MCServerLauncher.Common.<version>.nupkg`,
-`MCServerLauncher.Daemon.API.<version>.nupkg`, and `MCServerLauncher.Daemon.Plugin.Sdk.<version>.nupkg`
-assets. Download them into a configured NuGet source before restore when a package feed is not
-available. Exact Preview-1 versions and SHA-256 hashes are recorded in
-`docs/preview1-package-pin.md`.
-
-The API package does not expose TouchSocket, MessagePipe, Serilog, daemon DI, mutable runtime
-collections, or disposable resource handles.
+Plugins are trusted in-process code. Features are admission and audit boundaries, not a
+sandbox. Hooks, hot unload, factory/store/control/filesystem capabilities, and
+plugin-to-plugin services remain outside this milestone.
 
 ## Manifest
 
-Create `mcsl-plugin.json` beside the entry assembly:
+Add one mcsl-plugin.json next to the project file. The SDK passes it to the generator
+and copies it beside the published entry assembly.
 
-```json
-{
-  "package": {
-    "id": "community.example.health",
-    "version": "1.0.0"
-  },
-  "entry": {
-    "assembly": "Example.Plugin.dll",
-    "type": "Example.Plugin.HealthPlugin"
-  },
-  "requires": {
-    "api": "[2.0.0,3.0.0)",
-    "features": ["event.publish", "instance.query", "rpc.register"]
-  }
-}
-```
+    {
+      "package": {
+        "id": "community.example.health",
+        "version": "1.0.0"
+      },
+      "entry": {
+        "assembly": "Example.Plugin.dll",
+        "type": "Example.Plugin.Generated.DaemonPluginAdapter"
+      },
+      "requires": {
+        "api": "[2.0.0,3.0.0)",
+        "features": ["rpc.register"]
+      }
+    }
 
-The package id is lowercase, dot-separated, and owns the `plugin.<id>.` protocol namespace.
-Discovery rejects duplicate ids, invalid ranges, unknown or unimplemented features, forbidden
-daemon/transport references, private copies of shared contracts, and malformed PE metadata
-deterministically. There is no `plugin.json` / `capabilities` compatibility path.
+The package id is lowercase and dot-separated. It owns the plugin.<id>. protocol
+namespace. The host validates the generated metadata and manifest digest before loading
+plugin IL. A changed digest, unknown feature, missing grant, invalid range, or catalog
+conflict skips the whole bundle atomically.
+
+Preview-1 grantable features are system.query, instance.query, instance.manage,
+operation.query, operation.cancel, provisioning.manage, network.http.listen,
+auth.verify, and storage.private. The host also provides rpc.register and
+event.publish for generated modules. Every listed feature is required.
+
+## Module
+
+Write a partial module. The generator creates the adapter, the feature bag, private DI
+registration, metadata, and authorized application facades.
+
+    using MCServerLauncher.Common.Contracts.Protocol;
+    using MCServerLauncher.Common.Contracts.Serialization;
+    using MCServerLauncher.Daemon.API.Errors;
+    using MCServerLauncher.Daemon.API.Protocol;
+    using MCServerLauncher.Daemon.Plugin.Sdk;
+    using Microsoft.Extensions.DependencyInjection;
+    using RustyOptions;
+
+    namespace Example.Plugin;
+
+    [DaemonPluginModule]
+    public partial class HealthPlugin
+    {
+        public void ConfigureServices(IServiceCollection services, HealthPluginFeatures features)
+        {
+            var registration = features.Rpc.Register(
+                "ping",
+                BuiltInProtocolJsonContext.Default.EmptyRequest,
+                BuiltInProtocolJsonContext.Default.UnitResult,
+                new RpcDocumentation(
+                    "community.example.health",
+                    "Health ping",
+                    "Checks that the plugin is active.",
+                    "example.empty-request",
+                    "example.unit-result"),
+                static (_, _) => Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())));
+            if (registration.IsErr(out var error))
+                throw new InvalidOperationException(error!.Message);
+        }
+
+        public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(PluginResult.Ok());
+
+        public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(PluginResult.Ok());
+    }
+
+HealthPluginFeatures exposes only the surfaces declared by requires.features.
+Use features.ForPrincipal(principal) for user-originated application calls; it returns
+permission-checked facades. MCP tools must not fall back to the host principal.
+
+The optional same-directory config.json is cold-read once at daemon startup through the
+generated configuration service. There is no manifest configuration field and no plugin
+reload path.
 
 ## Lifecycle
 
-Implement `IDaemonPlugin`:
+ConfigureServices records registrations and private services; it must not start I/O or
+background work. The host validates every draft globally, starts admitted plugins before
+opening /api/v2, then activates successful catalog contributions. A plugin that starts
+background work waits for activation before publishing events.
 
-1. `Configure` records typed registrations only. It must not perform I/O or start background work.
-2. The host validates the draft globally and moves the plugin through `Configured` and `Validated`.
-3. `StartAsync` may create background work, but work must await `IPluginContext.Activation` before publishing events.
-4. The host commits the catalog and activates all successful plugins before opening `/api/v2`.
-5. `StopAsync` releases plugin-owned resources. The host cancels `LifetimeToken` first and stops plugins in reverse order.
+StartAsync is bounded by the daemon plugin startup timeout. On failure or timeout, host
+registrations, events, and future HTTP admissions are revoked while cleanup is supervised
+without making /api/v2 unavailable. StopAsync releases plugin-owned resources; the host
+cancels the lifetime token first and stops successful plugins in reverse order.
 
-Return `Result.Err` for expected failures. Unexpected exceptions are caught, logged with the
-lifecycle stage, and isolated from other plugins and daemon startup.
+## Publish
 
-## Build and publish
+    dotnet build Example.Plugin/Example.Plugin.csproj -c Release
+    dotnet publish Example.Plugin/Example.Plugin.csproj -c Release -p:MCSLPluginBundle=true -o artifacts/plugins/community.example.health
 
-```powershell
-dotnet build Example.Plugin/Example.Plugin.csproj -c Release
-dotnet publish Example.Plugin/Example.Plugin.csproj -c Release -p:MCSLPluginBundle=true -o artifacts/plugins/community.example.health
-```
+MCSLPluginBundle=true removes host-provided shared assemblies from the bundle. Deploy the
+published entry DLL, mcsl-plugin.json, optional config.json, and private dependencies
+under plugins/community.example.health/ beside the daemon. Do not bundle the daemon,
+TouchSocket, MessagePipe, Serilog, MCServerLauncher.Daemon.API.dll,
+MCServerLauncher.Common.dll, or MCServerLauncher.Daemon.Plugin.Sdk.dll.
 
-The `MCSLPluginBundle=true` property is required: the API package's publish target removes shared
-host assemblies from the bundle so the daemon can preserve one shared contract identity. Copy
-`mcsl-plugin.json`, the plugin entry DLL, and private dependencies to
-`plugins/community.example.health/` beside the published daemon. Do not copy the daemon executable,
-TouchSocket assemblies, MessagePipe, Serilog, `MCServerLauncher.Daemon.API.dll`, or
-`MCServerLauncher.Common.dll` into the bundle.
-
-The repository fixtures under `tests/Fixtures/Plugins/` show external-style compile, health,
-returned-error, and throwing cases. The published acceptance command is:
-
-```powershell
-$env:MCSL_PUBLISHED_DAEMON = (Resolve-Path artifacts/plugin-e2e/daemon/MCServerLauncher.Daemon.exe)
-dotnet test tests/MCServerLauncher.PluginIntegrationTests/MCServerLauncher.PluginIntegrationTests.csproj -c Release -m:1
-```
+Exact Preview-1 candidate versions and payload hashes are recorded in
+docs/preview1-package-pin.md. The MCP implementation gate remains locked until those
+candidate assets are verified on the corresponding GitHub Release.

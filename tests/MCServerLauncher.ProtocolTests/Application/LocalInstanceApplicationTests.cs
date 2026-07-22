@@ -31,7 +31,7 @@ public sealed class LocalInstanceApplicationTests
     }
 
     [Fact]
-    public async Task HaltInstance_ProcessFailure_ReturnsTypedInternalError()
+    public async Task HaltInstance_ProcessFailure_ReturnsTypedFailure()
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
@@ -41,8 +41,8 @@ public sealed class LocalInstanceApplicationTests
         var result = await application.HaltInstanceAsync(new InstanceReference(config.Uuid), CancellationToken.None);
 
         Assert.True(result.IsErr(out var error));
-        var internalError = Assert.IsType<InternalDaemonError>(error);
-        Assert.Equal("instance.halt_failed", internalError.Code);
+        Assert.IsType<InternalDaemonError>(error);
+        Assert.Equal("instance.halt_failed", error.Code);
     }
 
     [Fact]
@@ -121,6 +121,43 @@ public sealed class LocalInstanceApplicationTests
         Assert.Equal(1, Volatile.Read(ref stopCalls));
         // Stub Stop does not publish a terminal status; the instance remains mapped until one does.
         Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
+    }
+
+    [Fact]
+    public async Task HaltInstance_WaitsForConcurrentStartThenKillsThatCommittedGeneration()
+    {
+        var manager = new InstanceManager();
+        var config = CreateConfig();
+        var startEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseStart = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var haltCalls = 0;
+        var instance = new TestInstance(
+            config,
+            () => null,
+            startAsync: async _ =>
+            {
+                startEntered.TrySetResult();
+                await releaseStart.Task;
+                return true;
+            },
+            halt: () => Interlocked.Increment(ref haltCalls));
+        manager.ReplaceInstance(config.Uuid, instance);
+        var application = new LocalInstanceApplication(manager);
+
+        var startTask = application.StartInstanceAsync(
+            new InstanceReference(config.Uuid),
+            CancellationToken.None);
+        await startEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        var haltTask = application.HaltInstanceAsync(
+            new InstanceReference(config.Uuid),
+            CancellationToken.None);
+        Assert.False(haltTask.IsCompleted);
+
+        releaseStart.TrySetResult();
+        Assert.True((await startTask.WaitAsync(TimeSpan.FromSeconds(3))).IsOk(out _));
+        Assert.True((await haltTask.WaitAsync(TimeSpan.FromSeconds(3))).IsOk(out _));
+        Assert.Equal(1, Volatile.Read(ref haltCalls));
+        Assert.False(manager.RunningInstances.ContainsKey(config.Uuid));
     }
 
     [Fact]
@@ -1950,7 +1987,8 @@ public sealed class LocalInstanceApplicationTests
         InstanceStatus status = InstanceStatus.Stopped,
         Func<CancellationToken, Task<bool>>? startAsync = null,
         Action? stop = null,
-        Action? dispose = null) : IInstance
+        Action? dispose = null,
+        Action? halt = null) : IInstance
     {
         public InstanceConfig Config { get; } = config;
         public InstanceProcess? Process => process();
@@ -1979,13 +2017,19 @@ public sealed class LocalInstanceApplicationTests
             return startAsync?.Invoke(ct) ?? Task.FromResult(false);
         }
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
             stop?.Invoke();
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            halt?.Invoke();
+            _ = process();
+            return Task.CompletedTask;
+        }
 
         public IReadOnlyList<string> GetLogHistory()
         {
@@ -2048,12 +2092,12 @@ public sealed class LocalInstanceApplicationTests
             return Task.FromResult(false);
         }
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => _logs;
 
@@ -2130,12 +2174,12 @@ public sealed class LocalInstanceApplicationTests
             return Task.FromResult(false);
         }
 
-        public Task StopAsync(CancellationToken ct = default)
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory()
         {
@@ -2175,9 +2219,9 @@ public sealed class LocalInstanceApplicationTests
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) =>
             throw new NotSupportedException();
 
-        public Task StopAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<bool> StopAsync(CancellationToken ct = default) => throw new NotSupportedException();
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => [];
 

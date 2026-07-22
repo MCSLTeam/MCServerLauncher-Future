@@ -294,7 +294,7 @@ public sealed class V2ClientProtocolTests
         private const string Config = "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"target\":\"server.jar\",\"instance_type\":\"universal\",\"target_type\":\"jar\",\"version\":\"1\",\"input_encoding\":\"utf-8\",\"output_encoding\":\"utf-8\",\"java_path\":\"java\",\"arguments\":[\"-Xmx2G\"],\"environment_variables\":{\"ENV\":\"value\"},\"event_rules\":{\"enabled\":true},\"console_mode\":\"pipe\"}";
         private const string FileMeta = "{\"creation_time\":\"2026-01-01T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-02T00:00:00+00:00\",\"last_write_time\":\"2026-01-03T00:00:00+00:00\",\"read_only\":true,\"size\":7}";
         private const string DirectoryMeta = "{\"creation_time\":\"2026-01-04T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-05T00:00:00+00:00\",\"last_write_time\":\"2026-01-06T00:00:00+00:00\"}";
-        private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234}";
+        private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234,\"ready_timed_out\":true}";
         private const string System = "{\"os\":{\"name\":\"Windows\",\"architecture\":\"x64\"},\"cpu\":{\"vendor\":\"vendor\",\"name\":\"cpu\",\"count\":16,\"usage\":5.5,\"core_count\":8,\"thread_count\":16},\"mem\":{\"total_kilobytes\":32768,\"free_kilobytes\":16384},\"drive\":{\"drive_format\":\"NTFS\",\"total_bytes\":1024,\"free_bytes\":512,\"name\":\"C\"},\"drives\":[{\"drive_format\":\"EXT4\",\"total_bytes\":2048,\"free_bytes\":1024,\"name\":\"D\"}],\"daemon_version\":\"2.0.0\"}";
 
         internal static string For(Type type)
@@ -327,7 +327,7 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(DownloadSession)) return "{\"session_id\":\"" + Id + "\",\"length\":7,\"sha256\":\"hash\",\"max_chunk_size\":4,\"expires_at\":\"2026-01-01T00:00:00+00:00\"}";
             if (type == typeof(UploadSession)) return "{\"session_id\":\"" + Id + "\",\"max_chunk_size\":4,\"expires_at\":\"2026-01-01T00:00:00+00:00\"}";
             if (type == typeof(DownloadReadResult)) return "{\"session_id\":\"" + Id + "\",\"offset\":3,\"length\":4,\"is_final\":true}";
-            if (type == typeof(InstanceCatalogResult)) return "{\"version\":7,\"items\":[{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\"}]}";
+            if (type == typeof(InstanceCatalogResult)) return "{\"version\":7,\"items\":[{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\",\"ready_timed_out\":false}]}";
             if (type == typeof(CreateInstanceResult)) return "{\"config\":" + Config + "}";
             if (type == typeof(EventRuleSet)) return "{\"instance_id\":\"" + Id + "\",\"rules\":{\"enabled\":true}}";
             if (type == typeof(InstanceLogResult)) return "{\"logs\":[\"ready\"]}";

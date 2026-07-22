@@ -328,7 +328,8 @@ internal sealed class RemoteInstanceCatalogMirror : IInstanceSnapshotSource
             item.Name,
             item.InstanceType,
             item.Version,
-            item.Status);
+            item.Status,
+            item.ReadyTimedOut);
         return true;
     }
 
@@ -410,8 +411,9 @@ internal sealed class RemoteInstanceCatalogMirror : IInstanceSnapshotSource
         string Name,
         Common.ProtoType.Instance.InstanceType InstanceType,
         string Version,
-        Common.ProtoType.Instance.InstanceStatus Status)
+        Common.ProtoType.Instance.InstanceStatus Status,
+        bool ReadyTimedOut)
     {
-        internal InstanceSnapshot ToSnapshot() => new(Id, Name, InstanceType, Version, Status);
+        internal InstanceSnapshot ToSnapshot() => new(Id, Name, InstanceType, Version, Status, ReadyTimedOut);
     }
 }

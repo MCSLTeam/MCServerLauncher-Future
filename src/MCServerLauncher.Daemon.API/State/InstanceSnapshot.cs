@@ -10,4 +10,5 @@ public sealed record InstanceSnapshot(
     string Name,
     InstanceType InstanceType,
     string Version,
-    InstanceStatus Status);
+    InstanceStatus Status,
+    bool ReadyTimedOut);

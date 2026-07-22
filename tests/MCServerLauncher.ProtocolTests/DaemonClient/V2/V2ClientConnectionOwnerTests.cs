@@ -1536,7 +1536,7 @@ public sealed class V2ClientConnectionOwnerTests
         $"{{\"version\":{version},\"items\":[{string.Join(',', items)}]}}";
 
     private static string Item(string name) =>
-        $"{{\"instance_id\":\"{InstanceId:D}\",\"name\":\"{name}\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\"}}";
+        $"{{\"instance_id\":\"{InstanceId:D}\",\"name\":\"{name}\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\",\"ready_timed_out\":false}}";
 
     private sealed record SentRequest(string Method, string IdJson, string Json);
 

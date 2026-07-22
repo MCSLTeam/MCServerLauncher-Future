@@ -243,13 +243,7 @@ public partial class InstanceManagerViewModel : ObservableObject
     {
         var filtered = AllInstances.AsEnumerable();
 
-        filtered = SelectedStatusFilter switch
-        {
-            "Running" => filtered.Where(c => c.Status == InstanceStatus.Running),
-            "Stopped" => filtered.Where(c => c.Status == InstanceStatus.Stopped),
-            "Crashed" => filtered.Where(c => c.Status == InstanceStatus.Crashed),
-            _ => filtered
-        };
+        filtered = filtered.Where(card => MatchesStatusFilter(card.Status, SelectedStatusFilter));
 
         var searchText = SearchText.Trim();
         if (!string.IsNullOrWhiteSpace(searchText))
@@ -259,6 +253,16 @@ public partial class InstanceManagerViewModel : ObservableObject
 
         SyncFilteredInstances(filtered.ToList());
     }
+
+    internal static bool MatchesStatusFilter(InstanceStatus status, string filter) => filter switch
+    {
+        "Running" => status == InstanceStatus.Running,
+        "Starting" => status == InstanceStatus.Starting,
+        "Stopping" => status == InstanceStatus.Stopping,
+        "Stopped" => status == InstanceStatus.Stopped,
+        "Crashed" => status == InstanceStatus.Crashed,
+        _ => true,
+    };
 
     [RelayCommand]
     private async Task StartInstanceAsync(InstanceCardModel instance)

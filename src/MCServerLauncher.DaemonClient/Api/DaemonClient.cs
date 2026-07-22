@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Events;
@@ -16,6 +17,8 @@ namespace MCServerLauncher.DaemonClient;
 
 public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
 {
+    private static readonly TimeSpan RestartPollInterval = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan RestartTerminalTimeout = TimeSpan.FromSeconds(30);
     private readonly object _disposeGate = new();
     private readonly V2RemoteApplicationInvoker _invoker;
     private readonly V2ClientConnectionOwner _owner;
@@ -96,7 +99,37 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
         if (stopResult.IsErr(out var stopError))
             return Result.Err<Unit, DaemonError>(stopError!);
 
-        await Task.Delay(TimeSpan.FromSeconds(1), _timeProvider, cancellationToken).ConfigureAwait(false);
+        using var timeout = new CancellationTokenSource(RestartTerminalTimeout, _timeProvider);
+        using var wait = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        try
+        {
+            while (true)
+            {
+                var reportResult = await Instances.GetInstanceReportAsync(instance, wait.Token).ConfigureAwait(false);
+                if (reportResult.IsErr(out var reportError))
+                    return Result.Err<Unit, DaemonError>(reportError!);
+
+                var status = reportResult.Unwrap().Status;
+                if (status is InstanceStatus.Stopped or InstanceStatus.Crashed)
+                    break;
+
+                await Task.Delay(RestartPollInterval, _timeProvider, wait.Token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw;
+        }
+        catch (OperationCanceledException) when (
+            !cancellationToken.IsCancellationRequested && timeout.IsCancellationRequested)
+        {
+            return Result.Err<Unit, DaemonError>(new ConflictDaemonError(
+                "instance.restart_timeout",
+                "The instance did not reach a terminal state before the restart timeout."));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
         return await Instances.StartInstanceAsync(instance, cancellationToken).ConfigureAwait(false);
     }
 

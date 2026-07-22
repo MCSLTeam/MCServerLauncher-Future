@@ -47,7 +47,8 @@ internal sealed class InstanceCatalogDomainEventBridge(
                     commit.Snapshot.Name,
                     commit.Snapshot.InstanceType,
                     commit.Snapshot.Version,
-                    commit.Snapshot.Status);
+                    commit.Snapshot.Status,
+                    commit.Snapshot.ReadyTimedOut);
             await domainEvents.PublishAsync(
                 new InstanceCatalogChangedDomainEvent(
                     new InstanceCatalogChangedEventData(

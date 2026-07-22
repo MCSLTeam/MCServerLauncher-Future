@@ -251,8 +251,8 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         var low = Guid.Parse("00000000-0000-0000-0000-000000000001");
         var publisher = new StatePublisher<InstanceCatalogSnapshot>(new InstanceCatalogSnapshot(
         [
-            new(high, new InstanceSnapshot(high, "High", InstanceType.Universal, "2", InstanceStatus.Running)),
-            new(low, new InstanceSnapshot(low, "Low", InstanceType.MCJava, "1", InstanceStatus.Stopped))
+            new(high, new InstanceSnapshot(high, "High", InstanceType.Universal, "2", InstanceStatus.Running, ReadyTimedOut: false)),
+            new(low, new InstanceSnapshot(low, "Low", InstanceType.MCJava, "1", InstanceStatus.Starting, ReadyTimedOut: true))
         ]));
         publisher.Publish(7, publisher.Current.Value);
         var source = new TestSnapshotSource(publisher);
@@ -271,6 +271,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         Assert.Equal(7, result.Version);
         Assert.Equal([low, high], result.Items.Select(item => item.InstanceId));
         Assert.Equal(["Low", "High"], result.Items.Select(item => item.Name));
+        Assert.Equal([true, false], result.Items.Select(item => item.ReadyTimedOut));
     }
 
     [Fact]

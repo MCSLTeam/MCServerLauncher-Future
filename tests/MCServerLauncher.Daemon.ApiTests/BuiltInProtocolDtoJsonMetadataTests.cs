@@ -102,13 +102,15 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
             "first",
             InstanceType.MCJava,
             "1.21.5",
-            InstanceStatus.Running);
+            InstanceStatus.Running,
+            readyTimedOut: true);
         var second = new InstanceCatalogItem(
             Guid.Parse("22222222-2222-2222-2222-222222222222"),
             "second",
             InstanceType.MCJava,
             "1.21.5",
-            InstanceStatus.Stopped);
+            InstanceStatus.Stopped,
+            readyTimedOut: false);
 
         var catalog = new InstanceCatalogResult(0, [second, first]);
 
@@ -129,7 +131,8 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
             first.Name,
             (InstanceType)999,
             first.Version,
-            first.Status));
+            first.Status,
+            first.ReadyTimedOut));
         Assert.Throws<ArgumentOutOfRangeException>(() => new InstanceCatalogChangedEventData(
             1,
             (InstanceCatalogChangeOperation)999,
@@ -173,10 +176,10 @@ public sealed class BuiltInProtocolDtoJsonMetadataTests
             $$$"""{"version":1,"operation":"upsert","instance_id":"{{{instanceId}}}","snapshot":null}""",
             context));
         Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
-            $$$"""{"version":1,"operation":"upsert","instance_id":"{{{instanceId}}}","snapshot":{"instance_id":"22222222-2222-2222-2222-222222222222","name":"other","instance_type":"mc_java","version":"1.21.5","status":"running"}}""",
+            $$$"""{"version":1,"operation":"upsert","instance_id":"{{{instanceId}}}","snapshot":{"instance_id":"22222222-2222-2222-2222-222222222222","name":"other","instance_type":"mc_java","version":"1.21.5","status":"running","ready_timed_out":false}}""",
             context));
         Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize(
-            $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}","snapshot":{"instance_id":"{{{instanceId}}}","name":"first","instance_type":"mc_java","version":"1.21.5","status":"running"}}""",
+            $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}","snapshot":{"instance_id":"{{{instanceId}}}","name":"first","instance_type":"mc_java","version":"1.21.5","status":"running","ready_timed_out":false}}""",
             context));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
             $$$"""{"version":1,"operation":"remove","instance_id":"{{{instanceId}}}","unknown":true}""",

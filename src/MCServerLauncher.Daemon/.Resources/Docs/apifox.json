@@ -2816,6 +2816,9 @@
                         "starting",
                         "stopping"
                       ]
+                    },
+                    "ready_timed_out": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -2823,7 +2826,8 @@
                     "name",
                     "instance_type",
                     "version",
-                    "status"
+                    "status",
+                    "ready_timed_out"
                   ],
                   "additionalProperties": false
                 }
@@ -3745,6 +3749,9 @@
                           "starting",
                           "stopping"
                         ]
+                      },
+                      "ready_timed_out": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -3752,7 +3759,8 @@
                       "name",
                       "instance_type",
                       "version",
-                      "status"
+                      "status",
+                      "ready_timed_out"
                     ],
                     "additionalProperties": false
                   }
@@ -4734,6 +4742,10 @@
                     "integer",
                     "null"
                   ]
+                },
+                "ready_timed_out": {
+                  "type": "boolean",
+                  "default": false
                 }
               },
               "required": [
@@ -4959,6 +4971,10 @@
                           "integer",
                           "null"
                         ]
+                      },
+                      "ready_timed_out": {
+                        "type": "boolean",
+                        "default": false
                       }
                     },
                     "required": [

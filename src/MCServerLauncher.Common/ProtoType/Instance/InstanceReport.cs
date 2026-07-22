@@ -5,5 +5,6 @@ public record InstanceReport(
     InstanceConfig Config,
     Dictionary<string, string> Properties,
     Player[] Players,
-    InstancePerformanceCounter PerformanceCounter
+    InstancePerformanceCounter PerformanceCounter,
+    bool ReadyTimedOut = false
 );

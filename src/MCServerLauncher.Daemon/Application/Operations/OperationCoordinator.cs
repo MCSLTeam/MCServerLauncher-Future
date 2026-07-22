@@ -22,9 +22,7 @@ namespace MCServerLauncher.Daemon.ApplicationCore.Operations;
 /// </summary>
 internal sealed class OperationCoordinator : IOperationApplication, IAsyncDisposable
 {
-    private static readonly TimeSpan DefaultRetention = TimeSpan.FromDays(7);
     private static readonly TimeSpan ProgressPersistInterval = TimeSpan.FromMilliseconds(200);
-    private const long DefaultMaxBytes = 268_435_456;
 
     private readonly ConcurrentDictionary<Guid, OperationRuntime> _operations = new();
     private readonly object _lifecycleGate = new();
@@ -36,6 +34,9 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
     private readonly ServiceProvider? _ownedScopeProvider;
     private readonly OwnedTaskSupervisor _supervisor;
     private readonly ILogger<OperationCoordinator> _logger;
+    private readonly TimeSpan _retention;
+    private readonly long _maximumBytes;
+    private readonly Action<byte[]> _indexWriter;
     private DateTimeOffset _lastProgressPersist = DateTimeOffset.MinValue;
     private long _persistenceWriteCount;
     private int _disposed;
@@ -44,10 +45,43 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         TimeProvider? timeProvider = null,
         string? rootDirectory = null,
         IServiceScopeFactory? scopeFactory = null,
-        ILogger<OperationCoordinator>? logger = null)
+        ILogger<OperationCoordinator>? logger = null,
+        DaemonOperationsConfig? config = null)
+        : this(timeProvider, rootDirectory, scopeFactory, logger, config, indexWriter: null)
+    {
+    }
+
+    internal OperationCoordinator(
+        Action<byte[]> indexWriter,
+        TimeProvider? timeProvider = null,
+        string? rootDirectory = null,
+        IServiceScopeFactory? scopeFactory = null,
+        ILogger<OperationCoordinator>? logger = null,
+        DaemonOperationsConfig? config = null)
+        : this(timeProvider, rootDirectory, scopeFactory, logger, config, indexWriter)
+    {
+    }
+
+    private OperationCoordinator(
+        TimeProvider? timeProvider,
+        string? rootDirectory,
+        IServiceScopeFactory? scopeFactory,
+        ILogger<OperationCoordinator>? logger,
+        DaemonOperationsConfig? config,
+        Action<byte[]>? indexWriter)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
         _logger = logger ?? NullLogger<OperationCoordinator>.Instance;
+        config ??= new DaemonOperationsConfig();
+        config.Validate();
+        _retention = TimeSpan.FromDays(config.RetentionDays);
+        _maximumBytes = config.MaximumBytes;
+        _root = Path.GetFullPath(rootDirectory ?? Path.Combine(FileManager.Root, "operations"));
+        Directory.CreateDirectory(_root);
+        _indexPath = Path.Combine(_root, "index.json");
+        _indexWriter = indexWriter ?? WriteIndex;
+        LoadIndex();
+
         if (scopeFactory is null)
         {
             _ownedScopeProvider = new ServiceCollection().BuildServiceProvider();
@@ -59,14 +93,21 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         }
 
         _supervisor = new OwnedTaskSupervisor(nameof(OperationCoordinator), _logger);
-        _root = Path.GetFullPath(rootDirectory ?? Path.Combine(FileManager.Root, "operations"));
-        Directory.CreateDirectory(_root);
-        _indexPath = Path.Combine(_root, "index.json");
-        LoadIndex();
-        MarkInterruptedOnStartup();
     }
 
     internal long PersistenceWriteCount => Interlocked.Read(ref _persistenceWriteCount);
+
+    internal bool HasAcceptedOperation(string kind, string target)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(target);
+        return _operations.Values.Any(runtime =>
+        {
+            var snapshot = runtime.Snapshot;
+            return string.Equals(snapshot.Kind, kind, StringComparison.Ordinal) &&
+                string.Equals(snapshot.Target, target, StringComparison.Ordinal);
+        });
+    }
 
     public Task<Result<OperationListResult, DaemonError>> ListOperationsAsync(
         OperationListQuery request,
@@ -130,20 +171,28 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 new PermissionDaemonError("operation.forbidden", "The caller cannot cancel this operation.")));
         }
 
-        if (!runtime.TryRequestCancellation(_timeProvider.GetUtcNow()))
-        {
-            return Task.FromResult(Result.Ok<OperationCancelResult, DaemonError>(
-                new OperationCancelResult(request.OperationId, CancelRequested: false)));
-        }
-
         try
         {
-            Persist();
+            lock (_persistGate)
+            {
+                if (!runtime.TryCreateCancellationSnapshot(_timeProvider.GetUtcNow(), out var candidate))
+                {
+                    return Task.FromResult(Result.Ok<OperationCancelResult, DaemonError>(
+                        new OperationCancelResult(request.OperationId, CancelRequested: false)));
+                }
+
+                var snapshots = CaptureSnapshots(runtime, candidate);
+                var persisted = PersistSnapshotsUnderLock(snapshots);
+                if (!persisted.RetainedOperationIds.Contains(candidate.OperationId))
+                    throw new InvalidOperationException("A non-terminal cancellation candidate was pruned during persistence.");
+
+                runtime.PublishCancellation(candidate);
+                PrunePublishedOperations(persisted.RetainedOperationIds);
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             _logger.LogError(exception, "Failed to persist cancellation for operation {OperationId}.", request.OperationId);
-            runtime.SignalCancellation(_logger);
             return Task.FromResult(Result.Err<OperationCancelResult, DaemonError>(
                 new InternalDaemonError("operation.persist_failed", "The cancellation request could not be persisted.")));
         }
@@ -156,7 +205,9 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
 
     /// <summary>
     /// Persists and accepts a daemon operation, then schedules its execution independently of
-    /// the request lifetime. The returned snapshot is always the accepted queued snapshot.
+    /// the request lifetime. The returned snapshot is always the accepted queued snapshot. A
+    /// terminal commit must atomically persist linked domain state before returning; the operation
+    /// terminal snapshot is not published until that commit succeeds.
     /// </summary>
     internal Task<Result<OperationSnapshot, DaemonError>> StartAsync(
         string kind,
@@ -164,35 +215,40 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         string ownerPrincipal,
         Func<IServiceProvider, IOperationContext, CancellationToken, Task<Result<string, DaemonError>>> executor,
         CancellationToken cancellationToken,
-        Action<OperationSnapshot>? completionCallback = null)
+        Func<OperationCompletion, Result<Unit, DaemonError>>? terminalCommit = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerPrincipal);
         ArgumentNullException.ThrowIfNull(executor);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var now = _timeProvider.GetUtcNow();
-        var id = Guid.NewGuid();
-        var accepted = new OperationSnapshot(
-            OperationId: id,
-            Kind: kind,
-            Target: target,
-            OwnerPrincipal: ownerPrincipal,
-            Status: OperationStatus.Queued,
-            Stage: OperationStage.Queued,
-            Progress: new OperationProgress(true, null, null, null, null, null, null),
-            Version: 1,
-            CreatedAt: now,
-            UpdatedAt: now,
-            CompletedAt: null,
-            Cancellable: true,
-            ErrorCode: null,
-            ErrorMessage: null,
-            ResultReference: null);
-        var runtime = new OperationRuntime(accepted);
-
         lock (_lifecycleGate)
         {
+            var now = _timeProvider.GetUtcNow();
+            Guid id;
+            do
+            {
+                id = Guid.NewGuid();
+            } while (_operations.ContainsKey(id));
+
+            var accepted = new OperationSnapshot(
+                OperationId: id,
+                Kind: kind,
+                Target: target,
+                OwnerPrincipal: ownerPrincipal,
+                Status: OperationStatus.Queued,
+                Stage: OperationStage.Queued,
+                Progress: new OperationProgress(true, null, null, null, null, null, null),
+                Version: 1,
+                CreatedAt: now,
+                UpdatedAt: now,
+                CompletedAt: null,
+                Cancellable: true,
+                ErrorCode: null,
+                ErrorMessage: null,
+                ResultReference: null);
+            var runtime = new OperationRuntime(accepted);
+
             try
             {
                 lock (_persistGate)
@@ -200,30 +256,36 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                     cancellationToken.ThrowIfCancellationRequested();
                     if (Volatile.Read(ref _disposed) != 0)
                     {
+                        runtime.Dispose();
                         return Task.FromResult(Result.Err<OperationSnapshot, DaemonError>(
                             new ConflictDaemonError("operation.coordinator_stopped", "The operation coordinator is stopping.")));
                     }
 
+                    var snapshots = _operations.Values
+                        .Select(static current => current.Snapshot)
+                        .Append(accepted)
+                        .ToArray();
+                    var persisted = PersistSnapshotsUnderLock(snapshots);
+                    PrunePublishedOperations(persisted.RetainedOperationIds);
+
+                    // Start admissions are serialized by _lifecycleGate. The id was checked while
+                    // holding that gate, so publication cannot conflict after the candidate index
+                    // has become durable.
                     if (!_operations.TryAdd(id, runtime))
                     {
-                        return Task.FromResult(Result.Err<OperationSnapshot, DaemonError>(
-                            new InternalDaemonError("operation.create_failed", "The operation could not be created.")));
-                    }
-
-                    try
-                    {
-                        PersistUnderLock();
-                    }
-                    catch
-                    {
-                        _operations.TryRemove(id, out _);
                         runtime.Dispose();
-                        throw;
+                        throw new InvalidOperationException("A durable operation id collided during publication.");
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                runtime.Dispose();
+                throw;
+            }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
+                runtime.Dispose();
                 _logger.LogError(exception, "Failed to persist operation {OperationId} admission.", id);
                 return Task.FromResult(Result.Err<OperationSnapshot, DaemonError>(
                     new InternalDaemonError("operation.persist_failed", "The operation could not be persisted.")));
@@ -233,13 +295,12 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             {
                 _supervisor.Schedule(
                     $"operation:{id:D}",
-                    shutdownToken => RunOperationAsync(runtime, executor, completionCallback, shutdownToken));
+                    shutdownToken => RunOperationAsync(runtime, executor, terminalCommit, shutdownToken));
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Failed to schedule accepted operation {OperationId}.", id);
-                if (TryComplete(runtime, OperationCompletion.Interrupted()))
-                    NotifyCompletion(runtime, completionCallback);
+                Complete(runtime, OperationCompletion.Interrupted(), terminalCommit);
                 runtime.Dispose();
             }
 
@@ -250,7 +311,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
     private async Task RunOperationAsync(
         OperationRuntime runtime,
         Func<IServiceProvider, IOperationContext, CancellationToken, Task<Result<string, DaemonError>>> executor,
-        Action<OperationSnapshot>? completionCallback,
+        Func<OperationCompletion, Result<Unit, DaemonError>>? terminalCommit,
         CancellationToken shutdownToken)
     {
         await Task.Yield();
@@ -261,13 +322,12 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
-            if (!runtime.TryStart(_timeProvider.GetUtcNow()))
+            if (!TryStartAndPersist(runtime))
             {
                 completion = OperationCompletion.Cancelled();
             }
             else
             {
-                Persist();
                 var context = new CoordinatorOperationContext(runtime, this);
                 var result = await executor(scope.ServiceProvider, context, linked.Token).ConfigureAwait(false);
                 if (linked.IsCancellationRequested || runtime.CancellationRequested)
@@ -296,10 +356,14 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 "The operation failed due to an internal error.");
         }
 
-        if (TryComplete(runtime, completion))
-            NotifyCompletion(runtime, completionCallback);
-        runtime.Dispose();
-        EnforceRetention();
+        try
+        {
+            Complete(runtime, completion, terminalCommit);
+        }
+        finally
+        {
+            runtime.Dispose();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -326,127 +390,326 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
 
     internal void ReportProgress(OperationRuntime runtime, OperationStage? stage, OperationProgress? progress)
     {
+        if (stage is not null)
+        {
+            PersistAndPublishTransition(
+                runtime,
+                current => CreateProgressSnapshot(current, stage, progress));
+            return;
+        }
+
         Mutate(
             runtime,
-            current =>
+            current => CreateProgressSnapshot(current, stage: null, progress));
+    }
+
+    private void Complete(
+        OperationRuntime runtime,
+        OperationCompletion completion,
+        Func<OperationCompletion, Result<Unit, DaemonError>>? terminalCommit)
+    {
+        OperationCompletion prepared;
+        lock (_persistGate)
+        {
+            if (!runtime.TryPrepareCompletion(completion, _timeProvider.GetUtcNow(), out prepared))
+                return;
+        }
+
+        if (terminalCommit is not null)
+        {
+            Result<Unit, DaemonError> committed;
+            try
             {
-                if (IsTerminal(current.Status))
-                    return current;
+                // The hook is a required part of the terminal commit. It must atomically persist
+                // linked domain state before returning success. It deliberately runs outside the
+                // operation runtime lock.
+                committed = terminalCommit(prepared);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "Operation {OperationId} terminal commit threw {ExceptionType}; terminal publication was withheld.",
+                    runtime.Snapshot.OperationId,
+                    exception.GetType().FullName);
+                return;
+            }
 
-                var nextStage = stage ?? current.Stage;
-                var nextProgress = progress ?? current.Progress;
-                if (nextStage == current.Stage && nextProgress == current.Progress)
-                    return current;
-
-                return current with
-                {
-                    Stage = nextStage,
-                    Progress = nextProgress,
-                    Version = current.Version + 1,
-                    UpdatedAt = _timeProvider.GetUtcNow(),
-                };
-            },
-            forcePersist: stage is not null);
-    }
-
-    private bool TryComplete(OperationRuntime runtime, OperationCompletion completion)
-    {
-        if (!runtime.TryComplete(completion, _timeProvider.GetUtcNow()))
-            return false;
-
-        Persist();
-        return true;
-    }
-
-    private void NotifyCompletion(OperationRuntime runtime, Action<OperationSnapshot>? completionCallback)
-    {
-        if (completionCallback is null)
-            return;
+            if (committed.IsErr(out var error))
+            {
+                _logger.LogError(
+                    "Operation {OperationId} terminal commit failed with {ErrorCode}; terminal publication was withheld.",
+                    runtime.Snapshot.OperationId,
+                    error!.Code);
+                return;
+            }
+        }
 
         try
         {
-            completionCallback(runtime.Snapshot);
+            PersistAndPublishCompletion(runtime, prepared);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             _logger.LogError(
                 exception,
-                "Operation {OperationId} completion callback failed.",
+                "Operation {OperationId} terminal persistence failed; terminal publication was withheld.",
                 runtime.Snapshot.OperationId);
         }
     }
 
-    private void MarkInterruptedOnStartup()
-    {
-        var changed = false;
-        foreach (var runtime in _operations.Values)
-        {
-            if (IsTerminal(runtime.Snapshot.Status))
-                continue;
-
-            if (!runtime.Update(current => current with
-            {
-                Status = OperationStatus.Interrupted,
-                Stage = OperationStage.Interrupted,
-                CompletedAt = _timeProvider.GetUtcNow(),
-                Cancellable = false,
-                Version = current.Version + 1,
-                UpdatedAt = _timeProvider.GetUtcNow(),
-            }))
-            {
-                continue;
-            }
-
-            changed = true;
-        }
-
-        if (changed)
-            Persist();
-    }
-
-    private void Mutate(OperationRuntime runtime, Func<OperationSnapshot, OperationSnapshot> mutator, bool forcePersist)
-    {
-        if (!runtime.Update(mutator))
-            return;
-
-        if (forcePersist)
-        {
-            Persist();
-            return;
-        }
-
-        PersistProgressIfDue();
-    }
-
-    private void Persist()
+    private void PersistAndPublishCompletion(OperationRuntime runtime, OperationCompletion completion)
     {
         lock (_persistGate)
-            PersistUnderLock();
+        {
+            if (!runtime.TryCreateCompletionSnapshot(completion, _timeProvider.GetUtcNow(), out var candidate))
+                return;
+
+            // Persist the candidate while the currently published snapshot is still non-terminal.
+            // Keeping the persistence gate through publication prevents another operation write
+            // from overwriting the durable candidate with this runtime's old snapshot.
+            var snapshots = CaptureSnapshots(runtime, candidate);
+            var persisted = PersistSnapshotsUnderLock(snapshots);
+            if (persisted.RetainedOperationIds.Contains(candidate.OperationId))
+                runtime.PublishCompletion(candidate);
+            PrunePublishedOperations(persisted.RetainedOperationIds);
+        }
     }
 
-    private void PersistProgressIfDue()
+    internal void PublishInterruptedAfterPlanReconciliation()
     {
         lock (_persistGate)
         {
             var now = _timeProvider.GetUtcNow();
-            if (now - _lastProgressPersist < ProgressPersistInterval)
+            var candidates = new Dictionary<OperationRuntime, OperationSnapshot>();
+            foreach (var runtime in _operations.Values)
+            {
+                if (runtime.TryCreateStartupRecoverySnapshot(now, out var candidate))
+                    candidates.Add(runtime, candidate);
+            }
+
+            if (candidates.Count == 0)
                 return;
 
-            PersistUnderLock();
+            var snapshots = CaptureSnapshots(candidates);
+            var persisted = PersistSnapshotsUnderLock(snapshots);
+
+            foreach (var (runtime, candidate) in candidates)
+            {
+                if (persisted.RetainedOperationIds.Contains(candidate.OperationId))
+                    runtime.PublishStartupRecovery(candidate);
+            }
+            PrunePublishedOperations(persisted.RetainedOperationIds);
         }
     }
 
-    private void PersistUnderLock()
+    private bool TryStartAndPersist(OperationRuntime runtime)
+    {
+        lock (_persistGate)
+        {
+            if (!runtime.TryCreateStartSnapshot(_timeProvider.GetUtcNow(), out var candidate))
+                return false;
+
+            PersistAndPublishCandidateUnderLock(runtime, candidate, runtime.PublishTransition);
+            return true;
+        }
+    }
+
+    private void PersistAndPublishTransition(
+        OperationRuntime runtime,
+        Func<OperationSnapshot, OperationSnapshot> mutator)
+    {
+        lock (_persistGate)
+        {
+            if (!runtime.TryCreateTransitionSnapshot(mutator, out var candidate))
+                return;
+
+            PersistAndPublishCandidateUnderLock(runtime, candidate, runtime.PublishTransition);
+        }
+    }
+
+    private void PersistAndPublishCandidateUnderLock(
+        OperationRuntime runtime,
+        OperationSnapshot candidate,
+        Action<OperationSnapshot> publish)
+    {
+        var snapshots = CaptureSnapshots(runtime, candidate);
+        var persisted = PersistSnapshotsUnderLock(snapshots);
+        if (!persisted.RetainedOperationIds.Contains(candidate.OperationId))
+            throw new InvalidOperationException("A non-terminal operation candidate was pruned during persistence.");
+
+        publish(candidate);
+        PrunePublishedOperations(persisted.RetainedOperationIds);
+    }
+
+    private void Mutate(
+        OperationRuntime runtime,
+        Func<OperationSnapshot, OperationSnapshot> mutator)
+    {
+        lock (_persistGate)
+        {
+            if (!runtime.Update(mutator))
+                return;
+
+            PersistProgressIfDueUnderLock();
+        }
+    }
+
+    private OperationSnapshot CreateProgressSnapshot(
+        OperationSnapshot current,
+        OperationStage? stage,
+        OperationProgress? progress)
+    {
+        if (IsTerminal(current.Status))
+            return current;
+
+        var nextStage = stage ?? current.Stage;
+        var nextProgress = progress ?? current.Progress;
+        if (nextStage == current.Stage && nextProgress == current.Progress)
+            return current;
+
+        return current with
+        {
+            Stage = nextStage,
+            Progress = nextProgress,
+            Version = current.Version + 1,
+            UpdatedAt = _timeProvider.GetUtcNow(),
+        };
+    }
+
+    private void PersistProgressIfDueUnderLock()
+    {
+        var now = _timeProvider.GetUtcNow();
+        if (now - _lastProgressPersist < ProgressPersistInterval)
+        {
+            return;
+        }
+
+        PersistCurrentUnderLock();
+    }
+
+    private void PersistCurrentUnderLock()
     {
         var snapshots = _operations.Values.Select(static runtime => runtime.Snapshot).ToArray();
+        var persisted = PersistSnapshotsUnderLock(snapshots);
+        PrunePublishedOperations(persisted.RetainedOperationIds);
+    }
+
+    private OperationSnapshot[] CaptureSnapshots(
+        OperationRuntime? overrideRuntime,
+        OperationSnapshot? overrideSnapshot)
+    {
+        return _operations.Values
+            .Select(runtime => ReferenceEquals(runtime, overrideRuntime) ? overrideSnapshot! : runtime.Snapshot)
+            .ToArray();
+    }
+
+    private OperationSnapshot[] CaptureSnapshots(
+        IReadOnlyDictionary<OperationRuntime, OperationSnapshot> overrides)
+    {
+        return _operations.Values
+            .Select(runtime => overrides.TryGetValue(runtime, out var snapshot) ? snapshot : runtime.Snapshot)
+            .ToArray();
+    }
+
+    private PersistedOperationIndex PersistSnapshotsUnderLock(OperationSnapshot[] snapshots)
+    {
+        var prepared = PrepareOperationIndex(snapshots, allowOversizedNonTerminal: false);
+        WritePreparedIndexUnderLock(prepared);
+        return new PersistedOperationIndex(prepared.RetainedOperationIds);
+    }
+
+    private PreparedOperationIndex PrepareOperationIndex(
+        OperationSnapshot[] snapshots,
+        bool allowOversizedNonTerminal)
+    {
+        var retained = new Dictionary<Guid, OperationSnapshot>(snapshots.Length);
+        foreach (var snapshot in snapshots)
+        {
+            ValidateSnapshot(snapshot);
+            if (!retained.TryAdd(snapshot.OperationId, snapshot))
+                throw new InvalidDataException($"The operation index contains duplicate id '{snapshot.OperationId:D}'.");
+        }
+
+        var originalCount = retained.Count;
+        var cutoff = _timeProvider.GetUtcNow() - _retention;
+        foreach (var snapshot in retained.Values.ToArray())
+        {
+            var completedAt = snapshot.CompletedAt ?? snapshot.UpdatedAt;
+            if (IsTerminal(snapshot.Status) && completedAt < cutoff)
+                retained.Remove(snapshot.OperationId);
+        }
+
+        var itemSizes = retained.Values.ToDictionary(
+            static snapshot => snapshot.OperationId,
+            static snapshot => (long)JsonSerializer.SerializeToUtf8Bytes(
+                snapshot,
+                OperationPersistenceJsonContext.Default.OperationSnapshot).Length);
+        long encodedLength = 2 + itemSizes.Values.Sum() + Math.Max(0, retained.Count - 1);
+        foreach (var snapshot in retained.Values
+                     .Where(static snapshot => IsTerminal(snapshot.Status))
+                     .OrderBy(static snapshot => snapshot.CompletedAt ?? snapshot.UpdatedAt)
+                     .ThenBy(static snapshot => snapshot.OperationId))
+        {
+            if (encodedLength <= _maximumBytes)
+                break;
+
+            retained.Remove(snapshot.OperationId);
+            itemSizes.Remove(snapshot.OperationId);
+            encodedLength = 2 + itemSizes.Values.Sum() + Math.Max(0, retained.Count - 1);
+        }
+
+        var retainedSnapshots = retained.Values
+            .OrderBy(static snapshot => snapshot.CreatedAt)
+            .ThenBy(static snapshot => snapshot.OperationId)
+            .ToArray();
         var bytes = JsonSerializer.SerializeToUtf8Bytes(
-            snapshots,
+            retainedSnapshots,
             OperationPersistenceJsonContext.Default.OperationSnapshotArray);
+        if (bytes.LongLength > _maximumBytes && !allowOversizedNonTerminal)
+        {
+            throw new IOException(
+                $"The operation index requires {bytes.LongLength} bytes, exceeding the configured {_maximumBytes}-byte cap without prunable terminal records.");
+        }
+
+        return new PreparedOperationIndex(
+            bytes,
+            retained.Keys.ToHashSet(),
+            originalCount - retained.Count);
+    }
+
+    private void WritePreparedIndexUnderLock(PreparedOperationIndex prepared)
+    {
+        _indexWriter(prepared.Bytes);
+        _lastProgressPersist = _timeProvider.GetUtcNow();
+        Interlocked.Increment(ref _persistenceWriteCount);
+        if (prepared.PrunedCount > 0)
+        {
+            _logger.LogInformation(
+                "Pruned {PrunedCount} retained operation records to satisfy age and byte retention.",
+                prepared.PrunedCount);
+        }
+    }
+
+    private void WriteIndex(byte[] bytes)
+    {
         var temp = _indexPath + ".tmp";
         File.WriteAllBytes(temp, bytes);
         File.Move(temp, _indexPath, overwrite: true);
-        _lastProgressPersist = _timeProvider.GetUtcNow();
-        Interlocked.Increment(ref _persistenceWriteCount);
+    }
+
+    private void PrunePublishedOperations(HashSet<Guid> retainedOperationIds)
+    {
+        foreach (var (operationId, _) in _operations)
+        {
+            if (retainedOperationIds.Contains(operationId) ||
+                !_operations.TryRemove(operationId, out var removed))
+            {
+                continue;
+            }
+
+            removed.Dispose();
+        }
     }
 
     private void LoadIndex()
@@ -454,64 +717,121 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         if (!File.Exists(_indexPath))
             return;
 
+        OperationSnapshot[] snapshots;
         try
         {
             var bytes = File.ReadAllBytes(_indexPath);
-            var snapshots = JsonSerializer.Deserialize(bytes, OperationPersistenceJsonContext.Default.OperationSnapshotArray);
-            if (snapshots is null)
-                return;
-
-            foreach (var snapshot in snapshots)
-            {
-                _operations[snapshot.OperationId] = new OperationRuntime(snapshot, recoverOnly: true);
-            }
+            snapshots = JsonSerializer.Deserialize(bytes, OperationPersistenceJsonContext.Default.OperationSnapshotArray)
+                ?? throw new InvalidDataException("The operation index JSON root cannot be null.");
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
-            // Corrupt index is non-fatal; start empty and rewrite on next mutation.
+            throw new InvalidDataException("The operation index contains invalid JSON.", exception);
+        }
+
+        var prepared = PrepareOperationIndex(snapshots, allowOversizedNonTerminal: true);
+        if (prepared.PrunedCount > 0 && prepared.Bytes.LongLength <= _maximumBytes)
+            WritePreparedIndexUnderLock(prepared);
+
+        foreach (var snapshot in snapshots)
+        {
+            if (!prepared.RetainedOperationIds.Contains(snapshot.OperationId))
+                continue;
+            if (!_operations.TryAdd(
+                    snapshot.OperationId,
+                    new OperationRuntime(snapshot, recoverOnly: !IsTerminal(snapshot.Status))))
+            {
+                throw new InvalidDataException(
+                    $"The operation index contains duplicate id '{snapshot.OperationId:D}'.");
+            }
         }
     }
 
-    private void EnforceRetention()
+    private static void ValidateSnapshot(OperationSnapshot snapshot)
     {
-        var cutoff = _timeProvider.GetUtcNow() - DefaultRetention;
-        var terminal = _operations.Values
-            .Where(static runtime => IsTerminal(runtime.Snapshot.Status))
-            .OrderBy(static runtime => runtime.Snapshot.CompletedAt ?? runtime.Snapshot.UpdatedAt)
-            .ToList();
-        var changed = false;
-
-        foreach (var runtime in terminal)
+        if (snapshot is null ||
+            snapshot.OperationId == Guid.Empty ||
+            string.IsNullOrWhiteSpace(snapshot.Kind) ||
+            string.IsNullOrWhiteSpace(snapshot.OwnerPrincipal) ||
+            snapshot.Progress is null ||
+            !Enum.IsDefined(snapshot.Status) ||
+            !Enum.IsDefined(snapshot.Stage) ||
+            snapshot.Version < 1 ||
+            snapshot.CreatedAt == default ||
+            snapshot.UpdatedAt < snapshot.CreatedAt)
         {
-            var completedAt = runtime.Snapshot.CompletedAt ?? runtime.Snapshot.UpdatedAt;
-            if (completedAt < cutoff && _operations.TryRemove(runtime.Snapshot.OperationId, out var removed))
+            throw new InvalidDataException("The operation index contains an invalid operation record.");
+        }
+
+        if (IsTerminal(snapshot.Status))
+        {
+            if (snapshot.CompletedAt is null ||
+                snapshot.CompletedAt < snapshot.CreatedAt ||
+                snapshot.CompletedAt > snapshot.UpdatedAt ||
+                snapshot.Cancellable ||
+                !TerminalStageMatches(snapshot.Status, snapshot.Stage) ||
+                !TerminalPayloadMatches(snapshot))
             {
-                removed.Dispose();
-                changed = true;
+                throw new InvalidDataException(
+                    $"The terminal operation '{snapshot.OperationId:D}' has inconsistent terminal state.");
             }
         }
-
-        try
+        else if (snapshot.CompletedAt is not null ||
+                 TerminalStage(snapshot.Stage) ||
+                 !NonTerminalStageMatches(snapshot.Status, snapshot.Stage) ||
+                 snapshot.ErrorCode is not null ||
+                 snapshot.ErrorMessage is not null ||
+                 snapshot.ResultReference is not null)
         {
-            if (File.Exists(_indexPath) && new FileInfo(_indexPath).Length > DefaultMaxBytes)
-            {
-                foreach (var runtime in terminal.Take(Math.Max(1, terminal.Count / 4)))
-                {
-                    if (_operations.TryRemove(runtime.Snapshot.OperationId, out var removed))
-                    {
-                        removed.Dispose();
-                        changed = true;
-                    }
-                }
-            }
+            throw new InvalidDataException(
+                $"The non-terminal operation '{snapshot.OperationId:D}' has inconsistent terminal state.");
         }
-        catch (IOException)
-        {
-        }
-
-        if (changed)
-            Persist();
     }
+
+    private static bool TerminalPayloadMatches(OperationSnapshot snapshot) => snapshot.Status switch
+    {
+        OperationStatus.Succeeded =>
+            !string.IsNullOrWhiteSpace(snapshot.ResultReference) &&
+            snapshot.ErrorCode is null &&
+            snapshot.ErrorMessage is null,
+        OperationStatus.Failed =>
+            !string.IsNullOrWhiteSpace(snapshot.ErrorCode) &&
+            !string.IsNullOrWhiteSpace(snapshot.ErrorMessage) &&
+            snapshot.ResultReference is null,
+        OperationStatus.Cancelled =>
+            string.Equals(snapshot.ErrorCode, "operation.cancelled", StringComparison.Ordinal) &&
+            !string.IsNullOrWhiteSpace(snapshot.ErrorMessage) &&
+            snapshot.ResultReference is null,
+        OperationStatus.Interrupted =>
+            string.Equals(snapshot.ErrorCode, "operation.interrupted", StringComparison.Ordinal) &&
+            !string.IsNullOrWhiteSpace(snapshot.ErrorMessage) &&
+            snapshot.ResultReference is null,
+        _ => false,
+    };
+
+    private static bool NonTerminalStageMatches(OperationStatus status, OperationStage stage) => status switch
+    {
+        OperationStatus.Queued => stage == OperationStage.Queued,
+        OperationStatus.Running => stage is not OperationStage.Queued && !TerminalStage(stage),
+        _ => false,
+    };
+
+    private static bool TerminalStageMatches(OperationStatus status, OperationStage stage) =>
+        (status, stage) is
+            (OperationStatus.Succeeded, OperationStage.Succeeded) or
+            (OperationStatus.Failed, OperationStage.Failed) or
+            (OperationStatus.Cancelled, OperationStage.Cancelled) or
+            (OperationStatus.Interrupted, OperationStage.Interrupted);
+
+    private static bool TerminalStage(OperationStage stage) =>
+        stage is OperationStage.Succeeded or OperationStage.Failed or OperationStage.Cancelled or OperationStage.Interrupted;
+
+    private sealed record PreparedOperationIndex(
+        byte[] Bytes,
+        HashSet<Guid> RetainedOperationIds,
+        int PrunedCount);
+
+    private sealed record PersistedOperationIndex(HashSet<Guid> RetainedOperationIds);
 
     private static bool IsTerminal(OperationStatus status) =>
         status is OperationStatus.Succeeded or OperationStatus.Failed or OperationStatus.Cancelled or OperationStatus.Interrupted;
@@ -534,12 +854,15 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         private readonly object _gate = new();
         private readonly CancellationTokenSource _cancellation = new();
         private OperationSnapshot _snapshot;
+        private readonly bool _recoverOnly;
         private bool _cancellationRequested;
+        private bool _completionPrepared;
         private int _disposed;
 
         public OperationRuntime(OperationSnapshot snapshot, bool recoverOnly = false)
         {
             _snapshot = snapshot;
+            _recoverOnly = recoverOnly;
             if (recoverOnly)
             {
                 _cancellationRequested = true;
@@ -567,21 +890,35 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             }
         }
 
-        public bool TryRequestCancellation(DateTimeOffset now)
+        public bool TryCreateCancellationSnapshot(DateTimeOffset now, out OperationSnapshot candidate)
         {
             lock (_gate)
             {
-                if (_cancellationRequested || IsTerminal(_snapshot.Status) || !_snapshot.Cancellable)
+                if (_cancellationRequested || _completionPrepared || IsTerminal(_snapshot.Status) || !_snapshot.Cancellable)
+                {
+                    candidate = _snapshot;
                     return false;
+                }
 
-                _cancellationRequested = true;
-                _snapshot = _snapshot with
+                candidate = _snapshot with
                 {
                     Cancellable = false,
                     Version = _snapshot.Version + 1,
                     UpdatedAt = now,
                 };
                 return true;
+            }
+        }
+
+        public void PublishCancellation(OperationSnapshot candidate)
+        {
+            lock (_gate)
+            {
+                if (_cancellationRequested || _completionPrepared || IsTerminal(_snapshot.Status) || !_snapshot.Cancellable)
+                    throw new InvalidOperationException("The operation cancellation candidate is no longer publishable.");
+
+                _cancellationRequested = true;
+                _snapshot = candidate;
             }
         }
 
@@ -600,14 +937,17 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             }
         }
 
-        public bool TryStart(DateTimeOffset now)
+        public bool TryCreateStartSnapshot(DateTimeOffset now, out OperationSnapshot candidate)
         {
             lock (_gate)
             {
-                if (_cancellationRequested || _snapshot.Status != OperationStatus.Queued)
+                if (_cancellationRequested || _completionPrepared || _snapshot.Status != OperationStatus.Queued)
+                {
+                    candidate = _snapshot;
                     return false;
+                }
 
-                _snapshot = _snapshot with
+                candidate = _snapshot with
                 {
                     Status = OperationStatus.Running,
                     Stage = OperationStage.Resolving,
@@ -618,17 +958,81 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             }
         }
 
-        public bool TryComplete(OperationCompletion completion, DateTimeOffset now)
+        public bool TryCreateTransitionSnapshot(
+            Func<OperationSnapshot, OperationSnapshot> mutator,
+            out OperationSnapshot candidate)
         {
             lock (_gate)
             {
-                if (IsTerminal(_snapshot.Status))
+                candidate = _snapshot;
+                if (_completionPrepared)
+                    return false;
+
+                candidate = mutator(_snapshot);
+                return candidate != _snapshot;
+            }
+        }
+
+        public void PublishTransition(OperationSnapshot candidate)
+        {
+            lock (_gate)
+            {
+                if (_completionPrepared ||
+                    IsTerminal(_snapshot.Status) ||
+                    candidate.OperationId != _snapshot.OperationId ||
+                    candidate.Version != _snapshot.Version + 1)
+                {
+                    throw new InvalidOperationException("The operation transition candidate is no longer publishable.");
+                }
+
+                _snapshot = candidate;
+            }
+        }
+
+        public bool TryPrepareCompletion(
+            OperationCompletion completion,
+            DateTimeOffset now,
+            out OperationCompletion prepared)
+        {
+            lock (_gate)
+            {
+                prepared = completion;
+                if (_completionPrepared || IsTerminal(_snapshot.Status))
                     return false;
 
                 if (_cancellationRequested && completion.Status is not OperationStatus.Interrupted)
-                    completion = OperationCompletion.Cancelled();
+                    prepared = OperationCompletion.Cancelled();
 
-                _snapshot = _snapshot with
+                // Freeze the effective outcome before invoking the domain commit. Late cancellation
+                // must not change the outcome after the hook has committed against it.
+                _completionPrepared = true;
+                if (_snapshot.Cancellable)
+                {
+                    _snapshot = _snapshot with
+                    {
+                        Cancellable = false,
+                        Version = _snapshot.Version + 1,
+                        UpdatedAt = now,
+                    };
+                }
+                return true;
+            }
+        }
+
+        public bool TryCreateCompletionSnapshot(
+            OperationCompletion completion,
+            DateTimeOffset now,
+            out OperationSnapshot candidate)
+        {
+            lock (_gate)
+            {
+                if (!_completionPrepared || IsTerminal(_snapshot.Status))
+                {
+                    candidate = _snapshot;
+                    return false;
+                }
+
+                candidate = _snapshot with
                 {
                     Status = completion.Status,
                     Stage = completion.Stage,
@@ -644,10 +1048,63 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             }
         }
 
+        public void PublishCompletion(OperationSnapshot candidate)
+        {
+            lock (_gate)
+            {
+                if (!_completionPrepared || IsTerminal(_snapshot.Status))
+                    throw new InvalidOperationException("The operation terminal candidate is no longer publishable.");
+
+                _snapshot = candidate;
+            }
+        }
+
+        public bool TryCreateStartupRecoverySnapshot(
+            DateTimeOffset now,
+            out OperationSnapshot candidate)
+        {
+            lock (_gate)
+            {
+                if (!_recoverOnly || IsTerminal(_snapshot.Status))
+                {
+                    candidate = _snapshot;
+                    return false;
+                }
+
+                candidate = _snapshot with
+                {
+                    Status = OperationStatus.Interrupted,
+                    Stage = OperationStage.Interrupted,
+                    CompletedAt = now,
+                    Cancellable = false,
+                    ErrorCode = "operation.interrupted",
+                    ErrorMessage = "The operation was interrupted by daemon restart.",
+                    ResultReference = null,
+                    Version = _snapshot.Version + 1,
+                    UpdatedAt = now,
+                };
+                return true;
+            }
+        }
+
+        public void PublishStartupRecovery(OperationSnapshot candidate)
+        {
+            lock (_gate)
+            {
+                if (!_recoverOnly || IsTerminal(_snapshot.Status))
+                    throw new InvalidOperationException("The operation startup recovery candidate is no longer publishable.");
+
+                _snapshot = candidate;
+            }
+        }
+
         public bool Update(Func<OperationSnapshot, OperationSnapshot> mutator)
         {
             lock (_gate)
             {
+                if (_completionPrepared)
+                    return false;
+
                 var updated = mutator(_snapshot);
                 if (updated == _snapshot)
                     return false;
@@ -672,8 +1129,11 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         string? ErrorMessage,
         string? ResultReference)
     {
-        internal static OperationCompletion Succeeded(string resultReference) =>
-            new(OperationStatus.Succeeded, OperationStage.Succeeded, null, null, resultReference);
+        internal static OperationCompletion Succeeded(string resultReference)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(resultReference);
+            return new(OperationStatus.Succeeded, OperationStage.Succeeded, null, null, resultReference);
+        }
 
         internal static OperationCompletion Failed(string errorCode, string errorMessage) =>
             new(OperationStatus.Failed, OperationStage.Failed, errorCode, errorMessage, null);
@@ -829,4 +1289,5 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         typeof(JsonStringEnumConverter<OperationStage>)
     ])]
 [JsonSerializable(typeof(OperationSnapshot[]))]
+[JsonSerializable(typeof(OperationSnapshot))]
 internal partial class OperationPersistenceJsonContext : JsonSerializerContext;
