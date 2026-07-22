@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.Json;
 using MCServerLauncher.Daemon;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
@@ -111,6 +112,144 @@ public sealed class PluginHostServicesTests
     }
 
     [Fact]
+    public async Task PrivateStorage_SnapshotReplacementUsesProjectedSizeAtQuotaBoundary()
+    {
+        var small = new SampleConfig("a", 1);
+        var boundary = new SampleConfig(new string('x', 32), 2);
+        var oversized = new SampleConfig(new string('x', 33), 3);
+        var quota = JsonSerializer.SerializeToUtf8Bytes(
+            boundary,
+            PluginHostServicesJsonContext.Default.SampleConfig).LongLength;
+        using var fixture = new StorageFixture(quota, maxFiles: 2);
+
+        Assert.True((await fixture.Storage.WriteSnapshotAsync(
+            "state.json",
+            small,
+            PluginHostServicesJsonContext.Default.SampleConfig,
+            CancellationToken.None)).IsOk(out _));
+        Assert.True((await fixture.Storage.WriteSnapshotAsync(
+            "state.json",
+            boundary,
+            PluginHostServicesJsonContext.Default.SampleConfig,
+            CancellationToken.None)).IsOk(out _));
+        Assert.Equal(quota, new FileInfo(Path.Combine(fixture.DataRoot, "state.json")).Length);
+
+        var rejected = await fixture.Storage.WriteSnapshotAsync(
+            "state.json",
+            oversized,
+            PluginHostServicesJsonContext.Default.SampleConfig,
+            CancellationToken.None);
+        Assert.True(rejected.IsErr(out var quotaError));
+        Assert.Equal("plugin_storage_byte_quota", quotaError!.Code);
+        Assert.Equal(quota, new FileInfo(Path.Combine(fixture.DataRoot, "state.json")).Length);
+
+        Assert.True((await fixture.Storage.WriteSnapshotAsync(
+            "state.json",
+            small,
+            PluginHostServicesJsonContext.Default.SampleConfig,
+            CancellationToken.None)).IsOk(out _));
+        Assert.Equal(
+            JsonSerializer.SerializeToUtf8Bytes(small, PluginHostServicesJsonContext.Default.SampleConfig).LongLength,
+            new FileInfo(Path.Combine(fixture.DataRoot, "state.json")).Length);
+        Assert.Empty(Directory.GetFiles(fixture.DataRoot, "*.tmp", SearchOption.TopDirectoryOnly));
+    }
+
+    [Fact]
+    public async Task PrivateStorage_RepeatedJsonlAppendStopsAtExactByteQuota()
+    {
+        var value = new SampleConfig("line", 1);
+        var lineBytes = JsonSerializer.SerializeToUtf8Bytes(
+            value,
+            PluginHostServicesJsonContext.Default.SampleConfig).LongLength + 1;
+        using var fixture = new StorageFixture(lineBytes * 3, maxFiles: 1);
+
+        for (var index = 0; index < 3; index++)
+        {
+            var result = await fixture.Storage.AppendJsonlAsync(
+                "events.jsonl",
+                value,
+                PluginHostServicesJsonContext.Default.SampleConfig,
+                CancellationToken.None);
+            Assert.True(result.IsOk(out _));
+        }
+
+        var rejected = await fixture.Storage.AppendJsonlAsync(
+            "events.jsonl",
+            value,
+            PluginHostServicesJsonContext.Default.SampleConfig,
+            CancellationToken.None);
+        Assert.True(rejected.IsErr(out var quotaError));
+        Assert.Equal("plugin_storage_byte_quota", quotaError!.Code);
+
+        var path = Path.Combine(fixture.DataRoot, "events.jsonl");
+        Assert.Equal(lineBytes * 3, new FileInfo(path).Length);
+        Assert.Equal(3, File.ReadAllLines(path).Length);
+    }
+
+    [Fact]
+    public async Task PrivateStorage_ConcurrentJsonlAppendCannotOvercommitOrCorruptLines()
+    {
+        var value = new SampleConfig("concurrent", 7);
+        var lineBytes = JsonSerializer.SerializeToUtf8Bytes(
+            value,
+            PluginHostServicesJsonContext.Default.SampleConfig).LongLength + 1;
+        const int acceptedLines = 16;
+        using var fixture = new StorageFixture(lineBytes * acceptedLines, maxFiles: 1);
+
+        var attempts = Enumerable.Range(0, acceptedLines * 4)
+            .Select(_ => Task.Run(async () => await fixture.Storage.AppendJsonlAsync(
+                "events.jsonl",
+                value,
+                PluginHostServicesJsonContext.Default.SampleConfig,
+                CancellationToken.None)))
+            .ToArray();
+        var results = await Task.WhenAll(attempts);
+
+        Assert.Equal(acceptedLines, results.Count(static result => result.IsOk(out _)));
+        Assert.All(
+            results.Where(static result => result.IsErr(out _)),
+            result =>
+            {
+                Assert.True(result.IsErr(out var error));
+                Assert.Equal("plugin_storage_byte_quota", error!.Code);
+            });
+
+        var path = Path.Combine(fixture.DataRoot, "events.jsonl");
+        Assert.Equal(lineBytes * acceptedLines, new FileInfo(path).Length);
+        var lines = File.ReadAllLines(path);
+        Assert.Equal(acceptedLines, lines.Length);
+        Assert.All(lines, line =>
+        {
+            var parsed = JsonSerializer.Deserialize(
+                line,
+                PluginHostServicesJsonContext.Default.SampleConfig);
+            Assert.Equal(value, parsed);
+        });
+    }
+
+    [Fact]
+    public async Task PrivateStorage_MaxFileQuotaAndPathEscapeRemainEnforced()
+    {
+        using var fixture = new StorageFixture(quotaBytes: 4096, maxFiles: 2);
+        var value = new SampleConfig("file", 1);
+
+        Assert.True((await fixture.Storage.WriteSnapshotAsync(
+            "a.json", value, PluginHostServicesJsonContext.Default.SampleConfig, CancellationToken.None)).IsOk(out _));
+        Assert.True((await fixture.Storage.WriteSnapshotAsync(
+            "nested/b.json", value, PluginHostServicesJsonContext.Default.SampleConfig, CancellationToken.None)).IsOk(out _));
+
+        var third = await fixture.Storage.WriteSnapshotAsync(
+            "c.json", value, PluginHostServicesJsonContext.Default.SampleConfig, CancellationToken.None);
+        Assert.True(third.IsErr(out var fileError));
+        Assert.Equal("plugin_storage_file_quota", fileError!.Code);
+
+        var escaped = await fixture.Storage.WriteSnapshotAsync(
+            "../escape.json", value, PluginHostServicesJsonContext.Default.SampleConfig, CancellationToken.None);
+        Assert.True(escaped.IsErr(out var pathError));
+        Assert.Equal("plugin_storage_path_invalid", pathError!.Code);
+    }
+
+    [Fact]
     public void HttpEndpointPolicy_RejectsNonLoopbackAndPortConflicts()
     {
         var registry = new PluginHttpEndpointRegistry();
@@ -135,6 +274,31 @@ public sealed class PluginHostServicesTests
         var wildcard = policy.ValidateAndRegister("0.0.0.0", 18082);
         Assert.True(wildcard.IsErr(out var wildcardError));
         Assert.Equal("plugin_http_bind_not_loopback", wildcardError!.Code);
+    }
+
+    [Fact]
+    public void HttpEndpointPolicy_ReleasesOnlyTheRequestedOwnedEndpoint()
+    {
+        var registry = new PluginHttpEndpointRegistry();
+        var identity = new PluginIdentity("fixture.http.owner", "1.0.0");
+        var owner = new PluginHttpEndpointPolicy(identity.Id, registry, new PluginErrorFactory(identity));
+        Assert.True(owner.ValidateAndRegister("127.0.0.1", 18080).IsOk(out _));
+        Assert.True(owner.ValidateAndRegister("127.0.0.1", 18081).IsOk(out _));
+
+        owner.Release("127.0.0.1", 18080);
+
+        var otherIdentity = new PluginIdentity("fixture.http.other-owner", "1.0.0");
+        var other = new PluginHttpEndpointPolicy(
+            otherIdentity.Id,
+            registry,
+            new PluginErrorFactory(otherIdentity));
+        Assert.True(other.ValidateAndRegister("127.0.0.1", 18080).IsOk(out _));
+        var stillOwned = other.ValidateAndRegister("127.0.0.1", 18081);
+        Assert.True(stillOwned.IsErr(out var conflict));
+        Assert.Equal("plugin_http_port_conflict", conflict!.Code);
+
+        owner.ReleaseAll();
+        Assert.True(other.ValidateAndRegister("127.0.0.1", 18081).IsOk(out _));
     }
 
     [Fact]
@@ -185,6 +349,39 @@ public sealed class PluginHostServicesTests
     }
 
     public sealed record SampleConfig(string Name, int Count);
+
+    private sealed class StorageFixture : IDisposable
+    {
+        private readonly string _pluginRoot;
+
+        internal StorageFixture(long quotaBytes, int maxFiles)
+        {
+            var identity = new PluginIdentity($"fixture.storage.{Guid.NewGuid():N}", "1.0.0");
+            _pluginRoot = Path.Combine(FileManager.Root, "plugins", identity.Id);
+            DataRoot = Path.Combine(_pluginRoot, "data");
+            Storage = new PluginPrivateStorage(
+                identity,
+                new DaemonPluginsConfig
+                {
+                    Storage = new PluginStorageConfig
+                    {
+                        DefaultQuotaBytes = quotaBytes,
+                        DefaultMaxFiles = maxFiles,
+                    },
+                },
+                new PluginErrorFactory(identity));
+        }
+
+        internal string DataRoot { get; }
+
+        internal PluginPrivateStorage Storage { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(_pluginRoot))
+                Directory.Delete(_pluginRoot, recursive: true);
+        }
+    }
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]

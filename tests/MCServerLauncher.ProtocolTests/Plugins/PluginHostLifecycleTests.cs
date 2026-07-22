@@ -12,6 +12,7 @@ using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.ReturnedError;
+using MCServerLauncher.PluginFixtures.SdkGeneratedHealth;
 using MCServerLauncher.PluginFixtures.StartReturnedError;
 using MCServerLauncher.PluginFixtures.StartHanging;
 using MCServerLauncher.PluginFixtures.StartThrowing;
@@ -21,6 +22,7 @@ using MessagePipe;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SdkGeneratedAdapter = MCServerLauncher.PluginFixtures.SdkGeneratedHealth.Generated.DaemonPluginAdapter;
 
 namespace MCServerLauncher.ProtocolTests.Plugins;
 
@@ -332,6 +334,77 @@ public sealed class PluginHostLifecycleTests
         }
     }
 
+    [Theory]
+    [InlineData("throw")]
+    [InlineData("timeout")]
+    public async Task StartAsync_FailureReleasesGeneratedProviderAndEveryEndpointExactlyOnce(string mode)
+    {
+        var probePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-provider-{Guid.NewGuid():N}.log");
+        const int port = 18123;
+        var previousMode = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_MODE");
+        var previousPort = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PORT");
+        var previousProbe = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_MODE", mode);
+        Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH", probePath);
+        try
+        {
+            var adapterType = typeof(SdkGeneratedAdapter);
+            using var fixture = PluginHostFixture.CreateGenerated(
+                "fixture.sdk-generated-health",
+                adapterType.Assembly,
+                "SdkGeneratedHealth.dll",
+                adapterType.FullName!,
+                ["network.http.listen"]);
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var endpoints = new PluginHttpEndpointRegistry();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromMilliseconds(150),
+                config,
+                endpoints,
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+
+            await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+            AssertStates(host.States, ("fixture.sdk-generated-health", PluginRuntimeState.Failed));
+            var lines = File.ReadAllLines(probePath);
+            Assert.Equal(1, lines.Count(static line => line == "created"));
+            Assert.Equal(1, lines.Count(static line => line == "disposed"));
+            Assert.True(endpoints.TryRegister(
+                "fixture.after-failure",
+                new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, port),
+                out _));
+
+            await host.StopAsync(CancellationToken.None);
+            lines = File.ReadAllLines(probePath);
+            Assert.Equal(1, lines.Count(static line => line == "created"));
+            Assert.Equal(1, lines.Count(static line => line == "disposed"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_MODE", previousMode);
+            Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PORT", previousPort);
+            Environment.SetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH", previousProbe);
+            if (File.Exists(probePath))
+                File.Delete(probePath);
+        }
+    }
+
     private static void AssertStates(
         ImmutableArray<(string Id, PluginRuntimeState State)> states,
         params (string Id, PluginRuntimeState State)[] expected)
@@ -382,6 +455,18 @@ public sealed class PluginHostLifecycleTests
             return fixture;
         }
 
+        public static PluginHostFixture CreateGenerated(
+            string id,
+            Assembly assembly,
+            string entryAssembly,
+            string entryType,
+            string[] features)
+        {
+            var fixture = new PluginHostFixture(Directory.CreateTempSubdirectory("mcsl-plugin-host-").FullName);
+            fixture.Add(id, assembly, entryType, features, entryAssembly, copyGeneratedDependencies: true);
+            return fixture;
+        }
+
         public void Dispose()
         {
             try
@@ -400,11 +485,18 @@ public sealed class PluginHostLifecycleTests
             string id,
             Assembly assembly,
             string entryType,
-            string[]? features = null)
+            string[]? features = null,
+            string entryAssembly = "PluginEntry.dll",
+            bool copyGeneratedDependencies = false)
         {
             var bundle = Path.Combine(PluginsRoot, id);
             Directory.CreateDirectory(bundle);
-            File.Copy(assembly.Location, Path.Combine(bundle, "PluginEntry.dll"));
+            File.Copy(assembly.Location, Path.Combine(bundle, entryAssembly));
+            if (copyGeneratedDependencies)
+            {
+                CopyDependency(assembly, bundle, "MCServerLauncher.Daemon.Plugin.Sdk.dll");
+                CopyDependency(assembly, bundle, "Microsoft.Extensions.DependencyInjection.dll");
+            }
             var serializedFeatures = JsonSerializer.Serialize(
                 features ?? ["event.publish", "instance.query", "rpc.register"]);
             File.WriteAllText(
@@ -416,7 +508,7 @@ public sealed class PluginHostLifecycleTests
                     "version": "1.0.0"
                   },
                   "entry": {
-                    "assembly": "PluginEntry.dll",
+                    "assembly": "{{entryAssembly}}",
                     "type": "{{entryType}}"
                   },
                   "requires": {
@@ -425,6 +517,13 @@ public sealed class PluginHostLifecycleTests
                   }
                 }
                 """);
+        }
+
+        private static void CopyDependency(Assembly assembly, string bundle, string fileName)
+        {
+            var source = Path.Combine(Path.GetDirectoryName(assembly.Location)!, fileName);
+            if (File.Exists(source))
+                File.Copy(source, Path.Combine(bundle, fileName));
         }
     }
 

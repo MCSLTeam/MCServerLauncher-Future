@@ -9,6 +9,6 @@
   },
   "requires": {
     "api": "[2.0.0,3.0.0)",
-    "features": ["event.publish", "instance.query", "rpc.register"]
+    "features": ["network.http.listen"]
   }
 }

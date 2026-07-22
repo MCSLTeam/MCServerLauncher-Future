@@ -61,15 +61,27 @@ internal sealed class PluginPrivateStorage : IPluginPrivateStorage
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var bytes = JsonSerializer.SerializeToUtf8Bytes(value, typeInfo);
             lock (_gate)
             {
-                EnsureCapacityForWrite(fullPath, bytes.LongLength);
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-                // Atomic replace via temp + move.
-                var temp = fullPath + ".tmp";
-                File.WriteAllBytes(temp, bytes);
-                File.Move(temp, fullPath, overwrite: true);
+                cancellationToken.ThrowIfCancellationRequested();
+                EnsureCapacityForReplace(fullPath, bytes.LongLength);
+                var directory = Path.GetDirectoryName(fullPath)!;
+                Directory.CreateDirectory(directory);
+                var temporaryPath = Path.Combine(
+                    directory,
+                    $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+                try
+                {
+                    File.WriteAllBytes(temporaryPath, bytes);
+                    File.Move(temporaryPath, fullPath, overwrite: true);
+                }
+                finally
+                {
+                    if (File.Exists(temporaryPath))
+                        File.Delete(temporaryPath);
+                }
             }
 
             await Task.CompletedTask.ConfigureAwait(false);
@@ -140,11 +152,15 @@ internal sealed class PluginPrivateStorage : IPluginPrivateStorage
 
         try
         {
-            var line = JsonSerializer.Serialize(value, typeInfo) + "\n";
-            var bytes = System.Text.Encoding.UTF8.GetBytes(line);
+            cancellationToken.ThrowIfCancellationRequested();
+            var payload = JsonSerializer.SerializeToUtf8Bytes(value, typeInfo);
+            var bytes = new byte[payload.Length + 1];
+            payload.CopyTo(bytes, 0);
+            bytes[^1] = (byte)'\n';
             lock (_gate)
             {
-                EnsureCapacityForWrite(fullPath, bytes.LongLength);
+                cancellationToken.ThrowIfCancellationRequested();
+                EnsureCapacityForAppend(fullPath, bytes.LongLength);
                 Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
                 using var stream = new FileStream(
                     fullPath,
@@ -178,8 +194,13 @@ internal sealed class PluginPrivateStorage : IPluginPrivateStorage
 
         try
         {
-            if (File.Exists(fullPath))
-                File.Delete(fullPath);
+            cancellationToken.ThrowIfCancellationRequested();
+            lock (_gate)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (File.Exists(fullPath))
+                    File.Delete(fullPath);
+            }
             return Task.FromResult(Result.Ok<Unit, DaemonError>(Unit.Default));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -220,39 +241,71 @@ internal sealed class PluginPrivateStorage : IPluginPrivateStorage
         return true;
     }
 
-    private void EnsureCapacityForWrite(string fullPath, long incomingBytes)
+    private void EnsureCapacityForReplace(string fullPath, long replacementBytes)
     {
-        long total = 0;
+        var usage = MeasureUsage(fullPath);
+        EnsureFileCapacity(usage.FileCount + (usage.TargetExists ? 0 : 1));
+
+        var retainedBytes = usage.TotalBytes - usage.TargetBytes;
+        EnsureByteCapacity(retainedBytes, replacementBytes, "write");
+    }
+
+    private void EnsureCapacityForAppend(string fullPath, long appendedBytes)
+    {
+        var usage = MeasureUsage(fullPath);
+        EnsureFileCapacity(usage.FileCount + (usage.TargetExists ? 0 : 1));
+        EnsureByteCapacity(usage.TotalBytes, appendedBytes, "append");
+    }
+
+    private StorageUsage MeasureUsage(string fullPath)
+    {
+        long totalBytes = 0;
+        long targetBytes = 0;
         var fileCount = 0;
+        var targetExists = false;
         if (Directory.Exists(_root))
         {
             foreach (var file in Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories))
             {
+                var length = new FileInfo(file).Length;
                 fileCount++;
+                totalBytes += length;
                 if (StringComparer.OrdinalIgnoreCase.Equals(file, fullPath))
-                    continue;
-                total += new FileInfo(file).Length;
+                {
+                    targetExists = true;
+                    targetBytes = length;
+                }
             }
         }
 
-        var replacing = File.Exists(fullPath);
-        if (!replacing)
-            fileCount++;
-
-        if (fileCount > MaxFiles)
-        {
-            throw new DaemonErrorException(_errors.Create(
-                "plugin_storage_file_quota",
-                $"Plugin storage file count would exceed the maximum of {MaxFiles}."));
-        }
-
-        if (total + incomingBytes > QuotaBytes)
-        {
-            throw new DaemonErrorException(_errors.Create(
-                "plugin_storage_byte_quota",
-                $"Plugin storage write would exceed the quota of {QuotaBytes} bytes."));
-        }
+        return new StorageUsage(totalBytes, fileCount, targetExists, targetBytes);
     }
+
+    private void EnsureFileCapacity(int projectedFileCount)
+    {
+        if (projectedFileCount <= MaxFiles)
+            return;
+
+        throw new DaemonErrorException(_errors.Create(
+            "plugin_storage_file_quota",
+            $"Plugin storage file count would exceed the maximum of {MaxFiles}."));
+    }
+
+    private void EnsureByteCapacity(long retainedBytes, long incomingBytes, string operation)
+    {
+        if (incomingBytes <= QuotaBytes && retainedBytes <= QuotaBytes - incomingBytes)
+            return;
+
+        throw new DaemonErrorException(_errors.Create(
+            "plugin_storage_byte_quota",
+            $"Plugin storage {operation} would exceed the quota of {QuotaBytes} bytes."));
+    }
+
+    private readonly record struct StorageUsage(
+        long TotalBytes,
+        int FileCount,
+        bool TargetExists,
+        long TargetBytes);
 
     private sealed class DaemonErrorException(DaemonError error) : Exception(error.Message)
     {
