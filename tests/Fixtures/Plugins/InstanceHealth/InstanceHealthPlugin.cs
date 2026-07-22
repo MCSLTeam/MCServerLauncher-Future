@@ -7,19 +7,19 @@ using MCServerLauncher.Daemon.API.Protocol;
 using Microsoft.Extensions.Logging;
 using RustyOptions;
 
+[assembly: GeneratedDaemonPluginMetadata(
+    "community.instance-health",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.InstanceHealth.InstanceHealthPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "5f5f79456836caee99486555451f837f41d156288b60cbb7bd53d9e65dd6e08c")]
+
 namespace MCServerLauncher.PluginFixtures.InstanceHealth;
 
 public sealed class InstanceHealthPlugin : IGeneratedDaemonPluginAdapter
 {
-    public static PluginAdapterMetadata Metadata { get; } = new(
-        "community.instance-health",
-        "1.0.0",
-        "PluginEntry.dll",
-        "MCServerLauncher.PluginFixtures.InstanceHealth.InstanceHealthPlugin",
-        "[2.0.0, 3.0.0)",
-        ["event.publish", "instance.query", "rpc.register"],
-        "5f5f79456836caee99486555451f837f41d156288b60cbb7bd53d9e65dd6e08c");
-
     private IPluginContext? _context;
     private IPluginEventPublisher<InstanceHealthChanged, Unit>? _publisher;
     private Task? _backgroundTask;
@@ -27,13 +27,19 @@ public sealed class InstanceHealthPlugin : IGeneratedDaemonPluginAdapter
     public Result<Unit, DaemonError> Configure(IPluginContext context)
     {
         _context = context;
-        var rpcResult = context.Rpc.Register(InstanceHealthProtocol.Rpc, (request, _) =>
-            Task.FromResult(
+        var descriptor = InstanceHealthProtocol.Rpc;
+        var rpcResult = context.Rpc.Register(
+            "get",
+            descriptor.RequestTypeInfo,
+            descriptor.ResultTypeInfo,
+            descriptor.Documentation!,
+            (request, _) => Task.FromResult(
                 StringComparer.OrdinalIgnoreCase.Equals(request.Scope, "all")
                     ? PluginResult.Ok(CreateResult(context))
                     : PluginResult.Fail<InstanceHealthResult>(context.Errors.Create(
                         "plugin_scope_unsupported",
-                        $"Instance health scope '{request.Scope}' is not supported."))));
+                        $"Instance health scope '{request.Scope}' is not supported."))),
+            descriptor.AllowNotification);
         if (rpcResult.IsErr(out var rpcError))
             return Result.Err<Unit, DaemonError>(rpcError!);
 
@@ -113,8 +119,8 @@ public static class InstanceHealthProtocol
 {
     public static RpcDescriptor<InstanceHealthRequest, InstanceHealthResult> Rpc { get; } =
         PluginProtocol.CreateRpc(
-            "plugin.community.instance-health.rpc.get",
-            "plugin.community.instance-health.rpc",
+            "community.instance-health",
+            "get",
             InstanceHealthJsonContext.Default.InstanceHealthRequest,
             InstanceHealthJsonContext.Default.InstanceHealthResult,
             new RpcDocumentation(

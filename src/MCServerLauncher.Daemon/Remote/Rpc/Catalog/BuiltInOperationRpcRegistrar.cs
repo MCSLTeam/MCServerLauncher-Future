@@ -13,31 +13,25 @@ internal static class BuiltInOperationRpcRegistrar
 
         Register<OperationListQuery, OperationListResult>(builder, "mcsl.operation.list", async (context, request, token) =>
         {
-            var bound = request with { OwnerPrincipal = ResolveSubject(context) };
+            if (!RpcCallerSubjectResolver.TryResolve(context, useGlobalOwnerForMainToken: true, out var subject, out var error))
+                return ProtocolRpcExecution<OperationListResult>.Err(error!);
+            var bound = request with { OwnerPrincipal = subject };
             return BuiltInApplicationRpcExecution.FromResult(await application.ListOperationsAsync(bound, token).ConfigureAwait(false));
         });
         Register<OperationReference, OperationSnapshot>(builder, "mcsl.operation.get", async (context, request, token) =>
         {
-            var bound = request with { OwnerPrincipal = ResolveSubject(context) };
+            if (!RpcCallerSubjectResolver.TryResolve(context, useGlobalOwnerForMainToken: true, out var subject, out var error))
+                return ProtocolRpcExecution<OperationSnapshot>.Err(error!);
+            var bound = request with { OwnerPrincipal = subject };
             return BuiltInApplicationRpcExecution.FromResult(await application.GetOperationAsync(bound, token).ConfigureAwait(false));
         });
         Register<OperationCancelRequest, OperationCancelResult>(builder, "mcsl.operation.cancel", async (context, request, token) =>
         {
-            var bound = request with { OwnerPrincipal = ResolveSubject(context) };
+            if (!RpcCallerSubjectResolver.TryResolve(context, useGlobalOwnerForMainToken: true, out var subject, out var error))
+                return ProtocolRpcExecution<OperationCancelResult>.Err(error!);
+            var bound = request with { OwnerPrincipal = subject };
             return BuiltInApplicationRpcExecution.FromResult(await application.CancelOperationAsync(bound, token).ConfigureAwait(false));
         });
-    }
-
-    private static string ResolveSubject(ProtocolInvocationContext context)
-    {
-        var view = context.PermissionView;
-        if (view is null)
-            return string.Empty;
-        // Decision §7: main token / * sees all operations. Use trusted admin marker only when
-        // the connection is the raw main token (IsMainToken), never from client-supplied fields.
-        if (view.IsMainToken)
-            return "*";
-        return string.IsNullOrWhiteSpace(view.Subject) ? string.Empty : view.Subject;
     }
 
     private static void Register<TRequest, TResult>(

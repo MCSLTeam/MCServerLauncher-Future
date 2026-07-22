@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Threading.Channels;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Authentication;
 
@@ -51,8 +52,13 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
         Permissions = NormalizePermissions(permissions);
         CompiledPermissions = CompilePermissions(Permissions);
         Subject = string.IsNullOrWhiteSpace(subject)
-            ? (isMainToken ? "daemon-main" : "anonymous")
+            ? (isMainToken ? PrincipalIdentityPolicy.MainTokenSubject : "anonymous")
             : subject;
+        if (isMainToken)
+            PrincipalIdentityPolicy.ValidateMainTokenSubject(Subject, nameof(subject));
+        else
+            PrincipalIdentityPolicy.ValidateExternalSubject(Subject, nameof(subject));
+
         // IsMainToken is identity, not permission breadth. Bare "*" grants still match all methods.
         IsMainToken = isMainToken;
         _connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(connectionCancellation);

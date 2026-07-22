@@ -25,11 +25,13 @@ public static class JwtUtils
     {
         var secretBytes = Encoding.UTF8.GetBytes(Secret);
 
+        var tokenId = Guid.NewGuid().ToString("N");
 
         var claims = new[]
         {
             new Claim("permissions", permissions),
-            new Claim("jti", Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, tokenId),
+            new Claim(JwtRegisteredClaimNames.Sub, $"token:{tokenId}")
         };
 
         var token = new JwtSecurityToken(
@@ -51,16 +53,21 @@ public static class JwtUtils
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    public static (Guid JTI, string? Permissions, DateTime ValidTo) ReadToken(string token)
+    public static (Guid JTI, string Subject, string? Permissions, DateTime ValidTo) ReadToken(string token)
     {
         if (token == AppConfig.Get().MainToken)
-            return (Guid.Empty, "*", DateTime.MaxValue);
+            return (Guid.Empty, "daemon-main", "*", DateTime.MaxValue);
 
         var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var permissions = parsed.Claims.FirstOrDefault(c => c.Type == "permissions")?.Value;
         var expires = parsed.ValidTo;
-        var id = parsed.Id;
-        return (Guid.Parse(id), permissions, expires);
+        var id = string.IsNullOrWhiteSpace(parsed.Id)
+            ? throw new FormatException("The JWT jti claim is required.")
+            : parsed.Id;
+        var subject = string.IsNullOrWhiteSpace(parsed.Subject)
+            ? throw new FormatException("The JWT sub claim is required.")
+            : parsed.Subject;
+        return (Guid.Parse(id), subject, permissions, expires);
     }
 
     /// <summary>
@@ -91,7 +98,7 @@ public static class JwtUtils
                 ClockSkew = TimeSpan.Zero // <==  *** 消除时钟偏差!!! ***
             };
             var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(jwt, tokenValidationParameters, out _);
-            var (_, permissions, _) = ReadToken(jwt);
+            var (_, _, permissions, _) = ReadToken(jwt);
             return permissions != null && Permissions.IsValid(permissions);
         }
         catch (Exception e)

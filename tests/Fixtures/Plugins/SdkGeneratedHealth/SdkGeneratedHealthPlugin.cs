@@ -49,11 +49,21 @@ internal sealed class SdkGeneratedResourceProbe : IAsyncDisposable
 
     public SdkGeneratedResourceProbe() => Record("created");
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) == 0)
-            Record("disposed");
-        return ValueTask.CompletedTask;
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
+        var releasePath = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_DISPOSE_RELEASE_PATH");
+        if (!string.IsNullOrWhiteSpace(releasePath))
+        {
+            Record("disposing");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            while (!File.Exists(releasePath))
+                await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token).ConfigureAwait(false);
+        }
+
+        Record("disposed");
     }
 
     private static void Record(string value)

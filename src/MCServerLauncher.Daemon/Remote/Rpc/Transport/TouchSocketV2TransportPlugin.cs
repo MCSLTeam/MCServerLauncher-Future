@@ -348,36 +348,31 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 
     internal static bool TryAuthenticateToken(string token, TimeProvider timeProvider,
         Func<string, bool> validate,
-        Func<string, (Guid JTI, string? Permissions, DateTime ValidTo)> read,
+        Func<string, (Guid JTI, string? Subject, string? Permissions, DateTime ValidTo)> read,
         out V2VerifiedToken verified)
     {
         verified = default;
         try
         {
             if (!validate(token)) return false;
-            var (jti, permissions, validTo) = read(token);
+            var (jti, subject, permissions, validTo) = read(token);
             if (permissions is null) return false;
             var expiry = validTo == DateTime.MaxValue ? DateTimeOffset.MaxValue : new DateTimeOffset(validTo, TimeSpan.Zero);
             if (expiry <= timeProvider.GetUtcNow()) return false;
             // Main-token privilege is only equality with AppConfig.MainToken.
             // Empty jti on a signed JWT must not elevate to main.
             var isMain = string.Equals(token, AppConfig.Get().MainToken, StringComparison.Ordinal);
-            var subject = isMain ? "daemon-main" : "token-user";
-            if (!isMain)
+            if (isMain)
             {
-                try
-                {
-                    var jwt = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(token);
-                    subject = jwt.Subject
-                        ?? jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
-                        ?? $"token:{jti:N}";
-                }
-                catch
-                {
-                    subject = $"token:{jti:N}";
-                }
+                if (!PrincipalIdentityPolicy.IsMainTokenSubject(subject))
+                    return false;
             }
-            verified = new V2VerifiedToken(jti, permissions, expiry, subject, isMain);
+            else if (jti == Guid.Empty || !PrincipalIdentityPolicy.IsValidExternalSubject(subject))
+            {
+                return false;
+            }
+
+            verified = new V2VerifiedToken(jti, permissions, expiry, subject!, isMain);
             return true;
         }
         catch { return false; }

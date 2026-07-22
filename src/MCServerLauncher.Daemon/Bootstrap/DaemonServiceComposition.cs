@@ -78,7 +78,10 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IOperationApplication, OperationCoordinator>();
         a.RegisterSingleton<PlanKernel>();
         a.RegisterSingleton<IProvisioningApplication, LocalProvisioningApplication>();
-        a.RegisterSingleton<ICallerContextFactory, CallerContextFactory>();
+        var verifiedPrincipals = new VerifiedPrincipalAuthority();
+        var callerContextFactory = new CallerContextFactory(verifiedPrincipals);
+        a.RegisterSingleton(verifiedPrincipals);
+        a.RegisterSingleton<ICallerContextFactory>(callerContextFactory);
         a.RegisterSingleton<ITokenIssueApplication, TokenIssueApplication>();
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
@@ -118,7 +121,8 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<IInstanceApplication>(),
             serviceProvider.GetRequiredService<IOperationApplication>(),
             serviceProvider.GetRequiredService<IProvisioningApplication>(),
-            serviceProvider.GetRequiredService<PluginAdmissionPreflight>()));
+            serviceProvider.GetRequiredService<PluginAdmissionPreflight>(),
+            serviceProvider.GetRequiredService<VerifiedPrincipalAuthority>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);

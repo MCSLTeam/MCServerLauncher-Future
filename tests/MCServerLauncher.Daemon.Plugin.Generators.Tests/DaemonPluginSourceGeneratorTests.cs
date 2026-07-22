@@ -111,9 +111,11 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
         Assert.Contains("class DaemonPluginAdapter", generated, StringComparison.Ordinal);
         Assert.Contains("IGeneratedDaemonPluginAdapter", generated, StringComparison.Ordinal);
-        Assert.Contains("PluginAdapterMetadata Metadata", generated, StringComparison.Ordinal);
+        Assert.Contains("GeneratedDaemonPluginMetadataAttribute", generated, StringComparison.Ordinal);
+        Assert.Contains("event.publish\\ninstance.query\\nrpc.register", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("PluginAdapterMetadata", generated, StringComparison.Ordinal);
         Assert.Contains("class HealthPluginFeatures", generated, StringComparison.Ordinal);
-        Assert.Contains("class HealthPluginMetadata", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("class HealthPluginMetadata", generated, StringComparison.Ordinal);
         Assert.Contains("class HealthPluginServiceRegistration", generated, StringComparison.Ordinal);
         Assert.Contains("IPluginRpcRegistrar Rpc", generated, StringComparison.Ordinal);
         Assert.Contains("IPluginEventRegistrar Events", generated, StringComparison.Ordinal);
@@ -126,10 +128,10 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains("AttachServices", generated, StringComparison.Ordinal);
         Assert.Contains("DetachServices", generated, StringComparison.Ordinal);
         Assert.Contains("IAsyncDisposable", generated, StringComparison.Ordinal);
-        Assert.Contains("ManifestDigest", generated, StringComparison.Ordinal);
-        Assert.Contains("ImmutableArray<string> Features", generated, StringComparison.Ordinal);
         Assert.Contains("community.example.health", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("IPluginContext Context { get; }", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("IPluginContext _context", generated, StringComparison.Ordinal);
+        Assert.Contains("IPluginAuthorizedApplications> _forPrincipal", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginContext)", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.State.IInstanceSnapshotSource)", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("typeof(global::MCServerLauncher.Daemon.API.Application.IInstanceApplication)", generated, StringComparison.Ordinal);
@@ -158,6 +160,37 @@ public sealed class DaemonPluginSourceGeneratorTests
             ("second/mcsl-plugin.json", ManifestJson));
 
         Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "MCSLPLG002");
+    }
+
+    [Theory]
+    [InlineData("backup-mcsl-plugin.json")]
+    [InlineData("notmcsl-plugin.json")]
+    [InlineData("MCSL-PLUGIN.JSON")]
+    public void IgnoresAdditionalFilesWithoutTheExactManifestBasename(string deceptivePath)
+    {
+        var (diagnostics, generated) = RunGenerator(
+            ModuleSource,
+            manifestJson: null,
+            (deceptivePath, ManifestJson));
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "MCSLPLG001");
+        Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Id == "MCSLPLG002");
+        Assert.Empty(generated);
+    }
+
+    [Theory]
+    [InlineData("backup-mcsl-plugin.json")]
+    [InlineData("notmcsl-plugin.json")]
+    [InlineData("MCSL-PLUGIN.JSON")]
+    public void DeceptiveManifestNamesDoNotMakeTheRealManifestAmbiguous(string deceptivePath)
+    {
+        var (diagnostics, generated) = RunGenerator(
+            ModuleSource,
+            ManifestJson,
+            (deceptivePath, ManifestJson));
+
+        Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Id == "MCSLPLG002");
+        Assert.Contains("DaemonPluginAdapter", generated, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -194,10 +227,13 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "MCSLPLG010");
     }
 
-    [Fact]
-    public void ReportsManualIDaemonPluginWhenManifestPresent()
+    [Theory]
+    [InlineData("class")]
+    [InlineData("record class")]
+    [InlineData("struct")]
+    public void ReportsManualIDaemonPluginWhenManifestPresent(string declarationKind)
     {
-        const string manual = """
+        var manual = $$"""
             using System.Threading;
             using System.Threading.Tasks;
             using MCServerLauncher.Daemon.API.Errors;
@@ -206,7 +242,7 @@ public sealed class DaemonPluginSourceGeneratorTests
 
             namespace Example.Plugin;
 
-            public sealed class ManualPlugin : IDaemonPlugin
+            public {{declarationKind}} ManualPlugin : IDaemonPlugin
             {
                 public Result<Unit, DaemonError> Configure(IPluginContext context) => PluginResult.Ok();
                 public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
@@ -279,8 +315,8 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.DoesNotContain(normalizedDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         Assert.Contains(reorderedDiagnostics, diagnostic => diagnostic.Id == "MCSLPLG006");
         Assert.DoesNotContain(schemaDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
-        Assert.Contains("PackageVersion = \"1.0.0\"", normalizedGenerated, StringComparison.Ordinal);
-        Assert.Contains("ApiRange = \"[2.0.0, 3.0.0)\"", normalizedGenerated, StringComparison.Ordinal);
+        Assert.Contains("    \"1.0.0\",", normalizedGenerated, StringComparison.Ordinal);
+        Assert.Contains("    \"[2.0.0, 3.0.0)\",", normalizedGenerated, StringComparison.Ordinal);
         Assert.Equal(ExtractManifestDigest(normalizedGenerated), ExtractManifestDigest(reorderedGenerated));
         Assert.Equal(ExtractManifestDigest(normalizedGenerated), ExtractManifestDigest(schemaGenerated));
     }
@@ -520,7 +556,7 @@ public sealed class DaemonPluginSourceGeneratorTests
     {
         var match = Regex.Match(
             generated,
-            "ManifestDigest = \\\"(?<digest>[0-9a-f]{64})\\\"",
+            "\\\"(?<digest>[0-9a-f]{64})\\\"\\)\\]",
             RegexOptions.CultureInvariant);
         Assert.True(match.Success, "Generated metadata did not contain a normalized manifest digest.");
         return match.Groups["digest"].Value;
