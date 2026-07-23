@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -546,7 +547,7 @@ public sealed class ProvisioningPlanKernelTests
     }
 
     [Fact]
-    public async Task Execute_ContinuousPlanPersistenceFailurePublishesInterruptedUntilPlanRecovery()
+    public async Task Execute_ContinuousPlanPersistenceFailureReconcilesWithoutRestart()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-plans-terminal-persist-").FullName;
         var operationsRoot = Path.Combine(root, "ops");
@@ -585,46 +586,28 @@ public sealed class ProvisioningPlanKernelTests
             // A directory at that path keeps both the initial write and its single retry failing.
             Directory.CreateDirectory(Path.Combine(root, "index.json.tmp"));
             release.TrySetResult();
-            await operations.DisposeAsync();
 
-            var retainedOperation = await operations.GetOperationAsync(
-                new OperationReference(handle!.OperationId, "owner-a"),
-                CancellationToken.None);
-            Assert.True(retainedOperation.IsOk(out var retainedSnapshot));
-            Assert.Equal(OperationStatus.Interrupted, retainedSnapshot!.Status);
+            var retainedSnapshot = await WaitForTerminalAsync(operations, handle!.OperationId, "owner-a");
+            Assert.Equal(OperationStatus.Interrupted, retainedSnapshot.Status);
             Assert.False(retainedSnapshot.Cancellable);
             var retained = kernel.Get(plan.PlanId);
             Assert.True(retained.IsOk(out var retainedPlan));
             Assert.Equal(PlanStatus.Executing, retainedPlan!.Status);
-            Assert.Equal(2, logger.Entries.Count(entry =>
-                entry.Exception is IOException or UnauthorizedAccessException));
+            Assert.True(logger.Entries.Count(entry =>
+                entry.Exception is IOException or UnauthorizedAccessException) >= 2);
             Assert.Contains(logger.Entries, static entry => entry.Level == LogLevel.Error);
 
             Directory.Delete(Path.Combine(root, "index.json.tmp"));
-            await using var recoveredOperations = new OperationCoordinator(rootDirectory: operationsRoot);
-            var recoveredKernel = new PlanKernel(rootDirectory: root);
-            var startupRecovery = new OperationStartupRecovery(recoveredOperations, recoveredKernel);
+            var consumedPlan = await WaitForPlanStatusAsync(kernel, plan.PlanId, PlanStatus.Consumed);
+            Assert.Equal(PlanStatus.Consumed, consumedPlan.Status);
 
-            var beforeRecovery = await recoveredOperations.GetOperationAsync(
+            var retainedOperation = await operations.GetOperationAsync(
                 new OperationReference(handle.OperationId, "owner-a"),
                 CancellationToken.None);
-            Assert.True(beforeRecovery.IsOk(out var interruptedBeforeRecovery));
-            Assert.Equal(OperationStatus.Interrupted, interruptedBeforeRecovery!.Status);
-            var executingBeforeRecovery = recoveredKernel.Get(plan.PlanId);
-            Assert.True(executingBeforeRecovery.IsOk(out var executingPlan));
-            Assert.Equal(PlanStatus.Executing, executingPlan!.Status);
-
-            startupRecovery.Recover();
-            var recoveredOperation = await recoveredOperations.GetOperationAsync(
-                new OperationReference(handle.OperationId, "owner-a"),
-                CancellationToken.None);
-            Assert.True(recoveredOperation.IsOk(out var interrupted));
+            Assert.True(retainedOperation.IsOk(out var interrupted));
             Assert.Equal(OperationStatus.Interrupted, interrupted!.Status);
 
-            var recoveredPlan = recoveredKernel.Get(plan.PlanId);
-            Assert.True(recoveredPlan.IsOk(out var consumedPlan));
-            Assert.Equal(PlanStatus.Consumed, consumedPlan!.Status);
-            var replay = recoveredKernel.TryBeginExecute(plan.PlanId, "owner-a");
+            var replay = kernel.TryBeginExecute(plan.PlanId, "owner-a");
             Assert.True(replay.IsErr(out var replayError));
             Assert.Equal("plan.single_flight", replayError!.Code);
         }
@@ -1104,6 +1087,23 @@ public sealed class ProvisioningPlanKernelTests
         }
     }
 
+    private static async Task<ProvisioningPlanSnapshot> WaitForPlanStatusAsync(
+        PlanKernel kernel,
+        Guid planId,
+        PlanStatus expectedStatus)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (true)
+        {
+            var current = kernel.Get(planId);
+            Assert.True(current.IsOk(out var snapshot));
+            if (snapshot!.Status == expectedStatus)
+                return snapshot;
+
+            await Task.Delay(10, timeout.Token);
+        }
+    }
+
     private sealed class StubInstances(
         Func<MCServerLauncher.Common.Contracts.Instances.CreateInstanceRequest,
             CancellationToken,
@@ -1211,8 +1211,16 @@ public sealed class ProvisioningPlanKernelTests
     private sealed class RecordingLogger<T> : ILogger<T>
     {
         private readonly object _gate = new();
+        private readonly List<LogEntry> _entries = [];
 
-        internal List<LogEntry> Entries { get; } = [];
+        internal ImmutableArray<LogEntry> Entries
+        {
+            get
+            {
+                lock (_gate)
+                    return [.. _entries];
+            }
+        }
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -1226,7 +1234,7 @@ public sealed class ProvisioningPlanKernelTests
             Func<TState, Exception?, string> formatter)
         {
             lock (_gate)
-                Entries.Add(new LogEntry(logLevel, formatter(state, exception), exception));
+                _entries.Add(new LogEntry(logLevel, formatter(state, exception), exception));
         }
     }
 
