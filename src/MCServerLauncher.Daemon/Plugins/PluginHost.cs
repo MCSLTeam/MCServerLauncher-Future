@@ -34,7 +34,7 @@ internal sealed class PluginHost
 {
     internal const string HostApiVersion = "2.0.0";
     private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan RollbackCleanupTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DefaultRollbackCleanupTimeout = TimeSpan.FromSeconds(30);
 
     private readonly object _gate = new();
     private readonly IInstanceSnapshotSource _instances;
@@ -49,6 +49,7 @@ internal sealed class PluginHost
     private readonly IPluginEventBus _eventBus;
     private readonly string _pluginsRoot;
     private readonly TimeSpan _startTimeout;
+    private readonly TimeSpan _rollbackCleanupTimeout;
     private readonly DaemonPluginsConfig _pluginsConfig;
     private readonly PluginAdmissionPreflight _preflight;
     private readonly PluginHttpEndpointRegistry _httpEndpoints;
@@ -132,7 +133,8 @@ internal sealed class PluginHost
         IOperationApplication? operationApplication = null,
         IProvisioningApplication? provisioningApplication = null,
         PluginAdmissionPreflight? preflight = null,
-        VerifiedPrincipalAuthority? verifiedPrincipals = null)
+        VerifiedPrincipalAuthority? verifiedPrincipals = null,
+        TimeSpan? rollbackCleanupTimeout = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -143,6 +145,8 @@ internal sealed class PluginHost
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(startTimeout, TimeSpan.Zero);
         _pluginsRoot = Path.GetFullPath(pluginsRoot);
         _startTimeout = startTimeout;
+        _rollbackCleanupTimeout = rollbackCleanupTimeout ?? DefaultRollbackCleanupTimeout;
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_rollbackCleanupTimeout, TimeSpan.Zero);
         _pluginsConfig = pluginsConfig ?? DaemonPluginsConfig.Default;
         _preflight = preflight ?? PluginAdmissionPreflight.CreateNonInteractive(_pluginsConfig);
         _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
@@ -806,7 +810,7 @@ internal sealed class PluginHost
 
         CloseHttpEndpointAdmission(runtime);
         using var stopTimeout = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
-        stopTimeout.CancelAfter(RollbackCleanupTimeout);
+        stopTimeout.CancelAfter(_rollbackCleanupTimeout);
         try
         {
             var result = await runtime.Plugin.StopAsync(stopTimeout.Token)
@@ -842,7 +846,7 @@ internal sealed class PluginHost
         var disposeTask = DisposePluginAsync(runtime);
         try
         {
-            if (await disposeTask.WaitAsync(RollbackCleanupTimeout).ConfigureAwait(false))
+            if (await disposeTask.WaitAsync(_rollbackCleanupTimeout).ConfigureAwait(false))
             {
                 ReleaseHttpEndpoints(runtime);
                 return;
@@ -857,38 +861,18 @@ internal sealed class PluginHost
             _logger.LogWarning(
                 "Plugin {PluginId} timed-out start cleanup exceeded {Timeout}; endpoint ownership remains fail-closed until disposal completes.",
                 runtime.Manifest.Identity.Id,
-                RollbackCleanupTimeout);
-            ObserveLateDisposeCompletion(runtime, disposeTask);
+                _rollbackCleanupTimeout);
         }
-    }
 
-    private void ObserveLateDisposeCompletion(PluginRuntime runtime, Task<bool> disposeTask)
-    {
-        _ = disposeTask.ContinueWith(
-            static (task, state) =>
-            {
-                var (host, pluginRuntime) = ((PluginHost Host, PluginRuntime Runtime))state!;
-                if (task.Status == TaskStatus.RanToCompletion && task.Result)
-                {
-                    ReleaseHttpEndpoints(pluginRuntime);
-                    host._logger.LogInformation(
-                        "Plugin {PluginId} completed delayed timed-out start disposal; endpoint ownership was released.",
-                        pluginRuntime.Manifest.Identity.Id);
-                    return;
-                }
-
-                if (task.Exception is { } exception)
-                {
-                    host._logger.LogError(
-                        exception,
-                        "Plugin {PluginId} delayed timed-out start disposal faulted; endpoint ownership remains fail-closed.",
-                        pluginRuntime.Manifest.Identity.Id);
-                }
-            },
-            (this, runtime),
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        // The cleanup deadline is an observability threshold, not an ownership boundary. Keep
+        // awaiting the real dispose task so the host supervisor owns it through completion.
+        if (await disposeTask.ConfigureAwait(false))
+        {
+            ReleaseHttpEndpoints(runtime);
+            _logger.LogInformation(
+                "Plugin {PluginId} completed delayed timed-out start disposal; endpoint ownership was released.",
+                runtime.Manifest.Identity.Id);
+        }
     }
 
     private void FailWithoutDisposal(

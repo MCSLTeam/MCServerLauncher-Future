@@ -1,7 +1,8 @@
-using System.Reflection;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -763,7 +764,8 @@ public sealed class PluginHostLifecycleTests
                 TimeSpan.FromMilliseconds(150),
                 config,
                 endpoints,
-                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config),
+                rollbackCleanupTimeout: TimeSpan.FromMilliseconds(50));
 
             Task cleanupTask;
             PluginRuntimeState expectedState;
@@ -796,6 +798,10 @@ public sealed class PluginHostLifecycleTests
             if (mode.Equals("start-timeout", StringComparison.Ordinal))
             {
                 await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
+                await WaitForLogMessageAsync(
+                    logger,
+                    "timed-out start cleanup exceeded",
+                    TimeSpan.FromSeconds(5));
                 stopTask = host.StopAsync(CancellationToken.None);
                 Assert.False(stopTask.IsCompleted);
             }
@@ -1072,6 +1078,23 @@ public sealed class PluginHostLifecycleTests
         }
     }
 
+    private static async Task WaitForLogMessageAsync(
+        RecordingLogger<PluginHost> logger,
+        string expected,
+        TimeSpan timeout)
+    {
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            while (!logger.Messages.Any(message => message.Contains(expected, StringComparison.Ordinal)))
+                await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Log message containing '{expected}' was not observed before the deadline.");
+        }
+    }
+
     private static async Task WaitForEndpointRegistrationAsync(
         PluginHttpEndpointRegistry endpoints,
         string owner,
@@ -1315,7 +1338,7 @@ public sealed class PluginHostLifecycleTests
 
     private sealed class RecordingLogger<T> : ILogger<T>
     {
-        internal List<string> Messages { get; } = [];
+        internal ConcurrentQueue<string> Messages { get; } = new();
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
 
@@ -1331,7 +1354,7 @@ public sealed class PluginHostLifecycleTests
             var message = formatter(state, exception);
             if (exception is not null)
                 message += " | " + exception.GetBaseException().Message;
-            Messages.Add(message);
+            Messages.Enqueue(message);
         }
 
         private sealed class NullScope : IDisposable

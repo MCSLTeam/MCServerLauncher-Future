@@ -23,6 +23,7 @@ namespace MCServerLauncher.Daemon.ApplicationCore.Operations;
 internal sealed class OperationCoordinator : IOperationApplication, IAsyncDisposable
 {
     private static readonly TimeSpan ProgressPersistInterval = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan TerminalCommitRetryDelay = TimeSpan.FromSeconds(1);
 
     private readonly ConcurrentDictionary<Guid, OperationRuntime> _operations = new();
     private readonly object _lifecycleGate = new();
@@ -206,8 +207,9 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
     /// <summary>
     /// Persists and accepts a daemon operation, then schedules its execution independently of
     /// the request lifetime. The returned snapshot is always the accepted queued snapshot. A
-    /// terminal commit must atomically persist linked domain state before returning; the operation
-    /// terminal snapshot is not published until that commit succeeds.
+    /// terminal commit must atomically persist linked domain state before returning and must be
+    /// safe to retry. A failed commit publishes Interrupted and remains supervised for in-process
+    /// reconciliation until it succeeds or daemon shutdown begins.
     /// </summary>
     internal Task<Result<OperationSnapshot, DaemonError>> StartAsync(
         string kind,
@@ -433,6 +435,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                     runtime.Snapshot.OperationId,
                     exception.GetType().FullName);
                 PublishInterruptedAfterTerminalFailure(runtime);
+                ScheduleTerminalCommitReconciliation(runtime, prepared, terminalCommit);
                 return;
             }
 
@@ -443,6 +446,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                     runtime.Snapshot.OperationId,
                     error!.Code);
                 PublishInterruptedAfterTerminalFailure(runtime);
+                ScheduleTerminalCommitReconciliation(runtime, prepared, terminalCommit);
                 return;
             }
         }
@@ -476,6 +480,66 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 "Operation {OperationId} interrupted recovery could not be persisted; publishing it for the current daemon lifetime.",
                 runtime.Snapshot.OperationId);
             PublishCompletionWithoutPersistence(runtime, interrupted);
+        }
+    }
+
+    private void ScheduleTerminalCommitReconciliation(
+        OperationRuntime runtime,
+        OperationCompletion completion,
+        Func<OperationCompletion, Result<Unit, DaemonError>> terminalCommit)
+    {
+        var operationId = runtime.Snapshot.OperationId;
+        try
+        {
+            _supervisor.Schedule(
+                $"terminal-commit-reconciliation:{operationId:D}",
+                cancellationToken => ReconcileTerminalCommitAsync(
+                    operationId,
+                    completion,
+                    terminalCommit,
+                    cancellationToken));
+        }
+        catch (ObjectDisposedException) when (Volatile.Read(ref _disposed) != 0)
+        {
+            _logger.LogInformation(
+                "Operation {OperationId} terminal commit reconciliation was deferred to startup recovery because the coordinator is stopping.",
+                operationId);
+        }
+    }
+
+    private async Task ReconcileTerminalCommitAsync(
+        Guid operationId,
+        OperationCompletion completion,
+        Func<OperationCompletion, Result<Unit, DaemonError>> terminalCommit,
+        CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            await Task.Delay(TerminalCommitRetryDelay, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var committed = terminalCommit(completion);
+                if (!committed.IsErr(out var error))
+                {
+                    _logger.LogInformation(
+                        "Operation {OperationId} terminal commit reconciliation completed.",
+                        operationId);
+                    return;
+                }
+
+                _logger.LogWarning(
+                    "Operation {OperationId} terminal commit reconciliation still failed with {ErrorCode}; retrying.",
+                    operationId,
+                    error!.Code);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(
+                    exception,
+                    "Operation {OperationId} terminal commit reconciliation threw {ExceptionType}; retrying.",
+                    operationId,
+                    exception.GetType().FullName);
+            }
         }
     }
 
