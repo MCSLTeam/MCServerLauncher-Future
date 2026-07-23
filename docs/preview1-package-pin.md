@@ -1,14 +1,16 @@
 # Preview-1 Package Pin
 
-Status: final package-affecting source candidate verified twice; GitHub Release asset verification is pending.
+Status: package-affecting source candidate verified twice locally; GitHub Release asset verification is pending.
 Branch: `feat/plugin-sdk-2-preview1`
 Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`, sections 1, 10, and 12.
 
 ## Gate status
 
 This document records the reproducible local `2.0.0-preview.2` candidate from
-package-affecting source commit `2d3605d1`. Two fresh package outputs
-(`artifacts/_tmp_round3_pin_a` and `artifacts/_tmp_round3_pin_b`) produced
+package-affecting source commit `6148f426`. Two builds with independent pin
+roots (`artifacts/_tmp_round4_pin_build_a` and
+`artifacts/_tmp_round4_pin_build_b`) and package outputs
+(`artifacts/_tmp_round4_pin_a` and `artifacts/_tmp_round4_pin_b`) produced
 identical fingerprints for every listed payload. It does not mark the SDK
 Preview-1 package gate accepted and does not unblock MCP implementation.
 Acceptance requires attaching packages with these exact payloads to a GitHub
@@ -44,11 +46,11 @@ the consumer build or runtime path, plus every `buildTransitive` asset.
 Repository build settings make payloads reproducible when packing with
 `-p:MCSL_PIN_PACKAGE_PAYLOAD=true`:
 
-- `Directory.Build.props` enables deterministic compilation and omits source
-  revision from informational versions.
-- `Directory.Build.targets` enables CI path normalization, disables PDB output,
-  and excludes PDBs from package content for packable projects and the Roslyn
-  generator.
+- `Directory.Build.props` isolates pin output and intermediate roots, maps the
+  caller-selected pin root to a stable compiler path, enables deterministic CI
+  compilation, omits source revision metadata, and disables PDB/source output.
+- `Directory.Build.targets` excludes PDBs from package content for packable
+  projects.
 - `.gitattributes` forces LF for packed `buildTransitive` assets.
 
 Normal daemon and WPF builds keep referenced-project PDBs. The pin property is
@@ -57,9 +59,10 @@ pack-only. Reproducibility requires .NET SDK `10.0.201` from `global.json`.
 Build the candidate packages with:
 
 ```powershell
-dotnet pack src/MCServerLauncher.Common/MCServerLauncher.Common.csproj -c Release -o artifacts/preview1-package-pin-preview2 /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true
-dotnet pack src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj -c Release -o artifacts/preview1-package-pin-preview2 /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true
-dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj -c Release -o artifacts/preview1-package-pin-preview2 /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true
+$pinBuildRoot = Join-Path (Get-Location).Path 'artifacts/preview1-package-pin-build-preview2'
+dotnet pack src/MCServerLauncher.Common/MCServerLauncher.Common.csproj -c Release -o artifacts/preview1-package-pin-preview2 /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true "-p:MCSLPinBuildRoot=$pinBuildRoot"
+dotnet pack src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj -c Release -o artifacts/preview1-package-pin-preview2 /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true "-p:MCSLPinBuildRoot=$pinBuildRoot"
+dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj -c Release -o artifacts/preview1-package-pin-preview2 /m:1 -p:MCSL_PIN_PACKAGE_PAYLOAD=true "-p:MCSLPinBuildRoot=$pinBuildRoot"
 ```
 
 The release workflow recognizes the `2.0.0-preview.2` tag, packs all three
@@ -69,7 +72,7 @@ declared versions with `MCSL_PIN_PACKAGE_PAYLOAD=true`, and attaches each nupkg.
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `586c8a02e1a11a3d226a8b6abb38e1489c63f81629bb64d2eff0ea5b9b985d60` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `968741466a4b74417dab808dc9aa3ab5c3c7e30624a473a781619afac543fd27` |
 
 ### `MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg`
 
