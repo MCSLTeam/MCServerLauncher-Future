@@ -5,17 +5,6 @@
     `dotnet pack` so normal daemon/WPF builds keep referenced-project PDBs for
     include_pdb=true release archives.
   -->
-  <PropertyGroup Condition="'$(MCSL_PIN_PACKAGE_PAYLOAD)' == 'true' And (('$(IsPackable)' == 'true' And '$(PackageId)' != '') Or '$(IsRoslynComponent)' == 'true')">
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <DebugType>none</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-    <IncludeSymbols>false</IncludeSymbols>
-    <IncludeSource>false</IncludeSource>
-    <EmbedUntrackedSources>false</EmbedUntrackedSources>
-    <EmbedAllSources>false</EmbedAllSources>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(MCSL_PIN_PACKAGE_PAYLOAD)' == 'true' And '$(IsPackable)' == 'true' And '$(PackageId)' != ''">
     <!-- Prevent NuGet pack from requiring a staged .pdb (NU5026). -->
     <AllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;.xml</AllowedOutputExtensionsInPackageBuildOutputFolder>

@@ -157,19 +157,50 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.Contains("start_timed_out", logs, StringComparison.Ordinal);
     }
 
+    [Fact]
+    [Trait("Category", "PublishedPlugin")]
+    public async Task PublishedDaemon_AbandonsNonCooperativeDisposeAndCompletesGracefulShutdown()
+    {
+        var publishedDaemon = Environment.GetEnvironmentVariable("MCSL_PUBLISHED_DAEMON");
+        Assert.False(
+            string.IsNullOrWhiteSpace(publishedDaemon),
+            "MCSL_PUBLISHED_DAEMON must point to a published daemon executable or directory for published-plugin acceptance.");
+
+        await using var fixture = await PublishedDaemonFixture.CreateAsync(
+            publishedDaemon!,
+            includeNeverCompletingDisposePlugin: true);
+        await fixture.StartAsync();
+
+        var startedAt = Stopwatch.GetTimestamp();
+        var logs = await fixture.StopAndReadLogsAsync(TimeSpan.FromSeconds(45));
+        var elapsed = Stopwatch.GetElapsedTime(startedAt);
+
+        Assert.True(fixture.GracefulStopObserved, "Published daemon did not complete bounded graceful shutdown.");
+        Assert.True(elapsed < TimeSpan.FromSeconds(45), $"Published daemon shutdown exceeded its test deadline: {elapsed}.");
+        Assert.Contains("fixture.late-http-cleanup", logs, StringComparison.Ordinal);
+        Assert.Contains("cleanup_abandoned", logs, StringComparison.Ordinal);
+    }
+
     private sealed class PublishedDaemonFixture : IAsyncDisposable
     {
         private readonly string _root;
         private readonly string _daemonPath;
+        private readonly bool _includeNeverCompletingDisposePlugin;
         private Process? _process;
         private Task<string>? _standardError;
 
         public bool GracefulStopObserved { get; private set; }
 
-        private PublishedDaemonFixture(string root, string daemonPath, int port, string token)
+        private PublishedDaemonFixture(
+            string root,
+            string daemonPath,
+            int port,
+            string token,
+            bool includeNeverCompletingDisposePlugin)
         {
             _root = root;
             _daemonPath = daemonPath;
+            _includeNeverCompletingDisposePlugin = includeNeverCompletingDisposePlugin;
             WebSocketUri = new Uri($"ws://127.0.0.1:{port}/api/v2?token={Uri.EscapeDataString(token)}");
             EndpointUri = new Uri($"ws://127.0.0.1:{port}/api/v2");
             Token = token;
@@ -183,7 +214,8 @@ public sealed class PublishedInstanceHealthPluginTests
 
         public static async Task<PublishedDaemonFixture> CreateAsync(
             string configuredPath,
-            bool includeNeverCompletingStartPlugin = false)
+            bool includeNeverCompletingStartPlugin = false,
+            bool includeNeverCompletingDisposePlugin = false)
         {
             var source = ResolveDaemonPath(configuredPath);
             var root = Directory.CreateTempSubdirectory("mcsl-published-plugin-").FullName;
@@ -191,9 +223,12 @@ public sealed class PublishedInstanceHealthPluginTests
             var daemonPath = Path.Combine(root, Path.GetFileName(source));
             var port = GetUnusedLoopbackPort();
             var token = Convert.ToHexString(Guid.NewGuid().ToByteArray()).ToLowerInvariant();
+            var pluginsConfig = includeNeverCompletingDisposePlugin
+                ? ",\"plugins\":{\"grant_level\":\"High\",\"plugin_grants\":{\"fixture.late-http-cleanup\":[\"network.http.listen\"]}}"
+                : string.Empty;
             await File.WriteAllTextAsync(
                 Path.Combine(root, "config.json"),
-                $$"""{"port":{{port}},"secret":"{{token}}","main_token":"{{token}}","file_download_sessions":1,"verbose":false}""");
+                $$"""{"port":{{port}},"secret":"{{token}}","main_token":"{{token}}","file_download_sessions":1,"verbose":false{{pluginsConfig}}}""");
 
             var pluginDirectory = Path.Combine(root, "plugins", "community.instance-health");
             Directory.CreateDirectory(pluginDirectory);
@@ -236,14 +271,28 @@ public sealed class PublishedInstanceHealthPluginTests
                     typeof(NeverCompletingStartPlugin).FullName!,
                     "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             }
+            if (includeNeverCompletingDisposePlugin)
+            {
+                await WritePluginAsync(
+                    Path.Combine(root, "plugins", "fixture.late-http-cleanup"),
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
+                    "[\"network.http.listen\"]");
+            }
             await WriteDocumentedPackagePluginAsync(root);
 
-            return new PublishedDaemonFixture(root, daemonPath, port, token);
+            return new PublishedDaemonFixture(
+                root,
+                daemonPath,
+                port,
+                token,
+                includeNeverCompletingDisposePlugin);
         }
 
         public async Task StartAsync(TimeSpan? startupTimeout = null)
         {
-            _process = Process.Start(new ProcessStartInfo(_daemonPath)
+            var startInfo = new ProcessStartInfo(_daemonPath)
             {
                 WorkingDirectory = _root,
                 UseShellExecute = false,
@@ -251,7 +300,25 @@ public sealed class PublishedInstanceHealthPluginTests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = true
-            }) ?? throw new InvalidOperationException("The published daemon process could not be started.");
+            };
+            if (_includeNeverCompletingDisposePlugin)
+            {
+                var ownedPort = GetUnusedLoopbackPort();
+                var latePort = GetUnusedLoopbackPort();
+                while (latePort == ownedPort)
+                    latePort = GetUnusedLoopbackPort();
+
+                startInfo.Environment["MCSL_LATE_HTTP_MODE"] = "shutdown";
+                startInfo.Environment["MCSL_LATE_HTTP_OWNED_PORT"] = ownedPort.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                startInfo.Environment["MCSL_LATE_HTTP_PORT"] = latePort.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                startInfo.Environment["MCSL_LATE_HTTP_SIGNAL_PATH"] = Path.Combine(_root, "late-http.signal");
+                startInfo.Environment["MCSL_LATE_HTTP_RESULT_PATH"] = Path.Combine(_root, "late-http.result");
+                startInfo.Environment["MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH"] = Path.Combine(_root, "dispose.entered");
+                startInfo.Environment["MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH"] = Path.Combine(_root, "dispose.release");
+            }
+
+            _process = Process.Start(startInfo) ??
+                       throw new InvalidOperationException("The published daemon process could not be started.");
             _standardError = _process.StandardError.ReadToEndAsync();
 
             using var timeout = new CancellationTokenSource(startupTimeout ?? StartupTimeout);
@@ -279,7 +346,7 @@ public sealed class PublishedInstanceHealthPluginTests
             throw new TimeoutException("The published daemon did not accept an authenticated WebSocket connection in time.");
         }
 
-        public async Task<string> StopAndReadLogsAsync()
+        public async Task<string> StopAndReadLogsAsync(TimeSpan? shutdownTimeout = null)
         {
             if (_process is not null)
             {
@@ -297,7 +364,7 @@ public sealed class PublishedInstanceHealthPluginTests
 
                 try
                 {
-                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    using var timeout = new CancellationTokenSource(shutdownTimeout ?? TimeSpan.FromSeconds(10));
                     await _process.WaitForExitAsync(timeout.Token);
                     GracefulStopObserved = !_process.HasExited || _process.ExitCode == 0;
                 }

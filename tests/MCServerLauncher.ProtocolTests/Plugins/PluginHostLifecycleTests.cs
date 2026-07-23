@@ -677,7 +677,7 @@ public sealed class PluginHostLifecycleTests
 
             AssertStates(host.States, ("fixture.sdk-generated-health", expectedState));
             var lines = File.ReadAllLines(probePath);
-            if (mode.Equals("timeout", StringComparison.Ordinal))
+            if (!mode.Equals("success", StringComparison.Ordinal))
                 await WaitForProbeLineAsync(probePath, "disposed", TimeSpan.FromSeconds(5));
             lines = File.ReadAllLines(probePath);
             Assert.Equal(1, lines.Count(static line => line == "created"));
@@ -800,7 +800,7 @@ public sealed class PluginHostLifecycleTests
                 await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
                 await WaitForLogMessageAsync(
                     logger,
-                    "timed-out start cleanup exceeded",
+                    "failed-start cleanup exceeded",
                     TimeSpan.FromSeconds(5));
                 stopTask = host.StopAsync(CancellationToken.None);
                 Assert.False(stopTask.IsCompleted);
@@ -839,6 +839,177 @@ public sealed class PluginHostLifecycleTests
                 File.Delete(disposeEnteredPath);
             if (File.Exists(disposeReleasePath))
                 File.Delete(disposeReleasePath);
+        }
+    }
+
+    [Theory]
+    [InlineData("shutdown")]
+    [InlineData("start-timeout")]
+    [InlineData("configure-failure")]
+    [InlineData("start-failure")]
+    [InlineData("stop-synchronously-blocks")]
+    [InlineData("stop-blocking-cancellation")]
+    public async Task StopAsync_AbandonsNonCooperativeDisposeAtFinalDeadline(string mode)
+    {
+        var signalPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-abandoned-{Guid.NewGuid():N}.signal");
+        var resultPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-abandoned-{Guid.NewGuid():N}.result");
+        var disposeEnteredPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-abandoned-{Guid.NewGuid():N}.disposing");
+        var disposeReleasePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-abandoned-{Guid.NewGuid():N}.release");
+        var stopReleasePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-abandoned-stop-{Guid.NewGuid():N}.release");
+        const int ownedPort = 18128;
+        const int latePort = 18129;
+        var previousMode = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_MODE");
+        var previousPort = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_PORT");
+        var previousOwnedPort = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT");
+        var previousSignal = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH");
+        var previousResult = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH");
+        var previousDisposeEntered = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH");
+        var previousDisposeRelease = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH");
+        var previousStopRelease = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_STOP_RELEASE_PATH");
+        var previousResource = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH");
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", mode);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_PORT", latePort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT", ownedPort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH", signalPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH", resultPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", disposeEnteredPath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", disposeReleasePath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_STOP_RELEASE_PATH", stopReleasePath);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", null);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateWithFeatures(
+                (
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
+                    ["network.http.listen"]));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var endpoints = new PluginHttpEndpointRegistry();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromMilliseconds(150),
+                config,
+                endpoints,
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config),
+                rollbackCleanupTimeout: TimeSpan.FromMilliseconds(50),
+                shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
+
+            Task stopTask;
+            if (mode.Equals("shutdown", StringComparison.Ordinal) ||
+                mode.Equals("stop-synchronously-blocks", StringComparison.Ordinal) ||
+                mode.Equals("stop-blocking-cancellation", StringComparison.Ordinal))
+            {
+                await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                stopTask = host.StopAsync(CancellationToken.None);
+            }
+            else
+            {
+                await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                await WaitForFileAsync(disposeEnteredPath, TimeSpan.FromSeconds(5));
+                stopTask = host.StopAsync(CancellationToken.None);
+            }
+
+            await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
+            AssertStates(host.States, ("fixture.late-http-cleanup", PluginRuntimeState.CleanupAbandoned));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
+                message.Contains("cleanup_abandoned", StringComparison.Ordinal));
+
+            var ownedEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, ownedPort);
+            Assert.False(endpoints.TryRegister("fixture.after-abandoned-cleanup", ownedEndpoint, out var conflictOwner));
+            Assert.Equal("fixture.late-http-cleanup", conflictOwner);
+
+            File.WriteAllText(signalPath, string.Empty);
+            await WaitForFileTextAsync(resultPath, "plugin_http_policy_closed", TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", previousMode);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_PORT", previousPort);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_OWNED_PORT", previousOwnedPort);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_SIGNAL_PATH", previousSignal);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESULT_PATH", previousResult);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", previousDisposeEntered);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", previousDisposeRelease);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_STOP_RELEASE_PATH", previousStopRelease);
+            Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", previousResource);
+            File.WriteAllText(signalPath, string.Empty);
+            File.WriteAllText(disposeReleasePath, string.Empty);
+            File.WriteAllText(stopReleasePath, string.Empty);
+            if (File.Exists(signalPath))
+                File.Delete(signalPath);
+            if (File.Exists(resultPath))
+                File.Delete(resultPath);
+            if (File.Exists(disposeEnteredPath))
+                File.Delete(disposeEnteredPath);
+            if (File.Exists(disposeReleasePath))
+                File.Delete(disposeReleasePath);
+            if (File.Exists(stopReleasePath))
+                File.Delete(stopReleasePath);
+        }
+    }
+
+    [Fact]
+    public async Task StopAsync_WaitingForStartupGateHonorsCallerCancellation()
+    {
+        var enteredPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-start-entered-{Guid.NewGuid():N}.signal");
+        var previousEnteredPath = Environment.GetEnvironmentVariable("MCSL_PLUGIN_START_ENTERED_PATH");
+        Environment.SetEnvironmentVariable("MCSL_PLUGIN_START_ENTERED_PATH", enteredPath);
+        try
+        {
+            using var fixture = PluginHostFixture.Create(
+                ("fixture.start-never-completes", typeof(NeverCompletingStartPlugin).Assembly, typeof(NeverCompletingStartPlugin).FullName!));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromMilliseconds(500),
+                DaemonPluginsConfig.Default,
+                new PluginHttpEndpointRegistry(),
+                rollbackCleanupTimeout: TimeSpan.FromMilliseconds(50),
+                shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
+
+            var startTask = host.StartAsync(CancellationToken.None);
+            await WaitForFileAsync(enteredPath, TimeSpan.FromSeconds(5));
+            using var stopCancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => host.StopAsync(stopCancellation.Token));
+
+            await startTask.WaitAsync(TimeSpan.FromSeconds(5));
+            await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_PLUGIN_START_ENTERED_PATH", previousEnteredPath);
+            if (File.Exists(enteredPath))
+                File.Delete(enteredPath);
         }
     }
 
@@ -930,19 +1101,26 @@ public sealed class PluginHostLifecycleTests
         }
     }
 
-    [Fact]
-    public async Task LoadFailureAfterAdapterConstructionDisposesOwnedResources()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LoadFailureAfterAdapterConstructionUsesSupervisedBoundedCleanup(
+        bool nonCooperativeDispose)
     {
         var resourcePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-load-cleanup-{Guid.NewGuid():N}.lock");
         var disposedPath = resourcePath + ".disposed";
+        var disposeEnteredPath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-load-cleanup-{Guid.NewGuid():N}.disposing");
+        var disposeReleasePath = Path.Combine(Path.GetTempPath(), $"mcsl-plugin-load-cleanup-{Guid.NewGuid():N}.release");
         var previousMode = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_MODE");
         var previousResource = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH");
         var previousDisposeEntered = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH");
         var previousDisposeRelease = Environment.GetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH");
         Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", "construction-failure");
         Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", resourcePath);
-        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", null);
-        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH", null);
+        Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", disposeEnteredPath);
+        Environment.SetEnvironmentVariable(
+            "MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH",
+            nonCooperativeDispose ? disposeReleasePath : null);
         try
         {
             using var fixture = PluginHostFixture.CreateWithFeatures(
@@ -974,22 +1152,42 @@ public sealed class PluginHostLifecycleTests
                 TimeSpan.FromSeconds(1),
                 config,
                 new PluginHttpEndpointRegistry(),
-                preflight: PluginAdmissionPreflight.CreateNonInteractive(config));
+                preflight: PluginAdmissionPreflight.CreateNonInteractive(config),
+                rollbackCleanupTimeout: TimeSpan.FromMilliseconds(50),
+                shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
 
             await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
 
             Assert.Empty(host.States);
-            Assert.True(File.Exists(disposedPath));
+            await WaitForFileAsync(disposeEnteredPath, TimeSpan.FromSeconds(5));
+            if (nonCooperativeDispose)
+            {
+                await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.False(File.Exists(disposedPath));
+                Assert.Contains(logger.Messages, message =>
+                    message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
+                    message.Contains("cleanup_abandoned", StringComparison.Ordinal));
+                File.WriteAllText(disposeReleasePath, string.Empty);
+            }
+            else
+            {
+                await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+            }
+
+            await WaitForFileAsync(disposedPath, TimeSpan.FromSeconds(5));
             using (new FileStream(resourcePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
             {
             }
             Assert.Contains(logger.Messages, message =>
                 message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
                 message.Contains("Failed to load plugin", StringComparison.Ordinal));
-            await host.StopAsync(CancellationToken.None);
+            Assert.DoesNotContain(logger.Messages, message =>
+                message.Contains("Owned task", StringComparison.Ordinal) &&
+                message.Contains("failed-load-cleanup", StringComparison.Ordinal));
         }
         finally
         {
+            File.WriteAllText(disposeReleasePath, string.Empty);
             Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_MODE", previousMode);
             Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_RESOURCE_PATH", previousResource);
             Environment.SetEnvironmentVariable("MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH", previousDisposeEntered);
@@ -998,6 +1196,10 @@ public sealed class PluginHostLifecycleTests
                 File.Delete(resourcePath);
             if (File.Exists(disposedPath))
                 File.Delete(disposedPath);
+            if (File.Exists(disposeEnteredPath))
+                File.Delete(disposeEnteredPath);
+            if (File.Exists(disposeReleasePath))
+                File.Delete(disposeReleasePath);
         }
     }
 

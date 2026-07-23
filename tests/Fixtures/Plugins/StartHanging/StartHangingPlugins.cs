@@ -81,6 +81,9 @@ public sealed class NeverCompletingStartPlugin : IGeneratedDaemonPluginAdapter
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
+        var enteredPath = Environment.GetEnvironmentVariable("MCSL_PLUGIN_START_ENTERED_PATH");
+        if (!string.IsNullOrWhiteSpace(enteredPath))
+            File.WriteAllText(enteredPath, string.Empty);
         return new TaskCompletionSource<Result<Unit, DaemonError>>(
             TaskCreationOptions.RunContinuationsAsynchronously).Task;
     }

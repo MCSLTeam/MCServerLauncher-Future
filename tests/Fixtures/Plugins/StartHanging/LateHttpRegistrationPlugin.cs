@@ -59,6 +59,14 @@ public sealed class LateHttpRegistrationPlugin : IGeneratedDaemonPluginAdapter, 
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
+        if (ModeIs("start-failure"))
+        {
+            ScheduleLateRegistration();
+            return Task.FromResult(Result.Err<Unit, DaemonError>(_context!.Errors.Create(
+                "fixture_start_failure",
+                "Fixture fails startup after scheduling a late endpoint registration.")));
+        }
+
         if (!ModeIs("start-timeout"))
             return Task.FromResult(PluginResult.Ok());
 
@@ -70,8 +78,30 @@ public sealed class LateHttpRegistrationPlugin : IGeneratedDaemonPluginAdapter, 
     public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
-        if (ModeIs("shutdown") || ModeIs("dispose-fault"))
+        if (ModeIs("shutdown") ||
+            ModeIs("dispose-fault") ||
+            ModeIs("stop-synchronously-blocks") ||
+            ModeIs("stop-blocking-cancellation"))
             ScheduleLateRegistration();
+        if (ModeIs("stop-blocking-cancellation"))
+        {
+            var releasePath = GetRequiredEnvironmentVariable("MCSL_LATE_HTTP_STOP_RELEASE_PATH");
+            _ = cancellationToken.Register(() =>
+            {
+                while (!File.Exists(releasePath))
+                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
+            });
+            return new TaskCompletionSource<Result<Unit, DaemonError>>(
+                TaskCreationOptions.RunContinuationsAsynchronously).Task;
+        }
+
+        if (ModeIs("stop-synchronously-blocks"))
+        {
+            var releasePath = GetRequiredEnvironmentVariable("MCSL_LATE_HTTP_STOP_RELEASE_PATH");
+            while (!File.Exists(releasePath))
+                Thread.Sleep(TimeSpan.FromMilliseconds(10));
+        }
+
         return Task.FromResult(PluginResult.Ok());
     }
 

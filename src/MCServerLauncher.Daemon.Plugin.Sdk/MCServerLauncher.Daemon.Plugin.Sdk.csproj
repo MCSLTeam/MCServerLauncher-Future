@@ -57,21 +57,24 @@
           DependsOnTargets="ResolveProjectReferences">
     <MSBuild Projects="..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj"
              Targets="Build"
-             Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0" />
-    <PropertyGroup>
-      <_PluginGeneratorOutput>$(MSBuildThisFileDirectory)..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\bin\$(Configuration)\netstandard2.0\MCServerLauncher.Daemon.Plugin.Generators.dll</_PluginGeneratorOutput>
-      <_PluginGeneratorVersioningOutput>$(MSBuildThisFileDirectory)..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\bin\$(Configuration)\netstandard2.0\NuGet.Versioning.dll</_PluginGeneratorVersioningOutput>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(_PluginGeneratorOutput)')"
-           Text="Plugin generator DLL was not found at $(_PluginGeneratorOutput)." />
-    <Error Condition="!Exists('$(_PluginGeneratorVersioningOutput)')"
-           Text="Plugin generator dependency was not found at $(_PluginGeneratorVersioningOutput)." />
+             Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0">
+      <Output TaskParameter="TargetOutputs" ItemName="_PluginGeneratorBuildOutputs" />
+    </MSBuild>
     <ItemGroup>
-      <None Include="$(_PluginGeneratorOutput)"
+      <_PluginGeneratorOutput Include="@(_PluginGeneratorBuildOutputs)"
+                              Condition="'%(Filename)%(Extension)' == 'MCServerLauncher.Daemon.Plugin.Generators.dll'" />
+      <_PluginGeneratorVersioningOutput Include="@(_PluginGeneratorOutput->'%(RootDir)%(Directory)NuGet.Versioning.dll')" />
+    </ItemGroup>
+    <Error Condition="'@(_PluginGeneratorOutput)' == '' Or !Exists('@(_PluginGeneratorOutput->'%(FullPath)')')"
+           Text="The plugin generator build did not return its output DLL." />
+    <Error Condition="!Exists('@(_PluginGeneratorVersioningOutput->'%(FullPath)')')"
+           Text="Plugin generator dependency was not found next to @(_PluginGeneratorOutput->'%(FullPath)')." />
+    <ItemGroup>
+      <None Include="@(_PluginGeneratorOutput)"
             Pack="true"
             PackagePath="analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll"
             Visible="false" />
-      <None Include="$(_PluginGeneratorVersioningOutput)"
+      <None Include="@(_PluginGeneratorVersioningOutput)"
             Pack="true"
             PackagePath="analyzers/dotnet/cs/NuGet.Versioning.dll"
             Visible="false" />
