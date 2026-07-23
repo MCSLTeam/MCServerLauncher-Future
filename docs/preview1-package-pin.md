@@ -1,18 +1,18 @@
 # Preview-1 Package Pin
 
-Status: current working-tree candidate verified twice; final committed-source and GitHub Release asset verification are pending.
+Status: final package-affecting source candidate verified twice; GitHub Release asset verification is pending.
 Branch: `feat/plugin-sdk-2-preview1`
 Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`, sections 1, 10, and 12.
 
 ## Gate status
 
-This document records the reproducible local `2.0.0-preview.2` candidate. Two
-fresh package outputs (`artifacts/preview1-round2-pin-a` and
-`artifacts/preview1-round2-pin-b`) produced identical fingerprints for every
-listed payload. It does not mark the SDK Preview-1 package gate accepted and
-does not unblock MCP implementation. Acceptance requires rebuilding the final
-committed source, attaching these exact packages to a GitHub Release, and
-verifying every listed payload from the downloaded release assets.
+This document records the reproducible local `2.0.0-preview.2` candidate from
+package-affecting source commit `2d3605d1`. Two fresh package outputs
+(`artifacts/_tmp_round3_pin_a` and `artifacts/_tmp_round3_pin_b`) produced
+identical fingerprints for every listed payload. It does not mark the SDK
+Preview-1 package gate accepted and does not unblock MCP implementation.
+Acceptance requires attaching packages with these exact payloads to a GitHub
+Release and verifying every listed payload from the downloaded release assets.
 
 ## Exact versions
 
@@ -69,13 +69,13 @@ declared versions with `MCSL_PIN_PACKAGE_PAYLOAD=true`, and attaches each nupkg.
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `712d53923c2ac5e8ac294b1c35e66b04f52f751132c4bd413b9e812d7171061f` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `586c8a02e1a11a3d226a8b6abb38e1489c63f81629bb64d2eff0ea5b9b985d60` |
 
 ### `MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `a2f06f94262cd21d114ff8f0808705e504049853db80389f11e0e9acd1983d9b` |
+| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `9896e863ad0eaf394e1379d429d1cbb4e63143ce53577124bfbce8ab40c6d83e` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
 Nuspec dependencies are exact:
@@ -88,8 +88,8 @@ Nuspec dependencies are exact:
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `8ba6171ae5b855a7b006d807570fb283abad9163494b031acbec6437b384bd12` |
-| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `e278b7fb68cc3a289a8f5b6d1467d9de33ce4c566237fbd94ab66054b4f6a0b1` |
+| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `c52be37810be8730f28f6577162b30c838c02c3ca5f2790f6eeea36035f3d0da` |
+| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `c71a42a3bc044be9f2b20fb823d746205fda1680b1e0aaffdbbd3af6187168d2` |
 | `analyzers/dotnet/cs/NuGet.Versioning.dll` | `5ccab32f44a29834becbf640cfac4b119edce8496a02e94ef20e1b1d2e652b26` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `c0dd9844c62950e9cf678c9bb067dd030876afa4d263eedd0d146ce52e5eb895` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |
