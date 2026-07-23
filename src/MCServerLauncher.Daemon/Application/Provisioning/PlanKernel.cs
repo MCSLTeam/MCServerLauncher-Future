@@ -374,14 +374,15 @@ internal sealed class PlanKernel
         }
 
         var planIds = new HashSet<Guid>();
-        var idempotencyScopes = new HashSet<IdempotencyScope>();
+        var activeIdempotencyScopes = new HashSet<IdempotencyScope>();
         foreach (var snapshot in snapshots)
         {
             ValidateSnapshot(snapshot);
             if (!planIds.Add(snapshot.PlanId))
                 throw new InvalidDataException($"The plan index contains duplicate id '{snapshot.PlanId:D}'.");
             if (!string.IsNullOrWhiteSpace(snapshot.IdempotencyKey) &&
-                !idempotencyScopes.Add(new IdempotencyScope(snapshot.CreatorPrincipal, snapshot.IdempotencyKey)))
+                !IsTerminalOrExpired(snapshot) &&
+                !activeIdempotencyScopes.Add(new IdempotencyScope(snapshot.CreatorPrincipal, snapshot.IdempotencyKey)))
             {
                 throw new InvalidDataException(
                     $"The plan index contains duplicate idempotency key '{snapshot.IdempotencyKey}' for principal '{snapshot.CreatorPrincipal}'.");
@@ -391,7 +392,7 @@ internal sealed class PlanKernel
         foreach (var snapshot in snapshots)
         {
             _plans.TryAdd(snapshot.PlanId, new PlanRecord(snapshot));
-            if (!string.IsNullOrWhiteSpace(snapshot.IdempotencyKey))
+            if (!string.IsNullOrWhiteSpace(snapshot.IdempotencyKey) && !IsTerminalOrExpired(snapshot))
             {
                 _idempotency.TryAdd(
                     new IdempotencyScope(snapshot.CreatorPrincipal, snapshot.IdempotencyKey),

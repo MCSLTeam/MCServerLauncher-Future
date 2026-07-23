@@ -1097,12 +1097,16 @@ public sealed class InstanceProcessEventPumpTests
         Assert.True(await liveProcess.StartAsync(delayToCheck: 20));
         var stopTask = manager.StopAllInstances();
         await stoppedLogEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
-        Assert.False(stopTask.IsCompleted);
-
-        releaseStoppedLog.TrySetResult();
-        await Assert.ThrowsAsync<AggregateException>(() => stopTask.WaitAsync(TimeSpan.FromSeconds(5)));
-        Assert.True(liveProcess.HasExit);
-        Assert.Equal(InstanceStatus.Stopped, liveProcess.Status);
+        try
+        {
+            await Assert.ThrowsAsync<AggregateException>(() => stopTask.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.True(liveProcess.HasExit);
+            Assert.Equal(InstanceStatus.Stopped, liveProcess.Status);
+        }
+        finally
+        {
+            releaseStoppedLog.TrySetResult();
+        }
     }
 
     [Fact]

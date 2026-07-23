@@ -792,10 +792,17 @@ public sealed class PluginHostLifecycleTests
             var lateEndpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, latePort);
             Assert.True(endpoints.TryRegister("fixture.late-http-competitor", lateEndpoint, out _));
 
+            Task? stopTask = null;
             if (mode.Equals("start-timeout", StringComparison.Ordinal))
+            {
                 await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
+                stopTask = host.StopAsync(CancellationToken.None);
+                Assert.False(stopTask.IsCompleted);
+            }
             File.WriteAllText(disposeReleasePath, string.Empty);
-            if (!mode.Equals("start-timeout", StringComparison.Ordinal))
+            if (mode.Equals("start-timeout", StringComparison.Ordinal))
+                await stopTask!.WaitAsync(TimeSpan.FromSeconds(5));
+            else
                 await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
             AssertStates(host.States, ("fixture.late-http-cleanup", expectedState));
             await WaitForEndpointRegistrationAsync(
@@ -803,7 +810,8 @@ public sealed class PluginHostLifecycleTests
                 "fixture.after-dispose",
                 ownedEndpoint,
                 TimeSpan.FromSeconds(5));
-            await host.StopAsync(CancellationToken.None);
+            if (!mode.Equals("start-timeout", StringComparison.Ordinal))
+                await host.StopAsync(CancellationToken.None);
         }
         finally
         {

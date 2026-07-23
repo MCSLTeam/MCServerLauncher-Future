@@ -429,18 +429,20 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             {
                 _logger.LogError(
                     exception,
-                    "Operation {OperationId} terminal commit threw {ExceptionType}; terminal publication was withheld.",
+                    "Operation {OperationId} terminal commit threw {ExceptionType}; publishing interrupted recovery.",
                     runtime.Snapshot.OperationId,
                     exception.GetType().FullName);
+                PublishInterruptedAfterTerminalFailure(runtime);
                 return;
             }
 
             if (committed.IsErr(out var error))
             {
                 _logger.LogError(
-                    "Operation {OperationId} terminal commit failed with {ErrorCode}; terminal publication was withheld.",
+                    "Operation {OperationId} terminal commit failed with {ErrorCode}; publishing interrupted recovery.",
                     runtime.Snapshot.OperationId,
                     error!.Code);
+                PublishInterruptedAfterTerminalFailure(runtime);
                 return;
             }
         }
@@ -453,8 +455,36 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         {
             _logger.LogError(
                 exception,
-                "Operation {OperationId} terminal persistence failed; terminal publication was withheld.",
+                "Operation {OperationId} terminal persistence failed; publishing interrupted recovery.",
                 runtime.Snapshot.OperationId);
+            PublishInterruptedAfterTerminalFailure(runtime);
+        }
+    }
+
+    private void PublishInterruptedAfterTerminalFailure(OperationRuntime runtime)
+    {
+        var interrupted = OperationCompletion.Interrupted(
+            "The operation was interrupted because its terminal outcome could not be committed.");
+        try
+        {
+            PersistAndPublishCompletion(runtime, interrupted);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogError(
+                exception,
+                "Operation {OperationId} interrupted recovery could not be persisted; publishing it for the current daemon lifetime.",
+                runtime.Snapshot.OperationId);
+            PublishCompletionWithoutPersistence(runtime, interrupted);
+        }
+    }
+
+    private void PublishCompletionWithoutPersistence(OperationRuntime runtime, OperationCompletion completion)
+    {
+        lock (_persistGate)
+        {
+            if (runtime.TryCreateCompletionSnapshot(completion, _timeProvider.GetUtcNow(), out var candidate))
+                runtime.PublishCompletion(candidate);
         }
     }
 
@@ -1146,12 +1176,12 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 "The operation was cancelled.",
                 null);
 
-        internal static OperationCompletion Interrupted() =>
+        internal static OperationCompletion Interrupted(string? message = null) =>
             new(
                 OperationStatus.Interrupted,
                 OperationStage.Interrupted,
                 "operation.interrupted",
-                "The operation was interrupted before execution could start.",
+                message ?? "The operation was interrupted before execution could start.",
                 null);
     }
 
