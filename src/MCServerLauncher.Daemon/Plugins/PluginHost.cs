@@ -7,6 +7,7 @@ using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.ApplicationCore.Auth;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
@@ -53,6 +54,7 @@ internal sealed class PluginHost
     private readonly PluginHttpEndpointRegistry _httpEndpoints;
     private readonly List<PluginRuntime> _runtimes = [];
     private readonly List<PluginRuntime> _started = [];
+    private readonly OwnedTaskSupervisor _failedStartCleanupSupervisor;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
     private bool _prepared;
     private bool _catalogAdmissionComplete;
@@ -135,6 +137,7 @@ internal sealed class PluginHost
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _failedStartCleanupSupervisor = new OwnedTaskSupervisor(nameof(PluginHost), _logger);
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginsRoot);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(startTimeout, TimeSpan.Zero);
@@ -372,6 +375,10 @@ internal sealed class PluginHost
                 DisposeLifetime(runtime);
                 runtime.State = PluginRuntimeState.Stopped;
             }
+
+            // Timed-out starts are not part of _started, but their Stop/Dispose work is still
+            // daemon-owned. Drain it before shutdown returns so it cannot outlive the host.
+            await _failedStartCleanupSupervisor.DrainAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -823,29 +830,9 @@ internal sealed class PluginHost
         if (Interlocked.Exchange(ref runtime.FailedStartCleanupScheduled, 1) != 0)
             return;
 
-        var cleanup = Task.Factory.StartNew(
-                () => CompleteFailedStartCleanupAsync(runtime),
-                CancellationToken.None,
-                TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning,
-                TaskScheduler.Default)
-            .Unwrap();
-        runtime.FailedStartCleanup = cleanup;
-        _ = cleanup.ContinueWith(
-            static (task, state) =>
-            {
-                var (host, pluginRuntime) = ((PluginHost Host, PluginRuntime Runtime))state!;
-                if (task.IsFaulted)
-                {
-                    host._logger.LogError(
-                        task.Exception,
-                        "Plugin {PluginId} timed-out start cleanup faulted; endpoint ownership remains fail-closed.",
-                        pluginRuntime.Manifest.Identity.Id);
-                }
-            },
-            (this, runtime),
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        _failedStartCleanupSupervisor.Schedule(
+            $"failed-start-cleanup:{runtime.Manifest.Identity.Id}",
+            _ => CompleteFailedStartCleanupAsync(runtime));
     }
 
     private async Task CompleteFailedStartCleanupAsync(PluginRuntime runtime)
@@ -1117,7 +1104,6 @@ internal sealed class PluginHost
         internal Task? LifetimeCancellation { get; set; }
         internal string? LifetimeCancellationStage { get; set; }
         internal int LifetimeDisposeScheduled;
-        internal Task? FailedStartCleanup { get; set; }
         internal int FailedStartCleanupScheduled;
         internal TaskCompletionSource Activation { get; } = activation;
         internal PluginEventOwnerLedger EventOwner { get; } = eventOwner;

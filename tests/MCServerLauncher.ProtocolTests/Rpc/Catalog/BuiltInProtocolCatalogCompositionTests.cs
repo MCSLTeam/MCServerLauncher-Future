@@ -171,6 +171,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     }
 
 
+
     private sealed class ThrowingTokenIssueApplication : ITokenIssueApplication
     {
         public Task<Result<TokenIssueResult, DaemonError>> IssueTokenAsync(TokenIssueRequest request, ICallerContext caller, CancellationToken cancellationToken) => throw new NotSupportedException();

@@ -305,7 +305,7 @@ public sealed class OperationCoordinatorTests
     }
 
     [Fact]
-    public async Task TerminalCommitException_WithholdsTerminalAndRecoversLinkedPlanOnRestart()
+    public async Task TerminalCommitException_PublishesInterruptedAndRecoversLinkedPlanOnRestart()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-ops-terminal-commit-failure-").FullName;
         var operationsRoot = Path.Combine(root, "operations");
@@ -333,7 +333,7 @@ public sealed class OperationCoordinatorTests
             await coordinator.DisposeAsync();
 
             var retained = await GetAsync(coordinator, accepted!.OperationId, "owner-terminal");
-            Assert.Equal(OperationStatus.Running, retained.Status);
+            Assert.Equal(OperationStatus.Interrupted, retained.Status);
             Assert.False(retained.Cancellable);
             var executing = planKernel.Get(plan.PlanId);
             Assert.True(executing.IsOk(out var executingPlan));
@@ -344,7 +344,7 @@ public sealed class OperationCoordinatorTests
 
             await using var recoveredOperations = new OperationCoordinator(rootDirectory: operationsRoot);
             var beforeRecovery = await GetAsync(recoveredOperations, accepted.OperationId, "owner-terminal");
-            Assert.Equal(OperationStatus.Running, beforeRecovery.Status);
+            Assert.Equal(OperationStatus.Interrupted, beforeRecovery.Status);
 
             var recoveredKernel = new PlanKernel(rootDirectory: plansRoot);
             var startupRecovery = new OperationStartupRecovery(recoveredOperations, recoveredKernel);
@@ -363,7 +363,7 @@ public sealed class OperationCoordinatorTests
     }
 
     [Fact]
-    public async Task TerminalPersistenceFailure_DoesNotPublishTerminalSnapshot()
+    public async Task TerminalPersistenceFailure_PublishesInterruptedForCurrentDaemonLifetime()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-ops-terminal-persist-failure-").FullName;
         var operationsRoot = Path.Combine(root, "operations");
@@ -404,7 +404,7 @@ public sealed class OperationCoordinatorTests
             await coordinator.DisposeAsync();
 
             var retained = await GetAsync(coordinator, accepted!.OperationId, "owner-terminal");
-            Assert.Equal(OperationStatus.Running, retained.Status);
+            Assert.Equal(OperationStatus.Interrupted, retained.Status);
             Assert.False(retained.Cancellable);
             var consumed = planKernel.Get(plan.PlanId);
             Assert.True(consumed.IsOk(out var consumedPlan));

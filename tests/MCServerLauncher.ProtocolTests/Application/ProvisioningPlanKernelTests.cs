@@ -171,6 +171,58 @@ public sealed class ProvisioningPlanKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(PlanStatus.Consumed)]
+    [InlineData(PlanStatus.Expired)]
+    public void Put_ReusesTerminalIdempotencyKeyAndReloads(PlanStatus terminalStatus)
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-idempotency-terminal-reuse-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-23T00:00:00Z"));
+        try
+        {
+            var kernel = new PlanKernel(timeProvider: time, rootDirectory: root);
+            var first = PutReadyPlan(
+                kernel,
+                expiry: terminalStatus == PlanStatus.Expired ? TimeSpan.FromMinutes(1) : TimeSpan.FromMinutes(15),
+                creatorPrincipal: "owner-terminal-reuse",
+                idempotencyKey: "reusable-key");
+            Assert.True(first.IsOk(out var firstPlan));
+
+            if (terminalStatus == PlanStatus.Consumed)
+            {
+                Assert.True(kernel.TryBeginExecute(firstPlan!.PlanId, "owner-terminal-reuse").IsOk(out _));
+                Assert.True(kernel.CompleteAcceptedExecute(firstPlan.PlanId).IsOk(out _));
+            }
+            else
+            {
+                time.Advance(TimeSpan.FromMinutes(2));
+            }
+
+            var second = PutReadyPlan(
+                kernel,
+                creatorPrincipal: "owner-terminal-reuse",
+                idempotencyKey: "reusable-key");
+            Assert.True(second.IsOk(out var secondPlan));
+            Assert.NotEqual(firstPlan!.PlanId, secondPlan!.PlanId);
+
+            var reloaded = new PlanKernel(timeProvider: time, rootDirectory: root);
+            var retained = reloaded.Get(secondPlan.PlanId);
+            Assert.True(retained.IsOk(out var retainedPlan));
+            Assert.Equal(PlanStatus.Ready, retainedPlan!.Status);
+
+            var repeated = PutReadyPlan(
+                reloaded,
+                creatorPrincipal: "owner-terminal-reuse",
+                idempotencyKey: "reusable-key");
+            Assert.True(repeated.IsOk(out var repeatedPlan));
+            Assert.Equal(secondPlan.PlanId, repeatedPlan!.PlanId);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task Put_ConcurrentFirstWriterForSamePrincipalAndIntentReturnsOnePlan()
     {
@@ -494,7 +546,7 @@ public sealed class ProvisioningPlanKernelTests
     }
 
     [Fact]
-    public async Task Execute_ContinuousPlanPersistenceFailureWithholdsTerminalUntilRestartRecovery()
+    public async Task Execute_ContinuousPlanPersistenceFailurePublishesInterruptedUntilPlanRecovery()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-plans-terminal-persist-").FullName;
         var operationsRoot = Path.Combine(root, "ops");
@@ -539,7 +591,7 @@ public sealed class ProvisioningPlanKernelTests
                 new OperationReference(handle!.OperationId, "owner-a"),
                 CancellationToken.None);
             Assert.True(retainedOperation.IsOk(out var retainedSnapshot));
-            Assert.Equal(OperationStatus.Running, retainedSnapshot!.Status);
+            Assert.Equal(OperationStatus.Interrupted, retainedSnapshot!.Status);
             Assert.False(retainedSnapshot.Cancellable);
             var retained = kernel.Get(plan.PlanId);
             Assert.True(retained.IsOk(out var retainedPlan));
@@ -556,8 +608,8 @@ public sealed class ProvisioningPlanKernelTests
             var beforeRecovery = await recoveredOperations.GetOperationAsync(
                 new OperationReference(handle.OperationId, "owner-a"),
                 CancellationToken.None);
-            Assert.True(beforeRecovery.IsOk(out var runningBeforeRecovery));
-            Assert.Equal(OperationStatus.Running, runningBeforeRecovery!.Status);
+            Assert.True(beforeRecovery.IsOk(out var interruptedBeforeRecovery));
+            Assert.Equal(OperationStatus.Interrupted, interruptedBeforeRecovery!.Status);
             var executingBeforeRecovery = recoveredKernel.Get(plan.PlanId);
             Assert.True(executingBeforeRecovery.IsOk(out var executingPlan));
             Assert.Equal(PlanStatus.Executing, executingPlan!.Status);
