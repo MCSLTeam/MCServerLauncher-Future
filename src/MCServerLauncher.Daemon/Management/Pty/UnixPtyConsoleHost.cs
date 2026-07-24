@@ -46,6 +46,10 @@ internal sealed class UnixPtyConsoleHost : IInstanceConsoleHost
 
     public Process Process => _process;
 
+    public void NotifyProcessExited()
+    {
+    }
+
     public static UnixPtyConsoleHost CreateViaForkPty(ProcessStartInfo startInfo, ushort columns, ushort rows)
     {
         ArgumentNullException.ThrowIfNull(startInfo);

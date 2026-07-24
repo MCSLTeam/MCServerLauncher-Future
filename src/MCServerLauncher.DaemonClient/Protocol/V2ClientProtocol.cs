@@ -4,6 +4,9 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Daemon.API.Protocol;
 
 namespace MCServerLauncher.DaemonClient.Protocol;
@@ -11,6 +14,7 @@ namespace MCServerLauncher.DaemonClient.Protocol;
 internal static class V2ClientProtocol
 {
     internal static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions => BuiltInProtocolDefinitions.GetAuthPermissions;
+    internal static RpcDescriptor<TokenIssueRequest, TokenIssueResult> IssueToken => BuiltInProtocolDefinitions.IssueToken;
     internal static RpcDescriptor<EmptyRequest, PingResult> PingDaemon => BuiltInProtocolDefinitions.PingDaemon;
     internal static RpcDescriptor<PathTransferRequest, UnitResult> CopyDirectory => BuiltInProtocolDefinitions.CopyDirectory;
     internal static RpcDescriptor<PathRequest, UnitResult> CreateDirectory => BuiltInProtocolDefinitions.CreateDirectory;
@@ -49,6 +53,12 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<InstanceReference, UnitResult> StartInstance => BuiltInProtocolDefinitions.StartInstance;
     internal static RpcDescriptor<InstanceReference, UnitResult> StopInstance => BuiltInProtocolDefinitions.StopInstance;
     internal static RpcDescriptor<EmptyRequest, JavaRuntimeList> ListJavaRuntimes => BuiltInProtocolDefinitions.ListJavaRuntimes;
+    internal static RpcDescriptor<OperationCancelRequest, OperationCancelResult> CancelOperation => BuiltInProtocolDefinitions.CancelOperation;
+    internal static RpcDescriptor<OperationReference, OperationSnapshot> GetOperation => BuiltInProtocolDefinitions.GetOperation;
+    internal static RpcDescriptor<OperationListQuery, OperationListResult> ListOperations => BuiltInProtocolDefinitions.ListOperations;
+    internal static RpcDescriptor<ProvisioningResolveRequest, ProvisioningPlanSnapshot> ResolveProvisioning => BuiltInProtocolDefinitions.ResolveProvisioning;
+    internal static RpcDescriptor<ProvisioningPlanReference, ProvisioningPlanSnapshot> GetProvisioningPlan => BuiltInProtocolDefinitions.GetProvisioningPlan;
+    internal static RpcDescriptor<ProvisioningExecuteRequest, ProvisioningExecuteResult> ExecuteProvisioning => BuiltInProtocolDefinitions.ExecuteProvisioning;
     internal static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo => BuiltInProtocolDefinitions.GetSystemInfo;
     internal static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc => BuiltInProtocolDefinitions.DiscoverRpc;
 
@@ -59,11 +69,12 @@ internal static class V2ClientProtocol
 
     internal static ImmutableArray<RpcDescriptor> Rpcs { get; } =
     [
-        GetAuthPermissions, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
+        GetAuthPermissions, IssueToken, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
-        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, GetSystemInfo, DiscoverRpc
+        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning, GetSystemInfo,
+        DiscoverRpc
     ];
 
     internal static ImmutableArray<EventDescriptor> Events { get; } =

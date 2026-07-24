@@ -1,7 +1,10 @@
+using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
@@ -26,6 +29,9 @@ internal static class BenchmarkProtocolCatalogFactory
             new ThrowingFileApplication(),
             new ThrowingSystemApplication(),
             new ThrowingEventRuleApplication(),
+            new ThrowingOperationApplication(),
+            new ThrowingProvisioningApplication(),
+            new ThrowingTokenIssueApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
             accessor).Catalog;
@@ -53,6 +59,25 @@ internal static class BenchmarkProtocolCatalogFactory
         public Task<Result<Unit, DaemonError>> UpdateEventRulesAsync(EventRuleUpdateRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
+    private sealed class ThrowingTokenIssueApplication : ITokenIssueApplication
+    {
+        public Task<Result<TokenIssueResult, DaemonError>> IssueTokenAsync(TokenIssueRequest request, ICallerContext caller, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingProvisioningApplication : IProvisioningApplication
+    {
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ResolveAsync(ProvisioningResolveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> GetPlanAsync(ProvisioningPlanReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningExecuteResult, DaemonError>> ExecuteAsync(ProvisioningExecuteRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingOperationApplication : IOperationApplication
+    {
+        public Task<Result<OperationListResult, DaemonError>> ListOperationsAsync(OperationListQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationSnapshot, DaemonError>> GetOperationAsync(OperationReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationCancelResult, DaemonError>> CancelOperationAsync(OperationCancelRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
     private sealed class ThrowingInstanceApplication : IInstanceApplication
     {
         public Task<Result<CreateInstanceResult, DaemonError>> CreateInstanceAsync(CreateInstanceRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
@@ -61,6 +86,10 @@ internal static class BenchmarkProtocolCatalogFactory
         public Task<Result<Unit, DaemonError>> StopInstanceAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<Unit, DaemonError>> HaltInstanceAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<Unit, DaemonError>> SendCommandAsync(InstanceCommandRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(ConsoleOpenRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> ResizeConsoleAsync(ConsoleResizeRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> CloseConsoleAsync(ConsoleSessionReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<Unit, DaemonError>> WriteConsoleAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(InstanceReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<InstanceReportList, DaemonError>> ListInstanceReportsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<InstanceLogResult, DaemonError>> GetInstanceLogAsync(InstanceLogQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();

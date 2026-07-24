@@ -3,7 +3,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Reflection;
+using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Events;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.ReturnedError;
@@ -21,6 +25,18 @@ public sealed class PublishedInstanceHealthPluginTests
     private static readonly TimeSpan SupervisedStartupTimeout = TimeSpan.FromSeconds(50);
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan EventTimeout = TimeSpan.FromSeconds(75);
+    private static readonly RpcDescriptor<EmptyRequest, UnitResult> PackageReferenceConsumerPing =
+        PluginProtocol.CreateRpc(
+            "fixture.package-reference-consumer",
+            "ping",
+            BuiltInProtocolJsonContext.Default.EmptyRequest,
+            BuiltInProtocolJsonContext.Default.UnitResult,
+            new RpcDocumentation(
+                "fixture.package-reference-consumer",
+                "Package reference ping",
+                "Verifies the published package consumer's generated Plugin.Sdk adapter is active.",
+                "fixture.empty-request",
+                "fixture.unit-result"));
 
     [Fact]
     [Trait("Category", "PublishedPlugin")]
@@ -46,6 +62,8 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.True(discover.IsOk(out var document), discover.IsErr(out var discoverError) ? discoverError!.Message : null);
         Assert.Contains(document!.Methods, method =>
             method.Name == "plugin.community.instance-health.rpc.get");
+        Assert.Contains(document.Methods, method =>
+            method.Name == PackageReferenceConsumerPing.Method.Value);
 
         var health = await client.InvokeAsync(
             InstanceHealthProtocol.Rpc,
@@ -59,6 +77,13 @@ public sealed class PublishedInstanceHealthPluginTests
             new InstanceHealthRequest { Scope = "unsupported" }).WaitAsync(RequestTimeout);
         Assert.True(invalidHealth.IsErr(out var invalidHealthError));
         Assert.Equal("plugin_scope_unsupported", invalidHealthError!.Code);
+
+        var packageReferencePing = await client.InvokeAsync(
+            PackageReferenceConsumerPing,
+            new EmptyRequest()).WaitAsync(RequestTimeout);
+        Assert.True(
+            packageReferencePing.IsOk(out _),
+            packageReferencePing.IsErr(out var packageReferenceError) ? packageReferenceError!.Message : null);
 
         var changed = new TaskCompletionSource<DaemonEvent<InstanceHealthChanged, Unit>>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -90,7 +115,6 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.Contains("fixture_start_returned_error", logs, StringComparison.Ordinal);
         Assert.Contains("fixture.start-throwing", logs, StringComparison.Ordinal);
         Assert.Contains("start_threw", logs, StringComparison.Ordinal);
-        Assert.Contains("fixture.package_reference_consumer.configure", logs, StringComparison.Ordinal);
         Assert.Contains("fixture.instance_health.stop", logs, StringComparison.Ordinal);
     }
 
@@ -133,19 +157,50 @@ public sealed class PublishedInstanceHealthPluginTests
         Assert.Contains("start_timed_out", logs, StringComparison.Ordinal);
     }
 
+    [Fact]
+    [Trait("Category", "PublishedPlugin")]
+    public async Task PublishedDaemon_AbandonsNonCooperativeDisposeAndCompletesGracefulShutdown()
+    {
+        var publishedDaemon = Environment.GetEnvironmentVariable("MCSL_PUBLISHED_DAEMON");
+        Assert.False(
+            string.IsNullOrWhiteSpace(publishedDaemon),
+            "MCSL_PUBLISHED_DAEMON must point to a published daemon executable or directory for published-plugin acceptance.");
+
+        await using var fixture = await PublishedDaemonFixture.CreateAsync(
+            publishedDaemon!,
+            includeNeverCompletingDisposePlugin: true);
+        await fixture.StartAsync();
+
+        var startedAt = Stopwatch.GetTimestamp();
+        var logs = await fixture.StopAndReadLogsAsync(TimeSpan.FromSeconds(45));
+        var elapsed = Stopwatch.GetElapsedTime(startedAt);
+
+        Assert.True(fixture.GracefulStopObserved, "Published daemon did not complete bounded graceful shutdown.");
+        Assert.True(elapsed < TimeSpan.FromSeconds(45), $"Published daemon shutdown exceeded its test deadline: {elapsed}.");
+        Assert.Contains("fixture.late-http-cleanup", logs, StringComparison.Ordinal);
+        Assert.Contains("cleanup_abandoned", logs, StringComparison.Ordinal);
+    }
+
     private sealed class PublishedDaemonFixture : IAsyncDisposable
     {
         private readonly string _root;
         private readonly string _daemonPath;
+        private readonly bool _includeNeverCompletingDisposePlugin;
         private Process? _process;
         private Task<string>? _standardError;
 
         public bool GracefulStopObserved { get; private set; }
 
-        private PublishedDaemonFixture(string root, string daemonPath, int port, string token)
+        private PublishedDaemonFixture(
+            string root,
+            string daemonPath,
+            int port,
+            string token,
+            bool includeNeverCompletingDisposePlugin)
         {
             _root = root;
             _daemonPath = daemonPath;
+            _includeNeverCompletingDisposePlugin = includeNeverCompletingDisposePlugin;
             WebSocketUri = new Uri($"ws://127.0.0.1:{port}/api/v2?token={Uri.EscapeDataString(token)}");
             EndpointUri = new Uri($"ws://127.0.0.1:{port}/api/v2");
             Token = token;
@@ -159,7 +214,8 @@ public sealed class PublishedInstanceHealthPluginTests
 
         public static async Task<PublishedDaemonFixture> CreateAsync(
             string configuredPath,
-            bool includeNeverCompletingStartPlugin = false)
+            bool includeNeverCompletingStartPlugin = false,
+            bool includeNeverCompletingDisposePlugin = false)
         {
             var source = ResolveDaemonPath(configuredPath);
             var root = Directory.CreateTempSubdirectory("mcsl-published-plugin-").FullName;
@@ -167,9 +223,12 @@ public sealed class PublishedInstanceHealthPluginTests
             var daemonPath = Path.Combine(root, Path.GetFileName(source));
             var port = GetUnusedLoopbackPort();
             var token = Convert.ToHexString(Guid.NewGuid().ToByteArray()).ToLowerInvariant();
+            var pluginsConfig = includeNeverCompletingDisposePlugin
+                ? ",\"plugins\":{\"grant_level\":\"High\",\"plugin_grants\":{\"fixture.late-http-cleanup\":[\"network.http.listen\"]}}"
+                : string.Empty;
             await File.WriteAllTextAsync(
                 Path.Combine(root, "config.json"),
-                $$"""{"port":{{port}},"secret":"{{token}}","main_token":"{{token}}","file_download_sessions":1,"verbose":false}""");
+                $$"""{"port":{{port}},"secret":"{{token}}","main_token":"{{token}}","file_download_sessions":1,"verbose":false{{pluginsConfig}}}""");
 
             var pluginDirectory = Path.Combine(root, "plugins", "community.instance-health");
             Directory.CreateDirectory(pluginDirectory);
@@ -178,31 +237,31 @@ public sealed class PublishedInstanceHealthPluginTests
                 "community.instance-health",
                 typeof(InstanceHealthPlugin).Assembly,
                 typeof(InstanceHealthPlugin).FullName!,
-                "[\"rpc.register\",\"event.publish\",\"instance.query\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.returned-error"),
                 "fixture.returned-error",
                 typeof(ReturnedErrorPlugin).Assembly,
                 typeof(ReturnedErrorPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.throwing"),
                 "fixture.throwing",
                 typeof(ThrowingPlugin).Assembly,
                 typeof(ThrowingPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.start-returned-error"),
                 "fixture.start-returned-error",
                 typeof(StartReturnedErrorPlugin).Assembly,
                 typeof(StartReturnedErrorPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             await WritePluginAsync(
                 Path.Combine(root, "plugins", "fixture.start-throwing"),
                 "fixture.start-throwing",
                 typeof(StartThrowingPlugin).Assembly,
                 typeof(StartThrowingPlugin).FullName!,
-                "[\"rpc.register\"]");
+                "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
             if (includeNeverCompletingStartPlugin)
             {
                 await WritePluginAsync(
@@ -210,16 +269,30 @@ public sealed class PublishedInstanceHealthPluginTests
                     "fixture.start-never-completes",
                     typeof(NeverCompletingStartPlugin).Assembly,
                     typeof(NeverCompletingStartPlugin).FullName!,
-                    "[\"rpc.register\",\"event.publish\"]");
+                    "[\"event.publish\",\"instance.query\",\"rpc.register\"]");
+            }
+            if (includeNeverCompletingDisposePlugin)
+            {
+                await WritePluginAsync(
+                    Path.Combine(root, "plugins", "fixture.late-http-cleanup"),
+                    "fixture.late-http-cleanup",
+                    typeof(LateHttpRegistrationPlugin).Assembly,
+                    typeof(LateHttpRegistrationPlugin).FullName!,
+                    "[\"network.http.listen\"]");
             }
             await WriteDocumentedPackagePluginAsync(root);
 
-            return new PublishedDaemonFixture(root, daemonPath, port, token);
+            return new PublishedDaemonFixture(
+                root,
+                daemonPath,
+                port,
+                token,
+                includeNeverCompletingDisposePlugin);
         }
 
         public async Task StartAsync(TimeSpan? startupTimeout = null)
         {
-            _process = Process.Start(new ProcessStartInfo(_daemonPath)
+            var startInfo = new ProcessStartInfo(_daemonPath)
             {
                 WorkingDirectory = _root,
                 UseShellExecute = false,
@@ -227,7 +300,25 @@ public sealed class PublishedInstanceHealthPluginTests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = true
-            }) ?? throw new InvalidOperationException("The published daemon process could not be started.");
+            };
+            if (_includeNeverCompletingDisposePlugin)
+            {
+                var ownedPort = GetUnusedLoopbackPort();
+                var latePort = GetUnusedLoopbackPort();
+                while (latePort == ownedPort)
+                    latePort = GetUnusedLoopbackPort();
+
+                startInfo.Environment["MCSL_LATE_HTTP_MODE"] = "shutdown";
+                startInfo.Environment["MCSL_LATE_HTTP_OWNED_PORT"] = ownedPort.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                startInfo.Environment["MCSL_LATE_HTTP_PORT"] = latePort.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                startInfo.Environment["MCSL_LATE_HTTP_SIGNAL_PATH"] = Path.Combine(_root, "late-http.signal");
+                startInfo.Environment["MCSL_LATE_HTTP_RESULT_PATH"] = Path.Combine(_root, "late-http.result");
+                startInfo.Environment["MCSL_LATE_HTTP_DISPOSE_ENTERED_PATH"] = Path.Combine(_root, "dispose.entered");
+                startInfo.Environment["MCSL_LATE_HTTP_DISPOSE_RELEASE_PATH"] = Path.Combine(_root, "dispose.release");
+            }
+
+            _process = Process.Start(startInfo) ??
+                       throw new InvalidOperationException("The published daemon process could not be started.");
             _standardError = _process.StandardError.ReadToEndAsync();
 
             using var timeout = new CancellationTokenSource(startupTimeout ?? StartupTimeout);
@@ -255,7 +346,7 @@ public sealed class PublishedInstanceHealthPluginTests
             throw new TimeoutException("The published daemon did not accept an authenticated WebSocket connection in time.");
         }
 
-        public async Task<string> StopAndReadLogsAsync()
+        public async Task<string> StopAndReadLogsAsync(TimeSpan? shutdownTimeout = null)
         {
             if (_process is not null)
             {
@@ -273,7 +364,7 @@ public sealed class PublishedInstanceHealthPluginTests
 
                 try
                 {
-                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    using var timeout = new CancellationTokenSource(shutdownTimeout ?? TimeSpan.FromSeconds(10));
                     await _process.WaitForExitAsync(timeout.Token);
                     GracefulStopObserved = !_process.HasExited || _process.ExitCode == 0;
                 }
@@ -404,20 +495,26 @@ public sealed class PublishedInstanceHealthPluginTests
             string id,
             Assembly assembly,
             string entryType,
-            string capabilities)
+            string features)
         {
             Directory.CreateDirectory(pluginDirectory);
             File.Copy(assembly.Location, Path.Combine(pluginDirectory, "PluginEntry.dll"));
             await File.WriteAllTextAsync(
-                Path.Combine(pluginDirectory, "plugin.json"),
+                Path.Combine(pluginDirectory, "mcsl-plugin.json"),
                 $$"""
                 {
-                  "id": "{{id}}",
-                  "version": "1.0.0",
-                  "entry_assembly": "PluginEntry.dll",
-                  "entry_type": "{{entryType}}",
-                  "api_version": "[1.0.0,2.0.0)",
-                  "capabilities": {{capabilities}}
+                  "package": {
+                    "id": "{{id}}",
+                    "version": "1.0.0"
+                  },
+                  "entry": {
+                    "assembly": "PluginEntry.dll",
+                    "type": "{{entryType}}"
+                  },
+                  "requires": {
+                    "api": "[2.0.0,3.0.0)",
+                    "features": {{features}}
+                  }
                 }
                 """);
         }
@@ -426,21 +523,51 @@ public sealed class PublishedInstanceHealthPluginTests
         {
             var repositoryRoot = FindRepositoryRoot();
             var buildRoot = Path.Combine(daemonRoot, ".documented-plugin-build");
-            var packageSource = Path.Combine(buildRoot, "packages");
+            var configuredPackageSource = Environment.GetEnvironmentVariable("MCSL_PLUGIN_PACKAGE_SOURCE");
+            var packageSource = string.IsNullOrWhiteSpace(configuredPackageSource)
+                ? Path.Combine(buildRoot, "packages")
+                : Path.GetFullPath(configuredPackageSource);
             var packageCache = Path.Combine(buildRoot, "package-cache");
             var publishDirectory = Path.Combine(buildRoot, "publish");
-            Directory.CreateDirectory(packageSource);
 
-            await RunDotNetAsync(
-                repositoryRoot,
-                "pack",
-                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Common", "MCServerLauncher.Common.csproj"),
-                "--configuration", "Release", "--output", packageSource, "/m:1");
-            await RunDotNetAsync(
-                repositoryRoot,
-                "pack",
-                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.API", "MCServerLauncher.Daemon.API.csproj"),
-                "--configuration", "Release", "--output", packageSource, "/m:1");
+            if (string.IsNullOrWhiteSpace(configuredPackageSource))
+            {
+                Directory.CreateDirectory(packageSource);
+                await RunDotNetAsync(
+                    repositoryRoot,
+                    "pack",
+                    Path.Combine(repositoryRoot, "src", "MCServerLauncher.Common", "MCServerLauncher.Common.csproj"),
+                    "--configuration", "Release", "--output", packageSource, "/m:1");
+                await RunDotNetAsync(
+                    repositoryRoot,
+                    "pack",
+                    Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.API", "MCServerLauncher.Daemon.API.csproj"),
+                    "--configuration", "Release", "--output", packageSource, "/m:1");
+                await RunDotNetAsync(
+                    repositoryRoot,
+                    "pack",
+                    Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.Plugin.Sdk", "MCServerLauncher.Daemon.Plugin.Sdk.csproj"),
+                    "--configuration", "Release", "--output", packageSource, "/m:1");
+            }
+            else
+            {
+                var requiredPackages = new[]
+                {
+                    "MCServerLauncher.Common.2.0.0-preview.2.nupkg",
+                    "MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg",
+                    "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg"
+                };
+                foreach (var packageName in requiredPackages)
+                {
+                    if (!File.Exists(Path.Combine(packageSource, packageName)))
+                    {
+                        throw new FileNotFoundException(
+                            $"MCSL_PLUGIN_PACKAGE_SOURCE is missing required package '{packageName}'.",
+                            Path.Combine(packageSource, packageName));
+                    }
+                }
+            }
+
             await RunDotNetAsync(
                 repositoryRoot,
                 "publish",
@@ -455,18 +582,11 @@ public sealed class PublishedInstanceHealthPluginTests
             var pluginDirectory = Path.Combine(daemonRoot, "plugins", "fixture.package-reference-consumer");
             Directory.CreateDirectory(pluginDirectory);
             CopyDirectory(publishDirectory, pluginDirectory);
-            await File.WriteAllTextAsync(
-                Path.Combine(pluginDirectory, "plugin.json"),
-                """
-                {
-                  "id": "fixture.package-reference-consumer",
-                  "version": "1.0.0",
-                  "entry_assembly": "PackageReferenceConsumer.dll",
-                  "entry_type": "MCServerLauncher.PackageReferenceConsumer.PackageReferenceConsumerPlugin",
-                  "api_version": "[1.0.0,2.0.0)",
-                  "capabilities": []
-                }
-                """);
+            if (!File.Exists(Path.Combine(pluginDirectory, "mcsl-plugin.json")))
+            {
+                throw new InvalidDataException(
+                    "The Plugin.Sdk package consumer publish did not include mcsl-plugin.json.");
+            }
 
             Directory.Delete(buildRoot, recursive: true);
         }

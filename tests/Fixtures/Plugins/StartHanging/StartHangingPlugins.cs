@@ -6,15 +6,69 @@ using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using RustyOptions;
 
+[assembly: GeneratedDaemonPluginMetadata(
+    "fixture.start-never-completes",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.StartHanging.NeverCompletingStartPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "514ef77f364b028f43471542b8b2455804d0f2a286b2acdd59f3fece4fae5f76")]
+[assembly: GeneratedDaemonPluginMetadata(
+    "fixture.start-blocking-lifetime-cancellation",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.StartHanging.BlockingLifetimeCancellationPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "bcf1feaf105224149502fe70060faa4a3954b971f2fe5cc745b9a19267832354")]
+[assembly: GeneratedDaemonPluginMetadata(
+    "fixture.start-blocking-start-cancellation",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.StartHanging.BlockingStartCancellationPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "63caee1c2b3b180aa738483b1d00d638ed5b622e8c3d9dc8a9b586486224af4f")]
+[assembly: GeneratedDaemonPluginMetadata(
+    "fixture.start-ignores-cancellation",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.StartHanging.IgnoresCancellationStartPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "b2e1500368a2ad24479e84004459691d5f7a68da14c1c81237871c105bd7aa91")]
+[assembly: GeneratedDaemonPluginMetadata(
+    "fixture.start-late-success",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.StartHanging.DelayedRegisteredSuccessPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "f5f6795447c4ad608ad104e4e6225168dbaf092f912a89e230f03a6159ae6a02")]
+[assembly: GeneratedDaemonPluginMetadata(
+    "fixture.start-synchronously-blocks",
+    "1.0.0",
+    "PluginEntry.dll",
+    "MCServerLauncher.PluginFixtures.StartHanging.SynchronouslyBlockingStartPlugin",
+    "[2.0.0, 3.0.0)",
+    "event.publish\ninstance.query\nrpc.register",
+    "e6d169328216692a66602fe65f31a877564ad0dcda32ef6d223701dfba0e465f")]
+
 namespace MCServerLauncher.PluginFixtures.StartHanging;
 
-public sealed class NeverCompletingStartPlugin : IDaemonPlugin
+public sealed class NeverCompletingStartPlugin : IGeneratedDaemonPluginAdapter
 {
     public Result<Unit, DaemonError> Configure(IPluginContext context)
     {
+        var descriptor = NeverCompletingStartProtocol.Rpc;
         var rpcResult = context.Rpc.Register(
-            NeverCompletingStartProtocol.Rpc,
-            static (_, _) => Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())));
+            "ping",
+            descriptor.RequestTypeInfo,
+            descriptor.ResultTypeInfo,
+            descriptor.Documentation!,
+            static (_, _) => Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())),
+            descriptor.AllowNotification);
         if (rpcResult.IsErr(out var rpcError))
             return Result.Err<Unit, DaemonError>(rpcError!);
 
@@ -27,15 +81,30 @@ public sealed class NeverCompletingStartPlugin : IDaemonPlugin
     public Task<Result<Unit, DaemonError>> StartAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
+        var enteredPath = Environment.GetEnvironmentVariable("MCSL_PLUGIN_START_ENTERED_PATH");
+        if (!string.IsNullOrWhiteSpace(enteredPath))
+            File.WriteAllText(enteredPath, string.Empty);
         return new TaskCompletionSource<Result<Unit, DaemonError>>(
             TaskCreationOptions.RunContinuationsAsynchronously).Task;
     }
 
-    public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(PluginResult.Ok());
+    public Task<Result<Unit, DaemonError>> StopAsync(CancellationToken cancellationToken)
+    {
+        if (string.Equals(
+                Environment.GetEnvironmentVariable("MCSL_PLUGIN_HANG_STOP"),
+                "1",
+                StringComparison.Ordinal))
+        {
+            _ = cancellationToken;
+            return new TaskCompletionSource<Result<Unit, DaemonError>>(
+                TaskCreationOptions.RunContinuationsAsynchronously).Task;
+        }
+
+        return Task.FromResult(PluginResult.Ok());
+    }
 }
 
-public sealed class BlockingLifetimeCancellationPlugin : IDaemonPlugin
+public sealed class BlockingLifetimeCancellationPlugin : IGeneratedDaemonPluginAdapter
 {
     private IPluginContext? _context;
 
@@ -57,7 +126,7 @@ public sealed class BlockingLifetimeCancellationPlugin : IDaemonPlugin
         Task.FromResult(PluginResult.Ok());
 }
 
-public sealed class BlockingStartCancellationPlugin : IDaemonPlugin
+public sealed class BlockingStartCancellationPlugin : IGeneratedDaemonPluginAdapter
 {
     public Result<Unit, DaemonError> Configure(IPluginContext context) => PluginResult.Ok();
 
@@ -72,7 +141,7 @@ public sealed class BlockingStartCancellationPlugin : IDaemonPlugin
         Task.FromResult(PluginResult.Ok());
 }
 
-public sealed class IgnoresCancellationStartPlugin : IDaemonPlugin
+public sealed class IgnoresCancellationStartPlugin : IGeneratedDaemonPluginAdapter
 {
     public Result<Unit, DaemonError> Configure(IPluginContext context) => PluginResult.Ok();
 
@@ -93,13 +162,18 @@ public sealed class IgnoresCancellationStartPlugin : IDaemonPlugin
 /// Registers a valid capability before completing after the unit-test startup deadline.
 /// It proves a timed-out runtime cannot contribute its pre-start draft when it later succeeds.
 /// </summary>
-public sealed class DelayedRegisteredSuccessPlugin : IDaemonPlugin
+public sealed class DelayedRegisteredSuccessPlugin : IGeneratedDaemonPluginAdapter
 {
     public Result<Unit, DaemonError> Configure(IPluginContext context)
     {
+        var descriptor = DelayedRegisteredSuccessProtocol.Rpc;
         var rpcResult = context.Rpc.Register(
-            DelayedRegisteredSuccessProtocol.Rpc,
-            static (_, _) => Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())));
+            "ping",
+            descriptor.RequestTypeInfo,
+            descriptor.ResultTypeInfo,
+            descriptor.Documentation!,
+            static (_, _) => Task.FromResult(PluginResult.Ok<UnitResult>(new UnitResult())),
+            descriptor.AllowNotification);
         if (rpcResult.IsErr(out var rpcError))
             return Result.Err<Unit, DaemonError>(rpcError!);
 
@@ -122,7 +196,7 @@ public sealed class DelayedRegisteredSuccessPlugin : IDaemonPlugin
         Task.FromResult(PluginResult.Ok());
 }
 
-public sealed class SynchronouslyBlockingStartPlugin : IDaemonPlugin
+public sealed class SynchronouslyBlockingStartPlugin : IGeneratedDaemonPluginAdapter
 {
     public Result<Unit, DaemonError> Configure(IPluginContext context) => PluginResult.Ok();
 
@@ -142,8 +216,8 @@ public sealed class SynchronouslyBlockingStartPlugin : IDaemonPlugin
 public static class DelayedRegisteredSuccessProtocol
 {
     public static RpcDescriptor<EmptyRequest, UnitResult> Rpc { get; } = PluginProtocol.CreateRpc(
-        "plugin.fixture.start-late-success.rpc.ping",
-        "plugin.fixture.start-late-success.rpc",
+        "fixture.start-late-success",
+        "ping",
         StartHangingJsonContext.Default.EmptyRequest,
         StartHangingJsonContext.Default.UnitResult,
         new RpcDocumentation(
@@ -169,8 +243,8 @@ public static class DelayedRegisteredSuccessProtocol
 public static class NeverCompletingStartProtocol
 {
     public static RpcDescriptor<EmptyRequest, UnitResult> Rpc { get; } = PluginProtocol.CreateRpc(
-        "plugin.fixture.start-never-completes.rpc.ping",
-        "plugin.fixture.start-never-completes.rpc",
+        "fixture.start-never-completes",
+        "ping",
         StartHangingJsonContext.Default.EmptyRequest,
         StartHangingJsonContext.Default.UnitResult,
         new RpcDocumentation(

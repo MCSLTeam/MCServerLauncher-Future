@@ -1,6 +1,9 @@
+using MCServerLauncher.Daemon.Plugins.Configuration;
+using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Storage;
 using Serilog;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -25,14 +28,24 @@ internal class AppConfig
         string secret,
         string mainToken,
         int fileDownloadSessions = 3,
-        bool verbose = false)
+        bool verbose = false,
+        DaemonSecurityConfig? security = null,
+        DaemonPluginsConfig? plugins = null,
+        DaemonOperationsConfig? operations = null)
     {
         Port = port;
         Secret = secret;
         MainToken = mainToken;
         FileDownloadSessions = fileDownloadSessions;
         Verbose = verbose;
-        Log.Information("[AppConfig] Main token: {0}", mainToken);
+        // Cold-merge defaults for missing security/plugins/operations sections so existing config.json
+        // files keep working without forcing a first-run Q&A.
+        Security = security ?? new DaemonSecurityConfig();
+        Plugins = plugins ?? DaemonPluginsConfig.Default;
+        Operations = operations ?? new DaemonOperationsConfig();
+        _ = PluginAdmissionPolicy.ParseGrantLevel(Plugins.GrantLevel);
+        Operations.Validate();
+        Log.Information("[AppConfig] Loaded configuration for port {Port}.", port);
     }
 
     /// <summary>
@@ -53,6 +66,12 @@ internal class AppConfig
 
     public int FileDownloadSessions { get; private set; }
 
+    public DaemonSecurityConfig Security { get; private set; }
+
+    public DaemonPluginsConfig Plugins { get; private set; }
+
+    public DaemonOperationsConfig Operations { get; private set; }
+
     internal static JsonTypeInfo<AppConfig> PersistenceWriteIndentedTypeInfo { get; } = ResolvePersistenceWriteIndentedTypeInfo();
 
     private static AppConfig GetDefault()
@@ -62,10 +81,12 @@ internal class AppConfig
 
     private static string GenerateRandomString(int length = 32)
     {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        var random = new Random();
-        return new string(Enumerable.Repeat(chars, length)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
+        // 32 bytes -> 64 hex chars when length is 32; keep length as character count.
+        var byteCount = Math.Max(1, (length + 1) / 2);
+        Span<byte> bytes = stackalloc byte[byteCount];
+        RandomNumberGenerator.Fill(bytes);
+        var hex = Convert.ToHexString(bytes).ToLowerInvariant();
+        return hex.Length <= length ? hex : hex[..length];
     }
 
     public bool ResetSecret()
@@ -76,7 +97,7 @@ internal class AppConfig
 
     public bool ResetMainToken()
     {
-        Secret = GenerateRandomString();
+        MainToken = GenerateRandomString();
         return TrySave();
     }
 
@@ -94,13 +115,12 @@ internal class AppConfig
         path ??= ConfigPath;
         try
         {
-            File.WriteAllText(path,
-                JsonSerializer.Serialize(this, PersistenceWriteIndentedTypeInfo));
+            FileManager.WriteJsonAndBackup(path, this);
             return true;
         }
         catch (Exception e)
         {
-            Log.Fatal($"Failed to save config file: {e.Message}");
+            Log.Error("Failed to save config file: {Message}", e.Message);
             return false;
         }
     }

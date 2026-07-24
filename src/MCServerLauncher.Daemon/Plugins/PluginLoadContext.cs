@@ -1,8 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Plugins;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RustyOptions;
 
@@ -36,7 +37,12 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         "Trimming",
         "IL2026",
         Justification = "The daemon plugin product is an untrimmed JIT host; sidecar plugin assemblies are loaded intentionally at startup.")]
-    internal Assembly LoadEntryAssembly(string entryAssemblyPath) => LoadFromAssemblyPath(entryAssemblyPath);
+    internal Assembly LoadEntryAssembly(GeneratedPluginMetadataReader.ValidatedPluginAssemblyImage image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        using var stream = image.OpenReadStream();
+        return LoadFromStream(stream);
+    }
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {
@@ -52,6 +58,9 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         "MCServerLauncher.Common" => typeof(JsonRpcRequestEnvelope).Assembly,
         "RustyOptions" => typeof(Result<,>).Assembly,
         "Microsoft.Extensions.Logging.Abstractions" => typeof(ILogger).Assembly,
+        // Shared DI abstractions preserve IServiceCollection type identity across ALCs.
+        // DI implementation assemblies remain private to the plugin bundle.
+        "Microsoft.Extensions.DependencyInjection.Abstractions" => typeof(IServiceCollection).Assembly,
         _ => throw new InvalidOperationException($"Unsupported shared plugin assembly '{name}'.")
     };
 }

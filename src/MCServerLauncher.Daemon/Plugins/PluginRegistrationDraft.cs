@@ -34,23 +34,40 @@ internal sealed class PluginRegistrationDraft(
     internal bool IsInvalid => _invalidError is not null;
 
     public Result<Unit, DaemonError> Register<TRequest, TResult>(
-        RpcDescriptor<TRequest, TResult> descriptor,
-        PluginRpcHandler<TRequest, TResult> handler)
+        string relativeMethod,
+        JsonTypeInfo<TRequest> requestTypeInfo,
+        JsonTypeInfo<TResult> resultTypeInfo,
+        RpcDocumentation documentation,
+        PluginRpcHandler<TRequest, TResult> handler,
+        bool allowNotification = false)
         where TResult : notnull
     {
-        ArgumentNullException.ThrowIfNull(descriptor);
         ArgumentNullException.ThrowIfNull(handler);
         if (!EnsureWritable(out var stateError))
             return Result.Err<Unit, DaemonError>(stateError!);
-        if (!Manifest.HasCapability(PluginCapability.RpcRegister))
+        if (!Manifest.HasFeature(PluginFeature.RpcRegister))
         {
             return Error(
-                "plugin_capability_required",
-                $"Plugin '{Manifest.Identity.Id}' must declare capability 'rpc.register' before registering an RPC.");
+                "plugin_feature_required",
+                $"Plugin '{Manifest.Identity.Id}' must declare feature 'rpc.register' before registering an RPC.");
         }
 
         try
         {
+            var descriptor = PluginProtocol.CreateRpc(
+                Manifest.Identity.Id,
+                relativeMethod,
+                requestTypeInfo,
+                resultTypeInfo,
+                documentation,
+                allowNotification);
+            if (!StringComparer.Ordinal.Equals(descriptor.Method.Value, descriptor.Permission.Value))
+            {
+                return Error(
+                    "plugin_rpc_permission_mismatch",
+                    $"Plugin RPC '{descriptor.Method.Value}' must use its exact method name as permission.");
+            }
+
             var binding = new RpcBinding<TRequest, TResult>(
                 Owner,
                 async (_, request, cancellationToken) =>
@@ -75,11 +92,11 @@ internal sealed class PluginRegistrationDraft(
         ArgumentNullException.ThrowIfNull(descriptor);
         if (!EnsureWritable(out var stateError))
             return Result.Err<IPluginEventPublisher<TData, TMeta>, DaemonError>(stateError!);
-        if (!Manifest.HasCapability(PluginCapability.EventPublish))
+        if (!Manifest.HasFeature(PluginFeature.EventPublish))
         {
             return Error<IPluginEventPublisher<TData, TMeta>>(
-                "plugin_capability_required",
-                $"Plugin '{Manifest.Identity.Id}' must declare capability 'event.publish' before registering an event.");
+                "plugin_feature_required",
+                $"Plugin '{Manifest.Identity.Id}' must declare feature 'event.publish' before registering an event.");
         }
 
         var publisher = new PluginEventPublisher<TData, TMeta>(

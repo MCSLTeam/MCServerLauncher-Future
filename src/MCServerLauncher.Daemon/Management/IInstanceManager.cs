@@ -66,7 +66,7 @@ internal interface IInstanceManager
     ///     杀死服务器进程
     /// </summary>
     /// <param name="instanceId">实例Uuid</param>
-    void KillInstance(Guid instanceId);
+    Task KillInstanceAsync(Guid instanceId, CancellationToken ct = default);
 
     /// <summary>
     ///     获取服务器实例状态

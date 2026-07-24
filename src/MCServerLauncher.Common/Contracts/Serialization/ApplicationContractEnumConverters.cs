@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 
 namespace MCServerLauncher.Common.Contracts.Serialization;
 
@@ -19,6 +21,12 @@ internal sealed class InstanceFactoryMirrorJsonConverter()
 
 internal sealed class InstanceStatusJsonConverter()
     : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class OperationStatusJsonConverter()
+    : JsonStringEnumConverter<OperationStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class OperationStageJsonConverter()
+    : JsonStringEnumConverter<OperationStage>(JsonNamingPolicy.SnakeCaseLower);
 
 internal sealed class EventMetaFilterKindJsonConverter()
     : JsonStringEnumConverter<EventMetaFilterKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
@@ -40,6 +48,15 @@ internal sealed class BuiltInProtocolInstanceTypeJsonConverter()
 
 internal sealed class BuiltInProtocolInstanceStatusJsonConverter()
     : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class PlanStatusJsonConverter()
+    : JsonStringEnumConverter<PlanStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class PlanRiskClassJsonConverter()
+    : JsonStringEnumConverter<PlanRiskClass>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class ProvisioningProviderKindJsonConverter()
+    : JsonStringEnumConverter<ProvisioningProviderKind>(JsonNamingPolicy.SnakeCaseLower);
 
 internal sealed class ConsoleModeJsonConverter()
     : JsonStringEnumConverter<MCServerLauncher.Common.ProtoType.Instance.ConsoleMode>(JsonNamingPolicy.SnakeCaseLower);

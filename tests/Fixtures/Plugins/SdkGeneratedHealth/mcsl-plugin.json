@@ -1,0 +1,14 @@
+{
+  "package": {
+    "id": "fixture.sdk-generated-health",
+    "version": "1.0.0"
+  },
+  "entry": {
+    "assembly": "SdkGeneratedHealth.dll",
+    "type": "MCServerLauncher.PluginFixtures.SdkGeneratedHealth.Generated.DaemonPluginAdapter"
+  },
+  "requires": {
+    "api": "[2.0.0,3.0.0)",
+    "features": ["network.http.listen"]
+  }
+}

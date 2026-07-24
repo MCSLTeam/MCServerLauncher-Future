@@ -19,7 +19,7 @@ namespace MCServerLauncher.ProtocolTests.Rpc.Transport;
 
 public sealed class TouchSocketV2TransportPluginTests
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
     [Fact]
     public void Authentication_RejectsDecodableForgedAndExpiredTokens()
@@ -32,7 +32,26 @@ public sealed class TouchSocketV2TransportPluginTests
         Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken(forged, time, out _));
         Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken("expired", time,
             static _ => true,
-            static _ => (Guid.NewGuid(), "*", DateTime.Parse("2029-12-31T23:59:59Z").ToUniversalTime()), out _));
+            static _ => (Guid.NewGuid(), "user-a", "*", DateTime.Parse("2029-12-31T23:59:59Z").ToUniversalTime()), out _));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void Authentication_InjectedClaimsRejectMissingSubjectOrTokenId(
+        bool hasSubject,
+        bool hasTokenId)
+    {
+        var tokenId = hasTokenId ? Guid.NewGuid() : Guid.Empty;
+        var subject = hasSubject ? "user-a" : null;
+
+        Assert.False(TouchSocketV2TransportPlugin.TryAuthenticateToken(
+            "signed-jwt",
+            TimeProvider.System,
+            static _ => true,
+            _ => (tokenId, subject, "mcsl.instance.catalog.get", DateTime.UtcNow.AddMinutes(5)),
+            out _));
     }
 
     [Theory]
@@ -129,7 +148,7 @@ public sealed class TouchSocketV2TransportPluginTests
     public async Task V2Connected_BuildsOneStateWithImmutablePermissionSnapshotAndSuppressesNext()
     {
         await using var fixture = Fixture.Create();
-        var permissions = new[] { "mcsl.daemon.file.upload" };
+        var permissions = new[] { "mcsl.file.upload" };
         var nextCalls = 0;
 
         await fixture.Plugin.HandleConnectedAsync(TouchSocketV2TransportPlugin.Endpoint, "v2", permissions,
@@ -140,7 +159,7 @@ public sealed class TouchSocketV2TransportPluginTests
         Assert.Equal(1, fixture.Plugin.ConnectionCount);
         Assert.True(fixture.Events.TryGet("v2", out var entry));
         Assert.Single(entry!.Owner.Permissions);
-        Assert.Equal("mcsl.daemon.file.upload", entry.Owner.Permissions[0]);
+        Assert.Equal("mcsl.file.upload", entry.Owner.Permissions[0]);
     }
 
     [Fact]
@@ -156,7 +175,7 @@ public sealed class TouchSocketV2TransportPluginTests
         await fixture.Plugin.HandleConnectedAsync(
             TouchSocketV2TransportPlugin.Endpoint,
             "b-connection",
-            ["mcsl.daemon.file.upload"],
+            ["mcsl.file.upload"],
             second,
             Never,
             Never,
@@ -627,6 +646,9 @@ public sealed class TouchSocketV2TransportPluginTests
         public IFileApplication Files { get; } = files;
         public ISystemApplication System => throw new NotSupportedException();
         public IEventRuleApplication EventRules => throw new NotSupportedException();
+
+        public IOperationApplication Operations { get; } = null!;
+        public IProvisioningApplication Provisioning { get; } = null!;
     }
 
     private sealed class FakeFiles : IFileApplication

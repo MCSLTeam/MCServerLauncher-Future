@@ -20,7 +20,7 @@ description: Guides work that changes or reviews MCServerLauncher Future domain 
 - Daemon behavior has one application implementation; transport, console, event rules, WPF, and plugins delegate to it.
 - Protocol and plugin serialization uses explicit source-generated `System.Text.Json` metadata with no reflection fallback.
 - Plugin-enabled publishing is untrimmed JIT single-file plus sidecars. Keep trim analysis, but do not claim Native AOT or trimmed plugin-host support.
-- First-milestone plugins are trusted and startup-only, with typed RPC registration, typed event publication, and immutable instance queries only.
+- Plugins are trusted and startup-only. Plugin API 2.0 admits features via `mcsl-plugin.json` (`requires.features`); first-milestone runtime implements `rpc.register`, `event.publish`, and `instance.query`, with Preview-1 expanding the vocabulary for operations/provisioning/auth/HTTP.
 - Instance catalog reads use deep immutable copy-on-write published state.
 - Instance creation remains factory-driven through `IInstanceFactory` and `[InstanceFactory]`.
 - WPF user-facing text uses `Lang.Tr[...]`.
@@ -34,7 +34,7 @@ description: Guides work that changes or reviews MCServerLauncher Future domain 
 
 **Published state.** Keep snapshot values deeply immutable. `Current`/`TryGet` reads are lock-free and allocation-free; I/O, callbacks, logging, and `await` never occur under the writer lock.
 
-**Plugins.** Validate manifest, API version, capabilities, references, namespace ownership, and catalog conflicts before commit. A failed plugin must leave no host-owned registration or lifetime residue and must not stop daemon startup.
+**Plugins.** Validate `mcsl-plugin.json`, API version, features, references, namespace ownership, and catalog conflicts before commit. A failed plugin must leave no host-owned registration or lifetime residue and must not stop daemon startup.
 
 **Instance lifecycle.** Public application methods use `Task<Result<T, DaemonError>>`; legacy manager `Result<T, Error>` paths stay implementation-only until the V2 deletion gate. Preserve cancellation and daemon-side authority for state changes.
 

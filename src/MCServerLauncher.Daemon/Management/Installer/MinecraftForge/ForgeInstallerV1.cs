@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.Json;
 using MCServerLauncher.Daemon.Management.Installer.MinecraftForge.V1Json;
@@ -27,29 +29,38 @@ public class ForgeInstallerV1 : ForgeInstallerBase
     public VersionInfo VersionInfo { get; }
     public override InstallV1 Install { get; }
 
-    public override async Task<Result<Unit, DaemonError>> Run(InstanceFactoryConfiguration setting, CancellationToken ct = default)
+    public override async Task<Result<Unit, DaemonError>> Run(
+        InstanceFactoryConfiguration setting,
+        CancellationToken ct = default,
+        IOperationContext? operation = null)
     {
+        BindOperation(operation);
         var workingDirectory = setting.Configuration.GetWorkingDirectory();
         var librariesDir = Path.Combine(workingDirectory, "libraries");
         Directory.CreateDirectory(librariesDir);
         ct.ThrowIfCancellationRequested();
 
-
         // STAGE: 解压main jar
+        Operation.SetStage(OperationStage.Extracting);
+        var extract = Operation.CreateChild("extract", 0.1);
         await ExtractContained(Install.FilePath!, Path.Combine(workingDirectory, Install.FilePath!), ct);
+        extract.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
 
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 下载原版服务器核心到指定地址
+        Operation.SetStage(OperationStage.Downloading);
         Log.Debug("[ForgeInstaller] Downloading vanilla server core");
         var serverJarPath = Path.Combine(workingDirectory, $"minecraft_server.{Install.Minecraft}.jar");
-        if (!await DownloadMinecraft(serverJarPath, ct))
+        var vanilla = Operation.CreateChild("vanilla_core", 0.25);
+        if (!await DownloadMinecraft(serverJarPath, ct, vanilla))
         {
             Log.Error("[ForgeInstaller] Failed to download vanilla server core");
             return ResultExt.Err(new StorageDaemonError(
                 "instance.vanilla_core.download_failed",
                 "Failed to download vanilla server core."));
         }
+        vanilla.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
 
         ct.ThrowIfCancellationRequested();
 
@@ -60,13 +71,33 @@ public class ForgeInstallerV1 : ForgeInstallerBase
         librariesLeft = await ParallelProcessLibraries(librariesLeft, librariesDir, ConsiderLibrary, ct);
 
         Log.Debug("[ForgeInstaller] Downloading {0} libraries", librariesLeft.Count);
-        librariesLeft = await ParallelProcessLibraries(librariesLeft, librariesDir, DownloadLibrary, ct);
+        var libraries = Operation.CreateChild("libraries", 0.45);
+        var total = Math.Max(1, librariesLeft.Count);
+        var completed = 0;
+        using (UseDownloadContext(libraries))
+        {
+            librariesLeft = await ParallelProcessLibraries(librariesLeft, librariesDir, async (library, root, token) =>
+            {
+                var ok = await DownloadLibrary(library, root, token);
+                var done = Interlocked.Increment(ref completed);
+                libraries.ReportProgress(new OperationProgress(false, done, total, "items", null, null, null));
+                return ok;
+            }, ct);
+        }
         foreach (var library in librariesLeft) Log.Warning("[ForgeInstaller] Library {0} not downloaded", library.Name);
+        libraries.ReportProgress(new OperationProgress(false, total, total, "items", null, null, null));
 
         ct.ThrowIfCancellationRequested();
 
         // STAGE: 运行forge installer的offline模式来应用postprocessors
-        if (await RunInstallerOffline(workingDirectory, ct)) return ResultExt.Ok();
+        Operation.SetStage(OperationStage.Installing);
+        var install = Operation.CreateChild("offline_install", 0.2);
+        if (await RunInstallerOffline(workingDirectory, ct))
+        {
+            install.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
+            Operation.SetStage(OperationStage.Finalizing);
+            return ResultExt.Ok();
+        }
 
         DeleteInstaller();
         return ResultExt.Err(new InternalDaemonError(

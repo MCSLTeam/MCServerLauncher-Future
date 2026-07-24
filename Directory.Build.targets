@@ -1,0 +1,22 @@
+<Project>
+  <!--
+    Preview-1 package pins fingerprint payload entry SHA-256 values.
+    Stable package payloads are opt-in via MCSL_PIN_PACKAGE_PAYLOAD=true on
+    `dotnet pack` so normal daemon/WPF builds keep referenced-project PDBs for
+    include_pdb=true release archives.
+  -->
+  <PropertyGroup Condition="'$(MCSL_PIN_PACKAGE_PAYLOAD)' == 'true' And '$(IsPackable)' == 'true' And '$(PackageId)' != ''">
+    <!-- Prevent NuGet pack from requiring a staged .pdb (NU5026). -->
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;.xml</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+  <Target Name="ExcludePdbsFromPackagePayload"
+          BeforeTargets="_GetBuildOutputFilesWithTfm;GenerateNuspec;_GetPackageFiles"
+          Condition="'$(MCSL_PIN_PACKAGE_PAYLOAD)' == 'true' And '$(IsPackable)' == 'true' And '$(PackageId)' != ''">
+    <ItemGroup>
+      <_BuildOutputInPackage Remove="@(_BuildOutputInPackage)" Condition="'%(Extension)' == '.pdb'" />
+      <_TargetPathsToSymbols Remove="@(_TargetPathsToSymbols)" />
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+</Project>

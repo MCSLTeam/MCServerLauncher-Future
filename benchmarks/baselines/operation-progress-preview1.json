@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "name": "mcsl-plugin-sdk-preview1-operation-progress",
+  "captured_at_utc": "2026-07-22T15:06:23.6853808Z",
+  "source": {
+    "head_commit": "392b11ad8488b897fbbc3966d5c8d6e46159a8d4",
+    "working_tree": true,
+    "benchmark_source": "benchmarks/MCServerLauncher.Benchmarks/Benchmarks/OperationProgressBenchmarks.cs",
+    "benchmark_source_sha256": "DDDEC10ACA8C97D8774CC07569131E09CA549AA1048B2BA69904DCCA0BE404CB",
+    "operation_coordinator_source": "src/MCServerLauncher.Daemon/Application/Operations/OperationCoordinator.cs",
+    "operation_coordinator_source_sha256": "017AF57961820FAB860F079779FBB334CCC99CBC6F099099653E258B867BC3A8",
+    "command": "dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release --no-build -- --filter \"*OperationProgressBenchmarks*\" --exporters json --artifacts BenchmarkDotNet.Artifacts/wp4-refresh"
+  },
+  "environment": {
+    "benchmarkdotnet_version": "0.15.8",
+    "dotnet_cli_version": "10.0.201",
+    "runtime_version": ".NET 10.0.5 (10.0.5, 10.0.526.15411)",
+    "os_version": "Windows 11 (10.0.26200.8875/25H2/2025Update/HudsonValley2)",
+    "architecture": "X64",
+    "processor": "AMD Ryzen 9 9900X",
+    "physical_cores": 12,
+    "logical_cores": 24,
+    "configuration": "RELEASE"
+  },
+  "methodology": {
+    "job": "ShortRun",
+    "launch_count": 1,
+    "warmup_count": 3,
+    "iteration_count": 3,
+    "progress_persistence_cadence_milliseconds": 200,
+    "active_operations": [1, 64],
+    "concurrent_reporters": [1, 4],
+    "reports_per_burst": [128, 2048],
+    "inside_coalescing_window_writes_per_burst": 0,
+    "at_persistence_cadence_writes_per_burst": 1,
+    "write_count_validation": "Every benchmark invocation checks the OperationCoordinator persistence-write delta and fails unless it matches the method contract.",
+    "throughput_formula": "reports_per_burst / mean_seconds_per_burst",
+    "threshold": null
+  },
+  "limitations": [
+    "This ShortRun capture is an implementation-time baseline, not a latency or concurrency SLA.",
+    "The four-reporter cases include Parallel.For scheduling and coordination allocations.",
+    "Persistence results include index validation, retention and byte-cap sizing, full-index JSON encoding, and one synchronous local filesystem temp-file replacement per burst.",
+    "Results are from one Windows machine and do not establish cross-platform or storage-device performance."
+  ],
+  "metrics": [
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 1,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 9848.136,
+      "standard_deviation_nanoseconds": 84.247,
+      "reports_per_second": 12997384,
+      "allocated_bytes_per_burst": 49152,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 1,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 497520.687,
+      "standard_deviation_nanoseconds": 27649.797,
+      "reports_per_second": 257276,
+      "allocated_bytes_per_burst": 52435,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 1,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 167899.601,
+      "standard_deviation_nanoseconds": 948.012,
+      "reports_per_second": 12197766,
+      "allocated_bytes_per_burst": 786432,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 1,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 936183.138,
+      "standard_deviation_nanoseconds": 17059.656,
+      "reports_per_second": 2187606,
+      "allocated_bytes_per_burst": 789725,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 1,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 37486.430,
+      "standard_deviation_nanoseconds": 2304.306,
+      "reports_per_second": 3414569,
+      "allocated_bytes_per_burst": 51194,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 1,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 767114.307,
+      "standard_deviation_nanoseconds": 81556.531,
+      "reports_per_second": 166859,
+      "allocated_bytes_per_burst": 54498,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 1,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 367174.992,
+      "standard_deviation_nanoseconds": 2729.900,
+      "reports_per_second": 5577722,
+      "allocated_bytes_per_burst": 788500,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 1,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 1290951.172,
+      "standard_deviation_nanoseconds": 45322.844,
+      "reports_per_second": 1586427,
+      "allocated_bytes_per_burst": 791793,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 64,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 11233.886,
+      "standard_deviation_nanoseconds": 178.651,
+      "reports_per_second": 11394098,
+      "allocated_bytes_per_burst": 49152,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 64,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 848873.698,
+      "standard_deviation_nanoseconds": 112001.767,
+      "reports_per_second": 150788,
+      "allocated_bytes_per_burst": 136313,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 64,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 176139.461,
+      "standard_deviation_nanoseconds": 17218.406,
+      "reports_per_second": 11627150,
+      "allocated_bytes_per_burst": 786432,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 64,
+      "concurrent_reporters": 1,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 1228226.953,
+      "standard_deviation_nanoseconds": 35143.920,
+      "reports_per_second": 1667444,
+      "allocated_bytes_per_burst": 874048,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 64,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 36855.479,
+      "standard_deviation_nanoseconds": 1063.283,
+      "reports_per_second": 3473025,
+      "allocated_bytes_per_burst": 51206,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 64,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 128,
+      "mean_nanoseconds_per_burst": 1142457.227,
+      "standard_deviation_nanoseconds": 54708.918,
+      "reports_per_second": 112039,
+      "allocated_bytes_per_burst": 138486,
+      "persistent_writes_per_burst": 1
+    },
+    {
+      "method": "ReportProgressInsideCoalescingWindow",
+      "active_operations": 64,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 387450.879,
+      "standard_deviation_nanoseconds": 14495.043,
+      "reports_per_second": 5285831,
+      "allocated_bytes_per_burst": 788497,
+      "persistent_writes_per_burst": 0
+    },
+    {
+      "method": "ReportProgressAtPersistenceCadence",
+      "active_operations": 64,
+      "concurrent_reporters": 4,
+      "reports_per_burst": 2048,
+      "mean_nanoseconds_per_burst": 1638541.081,
+      "standard_deviation_nanoseconds": 38970.652,
+      "reports_per_second": 1249892,
+      "allocated_bytes_per_burst": 876262,
+      "persistent_writes_per_burst": 1
+    }
+  ]
+}

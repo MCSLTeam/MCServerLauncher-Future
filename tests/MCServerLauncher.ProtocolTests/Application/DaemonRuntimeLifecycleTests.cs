@@ -96,6 +96,8 @@ public sealed class DaemonRuntimeLifecycleTests
         public MCServerLauncher.Daemon.API.Application.IFileApplication Files => null!;
         public MCServerLauncher.Daemon.API.Application.ISystemApplication System => null!;
         public MCServerLauncher.Daemon.API.Application.IEventRuleApplication EventRules => null!;
+        public MCServerLauncher.Daemon.API.Application.IOperationApplication Operations => null!;
+        public MCServerLauncher.Daemon.API.Application.IProvisioningApplication Provisioning => null!;
     }
 
     private sealed class FaultingProcessInstance(InstanceConfig config) : IInstance
@@ -121,11 +123,12 @@ public sealed class DaemonRuntimeLifecycleTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => [];
 

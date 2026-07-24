@@ -30,7 +30,7 @@ dotnet publish src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj `
   -p:PublishSingleFile=true -o artifacts/publish/daemon
 ```
 
-Place each plugin bundle under `artifacts/publish/daemon/plugins/<plugin-id>/`. A bundle contains `plugin.json`, the entry assembly, and private implementation dependencies. Shared `MCServerLauncher.Daemon.API.dll` and `MCServerLauncher.Common.dll` copies are rejected.
+Place each plugin bundle under `artifacts/publish/daemon/plugins/<plugin-id>/`. A bundle contains `mcsl-plugin.json`, the entry assembly, and private implementation dependencies. Shared `MCServerLauncher.Daemon.API.dll` and `MCServerLauncher.Common.dll` copies are rejected.
 
 ## Startup and shutdown
 

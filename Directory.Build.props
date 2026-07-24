@@ -1,0 +1,28 @@
+<Project>
+  <!--
+    Keep assembly builds deterministic and free of git-revision-stamped
+    informational versions. Pin builds use separate output and intermediate
+    roots so their compiler settings cannot reuse ordinary Release artifacts.
+  -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MCSL_PIN_PACKAGE_PAYLOAD)' == 'true'">
+    <MCSLPinBuildRoot Condition="'$(MCSLPinBuildRoot)' == ''">$(MSBuildThisFileDirectory)artifacts/pin-build</MCSLPinBuildRoot>
+    <_MCSLPinBuildRoot>$([MSBuild]::EnsureTrailingSlash('$(MCSLPinBuildRoot)'))</_MCSLPinBuildRoot>
+    <BaseOutputPath>$(_MCSLPinBuildRoot)bin/$(MSBuildProjectName)/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(_MCSLPinBuildRoot)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/bin/**;$(MSBuildProjectDirectory)/obj/**</DefaultItemExcludes>
+    <PathMap>$(_MCSLPinBuildRoot)=/_/pin/;$(PathMap)</PathMap>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <IncludeSymbols>false</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    <EmbedAllSources>false</EmbedAllSources>
+  </PropertyGroup>
+</Project>

@@ -16,18 +16,24 @@ public static class ConfigCommand
                 .Then(ctx.Literal("json")
                     .Executes(cmd =>
                     {
+                        // Never serialize secrets through Serilog sinks. Render the real config
+                        // shape (so operators see security/plugins sections) but redact secret
+                        // material before it leaves the console-only channel.
                         var config = AppConfig.Get();
-                        cmd.Source.SendFeedback(
-                            "config.json: {0}",
-                            JsonSerializer.Serialize(config, AppConfig.PersistenceWriteIndentedTypeInfo)
-                        );
+                        var json = JsonSerializer.Serialize(config, AppConfig.PersistenceWriteIndentedTypeInfo);
+                        var redacted = json
+                            .Replace($"\"secret\": \"{config.Secret}\"", "\"secret\": \"<redacted>\"", StringComparison.Ordinal)
+                            .Replace($"\"main_token\": \"{config.MainToken}\"", "\"main_token\": \"<redacted>\"", StringComparison.Ordinal);
+                        cmd.Source.SendSecret(redacted);
                         return 0;
                     }))
                 .Then(ctx.Literal("token")
                     .Executes(cmd =>
                     {
+                        // Reveal the main token to the interactive console only; it must not be
+                        // persisted to file or network Serilog sinks. Use `cfg reset token` to rotate.
                         var config = AppConfig.Get();
-                        cmd.Source.SendFeedback("MainToken: {0}", config.MainToken);
+                        cmd.Source.SendSecret($"MainToken: {config.MainToken}");
                         return 0;
                     })
                 ).Then(ctx.Literal("port")

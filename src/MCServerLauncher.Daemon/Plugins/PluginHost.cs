@@ -1,12 +1,14 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.Loader;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.ApplicationCore.Auth;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,7 @@ namespace MCServerLauncher.Daemon.Plugins;
 internal enum PluginRuntimeState
 {
     Discovered,
+    Admitted,
     Configured,
     Validated,
     Started,
@@ -24,24 +27,42 @@ internal enum PluginRuntimeState
     Active,
     Stopping,
     Stopped,
+    CleanupAbandoned,
     Failed
 }
 
 internal sealed class PluginHost
 {
-    internal const string HostApiVersion = "1.0.0";
+    internal const string HostApiVersion = "2.0.0";
     private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DefaultRollbackCleanupTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DefaultShutdownCleanupTimeout = TimeSpan.FromSeconds(30);
 
     private readonly object _gate = new();
     private readonly IInstanceSnapshotSource _instances;
+    private readonly ISystemApplication? _system;
+    private readonly CallerContextFactory _callerContexts;
+    private readonly VerifiedPrincipalAuthority _verifiedPrincipals;
+    private readonly IInstanceApplication? _instanceApplication;
+    private readonly IOperationApplication? _operationApplication;
+    private readonly IProvisioningApplication? _provisioningApplication;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
     private readonly string _pluginsRoot;
     private readonly TimeSpan _startTimeout;
+    private readonly TimeSpan _rollbackCleanupTimeout;
+    private readonly TimeSpan _shutdownCleanupTimeout;
+    private readonly TaskCompletionSource _shutdownCleanupBoundary = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly DaemonPluginsConfig _pluginsConfig;
+    private readonly PluginAdmissionPreflight _preflight;
+    private readonly PluginHttpEndpointRegistry _httpEndpoints;
     private readonly List<PluginRuntime> _runtimes = [];
     private readonly List<PluginRuntime> _started = [];
+    private readonly List<FailedLoadCleanup> _failedLoadCleanups = [];
+    private readonly OwnedTaskSupervisor _failedPluginCleanupSupervisor;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
+    private Task? _shutdownCleanupDeadlineDriver;
     private bool _prepared;
     private bool _catalogAdmissionComplete;
     private bool _stopping;
@@ -56,7 +77,11 @@ internal sealed class PluginHost
             loggerFactory,
             logger,
             Path.Combine(AppContext.BaseDirectory, "plugins"),
-            eventBus)
+            eventBus,
+            DefaultStartTimeout,
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry(),
+            system: null)
     {
     }
 
@@ -72,7 +97,10 @@ internal sealed class PluginHost
             logger,
             pluginsRoot,
             eventBus,
-            DefaultStartTimeout)
+            DefaultStartTimeout,
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry(),
+            system: null)
     {
     }
 
@@ -83,16 +111,86 @@ internal sealed class PluginHost
         string pluginsRoot,
         IPluginEventBus eventBus,
         TimeSpan startTimeout)
+        : this(
+            instances,
+            loggerFactory,
+            logger,
+            pluginsRoot,
+            eventBus,
+            startTimeout,
+            DaemonPluginsConfig.Default,
+            new PluginHttpEndpointRegistry(),
+            system: null)
+    {
+    }
+
+    internal PluginHost(
+        IInstanceSnapshotSource instances,
+        ILoggerFactory loggerFactory,
+        ILogger<PluginHost> logger,
+        string pluginsRoot,
+        IPluginEventBus eventBus,
+        TimeSpan startTimeout,
+        DaemonPluginsConfig pluginsConfig,
+        PluginHttpEndpointRegistry httpEndpoints,
+        ISystemApplication? system = null,
+        ICallerContextFactory? callerContexts = null,
+        IInstanceApplication? instanceApplication = null,
+        IOperationApplication? operationApplication = null,
+        IProvisioningApplication? provisioningApplication = null,
+        PluginAdmissionPreflight? preflight = null,
+        VerifiedPrincipalAuthority? verifiedPrincipals = null,
+        TimeSpan? rollbackCleanupTimeout = null,
+        TimeSpan? shutdownCleanupTimeout = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _failedPluginCleanupSupervisor = new OwnedTaskSupervisor(nameof(PluginHost), _logger);
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginsRoot);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(startTimeout, TimeSpan.Zero);
         _pluginsRoot = Path.GetFullPath(pluginsRoot);
         _startTimeout = startTimeout;
+        _rollbackCleanupTimeout = rollbackCleanupTimeout ?? DefaultRollbackCleanupTimeout;
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_rollbackCleanupTimeout, TimeSpan.Zero);
+        _shutdownCleanupTimeout = shutdownCleanupTimeout ?? DefaultShutdownCleanupTimeout;
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_shutdownCleanupTimeout, TimeSpan.Zero);
+        _pluginsConfig = pluginsConfig ?? DaemonPluginsConfig.Default;
+        _preflight = preflight ?? PluginAdmissionPreflight.CreateNonInteractive(_pluginsConfig);
+        _httpEndpoints = httpEndpoints ?? new PluginHttpEndpointRegistry();
+        _system = system;
+        if (callerContexts is not null && callerContexts is not CallerContextFactory)
+        {
+            throw new ArgumentException(
+                "PluginHost requires the daemon caller-context factory so verified principal provenance remains enforceable.",
+                nameof(callerContexts));
+        }
+
+        var daemonCallerContexts = (CallerContextFactory?)callerContexts;
+        _verifiedPrincipals = verifiedPrincipals
+            ?? daemonCallerContexts?.VerifiedPrincipals
+            ?? new VerifiedPrincipalAuthority();
+        if (daemonCallerContexts is not null &&
+            !ReferenceEquals(daemonCallerContexts.VerifiedPrincipals, _verifiedPrincipals))
+        {
+            throw new ArgumentException(
+                "The caller-context factory and principal authority must belong to the same host.",
+                nameof(callerContexts));
+        }
+
+        _callerContexts = daemonCallerContexts ?? new CallerContextFactory(_verifiedPrincipals);
+        _instanceApplication = instanceApplication;
+        _operationApplication = operationApplication;
+        _provisioningApplication = provisioningApplication;
     }
+
+    /// <summary>
+    /// HTTP endpoint registry shared with the daemon listener setup so plugin listeners can
+    /// reserve IP:port against the daemon's own /api/v2 port before any plugin opens a socket.
+    /// </summary>
+    internal PluginHttpEndpointRegistry HttpEndpoints => _httpEndpoints;
+
 
     internal ImmutableArray<(string Id, PluginRuntimeState State)> States
     {
@@ -115,18 +213,56 @@ internal sealed class PluginHost
             foreach (var failure in discovery.Failures)
                 _logger.LogError(failure.Exception, "Skipping plugin bundle {Bundle}: {Code} {Message}", failure.BundleDirectory, failure.Code, failure.Message);
 
+            // Complete admission for every bundle before loading any entry assembly. This keeps
+            // policy prompts and permanent-decision persistence independent from plugin DI and code.
+            var admitted = new List<PluginManifest>();
             foreach (var manifest in discovery.Plugins)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var runtime = TryLoad(manifest);
+                try
+                {
+                    // Generated metadata agreement precedes policy prompts and permanent admission
+                    // writes. PE metadata decoding does not load the assembly or execute plugin IL.
+                    GeneratedPluginMetadataReader.Validate(manifest);
+                }
+                catch (PluginManifestException exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "Plugin {PluginId} failed generated metadata preflight ({Code}): {Message} Skipping bundle.",
+                        manifest.Identity.Id,
+                        exception.Code,
+                        exception.Message);
+                    continue;
+                }
+
+                var outcome = _preflight.Evaluate(manifest);
+                if (!outcome.IsAdmitted)
+                {
+                    _logger.LogWarning(
+                        "Plugin {PluginId} failed preflight ({Code}): {Message} Skipping bundle.",
+                        manifest.Identity.Id,
+                        outcome.Code,
+                        outcome.Message);
+                    continue;
+                }
+
+                admitted.Add(manifest);
+            }
+
+            foreach (var manifest in admitted)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var runtime = await TryLoadAsync(manifest).ConfigureAwait(false);
                 if (runtime is null)
                     continue;
 
+                runtime.State = PluginRuntimeState.Admitted;
                 _runtimes.Add(runtime);
-                Configure(runtime);
+                await ConfigureAsync(runtime).ConfigureAwait(false);
             }
 
-            ValidateGlobalDrafts();
+            await ValidateGlobalDraftsAsync().ConfigureAwait(false);
             foreach (var runtime in _runtimes.Where(static runtime => runtime.State == PluginRuntimeState.Validated))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -191,7 +327,7 @@ internal sealed class PluginHost
 
     internal async Task StopAsync(CancellationToken cancellationToken)
     {
-        await _operationGate.WaitAsync().ConfigureAwait(false);
+        await _operationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             lock (_gate)
@@ -201,29 +337,49 @@ internal sealed class PluginHost
                 _stopping = true;
             }
 
+            _shutdownCleanupDeadlineDriver = DriveShutdownCleanupBoundaryAsync(cancellationToken);
+            var shutdownCleanupBoundary = _shutdownCleanupBoundary.Task;
+
             foreach (var runtime in _started.AsEnumerable().Reverse())
             {
                 if (runtime.State is not (PluginRuntimeState.Active or PluginRuntimeState.Committed or PluginRuntimeState.Started))
                     continue;
 
                 runtime.State = PluginRuntimeState.Stopping;
+                CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "stop");
                 // Stop accepting plugin-originated events before invoking plugin code.
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
-                using var stopTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                stopTimeout.CancelAfter(TimeSpan.FromSeconds(30));
+                var stopCancellation = new CancellationTokenSource();
+                var disposeStopCancellation = true;
+                var stopTask = StartStopPlugin(runtime, stopCancellation.Token);
+                var stopDeadline = Task.Delay(TimeSpan.FromSeconds(30));
                 try
                 {
-                    var result = await runtime.Plugin.StopAsync(stopTimeout.Token)
-                        .WaitAsync(stopTimeout.Token)
+                    var completed = await Task.WhenAny(stopTask, stopDeadline, shutdownCleanupBoundary)
                         .ConfigureAwait(false);
+                    if (!ReferenceEquals(completed, stopTask))
+                    {
+                        CancelPluginOperationAndDisposeLater(runtime, stopCancellation, "stop");
+                        disposeStopCancellation = false;
+                        RetainAbandonedStopTask(runtime, stopTask, "stop");
+                        if (shutdownCleanupBoundary.IsCompleted)
+                        {
+                            _logger.LogCritical(
+                                "Plugin {PluginId} stop exceeded the host shutdown cleanup deadline; continuing bounded cleanup.",
+                                runtime.Manifest.Identity.Id);
+                        }
+                        else
+                        {
+                            _logger.LogError("Plugin {PluginId} stop timed out.", runtime.Manifest.Identity.Id);
+                        }
+                        continue;
+                    }
+
+                    var result = await stopTask.ConfigureAwait(false);
                     if (result.IsErr(out var error))
                         LogReturnedError(runtime, "stop", error!);
-                }
-                catch (OperationCanceledException) when (stopTimeout.IsCancellationRequested)
-                {
-                    _logger.LogError("Plugin {PluginId} stop timed out.", runtime.Manifest.Identity.Id);
                 }
                 catch (Exception exception)
                 {
@@ -231,20 +387,71 @@ internal sealed class PluginHost
                 }
                 finally
                 {
+                    if (disposeStopCancellation)
+                        stopCancellation.Dispose();
                     runtime.Activation.TrySetCanceled();
+                    var disposeOutcome = await DisposePluginBeforeShutdownDeadlineAsync(
+                            runtime,
+                            shutdownCleanupBoundary,
+                            "normal shutdown")
+                        .ConfigureAwait(false);
+                    if (disposeOutcome == PluginDisposeOutcome.Completed)
+                        ReleaseHttpEndpoints(runtime);
                     DisposeLifetime(runtime);
-                    runtime.State = PluginRuntimeState.Stopped;
+                    runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
+                        ? PluginRuntimeState.CleanupAbandoned
+                        : PluginRuntimeState.Stopped;
                 }
             }
 
-            foreach (var runtime in _runtimes.Where(static runtime => runtime.State is PluginRuntimeState.Configured or PluginRuntimeState.Validated))
+            foreach (var runtime in _runtimes.Where(static runtime => runtime.State is PluginRuntimeState.Configured or PluginRuntimeState.Validated or PluginRuntimeState.Admitted))
             {
+                CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "cleanup");
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
+                var disposeOutcome = await DisposePluginBeforeShutdownDeadlineAsync(
+                        runtime,
+                        shutdownCleanupBoundary,
+                        "pre-start shutdown cleanup")
+                    .ConfigureAwait(false);
+                if (disposeOutcome == PluginDisposeOutcome.Completed)
+                    ReleaseHttpEndpoints(runtime);
                 DisposeLifetime(runtime);
-                runtime.State = PluginRuntimeState.Stopped;
+                runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
+                    ? PluginRuntimeState.CleanupAbandoned
+                    : PluginRuntimeState.Stopped;
+            }
+
+            // Failed plugins are not part of _started, but their cleanup remains daemon-owned until
+            // the final shutdown deadline. After that boundary, retain endpoint ownership and
+            // explicitly quarantine any non-cooperative cleanup.
+            try
+            {
+                var drainTask = _failedPluginCleanupSupervisor.DrainAsync();
+                var completed = await Task.WhenAny(drainTask, shutdownCleanupBoundary).ConfigureAwait(false);
+                if (ReferenceEquals(completed, drainTask))
+                {
+                    await drainTask.ConfigureAwait(false);
+                    return;
+                }
+
+                foreach (var runtime in _runtimes.Where(static runtime =>
+                             Volatile.Read(ref runtime.FailedCleanupScheduled) != 0 &&
+                             Volatile.Read(ref runtime.FailedCleanupCompleted) == 0))
+                {
+                    MarkCleanupAbandoned(runtime, null, "failed plugin cleanup drain");
+                }
+                foreach (var cleanup in _failedLoadCleanups.Where(static cleanup =>
+                             Volatile.Read(ref cleanup.Completed) == 0))
+                {
+                    MarkFailedLoadCleanupAbandoned(cleanup, null);
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Draining failed plugin cleanup tasks failed during shutdown.");
             }
         }
         finally
@@ -261,46 +468,308 @@ internal sealed class PluginHost
         "Trimming",
         "IL2072",
         Justification = "The daemon plugin product is an untrimmed JIT host and requires a public parameterless plugin constructor.")]
-    private PluginRuntime? TryLoad(PluginManifest manifest)
+    private async Task<PluginRuntime?> TryLoadAsync(PluginManifest manifest)
     {
+        IDaemonPlugin? plugin = null;
+        CancellationTokenSource? lifetime = null;
+        PluginHttpEndpointPolicy? httpPolicy = null;
+        var ownershipTransferred = false;
         try
         {
+            // Load only the immutable bytes whose metadata was validated. Dependency resolution
+            // remains rooted at the bundle path, but replacing that path cannot change entry IL.
+            var entryAssemblyImage = GeneratedPluginMetadataReader.ReadValidatedImage(manifest);
             var loadContext = new PluginLoadContext(manifest.EntryAssemblyPath, manifest.Identity.Id);
-            var assembly = loadContext.LoadEntryAssembly(manifest.EntryAssemblyPath);
+            var assembly = loadContext.LoadEntryAssembly(entryAssemblyImage);
             var pluginType = assembly.GetType(manifest.EntryType, throwOnError: true, ignoreCase: false);
-            if (pluginType is null || !typeof(IDaemonPlugin).IsAssignableFrom(pluginType))
-                throw new InvalidOperationException($"Entry type '{manifest.EntryType}' does not implement IDaemonPlugin.");
+            if (pluginType is null || !typeof(IGeneratedDaemonPluginAdapter).IsAssignableFrom(pluginType))
+            {
+                throw new InvalidOperationException(
+                    $"Entry type '{manifest.EntryType}' does not implement the generated adapter contract.");
+            }
 
-            if (Activator.CreateInstance(pluginType) is not IDaemonPlugin plugin)
+            if (Activator.CreateInstance(pluginType) is not IDaemonPlugin createdPlugin)
                 throw new InvalidOperationException($"Entry type '{manifest.EntryType}' could not be constructed.");
+            plugin = createdPlugin;
 
             var owner = ProtocolExecutionOwner.ForPlugin(
                 new ProtocolOwnerIdentity(manifest.Identity.Id, manifest.Identity.Version));
             var errors = new PluginErrorFactory(manifest.Identity);
             var pluginLogger = _loggerFactory.CreateLogger($"Plugin.{manifest.Identity.Id}");
             var draft = new PluginRegistrationDraft(manifest, owner, errors, _eventBus, pluginLogger);
-            var lifetime = new CancellationTokenSource();
+            lifetime = new CancellationTokenSource();
             var activation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var eventOwner = new PluginEventOwnerLedger();
+
+            PluginConfiguration configuration;
+            try
+            {
+                configuration = new PluginConfiguration(manifest.BundleDirectory, errors);
+            }
+            catch (PluginManifestException exception)
+            {
+                throw new InvalidOperationException(exception.Message, exception);
+            }
+
+            IPluginPrivateStorage? storage = manifest.HasFeature(PluginFeature.StoragePrivate)
+                ? new PluginPrivateStorage(manifest.Identity, _pluginsConfig, errors)
+                : null;
+            httpPolicy = manifest.HasFeature(PluginFeature.NetworkHttpListen)
+                ? new PluginHttpEndpointPolicy(manifest.Identity.Id, _httpEndpoints, errors)
+                : null;
+            IPluginAuthentication? authentication = manifest.HasFeature(PluginFeature.AuthVerify)
+                ? new PluginAuthentication(errors, _verifiedPrincipals)
+                : null;
+            ISystemQueryApplication? system = null;
+            if (manifest.HasFeature(PluginFeature.SystemQuery))
+            {
+                if (_system is null)
+                {
+                    throw new InvalidOperationException(
+                        "Plugin declared system.query but the host was constructed without ISystemApplication.");
+                }
+
+                system = new PluginSystemQueryApplication(_system);
+            }
+
+            var applications = new PluginApplicationAuthorizer(
+                manifest.Identity,
+                manifest.Features.Select(static feature => feature.Value),
+                _callerContexts,
+                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instances : null,
+                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instanceApplication : null,
+                system,
+                manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
+                manifest.HasFeature(PluginFeature.OperationQuery) ? _operationApplication : null,
+                manifest.HasFeature(PluginFeature.OperationCancel) ? _operationApplication : null,
+                manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,
                 errors,
                 draft,
-                _instances,
-                manifest.HasCapability(PluginCapability.InstanceQuery),
+                applications,
+                configuration,
+                storage,
+                httpPolicy,
+                authentication,
                 activation.Task,
                 lifetime.Token);
-            return new PluginRuntime(manifest, loadContext, plugin, context, draft, lifetime, activation, eventOwner);
+            var runtime = new PluginRuntime(
+                manifest,
+                loadContext,
+                plugin,
+                context,
+                draft,
+                lifetime,
+                activation,
+                eventOwner,
+                httpPolicy);
+            ownershipTransferred = true;
+            return runtime;
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Failed to load plugin {PluginId}; skipping bundle.", manifest.Identity.Id);
             return null;
         }
+        finally
+        {
+            if (!ownershipTransferred)
+            {
+                await ScheduleFailedLoadCleanupAsync(
+                        manifest,
+                        plugin,
+                        lifetime,
+                        httpPolicy)
+                    .ConfigureAwait(false);
+            }
+        }
     }
 
-    private void Configure(PluginRuntime runtime)
+    private async Task DriveShutdownCleanupBoundaryAsync(CancellationToken callerCancellation)
+    {
+        var deadline = Task.Delay(_shutdownCleanupTimeout);
+        if (callerCancellation.CanBeCanceled)
+        {
+            var callerCanceled = Task.Delay(Timeout.InfiniteTimeSpan, callerCancellation);
+            await Task.WhenAny(deadline, callerCanceled).ConfigureAwait(false);
+        }
+        else
+        {
+            await deadline.ConfigureAwait(false);
+        }
+
+        _shutdownCleanupBoundary.TrySetResult();
+    }
+
+    private Task ScheduleFailedLoadCleanupAsync(
+        PluginManifest manifest,
+        IDaemonPlugin? plugin,
+        CancellationTokenSource? lifetime,
+        PluginHttpEndpointPolicy? httpPolicy)
+    {
+        httpPolicy?.Close();
+        if (plugin is null && lifetime is null && httpPolicy is null)
+            return Task.CompletedTask;
+
+        var cleanup = new FailedLoadCleanup(manifest, plugin, lifetime, httpPolicy);
+        _failedLoadCleanups.Add(cleanup);
+        _failedPluginCleanupSupervisor.Schedule(
+            $"failed-load-cleanup:{manifest.Identity.Id}",
+            _ => CompleteFailedLoadCleanupAsync(cleanup));
+        return Task.CompletedTask;
+    }
+
+    private async Task CompleteFailedLoadCleanupAsync(FailedLoadCleanup cleanup)
+    {
+        try
+        {
+            await CompleteFailedLoadCleanupCoreAsync(cleanup).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref cleanup.Completed, 1);
+        }
+    }
+
+    private async Task CompleteFailedLoadCleanupCoreAsync(FailedLoadCleanup cleanup)
+    {
+        Task? lifetimeCancellation = null;
+        if (cleanup.Lifetime is not null)
+        {
+            try
+            {
+                lifetimeCancellation = cleanup.Lifetime.CancelAsync();
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "Plugin {PluginId} lifetime cancellation failed during load cleanup; continuing cleanup.",
+                    cleanup.Manifest.Identity.Id);
+            }
+        }
+
+        DisposeFailedLoadLifetime(cleanup, lifetimeCancellation);
+        var disposeTask = StartDisposeFailedLoadPlugin(cleanup);
+        cleanup.DisposeTask = disposeTask;
+        var observationDeadline = Task.Delay(_rollbackCleanupTimeout);
+        var completed = await Task.WhenAny(
+                disposeTask,
+                observationDeadline,
+                _shutdownCleanupBoundary.Task)
+            .ConfigureAwait(false);
+        if (ReferenceEquals(completed, disposeTask))
+        {
+            CompleteFailedLoadDisposal(cleanup, await disposeTask.ConfigureAwait(false));
+            return;
+        }
+        if (_shutdownCleanupBoundary.Task.IsCompleted)
+        {
+            MarkFailedLoadCleanupAbandoned(cleanup, disposeTask);
+            return;
+        }
+
+        _logger.LogWarning(
+            "Plugin {PluginId} failed load cleanup exceeded {Timeout}; resources remain host-owned until disposal completes or daemon shutdown reaches its final deadline.",
+            cleanup.Manifest.Identity.Id,
+            _rollbackCleanupTimeout);
+        completed = await Task.WhenAny(disposeTask, _shutdownCleanupBoundary.Task).ConfigureAwait(false);
+        if (ReferenceEquals(completed, disposeTask))
+            CompleteFailedLoadDisposal(cleanup, await disposeTask.ConfigureAwait(false));
+        else
+            MarkFailedLoadCleanupAbandoned(cleanup, disposeTask);
+    }
+
+    private Task<bool> StartDisposeFailedLoadPlugin(FailedLoadCleanup cleanup) =>
+        Task.Run(async () =>
+        {
+            if (cleanup.Plugin is null)
+                return true;
+
+            try
+            {
+                switch (cleanup.Plugin)
+                {
+                    case IAsyncDisposable asyncDisposable:
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        break;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "Plugin {PluginId} dispose threw during load cleanup; continuing cleanup.",
+                    cleanup.Manifest.Identity.Id);
+                return false;
+            }
+
+            return true;
+        });
+
+    private static void CompleteFailedLoadDisposal(FailedLoadCleanup cleanup, bool disposeCompleted)
+    {
+        if (!disposeCompleted)
+            return;
+
+        cleanup.HttpPolicy?.ReleaseAll();
+    }
+
+    private void DisposeFailedLoadLifetime(FailedLoadCleanup cleanup, Task? cancellation)
+    {
+        if (cleanup.Lifetime is null)
+            return;
+
+        if (cancellation is null || cancellation.IsCompleted)
+        {
+            LogFailedLoadLifetimeCancellationFailure(cleanup, cancellation);
+            cleanup.Lifetime.Dispose();
+            return;
+        }
+
+        _ = cancellation.ContinueWith(
+            static (task, state) =>
+            {
+                var (host, failedLoad) = ((PluginHost Host, FailedLoadCleanup Cleanup))state!;
+                host.LogFailedLoadLifetimeCancellationFailure(failedLoad, task);
+                failedLoad.Lifetime!.Dispose();
+            },
+            (this, cleanup),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private void LogFailedLoadLifetimeCancellationFailure(FailedLoadCleanup cleanup, Task? cancellation)
+    {
+        if (cancellation?.Exception is not { } exception)
+            return;
+
+        _logger.LogError(
+            exception,
+            "Plugin {PluginId} lifetime cancellation callbacks failed during load cleanup.",
+            cleanup.Manifest.Identity.Id);
+    }
+
+    private void MarkFailedLoadCleanupAbandoned(FailedLoadCleanup cleanup, Task<bool>? disposeTask)
+    {
+        if (disposeTask is not null)
+            cleanup.DisposeTask = disposeTask;
+        if (Interlocked.Exchange(ref cleanup.Abandoned, 1) != 0)
+            return;
+
+        _logger.LogCritical(
+            "Plugin {PluginId} cleanup_abandoned during failed load cleanup after the {Timeout} host shutdown deadline; resources remain quarantined and daemon shutdown will continue.",
+            cleanup.Manifest.Identity.Id,
+            _shutdownCleanupTimeout);
+    }
+
+    private async Task ConfigureAsync(PluginRuntime runtime)
     {
         try
         {
@@ -308,7 +777,8 @@ internal sealed class PluginHost
             runtime.Draft.Close();
             if (result.IsErr(out var error))
             {
-                Fail(runtime, "configure_returned_error", "Plugin Configure returned an error.", error!);
+                await FailAsync(runtime, "configure_returned_error", "Plugin Configure returned an error.", error!)
+                    .ConfigureAwait(false);
                 return;
             }
 
@@ -318,7 +788,8 @@ internal sealed class PluginHost
         }
         catch (Exception exception)
         {
-            Fail(runtime, "configure_threw", "Plugin Configure threw an unexpected exception.", exception);
+            await FailAsync(runtime, "configure_threw", "Plugin Configure threw an unexpected exception.", exception)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -326,7 +797,7 @@ internal sealed class PluginHost
         }
     }
 
-    private void ValidateGlobalDrafts()
+    private async Task ValidateGlobalDraftsAsync()
     {
         var candidates = _runtimes
             .Where(static runtime => runtime.State == PluginRuntimeState.Validated)
@@ -352,10 +823,11 @@ internal sealed class PluginHost
 
         foreach (var runtime in conflicts.OrderBy(static runtime => runtime.Manifest.Identity.Id, StringComparer.Ordinal))
         {
-            Fail(
+            await FailAsync(
                 runtime,
                 "catalog_conflict",
-                "The plugin registration draft conflicts with a built-in or another plugin protocol name.");
+                "The plugin registration draft conflicts with a built-in or another plugin protocol name.")
+                .ConfigureAwait(false);
         }
     }
 
@@ -374,32 +846,53 @@ internal sealed class PluginHost
             // Keep the supervisor timer independent from the token supplied to plugin code. A
             // plugin can register a blocking callback on that token; CancelAsync notifies it in
             // the background, while this deadline still returns daemon startup promptly.
+            var startDeadline = Task.Delay(_startTimeout);
+            var hostCancellation = Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            var lifetimeCancellation = Task.Delay(Timeout.InfiniteTimeSpan, runtime.Lifetime.Token);
             var completed = await Task.WhenAny(
                     startTask,
-                    Task.Delay(_startTimeout),
-                    Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken),
-                    Task.Delay(Timeout.InfiniteTimeSpan, runtime.Lifetime.Token))
+                    startDeadline,
+                    hostCancellation,
+                    lifetimeCancellation)
                 .ConfigureAwait(false);
             if (!ReferenceEquals(completed, startTask))
             {
                 ObserveLateStartFault(runtime, startTask);
                 CancelStartAndDisposeLater(runtime, startCancellation);
                 disposeStartCancellation = false;
-                FailStartCancellation(runtime, cancellationToken);
+                if (ReferenceEquals(completed, startDeadline))
+                {
+                    // Listener readiness is governed by the StartAsync deadline. Revoke all
+                    // host-owned admissions immediately, then supervise plugin Stop/Dispose in
+                    // the background while endpoint ownership remains fail-closed until disposal.
+                    FailWithoutDisposal(
+                        runtime,
+                        "start_timed_out",
+                        $"Plugin StartAsync exceeded the startup deadline of {_startTimeout}.");
+                    ScheduleFailedPluginCleanup(runtime, stopBeforeDispose: true);
+                    return;
+                }
+
+                await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
             var result = await startTask.ConfigureAwait(false);
             if (cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
             {
-                ObserveLateStartFault(runtime, startTask);
-                FailStartCancellation(runtime, cancellationToken);
+                await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
             if (result.IsErr(out var error))
             {
-                Fail(runtime, "start_returned_error", "Plugin StartAsync returned an error.", error!);
+                await FailAsync(
+                        runtime,
+                        "start_returned_error",
+                        "Plugin StartAsync returned an error.",
+                        error!,
+                        stopBeforeDispose: true)
+                    .ConfigureAwait(false);
                 return;
             }
 
@@ -410,11 +903,17 @@ internal sealed class PluginHost
             cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
         {
             ObserveLateStartFault(runtime, startTask);
-            FailStartCancellation(runtime, cancellationToken);
+            await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
-            Fail(runtime, "start_threw", "Plugin StartAsync threw an unexpected exception.", exception);
+            await FailAsync(
+                    runtime,
+                    "start_threw",
+                    "Plugin StartAsync threw an unexpected exception.",
+                    exception,
+                    stopBeforeDispose: true)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -423,24 +922,36 @@ internal sealed class PluginHost
         }
     }
 
-    private void FailStartCancellation(PluginRuntime runtime, CancellationToken cancellationToken)
+    private async Task FailStartCancellationAsync(PluginRuntime runtime, CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            Fail(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.");
+            await FailAsync(
+                    runtime,
+                    "start_canceled",
+                    "Plugin StartAsync was canceled before it completed.",
+                    stopBeforeDispose: true)
+                .ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
         }
 
         if (runtime.Lifetime.IsCancellationRequested)
         {
-            Fail(runtime, "start_canceled", "Plugin StartAsync was canceled before it completed.");
+            await FailAsync(
+                    runtime,
+                    "start_canceled",
+                    "Plugin StartAsync was canceled before it completed.",
+                    stopBeforeDispose: true)
+                .ConfigureAwait(false);
             return;
         }
 
-        Fail(
+        await FailAsync(
             runtime,
             "start_timed_out",
-            $"Plugin StartAsync exceeded the startup deadline of {_startTimeout}.");
+            $"Plugin StartAsync exceeded the startup deadline of {_startTimeout}.",
+            stopBeforeDispose: true)
+            .ConfigureAwait(false);
     }
 
     private void ObserveLateStartFault(PluginRuntime runtime, Task startTask)
@@ -506,15 +1017,257 @@ internal sealed class PluginHost
             runtime.Manifest.Identity.Id);
     }
 
-    private void Fail(
+    private async Task StopRollbackAsync(PluginRuntime runtime)
+    {
+        // Best-effort: give the plugin a bounded chance to StopAsync so it can release plugin-owned
+        // resources (Kestrel, file handles) before the host marks it failed. A plugin that ignores
+        // cancellation is bounded by the stop deadline; failures here are logged, never rethrown.
+        if (runtime.State == PluginRuntimeState.Stopped)
+            return;
+
+        CloseHttpEndpointAdmission(runtime);
+        var stopCancellation = new CancellationTokenSource();
+        var disposeStopCancellation = true;
+        var stopTask = StartStopPlugin(runtime, stopCancellation.Token);
+        var rollbackDeadline = Task.Delay(_rollbackCleanupTimeout);
+        try
+        {
+            var completed = await Task.WhenAny(stopTask, rollbackDeadline, _shutdownCleanupBoundary.Task)
+                .ConfigureAwait(false);
+            if (!ReferenceEquals(completed, stopTask))
+            {
+                CancelPluginOperationAndDisposeLater(runtime, stopCancellation, "rollback");
+                disposeStopCancellation = false;
+                RetainAbandonedStopTask(runtime, stopTask, "rollback");
+                if (_shutdownCleanupBoundary.Task.IsCompleted)
+                {
+                    _logger.LogCritical(
+                        "Plugin {PluginId} rollback stop exceeded the host shutdown cleanup deadline.",
+                        runtime.Manifest.Identity.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Plugin {PluginId} rollback stop timed out.", runtime.Manifest.Identity.Id);
+                }
+                return;
+            }
+
+            var result = await stopTask.ConfigureAwait(false);
+            if (result.IsErr(out var error))
+                LogReturnedError(runtime, "rollback", error!);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Plugin {PluginId} rollback stop threw; continuing cleanup.", runtime.Manifest.Identity.Id);
+        }
+        finally
+        {
+            if (disposeStopCancellation)
+                stopCancellation.Dispose();
+        }
+    }
+
+    private static Task<Result<Unit, DaemonError>> StartStopPlugin(
+        PluginRuntime runtime,
+        CancellationToken cancellationToken) =>
+        Task.Factory.StartNew(
+                () => runtime.Plugin.StopAsync(cancellationToken),
+                CancellationToken.None,
+                TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning,
+                TaskScheduler.Default)
+            .Unwrap();
+
+    private void CancelPluginOperationAndDisposeLater(
+        PluginRuntime runtime,
+        CancellationTokenSource operationCancellation,
+        string stage)
+    {
+        try
+        {
+            var cancellation = operationCancellation.CancelAsync();
+            if (cancellation.IsCompleted)
+            {
+                LogPluginOperationCancellationFailure(runtime, cancellation, stage);
+                operationCancellation.Dispose();
+                return;
+            }
+
+            _ = cancellation.ContinueWith(
+                static (task, state) =>
+                {
+                    var (host, pluginRuntime, source, operation) =
+                        ((PluginHost Host, PluginRuntime Runtime, CancellationTokenSource Source, string Operation))state!;
+                    host.LogPluginOperationCancellationFailure(pluginRuntime, task, operation);
+                    source.Dispose();
+                },
+                (this, runtime, operationCancellation, stage),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Plugin {PluginId} {Stage} cancellation could not be supervised after the deadline.",
+                runtime.Manifest.Identity.Id,
+                stage);
+            operationCancellation.Dispose();
+        }
+    }
+
+    private void LogPluginOperationCancellationFailure(
+        PluginRuntime runtime,
+        Task cancellation,
+        string stage)
+    {
+        if (cancellation.Exception is not { } exception)
+            return;
+
+        _logger.LogWarning(
+            exception,
+            "Plugin {PluginId} {Stage} cancellation callbacks failed after the deadline.",
+            runtime.Manifest.Identity.Id,
+            stage);
+    }
+
+    private void RetainAbandonedStopTask(PluginRuntime runtime, Task stopTask, string stage)
+    {
+        runtime.AbandonedStopTask = stopTask;
+        _ = stopTask.ContinueWith(
+            static (task, state) =>
+            {
+                var (logger, pluginId, operation) =
+                    ((ILogger<PluginHost> Logger, string PluginId, string Operation))state!;
+                logger.LogWarning(
+                    task.Exception,
+                    "Plugin {PluginId} {Operation} faulted after its host deadline.",
+                    pluginId,
+                    operation);
+            },
+            (_logger, runtime.Manifest.Identity.Id, stage),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private void ScheduleFailedPluginCleanup(PluginRuntime runtime, bool stopBeforeDispose)
+    {
+        if (stopBeforeDispose)
+            Interlocked.Exchange(ref runtime.FailedCleanupRequiresStop, 1);
+        if (Interlocked.Exchange(ref runtime.FailedCleanupScheduled, 1) != 0)
+            return;
+
+        _failedPluginCleanupSupervisor.Schedule(
+            $"failed-plugin-cleanup:{runtime.Manifest.Identity.Id}",
+            _ => CompleteFailedPluginCleanupAsync(runtime));
+    }
+
+    private async Task CompleteFailedPluginCleanupAsync(PluginRuntime runtime)
+    {
+        try
+        {
+            var stopBeforeDispose = Volatile.Read(ref runtime.FailedCleanupRequiresStop) != 0;
+            var cleanupStage = stopBeforeDispose ? "failed-start cleanup" : "failed plugin cleanup";
+            if (stopBeforeDispose)
+                await StopRollbackAsync(runtime).ConfigureAwait(false);
+
+            if (_shutdownCleanupBoundary.Task.IsCompleted)
+            {
+                MarkCleanupAbandoned(runtime, null, cleanupStage);
+                return;
+            }
+
+            var disposeTask = StartDisposePlugin(runtime);
+            var observationDeadline = Task.Delay(_rollbackCleanupTimeout);
+            var completed = await Task.WhenAny(
+                    disposeTask,
+                    observationDeadline,
+                    _shutdownCleanupBoundary.Task)
+                .ConfigureAwait(false);
+            if (ReferenceEquals(completed, disposeTask))
+            {
+                var disposed = await disposeTask.ConfigureAwait(false);
+                if (disposed)
+                    ReleaseHttpEndpoints(runtime);
+                else
+                {
+                    _logger.LogWarning(
+                        "Plugin {PluginId} {CleanupStage} could not dispose the plugin; endpoint ownership remains fail-closed.",
+                        runtime.Manifest.Identity.Id,
+                        cleanupStage);
+                }
+                return;
+            }
+            if (_shutdownCleanupBoundary.Task.IsCompleted)
+            {
+                MarkCleanupAbandoned(runtime, disposeTask, cleanupStage);
+                return;
+            }
+
+            _logger.LogWarning(
+                "Plugin {PluginId} {CleanupStage} exceeded {Timeout}; endpoint ownership remains fail-closed until disposal completes or daemon shutdown reaches its final deadline.",
+                runtime.Manifest.Identity.Id,
+                cleanupStage,
+                _rollbackCleanupTimeout);
+
+            completed = await Task.WhenAny(disposeTask, _shutdownCleanupBoundary.Task).ConfigureAwait(false);
+            if (ReferenceEquals(completed, disposeTask))
+            {
+                if (await disposeTask.ConfigureAwait(false))
+                {
+                    ReleaseHttpEndpoints(runtime);
+                    _logger.LogInformation(
+                        "Plugin {PluginId} completed delayed {CleanupStage}; endpoint ownership was released.",
+                        runtime.Manifest.Identity.Id,
+                        cleanupStage);
+                }
+            }
+            else
+            {
+                MarkCleanupAbandoned(runtime, disposeTask, cleanupStage);
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref runtime.FailedCleanupCompleted, 1);
+        }
+    }
+
+    private void FailWithoutDisposal(
         PluginRuntime runtime,
         string stage,
-        string message,
-        Exception? exception = null)
+        string message)
     {
         if (runtime.State is PluginRuntimeState.Failed or PluginRuntimeState.Stopped)
             return;
 
+        CloseHttpEndpointAdmission(runtime);
+        _logger.LogError(
+            "Plugin {PluginId} version {PluginVersion} failed at {Stage}: {Message}",
+            runtime.Manifest.Identity.Id,
+            runtime.Manifest.Identity.Version,
+            stage,
+            message);
+        CancelLifetime(runtime, stage);
+        runtime.Draft.Clear();
+        runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
+        runtime.Activation.TrySetCanceled();
+        runtime.State = PluginRuntimeState.Failed;
+        DisposeLifetime(runtime);
+    }
+
+    private Task FailAsync(
+        PluginRuntime runtime,
+        string stage,
+        string message,
+        Exception? exception = null,
+        bool stopBeforeDispose = false)
+    {
+        if (runtime.State is PluginRuntimeState.Failed or PluginRuntimeState.Stopped)
+            return Task.CompletedTask;
+
+        CloseHttpEndpointAdmission(runtime);
         if (exception is PluginErrorException pluginErrorException)
             _logger.LogError(
                 exception,
@@ -545,16 +1298,20 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
-        DisposeLifetime(runtime);
         runtime.State = PluginRuntimeState.Failed;
+        DisposeLifetime(runtime);
+        ScheduleFailedPluginCleanup(runtime, stopBeforeDispose);
+        return Task.CompletedTask;
     }
 
-    private void Fail(
+    private Task FailAsync(
         PluginRuntime runtime,
         string stage,
         string message,
-        DaemonError error)
+        DaemonError error,
+        bool stopBeforeDispose = false)
     {
+        CloseHttpEndpointAdmission(runtime);
         _logger.LogError(
             "Plugin {PluginId} version {PluginVersion} returned error at {Stage}: {Code} {Message} Details={Details}",
             runtime.Manifest.Identity.Id,
@@ -567,8 +1324,10 @@ internal sealed class PluginHost
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
         runtime.Activation.TrySetCanceled();
-        DisposeLifetime(runtime);
         runtime.State = PluginRuntimeState.Failed;
+        DisposeLifetime(runtime);
+        ScheduleFailedPluginCleanup(runtime, stopBeforeDispose);
+        return Task.CompletedTask;
     }
 
     private void LogReturnedError(PluginRuntime runtime, string stage, DaemonError error)
@@ -600,6 +1359,86 @@ internal sealed class PluginHost
                 stage);
         }
     }
+
+    private Task<bool> StartDisposePlugin(PluginRuntime runtime) =>
+        Task.Run(() => DisposePluginAsync(runtime));
+
+    private async Task<PluginDisposeOutcome> DisposePluginBeforeShutdownDeadlineAsync(
+        PluginRuntime runtime,
+        Task shutdownCleanupBoundary,
+        string stage)
+    {
+        if (shutdownCleanupBoundary.IsCompleted)
+        {
+            MarkCleanupAbandoned(runtime, null, stage);
+            return PluginDisposeOutcome.Abandoned;
+        }
+
+        var disposeTask = StartDisposePlugin(runtime);
+        var completed = await Task.WhenAny(disposeTask, shutdownCleanupBoundary).ConfigureAwait(false);
+        if (!ReferenceEquals(completed, disposeTask))
+        {
+            MarkCleanupAbandoned(runtime, disposeTask, stage);
+            return PluginDisposeOutcome.Abandoned;
+        }
+
+        return await disposeTask.ConfigureAwait(false)
+            ? PluginDisposeOutcome.Completed
+            : PluginDisposeOutcome.Failed;
+    }
+
+    private void MarkCleanupAbandoned(PluginRuntime runtime, Task<bool>? disposeTask, string stage)
+    {
+        if (disposeTask is not null)
+            runtime.AbandonedDisposeTask = disposeTask;
+        if (Interlocked.Exchange(ref runtime.CleanupAbandoned, 1) != 0)
+            return;
+
+        runtime.State = PluginRuntimeState.CleanupAbandoned;
+        _logger.LogCritical(
+            "Plugin {PluginId} cleanup_abandoned at {Stage} after the {Timeout} host shutdown deadline; endpoint ownership remains fail-closed and daemon shutdown will continue.",
+            runtime.Manifest.Identity.Id,
+            stage,
+            _shutdownCleanupTimeout);
+    }
+
+    private async Task<bool> DisposePluginAsync(PluginRuntime runtime)
+    {
+        try
+        {
+            switch (runtime.Plugin)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
+            return true;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Plugin {PluginId} dispose threw an unexpected exception.",
+                runtime.Manifest.Identity.Id);
+            return false;
+        }
+    }
+
+    private enum PluginDisposeOutcome
+    {
+        Completed,
+        Failed,
+        Abandoned
+    }
+
+    private static void CloseHttpEndpointAdmission(PluginRuntime runtime) =>
+        runtime.HttpEndpointPolicy?.Close();
+
+    private static void ReleaseHttpEndpoints(PluginRuntime runtime) =>
+        runtime.HttpEndpointPolicy?.ReleaseAll();
 
     private void DisposeLifetime(PluginRuntime runtime)
     {
@@ -639,6 +1478,21 @@ internal sealed class PluginHost
             stage ?? "cleanup");
     }
 
+    private sealed class FailedLoadCleanup(
+        PluginManifest manifest,
+        IDaemonPlugin? plugin,
+        CancellationTokenSource? lifetime,
+        PluginHttpEndpointPolicy? httpPolicy)
+    {
+        internal PluginManifest Manifest { get; } = manifest;
+        internal IDaemonPlugin? Plugin { get; } = plugin;
+        internal CancellationTokenSource? Lifetime { get; } = lifetime;
+        internal PluginHttpEndpointPolicy? HttpPolicy { get; } = httpPolicy;
+        internal Task<bool>? DisposeTask { get; set; }
+        internal int Completed;
+        internal int Abandoned;
+    }
+
     private sealed class PluginRuntime(
         PluginManifest manifest,
         PluginLoadContext loadContext,
@@ -647,7 +1501,8 @@ internal sealed class PluginHost
         PluginRegistrationDraft draft,
         CancellationTokenSource lifetime,
         TaskCompletionSource activation,
-        PluginEventOwnerLedger eventOwner)
+        PluginEventOwnerLedger eventOwner,
+        PluginHttpEndpointPolicy? httpEndpointPolicy)
     {
         internal PluginManifest Manifest { get; } = manifest;
         internal PluginLoadContext LoadContext { get; } = loadContext;
@@ -658,8 +1513,15 @@ internal sealed class PluginHost
         internal Task? LifetimeCancellation { get; set; }
         internal string? LifetimeCancellationStage { get; set; }
         internal int LifetimeDisposeScheduled;
+        internal int FailedCleanupScheduled;
+        internal int FailedCleanupCompleted;
+        internal int FailedCleanupRequiresStop;
+        internal int CleanupAbandoned;
+        internal Task? AbandonedStopTask;
+        internal Task<bool>? AbandonedDisposeTask;
         internal TaskCompletionSource Activation { get; } = activation;
         internal PluginEventOwnerLedger EventOwner { get; } = eventOwner;
+        internal PluginHttpEndpointPolicy? HttpEndpointPolicy { get; } = httpEndpointPolicy;
         internal PluginRuntimeState State { get; set; } = PluginRuntimeState.Discovered;
     }
 }

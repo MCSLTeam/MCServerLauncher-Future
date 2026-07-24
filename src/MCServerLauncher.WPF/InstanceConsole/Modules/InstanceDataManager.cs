@@ -477,7 +477,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             return dispatcher.InvokeAsync(action).Task;
         }
 
-        private static InstanceReport ToPresentationReport(TypedInstanceReport report)
+        internal static InstanceReport ToPresentationReport(TypedInstanceReport report)
         {
             var config = report.Config;
             return new InstanceReport(
@@ -496,7 +496,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                 },
                 report.Properties.ToDictionary(pair => pair.Key, pair => pair.Value),
                 report.Players.Select(player => new Player(player.Name, player.Uuid)).ToArray(),
-                new InstancePerformanceCounter(report.PerformanceCounter.Cpu, report.PerformanceCounter.MemoryBytes));
+                new InstancePerformanceCounter(report.PerformanceCounter.Cpu, report.PerformanceCounter.MemoryBytes),
+                report.ReadyTimedOut);
         }
     }
 }

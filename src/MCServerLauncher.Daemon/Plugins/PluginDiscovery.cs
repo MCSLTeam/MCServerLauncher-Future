@@ -74,7 +74,8 @@ internal static class PluginAssemblyPolicy
             "MCServerLauncher.Daemon.API",
             "MCServerLauncher.Common",
             "RustyOptions",
-            "Microsoft.Extensions.Logging.Abstractions");
+            "Microsoft.Extensions.Logging.Abstractions",
+            "Microsoft.Extensions.DependencyInjection.Abstractions");
 
     private static readonly ImmutableHashSet<string> ForbiddenAssemblies =
         ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,

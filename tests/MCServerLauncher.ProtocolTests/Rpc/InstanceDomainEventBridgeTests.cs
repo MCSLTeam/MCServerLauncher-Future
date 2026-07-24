@@ -120,11 +120,12 @@ public sealed class InstanceDomainEventBridgeTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory() => [];
 

@@ -601,7 +601,7 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
         $"{{\"version\":{version},\"items\":[{string.Join(',', items)}]}}";
 
     private static string Item(string name) =>
-        $"{{\"instance_id\":\"{FirstId:D}\",\"name\":\"{name}\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\"}}";
+        $"{{\"instance_id\":\"{FirstId:D}\",\"name\":\"{name}\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\",\"ready_timed_out\":false}}";
 
     private static byte[] CatalogEvent(long version, string name) =>
         Utf8($"{{\"jsonrpc\":\"2.0\",\"method\":\"mcsl.event.instance.catalog.changed\",\"params\":{{\"sequence\":{version},\"timestamp\":{version},\"data\":{{\"version\":{version},\"operation\":\"upsert\",\"instance_id\":\"{FirstId:D}\",\"snapshot\":{Item(name)}}}}}}}");

@@ -456,7 +456,7 @@ public sealed class DomainEventPortAndTriggerTests
         };
         using var process = new MCServerLauncher.Daemon.Management.Communicate.InstanceProcess(
             CreateReadyThenLongRunningStartInfo(),
-            isMcServer: false);
+            MCServerLauncher.Common.ProtoType.Instance.InstanceType.Universal);
         var restartCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var application = CreateApplication(
             getRules: id => Result.Ok<EventRuleSet, DaemonError>(CreateRuleSet(id, [rule])),
@@ -599,6 +599,9 @@ public sealed class DomainEventPortAndTriggerTests
         public IFileApplication Files => throw new NotSupportedException();
         public ISystemApplication System => throw new NotSupportedException();
         public IEventRuleApplication EventRules { get; } = eventRules;
+
+        public IOperationApplication Operations { get; } = null!;
+        public IProvisioningApplication Provisioning { get; } = null!;
     }
 
     private class InterfaceDispatchProxy : DispatchProxy

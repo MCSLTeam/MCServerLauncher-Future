@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Threading.Channels;
+using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Authentication;
 
@@ -42,12 +43,24 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
         IV2OutboundSender sender,
         IEnumerable<string>? permissions = null,
         TimeProvider? timeProvider = null,
-        CancellationToken connectionCancellation = default)
+        CancellationToken connectionCancellation = default,
+        string? subject = null,
+        bool isMainToken = false)
     {
         _sender = sender ?? throw new ArgumentNullException(nameof(sender));
         _timeProvider = timeProvider ?? TimeProvider.System;
         Permissions = NormalizePermissions(permissions);
         CompiledPermissions = CompilePermissions(Permissions);
+        Subject = string.IsNullOrWhiteSpace(subject)
+            ? (isMainToken ? PrincipalIdentityPolicy.MainTokenSubject : "anonymous")
+            : subject;
+        if (isMainToken)
+            PrincipalIdentityPolicy.ValidateMainTokenSubject(Subject, nameof(subject));
+        else
+            PrincipalIdentityPolicy.ValidateExternalSubject(Subject, nameof(subject));
+
+        // IsMainToken is identity, not permission breadth. Bare "*" grants still match all methods.
+        IsMainToken = isMainToken;
         _connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(connectionCancellation);
         _connectionToken = _connectionLifetime.Token;
         _outbound = Channel.CreateBounded<V2OutboundMessage>(
@@ -61,6 +74,10 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
     }
 
     public ImmutableArray<string> Permissions { get; }
+
+    public string Subject { get; }
+
+    public bool IsMainToken { get; }
 
     public Permissions CompiledPermissions { get; }
 
@@ -448,7 +465,7 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
             .Select(static permission =>
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(permission);
-                return permission.Trim().ToLowerInvariant();
+                return permission;
             })
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)

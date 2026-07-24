@@ -6,6 +6,9 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
+using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Protocol;
 using InstanceStatus = MCServerLauncher.Common.ProtoType.Instance.InstanceStatus;
@@ -20,7 +23,7 @@ public sealed class BuiltInProtocolDefinitionTests
     {
         RpcDescriptor[] namedRpcs =
         [
-            BuiltInProtocolDefinitions.GetAuthPermissions, BuiltInProtocolDefinitions.PingDaemon,
+            BuiltInProtocolDefinitions.GetAuthPermissions, BuiltInProtocolDefinitions.IssueToken, BuiltInProtocolDefinitions.PingDaemon,
             BuiltInProtocolDefinitions.CopyDirectory, BuiltInProtocolDefinitions.CreateDirectory,
             BuiltInProtocolDefinitions.DeleteDirectory, BuiltInProtocolDefinitions.GetDirectoryInfo,
             BuiltInProtocolDefinitions.MoveDirectory, BuiltInProtocolDefinitions.RenameDirectory,
@@ -38,6 +41,10 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolDefinitions.ListInstanceReports, BuiltInProtocolDefinitions.GetInstanceSettings,
             BuiltInProtocolDefinitions.UpdateInstanceSettings, BuiltInProtocolDefinitions.StartInstance,
             BuiltInProtocolDefinitions.StopInstance, BuiltInProtocolDefinitions.ListJavaRuntimes,
+            BuiltInProtocolDefinitions.ListOperations, BuiltInProtocolDefinitions.GetOperation,
+            BuiltInProtocolDefinitions.CancelOperation,
+            BuiltInProtocolDefinitions.ResolveProvisioning, BuiltInProtocolDefinitions.GetProvisioningPlan,
+            BuiltInProtocolDefinitions.ExecuteProvisioning,
             BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
         ];
         EventDescriptor[] namedEvents =
@@ -59,7 +66,7 @@ public sealed class BuiltInProtocolDefinitionTests
     {
         var expectedRpcs = new[]
         {
-            "mcsl.auth.permissions.get", "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
+            "mcsl.auth.permissions.get", "mcsl.auth.token.issue", "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
             "mcsl.directory.info.get", "mcsl.directory.move", "mcsl.directory.rename", "mcsl.event.subscribe",
             "mcsl.event.unsubscribe", "mcsl.file.copy", "mcsl.file.delete", "mcsl.file.download.close",
             "mcsl.file.download.open", "mcsl.file.download.read", "mcsl.file.info.get", "mcsl.file.move",
@@ -68,7 +75,10 @@ public sealed class BuiltInProtocolDefinitionTests
             "mcsl.instance.console.resize", "mcsl.instance.create", "mcsl.instance.event-rules.get",
             "mcsl.instance.event-rules.update", "mcsl.instance.halt", "mcsl.instance.log.get", "mcsl.instance.remove",
             "mcsl.instance.report.get", "mcsl.instance.report.list", "mcsl.instance.settings.get", "mcsl.instance.settings.update",
-            "mcsl.instance.start", "mcsl.instance.stop", "mcsl.java.list", "mcsl.system.info.get", "rpc.discover"
+            "mcsl.instance.start", "mcsl.instance.stop", "mcsl.java.list",
+            "mcsl.operation.cancel", "mcsl.operation.get", "mcsl.operation.list",
+            "mcsl.provisioning.execute", "mcsl.provisioning.get", "mcsl.provisioning.resolve",
+            "mcsl.system.info.get", "rpc.discover"
         };
         var expectedEvents = new[]
         {
@@ -87,47 +97,54 @@ public sealed class BuiltInProtocolDefinitionTests
     {
         var expected = new Dictionary<string, (string Permission, Type Request, Type Result)>(StringComparer.Ordinal)
         {
-            ["mcsl.auth.permissions.get"] = ("*", typeof(EmptyRequest), typeof(PermissionsResult)),
-            ["mcsl.daemon.ping"] = ("*", typeof(EmptyRequest), typeof(PingResult)),
-            ["mcsl.directory.copy"] = ("mcsl.daemon.file.copy.directory", typeof(PathTransferRequest), typeof(UnitResult)),
-            ["mcsl.directory.create"] = ("mcsl.daemon.file.create.directory", typeof(PathRequest), typeof(UnitResult)),
-            ["mcsl.directory.delete"] = ("mcsl.daemon.file.delete.directory", typeof(DeleteDirectoryRequest), typeof(UnitResult)),
-            ["mcsl.directory.info.get"] = ("mcsl.daemon.file.info.directory", typeof(PathRequest), typeof(DirectoryDetails)),
-            ["mcsl.directory.move"] = ("mcsl.daemon.file.move.directory", typeof(PathTransferRequest), typeof(UnitResult)),
-            ["mcsl.directory.rename"] = ("mcsl.daemon.file.rename.directory", typeof(PathRenameRequest), typeof(UnitResult)),
-            ["mcsl.event.subscribe"] = ("*", typeof(EventSubscriptionRequest), typeof(UnitResult)),
-            ["mcsl.event.unsubscribe"] = ("*", typeof(EventSubscriptionRequest), typeof(UnitResult)),
-            ["mcsl.file.copy"] = ("mcsl.daemon.file.copy.file", typeof(PathTransferRequest), typeof(UnitResult)),
-            ["mcsl.file.delete"] = ("mcsl.daemon.file.delete.file", typeof(PathRequest), typeof(UnitResult)),
-            ["mcsl.file.download.close"] = ("mcsl.daemon.file.download", typeof(FileSessionReference), typeof(UnitResult)),
-            ["mcsl.file.download.open"] = ("mcsl.daemon.file.download", typeof(DownloadOpenRequest), typeof(DownloadSession)),
-            ["mcsl.file.download.read"] = ("mcsl.daemon.file.download", typeof(DownloadChunkRequest), typeof(DownloadReadResult)),
-            ["mcsl.file.info.get"] = ("mcsl.daemon.file.info.file", typeof(PathRequest), typeof(FileDetails)),
-            ["mcsl.file.move"] = ("mcsl.daemon.file.move.file", typeof(PathTransferRequest), typeof(UnitResult)),
-            ["mcsl.file.rename"] = ("mcsl.daemon.file.rename.file", typeof(PathRenameRequest), typeof(UnitResult)),
-            ["mcsl.file.upload.cancel"] = ("mcsl.daemon.file.upload", typeof(FileSessionReference), typeof(UnitResult)),
-            ["mcsl.file.upload.close"] = ("mcsl.daemon.file.upload", typeof(FileSessionReference), typeof(UnitResult)),
-            ["mcsl.file.upload.open"] = ("mcsl.daemon.file.upload", typeof(UploadOpenRequest), typeof(UploadSession)),
-            ["mcsl.instance.catalog.get"] = ("*", typeof(EmptyRequest), typeof(InstanceCatalogResult)),
-            ["mcsl.instance.command.send"] = ("*", typeof(InstanceCommandRequest), typeof(UnitResult)),
-            ["mcsl.instance.console.close"] = ("*", typeof(ConsoleSessionReference), typeof(UnitResult)),
-            ["mcsl.instance.console.open"] = ("*", typeof(ConsoleOpenRequest), typeof(ConsoleSession)),
-            ["mcsl.instance.console.resize"] = ("*", typeof(ConsoleResizeRequest), typeof(UnitResult)),
-            ["mcsl.instance.create"] = ("*", typeof(CreateInstanceRequest), typeof(CreateInstanceResult)),
-            ["mcsl.instance.event-rules.get"] = ("*", typeof(EventRuleQuery), typeof(EventRuleSet)),
-            ["mcsl.instance.event-rules.update"] = ("*", typeof(EventRuleUpdateRequest), typeof(UnitResult)),
-            ["mcsl.instance.halt"] = ("*", typeof(InstanceReference), typeof(UnitResult)),
-            ["mcsl.instance.log.get"] = ("*", typeof(InstanceLogQuery), typeof(InstanceLogResult)),
-            ["mcsl.instance.remove"] = ("*", typeof(InstanceReference), typeof(UnitResult)),
-            ["mcsl.instance.report.get"] = ("*", typeof(InstanceReference), typeof(InstanceReport)),
-            ["mcsl.instance.report.list"] = ("*", typeof(EmptyRequest), typeof(InstanceReportList)),
-            ["mcsl.instance.settings.get"] = ("*", typeof(InstanceReference), typeof(InstanceSettingsResult)),
-            ["mcsl.instance.settings.update"] = ("*", typeof(UpdateInstanceSettingsRequest), typeof(UpdateInstanceSettingsResult)),
-            ["mcsl.instance.start"] = ("*", typeof(InstanceReference), typeof(UnitResult)),
-            ["mcsl.instance.stop"] = ("*", typeof(InstanceReference), typeof(UnitResult)),
-            ["mcsl.java.list"] = ("mcsl.daemon.java_list", typeof(EmptyRequest), typeof(JavaRuntimeList)),
-            ["mcsl.system.info.get"] = ("*", typeof(EmptyRequest), typeof(SystemInfo)),
-            ["rpc.discover"] = ("*", typeof(EmptyRequest), typeof(OpenRpcDocument))
+["mcsl.auth.permissions.get"] = ("mcsl.auth.permissions.get", typeof(EmptyRequest), typeof(PermissionsResult)),
+            ["mcsl.auth.token.issue"] = ("mcsl.auth.token.issue", typeof(TokenIssueRequest), typeof(TokenIssueResult)),
+            ["mcsl.daemon.ping"] = ("mcsl.daemon.ping", typeof(EmptyRequest), typeof(PingResult)),
+            ["mcsl.directory.copy"] = ("mcsl.directory.copy", typeof(PathTransferRequest), typeof(UnitResult)),
+            ["mcsl.directory.create"] = ("mcsl.directory.create", typeof(PathRequest), typeof(UnitResult)),
+            ["mcsl.directory.delete"] = ("mcsl.directory.delete", typeof(DeleteDirectoryRequest), typeof(UnitResult)),
+            ["mcsl.directory.info.get"] = ("mcsl.directory.info.get", typeof(PathRequest), typeof(DirectoryDetails)),
+            ["mcsl.directory.move"] = ("mcsl.directory.move", typeof(PathTransferRequest), typeof(UnitResult)),
+            ["mcsl.directory.rename"] = ("mcsl.directory.rename", typeof(PathRenameRequest), typeof(UnitResult)),
+            ["mcsl.event.subscribe"] = ("mcsl.event.subscribe", typeof(EventSubscriptionRequest), typeof(UnitResult)),
+            ["mcsl.event.unsubscribe"] = ("mcsl.event.unsubscribe", typeof(EventSubscriptionRequest), typeof(UnitResult)),
+            ["mcsl.file.copy"] = ("mcsl.file.copy", typeof(PathTransferRequest), typeof(UnitResult)),
+            ["mcsl.file.delete"] = ("mcsl.file.delete", typeof(PathRequest), typeof(UnitResult)),
+            ["mcsl.file.download.close"] = ("mcsl.file.download.close", typeof(FileSessionReference), typeof(UnitResult)),
+            ["mcsl.file.download.open"] = ("mcsl.file.download.open", typeof(DownloadOpenRequest), typeof(DownloadSession)),
+            ["mcsl.file.download.read"] = ("mcsl.file.download.read", typeof(DownloadChunkRequest), typeof(DownloadReadResult)),
+            ["mcsl.file.info.get"] = ("mcsl.file.info.get", typeof(PathRequest), typeof(FileDetails)),
+            ["mcsl.file.move"] = ("mcsl.file.move", typeof(PathTransferRequest), typeof(UnitResult)),
+            ["mcsl.file.rename"] = ("mcsl.file.rename", typeof(PathRenameRequest), typeof(UnitResult)),
+            ["mcsl.file.upload.cancel"] = ("mcsl.file.upload.cancel", typeof(FileSessionReference), typeof(UnitResult)),
+            ["mcsl.file.upload.close"] = ("mcsl.file.upload.close", typeof(FileSessionReference), typeof(UnitResult)),
+            ["mcsl.file.upload.open"] = ("mcsl.file.upload.open", typeof(UploadOpenRequest), typeof(UploadSession)),
+            ["mcsl.instance.catalog.get"] = ("mcsl.instance.catalog.get", typeof(EmptyRequest), typeof(InstanceCatalogResult)),
+            ["mcsl.instance.command.send"] = ("mcsl.instance.command.send", typeof(InstanceCommandRequest), typeof(UnitResult)),
+            ["mcsl.instance.console.close"] = ("mcsl.instance.console.close", typeof(ConsoleSessionReference), typeof(UnitResult)),
+            ["mcsl.instance.console.open"] = ("mcsl.instance.console.open", typeof(ConsoleOpenRequest), typeof(ConsoleSession)),
+            ["mcsl.instance.console.resize"] = ("mcsl.instance.console.resize", typeof(ConsoleResizeRequest), typeof(UnitResult)),
+            ["mcsl.instance.create"] = ("mcsl.instance.create", typeof(CreateInstanceRequest), typeof(CreateInstanceResult)),
+            ["mcsl.instance.event-rules.get"] = ("mcsl.instance.event-rules.get", typeof(EventRuleQuery), typeof(EventRuleSet)),
+            ["mcsl.instance.event-rules.update"] = ("mcsl.instance.event-rules.update", typeof(EventRuleUpdateRequest), typeof(UnitResult)),
+            ["mcsl.instance.halt"] = ("mcsl.instance.halt", typeof(InstanceReference), typeof(UnitResult)),
+            ["mcsl.instance.log.get"] = ("mcsl.instance.log.get", typeof(InstanceLogQuery), typeof(InstanceLogResult)),
+            ["mcsl.instance.remove"] = ("mcsl.instance.remove", typeof(InstanceReference), typeof(UnitResult)),
+            ["mcsl.instance.report.get"] = ("mcsl.instance.report.get", typeof(InstanceReference), typeof(InstanceReport)),
+            ["mcsl.instance.report.list"] = ("mcsl.instance.report.list", typeof(EmptyRequest), typeof(InstanceReportList)),
+            ["mcsl.instance.settings.get"] = ("mcsl.instance.settings.get", typeof(InstanceReference), typeof(InstanceSettingsResult)),
+            ["mcsl.instance.settings.update"] = ("mcsl.instance.settings.update", typeof(UpdateInstanceSettingsRequest), typeof(UpdateInstanceSettingsResult)),
+            ["mcsl.instance.start"] = ("mcsl.instance.start", typeof(InstanceReference), typeof(UnitResult)),
+            ["mcsl.instance.stop"] = ("mcsl.instance.stop", typeof(InstanceReference), typeof(UnitResult)),
+            ["mcsl.java.list"] = ("mcsl.java.list", typeof(EmptyRequest), typeof(JavaRuntimeList)),
+            ["mcsl.operation.cancel"] = ("mcsl.operation.cancel", typeof(OperationCancelRequest), typeof(OperationCancelResult)),
+            ["mcsl.operation.get"] = ("mcsl.operation.get", typeof(OperationReference), typeof(OperationSnapshot)),
+            ["mcsl.operation.list"] = ("mcsl.operation.list", typeof(OperationListQuery), typeof(OperationListResult)),
+            ["mcsl.provisioning.execute"] = ("mcsl.provisioning.execute", typeof(ProvisioningExecuteRequest), typeof(ProvisioningExecuteResult)),
+            ["mcsl.provisioning.get"] = ("mcsl.provisioning.get", typeof(ProvisioningPlanReference), typeof(ProvisioningPlanSnapshot)),
+            ["mcsl.provisioning.resolve"] = ("mcsl.provisioning.resolve", typeof(ProvisioningResolveRequest), typeof(ProvisioningPlanSnapshot)),
+            ["mcsl.system.info.get"] = ("mcsl.system.info.get", typeof(EmptyRequest), typeof(SystemInfo)),
+            ["rpc.discover"] = ("rpc.discover", typeof(EmptyRequest), typeof(OpenRpcDocument))
         };
 
         foreach (var descriptor in BuiltInProtocolDefinitions.Rpcs)
@@ -195,7 +212,7 @@ public sealed class BuiltInProtocolDefinitionTests
 
         var settings = first.Methods.Single(method => method.Name == "mcsl.instance.settings.update");
         Assert.Equal(
-            ["arguments", "force_rerun_installer", "instance_id", "instance_type", "java_path", "name", "replacement_core", "version"],
+            ["arguments", "console_mode", "force_rerun_installer", "instance_id", "instance_type", "java_path", "name", "replacement_core", "version"],
             settings.Params.Select(parameter => parameter.Name));
         Assert.Contains(settings.Params, parameter => parameter.Name == "instance_id" && parameter.Required);
         Assert.Contains(settings.Params, parameter => parameter.Name == "force_rerun_installer" && parameter.Required);
@@ -241,7 +258,8 @@ public sealed class BuiltInProtocolDefinitionTests
             "first",
             InstanceType.MCJava,
             "1.21.5",
-            InstanceStatus.Running);
+            InstanceStatus.Running,
+            readyTimedOut: true);
         var upsertJson = JsonSerializer.Serialize(
             new InstanceCatalogChangedEventData(1, InstanceCatalogChangeOperation.Upsert, snapshot.InstanceId, snapshot),
             BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
@@ -250,6 +268,7 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolJsonContext.Default.InstanceCatalogChangedEventData);
         Assert.Contains("\"operation\":\"upsert\"", upsertJson, StringComparison.Ordinal);
         Assert.Contains("\"snapshot\":", upsertJson, StringComparison.Ordinal);
+        Assert.Contains("\"ready_timed_out\":true", upsertJson, StringComparison.Ordinal);
         Assert.Contains("\"operation\":\"remove\"", removeJson, StringComparison.Ordinal);
         Assert.DoesNotContain("\"snapshot\":", removeJson, StringComparison.Ordinal);
 

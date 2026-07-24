@@ -7,6 +7,9 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.DaemonClient.Connection.V2;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
@@ -54,6 +57,7 @@ public sealed class V2ClientProtocolTests
         RpcAccessorCase[] rpcCases =
         [
             Accessor(V2ClientProtocol.GetAuthPermissions, "mcsl.auth.permissions.get"),
+            Accessor(V2ClientProtocol.IssueToken, "mcsl.auth.token.issue"),
             Accessor(V2ClientProtocol.PingDaemon, "mcsl.daemon.ping"),
             Accessor(V2ClientProtocol.CopyDirectory, "mcsl.directory.copy"),
             Accessor(V2ClientProtocol.CreateDirectory, "mcsl.directory.create"),
@@ -92,6 +96,12 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.StartInstance, "mcsl.instance.start"),
             Accessor(V2ClientProtocol.StopInstance, "mcsl.instance.stop"),
             Accessor(V2ClientProtocol.ListJavaRuntimes, "mcsl.java.list"),
+            Accessor(V2ClientProtocol.CancelOperation, "mcsl.operation.cancel"),
+            Accessor(V2ClientProtocol.GetOperation, "mcsl.operation.get"),
+            Accessor(V2ClientProtocol.ListOperations, "mcsl.operation.list"),
+            Accessor(V2ClientProtocol.ResolveProvisioning, "mcsl.provisioning.resolve"),
+            Accessor(V2ClientProtocol.GetProvisioningPlan, "mcsl.provisioning.get"),
+            Accessor(V2ClientProtocol.ExecuteProvisioning, "mcsl.provisioning.execute"),
             Accessor(V2ClientProtocol.GetSystemInfo, "mcsl.system.info.get"),
             Accessor(V2ClientProtocol.DiscoverRpc, "rpc.discover")
         ];
@@ -132,7 +142,7 @@ public sealed class V2ClientProtocolTests
     {
         IRpcGoldenCase[] cases =
         [
-            Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.CopyDirectory),
+            Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.IssueToken), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.CopyDirectory),
             Case(V2ClientProtocol.CreateDirectory), Case(V2ClientProtocol.DeleteDirectory), Case(V2ClientProtocol.GetDirectoryInfo),
             Case(V2ClientProtocol.MoveDirectory), Case(V2ClientProtocol.RenameDirectory), Case(V2ClientProtocol.SubscribeEvent),
             Case(V2ClientProtocol.UnsubscribeEvent), Case(V2ClientProtocol.CopyFile), Case(V2ClientProtocol.DeleteFile),
@@ -147,6 +157,8 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.GetInstanceReport), Case(V2ClientProtocol.ListInstanceReports),
             Case(V2ClientProtocol.GetInstanceSettings), Case(V2ClientProtocol.UpdateInstanceSettings),
             Case(V2ClientProtocol.StartInstance), Case(V2ClientProtocol.StopInstance), Case(V2ClientProtocol.ListJavaRuntimes),
+            Case(V2ClientProtocol.CancelOperation), Case(V2ClientProtocol.GetOperation), Case(V2ClientProtocol.ListOperations),
+            Case(V2ClientProtocol.ResolveProvisioning), Case(V2ClientProtocol.GetProvisioningPlan), Case(V2ClientProtocol.ExecuteProvisioning),
             Case(V2ClientProtocol.GetSystemInfo), Case(V2ClientProtocol.DiscoverRpc)
         ];
 
@@ -282,7 +294,7 @@ public sealed class V2ClientProtocolTests
         private const string Config = "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"target\":\"server.jar\",\"instance_type\":\"universal\",\"target_type\":\"jar\",\"version\":\"1\",\"input_encoding\":\"utf-8\",\"output_encoding\":\"utf-8\",\"java_path\":\"java\",\"arguments\":[\"-Xmx2G\"],\"environment_variables\":{\"ENV\":\"value\"},\"event_rules\":{\"enabled\":true},\"console_mode\":\"pipe\"}";
         private const string FileMeta = "{\"creation_time\":\"2026-01-01T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-02T00:00:00+00:00\",\"last_write_time\":\"2026-01-03T00:00:00+00:00\",\"read_only\":true,\"size\":7}";
         private const string DirectoryMeta = "{\"creation_time\":\"2026-01-04T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-05T00:00:00+00:00\",\"last_write_time\":\"2026-01-06T00:00:00+00:00\"}";
-        private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234}";
+        private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234,\"ready_timed_out\":true}";
         private const string System = "{\"os\":{\"name\":\"Windows\",\"architecture\":\"x64\"},\"cpu\":{\"vendor\":\"vendor\",\"name\":\"cpu\",\"count\":16,\"usage\":5.5,\"core_count\":8,\"thread_count\":16},\"mem\":{\"total_kilobytes\":32768,\"free_kilobytes\":16384},\"drive\":{\"drive_format\":\"NTFS\",\"total_bytes\":1024,\"free_bytes\":512,\"name\":\"C\"},\"drives\":[{\"drive_format\":\"EXT4\",\"total_bytes\":2048,\"free_bytes\":1024,\"name\":\"D\"}],\"daemon_version\":\"2.0.0\"}";
 
         internal static string For(Type type)
@@ -304,8 +316,10 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(ConsoleSession)) return "{\"session_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\",\"expires_at\":\"2026-01-01T00:00:00+00:00\",\"max_chunk_size\":4,\"columns\":120,\"rows\":40}";
             if (type == typeof(CreateInstanceRequest)) return "{\"setting\":{\"configuration\":" + Config + ",\"source\":\"server.jar\",\"source_type\":\"core\",\"mirror\":\"none\",\"use_post_process\":false}}";
             if (type == typeof(EventRuleUpdateRequest)) return "{\"instance_id\":\"" + Id + "\",\"rules\":{}}";
-            if (type == typeof(UpdateInstanceSettingsRequest)) return "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"java_path\":null,\"arguments\":[],\"version\":null,\"replacement_core\":null,\"force_rerun_installer\":false}";
+            if (type == typeof(UpdateInstanceSettingsRequest)) return "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"java_path\":null,\"arguments\":[],\"version\":null,\"replacement_core\":null,\"force_rerun_installer\":false,\"console_mode\":null}";
 
+            if (type == typeof(TokenIssueRequest)) return "{\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"ttl_seconds\":3600}";
+            if (type == typeof(TokenIssueResult)) return "{\"token\":\"jwt\",\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"expires_at\":\"2026-01-01T01:00:00+00:00\",\"token_id\":\"abc\"}";
             if (type == typeof(PermissionsResult)) return "{\"permissions\":[\"mcsl.daemon.read\"]}";
             if (type == typeof(PingResult)) return "{\"time\":42}";
             if (type == typeof(DirectoryDetails)) return "{\"parent\":\"instances\",\"files\":[{\"name\":\"server.jar\",\"meta\":" + FileMeta + "}],\"directories\":[{\"name\":\"plugins\",\"meta\":" + DirectoryMeta + "}]}";
@@ -313,7 +327,7 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(DownloadSession)) return "{\"session_id\":\"" + Id + "\",\"length\":7,\"sha256\":\"hash\",\"max_chunk_size\":4,\"expires_at\":\"2026-01-01T00:00:00+00:00\"}";
             if (type == typeof(UploadSession)) return "{\"session_id\":\"" + Id + "\",\"max_chunk_size\":4,\"expires_at\":\"2026-01-01T00:00:00+00:00\"}";
             if (type == typeof(DownloadReadResult)) return "{\"session_id\":\"" + Id + "\",\"offset\":3,\"length\":4,\"is_final\":true}";
-            if (type == typeof(InstanceCatalogResult)) return "{\"version\":7,\"items\":[{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\"}]}";
+            if (type == typeof(InstanceCatalogResult)) return "{\"version\":7,\"items\":[{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"version\":\"1\",\"status\":\"running\",\"ready_timed_out\":false}]}";
             if (type == typeof(CreateInstanceResult)) return "{\"config\":" + Config + "}";
             if (type == typeof(EventRuleSet)) return "{\"instance_id\":\"" + Id + "\",\"rules\":{\"enabled\":true}}";
             if (type == typeof(InstanceLogResult)) return "{\"logs\":[\"ready\"]}";
@@ -322,6 +336,17 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(InstanceSettingsResult)) return "{\"config\":" + Config + ",\"working_directory\":\"world\",\"current_target_exists\":true,\"can_edit\":false,\"edit_blocked_reason\":\"running\",\"install_metadata\":{\"installer_kind\":\"forge\",\"installer_source_path\":\"forge.jar\",\"generated_paths\":[\"libraries\"],\"resolved_launch_target\":\"run.jar\",\"installed_at\":\"2026-01-01T00:00:00+00:00\"}}";
             if (type == typeof(UpdateInstanceSettingsResult)) return "{\"config\":" + Config + ",\"requires_restart\":true,\"reinstalled\":true,\"deleted_generated_paths\":[\"old.jar\"],\"preserved_original_paths\":[\"backup.jar\"]}";
             if (type == typeof(JavaRuntimeList)) return "{\"items\":[{\"path\":\"C:/Java/bin/java.exe\",\"version\":\"21.0.7\",\"architecture\":\"x64\"}]}";
+            if (type == typeof(OperationReference)) return "{\"operation_id\":\"" + Id + "\",\"owner_principal\":null}";
+            if (type == typeof(OperationListQuery)) return "{\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(OperationCancelRequest)) return "{\"operation_id\":\"" + Id + "\",\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(OperationCancelResult)) return "{\"operation_id\":\"" + Id + "\",\"cancel_requested\":true}";
+            if (type == typeof(OperationSnapshot)) return "{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}";
+            if (type == typeof(ProvisioningResolveRequest)) return "{\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"creator_principal\":\"owner-a\",\"idempotency_key\":\"idem-1\",\"expiry\":null}";
+            if (type == typeof(ProvisioningPlanReference)) return "{\"plan_id\":\"" + Id + "\",\"owner_principal\":null}";
+            if (type == typeof(ProvisioningExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
+            if (type == typeof(ProvisioningExecuteResult)) return "{\"plan_id\":\"" + Id + "\",\"operation_id\":\"" + Id + "\"}";
+            if (type == typeof(ProvisioningPlanSnapshot)) return "{\"plan_id\":\"" + Id + "\",\"plan_hash\":\"abc\",\"kind\":\"provisioning.instance\",\"status\":\"ready\",\"risk_class\":\"routine\",\"required_permissions\":[\"mcsl.provisioning.resolve\"],\"requires_confirmation\":false,\"creator_principal\":\"owner-a\",\"created_at\":\"2026-01-01T00:00:00+00:00\",\"expires_at\":\"2026-01-01T00:15:00+00:00\",\"unresolved\":[],\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"idempotency_key\":\"idem-1\",\"payload\":{}}";
+            if (type == typeof(OperationListResult)) return "{\"operations\":[{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}]}";
             if (type == typeof(SystemInfo)) return System;
             if (type == typeof(OpenRpcDocument)) return "{\"openrpc\":\"1.3.2\",\"info\":{\"title\":\"daemon\",\"version\":\"2\"},\"methods\":[],\"x-mcsl-events\":[],\"components\":{\"schemas\":{}}}";
 

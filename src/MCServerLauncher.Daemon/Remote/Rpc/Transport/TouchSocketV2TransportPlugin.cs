@@ -108,7 +108,9 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             () => CloseDirectAsync(webSocket, WebSocketCloseStatus.InternalServerError, "V2 connection setup failed"),
             validTo == DateTime.MaxValue ? DateTimeOffset.MaxValue : new DateTimeOffset(validTo, TimeSpan.Zero),
             verified.Jti,
-            webSocket.Client.GetIPPort()).ConfigureAwait(false);
+            webSocket.Client.GetIPPort(),
+            verified.Subject,
+            verified.IsMainToken).ConfigureAwait(false);
     }
 
     internal async Task HandleConnectedAsync(
@@ -121,7 +123,9 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         Func<Task> rejectSetup,
         DateTimeOffset? expiresAt = null,
         Guid tokenId = default,
-        string remoteEndpoint = "")
+        string remoteEndpoint = "",
+        string? subject = null,
+        bool isMainToken = false)
     {
         ArgumentNullException.ThrowIfNull(relativeUrl);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionId);
@@ -149,7 +153,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         {
             var catalog = _catalogAccessor.GetRequired();
             var events = _runtime.GetEventConnections(catalog);
-            owner = new V2ConnectionOwner(sender, permissions, _timeProvider);
+            owner = new V2ConnectionOwner(sender, permissions, _timeProvider, subject: subject, isMainToken: isMainToken);
             if (events.TryAttach(connectionId, owner, out var eventEntry) != V2EventConnectionAttachResult.Attached)
                 throw new InvalidOperationException("The V2 event connection could not be attached.");
             var filesResult = V2FileSessionConnection.Attach(
@@ -344,18 +348,31 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
 
     internal static bool TryAuthenticateToken(string token, TimeProvider timeProvider,
         Func<string, bool> validate,
-        Func<string, (Guid JTI, string? Permissions, DateTime ValidTo)> read,
+        Func<string, (Guid JTI, string? Subject, string? Permissions, DateTime ValidTo)> read,
         out V2VerifiedToken verified)
     {
         verified = default;
         try
         {
             if (!validate(token)) return false;
-            var (jti, permissions, validTo) = read(token);
+            var (jti, subject, permissions, validTo) = read(token);
             if (permissions is null) return false;
             var expiry = validTo == DateTime.MaxValue ? DateTimeOffset.MaxValue : new DateTimeOffset(validTo, TimeSpan.Zero);
             if (expiry <= timeProvider.GetUtcNow()) return false;
-            verified = new V2VerifiedToken(jti, permissions, expiry);
+            // Main-token privilege is only equality with AppConfig.MainToken.
+            // Empty jti on a signed JWT must not elevate to main.
+            var isMain = string.Equals(token, AppConfig.Get().MainToken, StringComparison.Ordinal);
+            if (isMain)
+            {
+                if (!PrincipalIdentityPolicy.IsMainTokenSubject(subject))
+                    return false;
+            }
+            else if (jti == Guid.Empty || !PrincipalIdentityPolicy.IsValidExternalSubject(subject))
+            {
+                return false;
+            }
+
+            verified = new V2VerifiedToken(jti, permissions, expiry, subject!, isMain);
             return true;
         }
         catch { return false; }
@@ -568,7 +585,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
     }
 }
 
-internal readonly record struct V2VerifiedToken(Guid Jti, string Permissions, DateTimeOffset ValidTo);
+internal readonly record struct V2VerifiedToken(Guid Jti, string Permissions, DateTimeOffset ValidTo, string Subject, bool IsMainToken);
 
 internal sealed class V2TransportRuntime
 {

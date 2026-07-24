@@ -64,12 +64,31 @@ public class MinecraftInstance : InstanceBase
             Config,
             Properties,
             await GetServerPlayersAsync(ct),
-            Process is null ? default : await Process!.Monitor.GetMonitorData()
-        );
+            Process is null ? default : await Process.Monitor.GetMonitorData(),
+            ReadyTimedOut);
     }
 
-    public override void Stop()
+    public override async Task<bool> StopAsync(CancellationToken ct = default)
     {
-        Process?.WriteLine("stop");
+        var process = Process;
+        if (process is null)
+            return false;
+
+        // Return after Stopping succeeds; terminal Stopped comes from process finalizer.
+        if (!await process.RequestStoppingAsync(ct).ConfigureAwait(false))
+            return false;
+
+        try
+        {
+            process.WriteLine("stop");
+        }
+        catch (Exception exception) when (
+            (exception is InvalidOperationException or IOException or ObjectDisposedException) &&
+            (process.HasExit || process.Status is InstanceStatus.Stopped or InstanceStatus.Crashed))
+        {
+            // The process may exit after Stopping is committed but before stdin is written.
+            // Stopping is the public success boundary, so that race remains a successful stop.
+        }
+        return true;
     }
 }

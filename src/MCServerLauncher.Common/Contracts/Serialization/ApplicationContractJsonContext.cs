@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using ContractDriveInfo = MCServerLauncher.Common.Contracts.System.DriveInfo;
 using InstanceConsoleMode = MCServerLauncher.Common.ProtoType.Instance.ConsoleMode;
@@ -23,8 +26,15 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(SourceTypeJsonConverter),
         typeof(InstanceFactoryMirrorJsonConverter),
         typeof(InstanceStatusJsonConverter),
+typeof(OperationStatusJsonConverter),
+        typeof(OperationStageJsonConverter),
+        typeof(PlanStatusJsonConverter),
+        typeof(PlanRiskClassJsonConverter),
+        typeof(ProvisioningProviderKindJsonConverter),
         typeof(ConsoleModeJsonConverter)
     ])]
+[JsonSerializable(typeof(TokenIssueRequest))]
+[JsonSerializable(typeof(TokenIssueResult))]
 [JsonSerializable(typeof(EventRuleQuery))]
 [JsonSerializable(typeof(EventRuleSet))]
 [JsonSerializable(typeof(EventRuleUpdateRequest))]
@@ -88,4 +98,20 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(SystemInfo))]
 [JsonSerializable(typeof(JavaRuntime))]
 [JsonSerializable(typeof(JavaRuntimeList))]
+[JsonSerializable(typeof(OperationReference))]
+[JsonSerializable(typeof(OperationListQuery))]
+[JsonSerializable(typeof(OperationProgress))]
+[JsonSerializable(typeof(OperationSnapshot))]
+[JsonSerializable(typeof(OperationListResult))]
+[JsonSerializable(typeof(OperationCancelRequest))]
+[JsonSerializable(typeof(OperationCancelResult))]
+[JsonSerializable(typeof(ProvisioningProviderKind))]
+[JsonSerializable(typeof(PlanRiskClass))]
+[JsonSerializable(typeof(PlanStatus))]
+[JsonSerializable(typeof(ProvisioningExecuteResult))]
+[JsonSerializable(typeof(ProvisioningExecuteRequest))]
+[JsonSerializable(typeof(ProvisioningPlanReference))]
+[JsonSerializable(typeof(ProvisioningResolveRequest))]
+[JsonSerializable(typeof(ProvisioningPlanSnapshot))]
+[JsonSerializable(typeof(ProvisioningUnresolvedFact))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;

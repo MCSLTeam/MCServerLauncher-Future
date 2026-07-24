@@ -91,25 +91,25 @@ public class InstanceSettingsCoordinatorTests
     }
 
     [Fact]
-    public async Task InstanceProcess_MinecraftProcessStaysStoppedBeforeDoneLog()
+    public async Task InstanceProcess_MinecraftProcessStaysStartingBeforeDoneLog()
     {
         var startInfo = CreateShortLivedProcessStartInfo();
-        using var process = new InstanceProcess(startInfo, isMcServer: true);
+        using var process = new InstanceProcess(startInfo, InstanceType.MCJava);
 
         var started = await process.StartAsync(delayToCheck: 100);
 
         Assert.True(started);
-        Assert.Equal(InstanceStatus.Stopped, process.Status);
+        Assert.Equal(InstanceStatus.Starting, process.Status);
         process.KillProcess();
     }
 
     [Fact]
-    public void InstanceStatus_ContainsOnlyStableLifecycleStates()
+    public void InstanceStatus_IncludesIntermediateLifecycleStates()
     {
         var names = Enum.GetNames<InstanceStatus>();
 
-        Assert.DoesNotContain("Starting", names);
-        Assert.DoesNotContain("Stopping", names);
+        Assert.Contains("Starting", names);
+        Assert.Contains("Stopping", names);
         Assert.Contains("Running", names);
         Assert.Contains("Stopped", names);
         Assert.Contains("Crashed", names);
@@ -202,11 +202,12 @@ public class InstanceSettingsCoordinatorTests
             return Task.FromResult(true);
         }
 
-        public void Stop()
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public IReadOnlyList<string> GetLogHistory()
         {

@@ -21,7 +21,11 @@
     <ProjectReference Include="..\..\src\MCServerLauncher.DaemonClient\MCServerLauncher.DaemonClient.csproj" />
     <ProjectReference Include="..\..\tools\MCServerLauncher.ProtocolDocs\MCServerLauncher.ProtocolDocs.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Fixtures\Plugins\ExternalCompile\ExternalCompile.csproj" />
+    <ProjectReference Include="..\Fixtures\Plugins\SdkGeneratedHealth\SdkGeneratedHealth.csproj" />
     <ProjectReference Include="..\Fixtures\Plugins\InstanceHealth\InstanceHealth.csproj" />
+    <ProjectReference Include="..\Fixtures\Plugins\MetadataImposter\MetadataImposter.csproj" />
+    <ProjectReference Include="..\Fixtures\Plugins\MetadataMalformed\MetadataMalformed.csproj" />
+    <ProjectReference Include="..\Fixtures\Plugins\HandwrittenAdapterProbe\HandwrittenAdapterProbe.csproj" />
     <ProjectReference Include="..\Fixtures\Plugins\ReturnedError\ReturnedError.csproj" />
     <ProjectReference Include="..\Fixtures\Plugins\Throwing\Throwing.csproj" />
     <ProjectReference Include="..\Fixtures\Plugins\StartReturnedError\StartReturnedError.csproj" />

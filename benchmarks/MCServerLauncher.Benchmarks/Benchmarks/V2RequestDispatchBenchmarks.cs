@@ -93,6 +93,10 @@ public class V2RequestDispatchBenchmarks
 
         public ImmutableArray<string> Permissions { get; }
 
+        public string Subject => "benchmark";
+
+        public bool IsMainToken => true;
+
         public Permissions CompiledPermissions { get; }
     }
 

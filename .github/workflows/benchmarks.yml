@@ -25,7 +25,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.201'
 
       - name: Find benchmark project
         id: benchmark_project
@@ -36,6 +36,9 @@ jobs:
 
       - name: Restore benchmark project
         run: dotnet restore "${{ steps.benchmark_project.outputs.path }}"
+
+      - name: Run candidate benchmarks (Release)
+        run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --filter "*" --exporters json --artifacts ./BenchmarkDotNet.Artifacts
 
       - name: Checkout immutable Phase 0 V1 reference
         uses: actions/checkout@v4
@@ -49,9 +52,6 @@ jobs:
       - name: Run V1 dispatch reference benchmark (Release)
         working-directory: phase0-reference
         run: dotnet run --project benchmarks/MCServerLauncher.Benchmarks/MCServerLauncher.Benchmarks.csproj -c Release -- --filter "*ActionDispatchBenchmarks.DispatchPing*" --exporters json --artifacts "${{ github.workspace }}/BenchmarkDotNet.Reference"
-
-      - name: Run candidate benchmarks (Release)
-        run: dotnet run --project "${{ steps.benchmark_project.outputs.path }}" -c Release -- --filter "*" --exporters json --artifacts ./BenchmarkDotNet.Artifacts
 
       - name: Enforce V2 performance gate
         run: dotnet run --project tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj -c Release -- --baseline benchmarks/baselines/v2.json --reference-results BenchmarkDotNet.Reference/results --results BenchmarkDotNet.Artifacts/results --paired

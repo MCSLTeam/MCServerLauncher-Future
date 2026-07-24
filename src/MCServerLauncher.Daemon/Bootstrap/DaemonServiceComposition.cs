@@ -5,9 +5,13 @@ using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.ApplicationCore.Operations;
+using MCServerLauncher.Daemon.ApplicationCore.Auth;
+using MCServerLauncher.Daemon.ApplicationCore.Provisioning;
 using MCServerLauncher.Daemon.Console;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Plugins;
+using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -66,16 +70,61 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntimeList>>(javaRuntimeCell);
 
+        var appConfig = AppConfig.Get();
+        a.RegisterSingleton(appConfig.Operations);
         a.RegisterSingleton(DomainEventDispatchPolicy.Default);
         a.RegisterSingleton<IDomainEventPort, DomainEventPort>();
         a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
         a.RegisterSingleton<IFileApplication, LocalFileApplication>();
         a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
+        a.RegisterSingleton<IOperationApplication, OperationCoordinator>();
+        a.RegisterSingleton<PlanKernel>();
+        a.RegisterSingleton<OperationStartupRecovery>();
+        a.RegisterSingleton<IProvisioningApplication, LocalProvisioningApplication>();
+        var verifiedPrincipals = new VerifiedPrincipalAuthority();
+        var callerContextFactory = new CallerContextFactory(verifiedPrincipals);
+        a.RegisterSingleton(verifiedPrincipals);
+        a.RegisterSingleton<ICallerContextFactory>(callerContextFactory);
+        a.RegisterSingleton<ITokenIssueApplication, TokenIssueApplication>();
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
         a.RegisterSingleton<IPluginEventBus, PluginEventBus>();
-        a.RegisterSingleton<PluginHost>();
+
+        // SDK-1 admission: config-sourced start timeout, grant policy, and a shared HTTP endpoint
+        // registry so plugin listeners reserve IP:port against the daemon's own /api/v2 port.
+        var startTimeoutSeconds = appConfig.Plugins.StartTimeoutSeconds is > 0
+            ? appConfig.Plugins.StartTimeoutSeconds
+            : 30;
+        var startTimeout = TimeSpan.FromSeconds(startTimeoutSeconds);
+        var httpEndpoints = new PluginHttpEndpointRegistry();
+        var pluginPreflight = new PluginAdmissionPreflight(
+            appConfig.Plugins,
+            SystemPluginPreflightConsole.Instance,
+            new AppConfigPluginAdmissionStore(appConfig),
+            TimeProvider.System);
+        // Reserve the daemon's own /api/v2 port before any plugin can claim it.
+        _ = httpEndpoints.TryRegister("mcsl.daemon", new System.Net.IPEndPoint(System.Net.IPAddress.Any, appConfig.Port), out _);
+        a.RegisterSingleton(httpEndpoints);
+        collection.AddSingleton(appConfig.Plugins);
+        collection.AddSingleton(httpEndpoints);
+        collection.AddSingleton(pluginPreflight);
+        collection.AddSingleton(serviceProvider => new PluginHost(
+            serviceProvider.GetRequiredService<IInstanceSnapshotSource>(),
+            serviceProvider.GetRequiredService<ILoggerFactory>(),
+            serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<PluginHost>(),
+            System.IO.Path.Combine(AppContext.BaseDirectory, "plugins"),
+            serviceProvider.GetRequiredService<IPluginEventBus>(),
+            startTimeout,
+            appConfig.Plugins,
+            httpEndpoints,
+            serviceProvider.GetRequiredService<ISystemApplication>(),
+            serviceProvider.GetRequiredService<ICallerContextFactory>(),
+            serviceProvider.GetRequiredService<IInstanceApplication>(),
+            serviceProvider.GetRequiredService<IOperationApplication>(),
+            serviceProvider.GetRequiredService<IProvisioningApplication>(),
+            serviceProvider.GetRequiredService<PluginAdmissionPreflight>(),
+            serviceProvider.GetRequiredService<VerifiedPrincipalAuthority>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);
@@ -124,6 +173,8 @@ internal static class DaemonServiceComposition
 
     internal static DaemonLifecycleAttachment AttachDaemonLifecycle(HttpService httpService)
     {
+        httpService.Resolver.GetRequiredService<OperationStartupRecovery>().Recover();
+
         var pluginHost = httpService.Resolver.GetRequiredService<PluginHost>();
         pluginHost.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
 

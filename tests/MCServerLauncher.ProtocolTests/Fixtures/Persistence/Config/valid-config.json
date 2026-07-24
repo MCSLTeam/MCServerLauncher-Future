@@ -3,5 +3,26 @@
   "secret": "0123456789abcdef0123456789abcdef",
   "main_token": "fedcba9876543210fedcba9876543210",
   "file_download_sessions": 5,
-  "verbose": true
+  "verbose": true,
+  "security": {
+    "allow_main_token_issue": true,
+    "max_token_ttl_seconds": 2592000,
+    "api_canonical_uri": "mcsl://daemon/api/v2"
+  },
+  "plugins": {
+    "start_timeout_seconds": 30,
+    "grant_level": "Medium",
+    "feature_grants": [],
+    "storage": {
+      "default_quota_bytes": 268435456,
+      "default_max_files": 4096
+    },
+    "plugin_grants": {},
+    "admissions": {},
+    "entries": {}
+  },
+  "operations": {
+    "retention_days": 7,
+    "maximum_bytes": 268435456
+  }
 }

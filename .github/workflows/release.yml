@@ -133,7 +133,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.201'
 
       - name: Restore project
         run: dotnet restore src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj
@@ -276,7 +276,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.201'
 
       - name: Pack NuGet packages
         id: pack
@@ -300,37 +300,69 @@ jobs:
           $packageRoot = Join-Path $env:GITHUB_WORKSPACE 'artifacts/nuget'
           New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 
-          $commonArgs = @(
-            'pack',
-            'src/MCServerLauncher.Common/MCServerLauncher.Common.csproj',
-            '-c', 'Release',
-            '-p:PackageVersion=' + $packageVersion,
-            '-o', $packageRoot
-          )
-          & dotnet @commonArgs
-          if ($LASTEXITCODE -ne 0) {
-            throw "Common pack failed with exit code $LASTEXITCODE."
+          # The remediated SDK Preview-1 package closure ships under the fresh
+          # 2.0.0-preview.2 version. Other tags retain tag-derived package versions.
+          $isPreview1Pin = [string]::Equals($packageVersion, '2.0.0-preview.2', [System.StringComparison]::Ordinal)
+
+          if ($isPreview1Pin) {
+            $packages = @(
+              @{
+                Project = 'src/MCServerLauncher.Common/MCServerLauncher.Common.csproj'
+                Expected = 'MCServerLauncher.Common.2.0.0-preview.2.nupkg'
+                Label = 'Common'
+                OverrideVersion = $false
+              },
+              @{
+                Project = 'src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj'
+                Expected = 'MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg'
+                Label = 'Daemon API'
+                OverrideVersion = $false
+              },
+              @{
+                Project = 'src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj'
+                Expected = 'MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg'
+                Label = 'Plugin SDK'
+                OverrideVersion = $false
+              }
+            )
+          }
+          else {
+            $packages = @(
+              @{
+                Project = 'src/MCServerLauncher.Common/MCServerLauncher.Common.csproj'
+                Expected = "MCServerLauncher.Common.$packageVersion.nupkg"
+                Label = 'Common'
+                OverrideVersion = $true
+              },
+              @{
+                Project = 'src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj'
+                Expected = "MCServerLauncher.Daemon.API.$packageVersion.nupkg"
+                Label = 'Daemon API'
+                OverrideVersion = $true
+              }
+            )
           }
 
-          $daemonApiArgs = @(
-            'pack',
-            'src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj',
-            '-c', 'Release',
-            '-p:PackageVersion=' + $packageVersion,
-            '-o', $packageRoot
-          )
-          & dotnet @daemonApiArgs
-          if ($LASTEXITCODE -ne 0) {
-            throw "Daemon API pack failed with exit code $LASTEXITCODE."
-          }
+          foreach ($package in $packages) {
+            $args = @(
+              'pack',
+              $package.Project,
+              '-c', 'Release',
+              '-p:MCSL_PIN_PACKAGE_PAYLOAD=true',
+              '-o', $packageRoot
+            )
+            if ($package.OverrideVersion) {
+              $args += '-p:PackageVersion=' + $packageVersion
+            }
 
-          $expectedPackages = @(
-            "MCServerLauncher.Common.$packageVersion.nupkg",
-            "MCServerLauncher.Daemon.API.$packageVersion.nupkg"
-          )
-          foreach ($expectedPackage in $expectedPackages) {
-            if (-not (Test-Path -LiteralPath (Join-Path $packageRoot $expectedPackage) -PathType Leaf)) {
-              throw "Expected NuGet package was not produced: $expectedPackage"
+            & dotnet @args
+            if ($LASTEXITCODE -ne 0) {
+              throw "$($package.Label) pack failed with exit code $LASTEXITCODE."
+            }
+
+            $expectedPath = Join-Path $packageRoot $package.Expected
+            if (-not (Test-Path -LiteralPath $expectedPath -PathType Leaf)) {
+              throw "Expected NuGet package was not produced: $($package.Expected)"
             }
           }
 

@@ -11,22 +11,34 @@ namespace MCServerLauncher.Daemon.API.Plugins;
 public static class PluginProtocol
 {
     public static RpcDescriptor<TRequest, TResult> CreateRpc<TRequest, TResult>(
-        string method,
-        string permission,
+        string pluginId,
+        string relativeMethod,
         JsonTypeInfo<TRequest> requestTypeInfo,
         JsonTypeInfo<TResult> resultTypeInfo,
         RpcDocumentation documentation,
         bool allowNotification = false)
     {
+        var normalizedPluginId = ProtocolIdentifier.ValidatePluginId(pluginId, nameof(pluginId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(relativeMethod);
+        if (relativeMethod.Equals("plugin", StringComparison.Ordinal) ||
+            relativeMethod.StartsWith("plugin.", StringComparison.Ordinal) ||
+            relativeMethod.Equals("mcsl", StringComparison.Ordinal) ||
+            relativeMethod.StartsWith("mcsl.", StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "Plugin RPC methods must be relative to the generated plugin namespace.",
+                nameof(relativeMethod));
+        }
         ArgumentNullException.ThrowIfNull(documentation);
         EnsureSourceGenerated(requestTypeInfo);
         EnsureSourceGenerated(resultTypeInfo);
         requestTypeInfo.MakeReadOnly();
         resultTypeInfo.MakeReadOnly();
 
+        var method = new RpcMethod($"plugin.{normalizedPluginId}.rpc.{relativeMethod}");
         return new RpcDescriptor<TRequest, TResult>(
-            new RpcMethod(method),
-            new PermissionName(permission),
+            method,
+            new PermissionName(method.Value),
             requestTypeInfo,
             resultTypeInfo,
             allowNotification,

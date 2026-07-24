@@ -149,7 +149,7 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
         }
     }
 
-    public Task<Result<Unit, DaemonError>> HaltInstanceAsync(
+    public async Task<Result<Unit, DaemonError>> HaltInstanceAsync(
         InstanceReference request,
         CancellationToken cancellationToken)
     {
@@ -157,15 +157,20 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
 
         try
         {
-            // KillInstance is a fire-and-forget signal: missing instance or process is success.
-            instanceManager.KillInstance(request.InstanceId);
-            return Task.FromResult(Result.Ok<Unit, DaemonError>(Unit.Default));
+            // Halt commits under the same per-instance mutation gate as start/stop.
+            // Missing instances or processes remain idempotent success.
+            await instanceManager.KillInstanceAsync(request.InstanceId, cancellationToken).ConfigureAwait(false);
+            return Result.Ok<Unit, DaemonError>(Unit.Default);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception exception)
         {
             Log.Error(exception, "[LocalInstanceApplication] Unexpected instance halt failure for {InstanceId}.", request.InstanceId);
-            return Task.FromResult(Result.Err<Unit, DaemonError>(
-                new InternalDaemonError("instance.halt_failed", "The instance could not be halted.")));
+            return Result.Err<Unit, DaemonError>(
+                new InternalDaemonError("instance.halt_failed", "The instance could not be halted."));
         }
     }
 

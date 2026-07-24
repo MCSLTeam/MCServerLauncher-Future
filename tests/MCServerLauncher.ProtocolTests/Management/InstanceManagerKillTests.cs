@@ -14,7 +14,7 @@ public class InstanceManagerKillTests
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
-        using var process = new InstanceProcess(CreateLongRunningProcessStartInfo(), isMcServer: true);
+        using var process = new InstanceProcess(CreateLongRunningProcessStartInfo(), InstanceType.MCJava);
         var started = false;
 
         try
@@ -27,10 +27,11 @@ public class InstanceManagerKillTests
             manager.RunningInstances[config.Uuid] = instance;
 
             Assert.True(await manager.TryStopInstance(config.Uuid));
-            Assert.False(manager.RunningInstances.ContainsKey(config.Uuid));
+            // Intermediate Stopping keeps the instance mapped until a terminal status arrives.
+            Assert.True(manager.RunningInstances.ContainsKey(config.Uuid));
             Assert.False(process.HasExit);
 
-            manager.KillInstance(config.Uuid);
+            await manager.KillInstanceAsync(config.Uuid);
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await process.WaitForExitAsync(timeout.Token);
@@ -44,17 +45,17 @@ public class InstanceManagerKillTests
     }
 
     [Fact]
-    public void KillInstance_MissingInstance_IsNoOp()
+    public async Task KillInstance_MissingInstance_IsNoOp()
     {
         var manager = new InstanceManager();
 
-        var exception = Record.Exception(() => manager.KillInstance(Guid.NewGuid()));
+        var exception = await Record.ExceptionAsync(() => manager.KillInstanceAsync(Guid.NewGuid()));
 
         Assert.Null(exception);
     }
 
     [Fact]
-    public void KillInstance_NullProcess_IsNoOpAndReadsProcessOnce()
+    public async Task KillInstance_NullProcess_IsNoOpAndReadsProcessOnce()
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
@@ -68,7 +69,7 @@ public class InstanceManagerKillTests
                 return null;
             });
 
-        var exception = Record.Exception(() => manager.KillInstance(config.Uuid));
+        var exception = await Record.ExceptionAsync(() => manager.KillInstanceAsync(config.Uuid));
 
         Assert.Null(exception);
         Assert.Equal(1, processReads);
@@ -79,7 +80,7 @@ public class InstanceManagerKillTests
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
-        using var process = new InstanceProcess(CreateLongRunningProcessStartInfo(), isMcServer: false);
+        using var process = new InstanceProcess(CreateLongRunningProcessStartInfo(), InstanceType.Universal);
         var processReads = 0;
         var started = false;
 
@@ -98,7 +99,7 @@ public class InstanceManagerKillTests
                         : throw new Xunit.Sdk.XunitException("Process must be captured only once.");
                 });
 
-            manager.KillInstance(config.Uuid);
+            await manager.KillInstanceAsync(config.Uuid);
 
             Assert.Equal(1, processReads);
             Assert.True(process.HasExit);
@@ -111,7 +112,7 @@ public class InstanceManagerKillTests
     }
 
     [Fact]
-    public void KillInstance_ProcessFailure_IsSwallowed()
+    public async Task KillInstance_ProcessFailure_PropagatesAndPreservesBinding()
     {
         var manager = new InstanceManager();
         var config = CreateConfig();
@@ -120,8 +121,10 @@ public class InstanceManagerKillTests
             InstanceStatus.Stopped,
             () => throw new InvalidOperationException("process accessor failed"));
 
-        var exception = Record.Exception(() => manager.KillInstance(config.Uuid));
-        Assert.Null(exception);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => manager.KillInstanceAsync(config.Uuid));
+        Assert.Equal("process accessor failed", exception.Message);
+        Assert.True(manager.Instances.ContainsKey(config.Uuid));
     }
 
     [Fact]
@@ -208,11 +211,17 @@ public class InstanceManagerKillTests
             return Task.FromResult(false);
         }
 
-        public void Stop()
+        public Task<bool> StopAsync(CancellationToken ct = default)
         {
+            return Task.FromResult(true);
         }
 
-        public void ForceKillAndClear() { Process?.KillProcess(); }
+        public Task ForceKillAndClearAsync(CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            Process?.KillProcess();
+            return Task.CompletedTask;
+        }
 
         public IReadOnlyList<string> GetLogHistory()
         {

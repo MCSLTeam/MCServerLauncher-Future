@@ -1,0 +1,14 @@
+{
+  "package": {
+    "id": "fixture.package-reference-consumer",
+    "version": "1.0.0"
+  },
+  "entry": {
+    "assembly": "PackageReferenceConsumer.dll",
+    "type": "MCServerLauncher.PackageReferenceConsumer.Generated.DaemonPluginAdapter"
+  },
+  "requires": {
+    "api": "[2.0.0,3.0.0)",
+    "features": ["rpc.register"]
+  }
+}
