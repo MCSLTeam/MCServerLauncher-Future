@@ -26,7 +26,7 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(SourceTypeJsonConverter),
         typeof(InstanceFactoryMirrorJsonConverter),
         typeof(InstanceStatusJsonConverter),
-        typeof(OperationStatusJsonConverter),
+typeof(OperationStatusJsonConverter),
         typeof(OperationStageJsonConverter),
         typeof(PlanStatusJsonConverter),
         typeof(PlanRiskClassJsonConverter),

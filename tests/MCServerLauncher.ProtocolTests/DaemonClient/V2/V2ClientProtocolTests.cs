@@ -316,7 +316,7 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(ConsoleSession)) return "{\"session_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\",\"expires_at\":\"2026-01-01T00:00:00+00:00\",\"max_chunk_size\":4,\"columns\":120,\"rows\":40}";
             if (type == typeof(CreateInstanceRequest)) return "{\"setting\":{\"configuration\":" + Config + ",\"source\":\"server.jar\",\"source_type\":\"core\",\"mirror\":\"none\",\"use_post_process\":false}}";
             if (type == typeof(EventRuleUpdateRequest)) return "{\"instance_id\":\"" + Id + "\",\"rules\":{}}";
-            if (type == typeof(UpdateInstanceSettingsRequest)) return "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"java_path\":null,\"arguments\":[],\"version\":null,\"replacement_core\":null,\"force_rerun_installer\":false}";
+            if (type == typeof(UpdateInstanceSettingsRequest)) return "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"instance_type\":\"universal\",\"java_path\":null,\"arguments\":[],\"version\":null,\"replacement_core\":null,\"force_rerun_installer\":false,\"console_mode\":null}";
 
             if (type == typeof(TokenIssueRequest)) return "{\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"ttl_seconds\":3600}";
             if (type == typeof(TokenIssueResult)) return "{\"token\":\"jwt\",\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"expires_at\":\"2026-01-01T01:00:00+00:00\",\"token_id\":\"abc\"}";
