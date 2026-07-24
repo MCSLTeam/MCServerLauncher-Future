@@ -118,6 +118,5 @@ under plugins/community.example.health/ beside the daemon. Do not bundle the dae
 TouchSocket, MessagePipe, Serilog, MCServerLauncher.Daemon.API.dll,
 MCServerLauncher.Common.dll, or MCServerLauncher.Daemon.Plugin.Sdk.dll.
 
-Exact Preview-1 candidate versions and payload hashes are recorded in
-docs/preview1-package-pin.md. The MCP implementation gate remains locked until those
-candidate assets are verified on the corresponding GitHub Release.
+The accepted Preview-1 versions, public Release assets, and payload hashes are
+recorded in docs/preview1-package-pin.md. MCP-0..5 must pin those exact packages.

@@ -1,21 +1,21 @@
 # Preview-1 Package Pin
 
-Status: package-affecting source candidate verified twice locally; GitHub Release asset verification is pending.
+Status: accepted for MCP-0..5.
 Branch: `feat/plugin-sdk-2-preview1`
+Release: `2.0.0-preview.2` ([GitHub Release](https://github.com/MCSLTeam/MCServerLauncher-Future/releases/tag/2.0.0-preview.2))
+Source commit: `a5510a6089a88692ff7ff0cde7fd0b6249a3b965`
 Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`, sections 1, 10, and 12.
 
 ## Gate status
 
-This document records the reproducible local `2.0.0-preview.2` candidate from
-package-affecting source commit `d58375fa`. Two builds from a clean checkout
-with independent pin roots (`artifacts/_tmp_rebase_pin_canonical_build_a` and
-`artifacts/_tmp_rebase_pin_canonical_build_b`) and package outputs
-(`artifacts/_tmp_rebase_pin_canonical_a` and
-`artifacts/_tmp_rebase_pin_canonical_b`) produced
-identical fingerprints for every listed payload. It does not mark the SDK
-Preview-1 package gate accepted and does not unblock MCP implementation.
-Acceptance requires attaching packages with these exact payloads to a GitHub
-Release and verifying every listed payload from the downloaded release assets.
+The accepted packages were downloaded from the public prerelease above after
+Release workflow run `30101725253` completed successfully. A second independent
+Ubuntu `nuget` job (attempt 2, artifact `8600806535`) rebuilt the exact tag; all
+eight executable/build payload fingerprints matched the downloaded Release
+assets. Exact nuspec dependencies, package-only restore, bundle de-duplication,
+and the published Release daemon fixture also passed. The latter ran all three
+PluginIntegrationTests with `MCSL_PLUGIN_PACKAGE_SOURCE` bound to the downloaded
+Release packages.
 
 ## Exact versions
 
@@ -43,6 +43,14 @@ Whole-nupkg SHA-256 is not the acceptance pin: NuGet embeds repository and
 timestamp metadata that can change across repacks while payload code remains
 identical. The acceptance fingerprints below cover every DLL that executes in
 the consumer build or runtime path, plus every `buildTransitive` asset.
+
+Published Release asset SHA-256 values:
+
+| Package | SHA-256 |
+|---|---|
+| `MCServerLauncher.Common.2.0.0-preview.2.nupkg` | `1d7ded61ebf209d034c0465c13c86651771772a35ef6843482cc64ee09c2a430` |
+| `MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg` | `b8b2e5c6d76f7b39692b4a0cf14ff53954ee97848349c48580d5d4fdb3442d21` |
+| `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg` | `68081605db1cb5ccf9c78f882b9a54126183ad54da78be523f6a3748beb3214c` |
 
 Repository build settings make payloads reproducible when packing with
 `-p:MCSL_PIN_PACKAGE_PAYLOAD=true`:
@@ -73,7 +81,7 @@ declared versions with `MCSL_PIN_PACKAGE_PAYLOAD=true`, and attaches each nupkg.
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `968741466a4b74417dab808dc9aa3ab5c3c7e30624a473a781619afac543fd27` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `4d44f9993d9def979db6e80c7004c4d2ddf8fa92cdaf5511dc69842ad6dae38c` |
 
 ### `MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg`
 
@@ -138,6 +146,11 @@ dotnet test tests/MCServerLauncher.Daemon.ApiTests/MCServerLauncher.Daemon.ApiTe
 dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release /m:1
 dotnet run --project tools/MCServerLauncher.ProtocolDocs/MCServerLauncher.ProtocolDocs.csproj -- --check
 ```
+
+Release acceptance additionally runs `.github/workflows/verify-preview1-package-pin.yml`
+and the published-host suite with `MCSL_PUBLISHED_DAEMON` pointing to the
+downloaded daemon asset and `MCSL_PLUGIN_PACKAGE_SOURCE` pointing to the three
+downloaded nupkgs.
 
 Distribution remains GitHub Release assets for all three nupkgs. Public
 nuget.org publication is not required for the first accepted pin.
