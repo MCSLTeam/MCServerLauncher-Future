@@ -80,10 +80,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Required by plugins that host private ASP.NET Core applications. The plugin owns
+             its Kestrel instance, DI provider, and lifecycle; the runtime framework must be
+             declared by the process per the supported .NET plugin loading model. -->
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <PackageReference Include="Brigadier.NET" Version="1.2.13" />
         <PackageReference Include="Downloader" Version="3.1.2" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
-        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.0" />
         <PackageReference Include="Microsoft.Management.Infrastructure" Version="3.0.0" />
         <PackageReference Include="RustyOptions" Version="0.10.1" />
         <PackageReference Include="Serilog" Version="4.3.0" />
@@ -91,7 +93,6 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
         <PackageReference Include="MessagePipe" Version="1.8.2" />
         <PackageReference Include="NuGet.Versioning" Version="7.6.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
