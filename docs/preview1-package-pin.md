@@ -7,10 +7,11 @@ Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`
 ## Gate status
 
 This document records the reproducible local `2.0.0-preview.2` candidate from
-package-affecting source commit `6148f426`. Two builds with independent pin
-roots (`artifacts/_tmp_round4_pin_build_a` and
-`artifacts/_tmp_round4_pin_build_b`) and package outputs
-(`artifacts/_tmp_round4_pin_a` and `artifacts/_tmp_round4_pin_b`) produced
+package-affecting source commit `d58375fa`. Two builds from a clean checkout
+with independent pin roots (`artifacts/_tmp_rebase_pin_canonical_build_a` and
+`artifacts/_tmp_rebase_pin_canonical_build_b`) and package outputs
+(`artifacts/_tmp_rebase_pin_canonical_a` and
+`artifacts/_tmp_rebase_pin_canonical_b`) produced
 identical fingerprints for every listed payload. It does not mark the SDK
 Preview-1 package gate accepted and does not unblock MCP implementation.
 Acceptance requires attaching packages with these exact payloads to a GitHub
@@ -91,8 +92,8 @@ Nuspec dependencies are exact:
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `c52be37810be8730f28f6577162b30c838c02c3ca5f2790f6eeea36035f3d0da` |
-| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `c71a42a3bc044be9f2b20fb823d746205fda1680b1e0aaffdbbd3af6187168d2` |
+| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `7b675275b82cc6ecbd51793cd2c4cfd217dbf6b784bf5aeb21bda36cf51a850c` |
+| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `704a9051e922c93623884d28cc1c1cca684e389e5b8645cc141d49b017ebab2f` |
 | `analyzers/dotnet/cs/NuGet.Versioning.dll` | `5ccab32f44a29834becbf640cfac4b119edce8496a02e94ef20e1b1d2e652b26` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `c0dd9844c62950e9cf678c9bb067dd030876afa4d263eedd0d146ce52e5eb895` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |
