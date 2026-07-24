@@ -1,0 +1,151 @@
+name: Verify Preview-1 Package Pin
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Preview-1 release tag to verify
+        required: true
+        type: string
+        default: 2.0.0-preview.2
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.201
+
+      - name: Create independent source trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir source-a source-b
+          git archive HEAD | tar -xf - -C source-a
+          git archive HEAD | tar -xf - -C source-b
+
+      - name: Pack independent candidates
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $projects = @(
+            'src/MCServerLauncher.Common/MCServerLauncher.Common.csproj',
+            'src/MCServerLauncher.Daemon.API/MCServerLauncher.Daemon.API.csproj',
+            'src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugin.Sdk.csproj'
+          )
+
+          foreach ($source in @('source-a', 'source-b')) {
+            $output = "artifacts/$source"
+            foreach ($project in $projects) {
+              & dotnet pack "$source/$project" -c Release -o $output /m:1 `
+                -p:MCSL_PIN_PACKAGE_PAYLOAD=true
+              if ($LASTEXITCODE -ne 0) {
+                throw "Pack failed for $source/$project."
+              }
+            }
+          }
+
+      - name: Download published release packages
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PIN_TAG: ${{ inputs.tag_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force artifacts/release | Out-Null
+          & gh release download $env:PIN_TAG `
+            --repo $env:GITHUB_REPOSITORY `
+            --dir artifacts/release `
+            --pattern 'MCServerLauncher.*.nupkg'
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release download failed for $env:PIN_TAG."
+          }
+
+      - name: Compare all executable payloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $entries = @{
+            'MCServerLauncher.Common.2.0.0-preview.2.nupkg' = @(
+              'lib/net10.0/MCServerLauncher.Common.dll'
+            )
+            'MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg' = @(
+              'lib/net10.0/MCServerLauncher.Daemon.API.dll',
+              'buildTransitive/MCServerLauncher.Daemon.API.targets'
+            )
+            'MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg' = @(
+              'lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll',
+              'analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll',
+              'analyzers/dotnet/cs/NuGet.Versioning.dll',
+              'buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props',
+              'buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets'
+            )
+          }
+
+          function Get-ZipEntryHash([string] $packagePath, [string] $entryName) {
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($packagePath)
+            try {
+              $entry = $archive.GetEntry($entryName)
+              if ($null -eq $entry) {
+                throw "Missing package entry: $packagePath :: $entryName"
+              }
+
+              $stream = $entry.Open()
+              $sha = [System.Security.Cryptography.SHA256]::Create()
+              try {
+                return ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+              }
+              finally {
+                $sha.Dispose()
+                $stream.Dispose()
+              }
+            }
+            finally {
+              $archive.Dispose()
+            }
+          }
+
+          foreach ($packageName in $entries.Keys | Sort-Object) {
+            $paths = @(
+              "artifacts/source-a/$packageName",
+              "artifacts/source-b/$packageName",
+              "artifacts/release/$packageName"
+            )
+            foreach ($path in $paths) {
+              if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+                throw "Missing package: $path"
+              }
+            }
+
+            foreach ($entryName in $entries[$packageName]) {
+              $hashes = @($paths | ForEach-Object { Get-ZipEntryHash $_ $entryName })
+              if (($hashes | Select-Object -Unique).Count -ne 1) {
+                throw "Payload mismatch for $packageName :: $entryName -> $($hashes -join ', ')"
+              }
+              Write-Host "$packageName :: $entryName :: $($hashes[0])"
+            }
+          }
+
+      - name: Upload verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview1-package-pin-evidence
+          path: |
+            artifacts/source-a/*.nupkg
+            artifacts/source-b/*.nupkg
+            artifacts/release/*.nupkg
+          if-no-files-found: error

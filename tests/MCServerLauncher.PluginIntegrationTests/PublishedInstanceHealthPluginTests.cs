@@ -523,26 +523,51 @@ public sealed class PublishedInstanceHealthPluginTests
         {
             var repositoryRoot = FindRepositoryRoot();
             var buildRoot = Path.Combine(daemonRoot, ".documented-plugin-build");
-            var packageSource = Path.Combine(buildRoot, "packages");
+            var configuredPackageSource = Environment.GetEnvironmentVariable("MCSL_PLUGIN_PACKAGE_SOURCE");
+            var packageSource = string.IsNullOrWhiteSpace(configuredPackageSource)
+                ? Path.Combine(buildRoot, "packages")
+                : Path.GetFullPath(configuredPackageSource);
             var packageCache = Path.Combine(buildRoot, "package-cache");
             var publishDirectory = Path.Combine(buildRoot, "publish");
-            Directory.CreateDirectory(packageSource);
 
-            await RunDotNetAsync(
-                repositoryRoot,
-                "pack",
-                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Common", "MCServerLauncher.Common.csproj"),
-                "--configuration", "Release", "--output", packageSource, "/m:1");
-            await RunDotNetAsync(
-                repositoryRoot,
-                "pack",
-                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.API", "MCServerLauncher.Daemon.API.csproj"),
-                "--configuration", "Release", "--output", packageSource, "/m:1");
-            await RunDotNetAsync(
-                repositoryRoot,
-                "pack",
-                Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.Plugin.Sdk", "MCServerLauncher.Daemon.Plugin.Sdk.csproj"),
-                "--configuration", "Release", "--output", packageSource, "/m:1");
+            if (string.IsNullOrWhiteSpace(configuredPackageSource))
+            {
+                Directory.CreateDirectory(packageSource);
+                await RunDotNetAsync(
+                    repositoryRoot,
+                    "pack",
+                    Path.Combine(repositoryRoot, "src", "MCServerLauncher.Common", "MCServerLauncher.Common.csproj"),
+                    "--configuration", "Release", "--output", packageSource, "/m:1");
+                await RunDotNetAsync(
+                    repositoryRoot,
+                    "pack",
+                    Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.API", "MCServerLauncher.Daemon.API.csproj"),
+                    "--configuration", "Release", "--output", packageSource, "/m:1");
+                await RunDotNetAsync(
+                    repositoryRoot,
+                    "pack",
+                    Path.Combine(repositoryRoot, "src", "MCServerLauncher.Daemon.Plugin.Sdk", "MCServerLauncher.Daemon.Plugin.Sdk.csproj"),
+                    "--configuration", "Release", "--output", packageSource, "/m:1");
+            }
+            else
+            {
+                var requiredPackages = new[]
+                {
+                    "MCServerLauncher.Common.2.0.0-preview.2.nupkg",
+                    "MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg",
+                    "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg"
+                };
+                foreach (var packageName in requiredPackages)
+                {
+                    if (!File.Exists(Path.Combine(packageSource, packageName)))
+                    {
+                        throw new FileNotFoundException(
+                            $"MCSL_PLUGIN_PACKAGE_SOURCE is missing required package '{packageName}'.",
+                            Path.Combine(packageSource, packageName));
+                    }
+                }
+            }
+
             await RunDotNetAsync(
                 repositoryRoot,
                 "publish",
