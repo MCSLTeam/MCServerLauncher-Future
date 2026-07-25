@@ -223,9 +223,25 @@ public sealed class PublishedInstanceHealthPluginTests
             var daemonPath = Path.Combine(root, Path.GetFileName(source));
             var port = GetUnusedLoopbackPort();
             var token = Convert.ToHexString(Guid.NewGuid().ToByteArray()).ToLowerInvariant();
-            var pluginsConfig = includeNeverCompletingDisposePlugin
-                ? ",\"plugins\":{\"grant_level\":\"High\",\"plugin_grants\":{\"fixture.late-http-cleanup\":[\"network.http.listen\"]}}"
+            // Spec section 4: plugins load only with an explicit entries opt-in record.
+            var entryIds = new List<string>
+            {
+                "community.instance-health",
+                "fixture.returned-error",
+                "fixture.throwing",
+                "fixture.start-returned-error",
+                "fixture.start-throwing",
+                "fixture.package-reference-consumer",
+            };
+            if (includeNeverCompletingStartPlugin)
+                entryIds.Add("fixture.start-never-completes");
+            if (includeNeverCompletingDisposePlugin)
+                entryIds.Add("fixture.late-http-cleanup");
+            var entriesJson = string.Join(",", entryIds.Select(id => $"\"{id}\":{{\"enabled\":true}}"));
+            var pluginGrantsJson = includeNeverCompletingDisposePlugin
+                ? "\"grant_level\":\"High\",\"plugin_grants\":{\"fixture.late-http-cleanup\":[\"network.http.listen\"]},"
                 : string.Empty;
+            var pluginsConfig = $",\"plugins\":{{{pluginGrantsJson}\"entries\":{{{entriesJson}}}}}";
             await File.WriteAllTextAsync(
                 Path.Combine(root, "config.json"),
                 $$"""{"port":{{port}},"secret":"{{token}}","main_token":"{{token}}","file_download_sessions":1,"verbose":false{{pluginsConfig}}}""");

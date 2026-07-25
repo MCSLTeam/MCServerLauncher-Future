@@ -109,7 +109,9 @@ internal static class PluginAdmissionPolicy
                 denied.Add(required);
         }
 
-        var enabled = !config.Entries.TryGetValue(manifest.Identity.Id, out var entry) || entry.Enabled;
+        // Spec section 4: a plugin id absent from entries is disabled. Loading requires an
+        // explicit entries record (explicit opt-in); the absence default is false.
+        var enabled = config.Entries.TryGetValue(manifest.Identity.Id, out var entry) && entry.Enabled;
 
         return new PluginFeatureGrant(manifest.Identity.Id, granted.ToImmutable(), denied.ToImmutable(), enabled);
     }

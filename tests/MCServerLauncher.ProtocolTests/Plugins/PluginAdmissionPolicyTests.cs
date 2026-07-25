@@ -77,7 +77,7 @@ public sealed class PluginAdmissionPolicyTests
     public void DecideGrantsAllRequiredWhenWithinCeiling()
     {
         var manifest = Manifest("mcp", [PluginFeature.InstanceQuery, PluginFeature.RpcRegister]);
-        var grant = PluginAdmissionPolicy.Decide(manifest, DaemonPluginsConfig.Default);
+        var grant = PluginAdmissionPolicy.Decide(manifest, EnabledConfig());
 
         Assert.True(grant.Enabled);
         Assert.Empty(grant.Denied);
@@ -89,7 +89,7 @@ public sealed class PluginAdmissionPolicyTests
     {
         // network.http.listen is High risk; Medium ceiling denies it without plugin_grants.
         var manifest = Manifest("mcp", [PluginFeature.InstanceQuery, PluginFeature.NetworkHttpListen]);
-        var grant = PluginAdmissionPolicy.Decide(manifest, DaemonPluginsConfig.Default);
+        var grant = PluginAdmissionPolicy.Decide(manifest, EnabledConfig());
 
         Assert.True(grant.Enabled);
         var denied = Assert.Single(grant.Denied);
@@ -104,6 +104,7 @@ public sealed class PluginAdmissionPolicyTests
         {
             GrantLevel = "Medium",
             PluginGrants = { ["mcp"] = ["network.http.listen"] },
+            Entries = { ["mcp"] = new PluginEntryConfig() },
         };
         // Even though the feature is granted by plugin_grants, Decide checks membership of the
         // effective set, not IsImplemented. Admission of unimplemented features is handled earlier
@@ -128,6 +129,29 @@ public sealed class PluginAdmissionPolicyTests
         var grant = PluginAdmissionPolicy.Decide(manifest, config);
 
         Assert.False(grant.Enabled);
+    }
+
+    [Fact]
+    public void AbsentEntryDisablesPlugin()
+    {
+        // Spec section 4: a plugin id absent from entries is disabled (explicit opt-in).
+        var manifest = Manifest("mcp", [PluginFeature.InstanceQuery]);
+        var grant = PluginAdmissionPolicy.Decide(manifest, DaemonPluginsConfig.Default);
+
+        Assert.False(grant.Enabled);
+    }
+
+    [Fact]
+    public void PreflightSkipsPluginAbsentFromEntries()
+    {
+        var console = new FakePreflightConsole(isInteractive: true, PluginPreflightDecision.Approve);
+        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console);
+
+        var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.InstanceQuery]));
+
+        Assert.False(outcome.IsAdmitted);
+        Assert.Equal("entry_disabled", outcome.Code);
+        Assert.Equal(0, console.PromptCount);
     }
 
     [Fact]
@@ -173,7 +197,7 @@ public sealed class PluginAdmissionPolicyTests
     public void PreflightSilentlyAdmitsFeaturesWithinCeiling()
     {
         var console = new FakePreflightConsole(isInteractive: true, PluginPreflightDecision.Deny);
-        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console);
+        var preflight = new PluginAdmissionPreflight(EnabledConfig(), console);
 
         var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.InstanceQuery]));
 
@@ -194,7 +218,7 @@ public sealed class PluginAdmissionPolicyTests
     {
         var console = new FakePreflightConsole(isInteractive: true, (PluginPreflightDecision)decisionValue);
         var store = new FakeAdmissionStore(succeeds: true);
-        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console, store);
+        var preflight = new PluginAdmissionPreflight(EnabledConfig(), console, store);
 
         var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.NetworkHttpListen]));
 
@@ -208,7 +232,7 @@ public sealed class PluginAdmissionPolicyTests
     public void NonInteractivePreflightSkipsFeaturesOutsideCeiling()
     {
         var console = new FakePreflightConsole(isInteractive: false, PluginPreflightDecision.Approve);
-        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console);
+        var preflight = new PluginAdmissionPreflight(EnabledConfig(), console);
 
         var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.NetworkHttpListen]));
 
@@ -224,6 +248,7 @@ public sealed class PluginAdmissionPolicyTests
         var config = new DaemonPluginsConfig
         {
             PluginGrants = { ["mcp"] = ["network.http.listen"] },
+            Entries = { ["mcp"] = new PluginEntryConfig() },
             Admissions =
             {
                 ["mcp"] = new PluginAdmissionConfig
@@ -257,6 +282,7 @@ public sealed class PluginAdmissionPolicyTests
         var config = new DaemonPluginsConfig
         {
             PluginGrants = { ["mcp"] = ["network.http.listen"] },
+            Entries = { ["mcp"] = new PluginEntryConfig() },
             Admissions =
             {
                 ["mcp"] = new PluginAdmissionConfig
@@ -285,6 +311,7 @@ public sealed class PluginAdmissionPolicyTests
         var manifest = Manifest("mcp", [PluginFeature.InstanceQuery], "digest-current");
         var config = new DaemonPluginsConfig
         {
+            Entries = { ["mcp"] = new PluginEntryConfig() },
             Admissions =
             {
                 ["mcp"] = new PluginAdmissionConfig
@@ -310,7 +337,7 @@ public sealed class PluginAdmissionPolicyTests
     {
         var console = new FakePreflightConsole(isInteractive: true, PluginPreflightDecision.ApprovePermanent);
         var store = new FakeAdmissionStore(succeeds: false);
-        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console, store);
+        var preflight = new PluginAdmissionPreflight(EnabledConfig(), console, store);
 
         var outcome = preflight.Evaluate(Manifest("mcp", [PluginFeature.NetworkHttpListen]));
 
@@ -428,6 +455,13 @@ public sealed class PluginAdmissionPolicyTests
         Assert.True(registry.TryRegister("other", mappedIpv4, out _));
         Assert.False(registry.TryRegister("other", ipv6, out var ipv6Conflict));
         Assert.Equal("ipv6", ipv6Conflict);
+    }
+
+    private static DaemonPluginsConfig EnabledConfig(string id = "mcp")
+    {
+        var config = new DaemonPluginsConfig();
+        config.Entries[id] = new PluginEntryConfig();
+        return config;
     }
 
     private static PluginManifest Manifest(
