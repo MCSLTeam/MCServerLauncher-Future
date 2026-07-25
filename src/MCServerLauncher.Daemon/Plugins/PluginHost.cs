@@ -1394,12 +1394,14 @@ internal sealed class PluginHost
         if (Interlocked.Exchange(ref runtime.CleanupAbandoned, 1) != 0)
             return;
 
-        runtime.State = PluginRuntimeState.CleanupAbandoned;
+        // Record the diagnostic before publishing the state: observers poll the state, so publishing
+        // first leaves a window where an abandoned cleanup is visible with no explanation logged.
         _logger.LogCritical(
             "Plugin {PluginId} cleanup_abandoned at {Stage} after the {Timeout} host shutdown deadline; endpoint ownership remains fail-closed and daemon shutdown will continue.",
             runtime.Manifest.Identity.Id,
             stage,
             _shutdownCleanupTimeout);
+        runtime.State = PluginRuntimeState.CleanupAbandoned;
     }
 
     private async Task<bool> DisposePluginAsync(PluginRuntime runtime)
