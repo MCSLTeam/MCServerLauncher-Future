@@ -298,11 +298,12 @@ internal class InstanceManager : IInstanceManager
                 return null;
             }
 
+            // No snapshot upsert here: AttachInstance above already wired the ordered
+            // ProcessStatusChanged/ProcessReportFactChanged chain, so every transition reaches the
+            // catalog through it. A live `.Status` peek at this point races that chain and, when it
+            // wins the publication lock last, pins the catalog to a superseded status forever.
             if (await target.StartAsync(ct: ct))
-            {
-                _snapshotSource.Upsert(target);
                 return target;
-            }
 
             RunningInstances.TryRemove(instanceId, out _);
             return null;
