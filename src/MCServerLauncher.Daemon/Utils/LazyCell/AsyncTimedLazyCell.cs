@@ -14,6 +14,7 @@ public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
     private readonly object _gate = new();
     private readonly TimeSpan _cacheDuration;
     private readonly Action<Exception> _backgroundRefreshFailureObserver;
+    private readonly TimeProvider _timeProvider;
     private CacheEntry? _entry;
     private Task<T>? _refreshTask;
 
@@ -25,11 +26,13 @@ public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
     internal AsyncTimedLazyCell(
         Func<Task<T>> valueFactory,
         TimeSpan cacheDuration,
-        Action<Exception> backgroundRefreshFailureObserver)
+        Action<Exception> backgroundRefreshFailureObserver,
+        TimeProvider? timeProvider = null)
     {
         _valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
         _backgroundRefreshFailureObserver = backgroundRefreshFailureObserver ??
                                             throw new ArgumentNullException(nameof(backgroundRefreshFailureObserver));
+        _timeProvider = timeProvider ?? TimeProvider.System;
         if (cacheDuration < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(cacheDuration));
@@ -61,7 +64,7 @@ public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
             return true;
         }
 
-        return DateTime.UtcNow - new DateTime(entry.LastUpdatedUtcTicks, DateTimeKind.Utc) > _cacheDuration;
+        return UtcNow() - new DateTime(entry.LastUpdatedUtcTicks, DateTimeKind.Utc) > _cacheDuration;
     }
 
     public Task Update()
@@ -74,7 +77,7 @@ public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
 
     private ValueTask<T> GetValue()
     {
-        var nowUtc = DateTime.UtcNow;
+        var nowUtc = UtcNow();
         var entry = Volatile.Read(ref _entry);
         if (entry is not null)
         {
@@ -123,6 +126,8 @@ public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
         return new ValueTask<T>(refresh);
     }
 
+    private DateTime UtcNow() => _timeProvider.GetUtcNow().UtcDateTime;
+
     private Task<T> GetOrStartRefreshLocked(out bool startedRefresh)
     {
         if (_refreshTask is { IsCompleted: false })
@@ -139,7 +144,7 @@ public class AsyncTimedLazyCell<T> : IAsyncTimedLazyCell<T>
     private async Task<T> RefreshCoreAsync()
     {
         var newValue = await _valueFactory().ConfigureAwait(false);
-        var newEntry = new CacheEntry(newValue, DateTime.UtcNow.Ticks);
+        var newEntry = new CacheEntry(newValue, UtcNow().Ticks);
         lock (_gate)
         {
             Volatile.Write(ref _entry, newEntry);

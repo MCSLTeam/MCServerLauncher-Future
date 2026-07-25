@@ -4,6 +4,9 @@ namespace MCServerLauncher.ProtocolTests;
 
 public sealed class AsyncTimedLazyCellTests
 {
+    private static readonly DateTimeOffset StartTime = DateTimeOffset.Parse("2026-07-26T00:00:00Z");
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMilliseconds(10);
+
     [Fact]
     public void Constructor_RejectsNegativeCacheDuration()
     {
@@ -69,6 +72,7 @@ public sealed class AsyncTimedLazyCellTests
         var refreshStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseRefresh = new TaskCompletionSource<CacheValue>(TaskCreationOptions.RunContinuationsAsynchronously);
         var invocationCount = 0;
+        var time = new ManualTimeProvider(StartTime);
         var cell = new AsyncTimedLazyCell<CacheValue>(() =>
         {
             return Interlocked.Increment(ref invocationCount) switch
@@ -83,10 +87,10 @@ public sealed class AsyncTimedLazyCellTests
                 refreshStarted.TrySetResult();
                 return await releaseRefresh.Task.ConfigureAwait(false);
             }
-        }, TimeSpan.FromMilliseconds(10));
+        }, CacheDuration, _ => { }, time);
 
         Assert.Same(initial, await cell.Value);
-        await WaitUntilAsync(cell.IsExpired);
+        Expire(time);
 
         var staleReads = Enumerable.Range(0, 64)
             .Select(_ => cell.Value)
@@ -121,6 +125,7 @@ public sealed class AsyncTimedLazyCellTests
         var recovery = new TaskCompletionSource<CacheValue>(TaskCreationOptions.RunContinuationsAsynchronously);
         var invocationCount = 0;
         var expectedFailure = new InvalidOperationException("Refresh failed.");
+        var time = new ManualTimeProvider(StartTime);
         var cell = new AsyncTimedLazyCell<CacheValue>(() =>
         {
             return Interlocked.Increment(ref invocationCount) switch
@@ -142,10 +147,10 @@ public sealed class AsyncTimedLazyCellTests
                 recoveryStarted.TrySetResult();
                 return await recovery.Task.ConfigureAwait(false);
             }
-        }, TimeSpan.FromMilliseconds(10));
+        }, CacheDuration, _ => { }, time);
 
         Assert.Same(initial, await cell.Value);
-        await WaitUntilAsync(cell.IsExpired);
+        Expire(time);
 
         var staleRead = cell.Value;
         await failedRefreshStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -289,6 +294,7 @@ public sealed class AsyncTimedLazyCellTests
         var observedFailure = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
         var invocationCount = 0;
         var observationCount = 0;
+        var time = new ManualTimeProvider(StartTime);
         var cell = new AsyncTimedLazyCell<CacheValue>(() =>
         {
             if (Interlocked.Increment(ref invocationCount) == 1)
@@ -298,14 +304,14 @@ public sealed class AsyncTimedLazyCellTests
 
             refreshStarted.TrySetResult();
             return refresh.Task;
-        }, TimeSpan.FromMilliseconds(10), exception =>
+        }, CacheDuration, exception =>
         {
             Interlocked.Increment(ref observationCount);
             observedFailure.TrySetResult(exception);
-        });
+        }, time);
 
         Assert.Same(initial, await cell.Value);
-        await WaitUntilAsync(cell.IsExpired);
+        Expire(time);
 
         var staleReads = Enumerable.Range(0, 1_000).Select(_ => cell.Value).ToArray();
         await refreshStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -323,14 +329,7 @@ public sealed class AsyncTimedLazyCellTests
         Assert.Equal(2, Volatile.Read(ref invocationCount));
     }
 
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        while (!condition())
-        {
-            await Task.Delay(5, timeout.Token);
-        }
-    }
+    private static void Expire(ManualTimeProvider time) => time.Advance(CacheDuration + TimeSpan.FromTicks(1));
 
     private static void UpdateMaximum(ref int location, int value)
     {
@@ -345,6 +344,18 @@ public sealed class AsyncTimedLazyCellTests
 
             current = observed;
         }
+    }
+
+    /// <summary>
+    /// Torn-read-free so refresh continuations on the thread pool observe the advanced clock exactly.
+    /// </summary>
+    private sealed class ManualTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        private long _utcTicks = now.UtcTicks;
+
+        public override DateTimeOffset GetUtcNow() => new(Volatile.Read(ref _utcTicks), TimeSpan.Zero);
+
+        internal void Advance(TimeSpan duration) => Interlocked.Add(ref _utcTicks, duration.Ticks);
     }
 
     private sealed record CacheValue(int Version);
