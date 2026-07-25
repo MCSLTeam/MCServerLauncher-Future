@@ -114,7 +114,9 @@ cancels the lifetime token first and stops successful plugins in reverse order.
 
 MCSLPluginBundle=true removes host-provided shared assemblies from the bundle. Deploy the
 published entry DLL, mcsl-plugin.json, optional config.json, and private dependencies
-under plugins/community.example.health/ beside the daemon. Do not bundle the daemon,
+under plugins/community.example.health/ beside the daemon. The operator must then opt the
+plugin in through the daemon config.json (`plugins.entries.community.example.health.enabled: true`);
+a plugin id absent from `plugins.entries` stays disabled. Do not bundle the daemon,
 TouchSocket, MessagePipe, Serilog, MCServerLauncher.Daemon.API.dll,
 MCServerLauncher.Common.dll, or MCServerLauncher.Daemon.Plugin.Sdk.dll.
 

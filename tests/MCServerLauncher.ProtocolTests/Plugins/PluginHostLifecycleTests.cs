@@ -62,7 +62,9 @@ public sealed class PluginHostLifecycleTests
             logger,
             fixture.PluginsRoot,
             new PluginEventBus(provider.GetRequiredService<EventFactory>()),
-            TimeSpan.FromMilliseconds(250));
+            TimeSpan.FromMilliseconds(250),
+            fixture.CreateConfig("Medium"),
+            new PluginHttpEndpointRegistry());
 
         // Allow scheduler contention from the full protocol suite while still bounding an
         // otherwise unbounded startup. The fixture includes permanently incomplete starts.
@@ -142,7 +144,9 @@ public sealed class PluginHostLifecycleTests
                 logger,
                 fixture.PluginsRoot,
                 new PluginEventBus(provider.GetRequiredService<EventFactory>()),
-                TimeSpan.FromMilliseconds(150));
+                TimeSpan.FromMilliseconds(150),
+                fixture.CreateConfig("Medium"),
+                new PluginHttpEndpointRegistry());
 
             var startedAt = Stopwatch.GetTimestamp();
             await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2));
@@ -211,7 +215,10 @@ public sealed class PluginHostLifecycleTests
             loggerFactory,
             logger,
             fixture.PluginsRoot,
-            new PluginEventBus(provider.GetRequiredService<EventFactory>()));
+            new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+            TimeSpan.FromSeconds(30),
+            fixture.CreateConfig("Medium"),
+            new PluginHttpEndpointRegistry());
 
         await host.StartAsync(CancellationToken.None);
         Assert.Contains(logger.Messages, message =>
@@ -348,7 +355,8 @@ public sealed class PluginHostLifecycleTests
         var logger = new RecordingLogger<PluginHost>();
         var console = new RecordingPreflightConsole(PluginPreflightDecision.ApprovePermanent);
         var store = new RecordingAdmissionStore();
-        var preflight = new PluginAdmissionPreflight(DaemonPluginsConfig.Default, console, store);
+        var metadataMismatchConfig = fixture.CreateConfig("Medium");
+        var preflight = new PluginAdmissionPreflight(metadataMismatchConfig, console, store);
         var services = new ServiceCollection();
         services.AddMessagePipe(options =>
         {
@@ -365,7 +373,7 @@ public sealed class PluginHostLifecycleTests
             fixture.PluginsRoot,
             new PluginEventBus(provider.GetRequiredService<EventFactory>()),
             TimeSpan.FromSeconds(1),
-            DaemonPluginsConfig.Default,
+            metadataMismatchConfig,
             new PluginHttpEndpointRegistry(),
             preflight: preflight);
 
@@ -443,7 +451,7 @@ public sealed class PluginHostLifecycleTests
                 fixture.PluginsRoot,
                 new PluginEventBus(provider.GetRequiredService<EventFactory>()),
                 TimeSpan.FromSeconds(1),
-                DaemonPluginsConfig.Default,
+                fixture.CreateConfig("Medium"),
                 new PluginHttpEndpointRegistry(),
                 instanceApplication: rawApplication,
                 operationApplication: rawOperations);
@@ -558,7 +566,7 @@ public sealed class PluginHostLifecycleTests
                 options.EnableCaptureStackTrace = false;
             });
             using var provider = services.BuildServiceProvider();
-            var config = DaemonPluginsConfig.Default;
+            var config = fixture.CreateConfig("Medium");
             var host = new PluginHost(
                 new SnapshotSource(new InstanceCatalogSnapshot([])),
                 new RecordingLoggerFactory(logger),
@@ -633,7 +641,7 @@ public sealed class PluginHostLifecycleTests
                 options.EnableCaptureStackTrace = false;
             });
             using var provider = services.BuildServiceProvider();
-            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var config = fixture.CreateConfig();
             var endpoints = new PluginHttpEndpointRegistry();
             var host = new PluginHost(
                 new SnapshotSource(new InstanceCatalogSnapshot([])),
@@ -753,7 +761,7 @@ public sealed class PluginHostLifecycleTests
                 options.EnableCaptureStackTrace = false;
             });
             using var provider = services.BuildServiceProvider();
-            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var config = fixture.CreateConfig();
             var endpoints = new PluginHttpEndpointRegistry();
             var host = new PluginHost(
                 new SnapshotSource(new InstanceCatalogSnapshot([])),
@@ -894,7 +902,7 @@ public sealed class PluginHostLifecycleTests
                 options.EnableCaptureStackTrace = false;
             });
             using var provider = services.BuildServiceProvider();
-            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var config = fixture.CreateConfig();
             var endpoints = new PluginHttpEndpointRegistry();
             var host = new PluginHost(
                 new SnapshotSource(new InstanceCatalogSnapshot([])),
@@ -991,7 +999,7 @@ public sealed class PluginHostLifecycleTests
                 fixture.PluginsRoot,
                 new PluginEventBus(provider.GetRequiredService<EventFactory>()),
                 TimeSpan.FromMilliseconds(500),
-                DaemonPluginsConfig.Default,
+                fixture.CreateConfig("Medium"),
                 new PluginHttpEndpointRegistry(),
                 rollbackCleanupTimeout: TimeSpan.FromMilliseconds(50),
                 shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
@@ -1054,7 +1062,7 @@ public sealed class PluginHostLifecycleTests
                 options.EnableCaptureStackTrace = false;
             });
             using var provider = services.BuildServiceProvider();
-            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var config = fixture.CreateConfig();
             var endpoints = new PluginHttpEndpointRegistry();
             var host = new PluginHost(
                 new SnapshotSource(new InstanceCatalogSnapshot([])),
@@ -1142,7 +1150,7 @@ public sealed class PluginHostLifecycleTests
                 options.EnableCaptureStackTrace = false;
             });
             using var provider = services.BuildServiceProvider();
-            var config = new DaemonPluginsConfig { GrantLevel = "High" };
+            var config = fixture.CreateConfig();
             var host = new PluginHost(
                 new SnapshotSource(new InstanceCatalogSnapshot([])),
                 new RecordingLoggerFactory(logger),
@@ -1406,6 +1414,18 @@ public sealed class PluginHostLifecycleTests
 
         public string PluginsRoot { get; }
 
+        public List<string> Ids { get; } = [];
+
+        // Spec section 4: absent entries mean disabled, so every fixture plugin needs an
+        // explicit opt-in record for the host to consider it at all.
+        public DaemonPluginsConfig CreateConfig(string grantLevel = "High")
+        {
+            var config = new DaemonPluginsConfig { GrantLevel = grantLevel };
+            foreach (var id in Ids)
+                config.Entries[id] = new PluginEntryConfig();
+            return config;
+        }
+
         public static PluginHostFixture Create(params (string Id, Assembly Assembly, string EntryType)[] plugins)
         {
             var fixture = new PluginHostFixture(Directory.CreateTempSubdirectory("mcsl-plugin-host-").FullName);
@@ -1469,6 +1489,7 @@ public sealed class PluginHostLifecycleTests
             string entryAssembly = "PluginEntry.dll",
             bool copyGeneratedDependencies = false)
         {
+            Ids.Add(id);
             var bundle = Path.Combine(PluginsRoot, id);
             Directory.CreateDirectory(bundle);
             File.Copy(assembly.Location, Path.Combine(bundle, entryAssembly));
@@ -1487,6 +1508,7 @@ public sealed class PluginHostLifecycleTests
             string[] features,
             bool copyPrivateDiDependency)
         {
+            Ids.Add(id);
             var bundle = Path.Combine(PluginsRoot, id);
             Directory.CreateDirectory(bundle);
             File.Copy(assemblyPath, Path.Combine(bundle, "PluginEntry.dll"));

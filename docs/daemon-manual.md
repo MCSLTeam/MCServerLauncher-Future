@@ -32,6 +32,8 @@ dotnet publish src/MCServerLauncher.Daemon/MCServerLauncher.Daemon.csproj `
 
 Place each plugin bundle under `artifacts/publish/daemon/plugins/<plugin-id>/`. A bundle contains `mcsl-plugin.json`, the entry assembly, and private implementation dependencies. Shared `MCServerLauncher.Daemon.API.dll` and `MCServerLauncher.Common.dll` copies are rejected.
 
+A bundle loads only when the daemon `config.json` opts it in explicitly: `plugins.entries.<plugin-id>.enabled` must be `true`. A plugin id absent from `plugins.entries` is disabled. Required features must additionally fall within the effective grant set (`grant_level` plus `plugins.plugin_grants.<plugin-id>`); features above the grant level need an interactive approval or a recorded `plugins.admissions` decision.
+
 ## Startup and shutdown
 
 Plugins are discovered, validated, configured, started, admitted to the frozen catalog, and activated before the first client connection is accepted. A failed plugin is logged and skipped without preventing daemon startup. Shutdown cancels plugin lifetimes, stops successful plugins in reverse start order, closes event/RPC ownership, and then stops the daemon services.
