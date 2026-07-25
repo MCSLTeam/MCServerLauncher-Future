@@ -4,7 +4,7 @@
 
 Plugin API 2.0 plugins reference only the SDK package:
 
-    <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.2" />
+    <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.3" />
 
 The SDK carries the exact Daemon API/Common dependency chain, the source generator, and
 the buildTransitive publish targets. Do not add a direct Daemon API package reference.

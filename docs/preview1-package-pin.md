@@ -1,12 +1,38 @@
 # Preview-1 Package Pin
 
-Status: accepted for MCP-0..5.
-Branch: `feat/plugin-sdk-2-preview1`
-Release: `2.0.0-preview.2` ([GitHub Release](https://github.com/MCSLTeam/MCServerLauncher-Future/releases/tag/2.0.0-preview.2))
-Source commit: `a5510a6089a88692ff7ff0cde7fd0b6249a3b965`
+Status: internal baseline `2.0.0-preview.3` (2026-07-25) for MCP-0..5.
+No public release exists or is planned for Preview-1 packages; SDK-9a public
+distribution stays an explicitly reopened gate. The `2.0.0-preview.2`
+acceptance record below is historical.
 Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`, sections 1, 10, and 12.
 
-## Gate status
+## Internal `2.0.0-preview.3` baseline (2026-07-25)
+
+- Source: branch `codex/preview1-baseline-reconcile` — `origin/master`
+  (`8f2796f7`, carries `fix(daemon): preserve buffered ready lifecycle
+  signals`) plus the cherry-picked `build(daemon): declare ASP.NET Core
+  framework for plugins` change. This is the first commit line that satisfies
+  both Preview-1 daemon requirements (spec section 6 lifecycle correctness and
+  spec section 8 `Microsoft.AspNetCore.App` FrameworkReference) at once.
+- Version advanced to `2.0.0-preview.3` because two payload-identical but
+  bitwise-different `2.0.0-preview.2` builds already circulated (the
+  Action-built set from `a5510a60` and the locally built set from `4f3f1d8c`),
+  and same-version/different-hash packages break locked restores that mix
+  caches (NU1403). The reconciled commit would have added a third.
+- Packages are produced locally or in CI from the pinned commit via the MCP
+  repo's `tools/Get-SdkPackages.ps1`; the exact pinned commit is recorded
+  there and in the MCP repo's `.github/workflows/ci.yml` plus its lockfiles.
+- No GitHub Release, tag, or nuget.org publication is planned for
+  `2.0.0-preview.2` or `2.0.0-preview.3`.
+
+## Historical record: `2.0.0-preview.2` acceptance (superseded)
+
+Branch: `feat/plugin-sdk-2-preview1`
+Release workflow tag: `2.0.0-preview.2` (assets slated for removal; no
+publication plan)
+Source commit: `a5510a6089a88692ff7ff0cde7fd0b6249a3b965`
+
+### Gate status
 
 The accepted packages were downloaded from the public prerelease above after
 Release workflow run `30101725253` completed successfully. A second independent
@@ -17,7 +43,7 @@ and the published Release daemon fixture also passed. The latter ran all three
 PluginIntegrationTests with `MCSL_PLUGIN_PACKAGE_SOURCE` bound to the downloaded
 Release packages.
 
-## Exact versions
+### Exact versions
 
 | Package id | Version |
 |---|---|
@@ -28,7 +54,7 @@ Release packages.
 MCP and external consumers MUST pin exact versions, without floating ranges,
 and should use a lockfile.
 
-## Dependency pins in packages
+### Dependency pins in packages
 
 - `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [2.0.0-preview.2]`
 - `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [2.0.0-preview.2]`
@@ -37,7 +63,7 @@ and should use a lockfile.
 - `MCServerLauncher.Daemon.Plugin.Sdk` carries `buildTransitive` props and
   targets for `mcsl-plugin.json` and `MCSLPluginBundle`.
 
-## Content fingerprints
+### Content fingerprints
 
 Whole-nupkg SHA-256 is not the acceptance pin: NuGet embeds repository and
 timestamp metadata that can change across repacks while payload code remains
@@ -77,13 +103,13 @@ dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugi
 The release workflow recognizes the `2.0.0-preview.2` tag, packs all three
 declared versions with `MCSL_PIN_PACKAGE_PAYLOAD=true`, and attaches each nupkg.
 
-### `MCServerLauncher.Common.2.0.0-preview.2.nupkg`
+#### `MCServerLauncher.Common.2.0.0-preview.2.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
 | `lib/net10.0/MCServerLauncher.Common.dll` | `4d44f9993d9def979db6e80c7004c4d2ddf8fa92cdaf5511dc69842ad6dae38c` |
 
-### `MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg`
+#### `MCServerLauncher.Daemon.API.2.0.0-preview.2.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
@@ -96,7 +122,7 @@ Nuspec dependencies are exact:
 - `RustyOptions = [0.10.1]`
 - `Microsoft.Extensions.Logging.Abstractions = [10.0.9]`
 
-### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg`
+#### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.2.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
@@ -132,7 +158,7 @@ atomic admission skip.
 ## Consumer pin
 
 ```xml
-<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.2" />
+<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.3" />
 ```
 
 Local-feed restore requires the three nupkgs above and nuget.org for transitive
@@ -152,5 +178,7 @@ and the published-host suite with `MCSL_PUBLISHED_DAEMON` pointing to the
 downloaded daemon asset and `MCSL_PLUGIN_PACKAGE_SOURCE` pointing to the three
 downloaded nupkgs.
 
-Distribution remains GitHub Release assets for all three nupkgs. Public
-nuget.org publication is not required for the first accepted pin.
+Distribution is internal-only: consumers restore the three nupkgs from a local
+feed built by the MCP repo's `tools/Get-SdkPackages.ps1` at the pinned commit.
+Public distribution (GitHub Release assets or nuget.org) requires explicitly
+reopening SDK-9a.
