@@ -654,6 +654,20 @@ public sealed class InstanceProcessEventPumpTests
     }
 
     [Fact]
+    public async Task StartInstance_TerminalReachedDuringStart_LeavesCatalogAtTerminalStatus()
+    {
+        var config = CreateConfig();
+        var instance = new TerminalDuringStartInstance(config);
+        var manager = new InstanceManager();
+        manager.ReplaceInstance(config.Uuid, instance);
+
+        Assert.NotNull(await manager.TryStartInstance(config.Uuid));
+
+        Assert.True(manager.InstanceSnapshotSource.TryGet(config.Uuid, out var snapshot));
+        Assert.Equal(InstanceStatus.Stopped, snapshot.Status);
+    }
+
+    [Fact]
     public async Task BlockedRunningHandler_HaltCommitsImmediatelyAndPublishesInOrder()
     {
         using var process = new InstanceProcess(CreateReadyThenLongRunningStartInfo(), InstanceType.Universal);
@@ -1317,6 +1331,72 @@ public sealed class InstanceProcessEventPumpTests
         public void ReplaceConfig(InstanceConfig config)
         {
             ProtectedConfig = config;
+        }
+    }
+
+    /// <summary>
+    /// Delivers a terminal status through the ordered generation chain from inside
+    /// <see cref="StartAsync" /> while its live <see cref="Status" /> still reads Running — the shape a
+    /// process that exits during startup produces. A live-status upsert after start returns would
+    /// publish the superseded Running and pin the catalog to it.
+    /// </summary>
+    private sealed class TerminalDuringStartInstance(InstanceConfig config)
+        : IInstance, IInstanceProcessGenerationSource
+    {
+        public InstanceConfig Config { get; } = config;
+        public InstanceProcess? Process => null;
+        public InstanceStatus Status => InstanceStatus.Running;
+        public int ServerProcessId => -1;
+        public long CurrentProcessGeneration => 1;
+
+        public event Func<Guid, string, CancellationToken, Task>? OnLog
+        {
+            add { }
+            remove { }
+        }
+
+        public event Func<Guid, InstanceStatus, CancellationToken, Task>? OnStatusChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public event Func<IInstance, long, string, CancellationToken, Task>? ProcessLogReceived
+        {
+            add { }
+            remove { }
+        }
+
+        public event Func<IInstance, long, InstanceReportFact, CancellationToken, Task>? ProcessReportFactChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public event Func<IInstance, long, InstanceStatus, CancellationToken, Task>? ProcessStatusChanged;
+
+        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default) =>
+            Task.FromResult(new InstanceReport(Status, Config, [], [], default));
+
+        public async Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default)
+        {
+            if (ProcessStatusChanged is { } handler)
+            {
+                await handler(this, CurrentProcessGeneration, InstanceStatus.Stopped, CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+
+            return true;
+        }
+
+        public Task<bool> StopAsync(CancellationToken ct = default) => Task.FromResult(true);
+
+        public Task ForceKillAndClearAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+        public IReadOnlyList<string> GetLogHistory() => [];
+
+        public void Dispose()
+        {
         }
     }
 
