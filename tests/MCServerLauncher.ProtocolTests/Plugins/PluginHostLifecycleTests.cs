@@ -684,10 +684,9 @@ public sealed class PluginHostLifecycleTests
                 await cleanupTask.WaitAsync(TimeSpan.FromSeconds(5));
 
             AssertStates(host.States, ("fixture.sdk-generated-health", expectedState));
-            var lines = File.ReadAllLines(probePath);
             if (!mode.Equals("success", StringComparison.Ordinal))
                 await WaitForProbeLineAsync(probePath, "disposed", TimeSpan.FromSeconds(5));
-            lines = File.ReadAllLines(probePath);
+            var lines = ReadProbeLines(probePath);
             Assert.Equal(1, lines.Count(static line => line == "created"));
             Assert.Equal(1, lines.Count(static line => line == "disposed"));
             await WaitForEndpointRegistrationAsync(
@@ -697,7 +696,7 @@ public sealed class PluginHostLifecycleTests
                 TimeSpan.FromSeconds(5));
 
             await host.StopAsync(CancellationToken.None);
-            lines = File.ReadAllLines(probePath);
+            lines = ReadProbeLines(probePath);
             Assert.Equal(1, lines.Count(static line => line == "created"));
             Assert.Equal(1, lines.Count(static line => line == "disposed"));
         }
@@ -1211,6 +1210,20 @@ public sealed class PluginHostLifecycleTests
         }
     }
 
+    /// <summary>
+    /// The probe appends while the test reads, and the appender only shares read access, so a
+    /// default <see cref="File.ReadAllLines(string)"/> can lose the race with its own writer.
+    /// </summary>
+    private static string[] ReadProbeLines(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd()
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(static line => line.TrimEnd('\r'))
+            .ToArray();
+    }
+
     private static async Task WaitForProbeLineAsync(string path, string expected, TimeSpan timeout)
     {
         using var cancellation = new CancellationTokenSource(timeout);
@@ -1218,7 +1231,7 @@ public sealed class PluginHostLifecycleTests
         {
             while (true)
             {
-                if (File.Exists(path) && File.ReadAllLines(path).Contains(expected, StringComparer.Ordinal))
+                if (File.Exists(path) && ReadProbeLines(path).Contains(expected, StringComparer.Ordinal))
                     return;
                 await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
             }

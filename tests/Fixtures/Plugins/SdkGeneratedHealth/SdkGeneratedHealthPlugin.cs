@@ -45,6 +45,15 @@ public partial class SdkGeneratedHealthPlugin
 
 internal sealed class SdkGeneratedResourceProbe : IAsyncDisposable
 {
+    // Captured once per probe: the driving test rewrites these process-global variables for every
+    // theory case, so re-reading them per write let a probe that outlived its own case append into
+    // the next case's file.
+    private readonly string? _probePath =
+        Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH");
+
+    private readonly string? _releasePath =
+        Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_DISPOSE_RELEASE_PATH");
+
     private int _disposed;
 
     public SdkGeneratedResourceProbe() => Record("created");
@@ -54,22 +63,20 @@ internal sealed class SdkGeneratedResourceProbe : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
 
-        var releasePath = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_DISPOSE_RELEASE_PATH");
-        if (!string.IsNullOrWhiteSpace(releasePath))
+        if (!string.IsNullOrWhiteSpace(_releasePath))
         {
             Record("disposing");
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            while (!File.Exists(releasePath))
+            while (!File.Exists(_releasePath))
                 await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token).ConfigureAwait(false);
         }
 
         Record("disposed");
     }
 
-    private static void Record(string value)
+    private void Record(string value)
     {
-        var path = Environment.GetEnvironmentVariable("MCSL_SDK_GENERATED_RESOURCE_PROBE_PATH");
-        if (!string.IsNullOrWhiteSpace(path))
-            File.AppendAllText(path, value + Environment.NewLine);
+        if (!string.IsNullOrWhiteSpace(_probePath))
+            File.AppendAllText(_probePath, value + Environment.NewLine);
     }
 }
