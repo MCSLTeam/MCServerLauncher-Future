@@ -144,12 +144,20 @@ public sealed class TouchSocketV2RealHostIntegrationTests
             "Sec-WebSocket-Key",
             Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
         using var timeout = new CancellationTokenSource(Timeout);
-        using var response = await client.SendAsync(
-            request,
-            HttpCompletionOption.ResponseHeadersRead,
-            timeout.Token);
+        try
+        {
+            using var response = await client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                timeout.Token);
 
-        Assert.NotEqual(System.Net.HttpStatusCode.SwitchingProtocols, response.StatusCode);
+            Assert.NotEqual(System.Net.HttpStatusCode.SwitchingProtocols, response.StatusCode);
+        }
+        catch (HttpRequestException exception) when (HasConnectionReset(exception))
+        {
+            // The host may refuse the invalid upgrade by resetting the connection instead
+            // of answering with an HTTP status; a reset connection was equally not upgraded.
+        }
     }
 
     private static async Task AssertHttpMetadataReportsV2Async(int port)
