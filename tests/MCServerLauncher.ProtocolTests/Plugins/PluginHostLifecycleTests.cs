@@ -932,7 +932,16 @@ public sealed class PluginHostLifecycleTests
             }
 
             await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
-            AssertStates(host.States, ("fixture.late-http-cleanup", PluginRuntimeState.CleanupAbandoned));
+
+            // Abandonment is marked by the failed-cleanup supervisor, which by design outlives
+            // StopAsync ("abandon and keep shutting down"), so both the state and its log line have to
+            // be awaited rather than read straight after the stop completes.
+            await WaitForStateAsync(
+                host,
+                "fixture.late-http-cleanup",
+                PluginRuntimeState.CleanupAbandoned,
+                TimeSpan.FromSeconds(5));
+            await WaitForLogMessageAsync(logger, "cleanup_abandoned", TimeSpan.FromSeconds(5));
             Assert.Contains(logger.Messages, message =>
                 message.Contains("fixture.late-http-cleanup", StringComparison.Ordinal) &&
                 message.Contains("cleanup_abandoned", StringComparison.Ordinal));
@@ -1315,6 +1324,29 @@ public sealed class PluginHostLifecycleTests
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
             throw new TimeoutException($"Log message containing '{expected}' was not observed before the deadline.");
+        }
+    }
+
+    private static async Task WaitForStateAsync(
+        PluginHost host,
+        string pluginId,
+        PluginRuntimeState expected,
+        TimeSpan timeout)
+    {
+        using var cancellation = new CancellationTokenSource(timeout);
+        try
+        {
+            while (!host.States.Any(state =>
+                       string.Equals(state.Id, pluginId, StringComparison.Ordinal) && state.State == expected))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(10), cancellation.Token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Plugin '{pluginId}' did not reach state '{expected}' before the deadline; " +
+                $"observed [{string.Join(", ", host.States.Select(state => $"{state.Id}={state.State}"))}].");
         }
     }
 
