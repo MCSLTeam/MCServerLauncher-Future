@@ -16,9 +16,10 @@ namespace MCServerLauncher.Daemon;
 internal class AppConfig
 {
     /// <summary>
-    ///     不可变单例
+    ///     不可变单例。必须原子发布：<see cref="GetDefault" /> 会生成随机 Secret/MainToken，
+    ///     两个线程各自加载出的实例互不通用（签发与校验用不同 secret，且 Reset 可能写在被丢弃的实例上）。
     /// </summary>
-    [JsonIgnore] private static AppConfig? _appConfig;
+    private static readonly Lazy<AppConfig> LazyAppConfig = new(() => LoadOrDefault());
 
     public readonly bool Verbose;
 
@@ -133,6 +134,6 @@ internal class AppConfig
 
     public static AppConfig Get()
     {
-        return _appConfig ??= LoadOrDefault();
+        return LazyAppConfig.Value;
     }
 }
