@@ -706,7 +706,11 @@ public class InstanceProcess : DisposableObject
         Task publication;
         lock (_lifecycleStateGate)
         {
-            if (Volatile.Read(ref _terminalCommitted) != 0 || HasExit)
+            // Process.HasExited can become true before the stdout/stderr pumps drain their
+            // already-buffered lifecycle lines. Use the finalized boundary here so a Ready
+            // signal observed before a queued Crash signal preserves the stream order.
+            if (Volatile.Read(ref _terminalCommitted) != 0 ||
+                Volatile.Read(ref _finalized) != 0)
                 return;
 
             if ((InstanceStatus)_status != InstanceStatus.Starting)
