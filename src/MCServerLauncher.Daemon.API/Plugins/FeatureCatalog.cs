@@ -145,7 +145,15 @@ public static class FeatureCatalog
             PluginFeatureRisk.Medium,
             ["mcsl.provisioning.resolve", "mcsl.provisioning.get", "mcsl.provisioning.execute"],
             implemented: true),
-        Descriptor(PluginFeature.BackupManage, "List, create, prune, and restore cold backups.", PluginFeatureRisk.Medium, [], implemented: false),
+        Descriptor(
+            PluginFeature.BackupManage,
+            "List, create, prune, and restore cold backups.",
+            PluginFeatureRisk.Medium,
+            [
+                "mcsl.backup.list", "mcsl.backup.create", "mcsl.backup.prune",
+                "mcsl.backup.restore.plan", "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute"
+            ],
+            implemented: true),
         Descriptor(PluginFeature.MonitoringQuery, "Read retained system and instance metrics.", PluginFeatureRisk.None, [], implemented: false),
         Descriptor(PluginFeature.AutomationManage, "Validate, test, apply, and enable typed automation policies.", PluginFeatureRisk.Medium, [], implemented: false),
         Descriptor(PluginFeature.AuditQuery, "Query bounded structured audit records.", PluginFeatureRisk.None, [], implemented: false),

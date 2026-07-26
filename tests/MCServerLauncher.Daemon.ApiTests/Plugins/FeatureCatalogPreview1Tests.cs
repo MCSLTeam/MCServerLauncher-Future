@@ -15,6 +15,8 @@ public sealed class FeatureCatalogPreview1Tests
             PluginFeature.OperationQuery.Value,
             PluginFeature.OperationCancel.Value,
             PluginFeature.ProvisioningManage.Value,
+            // SDK-7 (Preview-2): cold backup and confirmed restore.
+            PluginFeature.BackupManage.Value,
             PluginFeature.NetworkHttpListen.Value,
             PluginFeature.AuthVerify.Value,
             PluginFeature.StoragePrivate.Value,
@@ -73,12 +75,21 @@ public sealed class FeatureCatalogPreview1Tests
                 "mcsl.provisioning.resolve",
             ],
             FeatureCatalog.MethodsFor(PluginFeature.ProvisioningManage).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [
+                "mcsl.backup.create",
+                "mcsl.backup.list",
+                "mcsl.backup.prune",
+                "mcsl.backup.restore.confirm",
+                "mcsl.backup.restore.execute",
+                "mcsl.backup.restore.plan",
+            ],
+            FeatureCatalog.MethodsFor(PluginFeature.BackupManage).Order(StringComparer.Ordinal));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.AuthVerify));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.NetworkHttpListen));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.StoragePrivate));
 
-        // Preview-2 domains remain unimplemented and contribute nothing to host expansion.
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.BackupManage));
+        // Remaining Preview-2 domains stay unimplemented and contribute nothing to host expansion.
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.MonitoringQuery));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.AutomationManage));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.AuditQuery));
