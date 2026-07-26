@@ -128,6 +128,7 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<IOperationApplication>(),
             serviceProvider.GetRequiredService<IProvisioningApplication>(),
             serviceProvider.GetRequiredService<PluginAdmissionPreflight>(),
+            serviceProvider.GetRequiredService<IBackupApplication>(),
             serviceProvider.GetRequiredService<VerifiedPrincipalAuthority>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);

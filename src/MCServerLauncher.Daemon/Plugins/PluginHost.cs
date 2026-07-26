@@ -46,6 +46,7 @@ internal sealed class PluginHost
     private readonly IInstanceApplication? _instanceApplication;
     private readonly IOperationApplication? _operationApplication;
     private readonly IProvisioningApplication? _provisioningApplication;
+    private readonly IBackupApplication? _backupApplication;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -139,6 +140,7 @@ internal sealed class PluginHost
         IOperationApplication? operationApplication = null,
         IProvisioningApplication? provisioningApplication = null,
         PluginAdmissionPreflight? preflight = null,
+        IBackupApplication? backupApplication = null,
         VerifiedPrincipalAuthority? verifiedPrincipals = null,
         TimeSpan? rollbackCleanupTimeout = null,
         TimeSpan? shutdownCleanupTimeout = null)
@@ -183,6 +185,7 @@ internal sealed class PluginHost
         _instanceApplication = instanceApplication;
         _operationApplication = operationApplication;
         _provisioningApplication = provisioningApplication;
+        _backupApplication = backupApplication;
     }
 
     /// <summary>
@@ -542,7 +545,8 @@ internal sealed class PluginHost
                 manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
                 manifest.HasFeature(PluginFeature.OperationQuery) ? _operationApplication : null,
                 manifest.HasFeature(PluginFeature.OperationCancel) ? _operationApplication : null,
-                manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null);
+                manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null,
+                manifest.HasFeature(PluginFeature.BackupManage) ? _backupApplication : null);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,
