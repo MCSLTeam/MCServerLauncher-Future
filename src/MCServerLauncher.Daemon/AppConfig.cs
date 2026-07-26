@@ -1,4 +1,5 @@
 using MCServerLauncher.Daemon.Plugins.Configuration;
+using MCServerLauncher.Daemon.ApplicationCore.Backups;
 using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.Serialization;
 using MCServerLauncher.Daemon.Storage;
@@ -32,7 +33,8 @@ internal class AppConfig
         bool verbose = false,
         DaemonSecurityConfig? security = null,
         DaemonPluginsConfig? plugins = null,
-        DaemonOperationsConfig? operations = null)
+        DaemonOperationsConfig? operations = null,
+        DaemonBackupConfig? backups = null)
     {
         Port = port;
         Secret = secret;
@@ -44,8 +46,10 @@ internal class AppConfig
         Security = security ?? new DaemonSecurityConfig();
         Plugins = plugins ?? DaemonPluginsConfig.Default;
         Operations = operations ?? new DaemonOperationsConfig();
+        Backups = backups ?? new DaemonBackupConfig();
         _ = PluginAdmissionPolicy.ParseGrantLevel(Plugins.GrantLevel);
         Operations.Validate();
+        Backups.Validate();
         Log.Information("[AppConfig] Loaded configuration for port {Port}.", port);
     }
 
@@ -72,6 +76,8 @@ internal class AppConfig
     public DaemonPluginsConfig Plugins { get; private set; }
 
     public DaemonOperationsConfig Operations { get; private set; }
+
+    public DaemonBackupConfig Backups { get; private set; }
 
     internal static JsonTypeInfo<AppConfig> PersistenceWriteIndentedTypeInfo { get; } = ResolvePersistenceWriteIndentedTypeInfo();
 

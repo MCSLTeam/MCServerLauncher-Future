@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.ApplicationCore.Backups;
 using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Plugins.Configuration;
@@ -14,6 +15,7 @@ namespace MCServerLauncher.Daemon.Serialization;
 [JsonSerializable(typeof(DaemonSecurityConfig))]
 [JsonSerializable(typeof(DaemonPluginsConfig))]
 [JsonSerializable(typeof(DaemonOperationsConfig))]
+[JsonSerializable(typeof(DaemonBackupConfig))]
 [JsonSerializable(typeof(PluginStorageConfig))]
 [JsonSerializable(typeof(PluginEntryConfig))]
 [JsonSerializable(typeof(PluginAdmissionConfig))]

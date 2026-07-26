@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -122,6 +123,19 @@ public sealed class ApplicationDtoJsonMetadataTests
             false,
             DateTimeOffset.UnixEpoch,
             DateTimeOffset.UnixEpoch);
+        var backupManifest = new BackupArchiveManifest(
+            Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            instanceId,
+            "Example",
+            1,
+            "1.21.5",
+            new string('b', 64),
+            DateTimeOffset.Parse("2026-07-11T00:00:00+00:00"),
+            [new BackupFileEntry("world/level.dat", 42)],
+            42,
+            21,
+            "deflate",
+            new string('c', 64));
         var drive = new ContractDriveInfo("NTFS", 1024, 512, "C:\\");
         var systemInfo = new SystemInfo(
             new OperatingSystemInfo("Windows", "x64"),
@@ -188,7 +202,19 @@ public sealed class ApplicationDtoJsonMetadataTests
             drive,
             systemInfo,
             new JavaRuntime("C:/Java/bin/java.exe", "21.0.7", "x64"),
-            new JavaRuntimeList([new JavaRuntime("C:/Java/bin/java.exe", "21.0.7", "x64")])
+            new JavaRuntimeList([new JavaRuntime("C:/Java/bin/java.exe", "21.0.7", "x64")]),
+            backupManifest,
+            new BackupFileEntry("world/level.dat", 42),
+            new BackupListQuery(instanceId, "owner-a"),
+            new BackupListResult([backupManifest]),
+            new BackupCreateRequest(instanceId, true, "owner-a"),
+            new BackupCreateResult(sessionId),
+            new BackupPruneRequest("owner-a"),
+            new BackupPruneResult([sessionId]),
+            new BackupRestorePlanRequest(sessionId, instanceId, "owner-a", "idem-1", TimeSpan.FromMinutes(30)),
+            new BackupRestoreConfirmRequest(sessionId, new string('a', 64), "owner-a"),
+            new BackupRestoreExecuteRequest(sessionId, "owner-a"),
+            new BackupRestoreExecuteResult(sessionId, instanceId)
         ];
     }
 

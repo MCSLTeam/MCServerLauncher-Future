@@ -251,6 +251,9 @@ Generated_Code/
 # because we have git ;-)
 _UpgradeReport_Files/
 Backup*/
+# The VS upgrade-backup rule above must not swallow real backup-domain source directories.
+!src/**/Backup*/
+!tests/**/Backup*/
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/
