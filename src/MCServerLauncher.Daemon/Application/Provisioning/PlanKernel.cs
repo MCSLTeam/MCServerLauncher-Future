@@ -369,6 +369,31 @@ internal sealed class PlanKernel
         }
     }
 
+    /// <summary>
+    /// Non-terminal, non-expired plans of one kind. Retention uses this as its pin source, so
+    /// Executing plans (which never expire) keep pinning until restart reconciliation resolves them.
+    /// </summary>
+    public ImmutableArray<ProvisioningPlanSnapshot> ListActive(string kind)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        PurgeExpired();
+        var active = ImmutableArray.CreateBuilder<ProvisioningPlanSnapshot>();
+        foreach (var record in _plans.Values)
+        {
+            lock (record.Gate)
+            {
+                var snapshot = record.Snapshot;
+                if (string.Equals(snapshot.Kind, kind, StringComparison.Ordinal) &&
+                    snapshot.Status is PlanStatus.Blocked or PlanStatus.Ready or PlanStatus.Executing)
+                {
+                    active.Add(snapshot);
+                }
+            }
+        }
+
+        return active.ToImmutable();
+    }
+
     internal void ReconcileExecutingPlans(OperationCoordinator operations)
     {
         foreach (var (planId, record) in _plans)

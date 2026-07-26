@@ -5,6 +5,7 @@ using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.ApplicationCore.Backups;
 using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.ApplicationCore.Auth;
 using MCServerLauncher.Daemon.ApplicationCore.Provisioning;
@@ -81,6 +82,9 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<PlanKernel>();
         a.RegisterSingleton<OperationStartupRecovery>();
         a.RegisterSingleton<IProvisioningApplication, LocalProvisioningApplication>();
+        a.RegisterSingleton(appConfig.Backups);
+        a.RegisterSingleton<BackupArchiveStore>();
+        a.RegisterSingleton<IBackupApplication, LocalBackupApplication>();
         var verifiedPrincipals = new VerifiedPrincipalAuthority();
         var callerContextFactory = new CallerContextFactory(verifiedPrincipals);
         a.RegisterSingleton(verifiedPrincipals);
