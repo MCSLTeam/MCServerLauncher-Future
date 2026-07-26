@@ -22,11 +22,12 @@ internal sealed class LocalBackupApplication(
     PlanKernel planKernel,
     IInstanceManager instanceManager,
     IInstanceApplication instances,
-    IOperationApplication operations) : IBackupApplication
+    IOperationApplication operations,
+    TimeSpan? stopExitDeadline = null) : IBackupApplication
 {
     internal const string RestorePlanKind = "backup.restore";
     internal const string RestoreOperationKind = "backup.restore.execute";
-    private static readonly TimeSpan StopExitDeadline = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _stopExitDeadline = stopExitDeadline ?? TimeSpan.FromSeconds(30);
 
     private static readonly ImmutableArray<string> RestorePermissions =
         ["mcsl.backup.restore.plan", "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute"];
@@ -56,8 +57,8 @@ internal sealed class LocalBackupApplication(
                 new NotFoundDaemonError("instance.not_found", "The instance was not found."));
         }
 
-        var wasRunning = instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed;
-        if (!request.Maintenance && wasRunning)
+        if (!request.Maintenance &&
+            instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
         {
             return Result.Err<BackupCreateResult, DaemonError>(
                 new ConflictDaemonError("instance.running", "The instance must be stopped for a direct backup."));
@@ -68,7 +69,7 @@ internal sealed class LocalBackupApplication(
             target: request.InstanceId.ToString("D"),
             ownerPrincipal: request.OwnerPrincipal,
             executor: (_, context, ct) => request.Maintenance
-                ? RunMaintenanceBackupAsync(instance, wasRunning, context, ct)
+                ? RunMaintenanceBackupAsync(instance, context, ct)
                 : RunDirectBackupAsync(instance, context, ct),
             cancellationToken: cancellationToken).ConfigureAwait(false);
         if (start.IsErr(out var startError))
@@ -228,7 +229,6 @@ internal sealed class LocalBackupApplication(
 
     private async Task<Result<string, DaemonError>> RunMaintenanceBackupAsync(
         IInstance instance,
-        bool wasRunning,
         IOperationContext context,
         CancellationToken cancellationToken)
     {
@@ -240,7 +240,10 @@ internal sealed class LocalBackupApplication(
 
         context.SetStage(OperationStage.Resolving);
         stopStep.ReportProgress(new OperationProgress(false, 0, 1, "steps", null, null, null));
-        if (wasRunning)
+        // Decide inside the executor: the admission-time state may be stale by the time the
+        // supervisor dispatches this. RunningInstances is the predicate start/stop themselves use.
+        var weStopped = false;
+        if (instanceManager.RunningInstances.ContainsKey(instance.Config.Uuid))
         {
             var stopped = await instances.StopInstanceAsync(
                 new InstanceReference(instance.Config.Uuid),
@@ -248,51 +251,103 @@ internal sealed class LocalBackupApplication(
             if (stopped.IsErr(out var stopError))
                 return Result.Err<string, DaemonError>(stopError!);
 
-            // Stop commits Stopping only; archiving a live directory would capture a torn world.
-            if (instance.Process is { } process)
+            weStopped = true;
+            var landed = await WaitForStoppedAsync(instance, cancellationToken).ConfigureAwait(false);
+            if (landed.IsErr(out var landError))
             {
-                try
-                {
-                    await process.WaitForExitAsync(cancellationToken)
-                        .WaitAsync(StopExitDeadline, cancellationToken).ConfigureAwait(false);
-                }
-                catch (TimeoutException)
-                {
-                    return Result.Err<string, DaemonError>(
-                        new ConflictDaemonError(
-                            "backup.stop_timeout",
-                            "The instance did not reach a stopped state before the maintenance deadline."));
-                }
-            }
-
-            if (instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
-            {
-                return Result.Err<string, DaemonError>(
-                    new ConflictDaemonError(
-                        "backup.stop_timeout",
-                        "The instance did not reach a stopped state before the maintenance deadline."));
+                await TryRestartAsync(instance, restartStep).ConfigureAwait(false);
+                return Result.Err<string, DaemonError>(landError!);
             }
         }
 
         stopStep.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
 
-        var archived = await ArchiveStoppedInstanceAsync(instance, archiveStep, cancellationToken)
-            .ConfigureAwait(false);
-        if (archived.IsErr(out var archiveError))
-            return Result.Err<string, DaemonError>(archiveError!);
+        Result<string, DaemonError> archived;
+        try
+        {
+            archived = await ArchiveStoppedInstanceAsync(instance, archiveStep, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch when (weStopped)
+        {
+            // The restart is compensating, not sequential: a failed or cancelled archive must not
+            // leave a server down that this operation itself stopped.
+            await TryRestartAsync(instance, restartStep).ConfigureAwait(false);
+            throw;
+        }
 
         restartStep.ReportProgress(new OperationProgress(false, 0, 1, "steps", null, null, null));
-        if (wasRunning)
+        if (weStopped)
         {
-            var restarted = await instances.StartInstanceAsync(
-                new InstanceReference(instance.Config.Uuid),
-                cancellationToken).ConfigureAwait(false);
-            if (restarted.IsErr(out var restartError))
+            var restarted = await TryRestartAsync(instance, restartStep).ConfigureAwait(false);
+            if (archived.IsOk(out _) && restarted.IsErr(out var restartError))
                 return Result.Err<string, DaemonError>(restartError!);
         }
 
+        if (archived.IsErr(out var archiveError))
+            return Result.Err<string, DaemonError>(archiveError!);
+
         restartStep.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
         return archived;
+    }
+
+    /// <summary>
+    /// Best-effort compensating restart, deliberately not bound to the operation token so a
+    /// cancelled backup still brings the server back.
+    /// </summary>
+    private async Task<Result<Unit, DaemonError>> TryRestartAsync(IInstance instance, IOperationContext restartStep)
+    {
+        restartStep.ReportProgress(new OperationProgress(false, 0, 1, "steps", null, null, null));
+        var restarted = await instances.StartInstanceAsync(
+            new InstanceReference(instance.Config.Uuid),
+            CancellationToken.None).ConfigureAwait(false);
+        if (restarted.IsOk(out _))
+            restartStep.ReportProgress(new OperationProgress(false, 1, 1, "steps", null, null, null));
+        return restarted;
+    }
+
+    private async Task<Result<Unit, DaemonError>> WaitForStoppedAsync(
+        IInstance instance,
+        CancellationToken cancellationToken)
+    {
+        // Stop commits Stopping only; archiving a live directory would capture a torn world. The
+        // process handle can also be detached before the terminal status lands, so poll the status
+        // against the deadline instead of failing the moment the handle is gone.
+        var deadline = DateTimeOffset.UtcNow + _stopExitDeadline;
+        while (instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
+        {
+            if (instance.Process is { } process)
+            {
+                try
+                {
+                    var remaining = deadline - DateTimeOffset.UtcNow;
+                    if (remaining <= TimeSpan.Zero)
+                        break;
+                    await process.WaitForExitAsync(cancellationToken)
+                        .WaitAsync(remaining, cancellationToken).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            if (DateTimeOffset.UtcNow >= deadline)
+                break;
+            await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
+        }
+
+        if (instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
+        {
+            return Result.Err<Unit, DaemonError>(
+                new ConflictDaemonError(
+                    "backup.stop_timeout",
+                    "The instance did not reach a stopped state before the maintenance deadline."));
+        }
+
+        return Result.Ok<Unit, DaemonError>(Unit.Default);
     }
 
     private async Task<Result<string, DaemonError>> ArchiveStoppedInstanceAsync(
@@ -300,6 +355,11 @@ internal sealed class LocalBackupApplication(
         IOperationContext context,
         CancellationToken cancellationToken)
     {
+        // The mutation lease keeps concurrent start/remove/settings mutations out of the working
+        // directory while it is being read. Stop/start application calls acquire the same
+        // non-reentrant gate internally, so this scope must never contain them.
+        using var mutation = await instanceManager.AcquireInstanceMutationAsync(instance.Config.Uuid, cancellationToken)
+            .ConfigureAwait(false);
         if (instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
         {
             return Result.Err<string, DaemonError>(
@@ -349,6 +409,10 @@ internal sealed class LocalBackupApplication(
                 new NotFoundDaemonError("instance.not_found", "The restore target instance was not found."));
         }
 
+        // Held through the swap: without it a concurrent instance.start could launch the server
+        // between the stopped check and the directory replacement.
+        using var mutation = await instanceManager.AcquireInstanceMutationAsync(manifest.InstanceId, cancellationToken)
+            .ConfigureAwait(false);
         if (instance.Status is not InstanceStatus.Stopped and not InstanceStatus.Crashed)
         {
             return Result.Err<string, DaemonError>(
@@ -400,14 +464,29 @@ internal sealed class LocalBackupApplication(
                         "The restore swap failed; the original instance directory was restored."));
             }
 
-            Directory.Delete(retiredDirectory, recursive: true);
+            // Past the point of no return: the restore has committed, so cleanup failures (an
+            // indexer or scanner briefly holding the retired tree) must not rewrite the outcome.
+            TryDeleteDirectory(retiredDirectory);
             context.SetStage(OperationStage.Finalizing);
             return Result.Ok<string, DaemonError>(payload.ArchiveId.ToString("D"));
         }
         finally
         {
-            if (Directory.Exists(stagingDirectory))
-                Directory.Delete(stagingDirectory, recursive: true);
+            TryDeleteDirectory(stagingDirectory);
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Leftover staging/retired trees are swept by name prefix on later runs; a cleanup
+            // failure never changes the operation outcome.
         }
     }
 
