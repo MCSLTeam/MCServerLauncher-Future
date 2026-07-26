@@ -20,6 +20,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         IEventRuleApplication eventRuleApplication,
         IOperationApplication operationApplication,
         IProvisioningApplication provisioningApplication,
+        IBackupApplication backupApplication,
         ITokenIssueApplication tokenIssueApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
@@ -31,6 +32,7 @@ internal sealed class BuiltInProtocolCatalogComposition
             eventRuleApplication,
             operationApplication,
             provisioningApplication,
+            backupApplication,
             tokenIssueApplication,
             snapshotSource,
             timeProvider,
@@ -46,6 +48,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         IEventRuleApplication eventRuleApplication,
         IOperationApplication operationApplication,
         IProvisioningApplication provisioningApplication,
+        IBackupApplication backupApplication,
         ITokenIssueApplication tokenIssueApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
@@ -58,6 +61,7 @@ internal sealed class BuiltInProtocolCatalogComposition
             eventRuleApplication,
             operationApplication,
             provisioningApplication,
+            backupApplication,
             tokenIssueApplication,
             snapshotSource,
             timeProvider,
@@ -73,6 +77,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         IEventRuleApplication eventRuleApplication,
         IOperationApplication operationApplication,
         IProvisioningApplication provisioningApplication,
+        IBackupApplication backupApplication,
         ITokenIssueApplication tokenIssueApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
@@ -85,6 +90,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         ArgumentNullException.ThrowIfNull(eventRuleApplication);
         ArgumentNullException.ThrowIfNull(operationApplication);
         ArgumentNullException.ThrowIfNull(provisioningApplication);
+        ArgumentNullException.ThrowIfNull(backupApplication);
         ArgumentNullException.ThrowIfNull(tokenIssueApplication);
         ArgumentNullException.ThrowIfNull(snapshotSource);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -104,6 +110,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         BuiltInEventRuleRpcRegistrar.Register(builder, eventRuleApplication);
         BuiltInOperationRpcRegistrar.Register(builder, operationApplication);
         BuiltInProvisioningRpcRegistrar.Register(builder, provisioningApplication);
+        BuiltInBackupRpcRegistrar.Register(builder, backupApplication);
         BuiltInAuthRpcRegistrar.Register(builder, tokenIssueApplication);
         RegisterBuiltInEvents(builder);
 

@@ -8,6 +8,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.Serialization;
@@ -71,6 +72,12 @@ public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions 
     public static RpcDescriptor<ProvisioningResolveRequest, ProvisioningPlanSnapshot> ResolveProvisioning { get; } = Rpc("mcsl.provisioning.resolve", new("mcsl.provisioning.resolve"), Application.ProvisioningResolveRequest, Application.ProvisioningPlanSnapshot, "provisioning", "Resolve provisioning plan", "Resolves an immutable provisioning plan for automatic providers.");
     public static RpcDescriptor<ProvisioningPlanReference, ProvisioningPlanSnapshot> GetProvisioningPlan { get; } = Rpc("mcsl.provisioning.get", new("mcsl.provisioning.get"), Application.ProvisioningPlanReference, Application.ProvisioningPlanSnapshot, "provisioning", "Get provisioning plan", "Gets an immutable provisioning plan snapshot.");
     public static RpcDescriptor<ProvisioningExecuteRequest, ProvisioningExecuteResult> ExecuteProvisioning { get; } = Rpc("mcsl.provisioning.execute", new("mcsl.provisioning.execute"), Application.ProvisioningExecuteRequest, Application.ProvisioningExecuteResult, "provisioning", "Execute provisioning plan", "Executes a ready provisioning plan as a long-running operation.");
+    public static RpcDescriptor<BackupListQuery, BackupListResult> ListBackups { get; } = Rpc("mcsl.backup.list", new("mcsl.backup.list"), Application.BackupListQuery, Application.BackupListResult, "backup", "List backups", "Lists cold backup archives visible to the caller.");
+    public static RpcDescriptor<BackupCreateRequest, BackupCreateResult> CreateBackup { get; } = Rpc("mcsl.backup.create", new("mcsl.backup.create"), Application.BackupCreateRequest, Application.BackupCreateResult, "backup", "Create backup", "Creates a cold backup as a long-running operation.");
+    public static RpcDescriptor<BackupPruneRequest, BackupPruneResult> PruneBackups { get; } = Rpc("mcsl.backup.prune", new("mcsl.backup.prune"), Application.BackupPruneRequest, Application.BackupPruneResult, "backup", "Prune backups", "Applies backup retention, preserving archives referenced by active restore plans.");
+    public static RpcDescriptor<BackupRestorePlanRequest, ProvisioningPlanSnapshot> PlanBackupRestore { get; } = Rpc("mcsl.backup.restore.plan", new("mcsl.backup.restore.plan"), Application.BackupRestorePlanRequest, Application.ProvisioningPlanSnapshot, "backup", "Plan backup restore", "Resolves an immutable destructive restore plan awaiting confirmation.");
+    public static RpcDescriptor<BackupRestoreConfirmRequest, ProvisioningPlanSnapshot> ConfirmBackupRestore { get; } = Rpc("mcsl.backup.restore.confirm", new("mcsl.backup.restore.confirm"), Application.BackupRestoreConfirmRequest, Application.ProvisioningPlanSnapshot, "backup", "Confirm backup restore", "Confirms a restore plan by echoing its hash, making it executable.");
+    public static RpcDescriptor<BackupRestoreExecuteRequest, BackupRestoreExecuteResult> ExecuteBackupRestore { get; } = Rpc("mcsl.backup.restore.execute", new("mcsl.backup.restore.execute"), Application.BackupRestoreExecuteRequest, Application.BackupRestoreExecuteResult, "backup", "Execute backup restore", "Executes a confirmed restore plan as a long-running operation.");
     public static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo { get; } = Rpc("mcsl.system.info.get", new("mcsl.system.info.get"), Protocol.EmptyRequest, Application.SystemInfo, "system", "Get system information", "Gets daemon host system information.");
     public static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc { get; } = Rpc("rpc.discover", new("rpc.discover"), Protocol.EmptyRequest, Protocol.OpenRpcDocument, "discovery", "Discover protocol", "Gets the frozen runtime OpenRPC protocol document.");
 
@@ -99,7 +106,9 @@ public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions 
             SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
             CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
             UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
-            UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, ListOperations, GetOperation, CancelOperation, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning, GetSystemInfo, DiscoverRpc)
+            UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, ListOperations, GetOperation, CancelOperation, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
+            ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore,
+            GetSystemInfo, DiscoverRpc)
         .Sort(CompareRpcs);
 
     private static ImmutableArray<EventDescriptor> CreateEvents() =>

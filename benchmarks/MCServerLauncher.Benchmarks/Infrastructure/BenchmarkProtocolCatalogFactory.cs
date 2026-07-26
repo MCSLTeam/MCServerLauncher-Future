@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
@@ -31,6 +32,7 @@ internal static class BenchmarkProtocolCatalogFactory
             new ThrowingEventRuleApplication(),
             new ThrowingOperationApplication(),
             new ThrowingProvisioningApplication(),
+            new ThrowingBackupApplication(),
             new ThrowingTokenIssueApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
@@ -69,6 +71,17 @@ internal static class BenchmarkProtocolCatalogFactory
         public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ResolveAsync(ProvisioningResolveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<ProvisioningPlanSnapshot, DaemonError>> GetPlanAsync(ProvisioningPlanReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<ProvisioningExecuteResult, DaemonError>> ExecuteAsync(ProvisioningExecuteRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+
+    private sealed class ThrowingBackupApplication : IBackupApplication
+    {
+        public Task<Result<BackupListResult, DaemonError>> ListAsync(BackupListQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<BackupCreateResult, DaemonError>> CreateAsync(BackupCreateRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<BackupPruneResult, DaemonError>> PruneAsync(BackupPruneRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> PlanRestoreAsync(BackupRestorePlanRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ConfirmRestoreAsync(BackupRestoreConfirmRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<BackupRestoreExecuteResult, DaemonError>> ExecuteRestoreAsync(BackupRestoreExecuteRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingOperationApplication : IOperationApplication

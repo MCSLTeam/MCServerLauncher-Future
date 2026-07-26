@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -253,6 +254,104 @@ public sealed class AuthorizedProvisioningApplication(
         if (owner.IsErr(out error))
             return Task.FromResult(Result.Err<ProvisioningExecuteResult, DaemonError>(error!));
         return _inner.ExecuteAsync(
+            request with { ExecutorPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+}
+
+public sealed class AuthorizedBackupApplication(
+    ICallerContext caller,
+    IBackupApplication inner) : IBackupApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IBackupApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<BackupListResult, DaemonError>> ListAsync(
+        BackupListQuery request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.backup.list");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<BackupListResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<BackupListResult, DaemonError>(error!));
+        return _inner.ListAsync(
+            request with { OwnerPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+
+    public Task<Result<BackupCreateResult, DaemonError>> CreateAsync(
+        BackupCreateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.backup.create");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<BackupCreateResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<BackupCreateResult, DaemonError>(error!));
+        return _inner.CreateAsync(
+            request with { OwnerPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+
+    public Task<Result<BackupPruneResult, DaemonError>> PruneAsync(
+        BackupPruneRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.backup.prune");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<BackupPruneResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<BackupPruneResult, DaemonError>(error!));
+        return _inner.PruneAsync(
+            request with { OwnerPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+
+    public Task<Result<ProvisioningPlanSnapshot, DaemonError>> PlanRestoreAsync(
+        BackupRestorePlanRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.backup.restore.plan");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        return _inner.PlanRestoreAsync(
+            request with { CreatorPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+
+    public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ConfirmRestoreAsync(
+        BackupRestoreConfirmRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.backup.restore.confirm");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        return _inner.ConfirmRestoreAsync(
+            request with { ConfirmerPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+
+    public Task<Result<BackupRestoreExecuteResult, DaemonError>> ExecuteRestoreAsync(
+        BackupRestoreExecuteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.backup.restore.execute");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<BackupRestoreExecuteResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<BackupRestoreExecuteResult, DaemonError>(error!));
+        return _inner.ExecuteRestoreAsync(
             request with { ExecutorPrincipal = owner.Unwrap() },
             cancellationToken);
     }

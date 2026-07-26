@@ -106,10 +106,246 @@
           ]
         },
         {
+          "id": "mcsl-folder-32afa6df",
+          "name": "backup",
+          "description": "backup RPC methods.",
+          "ordering": 2,
+          "items": [
+            {
+              "id": "mcsl-rpc-item-a9c818e4",
+              "name": "mcsl.backup.create",
+              "api": {
+                "id": "mcsl-rpc-a9c818e4",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-8b1a03ef",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.backup.create\u0022,\n  \u0022params\u0022: {\n    \u0022instance_id\u0022: \u0022\u0022,\n    \u0022maintenance\u0022: false,\n    \u0022owner_principal\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Creates a cold backup as a long-running operation.\n\nPermission: \u0060mcsl.backup.create\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.backup.create.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.backup.create.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 1,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-96ec8fc8",
+              "name": "mcsl.backup.list",
+              "api": {
+                "id": "mcsl-rpc-96ec8fc8",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-47214943",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.backup.list\u0022,\n  \u0022params\u0022: {\n    \u0022instance_id\u0022: {},\n    \u0022owner_principal\u0022: {}\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Lists cold backup archives visible to the caller.\n\nPermission: \u0060mcsl.backup.list\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.backup.list.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.backup.list.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 2,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-9479f4c0",
+              "name": "mcsl.backup.prune",
+              "api": {
+                "id": "mcsl-rpc-9479f4c0",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-ca3c057b",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.backup.prune\u0022,\n  \u0022params\u0022: {\n    \u0022owner_principal\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Applies backup retention, preserving archives referenced by active restore plans.\n\nPermission: \u0060mcsl.backup.prune\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.backup.prune.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.backup.prune.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 3,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-e8e8f8bc",
+              "name": "mcsl.backup.restore.confirm",
+              "api": {
+                "id": "mcsl-rpc-e8e8f8bc",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-a13d7287",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.backup.restore.confirm\u0022,\n  \u0022params\u0022: {\n    \u0022confirmer_principal\u0022: \u0022\u0022,\n    \u0022plan_hash\u0022: \u0022\u0022,\n    \u0022plan_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Confirms a restore plan by echoing its hash, making it executable.\n\nPermission: \u0060mcsl.backup.restore.confirm\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.backup.restore.confirm.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.backup.restore.confirm.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 4,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-cc821de3",
+              "name": "mcsl.backup.restore.execute",
+              "api": {
+                "id": "mcsl-rpc-cc821de3",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-ef642bb8",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.backup.restore.execute\u0022,\n  \u0022params\u0022: {\n    \u0022executor_principal\u0022: \u0022\u0022,\n    \u0022plan_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Executes a confirmed restore plan as a long-running operation.\n\nPermission: \u0060mcsl.backup.restore.execute\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.backup.restore.execute.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.backup.restore.execute.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 5,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            },
+            {
+              "id": "mcsl-rpc-item-ec878757",
+              "name": "mcsl.backup.restore.plan",
+              "api": {
+                "id": "mcsl-rpc-ec878757",
+                "path": "{{wsUrl}}?token={{token}}",
+                "parameters": {
+                  "query": [
+                    {
+                      "id": "mcsl-parameter-b4d4374c",
+                      "name": "token",
+                      "type": "string",
+                      "required": true,
+                      "defaultEnable": true,
+                      "defaultValue": "{{token}}",
+                      "description": "Daemon main token or JWT sub-token."
+                    }
+                  ],
+                  "path": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "requestBody": {
+                  "parameters": [],
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.backup.restore.plan\u0022,\n  \u0022params\u0022: {\n    \u0022archive_id\u0022: \u0022\u0022,\n    \u0022creator_principal\u0022: \u0022\u0022,\n    \u0022expiry\u0022: {},\n    \u0022idempotency_key\u0022: {},\n    \u0022instance_id\u0022: \u0022\u0022\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                },
+                "description": "Resolves an immutable destructive restore plan awaiting confirmation.\n\nPermission: \u0060mcsl.backup.restore.plan\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.backup.restore.plan.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.backup.restore.plan.result\u0060.",
+                "tags": [
+                  "json-rpc",
+                  "built-in"
+                ],
+                "status": "released",
+                "ordering": 6,
+                "advancedSettings": {},
+                "moduleId": "mcsl-daemon-protocol"
+              },
+              "moduleId": "mcsl-daemon-protocol"
+            }
+          ]
+        },
+        {
           "id": "mcsl-folder-38d253b5",
           "name": "daemon",
           "description": "daemon RPC methods.",
-          "ordering": 2,
+          "ordering": 3,
           "items": [
             {
               "id": "mcsl-rpc-item-07ff5dfe",
@@ -155,7 +391,7 @@
           "id": "mcsl-folder-89fa7115",
           "name": "discovery",
           "description": "discovery RPC methods.",
-          "ordering": 3,
+          "ordering": 4,
           "items": [
             {
               "id": "mcsl-rpc-item-223c6321",
@@ -201,7 +437,7 @@
           "id": "mcsl-folder-12d8e384",
           "name": "events",
           "description": "events RPC methods.",
-          "ordering": 4,
+          "ordering": 5,
           "items": [
             {
               "id": "mcsl-rpc-item-73bf38ee",
@@ -361,7 +597,7 @@
           "id": "mcsl-folder-3ee74090",
           "name": "files",
           "description": "files RPC methods.",
-          "ordering": 5,
+          "ordering": 6,
           "items": [
             {
               "id": "mcsl-rpc-item-a77790e6",
@@ -1015,7 +1251,7 @@
           "id": "mcsl-folder-0648fd33",
           "name": "instances",
           "description": "instances RPC methods.",
-          "ordering": 6,
+          "ordering": 7,
           "items": [
             {
               "id": "mcsl-rpc-item-4f5b1f30",
@@ -1593,7 +1829,7 @@
           "id": "mcsl-folder-8065cb2f",
           "name": "operations",
           "description": "operations RPC methods.",
-          "ordering": 7,
+          "ordering": 8,
           "items": [
             {
               "id": "mcsl-rpc-item-3ff92f2b",
@@ -1715,7 +1951,7 @@
           "id": "mcsl-folder-41ad1948",
           "name": "provisioning",
           "description": "provisioning RPC methods.",
-          "ordering": 8,
+          "ordering": 9,
           "items": [
             {
               "id": "mcsl-rpc-item-9bfd0278",
@@ -1837,7 +2073,7 @@
           "id": "mcsl-folder-491e0a9c",
           "name": "system",
           "description": "system RPC methods.",
-          "ordering": 9,
+          "ordering": 10,
           "items": [
             {
               "id": "mcsl-rpc-item-dc1d30c6",
@@ -2171,6 +2407,724 @@
           "moduleId": "mcsl-daemon-protocol"
         },
         {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.create.request",
+          "name": "mcsl.schema.mcsl.backup.create.request",
+          "displayName": "mcsl.schema.mcsl.backup.create.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.backup.create.request",
+              "type": "object",
+              "properties": {
+                "instance_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "maintenance": {
+                  "type": "boolean"
+                },
+                "owner_principal": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instance_id",
+                "maintenance",
+                "owner_principal"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 6,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.create.result",
+          "name": "mcsl.schema.mcsl.backup.create.result",
+          "displayName": "mcsl.schema.mcsl.backup.create.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "operation_id"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.backup.create.result"
+            }
+          },
+          "ordering": 7,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.list.request",
+          "name": "mcsl.schema.mcsl.backup.list.request",
+          "displayName": "mcsl.schema.mcsl.backup.list.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.backup.list.request",
+              "type": "object",
+              "properties": {
+                "instance_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "default": null
+                },
+                "owner_principal": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 8,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.list.result",
+          "name": "mcsl.schema.mcsl.backup.list.result",
+          "displayName": "mcsl.schema.mcsl.backup.list.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "archives": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "archive_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "instance_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "instance_name": {
+                        "type": "string"
+                      },
+                      "manifest_version": {
+                        "type": "integer"
+                      },
+                      "instance_version": {
+                        "type": "string"
+                      },
+                      "config_sha256": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "files": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "relative_path": {
+                              "type": "string"
+                            },
+                            "size_bytes": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "relative_path",
+                            "size_bytes"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "total_size_bytes": {
+                        "type": "integer"
+                      },
+                      "compressed_size_bytes": {
+                        "type": "integer"
+                      },
+                      "compression_method": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "archive_id",
+                      "instance_id",
+                      "instance_name",
+                      "manifest_version",
+                      "instance_version",
+                      "config_sha256",
+                      "created_at",
+                      "files",
+                      "total_size_bytes",
+                      "compressed_size_bytes",
+                      "compression_method",
+                      "sha256"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "archives"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.backup.list.result"
+            }
+          },
+          "ordering": 9,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.prune.request",
+          "name": "mcsl.schema.mcsl.backup.prune.request",
+          "displayName": "mcsl.schema.mcsl.backup.prune.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.backup.prune.request",
+              "type": "object",
+              "properties": {
+                "owner_principal": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "owner_principal"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 10,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.prune.result",
+          "name": "mcsl.schema.mcsl.backup.prune.result",
+          "displayName": "mcsl.schema.mcsl.backup.prune.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "removed_archive_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              },
+              "required": [
+                "removed_archive_ids"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.backup.prune.result"
+            }
+          },
+          "ordering": 11,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.restore.confirm.request",
+          "name": "mcsl.schema.mcsl.backup.restore.confirm.request",
+          "displayName": "mcsl.schema.mcsl.backup.restore.confirm.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.backup.restore.confirm.request",
+              "type": "object",
+              "properties": {
+                "confirmer_principal": {
+                  "type": "string"
+                },
+                "plan_hash": {
+                  "type": "string"
+                },
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "confirmer_principal",
+                "plan_hash",
+                "plan_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 12,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.restore.confirm.result",
+          "name": "mcsl.schema.mcsl.backup.restore.confirm.result",
+          "displayName": "mcsl.schema.mcsl.backup.restore.confirm.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "plan_hash": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "ready",
+                    "blocked",
+                    "executing",
+                    "consumed",
+                    "expired"
+                  ]
+                },
+                "risk_class": {
+                  "enum": [
+                    "routine",
+                    "sensitive",
+                    "destructive"
+                  ]
+                },
+                "required_permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requires_confirmation": {
+                  "type": "boolean"
+                },
+                "creator_principal": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "field": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "provider": {
+                  "enum": [
+                    "vanilla",
+                    "paper",
+                    "fabric",
+                    "forge",
+                    "neo_forge",
+                    "quilt"
+                  ]
+                },
+                "instance_name": {
+                  "type": "string"
+                },
+                "minecraft_version": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "mirror": {
+                  "enum": [
+                    "none",
+                    "bmcl_api"
+                  ]
+                },
+                "java_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "idempotency_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "payload": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "confirmed_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "confirmed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "default": null
+                }
+              },
+              "required": [
+                "plan_id",
+                "plan_hash",
+                "kind",
+                "status",
+                "risk_class",
+                "required_permissions",
+                "requires_confirmation",
+                "creator_principal",
+                "created_at",
+                "expires_at",
+                "unresolved",
+                "provider",
+                "instance_name",
+                "minecraft_version",
+                "source",
+                "mirror",
+                "java_path",
+                "idempotency_key",
+                "payload"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.backup.restore.confirm.result"
+            }
+          },
+          "ordering": 13,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.restore.execute.request",
+          "name": "mcsl.schema.mcsl.backup.restore.execute.request",
+          "displayName": "mcsl.schema.mcsl.backup.restore.execute.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.backup.restore.execute.request",
+              "type": "object",
+              "properties": {
+                "executor_principal": {
+                  "type": "string"
+                },
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "executor_principal",
+                "plan_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 14,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.restore.execute.result",
+          "name": "mcsl.schema.mcsl.backup.restore.execute.result",
+          "displayName": "mcsl.schema.mcsl.backup.restore.execute.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "plan_id",
+                "operation_id"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.backup.restore.execute.result"
+            }
+          },
+          "ordering": 15,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.restore.plan.request",
+          "name": "mcsl.schema.mcsl.backup.restore.plan.request",
+          "displayName": "mcsl.schema.mcsl.backup.restore.plan.request",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "$id": "mcsl.schema.mcsl.backup.restore.plan.request",
+              "type": "object",
+              "properties": {
+                "archive_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "creator_principal": {
+                  "type": "string"
+                },
+                "expiry": {
+                  "$comment": "Represents a System.TimeSpan value.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^-?(\\d\u002B\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+                  "default": null
+                },
+                "idempotency_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "instance_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "archive_id",
+                "creator_principal",
+                "instance_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ordering": 16,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
+          "id": "#/definitions/mcsl.schema.mcsl.backup.restore.plan.result",
+          "name": "mcsl.schema.mcsl.backup.restore.plan.result",
+          "displayName": "mcsl.schema.mcsl.backup.restore.plan.result",
+          "description": "Generated from the frozen protocol catalog.",
+          "schema": {
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "plan_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "plan_hash": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "ready",
+                    "blocked",
+                    "executing",
+                    "consumed",
+                    "expired"
+                  ]
+                },
+                "risk_class": {
+                  "enum": [
+                    "routine",
+                    "sensitive",
+                    "destructive"
+                  ]
+                },
+                "required_permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requires_confirmation": {
+                  "type": "boolean"
+                },
+                "creator_principal": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "field": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "provider": {
+                  "enum": [
+                    "vanilla",
+                    "paper",
+                    "fabric",
+                    "forge",
+                    "neo_forge",
+                    "quilt"
+                  ]
+                },
+                "instance_name": {
+                  "type": "string"
+                },
+                "minecraft_version": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "mirror": {
+                  "enum": [
+                    "none",
+                    "bmcl_api"
+                  ]
+                },
+                "java_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "idempotency_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "payload": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "confirmed_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "confirmed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "default": null
+                }
+              },
+              "required": [
+                "plan_id",
+                "plan_hash",
+                "kind",
+                "status",
+                "risk_class",
+                "required_permissions",
+                "requires_confirmation",
+                "creator_principal",
+                "created_at",
+                "expires_at",
+                "unresolved",
+                "provider",
+                "instance_name",
+                "minecraft_version",
+                "source",
+                "mirror",
+                "java_path",
+                "idempotency_key",
+                "payload"
+              ],
+              "additionalProperties": false,
+              "$id": "mcsl.schema.mcsl.backup.restore.plan.result"
+            }
+          },
+          "ordering": 17,
+          "moduleId": "mcsl-daemon-protocol"
+        },
+        {
           "id": "#/definitions/mcsl.schema.mcsl.daemon.ping.request",
           "name": "mcsl.schema.mcsl.daemon.ping.request",
           "displayName": "mcsl.schema.mcsl.daemon.ping.request",
@@ -2184,7 +3138,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 6,
+          "ordering": 18,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2207,7 +3161,7 @@
               "$id": "mcsl.schema.mcsl.daemon.ping.result"
             }
           },
-          "ordering": 7,
+          "ordering": 19,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2234,7 +3188,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 8,
+          "ordering": 20,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2250,7 +3204,7 @@
               "$id": "mcsl.schema.mcsl.directory.copy.result"
             }
           },
-          "ordering": 9,
+          "ordering": 21,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2273,7 +3227,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 10,
+          "ordering": 22,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2289,7 +3243,7 @@
               "$id": "mcsl.schema.mcsl.directory.create.result"
             }
           },
-          "ordering": 11,
+          "ordering": 23,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2316,7 +3270,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 12,
+          "ordering": 24,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2332,7 +3286,7 @@
               "$id": "mcsl.schema.mcsl.directory.delete.result"
             }
           },
-          "ordering": 13,
+          "ordering": 25,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2355,7 +3309,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 14,
+          "ordering": 26,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2477,7 +3431,7 @@
               "$id": "mcsl.schema.mcsl.directory.info.get.result"
             }
           },
-          "ordering": 15,
+          "ordering": 27,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2504,7 +3458,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 16,
+          "ordering": 28,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2520,7 +3474,7 @@
               "$id": "mcsl.schema.mcsl.directory.move.result"
             }
           },
-          "ordering": 17,
+          "ordering": 29,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2547,7 +3501,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 18,
+          "ordering": 30,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2563,7 +3517,7 @@
               "$id": "mcsl.schema.mcsl.directory.rename.result"
             }
           },
-          "ordering": 19,
+          "ordering": 31,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2722,7 +3676,7 @@
               "$id": "mcsl.schema.mcsl.event.daemon.report.data"
             }
           },
-          "ordering": 20,
+          "ordering": 32,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2879,7 +3833,7 @@
               "$id": "mcsl.schema.mcsl.event.instance.catalog.changed.data"
             }
           },
-          "ordering": 21,
+          "ordering": 33,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2902,7 +3856,7 @@
               "$id": "mcsl.schema.mcsl.event.instance.log.data"
             }
           },
-          "ordering": 22,
+          "ordering": 34,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2926,7 +3880,7 @@
               "$id": "mcsl.schema.mcsl.event.instance.log.meta"
             }
           },
-          "ordering": 23,
+          "ordering": 35,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2957,7 +3911,7 @@
               "$id": "mcsl.schema.mcsl.event.notification.data"
             }
           },
-          "ordering": 24,
+          "ordering": 36,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -2986,7 +3940,7 @@
               "$id": "mcsl.schema.mcsl.event.notification.meta"
             }
           },
-          "ordering": 25,
+          "ordering": 37,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3019,7 +3973,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 26,
+          "ordering": 38,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3035,7 +3989,7 @@
               "$id": "mcsl.schema.mcsl.event.subscribe.result"
             }
           },
-          "ordering": 27,
+          "ordering": 39,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3068,7 +4022,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 28,
+          "ordering": 40,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3084,7 +4038,7 @@
               "$id": "mcsl.schema.mcsl.event.unsubscribe.result"
             }
           },
-          "ordering": 29,
+          "ordering": 41,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3111,7 +4065,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 30,
+          "ordering": 42,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3127,7 +4081,7 @@
               "$id": "mcsl.schema.mcsl.file.copy.result"
             }
           },
-          "ordering": 31,
+          "ordering": 43,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3150,7 +4104,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 32,
+          "ordering": 44,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3166,7 +4120,7 @@
               "$id": "mcsl.schema.mcsl.file.delete.result"
             }
           },
-          "ordering": 33,
+          "ordering": 45,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3190,7 +4144,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 34,
+          "ordering": 46,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3206,7 +4160,7 @@
               "$id": "mcsl.schema.mcsl.file.download.close.result"
             }
           },
-          "ordering": 35,
+          "ordering": 47,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3229,7 +4183,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 36,
+          "ordering": 48,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3270,7 +4224,7 @@
               "$id": "mcsl.schema.mcsl.file.download.open.result"
             }
           },
-          "ordering": 37,
+          "ordering": 49,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3302,7 +4256,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 38,
+          "ordering": 50,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3338,7 +4292,7 @@
               "$id": "mcsl.schema.mcsl.file.download.read.result"
             }
           },
-          "ordering": 39,
+          "ordering": 51,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3361,7 +4315,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 40,
+          "ordering": 52,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3416,7 +4370,7 @@
               "$id": "mcsl.schema.mcsl.file.info.get.result"
             }
           },
-          "ordering": 41,
+          "ordering": 53,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3443,7 +4397,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 42,
+          "ordering": 54,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3459,7 +4413,7 @@
               "$id": "mcsl.schema.mcsl.file.move.result"
             }
           },
-          "ordering": 43,
+          "ordering": 55,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3486,7 +4440,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 44,
+          "ordering": 56,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3502,7 +4456,7 @@
               "$id": "mcsl.schema.mcsl.file.rename.result"
             }
           },
-          "ordering": 45,
+          "ordering": 57,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3526,7 +4480,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 46,
+          "ordering": 58,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3542,7 +4496,7 @@
               "$id": "mcsl.schema.mcsl.file.upload.cancel.result"
             }
           },
-          "ordering": 47,
+          "ordering": 59,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3566,7 +4520,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 48,
+          "ordering": 60,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3582,7 +4536,7 @@
               "$id": "mcsl.schema.mcsl.file.upload.close.result"
             }
           },
-          "ordering": 49,
+          "ordering": 61,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3613,7 +4567,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 50,
+          "ordering": 62,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3646,7 +4600,7 @@
               "$id": "mcsl.schema.mcsl.file.upload.open.result"
             }
           },
-          "ordering": 51,
+          "ordering": 63,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3663,7 +4617,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 52,
+          "ordering": 64,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3774,7 +4728,7 @@
               "$id": "mcsl.schema.mcsl.instance.catalog.get.result"
             }
           },
-          "ordering": 53,
+          "ordering": 65,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3802,7 +4756,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 54,
+          "ordering": 66,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3818,7 +4772,7 @@
               "$id": "mcsl.schema.mcsl.instance.command.send.result"
             }
           },
-          "ordering": 55,
+          "ordering": 67,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3842,7 +4796,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 56,
+          "ordering": 68,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3858,7 +4812,7 @@
               "$id": "mcsl.schema.mcsl.instance.console.close.result"
             }
           },
-          "ordering": 57,
+          "ordering": 69,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3897,7 +4851,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 58,
+          "ordering": 70,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3943,7 +4897,7 @@
               "$id": "mcsl.schema.mcsl.instance.console.open.result"
             }
           },
-          "ordering": 59,
+          "ordering": 71,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3975,7 +4929,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 60,
+          "ordering": 72,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -3991,7 +4945,7 @@
               "$id": "mcsl.schema.mcsl.instance.console.resize.result"
             }
           },
-          "ordering": 61,
+          "ordering": 73,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4165,7 +5119,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 62,
+          "ordering": 74,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4306,7 +5260,7 @@
               "$id": "mcsl.schema.mcsl.instance.create.result"
             }
           },
-          "ordering": 63,
+          "ordering": 75,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4330,7 +5284,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 64,
+          "ordering": 76,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4360,7 +5314,7 @@
               "$id": "mcsl.schema.mcsl.instance.event-rules.get.result"
             }
           },
-          "ordering": 65,
+          "ordering": 77,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4390,7 +5344,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 66,
+          "ordering": 78,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4406,7 +5360,7 @@
               "$id": "mcsl.schema.mcsl.instance.event-rules.update.result"
             }
           },
-          "ordering": 67,
+          "ordering": 79,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4430,7 +5384,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 68,
+          "ordering": 80,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4446,7 +5400,7 @@
               "$id": "mcsl.schema.mcsl.instance.halt.result"
             }
           },
-          "ordering": 69,
+          "ordering": 81,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4470,7 +5424,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 70,
+          "ordering": 82,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4496,7 +5450,7 @@
               "$id": "mcsl.schema.mcsl.instance.log.get.result"
             }
           },
-          "ordering": 71,
+          "ordering": 83,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4520,7 +5474,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 72,
+          "ordering": 84,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4536,7 +5490,7 @@
               "$id": "mcsl.schema.mcsl.instance.remove.result"
             }
           },
-          "ordering": 73,
+          "ordering": 85,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4560,7 +5514,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 74,
+          "ordering": 86,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4767,7 +5721,7 @@
               "$id": "mcsl.schema.mcsl.instance.report.get.result"
             }
           },
-          "ordering": 75,
+          "ordering": 87,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -4784,7 +5738,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 76,
+          "ordering": 88,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5003,7 +5957,7 @@
               "$id": "mcsl.schema.mcsl.instance.report.list.result"
             }
           },
-          "ordering": 77,
+          "ordering": 89,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5027,7 +5981,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 78,
+          "ordering": 90,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5229,7 +6183,7 @@
               "$id": "mcsl.schema.mcsl.instance.settings.get.result"
             }
           },
-          "ordering": 79,
+          "ordering": 91,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5362,7 +6316,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 80,
+          "ordering": 92,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5525,7 +6479,7 @@
               "$id": "mcsl.schema.mcsl.instance.settings.update.result"
             }
           },
-          "ordering": 81,
+          "ordering": 93,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5549,7 +6503,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 82,
+          "ordering": 94,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5565,7 +6519,7 @@
               "$id": "mcsl.schema.mcsl.instance.start.result"
             }
           },
-          "ordering": 83,
+          "ordering": 95,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5589,7 +6543,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 84,
+          "ordering": 96,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5605,7 +6559,7 @@
               "$id": "mcsl.schema.mcsl.instance.stop.result"
             }
           },
-          "ordering": 85,
+          "ordering": 97,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5622,7 +6576,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 86,
+          "ordering": 98,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5665,7 +6619,7 @@
               "$id": "mcsl.schema.mcsl.java.list.result"
             }
           },
-          "ordering": 87,
+          "ordering": 99,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5696,7 +6650,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 88,
+          "ordering": 100,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5724,7 +6678,7 @@
               "$id": "mcsl.schema.mcsl.operation.cancel.result"
             }
           },
-          "ordering": 89,
+          "ordering": 101,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5755,7 +6709,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 90,
+          "ordering": 102,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5924,7 +6878,7 @@
               "$id": "mcsl.schema.mcsl.operation.get.result"
             }
           },
-          "ordering": 91,
+          "ordering": 103,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -5949,7 +6903,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 92,
+          "ordering": 104,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6130,7 +7084,7 @@
               "$id": "mcsl.schema.mcsl.operation.list.result"
             }
           },
-          "ordering": 93,
+          "ordering": 105,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6158,7 +7112,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 94,
+          "ordering": 106,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6187,7 +7141,7 @@
               "$id": "mcsl.schema.mcsl.provisioning.execute.result"
             }
           },
-          "ordering": 95,
+          "ordering": 107,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6218,7 +7172,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 96,
+          "ordering": 108,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6388,7 +7342,7 @@
               "$id": "mcsl.schema.mcsl.provisioning.get.result"
             }
           },
-          "ordering": 97,
+          "ordering": 109,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6467,7 +7421,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 98,
+          "ordering": 110,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6637,7 +7591,7 @@
               "$id": "mcsl.schema.mcsl.provisioning.resolve.result"
             }
           },
-          "ordering": 99,
+          "ordering": 111,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6654,7 +7608,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 100,
+          "ordering": 112,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6800,7 +7754,7 @@
               "$id": "mcsl.schema.mcsl.system.info.get.result"
             }
           },
-          "ordering": 101,
+          "ordering": 113,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -6817,7 +7771,7 @@
               "additionalProperties": false
             }
           },
-          "ordering": 102,
+          "ordering": 114,
           "moduleId": "mcsl-daemon-protocol"
         },
         {
@@ -7058,7 +8012,7 @@
               "$id": "mcsl.schema.rpc.discover.result"
             }
           },
-          "ordering": 103,
+          "ordering": 115,
           "moduleId": "mcsl-daemon-protocol"
         }
       ]

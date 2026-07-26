@@ -9,6 +9,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.DaemonClient.Connection.V2;
 
@@ -125,6 +126,12 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.ResolveProvisioning, "mcsl.provisioning.resolve"),
             Accessor(V2ClientProtocol.GetProvisioningPlan, "mcsl.provisioning.get"),
             Accessor(V2ClientProtocol.ExecuteProvisioning, "mcsl.provisioning.execute"),
+            Accessor(V2ClientProtocol.ListBackups, "mcsl.backup.list"),
+            Accessor(V2ClientProtocol.CreateBackup, "mcsl.backup.create"),
+            Accessor(V2ClientProtocol.PruneBackups, "mcsl.backup.prune"),
+            Accessor(V2ClientProtocol.PlanBackupRestore, "mcsl.backup.restore.plan"),
+            Accessor(V2ClientProtocol.ConfirmBackupRestore, "mcsl.backup.restore.confirm"),
+            Accessor(V2ClientProtocol.ExecuteBackupRestore, "mcsl.backup.restore.execute"),
             Accessor(V2ClientProtocol.GetSystemInfo, "mcsl.system.info.get"),
             Accessor(V2ClientProtocol.DiscoverRpc, "rpc.discover")
         ];
@@ -182,6 +189,8 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.StartInstance), Case(V2ClientProtocol.StopInstance), Case(V2ClientProtocol.ListJavaRuntimes),
             Case(V2ClientProtocol.CancelOperation), Case(V2ClientProtocol.GetOperation), Case(V2ClientProtocol.ListOperations),
             Case(V2ClientProtocol.ResolveProvisioning), Case(V2ClientProtocol.GetProvisioningPlan), Case(V2ClientProtocol.ExecuteProvisioning),
+            Case(V2ClientProtocol.ListBackups), Case(V2ClientProtocol.CreateBackup), Case(V2ClientProtocol.PruneBackups),
+            Case(V2ClientProtocol.PlanBackupRestore), Case(V2ClientProtocol.ConfirmBackupRestore), Case(V2ClientProtocol.ExecuteBackupRestore),
             Case(V2ClientProtocol.GetSystemInfo), Case(V2ClientProtocol.DiscoverRpc)
         ];
 
@@ -315,6 +324,7 @@ public sealed class V2ClientProtocolTests
         private const string Id = "11111111-1111-1111-1111-111111111111";
         private const string RuleId = "22222222-2222-2222-2222-222222222222";
         private const string Config = "{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"target\":\"server.jar\",\"instance_type\":\"universal\",\"target_type\":\"jar\",\"version\":\"1\",\"input_encoding\":\"utf-8\",\"output_encoding\":\"utf-8\",\"java_path\":\"java\",\"arguments\":[\"-Xmx2G\"],\"environment_variables\":{\"ENV\":\"value\"},\"event_rules\":{\"enabled\":true},\"console_mode\":\"pipe\"}";
+        private const string BackupManifest = "{\"archive_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\",\"instance_name\":\"demo\",\"manifest_version\":1,\"instance_version\":\"1.21\",\"config_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"created_at\":\"2026-01-01T00:00:00+00:00\",\"files\":[{\"relative_path\":\"world/level.dat\",\"size_bytes\":42}],\"total_size_bytes\":42,\"compressed_size_bytes\":21,\"compression_method\":\"deflate\",\"sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"}";
         private const string FileMeta = "{\"creation_time\":\"2026-01-01T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-02T00:00:00+00:00\",\"last_write_time\":\"2026-01-03T00:00:00+00:00\",\"read_only\":true,\"size\":7}";
         private const string DirectoryMeta = "{\"creation_time\":\"2026-01-04T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-05T00:00:00+00:00\",\"last_write_time\":\"2026-01-06T00:00:00+00:00\"}";
         private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234,\"ready_timed_out\":true}";
@@ -364,6 +374,16 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(OperationCancelRequest)) return "{\"operation_id\":\"" + Id + "\",\"owner_principal\":\"owner-a\"}";
             if (type == typeof(OperationCancelResult)) return "{\"operation_id\":\"" + Id + "\",\"cancel_requested\":true}";
             if (type == typeof(OperationSnapshot)) return "{\"operation_id\":\"" + Id + "\",\"kind\":\"test.work\",\"target\":\"t1\",\"owner_principal\":\"owner-a\",\"status\":\"running\",\"stage\":\"installing\",\"progress\":{\"indeterminate\":false,\"completed\":1,\"total\":2,\"unit\":\"items\",\"bytes_transferred\":null,\"bytes_total\":null,\"rate\":null},\"version\":2,\"created_at\":\"2026-01-01T00:00:00+00:00\",\"updated_at\":\"2026-01-01T00:00:01+00:00\",\"completed_at\":null,\"cancellable\":true,\"error_code\":null,\"error_message\":null,\"result_reference\":null}";
+            if (type == typeof(BackupListQuery)) return "{\"instance_id\":\"" + Id + "\",\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(BackupListResult)) return "{\"archives\":[" + BackupManifest + "]}";
+            if (type == typeof(BackupCreateRequest)) return "{\"instance_id\":\"" + Id + "\",\"maintenance\":true,\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(BackupCreateResult)) return "{\"operation_id\":\"" + Id + "\"}";
+            if (type == typeof(BackupPruneRequest)) return "{\"owner_principal\":\"owner-a\"}";
+            if (type == typeof(BackupPruneResult)) return "{\"removed_archive_ids\":[\"" + Id + "\"]}";
+            if (type == typeof(BackupRestorePlanRequest)) return "{\"archive_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\",\"creator_principal\":\"owner-a\",\"idempotency_key\":\"idem-1\",\"expiry\":null}";
+            if (type == typeof(BackupRestoreConfirmRequest)) return "{\"plan_id\":\"" + Id + "\",\"plan_hash\":\"abc\",\"confirmer_principal\":\"owner-a\"}";
+            if (type == typeof(BackupRestoreExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
+            if (type == typeof(BackupRestoreExecuteResult)) return "{\"plan_id\":\"" + Id + "\",\"operation_id\":\"" + Id + "\"}";
             if (type == typeof(ProvisioningResolveRequest)) return "{\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"creator_principal\":\"owner-a\",\"idempotency_key\":\"idem-1\",\"expiry\":null}";
             if (type == typeof(ProvisioningPlanReference)) return "{\"plan_id\":\"" + Id + "\",\"owner_principal\":null}";
             if (type == typeof(ProvisioningExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
