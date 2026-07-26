@@ -113,8 +113,9 @@ public sealed class BackupArchiveStoreTests
             var extracted = store.ExtractToStaging(archiveId, staging, CancellationToken.None);
             Assert.True(extracted.IsErr(out var error));
             Assert.Equal("backup.archive_entry_invalid", error!.Code);
-            Assert.Empty(Directory.EnumerateFileSystemEntries(staging, "*", SearchOption.AllDirectories)
-                .Where(static path => !Directory.Exists(path)));
+            Assert.DoesNotContain(
+                Directory.EnumerateFileSystemEntries(staging, "*", SearchOption.AllDirectories),
+                static path => !Directory.Exists(path));
         }
         finally
         {
