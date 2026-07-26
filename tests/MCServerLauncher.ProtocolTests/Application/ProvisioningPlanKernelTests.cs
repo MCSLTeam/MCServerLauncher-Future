@@ -801,6 +801,9 @@ public sealed class ProvisioningPlanKernelTests
     [InlineData("blocked-name-fact-with-value")]
     [InlineData("blocked-missing-version-without-fact")]
     [InlineData("blocked-version-fact-with-value")]
+    [InlineData("confirmed-by-without-at")]
+    [InlineData("confirmed-at-without-by")]
+    [InlineData("blocked-after-confirmation")]
     public void Load_SemanticallyInvalidStatusShapeFailsClosed(string corruption)
     {
         var root = Directory.CreateTempSubdirectory("mcsl-plans-corrupt-state-").FullName;
@@ -814,6 +817,157 @@ public sealed class ProvisioningPlanKernelTests
                     PlanKernelJsonContext.Default.ProvisioningPlanSnapshotArray));
 
             Assert.Throws<InvalidDataException>(() => new PlanKernel(rootDirectory: root));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(PlanRiskClass.Destructive, true)]
+    [InlineData(PlanRiskClass.Sensitive, false)]
+    [InlineData(PlanRiskClass.Routine, true)]
+    public void Confirm_UnblocksPlanRecordsIdentityAndSurvivesReload(
+        PlanRiskClass riskClass,
+        bool requiresConfirmation)
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-confirm-").FullName;
+        try
+        {
+            var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-26T00:00:00Z"));
+            var kernel = new PlanKernel(time, root);
+            var put = PutConfirmationPlan(kernel, riskClass: riskClass, requiresConfirmation: requiresConfirmation);
+            Assert.True(put.IsOk(out var plan));
+            Assert.Equal(PlanStatus.Blocked, plan!.Status);
+            Assert.True(kernel.TryBeginExecute(plan.PlanId, "owner-a").IsErr(out var notReady));
+            Assert.Equal("plan.not_ready", notReady!.Code);
+
+            var confirmed = kernel.Confirm(plan.PlanId, plan.PlanHash, "owner-a");
+            Assert.True(confirmed.IsOk(out var confirmedPlan));
+            Assert.Equal(PlanStatus.Ready, confirmedPlan!.Status);
+            Assert.Equal("owner-a", confirmedPlan.ConfirmedBy);
+            Assert.Equal(time.GetUtcNow(), confirmedPlan.ConfirmedAt);
+            // The echoed hash stays stable: confirmation is state, not intent.
+            Assert.Equal(plan.PlanHash, confirmedPlan.PlanHash);
+
+            var reloaded = new PlanKernel(time, root);
+            var persisted = reloaded.Get(plan.PlanId);
+            Assert.True(persisted.IsOk(out var loaded));
+            Assert.Equal(PlanStatus.Ready, loaded!.Status);
+            Assert.Equal("owner-a", loaded.ConfirmedBy);
+            Assert.True(reloaded.TryBeginExecute(plan.PlanId, "owner-a").IsOk(out _));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Confirm_RejectsMismatchedHashWrongPrincipalExpiryAndUnrequiredConfirmation()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-confirm-reject-").FullName;
+        try
+        {
+            var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-26T00:00:00Z"));
+            var kernel = new PlanKernel(time, root);
+            var put = PutConfirmationPlan(kernel);
+            Assert.True(put.IsOk(out var plan));
+
+            var mismatched = kernel.Confirm(plan!.PlanId, new string('b', 64), "owner-a");
+            Assert.True(mismatched.IsErr(out var hashError));
+            Assert.Equal("plan.hash_mismatch", hashError!.Code);
+
+            var foreign = kernel.Confirm(plan.PlanId, plan.PlanHash, "owner-b");
+            Assert.True(foreign.IsErr(out var principalError));
+            Assert.Equal("plan.forbidden", principalError!.Code);
+
+            var wildcard = kernel.Confirm(plan.PlanId, plan.PlanHash, "*");
+            Assert.True(wildcard.IsErr(out var wildcardError));
+            Assert.Equal("plan.forbidden", wildcardError!.Code);
+
+            var routinePut = PutReadyPlan(kernel);
+            Assert.True(routinePut.IsOk(out var routinePlan));
+            var unrequired = kernel.Confirm(routinePlan!.PlanId, routinePlan.PlanHash, "owner-a");
+            Assert.True(unrequired.IsErr(out var unrequiredError));
+            Assert.Equal("plan.confirmation_not_required", unrequiredError!.Code);
+
+            time.Advance(TimeSpan.FromMinutes(16));
+            var expired = kernel.Confirm(plan.PlanId, plan.PlanHash, "owner-a");
+            Assert.True(expired.IsErr(out var expiredError));
+            Assert.Equal("plan.expired", expiredError!.Code);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Confirm_IsIdempotentAndNeverConfirmsAwayUnresolvedFacts()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-confirm-idempotent-").FullName;
+        try
+        {
+            var kernel = new PlanKernel(rootDirectory: root);
+            var put = PutConfirmationPlan(kernel);
+            Assert.True(put.IsOk(out var plan));
+            Assert.True(kernel.Confirm(plan!.PlanId, plan.PlanHash, "owner-a").IsOk(out var first));
+            var again = kernel.Confirm(plan.PlanId, plan.PlanHash, "owner-a");
+            Assert.True(again.IsOk(out var second));
+            Assert.Equal(first!.ConfirmedAt, second!.ConfirmedAt);
+
+            var blockedPut = PutConfirmationPlan(
+                kernel,
+                unresolved: [new ProvisioningUnresolvedFact("backup.archive.missing", "The archive is gone.")]);
+            Assert.True(blockedPut.IsOk(out var blockedPlan));
+            var confirmed = kernel.Confirm(blockedPlan!.PlanId, blockedPlan.PlanHash, "owner-a");
+            Assert.True(confirmed.IsOk(out var stillBlocked));
+            Assert.Equal(PlanStatus.Blocked, stillBlocked!.Status);
+            Assert.Equal("owner-a", stillBlocked.ConfirmedBy);
+            Assert.True(kernel.TryBeginExecute(blockedPlan.PlanId, "owner-a").IsErr(out var notReady));
+            Assert.Equal("plan.not_ready", notReady!.Code);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("backup.restore.execute", PlanStatus.Consumed)]
+    [InlineData("provisioning.execute", PlanStatus.Ready)]
+    public async Task Reconcile_MatchesAcceptedOperationsByPlanKind(
+        string persistedOperationKind,
+        PlanStatus expectedStatus)
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plans-reconcile-kind-").FullName;
+        var operationRoot = Path.Combine(root, "ops");
+        try
+        {
+            var kernel = new PlanKernel(rootDirectory: root);
+            var put = PutConfirmationPlan(kernel);
+            Assert.True(put.IsOk(out var plan));
+            Assert.True(kernel.Confirm(plan!.PlanId, plan.PlanHash, "owner-a").IsOk(out _));
+            Assert.True(kernel.TryBeginExecute(plan.PlanId, "owner-a").IsOk(out _));
+
+            var operationId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+            var persistedOperation = $$"""
+                [{"operation_id":"{{operationId:D}}","kind":"{{persistedOperationKind}}","target":"{{plan.PlanId:D}}","owner_principal":"owner-a","status":"Running","stage":"Installing","progress":{"indeterminate":true,"completed":null,"total":null,"unit":null,"bytes_transferred":null,"bytes_total":null,"rate":null},"version":2,"created_at":"2026-07-22T00:00:00+00:00","updated_at":"2026-07-22T00:00:01+00:00","completed_at":null,"cancellable":true,"error_code":null,"error_message":null,"result_reference":null}]
+                """;
+            Directory.CreateDirectory(operationRoot);
+            await File.WriteAllTextAsync(Path.Combine(operationRoot, "index.json"), persistedOperation);
+
+            await using var recoveredOperations = new OperationCoordinator(rootDirectory: operationRoot);
+            var recoveredKernel = new PlanKernel(rootDirectory: root);
+            new OperationStartupRecovery(recoveredOperations, recoveredKernel).Recover();
+
+            // A restore plan is consumed only by its own operation kind; an accepted operation of a
+            // different kind must not keep the destructive plan replayable as Consumed nor vice versa.
+            var reconciled = recoveredKernel.Get(plan.PlanId);
+            Assert.True(reconciled.IsOk(out var reconciledPlan));
+            Assert.Equal(expectedStatus, reconciledPlan!.Status);
         }
         finally
         {
@@ -1027,8 +1181,41 @@ public sealed class ProvisioningPlanKernelTests
                 MinecraftVersion = string.Empty,
             },
             "blocked-version-fact-with-value" => ready with { Status = PlanStatus.Blocked, Unresolved = [missingVersion] },
+            "confirmed-by-without-at" => ready with { ConfirmedBy = "owner-corrupt" },
+            "confirmed-at-without-by" => ready with { ConfirmedAt = DateTimeOffset.Parse("2026-07-22T00:05:00Z") },
+            "blocked-after-confirmation" => ready with
+            {
+                Status = PlanStatus.Blocked,
+                RequiresConfirmation = true,
+                ConfirmedBy = "owner-corrupt",
+                ConfirmedAt = DateTimeOffset.Parse("2026-07-22T00:05:00Z"),
+            },
             _ => throw new ArgumentOutOfRangeException(nameof(corruption), corruption, null),
         };
+    }
+
+    private static Result<ProvisioningPlanSnapshot, DaemonError> PutConfirmationPlan(
+        PlanKernel kernel,
+        PlanRiskClass riskClass = PlanRiskClass.Destructive,
+        bool requiresConfirmation = true,
+        string creatorPrincipal = "owner-a",
+        System.Collections.Immutable.ImmutableArray<ProvisioningUnresolvedFact>? unresolved = null)
+    {
+        var resolvedUnresolved = unresolved ?? System.Collections.Immutable.ImmutableArray<ProvisioningUnresolvedFact>.Empty;
+        return kernel.Put(
+            kind: "backup.restore",
+            riskClass: riskClass,
+            requiredPermissions: ["mcsl.backup.restore.execute"],
+            requiresConfirmation: requiresConfirmation,
+            creatorPrincipal: creatorPrincipal,
+            unresolved: resolvedUnresolved,
+            idempotencyKey: null,
+            expiry: TimeSpan.FromMinutes(15),
+            materialize: (planId, planHash, createdAt, expiresAt, payload) => new ProvisioningPlanSnapshot(
+                planId, planHash, "backup.restore", PlanStatus.Ready, riskClass,
+                ["mcsl.backup.restore.execute"], requiresConfirmation, creatorPrincipal, createdAt, expiresAt,
+                resolvedUnresolved, ProvisioningProviderKind.Vanilla, "restore-target", "archive", null,
+                InstanceFactoryMirror.None, null, null, payload));
     }
 
     private static Result<ProvisioningPlanSnapshot, DaemonError> PutReadyPlan(

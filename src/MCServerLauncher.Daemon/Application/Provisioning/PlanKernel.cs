@@ -75,7 +75,7 @@ internal sealed class PlanKernel
             var normalizedUnresolved = unresolved.IsDefault
                 ? ImmutableArray<ProvisioningUnresolvedFact>.Empty
                 : unresolved;
-            var status = RequiresBlockedState(riskClass, requiresConfirmation, normalizedUnresolved)
+            var status = RequiresBlockedState(riskClass, requiresConfirmation, normalizedUnresolved, confirmedBy: null)
                 ? PlanStatus.Blocked
                 : PlanStatus.Ready;
             var candidate = materialize(
@@ -94,6 +94,8 @@ internal sealed class PlanKernel
                 CreatorPrincipal = creatorPrincipal,
                 Unresolved = normalizedUnresolved,
                 IdempotencyKey = normalizedIdempotencyKey,
+                ConfirmedBy = null,
+                ConfirmedAt = null,
             };
             var planHash = ComputePlanHash(candidate);
             var snapshot = candidate with { PlanHash = planHash };
@@ -221,6 +223,87 @@ internal sealed class PlanKernel
         }
     }
 
+    /// <summary>
+    /// Second phase of two-phase confirmation: the caller echoes the plan hash it read, proving it
+    /// confirms the exact intent, and the recorded confirmation identity unblocks execution.
+    /// Unresolved facts are never confirmable away; they keep the plan blocked.
+    /// </summary>
+    public Result<ProvisioningPlanSnapshot, DaemonError> Confirm(
+        Guid planId,
+        string planHash,
+        string confirmerPrincipal)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(planHash);
+        ArgumentException.ThrowIfNullOrWhiteSpace(confirmerPrincipal);
+        PurgeExpired();
+        if (!_plans.TryGetValue(planId, out var record))
+        {
+            return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                new NotFoundDaemonError("plan.not_found", "The plan was not found."));
+        }
+
+        lock (record.Gate)
+        {
+            var snapshot = record.Snapshot;
+            if (snapshot.Status == PlanStatus.Expired)
+            {
+                return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                    new ConflictDaemonError("plan.expired", "The plan has expired."));
+            }
+
+            if (IsExpired(snapshot))
+            {
+                PersistAndPublish(record, snapshot with { Status = PlanStatus.Expired });
+                return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                    new ConflictDaemonError("plan.expired", "The plan has expired."));
+            }
+
+            if (!string.Equals(snapshot.PlanHash, planHash, StringComparison.Ordinal))
+            {
+                return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                    new ValidationDaemonError(
+                        "plan.hash_mismatch",
+                        "The confirmation does not match the plan that was read."));
+            }
+
+            // Match TryBeginExecute: do not trust client-supplied admin wildcards.
+            if (!string.Equals(snapshot.CreatorPrincipal, confirmerPrincipal, StringComparison.Ordinal))
+            {
+                return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                    new PermissionDaemonError("plan.forbidden", "The caller cannot confirm this plan."));
+            }
+
+            if (snapshot.ConfirmedBy is not null)
+                return Result.Ok<ProvisioningPlanSnapshot, DaemonError>(snapshot);
+
+            if (snapshot.RiskClass is PlanRiskClass.Routine && !snapshot.RequiresConfirmation)
+            {
+                return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                    new ConflictDaemonError(
+                        "plan.confirmation_not_required",
+                        "The plan does not require confirmation."));
+            }
+
+            var confirmed = snapshot with
+            {
+                ConfirmedBy = confirmerPrincipal,
+                ConfirmedAt = _timeProvider.GetUtcNow(),
+            };
+            confirmed = confirmed with
+            {
+                Status = RequiresBlockedState(
+                    confirmed.RiskClass,
+                    confirmed.RequiresConfirmation,
+                    confirmed.Unresolved,
+                    confirmed.ConfirmedBy)
+                    ? PlanStatus.Blocked
+                    : PlanStatus.Ready,
+            };
+            PersistAndPublish(record, confirmed);
+            return Result.Ok<ProvisioningPlanSnapshot, DaemonError>(confirmed);
+        }
+    }
+
     public void AbortExecuteAdmission(Guid planId)
     {
         if (!_plans.TryGetValue(planId, out var record))
@@ -296,7 +379,7 @@ internal sealed class PlanKernel
                     continue;
 
                 var accepted = operations.HasAcceptedOperation(
-                    "provisioning.execute",
+                    ExecutionOperationKind(record.Snapshot.Kind),
                     planId.ToString("D"));
                 PersistAndPublish(
                     record,
@@ -304,6 +387,17 @@ internal sealed class PlanKernel
             }
         }
     }
+
+    /// <summary>
+    /// Maps a plan kind to the operation kind its execution is admitted under. Matching against the
+    /// wrong kind would reconcile an accepted execution back to Ready and make the plan replayable.
+    /// </summary>
+    private static string ExecutionOperationKind(string planKind) => planKind switch
+    {
+        "provisioning.instance" => "provisioning.execute",
+        "backup.restore" => "backup.restore.execute",
+        _ => throw new InvalidDataException($"The plan kind '{planKind}' has no execution operation kind."),
+    };
 
     private void PurgeExpired()
     {
@@ -523,27 +617,40 @@ internal sealed class PlanKernel
             throw new InvalidDataException("The plan index contains an invalid plan record.");
         }
 
-        var missingInstanceName = string.IsNullOrWhiteSpace(snapshot.InstanceName);
-        var hasMissingInstanceNameFact = HasUnresolvedFact(
-            snapshot,
-            "provisioning.instance_name.required",
-            "instance_name");
-        var missingMinecraftVersion = string.IsNullOrWhiteSpace(snapshot.MinecraftVersion);
-        var hasMissingMinecraftVersionFact = HasUnresolvedFact(
-            snapshot,
-            "provisioning.minecraft_version.required",
-            "minecraft_version");
-        if (missingInstanceName != hasMissingInstanceNameFact ||
-            missingMinecraftVersion != hasMissingMinecraftVersionFact)
+        if ((snapshot.ConfirmedBy is null) != (snapshot.ConfirmedAt is null) ||
+            (snapshot.ConfirmedBy is not null && string.IsNullOrWhiteSpace(snapshot.ConfirmedBy)))
         {
             throw new InvalidDataException(
-                $"The plan '{snapshot.PlanId:D}' target facts are inconsistent with its unresolved facts.");
+                $"The plan '{snapshot.PlanId:D}' confirmation identity is incomplete.");
+        }
+
+        // The target-fact pairing below is provisioning vocabulary; other plan kinds carry their
+        // domain facts in the typed payload instead.
+        if (string.Equals(snapshot.Kind, "provisioning.instance", StringComparison.Ordinal))
+        {
+            var missingInstanceName = string.IsNullOrWhiteSpace(snapshot.InstanceName);
+            var hasMissingInstanceNameFact = HasUnresolvedFact(
+                snapshot,
+                "provisioning.instance_name.required",
+                "instance_name");
+            var missingMinecraftVersion = string.IsNullOrWhiteSpace(snapshot.MinecraftVersion);
+            var hasMissingMinecraftVersionFact = HasUnresolvedFact(
+                snapshot,
+                "provisioning.minecraft_version.required",
+                "minecraft_version");
+            if (missingInstanceName != hasMissingInstanceNameFact ||
+                missingMinecraftVersion != hasMissingMinecraftVersionFact)
+            {
+                throw new InvalidDataException(
+                    $"The plan '{snapshot.PlanId:D}' target facts are inconsistent with its unresolved facts.");
+            }
         }
 
         var requiresBlockedState = RequiresBlockedState(
             snapshot.RiskClass,
             snapshot.RequiresConfirmation,
-            snapshot.Unresolved);
+            snapshot.Unresolved,
+            snapshot.ConfirmedBy);
         var hasValidStatusShape = snapshot.Status switch
         {
             PlanStatus.Ready or PlanStatus.Executing or PlanStatus.Consumed => !requiresBlockedState,
@@ -561,10 +668,10 @@ internal sealed class PlanKernel
     private static bool RequiresBlockedState(
         PlanRiskClass riskClass,
         bool requiresConfirmation,
-        ImmutableArray<ProvisioningUnresolvedFact> unresolved) =>
-        riskClass is not PlanRiskClass.Routine ||
-        requiresConfirmation ||
-        !unresolved.IsDefaultOrEmpty;
+        ImmutableArray<ProvisioningUnresolvedFact> unresolved,
+        string? confirmedBy) =>
+        !unresolved.IsDefaultOrEmpty ||
+        ((riskClass is not PlanRiskClass.Routine || requiresConfirmation) && confirmedBy is null);
 
     private static bool HasUnresolvedFact(
         ProvisioningPlanSnapshot snapshot,
