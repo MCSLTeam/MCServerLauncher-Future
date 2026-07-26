@@ -91,7 +91,7 @@ public sealed class TouchSocketV2RealHostIntegrationTests
         {
             try
             {
-                using var client = new System.Net.Http.HttpClient();
+                using var client = CreateLoopbackClient();
                 var query = token is null ? string.Empty : $"?token={Uri.EscapeDataString(token)}";
                 using var request = new HttpRequestMessage(
                     System.Net.Http.HttpMethod.Get,
@@ -120,11 +120,23 @@ public sealed class TouchSocketV2RealHostIntegrationTests
         }
     }
 
+    /// <summary>
+    /// Loopback requests must never route through a configured system/environment proxy
+    /// (HTTP_PROXY without a loopback bypass turns every 127.0.0.1 request into a proxy 502).
+    /// </summary>
+    private static System.Net.Http.HttpClient CreateLoopbackClient() =>
+        new(new System.Net.Http.SocketsHttpHandler { UseProxy = false });
+
     private static bool HasConnectionReset(Exception exception)
     {
         for (var current = exception; current is not null; current = current.InnerException)
         {
             if (current is SocketException { SocketErrorCode: SocketError.ConnectionReset })
+                return true;
+
+            // The host can also refuse by closing the connection before a status line is written
+            // (FIN instead of RST); a prematurely ended response was equally never upgraded.
+            if (current is System.Net.Http.HttpIOException { HttpRequestError: System.Net.Http.HttpRequestError.ResponseEnded })
                 return true;
         }
 
@@ -133,7 +145,7 @@ public sealed class TouchSocketV2RealHostIntegrationTests
 
     private static async Task AssertEndpointIsNotUpgradedAsync(int port, string path, string token)
     {
-        using var client = new System.Net.Http.HttpClient();
+        using var client = CreateLoopbackClient();
         using var request = new HttpRequestMessage(
             System.Net.Http.HttpMethod.Get,
             $"http://127.0.0.1:{port}{path}?token={Uri.EscapeDataString(token)}");
@@ -162,7 +174,7 @@ public sealed class TouchSocketV2RealHostIntegrationTests
 
     private static async Task AssertHttpMetadataReportsV2Async(int port)
     {
-        using var client = new System.Net.Http.HttpClient();
+        using var client = CreateLoopbackClient();
         foreach (var path in new[] { "/", "/info" })
         {
             using var timeout = new CancellationTokenSource(Timeout);
