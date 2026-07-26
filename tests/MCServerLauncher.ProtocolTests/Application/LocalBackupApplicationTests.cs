@@ -59,10 +59,7 @@ public sealed class LocalBackupApplicationTests
     public async Task Create_MaintenanceStopsAndRestartsAndArchivesOnlyAfterRealExit()
     {
         using var harness = await Harness.CreateAsync();
-        harness.Instance.Status = InstanceStatus.Running;
-        // Stop commits Stopping only; the archive must not run until the instance is truly stopped.
-        harness.Instances.OnStop = () => harness.Instance.Status = InstanceStatus.Stopped;
-        harness.Instances.OnStart = () => harness.Instance.Status = InstanceStatus.Running;
+        harness.MarkRunning();
 
         var created = await harness.Application.CreateAsync(
             new BackupCreateRequest(harness.InstanceId, Maintenance: true, "owner-a"),
@@ -81,7 +78,8 @@ public sealed class LocalBackupApplicationTests
     public async Task Create_MaintenanceFailsWhenTheInstanceNeverStops()
     {
         using var harness = await Harness.CreateAsync();
-        harness.Instance.Status = InstanceStatus.Running;
+        harness.MarkRunning();
+        // Stopping instances stay in RunningInstances by design; the status never lands.
         harness.Instances.OnStop = () => harness.Instance.Status = InstanceStatus.Stopping;
 
         var created = await harness.Application.CreateAsync(
@@ -93,7 +91,62 @@ public sealed class LocalBackupApplicationTests
         Assert.Equal(OperationStatus.Failed, operation.Status);
         Assert.Equal("backup.stop_timeout", operation.ErrorCode);
         Assert.Empty(harness.Store.List());
-        Assert.Equal(0, harness.Instances.StartCount);
+        // The compensating restart still runs: this operation stopped the server, so it brings it back.
+        Assert.Equal(1, harness.Instances.StartCount);
+    }
+
+    [Fact]
+    public async Task Create_MaintenanceRestartsTheServerEvenWhenArchivingFails()
+    {
+        using var harness = await Harness.CreateAsync();
+        harness.MarkRunning();
+        var originalOnStop = harness.Instances.OnStop;
+        harness.Instances.OnStop = () =>
+        {
+            originalOnStop?.Invoke();
+            // The working directory disappears after the stop, so the archive step must fail —
+            // and the server this operation stopped must still be brought back.
+            Directory.Delete(harness.WorkingDirectory, recursive: true);
+        };
+
+        var created = await harness.Application.CreateAsync(
+            new BackupCreateRequest(harness.InstanceId, Maintenance: true, "owner-a"),
+            CancellationToken.None);
+
+        Assert.True(created.IsOk(out var result));
+        var operation = await harness.WaitForTerminalAsync(result!.OperationId);
+        Assert.Equal(OperationStatus.Failed, operation.Status);
+        Assert.Equal("backup.instance_directory_missing", operation.ErrorCode);
+        Assert.Equal(1, harness.Instances.StartCount);
+        Assert.Equal(InstanceStatus.Running, harness.Instance.Status);
+    }
+
+    [Fact]
+    public async Task ExecuteRestore_SwapFailureLeavesTheOriginalDirectoryIntact()
+    {
+        using var harness = await Harness.CreateAsync();
+        var manifest = await harness.ArchiveAsync();
+        await File.WriteAllTextAsync(Path.Combine(harness.WorkingDirectory, "server.jar"), "mutated");
+        var plan = await harness.ConfirmedRestorePlanAsync(manifest);
+
+        // An exclusive handle inside the working directory blocks the first rename on Windows,
+        // failing the swap before anything moved.
+        await using (new FileStream(
+            Path.Combine(harness.WorkingDirectory, "server.jar"),
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.None))
+        {
+            var executed = await harness.Application.ExecuteRestoreAsync(
+                new BackupRestoreExecuteRequest(plan.PlanId, "owner-a"),
+                CancellationToken.None);
+            Assert.True(executed.IsOk(out var result));
+            var operation = await harness.WaitForTerminalAsync(result!.OperationId);
+            Assert.Equal(OperationStatus.Failed, operation.Status);
+        }
+
+        Assert.Equal("mutated", await File.ReadAllTextAsync(Path.Combine(harness.WorkingDirectory, "server.jar")));
+        Assert.Empty(Directory.EnumerateDirectories(FileManager.InstancesRoot, ".restore-*"));
     }
 
     [Fact]
@@ -310,9 +363,30 @@ public sealed class LocalBackupApplicationTests
             var backupsRoot = Path.Combine(root, "backups");
             var store = new BackupArchiveStore(config ?? new DaemonBackupConfig(), rootDirectory: backupsRoot);
             var instances = new StubInstanceApplication();
-            var application = new LocalBackupApplication(store, plans, manager, instances, operations);
+            var application = new LocalBackupApplication(
+                store, plans, manager, instances, operations, stopExitDeadline: TimeSpan.FromMilliseconds(300));
             return new Harness(
                 root, backupsRoot, instanceId, workingDirectory, instance, manager, instances, operations, plans, store, application);
+        }
+
+        /// <summary>
+        /// Marks the instance as a managed running process: maintenance decides stop/restart from
+        /// RunningInstances membership, the same predicate start/stop use.
+        /// </summary>
+        internal void MarkRunning()
+        {
+            Instance.Status = InstanceStatus.Running;
+            Manager.RunningInstances.TryAdd(InstanceId, Instance);
+            Instances.OnStop = () =>
+            {
+                Instance.Status = InstanceStatus.Stopped;
+                Manager.RunningInstances.TryRemove(InstanceId, out _);
+            };
+            Instances.OnStart = () =>
+            {
+                Instance.Status = InstanceStatus.Running;
+                Manager.RunningInstances.TryAdd(InstanceId, Instance);
+            };
         }
 
         internal async Task<BackupArchiveManifest> ArchiveAsync()
