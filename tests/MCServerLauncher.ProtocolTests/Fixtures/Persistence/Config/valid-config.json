@@ -24,5 +24,10 @@
   "operations": {
     "retention_days": 7,
     "maximum_bytes": 268435456
+  },
+  "backups": {
+    "retention_days": 30,
+    "maximum_count": 16,
+    "maximum_bytes": 8589934592
   }
 }

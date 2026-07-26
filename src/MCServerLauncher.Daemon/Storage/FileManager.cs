@@ -33,6 +33,14 @@ internal static class FileManager
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
+    public static async Task<string> FileSha256(string path, CancellationToken ct = default)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var sha256 = SHA256.Create();
+        var hash = await sha256.ComputeHashAsync(stream, ct);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
     public static Guid DownloadFromUrl(
         string? targetDir,
         string filename,
@@ -209,7 +217,7 @@ internal static class FileManager
         }
     }
 
-    private static void DeleteIfExists(string path)
+    internal static void DeleteIfExists(string path)
     {
         if (File.Exists(path))
             File.Delete(path);

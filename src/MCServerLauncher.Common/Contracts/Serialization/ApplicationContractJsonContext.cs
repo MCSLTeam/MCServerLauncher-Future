@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -114,4 +115,16 @@ typeof(OperationStatusJsonConverter),
 [JsonSerializable(typeof(ProvisioningResolveRequest))]
 [JsonSerializable(typeof(ProvisioningPlanSnapshot))]
 [JsonSerializable(typeof(ProvisioningUnresolvedFact))]
+[JsonSerializable(typeof(BackupFileEntry))]
+[JsonSerializable(typeof(BackupArchiveManifest))]
+[JsonSerializable(typeof(BackupListQuery))]
+[JsonSerializable(typeof(BackupListResult))]
+[JsonSerializable(typeof(BackupCreateRequest))]
+[JsonSerializable(typeof(BackupCreateResult))]
+[JsonSerializable(typeof(BackupPruneRequest))]
+[JsonSerializable(typeof(BackupPruneResult))]
+[JsonSerializable(typeof(BackupRestorePlanRequest))]
+[JsonSerializable(typeof(BackupRestoreConfirmRequest))]
+[JsonSerializable(typeof(BackupRestoreExecuteRequest))]
+[JsonSerializable(typeof(BackupRestoreExecuteResult))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;
