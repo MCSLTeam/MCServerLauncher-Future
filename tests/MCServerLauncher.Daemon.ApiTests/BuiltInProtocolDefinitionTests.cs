@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
@@ -45,6 +46,9 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolDefinitions.CancelOperation,
             BuiltInProtocolDefinitions.ResolveProvisioning, BuiltInProtocolDefinitions.GetProvisioningPlan,
             BuiltInProtocolDefinitions.ExecuteProvisioning,
+            BuiltInProtocolDefinitions.ListBackups, BuiltInProtocolDefinitions.CreateBackup,
+            BuiltInProtocolDefinitions.PruneBackups, BuiltInProtocolDefinitions.PlanBackupRestore,
+            BuiltInProtocolDefinitions.ConfirmBackupRestore, BuiltInProtocolDefinitions.ExecuteBackupRestore,
             BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
         ];
         EventDescriptor[] namedEvents =
@@ -66,7 +70,10 @@ public sealed class BuiltInProtocolDefinitionTests
     {
         var expectedRpcs = new[]
         {
-            "mcsl.auth.permissions.get", "mcsl.auth.token.issue", "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
+            "mcsl.auth.permissions.get", "mcsl.auth.token.issue",
+            "mcsl.backup.create", "mcsl.backup.list", "mcsl.backup.prune",
+            "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute", "mcsl.backup.restore.plan",
+            "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
             "mcsl.directory.info.get", "mcsl.directory.move", "mcsl.directory.rename", "mcsl.event.subscribe",
             "mcsl.event.unsubscribe", "mcsl.file.copy", "mcsl.file.delete", "mcsl.file.download.close",
             "mcsl.file.download.open", "mcsl.file.download.read", "mcsl.file.info.get", "mcsl.file.move",
@@ -99,6 +106,12 @@ public sealed class BuiltInProtocolDefinitionTests
         {
 ["mcsl.auth.permissions.get"] = ("mcsl.auth.permissions.get", typeof(EmptyRequest), typeof(PermissionsResult)),
             ["mcsl.auth.token.issue"] = ("mcsl.auth.token.issue", typeof(TokenIssueRequest), typeof(TokenIssueResult)),
+            ["mcsl.backup.create"] = ("mcsl.backup.create", typeof(BackupCreateRequest), typeof(BackupCreateResult)),
+            ["mcsl.backup.list"] = ("mcsl.backup.list", typeof(BackupListQuery), typeof(BackupListResult)),
+            ["mcsl.backup.prune"] = ("mcsl.backup.prune", typeof(BackupPruneRequest), typeof(BackupPruneResult)),
+            ["mcsl.backup.restore.confirm"] = ("mcsl.backup.restore.confirm", typeof(BackupRestoreConfirmRequest), typeof(ProvisioningPlanSnapshot)),
+            ["mcsl.backup.restore.execute"] = ("mcsl.backup.restore.execute", typeof(BackupRestoreExecuteRequest), typeof(BackupRestoreExecuteResult)),
+            ["mcsl.backup.restore.plan"] = ("mcsl.backup.restore.plan", typeof(BackupRestorePlanRequest), typeof(ProvisioningPlanSnapshot)),
             ["mcsl.daemon.ping"] = ("mcsl.daemon.ping", typeof(EmptyRequest), typeof(PingResult)),
             ["mcsl.directory.copy"] = ("mcsl.directory.copy", typeof(PathTransferRequest), typeof(UnitResult)),
             ["mcsl.directory.create"] = ("mcsl.directory.create", typeof(PathRequest), typeof(UnitResult)),

@@ -6,6 +6,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Daemon.API.Protocol;
 
@@ -59,6 +60,12 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<ProvisioningResolveRequest, ProvisioningPlanSnapshot> ResolveProvisioning => BuiltInProtocolDefinitions.ResolveProvisioning;
     internal static RpcDescriptor<ProvisioningPlanReference, ProvisioningPlanSnapshot> GetProvisioningPlan => BuiltInProtocolDefinitions.GetProvisioningPlan;
     internal static RpcDescriptor<ProvisioningExecuteRequest, ProvisioningExecuteResult> ExecuteProvisioning => BuiltInProtocolDefinitions.ExecuteProvisioning;
+    internal static RpcDescriptor<BackupListQuery, BackupListResult> ListBackups => BuiltInProtocolDefinitions.ListBackups;
+    internal static RpcDescriptor<BackupCreateRequest, BackupCreateResult> CreateBackup => BuiltInProtocolDefinitions.CreateBackup;
+    internal static RpcDescriptor<BackupPruneRequest, BackupPruneResult> PruneBackups => BuiltInProtocolDefinitions.PruneBackups;
+    internal static RpcDescriptor<BackupRestorePlanRequest, ProvisioningPlanSnapshot> PlanBackupRestore => BuiltInProtocolDefinitions.PlanBackupRestore;
+    internal static RpcDescriptor<BackupRestoreConfirmRequest, ProvisioningPlanSnapshot> ConfirmBackupRestore => BuiltInProtocolDefinitions.ConfirmBackupRestore;
+    internal static RpcDescriptor<BackupRestoreExecuteRequest, BackupRestoreExecuteResult> ExecuteBackupRestore => BuiltInProtocolDefinitions.ExecuteBackupRestore;
     internal static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo => BuiltInProtocolDefinitions.GetSystemInfo;
     internal static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc => BuiltInProtocolDefinitions.DiscoverRpc;
 
@@ -73,7 +80,8 @@ internal static class V2ClientProtocol
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
-        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning, GetSystemInfo,
+        UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
+        ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore, GetSystemInfo,
         DiscoverRpc
     ];
 
