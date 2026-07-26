@@ -6346,6 +6346,21 @@
                   "not": {
                     "type": "null"
                   }
+                },
+                "confirmed_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "confirmed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "default": null
                 }
               },
               "required": [
@@ -6580,6 +6595,21 @@
                   "not": {
                     "type": "null"
                   }
+                },
+                "confirmed_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "confirmed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "default": null
                 }
               },
               "required": [

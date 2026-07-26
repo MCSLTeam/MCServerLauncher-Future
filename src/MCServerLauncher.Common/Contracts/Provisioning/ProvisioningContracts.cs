@@ -55,7 +55,9 @@ public sealed record ProvisioningPlanSnapshot(
     InstanceFactoryMirror Mirror,
     string? JavaPath,
     string? IdempotencyKey,
-    JsonElement Payload);
+    JsonElement Payload,
+    string? ConfirmedBy = null,
+    DateTimeOffset? ConfirmedAt = null);
 
 public sealed record ProvisioningResolveRequest(
     ProvisioningProviderKind Provider,
