@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="RustyOptions" Version="0.10.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -36,5 +37,12 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <Target Name="CopyPluginDependencyAssembly" AfterTargets="Build">
+    <Copy
+      SourceFiles="$(PkgMicrosoft_Extensions_DependencyInjection)\lib\net10.0\Microsoft.Extensions.DependencyInjection.dll"
+      DestinationFolder="$(OutputPath)"
+      SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
