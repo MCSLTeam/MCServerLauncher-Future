@@ -26,12 +26,16 @@ internal sealed class InstanceCatalogDomainEventBridge(
 
     internal async Task DrainAsync()
     {
-        Task runTask;
+        // Shutdown / dispose may run before lifecycle Start (e.g. ServeAsync aborted before
+        // host.StartAsync). Treat never-started as already drained so cleanup stays idempotent.
+        Task? runTask;
         lock (_gate)
         {
-            runTask = _runTask ?? throw new InvalidOperationException(
-                "The instance catalog domain-event bridge must be started before it can be drained.");
+            runTask = _runTask;
         }
+
+        if (runTask is null)
+            return;
 
         await runTask;
     }

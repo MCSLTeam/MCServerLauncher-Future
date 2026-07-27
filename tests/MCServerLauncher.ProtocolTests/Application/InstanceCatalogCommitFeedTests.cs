@@ -15,6 +15,17 @@ namespace MCServerLauncher.ProtocolTests;
 public sealed class InstanceCatalogCommitFeedTests
 {
     [Fact]
+    public async Task DrainAsync_WhenNeverStarted_CompletesAsNoOp()
+    {
+        using var domainEvents = DomainEventPortTestHost.Create();
+        var feed = new InstanceCatalogCommitFeed();
+        var bridge = new InstanceCatalogDomainEventBridge(feed, domainEvents.Port);
+
+        // Shutdown may call DrainAsync before lifecycle Start when ServeAsync aborts early.
+        await bridge.DrainAsync().WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task ConcurrentAuthoritativeCommits_ArePublishedOnceInStrictVersionOrder_AndDrainOnStop()
     {
         const int writerCount = 64;
