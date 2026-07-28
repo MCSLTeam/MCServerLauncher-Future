@@ -13,4 +13,12 @@ public interface IDaemonApplication
     IOperationApplication Operations { get; }
 
     IProvisioningApplication Provisioning { get; }
+
+    IBackupApplication Backups { get; }
+
+    IMonitoringApplication Monitoring { get; }
+
+    IAutomationApplication Automation { get; }
+
+    IAuditApplication Audit { get; }
 }

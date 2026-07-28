@@ -98,6 +98,10 @@ public sealed class DaemonRuntimeLifecycleTests
         public MCServerLauncher.Daemon.API.Application.IEventRuleApplication EventRules => null!;
         public MCServerLauncher.Daemon.API.Application.IOperationApplication Operations => null!;
         public MCServerLauncher.Daemon.API.Application.IProvisioningApplication Provisioning => null!;
+        public MCServerLauncher.Daemon.API.Application.IBackupApplication Backups => null!;
+        public MCServerLauncher.Daemon.API.Application.IMonitoringApplication Monitoring => null!;
+        public MCServerLauncher.Daemon.API.Application.IAutomationApplication Automation => null!;
+        public MCServerLauncher.Daemon.API.Application.IAuditApplication Audit => null!;
     }
 
     private sealed class FaultingProcessInstance(InstanceConfig config) : IInstance

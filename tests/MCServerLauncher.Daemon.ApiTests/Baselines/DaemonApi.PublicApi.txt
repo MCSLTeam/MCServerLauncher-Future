@@ -84,9 +84,13 @@ type MCServerLauncher.Daemon.API.Application.ICallerContextFactory | kind=interf
 method MCServerLauncher.Daemon.API.Application.ICallerContextFactory.CreateHost(MCServerLauncher.Daemon.API.Plugins.PluginIdentity plugin optional=False default=-,System.Collections.Generic.IEnumerable<System.String> grantedFeatureIds optional=False default=-) -> MCServerLauncher.Daemon.API.Application.ICallerContext | visibility=public | static=False | abstract=True | virtual=True | constraints=-
 method MCServerLauncher.Daemon.API.Application.ICallerContextFactory.ForPrincipal(MCServerLauncher.Daemon.API.Plugins.VerifiedPrincipal principal optional=False default=-) -> MCServerLauncher.Daemon.API.Application.ICallerContext | visibility=public | static=False | abstract=True | virtual=True | constraints=-
 type MCServerLauncher.Daemon.API.Application.IDaemonApplication | kind=interface | visibility=public | abstract=True | sealed=False | base=- | interfaces=- | constraints=-
+property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Audit[] : MCServerLauncher.Daemon.API.Application.IAuditApplication | get=public | set=-
+property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Automation[] : MCServerLauncher.Daemon.API.Application.IAutomationApplication | get=public | set=-
+property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Backups[] : MCServerLauncher.Daemon.API.Application.IBackupApplication | get=public | set=-
 property MCServerLauncher.Daemon.API.Application.IDaemonApplication.EventRules[] : MCServerLauncher.Daemon.API.Application.IEventRuleApplication | get=public | set=-
 property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Files[] : MCServerLauncher.Daemon.API.Application.IFileApplication | get=public | set=-
 property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Instances[] : MCServerLauncher.Daemon.API.Application.IInstanceApplication | get=public | set=-
+property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Monitoring[] : MCServerLauncher.Daemon.API.Application.IMonitoringApplication | get=public | set=-
 property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Operations[] : MCServerLauncher.Daemon.API.Application.IOperationApplication | get=public | set=-
 property MCServerLauncher.Daemon.API.Application.IDaemonApplication.Provisioning[] : MCServerLauncher.Daemon.API.Application.IProvisioningApplication | get=public | set=-
 property MCServerLauncher.Daemon.API.Application.IDaemonApplication.System[] : MCServerLauncher.Daemon.API.Application.ISystemApplication | get=public | set=-

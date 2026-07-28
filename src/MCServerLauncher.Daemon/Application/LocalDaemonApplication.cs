@@ -8,7 +8,11 @@ internal sealed class LocalDaemonApplication(
     ISystemApplication system,
     IEventRuleApplication eventRules,
     IOperationApplication operations,
-    IProvisioningApplication provisioning) : IDaemonApplication
+    IProvisioningApplication provisioning,
+    IBackupApplication backups,
+    IMonitoringApplication monitoring,
+    IAutomationApplication automation,
+    IAuditApplication audit) : IDaemonApplication
 {
     public IInstanceApplication Instances { get; } = instances;
 
@@ -21,4 +25,12 @@ internal sealed class LocalDaemonApplication(
     public IOperationApplication Operations { get; } = operations;
 
     public IProvisioningApplication Provisioning { get; } = provisioning;
+
+    public IBackupApplication Backups { get; } = backups;
+
+    public IMonitoringApplication Monitoring { get; } = monitoring;
+
+    public IAutomationApplication Automation { get; } = automation;
+
+    public IAuditApplication Audit { get; } = audit;
 }
