@@ -6,6 +6,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -127,6 +128,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
             new ThrowingOperationApplication(),
             new ThrowingProvisioningApplication(),
             new ThrowingBackupApplication(),
+            new ThrowingAuditApplication(),
             new ThrowingTokenIssueApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
@@ -195,6 +197,11 @@ public sealed class BuiltInProtocolCatalogCompositionTests
         public Task<Result<ProvisioningPlanSnapshot, DaemonError>> PlanRestoreAsync(BackupRestorePlanRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ConfirmRestoreAsync(BackupRestoreConfirmRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<BackupRestoreExecuteResult, DaemonError>> ExecuteRestoreAsync(BackupRestoreExecuteRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingAuditApplication : IAuditApplication
+    {
+        public Task<Result<AuditQueryResult, DaemonError>> QueryAsync(AuditQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingOperationApplication : IOperationApplication

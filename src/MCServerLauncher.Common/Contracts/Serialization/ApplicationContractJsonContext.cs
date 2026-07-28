@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
@@ -127,4 +128,7 @@ typeof(OperationStatusJsonConverter),
 [JsonSerializable(typeof(BackupRestoreConfirmRequest))]
 [JsonSerializable(typeof(BackupRestoreExecuteRequest))]
 [JsonSerializable(typeof(BackupRestoreExecuteResult))]
+[JsonSerializable(typeof(AuditRecord))]
+[JsonSerializable(typeof(AuditQuery))]
+[JsonSerializable(typeof(AuditQueryResult))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;

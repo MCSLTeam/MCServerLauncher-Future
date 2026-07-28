@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.ApplicationCore.Backups;
 using MCServerLauncher.Daemon.ApplicationCore.Operations;
@@ -85,6 +86,13 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton(appConfig.Backups);
         a.RegisterSingleton<BackupArchiveStore>();
         a.RegisterSingleton<IBackupApplication, LocalBackupApplication>();
+        a.RegisterSingleton(appConfig.Audit);
+        var auditLog = new AuditLog(appConfig.Audit);
+        a.RegisterSingleton(auditLog);
+        a.RegisterSingleton<IAuditSink>(auditLog);
+        a.RegisterSingleton<IAuditApplication, LocalAuditApplication>();
+        collection.AddSingleton(auditLog);
+        collection.AddSingleton<IAuditSink>(auditLog);
         var verifiedPrincipals = new VerifiedPrincipalAuthority();
         var callerContextFactory = new CallerContextFactory(verifiedPrincipals);
         a.RegisterSingleton(verifiedPrincipals);
@@ -129,6 +137,7 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<IProvisioningApplication>(),
             serviceProvider.GetRequiredService<PluginAdmissionPreflight>(),
             serviceProvider.GetRequiredService<IBackupApplication>(),
+            serviceProvider.GetRequiredService<IAuditApplication>(),
             serviceProvider.GetRequiredService<VerifiedPrincipalAuthority>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
@@ -154,7 +163,8 @@ internal static class DaemonServiceComposition
             services.GetRequiredService<IV2RpcDiagnosticSink>(),
             services.GetRequiredService<IV2InboundDiagnosticSink>(),
             services.GetRequiredService<TimeProvider>(),
-            downloadSessionLimit: AppConfig.Get().FileDownloadSessions));
+            downloadSessionLimit: AppConfig.Get().FileDownloadSessions,
+            auditSink: services.GetRequiredService<IAuditSink>()));
         collection.AddSingleton<IV2ConnectionAdministration>(services =>
             services.GetRequiredService<TouchSocketV2TransportPlugin>());
         a.RegisterSingleton<InstanceDomainEventBridge>();

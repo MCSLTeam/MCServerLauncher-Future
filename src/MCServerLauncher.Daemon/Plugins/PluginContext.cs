@@ -30,6 +30,7 @@ internal sealed class PluginApplicationAuthorizer
     private readonly IOperationControlApplication? _operationControl;
     private readonly IProvisioningApplication? _provisioning;
     private readonly IBackupApplication? _backups;
+    private readonly IAuditApplication? _audit;
 
     internal PluginApplicationAuthorizer(
         PluginIdentity identity,
@@ -42,7 +43,8 @@ internal sealed class PluginApplicationAuthorizer
         IOperationQueryApplication? operationQueries,
         IOperationControlApplication? operationControl,
         IProvisioningApplication? provisioning,
-        IBackupApplication? backups)
+        IBackupApplication? backups,
+        IAuditApplication? audit)
     {
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(grantedFeatureIds);
@@ -57,6 +59,7 @@ internal sealed class PluginApplicationAuthorizer
         _operationControl = HasFeature(PluginFeature.OperationCancel) ? operationControl : null;
         _provisioning = HasFeature(PluginFeature.ProvisioningManage) ? provisioning : null;
         _backups = HasFeature(PluginFeature.BackupManage) ? backups : null;
+        _audit = HasFeature(PluginFeature.AuditQuery) ? audit : null;
         Host = Create(_callerContexts.CreateHost(identity, grantedFeatures));
 
         bool HasFeature(PluginFeature feature) => grantedFeatures.Contains(feature.Value);
@@ -80,7 +83,8 @@ internal sealed class PluginApplicationAuthorizer
             _operationQueries is null ? null : new AuthorizedOperationQueryApplication(caller, _operationQueries),
             _operationControl is null ? null : new AuthorizedOperationControlApplication(caller, _operationControl),
             _provisioning is null ? null : new AuthorizedProvisioningApplication(caller, _provisioning),
-            _backups is null ? null : new AuthorizedBackupApplication(caller, _backups));
+            _backups is null ? null : new AuthorizedBackupApplication(caller, _backups),
+            _audit is null ? null : new AuthorizedAuditApplication(caller, _audit));
 }
 
 internal sealed class PluginAuthorizedApplications(
@@ -92,7 +96,8 @@ internal sealed class PluginAuthorizedApplications(
     IOperationQueryApplication? operationQueries,
     IOperationControlApplication? operationControl,
     IProvisioningApplication? provisioning,
-    IBackupApplication? backups) : IPluginAuthorizedApplications
+    IBackupApplication? backups,
+    IAuditApplication? audit) : IPluginAuthorizedApplications
 {
     public ICallerContext Caller { get; } = caller ?? throw new ArgumentNullException(nameof(caller));
 
@@ -119,6 +124,9 @@ internal sealed class PluginAuthorizedApplications(
 
     public IBackupApplication Backups =>
         backups ?? throw MissingFeature("backup.manage");
+
+    public IAuditApplication Audit =>
+        audit ?? throw MissingFeature("audit.query");
 
     private static InvalidOperationException MissingFeature(string feature) =>
         new($"The plugin did not declare the '{feature}' feature.");
@@ -196,6 +204,8 @@ internal sealed class PluginContext : IPluginContext
     public IProvisioningApplication Provisioning => _applications.Host.Provisioning;
 
     public IBackupApplication Backups => _applications.Host.Backups;
+
+    public IAuditApplication Audit => _applications.Host.Audit;
 
     public IPluginAuthorizedApplications ForPrincipal(VerifiedPrincipal principal) =>
         _applications.ForPrincipal(principal);

@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.Remote.Authentication;
 using MCServerLauncher.Daemon.Remote.Rpc;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -145,11 +146,16 @@ internal sealed class V2RpcDispatcher
     private static readonly ConcurrentDictionary<string, Permission> PermissionCache = new(StringComparer.Ordinal);
     private readonly FrozenProtocolCatalog _catalog;
     private readonly IV2RpcDiagnosticSink _diagnosticSink;
+    private readonly IAuditSink? _auditSink;
 
-    internal V2RpcDispatcher(FrozenProtocolCatalog catalog, IV2RpcDiagnosticSink diagnosticSink)
+    internal V2RpcDispatcher(
+        FrozenProtocolCatalog catalog,
+        IV2RpcDiagnosticSink diagnosticSink,
+        IAuditSink? auditSink = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _diagnosticSink = diagnosticSink ?? throw new ArgumentNullException(nameof(diagnosticSink));
+        _auditSink = auditSink;
     }
 
     internal async Task<V2RpcDispatchOutcome> DispatchAsync(
@@ -278,16 +284,19 @@ internal sealed class V2RpcDispatcher
             invocationCancellationToken.IsCancellationRequested &&
             exception.CancellationToken == invocationCancellationToken)
         {
+            RecordAudit(entry.Descriptor, entry.Owner, connection, typedRequest, null, false, "request.cancelled");
             throw;
         }
         catch (Exception exception)
         {
+            RecordAudit(entry.Descriptor, entry.Owner, connection, typedRequest, null, false, "internal.unexpected");
             return UnexpectedOrSuppress(request, entry.Owner, exception);
         }
 
         if (execution.Result.IsErr(out _))
         {
             var daemonError = execution.Result.UnwrapErr();
+            RecordAudit(entry.Descriptor, entry.Owner, connection, typedRequest, null, false, daemonError.Code);
             var pluginError = daemonError as PluginError;
             var code = pluginError is not null
                 ? -32005
@@ -306,6 +315,7 @@ internal sealed class V2RpcDispatcher
                 pluginError is null ? null : new ProtocolOwnerIdentity(pluginError.Identity.Id, pluginError.Identity.Version));
         }
 
+        RecordAudit(entry.Descriptor, entry.Owner, connection, typedRequest, execution.Result.Unwrap(), true, null);
         if (request.IsNotification)
         {
             return V2RpcPreparedDispatchOutcome.NoResponse;
@@ -339,6 +349,45 @@ internal sealed class V2RpcDispatcher
         catch (Exception exception)
         {
             return UnexpectedOrSuppress(request, entry.Owner, exception);
+        }
+    }
+
+    private void RecordAudit(
+        RpcDescriptor descriptor,
+        ProtocolExecutionOwner owner,
+        V2RpcConnectionContext connection,
+        object typedRequest,
+        object? result,
+        bool succeeded,
+        string? errorCode)
+    {
+        if (_auditSink is null || !RpcAuditPolicy.IsAudited(descriptor.Method.Value))
+        {
+            return;
+        }
+
+        try
+        {
+            var subject = connection.PermissionView?.Subject;
+            _auditSink.Record(RpcAuditPolicy.CreateEvent(
+                descriptor.Method.Value,
+                descriptor.Permission.Value,
+                string.IsNullOrWhiteSpace(subject) ? "(unknown)" : subject!,
+                owner.Kind == ProtocolExecutionOwnerKind.Plugin ? owner.Plugin?.Id : null,
+                typedRequest,
+                result,
+                succeeded,
+                errorCode));
+        }
+        catch (Exception exception)
+        {
+            // Audit is fail-open by contract: a recording defect must never rewrite the outcome
+            // of the mutation it observes, so it lands in diagnostics instead of the response.
+            _diagnosticSink.RecordUnexpected(new V2RpcUnexpectedDiagnostic(
+                Guid.NewGuid().ToString("N"),
+                descriptor.Method.Value,
+                owner,
+                exception));
         }
     }
 

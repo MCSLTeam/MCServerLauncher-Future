@@ -11,6 +11,7 @@ using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Files;
 using MCServerLauncher.Daemon.Remote.Rpc.Console;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using TouchSocket.Core;
 using TouchSocket.Http;
 using TouchSocket.Http.WebSockets;
@@ -31,6 +32,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
     private readonly TimeProvider _timeProvider;
     private readonly int _downloadSessionLimit;
     private readonly Func<Task> _beforeStartExpiry;
+    private readonly IAuditSink? _auditSink;
     private readonly ConcurrentDictionary<string, ConnectionState> _connections = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, byte> _v2Connections = new(StringComparer.Ordinal);
     private int _stopping;
@@ -44,7 +46,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         IV2InboundDiagnosticSink inboundDiagnostics,
         TimeProvider? timeProvider = null,
         Func<Task>? beforeStartExpiry = null,
-        int downloadSessionLimit = 0)
+        int downloadSessionLimit = 0,
+        IAuditSink? auditSink = null)
     {
         _application = application ?? throw new ArgumentNullException(nameof(application));
         _catalogAccessor = catalogAccessor ?? throw new ArgumentNullException(nameof(catalogAccessor));
@@ -55,6 +58,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         ArgumentOutOfRangeException.ThrowIfNegative(downloadSessionLimit);
         _downloadSessionLimit = downloadSessionLimit;
         _beforeStartExpiry = beforeStartExpiry ?? (() => Task.CompletedTask);
+        _auditSink = auditSink;
     }
 
     internal TouchSocketV2TransportPlugin(
@@ -65,7 +69,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
         IV2InboundDiagnosticSink inboundDiagnostics,
         TimeProvider? timeProvider = null,
         Func<Task>? beforeStartExpiry = null,
-        int downloadSessionLimit = 0)
+        int downloadSessionLimit = 0,
+        IAuditSink? auditSink = null)
         : this(
             application,
             PublishedAccessor(catalog),
@@ -74,7 +79,8 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             inboundDiagnostics,
             timeProvider,
             beforeStartExpiry,
-            downloadSessionLimit)
+            downloadSessionLimit,
+            auditSink)
     {
     }
 
@@ -174,7 +180,7 @@ internal sealed class TouchSocketV2TransportPlugin : PluginBase,
             {
             }
             var context = new V2RpcConnectionContext(owner, eventEntry!.Ledger, owner.ConnectionToken, files, consoles);
-            var pipeline = new V2InboundMessagePipeline(catalog, new V2RpcDispatcher(catalog, _rpcDiagnostics), context, owner, files, _inboundDiagnostics, consoles);
+            var pipeline = new V2InboundMessagePipeline(catalog, new V2RpcDispatcher(catalog, _rpcDiagnostics, _auditSink), context, owner, files, _inboundDiagnostics, consoles);
             state = new ConnectionState(
                 owner,
                 pipeline,
