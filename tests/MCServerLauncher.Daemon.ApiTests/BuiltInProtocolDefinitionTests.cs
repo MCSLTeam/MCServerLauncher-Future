@@ -9,6 +9,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -53,6 +54,10 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolDefinitions.ConfirmBackupRestore, BuiltInProtocolDefinitions.ExecuteBackupRestore,
             BuiltInProtocolDefinitions.QueryAudit,
             BuiltInProtocolDefinitions.GetMonitoringCurrent, BuiltInProtocolDefinitions.QueryMonitoring,
+            BuiltInProtocolDefinitions.GetAutomation, BuiltInProtocolDefinitions.ValidateAutomation,
+            BuiltInProtocolDefinitions.TestAutomation, BuiltInProtocolDefinitions.ApplyAutomation,
+            BuiltInProtocolDefinitions.EnableAutomation, BuiltInProtocolDefinitions.ConfirmAutomationIntent,
+            BuiltInProtocolDefinitions.ExecuteAutomationIntent,
             BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
         ];
         EventDescriptor[] namedEvents =
@@ -76,6 +81,9 @@ public sealed class BuiltInProtocolDefinitionTests
         {
             "mcsl.audit.query",
             "mcsl.auth.permissions.get", "mcsl.auth.token.issue",
+            "mcsl.automation.apply", "mcsl.automation.enable", "mcsl.automation.get",
+            "mcsl.automation.intent.confirm", "mcsl.automation.intent.execute",
+            "mcsl.automation.test", "mcsl.automation.validate",
             "mcsl.backup.create", "mcsl.backup.list", "mcsl.backup.prune",
             "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute", "mcsl.backup.restore.plan",
             "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
@@ -113,6 +121,13 @@ public sealed class BuiltInProtocolDefinitionTests
             ["mcsl.audit.query"] = ("mcsl.audit.query", typeof(AuditQuery), typeof(AuditQueryResult)),
 ["mcsl.auth.permissions.get"] = ("mcsl.auth.permissions.get", typeof(EmptyRequest), typeof(PermissionsResult)),
             ["mcsl.auth.token.issue"] = ("mcsl.auth.token.issue", typeof(TokenIssueRequest), typeof(TokenIssueResult)),
+            ["mcsl.automation.apply"] = ("mcsl.automation.apply", typeof(AutomationApplyRequest), typeof(AutomationApplyResult)),
+            ["mcsl.automation.enable"] = ("mcsl.automation.enable", typeof(AutomationEnableRequest), typeof(AutomationApplyResult)),
+            ["mcsl.automation.get"] = ("mcsl.automation.get", typeof(EmptyRequest), typeof(AutomationGetResult)),
+            ["mcsl.automation.intent.confirm"] = ("mcsl.automation.intent.confirm", typeof(AutomationIntentConfirmRequest), typeof(ProvisioningPlanSnapshot)),
+            ["mcsl.automation.intent.execute"] = ("mcsl.automation.intent.execute", typeof(AutomationIntentExecuteRequest), typeof(AutomationIntentExecuteResult)),
+            ["mcsl.automation.test"] = ("mcsl.automation.test", typeof(EmptyRequest), typeof(AutomationTestResult)),
+            ["mcsl.automation.validate"] = ("mcsl.automation.validate", typeof(AutomationValidateRequest), typeof(AutomationValidateResult)),
             ["mcsl.backup.create"] = ("mcsl.backup.create", typeof(BackupCreateRequest), typeof(BackupCreateResult)),
             ["mcsl.backup.list"] = ("mcsl.backup.list", typeof(BackupListQuery), typeof(BackupListResult)),
             ["mcsl.backup.prune"] = ("mcsl.backup.prune", typeof(BackupPruneRequest), typeof(BackupPruneResult)),

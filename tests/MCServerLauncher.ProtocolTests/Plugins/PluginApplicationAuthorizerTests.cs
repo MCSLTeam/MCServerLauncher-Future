@@ -32,7 +32,8 @@ public sealed class PluginApplicationAuthorizerTests
             provisioning: null,
             backups: null,
             audit: null,
-            monitoring: null);
+            monitoring: null,
+            automation: null);
 
         var hostQueries = Assert.IsType<AuthorizedInstanceQueryApplication>(authorizer.Host.InstanceQueries);
         Assert.NotSame(inner, hostQueries);
@@ -93,7 +94,8 @@ public sealed class PluginApplicationAuthorizerTests
             provisioning: null,
             backups: null,
             audit: null,
-            monitoring: null);
+            monitoring: null,
+            automation: null);
         var principal = new VerifiedPrincipal(
             "expiring-user",
             "expiring-token-id",
@@ -145,7 +147,8 @@ public sealed class PluginApplicationAuthorizerTests
             provisioning: null,
             backups: null,
             audit: null,
-            monitoring: null);
+            monitoring: null,
+            automation: null);
 
         Assert.Throws<ArgumentException>(() => authorizer.ForPrincipal(principal));
     }

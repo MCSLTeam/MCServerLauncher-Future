@@ -10,6 +10,7 @@ using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -81,6 +82,13 @@ public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions 
     public static RpcDescriptor<BackupRestoreConfirmRequest, ProvisioningPlanSnapshot> ConfirmBackupRestore { get; } = Rpc("mcsl.backup.restore.confirm", new("mcsl.backup.restore.confirm"), Application.BackupRestoreConfirmRequest, Application.ProvisioningPlanSnapshot, "backup", "Confirm backup restore", "Confirms a restore plan by echoing its hash, making it executable.");
     public static RpcDescriptor<BackupRestoreExecuteRequest, BackupRestoreExecuteResult> ExecuteBackupRestore { get; } = Rpc("mcsl.backup.restore.execute", new("mcsl.backup.restore.execute"), Application.BackupRestoreExecuteRequest, Application.BackupRestoreExecuteResult, "backup", "Execute backup restore", "Executes a confirmed restore plan as a long-running operation.");
     public static RpcDescriptor<AuditQuery, AuditQueryResult> QueryAudit { get; } = Rpc("mcsl.audit.query", new("mcsl.audit.query"), Application.AuditQuery, Application.AuditQueryResult, "audit", "Query audit records", "Queries bounded structured audit records visible to the caller.");
+    public static RpcDescriptor<EmptyRequest, AutomationGetResult> GetAutomation { get; } = Rpc("mcsl.automation.get", new("mcsl.automation.get"), Protocol.EmptyRequest, Application.AutomationGetResult, "automation", "Get automation policies", "Gets the applied typed policy document and its version.");
+    public static RpcDescriptor<AutomationValidateRequest, AutomationValidateResult> ValidateAutomation { get; } = Rpc("mcsl.automation.validate", new("mcsl.automation.validate"), Application.AutomationValidateRequest, Application.AutomationValidateResult, "automation", "Validate automation policies", "Structurally validates a policy document without applying it.");
+    public static RpcDescriptor<EmptyRequest, AutomationTestResult> TestAutomation { get; } = Rpc("mcsl.automation.test", new("mcsl.automation.test"), Protocol.EmptyRequest, Application.AutomationTestResult, "automation", "Test automation policies", "Dry-runs the applied policies against recorded facts without executing anything.");
+    public static RpcDescriptor<AutomationApplyRequest, AutomationApplyResult> ApplyAutomation { get; } = Rpc("mcsl.automation.apply", new("mcsl.automation.apply"), Application.AutomationApplyRequest, Application.AutomationApplyResult, "automation", "Apply automation policies", "Replaces the applied policy document under compare-and-swap versioning.");
+    public static RpcDescriptor<AutomationEnableRequest, AutomationApplyResult> EnableAutomation { get; } = Rpc("mcsl.automation.enable", new("mcsl.automation.enable"), Application.AutomationEnableRequest, Application.AutomationApplyResult, "automation", "Toggle automation policy", "Enables or disables one applied policy under compare-and-swap versioning.");
+    public static RpcDescriptor<AutomationIntentConfirmRequest, ProvisioningPlanSnapshot> ConfirmAutomationIntent { get; } = Rpc("mcsl.automation.intent.confirm", new("mcsl.automation.intent.confirm"), Application.AutomationIntentConfirmRequest, Application.ProvisioningPlanSnapshot, "automation", "Confirm automation intent", "Confirms a service-filed intent plan by echoing its hash, binding it to the confirmer.");
+    public static RpcDescriptor<AutomationIntentExecuteRequest, AutomationIntentExecuteResult> ExecuteAutomationIntent { get; } = Rpc("mcsl.automation.intent.execute", new("mcsl.automation.intent.execute"), Application.AutomationIntentExecuteRequest, Application.AutomationIntentExecuteResult, "automation", "Execute automation intent", "Executes a confirmed intent plan as a long-running operation.");
     public static RpcDescriptor<EmptyRequest, MonitoringCurrentResult> GetMonitoringCurrent { get; } = Rpc("mcsl.monitoring.current.get", new("mcsl.monitoring.current.get"), Protocol.EmptyRequest, Application.MonitoringCurrentResult, "monitoring", "Get current metrics", "Gets the newest retained daemon metrics sample.");
     public static RpcDescriptor<MonitoringQuery, MonitoringQueryResult> QueryMonitoring { get; } = Rpc("mcsl.monitoring.query", new("mcsl.monitoring.query"), Application.MonitoringQuery, Application.MonitoringQueryResult, "monitoring", "Query metrics history", "Queries the bounded metrics history with deterministic downsampling.");
     public static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo { get; } = Rpc("mcsl.system.info.get", new("mcsl.system.info.get"), Protocol.EmptyRequest, Application.SystemInfo, "system", "Get system information", "Gets daemon host system information.");
@@ -114,6 +122,8 @@ public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions 
             UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, ListOperations, GetOperation, CancelOperation, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
             ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore,
             QueryAudit, GetMonitoringCurrent, QueryMonitoring,
+            GetAutomation, ValidateAutomation, TestAutomation, ApplyAutomation, EnableAutomation,
+            ConfirmAutomationIntent, ExecuteAutomationIntent,
             GetSystemInfo, DiscoverRpc)
         .Sort(CompareRpcs);
 

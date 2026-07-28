@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
@@ -25,6 +26,10 @@ internal static class RpcAuditPolicy
     internal static readonly ImmutableHashSet<string> AuditedMethods = ImmutableHashSet.Create(
         StringComparer.Ordinal,
         "mcsl.auth.token.issue",
+        "mcsl.automation.apply",
+        "mcsl.automation.enable",
+        "mcsl.automation.intent.confirm",
+        "mcsl.automation.intent.execute",
         "mcsl.backup.create",
         "mcsl.backup.prune",
         "mcsl.backup.restore.plan",
@@ -63,6 +68,9 @@ internal static class RpcAuditPolicy
         StringComparer.Ordinal,
         "mcsl.audit.query",
         "mcsl.auth.permissions.get",
+        "mcsl.automation.get",
+        "mcsl.automation.test",
+        "mcsl.automation.validate",
         "mcsl.backup.list",
         "mcsl.daemon.ping",
         "mcsl.directory.info.get",
@@ -113,9 +121,16 @@ internal static class RpcAuditPolicy
             BackupRestoreConfirmRequest confirm => confirm.PlanId,
             BackupRestoreExecuteRequest execute => execute.PlanId,
             ProvisioningExecuteRequest execute => execute.PlanId,
+            AutomationIntentConfirmRequest intentConfirm => intentConfirm.PlanId,
+            AutomationIntentExecuteRequest intentExecute => intentExecute.PlanId,
             _ => null
         };
-        var planHash = request is BackupRestoreConfirmRequest confirmRequest ? confirmRequest.PlanHash : null;
+        var planHash = request switch
+        {
+            BackupRestoreConfirmRequest confirmRequest => confirmRequest.PlanHash,
+            AutomationIntentConfirmRequest intentConfirmRequest => intentConfirmRequest.PlanHash,
+            _ => null
+        };
         Guid? operationId = request is OperationCancelRequest cancel ? cancel.OperationId : null;
         string? confirmedBy = null;
 
@@ -139,6 +154,10 @@ internal static class RpcAuditPolicy
                 break;
             case OperationCancelResult cancelled:
                 operationId = cancelled.OperationId;
+                break;
+            case AutomationIntentExecuteResult intentExecuted:
+                planId = intentExecuted.PlanId;
+                operationId = intentExecuted.OperationId;
                 break;
             case CreateInstanceResult created:
                 target = created.Config.InstanceId.ToString("D");
@@ -175,6 +194,7 @@ internal static class RpcAuditPolicy
         TokenIssueRequest token => token.Subject,
         BackupCreateRequest backup => backup.InstanceId.ToString("D"),
         BackupRestorePlanRequest restorePlan => restorePlan.InstanceId.ToString("D"),
+        AutomationEnableRequest enable => enable.PolicyId.ToString("D"),
         ProvisioningResolveRequest resolve => resolve.InstanceName,
         _ => null
     };

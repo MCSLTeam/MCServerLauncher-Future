@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
@@ -137,4 +138,28 @@ typeof(OperationStatusJsonConverter),
 [JsonSerializable(typeof(MonitoringCurrentResult))]
 [JsonSerializable(typeof(MonitoringQuery))]
 [JsonSerializable(typeof(MonitoringQueryResult))]
+[JsonSerializable(typeof(AutomationTrigger))]
+[JsonSerializable(typeof(CrashLoopTrigger))]
+[JsonSerializable(typeof(UnexpectedExitTrigger))]
+[JsonSerializable(typeof(SustainedMetricTrigger))]
+[JsonSerializable(typeof(MaintenanceWindowTrigger))]
+[JsonSerializable(typeof(AutomationAction))]
+[JsonSerializable(typeof(RestartInstanceAction))]
+[JsonSerializable(typeof(StopInstanceAction))]
+[JsonSerializable(typeof(NotificationAction))]
+[JsonSerializable(typeof(ConfirmationPlanAction))]
+[JsonSerializable(typeof(AutomationPolicy))]
+[JsonSerializable(typeof(AutomationPolicySet))]
+[JsonSerializable(typeof(AutomationPolicyDiagnostic))]
+[JsonSerializable(typeof(AutomationGetResult))]
+[JsonSerializable(typeof(AutomationValidateRequest))]
+[JsonSerializable(typeof(AutomationValidateResult))]
+[JsonSerializable(typeof(AutomationApplyRequest))]
+[JsonSerializable(typeof(AutomationApplyResult))]
+[JsonSerializable(typeof(AutomationEnableRequest))]
+[JsonSerializable(typeof(AutomationTestOutcome))]
+[JsonSerializable(typeof(AutomationTestResult))]
+[JsonSerializable(typeof(AutomationIntentConfirmRequest))]
+[JsonSerializable(typeof(AutomationIntentExecuteRequest))]
+[JsonSerializable(typeof(AutomationIntentExecuteResult))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;

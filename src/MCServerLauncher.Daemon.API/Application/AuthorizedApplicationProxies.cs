@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Audit;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -354,6 +355,90 @@ public sealed class AuthorizedBackupApplication(
         if (owner.IsErr(out error))
             return Task.FromResult(Result.Err<BackupRestoreExecuteResult, DaemonError>(error!));
         return _inner.ExecuteRestoreAsync(
+            request with { ExecutorPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+}
+
+public sealed class AuthorizedAutomationApplication(
+    ICallerContext caller,
+    IAutomationApplication inner) : IAutomationApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IAutomationApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<AutomationGetResult, DaemonError>> GetAsync(CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.get");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AutomationGetResult, DaemonError>(error!));
+        return _inner.GetAsync(cancellationToken);
+    }
+
+    public Task<Result<AutomationValidateResult, DaemonError>> ValidateAsync(
+        AutomationValidateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.validate");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AutomationValidateResult, DaemonError>(error!));
+        return _inner.ValidateAsync(request, cancellationToken);
+    }
+
+    public Task<Result<AutomationTestResult, DaemonError>> TestAsync(CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.test");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AutomationTestResult, DaemonError>(error!));
+        return _inner.TestAsync(cancellationToken);
+    }
+
+    public Task<Result<AutomationApplyResult, DaemonError>> ApplyAsync(
+        AutomationApplyRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.apply");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AutomationApplyResult, DaemonError>(error!));
+        return _inner.ApplyAsync(request, cancellationToken);
+    }
+
+    public Task<Result<AutomationApplyResult, DaemonError>> EnableAsync(
+        AutomationEnableRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.enable");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AutomationApplyResult, DaemonError>(error!));
+        return _inner.EnableAsync(request, cancellationToken);
+    }
+
+    public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ConfirmIntentAsync(
+        AutomationIntentConfirmRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.intent.confirm");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<ProvisioningPlanSnapshot, DaemonError>(error!));
+        return _inner.ConfirmIntentAsync(
+            request with { ConfirmerPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+
+    public Task<Result<AutomationIntentExecuteResult, DaemonError>> ExecuteIntentAsync(
+        AutomationIntentExecuteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.automation.intent.execute");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AutomationIntentExecuteResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: false);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<AutomationIntentExecuteResult, DaemonError>(error!));
+        return _inner.ExecuteIntentAsync(
             request with { ExecutorPrincipal = owner.Unwrap() },
             cancellationToken);
     }

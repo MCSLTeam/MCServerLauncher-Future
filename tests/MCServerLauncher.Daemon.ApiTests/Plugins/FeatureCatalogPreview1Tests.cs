@@ -17,9 +17,10 @@ public sealed class FeatureCatalogPreview1Tests
             PluginFeature.ProvisioningManage.Value,
             // SDK-7 (Preview-2): cold backup and confirmed restore.
             PluginFeature.BackupManage.Value,
-            // SDK-8 (Preview-2): bounded audit history queries and retained metrics.
+            // SDK-8 (Preview-2): bounded audit history, retained metrics, typed automation.
             PluginFeature.AuditQuery.Value,
             PluginFeature.MonitoringQuery.Value,
+            PluginFeature.AutomationManage.Value,
             PluginFeature.NetworkHttpListen.Value,
             PluginFeature.AuthVerify.Value,
             PluginFeature.StoragePrivate.Value,
@@ -94,16 +95,27 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.Equal(
             ["mcsl.monitoring.current.get", "mcsl.monitoring.query"],
             FeatureCatalog.MethodsFor(PluginFeature.MonitoringQuery).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [
+                "mcsl.automation.apply",
+                "mcsl.automation.enable",
+                "mcsl.automation.get",
+                "mcsl.automation.intent.confirm",
+                "mcsl.automation.intent.execute",
+                "mcsl.automation.test",
+                "mcsl.automation.validate",
+            ],
+            FeatureCatalog.MethodsFor(PluginFeature.AutomationManage).Order(StringComparer.Ordinal));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.AuthVerify));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.NetworkHttpListen));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.StoragePrivate));
 
-        // SDK-8 (Preview-2): audit and monitoring are implemented; automation lands last.
+        // SDK-8 (Preview-2): the audit/monitoring/automation trio is implemented.
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AuditQuery));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.MonitoringQuery));
+        Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AutomationManage));
 
-        // Remaining Preview-2 domains stay unimplemented and contribute nothing to host expansion.
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.AutomationManage));
+        // Remaining domains stay unimplemented and contribute nothing to host expansion.
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileRead));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileWrite));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventSubscribe));

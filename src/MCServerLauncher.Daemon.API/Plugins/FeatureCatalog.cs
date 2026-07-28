@@ -160,7 +160,16 @@ public static class FeatureCatalog
             PluginFeatureRisk.None,
             ["mcsl.monitoring.current.get", "mcsl.monitoring.query"],
             implemented: true),
-        Descriptor(PluginFeature.AutomationManage, "Validate, test, apply, and enable typed automation policies.", PluginFeatureRisk.Medium, [], implemented: false),
+        Descriptor(
+            PluginFeature.AutomationManage,
+            "Validate, test, apply, and enable typed automation policies.",
+            PluginFeatureRisk.Medium,
+            [
+                "mcsl.automation.get", "mcsl.automation.validate", "mcsl.automation.test",
+                "mcsl.automation.apply", "mcsl.automation.enable",
+                "mcsl.automation.intent.confirm", "mcsl.automation.intent.execute"
+            ],
+            implemented: true),
         Descriptor(
             PluginFeature.AuditQuery,
             "Query bounded structured audit records.",

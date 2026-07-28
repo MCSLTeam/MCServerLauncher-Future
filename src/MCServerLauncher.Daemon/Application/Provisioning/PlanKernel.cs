@@ -209,8 +209,12 @@ internal sealed class PlanKernel
                     new ConflictDaemonError("plan.not_ready", "Only ready plans can be executed."));
             }
 
-            // Match OperationCoordinator: do not trust client-supplied admin wildcards.
-            if (!string.Equals(snapshot.CreatorPrincipal, executorPrincipal, StringComparison.Ordinal))
+            // Match OperationCoordinator: do not trust client-supplied admin wildcards. A
+            // service-filed plan is bound to the human that confirmed it instead of its creator.
+            var boundExecutor = AllowsForeignConfirmer(snapshot.Kind)
+                ? snapshot.ConfirmedBy
+                : snapshot.CreatorPrincipal;
+            if (!string.Equals(boundExecutor, executorPrincipal, StringComparison.Ordinal))
             {
                 return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
                     new PermissionDaemonError("plan.forbidden", "The caller cannot execute this plan."));
@@ -266,15 +270,26 @@ internal sealed class PlanKernel
                         "The confirmation does not match the plan that was read."));
             }
 
-            // Match TryBeginExecute: do not trust client-supplied admin wildcards.
-            if (!string.Equals(snapshot.CreatorPrincipal, confirmerPrincipal, StringComparison.Ordinal))
+            // Match TryBeginExecute: do not trust client-supplied admin wildcards. A service-filed
+            // automation intent is confirmable by any permitted human; the first confirmation then
+            // binds the plan to that identity.
+            if (!AllowsForeignConfirmer(snapshot.Kind) &&
+                !string.Equals(snapshot.CreatorPrincipal, confirmerPrincipal, StringComparison.Ordinal))
             {
                 return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
                     new PermissionDaemonError("plan.forbidden", "The caller cannot confirm this plan."));
             }
 
             if (snapshot.ConfirmedBy is not null)
+            {
+                if (!string.Equals(snapshot.ConfirmedBy, confirmerPrincipal, StringComparison.Ordinal))
+                {
+                    return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                        new PermissionDaemonError("plan.forbidden", "Another principal already confirmed this plan."));
+                }
+
                 return Result.Ok<ProvisioningPlanSnapshot, DaemonError>(snapshot);
+            }
 
             if (snapshot.RiskClass is PlanRiskClass.Routine && !snapshot.RequiresConfirmation)
             {
@@ -421,8 +436,16 @@ internal sealed class PlanKernel
     {
         "provisioning.instance" => "provisioning.execute",
         "backup.restore" => "backup.restore.execute",
+        "automation.intent" => "automation.intent.execute",
         _ => throw new InvalidDataException($"The plan kind '{planKind}' has no execution operation kind."),
     };
+
+    /// <summary>
+    /// Service-filed plan kinds are confirmable by a principal other than their creator; the first
+    /// confirmation binds the plan, and execution then requires that confirmer.
+    /// </summary>
+    private static bool AllowsForeignConfirmer(string planKind) =>
+        string.Equals(planKind, "automation.intent", StringComparison.Ordinal);
 
     private void PurgeExpired()
     {

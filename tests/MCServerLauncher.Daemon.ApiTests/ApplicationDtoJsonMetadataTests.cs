@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MCServerLauncher.Common.Contracts.Audit;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.EventRules;
@@ -151,6 +152,30 @@ public sealed class ApplicationDtoJsonMetadataTests
             true,
             null,
             null);
+        var automationPolicySet = new AutomationPolicySet
+        {
+            Version = 3,
+            Policies =
+            [
+                new AutomationPolicy
+                {
+                    Id = instanceId,
+                    Name = "crash-guard",
+                    Enabled = true,
+                    Trigger = new CrashLoopTrigger { InstanceId = instanceId, MaxCrashes = 3, WindowSeconds = 600 },
+                    Actions =
+                    [
+                        new NotificationAction { Title = "crash loop", Message = "instance is crash looping", Severity = "Warning" },
+                        new RestartInstanceAction { BackoffBaseSeconds = 30, BackoffMaxSeconds = 1800 },
+                        new ConfirmationPlanAction
+                        {
+                            Summary = "approve stop",
+                            Deferred = new StopInstanceAction { InstanceId = instanceId }
+                        }
+                    ]
+                }
+            ]
+        };
         var monitoringSample = new MonitoringSample(
             DateTimeOffset.UnixEpoch,
             false,
@@ -244,7 +269,21 @@ public sealed class ApplicationDtoJsonMetadataTests
             new MonitoringInstanceSample(instanceId, "Example", InstanceStatus.Running, 12.5, 1024),
             new MonitoringCurrentResult(monitoringSample, 0),
             new MonitoringQuery(DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(1), 100),
-            new MonitoringQueryResult([monitoringSample], 0)
+            new MonitoringQueryResult([monitoringSample], 0),
+            automationPolicySet,
+            automationPolicySet.Policies[0],
+            new AutomationPolicyDiagnostic(instanceId, "automation.name_required", "The policy needs a name."),
+            new AutomationGetResult(automationPolicySet),
+            new AutomationValidateRequest(automationPolicySet),
+            new AutomationValidateResult([new AutomationPolicyDiagnostic(null, "automation.trigger_required", "The policy needs a trigger.")]),
+            new AutomationApplyRequest(automationPolicySet),
+            new AutomationApplyResult(4),
+            new AutomationEnableRequest(instanceId, false, 3),
+            new AutomationTestOutcome(instanceId, true, "instance crashed", instanceId.ToString("D")),
+            new AutomationTestResult([new AutomationTestOutcome(instanceId, false, "disabled", null)]),
+            new AutomationIntentConfirmRequest(sessionId, new string('a', 64), "owner-a"),
+            new AutomationIntentExecuteRequest(sessionId, "owner-a"),
+            new AutomationIntentExecuteResult(sessionId, instanceId)
         ];
     }
 

@@ -70,6 +70,8 @@ public interface IPluginAuthorizedApplications
     IAuditApplication Audit { get; }
 
     IMonitoringApplication Monitoring { get; }
+
+    IAutomationApplication Automation { get; }
 }
 
 public interface IPluginContext : IPluginAuthorizedApplications

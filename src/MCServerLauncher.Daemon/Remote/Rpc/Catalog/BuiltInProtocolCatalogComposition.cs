@@ -23,6 +23,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         IBackupApplication backupApplication,
         IAuditApplication auditApplication,
         IMonitoringApplication monitoringApplication,
+        IAutomationApplication automationApplication,
         ITokenIssueApplication tokenIssueApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
@@ -37,6 +38,7 @@ internal sealed class BuiltInProtocolCatalogComposition
             backupApplication,
             auditApplication,
             monitoringApplication,
+            automationApplication,
             tokenIssueApplication,
             snapshotSource,
             timeProvider,
@@ -55,6 +57,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         IBackupApplication backupApplication,
         IAuditApplication auditApplication,
         IMonitoringApplication monitoringApplication,
+        IAutomationApplication automationApplication,
         ITokenIssueApplication tokenIssueApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
@@ -70,6 +73,7 @@ internal sealed class BuiltInProtocolCatalogComposition
             backupApplication,
             auditApplication,
             monitoringApplication,
+            automationApplication,
             tokenIssueApplication,
             snapshotSource,
             timeProvider,
@@ -88,6 +92,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         IBackupApplication backupApplication,
         IAuditApplication auditApplication,
         IMonitoringApplication monitoringApplication,
+        IAutomationApplication automationApplication,
         ITokenIssueApplication tokenIssueApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
@@ -103,6 +108,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         ArgumentNullException.ThrowIfNull(backupApplication);
         ArgumentNullException.ThrowIfNull(auditApplication);
         ArgumentNullException.ThrowIfNull(monitoringApplication);
+        ArgumentNullException.ThrowIfNull(automationApplication);
         ArgumentNullException.ThrowIfNull(tokenIssueApplication);
         ArgumentNullException.ThrowIfNull(snapshotSource);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -125,6 +131,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         BuiltInBackupRpcRegistrar.Register(builder, backupApplication);
         BuiltInAuditRpcRegistrar.Register(builder, auditApplication);
         BuiltInMonitoringRpcRegistrar.Register(builder, monitoringApplication);
+        BuiltInAutomationRpcRegistrar.Register(builder, automationApplication);
         BuiltInAuthRpcRegistrar.Register(builder, tokenIssueApplication);
         RegisterBuiltInEvents(builder);
 
