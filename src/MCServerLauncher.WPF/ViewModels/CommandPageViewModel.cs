@@ -36,11 +36,14 @@ public partial class CommandPageViewModel : ObservableObject
         InstanceDataManager.Instance.ReportUpdated -= OnReportUpdated;
     }
 
-    public bool CanSendCommand => Status == InstanceStatus.Running;
+    public bool CanSendCommand => IsProcessUp(Status);
     public bool CanStart => Status is InstanceStatus.Stopped or InstanceStatus.Crashed;
     public bool CanStop => Status is InstanceStatus.Running or InstanceStatus.Starting;
     public bool CanRestart => Status is InstanceStatus.Running or InstanceStatus.Starting;
     public bool CanKill => Status is InstanceStatus.Running or InstanceStatus.Starting or InstanceStatus.Stopping;
+
+    private static bool IsProcessUp(InstanceStatus status) =>
+        status is InstanceStatus.Running or InstanceStatus.Starting;
 
     partial void OnStatusChanged(InstanceStatus value)
     {

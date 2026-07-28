@@ -23,6 +23,7 @@ using TypedInstanceReport = MCServerLauncher.Common.Contracts.Instances.Instance
 using InstanceCommandRequest = MCServerLauncher.Common.Contracts.Instances.InstanceCommandRequest;
 using InstanceLogQuery = MCServerLauncher.Common.Contracts.Instances.InstanceLogQuery;
 using InstanceReference = MCServerLauncher.Common.Contracts.Instances.InstanceReference;
+using ConsoleOpenRequest = MCServerLauncher.Common.Contracts.Instances.ConsoleOpenRequest;
 
 namespace MCServerLauncher.WPF.InstanceConsole.Modules
 {
@@ -183,7 +184,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                         @event.Meta.Value.InstanceId != instanceId)
                         return Task.CompletedTask;
 
-                    return dispatchAsync(() => appendLog(@event.Data.Value.Log));
+                    DispatchFireAndForget(() => appendLog(@event.Data.Value.Log));
+                    return Task.CompletedTask;
                 },
                 @event =>
                 {
@@ -313,6 +315,21 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                 Log.Error(ex, "[InstanceDataManager] Failed to send command");
                 throw;
             }
+        }
+
+        public async Task<DaemonConsoleSession> OpenConsoleAsync(
+            ushort columns,
+            ushort rows,
+            CancellationToken cancellationToken = default)
+        {
+            var daemon = GetReadyDaemon();
+            var result = await daemon.OpenConsoleAsync(
+                new ConsoleOpenRequest(_instanceId, columns, rows),
+                cancellationToken);
+            if (result.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
+
+            return result.Unwrap();
         }
 
         /// <summary>
@@ -477,11 +494,26 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             return dispatcher.InvokeAsync(action).Task;
         }
 
+        private static void DispatchFireAndForget(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            _ = dispatcher.BeginInvoke(action);
+        }
+
         internal static InstanceReport ToPresentationReport(TypedInstanceReport report)
         {
             var config = report.Config;
+            var status = report.Status == InstanceStatus.Stopped && report.ProcessId is > 0
+                ? InstanceStatus.Starting
+                : report.Status;
             return new InstanceReport(
-                report.Status,
+                status,
                 new InstanceConfig
                 {
                     Name = config.Name,
@@ -492,7 +524,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                     InputEncodingWebName = config.InputEncoding,
                     OutputEncodingWebName = config.OutputEncoding,
                     JavaPath = config.JavaPath,
-                    Arguments = config.Arguments.ToArray()
+                    Arguments = config.Arguments.ToArray(),
+                    ConsoleMode = config.ConsoleMode
                 },
                 report.Properties.ToDictionary(pair => pair.Key, pair => pair.Value),
                 report.Players.Select(player => new Player(player.Name, player.Uuid)).ToArray(),

@@ -26,8 +26,11 @@ public sealed class InstanceReportPresentationTests
 
     [Theory]
     [MemberData(nameof(Preview1Statuses))]
-    public void PresentationMappingPreservesReadyTimeoutAndEveryLifecycleStatus(InstanceStatus status)
+    public void PresentationMappingPreservesReadyTimeoutAndActiveLifecycleStatus(InstanceStatus status)
     {
+        if (status == InstanceStatus.Stopped)
+            return;
+
         using var eventRules = JsonDocument.Parse("{}");
         var configuration = new InstanceConfiguration(
             Guid.NewGuid(),
@@ -41,7 +44,8 @@ public sealed class InstanceReportPresentationTests
             "java",
             ImmutableArray<string>.Empty,
             ImmutableDictionary<string, string>.Empty,
-            eventRules.RootElement);
+            eventRules.RootElement,
+            ConsoleMode.Pty);
         var report = new ContractInstanceReport(
             status,
             configuration,
@@ -55,6 +59,39 @@ public sealed class InstanceReportPresentationTests
 
         Assert.Equal(status, presentation.Status);
         Assert.True(presentation.ReadyTimedOut);
+        Assert.Equal(ConsoleMode.Pty, presentation.Config.ConsoleMode);
+    }
+
+    [Fact]
+    public void PresentationMappingTreatsStoppedReportWithProcessIdAsStarting()
+    {
+        using var eventRules = JsonDocument.Parse("{}");
+        var configuration = new InstanceConfiguration(
+            Guid.NewGuid(),
+            "booting",
+            "server.jar",
+            InstanceType.MCJava,
+            TargetType.Jar,
+            "1.21.8",
+            "utf-8",
+            "utf-8",
+            "java",
+            ImmutableArray<string>.Empty,
+            ImmutableDictionary<string, string>.Empty,
+            eventRules.RootElement,
+            ConsoleMode.Pty);
+        var report = new ContractInstanceReport(
+            InstanceStatus.Stopped,
+            configuration,
+            ImmutableDictionary<string, string>.Empty,
+            ImmutableArray<InstancePlayer>.Empty,
+            new InstancePerformance(0, 0),
+            ProcessId: 42,
+            ReadyTimedOut: false);
+
+        var presentation = InstanceDataManager.ToPresentationReport(report);
+
+        Assert.Equal(InstanceStatus.Starting, presentation.Status);
     }
 
     [Theory]

@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MCServerLauncher.WPF\MCServerLauncher.WPF.csproj" />
+    <ProjectReference Include="..\..\src\MCServerLauncher.TerminalEmulator\MCServerLauncher.TerminalEmulator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
