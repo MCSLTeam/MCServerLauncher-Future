@@ -50,6 +50,7 @@ internal sealed class PluginHost
     private readonly IAuditApplication? _auditApplication;
     private readonly IMonitoringApplication? _monitoringApplication;
     private readonly IAutomationApplication? _automationApplication;
+    private readonly IEventRuleApplication? _eventRuleApplication;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -147,6 +148,7 @@ internal sealed class PluginHost
         IAuditApplication? auditApplication = null,
         IMonitoringApplication? monitoringApplication = null,
         IAutomationApplication? automationApplication = null,
+        IEventRuleApplication? eventRuleApplication = null,
         VerifiedPrincipalAuthority? verifiedPrincipals = null,
         TimeSpan? rollbackCleanupTimeout = null,
         TimeSpan? shutdownCleanupTimeout = null)
@@ -195,6 +197,7 @@ internal sealed class PluginHost
         _auditApplication = auditApplication;
         _monitoringApplication = monitoringApplication;
         _automationApplication = automationApplication;
+        _eventRuleApplication = eventRuleApplication;
     }
 
     /// <summary>
@@ -558,7 +561,8 @@ internal sealed class PluginHost
                 manifest.HasFeature(PluginFeature.BackupManage) ? _backupApplication : null,
                 manifest.HasFeature(PluginFeature.AuditQuery) ? _auditApplication : null,
                 manifest.HasFeature(PluginFeature.MonitoringQuery) ? _monitoringApplication : null,
-                manifest.HasFeature(PluginFeature.AutomationManage) ? _automationApplication : null);
+                manifest.HasFeature(PluginFeature.AutomationManage) ? _automationApplication : null,
+                manifest.HasFeature(PluginFeature.EventRuleManage) ? _eventRuleApplication : null);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,

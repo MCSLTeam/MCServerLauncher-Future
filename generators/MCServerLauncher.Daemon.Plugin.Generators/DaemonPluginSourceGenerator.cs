@@ -457,6 +457,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         "Audit" => "audit.query",
         "Monitoring" => "monitoring.query",
         "Automation" => "automation.manage",
+        "EventRules" => "event-rule.manage",
         "Storage" => "storage.private",
         "HttpEndpoints" => "network.http.listen",
         "Authentication" => "auth.verify",
@@ -490,13 +491,14 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var hasAudit = manifest.Features.Contains("audit.query");
         var hasMonitoring = manifest.Features.Contains("monitoring.query");
         var hasAutomation = manifest.Features.Contains("automation.manage");
+        var hasEventRules = manifest.Features.Contains("event-rule.manage");
         var hasStorage = manifest.Features.Contains("storage.private");
         var hasHttp = manifest.Features.Contains("network.http.listen");
         var hasAuth = manifest.Features.Contains("auth.verify");
         var hasSystem = manifest.Features.Contains("system.query");
         var hasAuthorizedApps = hasInstanceQuery || hasInstanceManage || hasOperationQuery ||
             hasOperationCancel || hasProvisioning || hasBackups || hasAudit || hasMonitoring ||
-            hasAutomation || hasSystem;
+            hasAutomation || hasEventRules || hasSystem;
 
         var featureProperties = new StringBuilder();
         if (hasRpc)
@@ -591,6 +593,12 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "        public global::MCServerLauncher.Daemon.API.Application.IAutomationApplication Automation { get; }");
         }
 
+        if (hasEventRules)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IEventRuleApplication EventRules { get; }");
+        }
+
         var featureBackingFields = new StringBuilder();
         var featureCtorAssignments = new StringBuilder();
         if (hasAuthorizedApps)
@@ -650,6 +658,10 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         if (hasAutomation)
         {
             featureCtorAssignments.AppendLine("            Automation = context.Automation;");
+        }
+        if (hasEventRules)
+        {
+            featureCtorAssignments.AppendLine("            EventRules = context.EventRules;");
         }
 
         var registrationBody = new StringBuilder();
@@ -816,6 +828,17 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "            Automation = automation ?? throw new global::System.ArgumentNullException(nameof(automation));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Application.IAutomationApplication Automation { get; }");
+        }
+
+        if (hasEventRules)
+        {
+            authorizedParameters.Add(
+                "global::MCServerLauncher.Daemon.API.Application.IEventRuleApplication eventRules");
+            authorizedArguments.Add("applications.EventRules");
+            authorizedAssignments.AppendLine(
+                "            EventRules = eventRules ?? throw new global::System.ArgumentNullException(nameof(eventRules));");
+            authorizedProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IEventRuleApplication EventRules { get; }");
         }
 
         var authorizedParameterLiteral = string.Join(",\n            ", authorizedParameters);

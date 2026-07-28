@@ -72,6 +72,8 @@ public interface IPluginAuthorizedApplications
     IMonitoringApplication Monitoring { get; }
 
     IAutomationApplication Automation { get; }
+
+    IEventRuleApplication EventRules { get; }
 }
 
 public interface IPluginContext : IPluginAuthorizedApplications
