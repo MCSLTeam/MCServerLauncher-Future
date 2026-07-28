@@ -5,7 +5,7 @@ Developer SDK for MCServerLauncher Future plugins.
 ## Install
 
 ```xml
-<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.3" />
+<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.4" />
 ```
 
 Place `mcsl-plugin.json` beside the project (or under the project directory) and mark a partial class with `[DaemonPluginModule]`.
