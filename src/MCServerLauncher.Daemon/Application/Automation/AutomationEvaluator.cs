@@ -29,12 +29,23 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     internal const string AuditMethod = "automation.execute";
 
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan CrashMemory = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// How far back crash evidence is kept. It bounds the longest usable crash-loop window, so the
+    /// policy validator refuses windows longer than this rather than silently undercounting them.
+    /// </summary>
+    internal static readonly TimeSpan CrashMemory = TimeSpan.FromHours(24);
 
     private static readonly ImmutableArray<string> ServicePermissions =
         ["mcsl.instance.start", "mcsl.instance.stop"];
 
     private readonly object _gate = new();
+
+    /// <summary>
+    /// Guards every fact and guard-state collection below. The tick loop and the wire-exposed
+    /// dry run (mcsl.automation.test, on RPC threads) both reach them.
+    /// </summary>
+    private readonly object _stateGate = new();
     private readonly AutomationPolicyStore _store;
     private readonly IInstanceManager _instances;
     private readonly MonitoringSampler _metrics;
@@ -152,18 +163,24 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             if (!policy.Enabled || policy.Trigger is null)
                 continue;
 
-            var (fires, _, target) = EvaluateTrigger(policy.Trigger, now);
-            if (!fires)
+            var evaluation = EvaluateTrigger(policy.Trigger, now, SnapshotFacts());
+            if (!evaluation.Fires)
                 continue;
 
-            var suppression = CheckGuards(policy, now);
+            // Guards bound how often a policy fires, not how many instances one firing covers: a
+            // correlated multi-instance crash must be repaired as a single firing, otherwise the
+            // cooldown stamped by the first instance would strand every other one.
+            var suppression = CheckGuards(policy, now, admit: true);
             if (suppression is not null)
             {
-                Audit(policy, "automation.policy", Describe(target), false, suppression);
+                Audit(policy.Id, "automation.policy", Describe(evaluation.Targets.FirstOrDefault()), false, suppression);
                 continue;
             }
 
-            await ExecuteActionsAsync(policy, target, now, cancellationToken).ConfigureAwait(false);
+            foreach (var target in evaluation.Targets)
+            {
+                await ExecuteActionsAsync(policy, target, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 
@@ -174,6 +191,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     internal ImmutableArray<AutomationTestOutcome> Test()
     {
         var now = _timeProvider.GetUtcNow();
+        var facts = SnapshotFacts();
         var outcomes = ImmutableArray.CreateBuilder<AutomationTestOutcome>();
         foreach (var policy in _store.Get().Policies)
         {
@@ -189,17 +207,19 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 continue;
             }
 
-            var (fires, reason, target) = EvaluateTrigger(policy.Trigger, now);
-            if (!fires)
+            var evaluation = EvaluateTrigger(policy.Trigger, now, facts);
+            var target = Describe(evaluation.Targets.FirstOrDefault());
+            if (!evaluation.Fires)
             {
-                outcomes.Add(new AutomationTestOutcome(policy.Id, false, reason, Describe(target)));
+                outcomes.Add(new AutomationTestOutcome(policy.Id, false, evaluation.Reason, target));
                 continue;
             }
 
-            var suppression = CheckGuards(policy, now);
+            // A dry run observes guard state; it must never create or roll it.
+            var suppression = CheckGuards(policy, now, admit: false);
             outcomes.Add(suppression is not null
-                ? new AutomationTestOutcome(policy.Id, false, $"{reason}; suppressed: {suppression}", Describe(target))
-                : new AutomationTestOutcome(policy.Id, true, reason, Describe(target)));
+                ? new AutomationTestOutcome(policy.Id, false, $"{evaluation.Reason}; suppressed: {suppression}", target)
+                : new AutomationTestOutcome(policy.Id, true, evaluation.Reason, target));
         }
 
         return outcomes.ToImmutable();
@@ -224,35 +244,52 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         return outcome;
     }
 
-    internal (bool Fires, string Reason, Guid? Target) EvaluateTrigger(AutomationTrigger trigger, DateTimeOffset now)
+    internal TriggerEvaluation EvaluateTrigger(AutomationTrigger trigger, DateTimeOffset now) =>
+        EvaluateTrigger(trigger, now, SnapshotFacts());
+
+    /// <summary>
+    /// Evaluates one trigger against an immutable fact snapshot. Instance-scoped triggers return
+    /// EVERY matching instance: a wildcard policy must repair a whole correlated crash, not an
+    /// arbitrary one of them.
+    /// </summary>
+    private TriggerEvaluation EvaluateTrigger(AutomationTrigger trigger, DateTimeOffset now, FactSnapshot facts)
     {
         switch (trigger)
         {
             case UnexpectedExitTrigger unexpectedExit:
             {
-                foreach (var crashed in _crashedThisTick)
-                {
-                    if (unexpectedExit.InstanceId is null || unexpectedExit.InstanceId == crashed)
-                        return (true, "instance crashed", crashed);
-                }
-
-                return (false, "no crash observed", null);
+                var crashed = facts.CrashedThisTick
+                    .Where(id => unexpectedExit.InstanceId is null || unexpectedExit.InstanceId == id)
+                    .Order()
+                    .ToArray();
+                return crashed.Length == 0
+                    ? TriggerEvaluation.Quiet("no crash observed")
+                    : TriggerEvaluation.Firing(
+                        crashed.Length == 1 ? "instance crashed" : $"{crashed.Length} instances crashed",
+                        crashed);
             }
 
             case CrashLoopTrigger crashLoop:
             {
                 var floor = now - TimeSpan.FromSeconds(crashLoop.WindowSeconds);
-                foreach (var (instanceId, times) in _crashTimes)
+                var looping = new List<Guid>();
+                var recentMax = 0;
+                foreach (var (instanceId, times) in facts.CrashTimes)
                 {
                     if (crashLoop.InstanceId is not null && crashLoop.InstanceId != instanceId)
                         continue;
 
                     var recent = times.Count(time => time >= floor);
-                    if (recent >= crashLoop.MaxCrashes)
-                        return (true, $"{recent} crashes within {crashLoop.WindowSeconds}s", instanceId);
+                    if (recent < crashLoop.MaxCrashes)
+                        continue;
+                    looping.Add(instanceId);
+                    recentMax = Math.Max(recentMax, recent);
                 }
 
-                return (false, "below crash-loop threshold", null);
+                looping.Sort();
+                return looping.Count == 0
+                    ? TriggerEvaluation.Quiet("below crash-loop threshold")
+                    : TriggerEvaluation.Firing($"{recentMax} crashes within {crashLoop.WindowSeconds}s", looping);
             }
 
             case SustainedMetricTrigger sustained:
@@ -267,42 +304,55 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     ? minutesOfDay >= start && minutesOfDay < end
                     : minutesOfDay >= start || minutesOfDay < end - 1440;
                 return inside
-                    ? (true, "inside maintenance window", null)
-                    : (false, "outside maintenance window", null);
+                    ? TriggerEvaluation.Firing("inside maintenance window", [])
+                    : TriggerEvaluation.Quiet("outside maintenance window");
             }
 
             default:
-                return (false, "unknown trigger", null);
+                return TriggerEvaluation.Quiet("unknown trigger");
         }
     }
 
-    private (bool Fires, string Reason, Guid? Target) EvaluateSustainedMetric(
+    private TriggerEvaluation EvaluateSustainedMetric(
         SustainedMetricTrigger sustained,
         DateTimeOffset now)
     {
         var window = TimeSpan.FromSeconds(sustained.SustainedSeconds);
-        var result = _metrics.Query(new Common.Contracts.Monitoring.MonitoringQuery(now - window, now));
-        var samples = result.Samples.Where(static sample => !sample.Gap).ToArray();
-        // Sustained means evidence across the whole window: the oldest usable sample must sit in
-        // the window's first sampling interval, and no sample inside may dip below the threshold.
+        // Ask for enough points to cover the window at the sampling interval: a downsampled series
+        // would hide the below-threshold dips that must veto a "sustained" verdict.
+        var wanted = Math.Clamp(
+            (int)(window.TotalSeconds / Math.Max(1, _interval.TotalSeconds)) + 2,
+            1,
+            MonitoringSampler.MaximumQueryPoints);
+        var result = _metrics.Query(new Common.Contracts.Monitoring.MonitoringQuery(now - window, now, wanted));
+        var samples = result.Samples;
+        // A gap marks time nobody observed. Treating it as absence of evidence would let a policy
+        // claim a metric was sustained across a stretch the daemon never saw.
+        if (samples.Any(static sample => sample.Gap))
+        {
+            return TriggerEvaluation.Quiet("metric history has a gap in the window");
+        }
+
+        // Sustained means evidence across the whole window: the oldest sample must sit in the
+        // window's first sampling interval, and no sample inside may dip below the threshold.
         if (samples.Length == 0 || samples[0].Timestamp > now - window + _interval)
         {
-            return (false, "insufficient metric history", null);
+            return TriggerEvaluation.Quiet("insufficient metric history");
         }
 
         switch (sustained.Metric)
         {
             case "system_cpu":
                 return samples.All(sample => sample.SystemCpuPercent >= sustained.Threshold)
-                    ? (true, $"system cpu >= {sustained.Threshold} for {sustained.SustainedSeconds}s", null)
-                    : (false, "system cpu below threshold", null);
+                    ? TriggerEvaluation.Firing($"system cpu >= {sustained.Threshold} for {sustained.SustainedSeconds}s", [])
+                    : TriggerEvaluation.Quiet("system cpu below threshold");
 
             case "system_memory_percent":
                 return samples.All(sample =>
                     sample.MemoryTotalKilobytes > 0 &&
                     sample.MemoryUsedKilobytes * 100.0 / sample.MemoryTotalKilobytes >= sustained.Threshold)
-                    ? (true, $"system memory >= {sustained.Threshold}% for {sustained.SustainedSeconds}s", null)
-                    : (false, "system memory below threshold", null);
+                    ? TriggerEvaluation.Firing($"system memory >= {sustained.Threshold}% for {sustained.SustainedSeconds}s", [])
+                    : TriggerEvaluation.Quiet("system memory below threshold");
 
             case "instance_cpu":
             case "instance_memory_bytes":
@@ -311,7 +361,9 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     ? [fixedTarget]
                     : samples.SelectMany(static sample => sample.Instances.Select(static entry => entry.InstanceId))
                         .Distinct()
+                        .Order()
                         .ToArray();
+                var breaching = new List<Guid>();
                 foreach (var candidate in candidates)
                 {
                     var sustainedForCandidate = samples.All(sample =>
@@ -323,55 +375,74 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                         return value >= sustained.Threshold;
                     });
                     if (sustainedForCandidate)
-                        return (true, $"{sustained.Metric} >= {sustained.Threshold} for {sustained.SustainedSeconds}s", candidate);
+                        breaching.Add(candidate);
                 }
 
-                return (false, $"{sustained.Metric} below threshold", null);
+                return breaching.Count == 0
+                    ? TriggerEvaluation.Quiet($"{sustained.Metric} below threshold")
+                    : TriggerEvaluation.Firing(
+                        $"{sustained.Metric} >= {sustained.Threshold} for {sustained.SustainedSeconds}s",
+                        breaching);
             }
 
             default:
-                return (false, $"unknown metric '{sustained.Metric}'", null);
+                return TriggerEvaluation.Quiet($"unknown metric '{sustained.Metric}'");
         }
     }
 
-    private string? CheckGuards(AutomationPolicy policy, DateTimeOffset now)
+    /// <summary>
+    /// Cooldown and daily cap. <paramref name="admit" /> false observes the guards without
+    /// creating or rolling any state, which is what the dry run needs.
+    /// </summary>
+    private string? CheckGuards(AutomationPolicy policy, DateTimeOffset now, bool admit)
     {
-        var runtime = GetRuntime(policy.Id, now);
-        if (runtime.LastExecuted is { } last && now - last < TimeSpan.FromSeconds(policy.CooldownSeconds))
-            return "cooldown";
+        lock (_stateGate)
+        {
+            var runtime = GetRuntimeLocked(policy.Id, now, admit);
+            if (runtime is null)
+                return null;
 
-        if (runtime.DayCount >= policy.MaxExecutionsPerDay)
-            return "daily execution cap";
+            var day = DateOnly.FromDateTime(now.UtcDateTime);
+            var dayCount = runtime.Day == day ? runtime.DayCount : 0;
+            if (runtime.LastExecuted is { } last && now - last < TimeSpan.FromSeconds(policy.CooldownSeconds))
+                return "cooldown";
+            if (dayCount >= policy.MaxExecutionsPerDay)
+                return "daily execution cap";
 
-        return null;
+            if (admit)
+            {
+                runtime.LastExecuted = now;
+                runtime.Day = day;
+                runtime.DayCount = dayCount + 1;
+            }
+
+            return null;
+        }
     }
 
     private async Task ExecuteActionsAsync(
         AutomationPolicy policy,
         Guid? target,
-        DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        var runtime = GetRuntime(policy.Id, now);
-        runtime.LastExecuted = now;
-        runtime.DayCount++;
+        // The crash evidence that fired this policy is consumed here: leaving it in place would
+        // re-fire the trigger on every later tick and restart an instance that already recovered.
+        if (target is { } fired && policy.Trigger is CrashLoopTrigger)
+        {
+            lock (_stateGate)
+                _crashTimes.Remove(fired);
+        }
 
         foreach (var action in policy.Actions)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var outcome = await ExecuteSingleActionAsync(
+            await ExecuteSingleActionAsync(
                 action,
                 target,
                 policy,
                 applyRestartBackoff: true,
                 waitForStopBeforeRestart: false,
                 cancellationToken).ConfigureAwait(false);
-            Audit(
-                policy,
-                action.Type,
-                outcome.IsOk(out var reference) ? reference : Describe(target),
-                outcome.IsOk(out _),
-                outcome.IsErr(out var error) ? error!.Code : null);
         }
     }
 
@@ -383,75 +454,95 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         bool waitForStopBeforeRestart,
         CancellationToken cancellationToken)
     {
+        // Every branch audits its own outcome: only the branch knows which mutation actually ran,
+        // and a deferred restart must not be recorded as a completed one.
         switch (action)
         {
             case RestartInstanceAction restart:
             {
                 var instanceId = restart.InstanceId ?? triggerTarget;
                 if (instanceId is not { } target)
-                    return Err("automation.no_target", "The restart action has no target instance.");
+                    return Audited(policy, action.Type, triggerTarget, Err("automation.no_target", "The restart action has no target instance."));
 
                 if (applyRestartBackoff && policy is not null)
                 {
-                    var runtime = GetRuntime(policy.Id, _timeProvider.GetUtcNow());
-                    var backoff = runtime.GetBackoff(target);
                     var now = _timeProvider.GetUtcNow();
-                    if (now < backoff.NextAllowed)
-                        return Err("automation.backoff", "The restart is suppressed by backoff.");
+                    string? suppressed = null;
+                    lock (_stateGate)
+                    {
+                        var runtime = GetRuntimeLocked(policy.Id, now, create: true)!;
+                        var backoff = runtime.GetBackoff(target);
+                        if (now < backoff.NextAllowed)
+                        {
+                            suppressed = "automation.backoff";
+                        }
+                        else
+                        {
+                            var delaySeconds = Math.Min(
+                                restart.BackoffBaseSeconds * Math.Pow(2, Math.Min(backoff.ConsecutiveRestarts, 30)),
+                                restart.BackoffMaxSeconds);
+                            runtime.SetBackoff(target, backoff.ConsecutiveRestarts + 1, now + TimeSpan.FromSeconds(delaySeconds));
+                        }
+                    }
 
-                    var delaySeconds = Math.Min(
-                        restart.BackoffBaseSeconds * Math.Pow(2, backoff.ConsecutiveRestarts),
-                        restart.BackoffMaxSeconds);
-                    runtime.SetBackoff(target, backoff.ConsecutiveRestarts + 1, now + TimeSpan.FromSeconds(delaySeconds));
+                    if (suppressed is not null)
+                        return Audited(policy, action.Type, target, Err(suppressed, "The restart is suppressed by backoff."));
                 }
 
                 if (!_instances.Instances.TryGetValue(target, out var instance))
-                    return Err("instance.not_found", "The restart target was not found.");
+                    return Audited(policy, action.Type, target, Err("instance.not_found", "The restart target was not found."));
 
                 if (instance.Status is InstanceStatus.Stopped or InstanceStatus.Crashed)
                 {
                     var start = await _authorizedInstances.StartInstanceAsync(new InstanceReference(target), cancellationToken)
                         .ConfigureAwait(false);
-                    return start.IsErr(out var startError)
+                    return Audited(policy, action.Type, target, start.IsErr(out var startError)
                         ? RustyOptions.Result.Err<string, API.Errors.DaemonError>(startError!)
-                        : Ok(target);
+                        : Ok(target));
                 }
 
                 var stop = await _authorizedInstances.StopInstanceAsync(new InstanceReference(target), cancellationToken)
                     .ConfigureAwait(false);
                 if (stop.IsErr(out var stopError))
-                    return RustyOptions.Result.Err<string, API.Errors.DaemonError>(stopError!);
+                {
+                    return Audited(policy, action.Type, target,
+                        RustyOptions.Result.Err<string, API.Errors.DaemonError>(stopError!));
+                }
 
                 if (!waitForStopBeforeRestart)
                 {
-                    // The start half runs on a later tick once the stop is observed complete.
-                    lock (_gate)
+                    // The start half runs on a later tick once the stop is observed complete, and
+                    // audits itself there. This record claims only the half that has happened.
+                    lock (_stateGate)
                         _pendingRestartStarts.Add(target);
-                    return Ok(target);
+                    return Audited(policy, "instance.restart.stop", target, Ok(target));
                 }
 
                 var stopped = await WaitForStoppedAsync(instance, cancellationToken).ConfigureAwait(false);
                 if (!stopped)
-                    return Err("automation.stop_timeout", "The instance did not stop within the restart deadline.");
+                {
+                    return Audited(policy, action.Type, target,
+                        Err("automation.stop_timeout", "The instance did not stop within the restart deadline."));
+                }
 
                 var restartStart = await _authorizedInstances.StartInstanceAsync(new InstanceReference(target), cancellationToken)
                     .ConfigureAwait(false);
-                return restartStart.IsErr(out var restartError)
+                return Audited(policy, action.Type, target, restartStart.IsErr(out var restartError)
                     ? RustyOptions.Result.Err<string, API.Errors.DaemonError>(restartError!)
-                    : Ok(target);
+                    : Ok(target));
             }
 
             case StopInstanceAction stopAction:
             {
                 var instanceId = stopAction.InstanceId ?? triggerTarget;
                 if (instanceId is not { } target)
-                    return Err("automation.no_target", "The stop action has no target instance.");
+                    return Audited(policy, action.Type, triggerTarget, Err("automation.no_target", "The stop action has no target instance."));
 
                 var stop = await _authorizedInstances.StopInstanceAsync(new InstanceReference(target), cancellationToken)
                     .ConfigureAwait(false);
-                return stop.IsErr(out var stopError)
+                return Audited(policy, action.Type, target, stop.IsErr(out var stopError)
                     ? RustyOptions.Result.Err<string, API.Errors.DaemonError>(stopError!)
-                    : Ok(target);
+                    : Ok(target));
             }
 
             case NotificationAction notification:
@@ -464,16 +555,19 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                         policy?.Id ?? Guid.Empty,
                         _timeProvider.GetUtcNow().ToUnixTimeMilliseconds()),
                     cancellationToken).ConfigureAwait(false);
-                return Ok(triggerTarget);
+                return Audited(policy, action.Type, triggerTarget, Ok(triggerTarget));
 
             case ConfirmationPlanAction confirmation when policy is not null:
-                return AutomationIntents.FilePlan(_planKernel, policy, confirmation, triggerTarget);
+                return Audited(policy, action.Type, triggerTarget,
+                    AutomationIntents.FilePlan(_planKernel, policy, confirmation, triggerTarget));
 
             case ConfirmationPlanAction:
-                return Err("automation.deferred_invalid", "A deferred confirmation plan cannot nest another one.");
+                return Audited(policy, action.Type, triggerTarget,
+                    Err("automation.deferred_invalid", "A deferred confirmation plan cannot nest another one."));
 
             default:
-                return Err("automation.action_unknown", "The action type is not executable.");
+                return Audited(policy, action.Type, triggerTarget,
+                    Err("automation.action_unknown", "The action type is not executable."));
         }
 
         static RustyOptions.Result<string, API.Errors.DaemonError> Err(string code, string message) =>
@@ -482,6 +576,21 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
         static RustyOptions.Result<string, API.Errors.DaemonError> Ok(Guid? target) =>
             RustyOptions.Result.Ok<string, API.Errors.DaemonError>(target?.ToString("D") ?? "-");
+    }
+
+    private RustyOptions.Result<string, API.Errors.DaemonError> Audited(
+        AutomationPolicy? policy,
+        string permission,
+        Guid? target,
+        RustyOptions.Result<string, API.Errors.DaemonError> outcome)
+    {
+        Audit(
+            policy?.Id,
+            permission,
+            outcome.IsOk(out var reference) ? reference : Describe(target),
+            outcome.IsOk(out _),
+            outcome.IsErr(out var error) ? error!.Code : null);
+        return outcome;
     }
 
     private async Task<bool> WaitForStoppedAsync(IInstance instance, CancellationToken cancellationToken)
@@ -499,25 +608,42 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
     private async Task ObserveInstancesAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        _crashedThisTick.Clear();
+        // The status read is a live probe, so snapshot it once and do all bookkeeping under the
+        // state gate; the awaited starts then run without holding it.
+        var observed = _instances.Instances
+            .Select(static entry => (entry.Key, entry.Value.Status))
+            .ToArray();
         var pendingStarts = new List<Guid>();
-        foreach (var (instanceId, instance) in _instances.Instances)
+        lock (_stateGate)
         {
-            var status = instance.Status;
-            if (_lastStatuses.TryGetValue(instanceId, out var previous) &&
-                previous != InstanceStatus.Crashed &&
-                status == InstanceStatus.Crashed)
+            _crashedThisTick.Clear();
+            foreach (var (instanceId, status) in observed)
             {
-                _crashedThisTick.Add(instanceId);
-                if (!_crashTimes.TryGetValue(instanceId, out var times))
-                    _crashTimes[instanceId] = times = new List<DateTimeOffset>();
-                times.Add(now);
-                times.RemoveAll(time => time < now - CrashMemory);
-            }
+                var known = _lastStatuses.TryGetValue(instanceId, out var previous);
+                if (known && previous != InstanceStatus.Crashed && status == InstanceStatus.Crashed)
+                {
+                    _crashedThisTick.Add(instanceId);
+                    if (!_crashTimes.TryGetValue(instanceId, out var times))
+                        _crashTimes[instanceId] = times = new List<DateTimeOffset>();
+                    times.Add(now);
+                    times.RemoveAll(time => time < now - CrashMemory);
+                }
 
-            _lastStatuses[instanceId] = status;
-            lock (_gate)
-            {
+                // An instance still running once its own backoff delay has elapsed survived the
+                // episode, so the escalation resets. Reaching Running is not enough on its own:
+                // the restart we just performed does that, and clearing there would mean a crash
+                // loop never escalates at all.
+                if (status == InstanceStatus.Running)
+                {
+                    foreach (var runtime in _runtime.Values)
+                    {
+                        var backoff = runtime.GetBackoff(instanceId);
+                        if (backoff.ConsecutiveRestarts > 0 && now >= backoff.NextAllowed)
+                            runtime.ClearBackoff(instanceId);
+                    }
+                }
+
+                _lastStatuses[instanceId] = status;
                 if (_pendingRestartStarts.Contains(instanceId) &&
                     status is InstanceStatus.Stopped or InstanceStatus.Crashed)
                 {
@@ -531,32 +657,47 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         {
             var start = await _authorizedInstances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken)
                 .ConfigureAwait(false);
-            if (start.IsErr(out var error))
+            // The second half of a deferred restart is an authorized mutation like any other, so
+            // it carries its own audit record instead of only a log line.
+            Audit(
+                null,
+                "instance.restart.start",
+                instanceId.ToString("D"),
+                start.IsOk(out _),
+                start.IsErr(out var error) ? error!.Code : null);
+            if (start.IsErr(out var startError))
             {
                 _logger?.LogWarning(
                     "[AutomationEvaluator] Deferred restart start failed for {InstanceId}: {Code}.",
                     instanceId,
-                    error!.Code);
+                    startError!.Code);
             }
         }
     }
 
-    private PolicyRuntime GetRuntime(Guid policyId, DateTimeOffset now)
+    private FactSnapshot SnapshotFacts()
     {
-        if (!_runtime.TryGetValue(policyId, out var runtime))
-            _runtime[policyId] = runtime = new PolicyRuntime();
-
-        var day = DateOnly.FromDateTime(now.UtcDateTime);
-        if (runtime.Day != day)
+        lock (_stateGate)
         {
-            runtime.Day = day;
-            runtime.DayCount = 0;
+            return new FactSnapshot(
+                [.. _crashedThisTick],
+                _crashTimes.ToDictionary(static entry => entry.Key, static entry => entry.Value.ToArray()));
         }
+    }
 
+    private PolicyRuntime? GetRuntimeLocked(Guid policyId, DateTimeOffset now, bool create)
+    {
+        if (_runtime.TryGetValue(policyId, out var runtime))
+            return runtime;
+        if (!create)
+            return null;
+
+        runtime = new PolicyRuntime { Day = DateOnly.FromDateTime(now.UtcDateTime) };
+        _runtime[policyId] = runtime;
         return runtime;
     }
 
-    private void Audit(AutomationPolicy policy, string permission, string? target, bool succeeded, string? errorCode)
+    private void Audit(Guid? policyId, string permission, string? target, bool succeeded, string? errorCode)
     {
         try
         {
@@ -565,7 +706,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 null,
                 AuditMethod,
                 permission,
-                target ?? policy.Id.ToString("D"),
+                target ?? policyId?.ToString("D"),
                 null,
                 null,
                 null,
@@ -627,5 +768,27 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
         internal void SetBackoff(Guid instanceId, int consecutiveRestarts, DateTimeOffset nextAllowed) =>
             _backoff[instanceId] = (consecutiveRestarts, nextAllowed);
+
+        internal void ClearBackoff(Guid instanceId) => _backoff.Remove(instanceId);
+    }
+
+    /// <summary>
+    /// An immutable copy of the fact state, so trigger evaluation never reads collections the tick
+    /// loop is mutating.
+    /// </summary>
+    private readonly record struct FactSnapshot(
+        IReadOnlyList<Guid> CrashedThisTick,
+        IReadOnlyDictionary<Guid, DateTimeOffset[]> CrashTimes);
+
+    /// <summary>
+    /// One trigger verdict. <see cref="Targets" /> holds every instance the trigger matched, and is
+    /// empty for daemon-wide triggers, whose actions carry their own target.
+    /// </summary>
+    internal readonly record struct TriggerEvaluation(bool Fires, string Reason, IReadOnlyList<Guid?> Targets)
+    {
+        internal static TriggerEvaluation Quiet(string reason) => new(false, reason, []);
+
+        internal static TriggerEvaluation Firing(string reason, IReadOnlyList<Guid> targets) =>
+            new(true, reason, targets.Count == 0 ? [null] : [.. targets.Select(static id => (Guid?)id)]);
     }
 }

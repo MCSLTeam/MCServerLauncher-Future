@@ -479,27 +479,50 @@ internal static class AutomationUnionStjHelper
     internal static StjJsonException UnknownDiscriminator(string baseTypeName, string discriminator, string[] knownValues) =>
         new($"Unknown {baseTypeName} discriminator '{discriminator}'. Known values: {string.Join(", ", knownValues)}.");
 
-    internal static string ReadStringOrDefault(StjJsonElement obj, string name, string fallback) =>
-        obj.TryGetProperty(name, out var token) && token.ValueKind == StjJsonValueKind.String
-            ? token.GetString() ?? fallback
-            : fallback;
+    // A malformed field is rejected, never coerced: silently defaulting a bad instance_id to null
+    // would widen a single-instance policy into a fleet-wide one, and validation runs after
+    // conversion so it could never see the loss.
+    internal static string ReadStringOrDefault(StjJsonElement obj, string name, string fallback)
+    {
+        if (!TryGetValue(obj, name, out var token))
+            return fallback;
+        if (token.ValueKind != StjJsonValueKind.String)
+            throw WrongType(name, "string");
+        return token.GetString() ?? fallback;
+    }
 
-    internal static int ReadIntOrDefault(StjJsonElement obj, string name, int fallback) =>
-        obj.TryGetProperty(name, out var token) && token.ValueKind == StjJsonValueKind.Number && token.TryGetInt32(out var value)
-            ? value
-            : fallback;
+    internal static int ReadIntOrDefault(StjJsonElement obj, string name, int fallback)
+    {
+        if (!TryGetValue(obj, name, out var token))
+            return fallback;
+        if (token.ValueKind != StjJsonValueKind.Number || !token.TryGetInt32(out var value))
+            throw WrongType(name, "32-bit integer");
+        return value;
+    }
 
-    internal static double ReadDoubleOrDefault(StjJsonElement obj, string name, double fallback) =>
-        obj.TryGetProperty(name, out var token) && token.ValueKind == StjJsonValueKind.Number
-            ? token.GetDouble()
-            : fallback;
+    internal static double ReadDoubleOrDefault(StjJsonElement obj, string name, double fallback)
+    {
+        if (!TryGetValue(obj, name, out var token))
+            return fallback;
+        if (token.ValueKind != StjJsonValueKind.Number)
+            throw WrongType(name, "number");
+        return token.GetDouble();
+    }
 
-    internal static Guid? ReadNullableGuid(StjJsonElement obj, string name) =>
-        obj.TryGetProperty(name, out var token) &&
-        token.ValueKind == StjJsonValueKind.String &&
-        Guid.TryParse(token.GetString(), out var value)
-            ? value
-            : null;
+    internal static Guid? ReadNullableGuid(StjJsonElement obj, string name)
+    {
+        if (!TryGetValue(obj, name, out var token))
+            return null;
+        if (token.ValueKind != StjJsonValueKind.String || !Guid.TryParse(token.GetString(), out var value))
+            throw WrongType(name, "GUID");
+        return value;
+    }
+
+    private static bool TryGetValue(StjJsonElement obj, string name, out StjJsonElement token) =>
+        obj.TryGetProperty(name, out token) && token.ValueKind != StjJsonValueKind.Null;
+
+    private static StjJsonException WrongType(string name, string expected) =>
+        new($"Cannot convert '{name}' to {expected}.");
 
     internal static void WriteNullableGuid(StjUtf8JsonWriter writer, string name, Guid? value)
     {

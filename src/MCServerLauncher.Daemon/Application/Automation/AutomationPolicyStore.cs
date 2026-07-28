@@ -241,6 +241,10 @@ internal static class AutomationPolicyValidator
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "Crash-loop max crashes must be at least 1."));
                 if (crashLoop.WindowSeconds < 10)
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The crash-loop window must be at least 10 seconds."));
+                // Beyond the retained crash memory the trigger could only ever undercount, so the
+                // policy is rejected instead of quietly never firing.
+                if (crashLoop.WindowSeconds > AutomationEvaluator.CrashMemory.TotalSeconds)
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"The crash-loop window cannot exceed {AutomationEvaluator.CrashMemory.TotalHours} hours."));
                 break;
 
             case UnexpectedExitTrigger:

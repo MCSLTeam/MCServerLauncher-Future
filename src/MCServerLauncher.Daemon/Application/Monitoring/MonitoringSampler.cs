@@ -20,6 +20,9 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 {
     internal const int DefaultQueryPoints = 500;
     internal const int MaximumQueryPoints = 2000;
+    // Raw-read ceiling before downsampling. A window holding more than this keeps its newest
+    // records (see BoundedJsonlLog.ReadRange), so an over-long window shortens from the far end
+    // instead of ending before the data the caller actually watches.
     private const int MaximumRawReadRecords = 100_000;
 
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(15);
@@ -161,9 +164,9 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Bounded range query, oldest-first, deterministically downsampled: fixed epoch-aligned
+    /// Bounded range query, oldest-first, deterministically downsampled: fixed window-aligned
     /// buckets, last sample per bucket, and a gap record always wins its bucket so downsampling
-    /// can never hide a hole.
+    /// can never hide a hole. The result never exceeds the requested point count.
     /// </summary>
     internal MonitoringQueryResult Query(MonitoringQuery query)
     {
@@ -185,7 +188,11 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         var buckets = new SortedDictionary<long, MonitoringSample>();
         foreach (var sample in raw)
         {
-            var bucket = sample.Timestamp.UtcTicks / bucketTicks;
+            // Buckets are relative to the window, not the epoch: an epoch-aligned grid splits an
+            // unaligned window across cap + 1 buckets and returns more points than were asked for.
+            // The closing boundary folds into the last bucket for the same reason.
+            var offset = sample.Timestamp.UtcTicks - query.NotBefore.UtcTicks;
+            var bucket = Math.Clamp(offset / bucketTicks, 0, cap - 1);
             if (buckets.TryGetValue(bucket, out var existing) && existing.Gap && !sample.Gap)
                 continue;
             buckets[bucket] = sample;
