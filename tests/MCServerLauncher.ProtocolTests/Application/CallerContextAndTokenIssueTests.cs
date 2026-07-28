@@ -78,12 +78,12 @@ public sealed class CallerContextAndTokenIssueTests
         var factory = new CallerContextFactory();
         var host = factory.CreateHost(
             new PluginIdentity("community.example.health", "1.0.0"),
-            ["instance.manage", "operation.query", "automation.manage"]);
+            ["instance.manage", "operation.query", "file.read"]);
         Assert.Equal("plugin:community.example.health", host.Subject);
         Assert.True(host.HasPermission("mcsl.instance.start"));
         Assert.True(host.HasPermission("mcsl.operation.get"));
         Assert.False(host.HasPermission("mcsl.backup.create")); // undeclared feature contributes nothing
-        Assert.False(host.HasPermission("mcsl.automation.apply")); // unimplemented feature contributes nothing
+        Assert.False(host.HasPermission("mcsl.file.info.get")); // unimplemented feature contributes nothing
         Assert.False(host.IsMainToken);
     }
 

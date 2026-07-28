@@ -49,6 +49,7 @@ internal sealed class PluginHost
     private readonly IBackupApplication? _backupApplication;
     private readonly IAuditApplication? _auditApplication;
     private readonly IMonitoringApplication? _monitoringApplication;
+    private readonly IAutomationApplication? _automationApplication;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -145,6 +146,7 @@ internal sealed class PluginHost
         IBackupApplication? backupApplication = null,
         IAuditApplication? auditApplication = null,
         IMonitoringApplication? monitoringApplication = null,
+        IAutomationApplication? automationApplication = null,
         VerifiedPrincipalAuthority? verifiedPrincipals = null,
         TimeSpan? rollbackCleanupTimeout = null,
         TimeSpan? shutdownCleanupTimeout = null)
@@ -192,6 +194,7 @@ internal sealed class PluginHost
         _backupApplication = backupApplication;
         _auditApplication = auditApplication;
         _monitoringApplication = monitoringApplication;
+        _automationApplication = automationApplication;
     }
 
     /// <summary>
@@ -554,7 +557,8 @@ internal sealed class PluginHost
                 manifest.HasFeature(PluginFeature.ProvisioningManage) ? _provisioningApplication : null,
                 manifest.HasFeature(PluginFeature.BackupManage) ? _backupApplication : null,
                 manifest.HasFeature(PluginFeature.AuditQuery) ? _auditApplication : null,
-                manifest.HasFeature(PluginFeature.MonitoringQuery) ? _monitoringApplication : null);
+                manifest.HasFeature(PluginFeature.MonitoringQuery) ? _monitoringApplication : null,
+                manifest.HasFeature(PluginFeature.AutomationManage) ? _automationApplication : null);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,

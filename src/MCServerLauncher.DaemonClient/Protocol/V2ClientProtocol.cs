@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Audit;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -71,6 +72,13 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<AuditQuery, AuditQueryResult> QueryAudit => BuiltInProtocolDefinitions.QueryAudit;
     internal static RpcDescriptor<EmptyRequest, MonitoringCurrentResult> GetMonitoringCurrent => BuiltInProtocolDefinitions.GetMonitoringCurrent;
     internal static RpcDescriptor<MonitoringQuery, MonitoringQueryResult> QueryMonitoring => BuiltInProtocolDefinitions.QueryMonitoring;
+    internal static RpcDescriptor<EmptyRequest, AutomationGetResult> GetAutomation => BuiltInProtocolDefinitions.GetAutomation;
+    internal static RpcDescriptor<AutomationValidateRequest, AutomationValidateResult> ValidateAutomation => BuiltInProtocolDefinitions.ValidateAutomation;
+    internal static RpcDescriptor<EmptyRequest, AutomationTestResult> TestAutomation => BuiltInProtocolDefinitions.TestAutomation;
+    internal static RpcDescriptor<AutomationApplyRequest, AutomationApplyResult> ApplyAutomation => BuiltInProtocolDefinitions.ApplyAutomation;
+    internal static RpcDescriptor<AutomationEnableRequest, AutomationApplyResult> EnableAutomation => BuiltInProtocolDefinitions.EnableAutomation;
+    internal static RpcDescriptor<AutomationIntentConfirmRequest, ProvisioningPlanSnapshot> ConfirmAutomationIntent => BuiltInProtocolDefinitions.ConfirmAutomationIntent;
+    internal static RpcDescriptor<AutomationIntentExecuteRequest, AutomationIntentExecuteResult> ExecuteAutomationIntent => BuiltInProtocolDefinitions.ExecuteAutomationIntent;
     internal static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo => BuiltInProtocolDefinitions.GetSystemInfo;
     internal static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc => BuiltInProtocolDefinitions.DiscoverRpc;
 
@@ -87,7 +95,9 @@ internal static class V2ClientProtocol
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
         UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
         ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore, QueryAudit,
-        GetMonitoringCurrent, QueryMonitoring, GetSystemInfo,
+        GetMonitoringCurrent, QueryMonitoring,
+        GetAutomation, ValidateAutomation, TestAutomation, ApplyAutomation, EnableAutomation, ConfirmAutomationIntent, ExecuteAutomationIntent,
+        GetSystemInfo,
         DiscoverRpc
     ];
 

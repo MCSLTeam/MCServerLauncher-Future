@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Audit;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -131,6 +132,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
             new ThrowingBackupApplication(),
             new ThrowingAuditApplication(),
             new ThrowingMonitoringApplication(),
+            new ThrowingAutomationApplication(),
             new ThrowingTokenIssueApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
@@ -210,6 +212,17 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     {
         public Task<Result<MonitoringCurrentResult, DaemonError>> GetCurrentAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<MonitoringQueryResult, DaemonError>> QueryAsync(MonitoringQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingAutomationApplication : IAutomationApplication
+    {
+        public Task<Result<AutomationGetResult, DaemonError>> GetAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<AutomationValidateResult, DaemonError>> ValidateAsync(AutomationValidateRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<AutomationTestResult, DaemonError>> TestAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<AutomationApplyResult, DaemonError>> ApplyAsync(AutomationApplyRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<AutomationApplyResult, DaemonError>> EnableAsync(AutomationEnableRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ProvisioningPlanSnapshot, DaemonError>> ConfirmIntentAsync(AutomationIntentConfirmRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<AutomationIntentExecuteResult, DaemonError>> ExecuteIntentAsync(AutomationIntentExecuteRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingOperationApplication : IOperationApplication

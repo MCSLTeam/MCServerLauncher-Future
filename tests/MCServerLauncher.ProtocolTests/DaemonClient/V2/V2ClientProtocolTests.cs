@@ -10,6 +10,7 @@ using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Audit;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -137,6 +138,13 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.QueryAudit, "mcsl.audit.query"),
             Accessor(V2ClientProtocol.GetMonitoringCurrent, "mcsl.monitoring.current.get"),
             Accessor(V2ClientProtocol.QueryMonitoring, "mcsl.monitoring.query"),
+            Accessor(V2ClientProtocol.GetAutomation, "mcsl.automation.get"),
+            Accessor(V2ClientProtocol.ValidateAutomation, "mcsl.automation.validate"),
+            Accessor(V2ClientProtocol.TestAutomation, "mcsl.automation.test"),
+            Accessor(V2ClientProtocol.ApplyAutomation, "mcsl.automation.apply"),
+            Accessor(V2ClientProtocol.EnableAutomation, "mcsl.automation.enable"),
+            Accessor(V2ClientProtocol.ConfirmAutomationIntent, "mcsl.automation.intent.confirm"),
+            Accessor(V2ClientProtocol.ExecuteAutomationIntent, "mcsl.automation.intent.execute"),
             Accessor(V2ClientProtocol.GetSystemInfo, "mcsl.system.info.get"),
             Accessor(V2ClientProtocol.DiscoverRpc, "rpc.discover")
         ];
@@ -198,6 +206,9 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.PlanBackupRestore), Case(V2ClientProtocol.ConfirmBackupRestore), Case(V2ClientProtocol.ExecuteBackupRestore),
             Case(V2ClientProtocol.QueryAudit),
             Case(V2ClientProtocol.GetMonitoringCurrent), Case(V2ClientProtocol.QueryMonitoring),
+            Case(V2ClientProtocol.GetAutomation), Case(V2ClientProtocol.ValidateAutomation), Case(V2ClientProtocol.TestAutomation),
+            Case(V2ClientProtocol.ApplyAutomation), Case(V2ClientProtocol.EnableAutomation),
+            Case(V2ClientProtocol.ConfirmAutomationIntent), Case(V2ClientProtocol.ExecuteAutomationIntent),
             Case(V2ClientProtocol.GetSystemInfo), Case(V2ClientProtocol.DiscoverRpc)
         ];
 
@@ -334,6 +345,8 @@ public sealed class V2ClientProtocolTests
         private const string BackupManifest = "{\"archive_id\":\"" + Id + "\",\"instance_id\":\"" + Id + "\",\"instance_name\":\"demo\",\"manifest_version\":1,\"instance_version\":\"1.21\",\"config_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"created_at\":\"2026-01-01T00:00:00+00:00\",\"files\":[{\"relative_path\":\"world/level.dat\",\"size_bytes\":42}],\"total_size_bytes\":42,\"compressed_size_bytes\":21,\"compression_method\":\"deflate\",\"sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"}";
         private const string AuditRecordJson = "{\"timestamp\":\"2026-01-01T00:00:00+00:00\",\"principal\":\"owner-a\",\"plugin_id\":null,\"method\":\"mcsl.instance.start\",\"permission\":\"mcsl.instance.start\",\"target\":\"" + Id + "\",\"plan_id\":null,\"plan_hash\":null,\"operation_id\":null,\"succeeded\":true,\"error_code\":null,\"confirmed_by\":null}";
         private const string MonitoringSampleJson = "{\"timestamp\":\"2026-01-01T00:00:00+00:00\",\"gap\":false,\"system_cpu_percent\":5.5,\"memory_used_kilobytes\":16384,\"memory_total_kilobytes\":32768,\"instances\":[{\"instance_id\":\"" + Id + "\",\"name\":\"demo\",\"status\":\"running\",\"cpu_percent\":12.5,\"memory_bytes\":1024}]}";
+        private const string AutomationPolicyJson = "{\"id\":\"" + Id + "\",\"name\":\"crash-guard\",\"enabled\":true,\"trigger\":{\"type\":\"instance.crash_loop\",\"instance_id\":\"" + Id + "\",\"max_crashes\":3,\"window_seconds\":600},\"actions\":[{\"type\":\"notification\",\"title\":\"crash loop\",\"message\":\"instance is crash looping\",\"severity\":\"Warning\"}],\"cooldown_seconds\":300,\"max_executions_per_day\":20}";
+        private const string AutomationPolicySetJson = "{\"policies\":[" + AutomationPolicyJson + "],\"version\":3}";
         private const string FileMeta = "{\"creation_time\":\"2026-01-01T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-02T00:00:00+00:00\",\"last_write_time\":\"2026-01-03T00:00:00+00:00\",\"read_only\":true,\"size\":7}";
         private const string DirectoryMeta = "{\"creation_time\":\"2026-01-04T00:00:00+00:00\",\"hidden\":true,\"last_access_time\":\"2026-01-05T00:00:00+00:00\",\"last_write_time\":\"2026-01-06T00:00:00+00:00\"}";
         private const string Report = "{\"status\":\"running\",\"config\":" + Config + ",\"properties\":{\"motd\":\"hello\"},\"players\":[{\"name\":\"Alex\",\"uuid\":\"33333333-3333-3333-3333-333333333333\"}],\"performance_counter\":{\"cpu\":12.5,\"memory_bytes\":1024},\"process_id\":1234,\"ready_timed_out\":true}";
@@ -398,6 +411,16 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(MonitoringQuery)) return "{\"not_before\":\"2026-01-01T00:00:00+00:00\",\"not_after\":\"2026-01-02T00:00:00+00:00\",\"maximum_points\":100}";
             if (type == typeof(MonitoringCurrentResult)) return "{\"sample\":" + MonitoringSampleJson + ",\"dropped_records\":0}";
             if (type == typeof(MonitoringQueryResult)) return "{\"samples\":[" + MonitoringSampleJson + "],\"dropped_records\":0}";
+            if (type == typeof(AutomationGetResult)) return "{\"policy_set\":" + AutomationPolicySetJson + "}";
+            if (type == typeof(AutomationValidateRequest)) return "{\"policy_set\":" + AutomationPolicySetJson + "}";
+            if (type == typeof(AutomationValidateResult)) return "{\"diagnostics\":[{\"policy_id\":\"" + Id + "\",\"code\":\"automation.name_required\",\"message\":\"The policy needs a name.\"}]}";
+            if (type == typeof(AutomationApplyRequest)) return "{\"policy_set\":" + AutomationPolicySetJson + "}";
+            if (type == typeof(AutomationApplyResult)) return "{\"version\":4}";
+            if (type == typeof(AutomationEnableRequest)) return "{\"policy_id\":\"" + Id + "\",\"enabled\":false,\"expected_version\":3}";
+            if (type == typeof(AutomationTestResult)) return "{\"outcomes\":[{\"policy_id\":\"" + Id + "\",\"would_fire\":true,\"reason\":\"instance crashed\",\"target\":\"" + Id + "\"}]}";
+            if (type == typeof(AutomationIntentConfirmRequest)) return "{\"plan_id\":\"" + Id + "\",\"plan_hash\":\"abc\",\"confirmer_principal\":\"owner-a\"}";
+            if (type == typeof(AutomationIntentExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
+            if (type == typeof(AutomationIntentExecuteResult)) return "{\"plan_id\":\"" + Id + "\",\"operation_id\":\"" + Id + "\"}";
             if (type == typeof(ProvisioningResolveRequest)) return "{\"provider\":\"vanilla\",\"instance_name\":\"demo\",\"minecraft_version\":\"1.21\",\"source\":\"server.jar\",\"mirror\":\"none\",\"java_path\":\"java\",\"creator_principal\":\"owner-a\",\"idempotency_key\":\"idem-1\",\"expiry\":null}";
             if (type == typeof(ProvisioningPlanReference)) return "{\"plan_id\":\"" + Id + "\",\"owner_principal\":null}";
             if (type == typeof(ProvisioningExecuteRequest)) return "{\"plan_id\":\"" + Id + "\",\"executor_principal\":\"owner-a\"}";
