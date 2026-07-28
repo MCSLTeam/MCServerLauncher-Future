@@ -33,6 +33,7 @@ internal sealed class PluginApplicationAuthorizer
     private readonly IAuditApplication? _audit;
     private readonly IMonitoringApplication? _monitoring;
     private readonly IAutomationApplication? _automation;
+    private readonly IEventRuleApplication? _eventRules;
 
     internal PluginApplicationAuthorizer(
         PluginIdentity identity,
@@ -48,7 +49,8 @@ internal sealed class PluginApplicationAuthorizer
         IBackupApplication? backups,
         IAuditApplication? audit,
         IMonitoringApplication? monitoring,
-        IAutomationApplication? automation)
+        IAutomationApplication? automation,
+        IEventRuleApplication? eventRules)
     {
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(grantedFeatureIds);
@@ -66,6 +68,7 @@ internal sealed class PluginApplicationAuthorizer
         _audit = HasFeature(PluginFeature.AuditQuery) ? audit : null;
         _monitoring = HasFeature(PluginFeature.MonitoringQuery) ? monitoring : null;
         _automation = HasFeature(PluginFeature.AutomationManage) ? automation : null;
+        _eventRules = HasFeature(PluginFeature.EventRuleManage) ? eventRules : null;
         Host = Create(_callerContexts.CreateHost(identity, grantedFeatures));
 
         bool HasFeature(PluginFeature feature) => grantedFeatures.Contains(feature.Value);
@@ -92,7 +95,8 @@ internal sealed class PluginApplicationAuthorizer
             _backups is null ? null : new AuthorizedBackupApplication(caller, _backups),
             _audit is null ? null : new AuthorizedAuditApplication(caller, _audit),
             _monitoring is null ? null : new AuthorizedMonitoringApplication(caller, _monitoring),
-            _automation is null ? null : new AuthorizedAutomationApplication(caller, _automation));
+            _automation is null ? null : new AuthorizedAutomationApplication(caller, _automation),
+            _eventRules is null ? null : new AuthorizedEventRuleApplication(caller, _eventRules));
 }
 
 internal sealed class PluginAuthorizedApplications(
@@ -107,7 +111,8 @@ internal sealed class PluginAuthorizedApplications(
     IBackupApplication? backups,
     IAuditApplication? audit,
     IMonitoringApplication? monitoring,
-    IAutomationApplication? automation) : IPluginAuthorizedApplications
+    IAutomationApplication? automation,
+    IEventRuleApplication? eventRules) : IPluginAuthorizedApplications
 {
     public ICallerContext Caller { get; } = caller ?? throw new ArgumentNullException(nameof(caller));
 
@@ -143,6 +148,9 @@ internal sealed class PluginAuthorizedApplications(
 
     public IAutomationApplication Automation =>
         automation ?? throw MissingFeature("automation.manage");
+
+    public IEventRuleApplication EventRules =>
+        eventRules ?? throw MissingFeature("event-rule.manage");
 
     private static InvalidOperationException MissingFeature(string feature) =>
         new($"The plugin did not declare the '{feature}' feature.");
@@ -226,6 +234,8 @@ internal sealed class PluginContext : IPluginContext
     public IMonitoringApplication Monitoring => _applications.Host.Monitoring;
 
     public IAutomationApplication Automation => _applications.Host.Automation;
+
+    public IEventRuleApplication EventRules => _applications.Host.EventRules;
 
     public IPluginAuthorizedApplications ForPrincipal(VerifiedPrincipal principal) =>
         _applications.ForPrincipal(principal);

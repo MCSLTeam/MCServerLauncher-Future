@@ -126,7 +126,12 @@ public static class FeatureCatalog
             PluginFeatureRisk.None,
             ["mcsl.system.info.get", "mcsl.java.list"],
             implemented: true),
-        Descriptor(PluginFeature.EventRuleManage, "Read, validate, test, and update event rules.", PluginFeatureRisk.Medium, [], implemented: false),
+        Descriptor(
+            PluginFeature.EventRuleManage,
+            "Read, validate, test, and update event rules.",
+            PluginFeatureRisk.Medium,
+            ["mcsl.instance.event-rules.get", "mcsl.instance.event-rules.update"],
+            implemented: true),
         Descriptor(
             PluginFeature.OperationQuery,
             "List and read immutable long-running operation snapshots.",

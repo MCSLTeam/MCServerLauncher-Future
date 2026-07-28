@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
+using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -357,6 +358,34 @@ public sealed class AuthorizedBackupApplication(
         return _inner.ExecuteRestoreAsync(
             request with { ExecutorPrincipal = owner.Unwrap() },
             cancellationToken);
+    }
+}
+
+public sealed class AuthorizedEventRuleApplication(
+    ICallerContext caller,
+    IEventRuleApplication inner) : IEventRuleApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IEventRuleApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<EventRuleSet, DaemonError>> GetEventRulesAsync(
+        EventRuleQuery request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.instance.event-rules.get");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<EventRuleSet, DaemonError>(error!));
+        return _inner.GetEventRulesAsync(request, cancellationToken);
+    }
+
+    public Task<Result<Unit, DaemonError>> UpdateEventRulesAsync(
+        EventRuleUpdateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.instance.event-rules.update");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<Unit, DaemonError>(error!));
+        return _inner.UpdateEventRulesAsync(request, cancellationToken);
     }
 }
 

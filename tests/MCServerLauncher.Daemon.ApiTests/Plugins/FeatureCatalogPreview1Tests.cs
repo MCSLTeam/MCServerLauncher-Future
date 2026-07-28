@@ -21,6 +21,8 @@ public sealed class FeatureCatalogPreview1Tests
             PluginFeature.AuditQuery.Value,
             PluginFeature.MonitoringQuery.Value,
             PluginFeature.AutomationManage.Value,
+            // Preview-2 remaining features.
+            PluginFeature.EventRuleManage.Value,
             PluginFeature.NetworkHttpListen.Value,
             PluginFeature.AuthVerify.Value,
             PluginFeature.StoragePrivate.Value,
@@ -106,6 +108,9 @@ public sealed class FeatureCatalogPreview1Tests
                 "mcsl.automation.validate",
             ],
             FeatureCatalog.MethodsFor(PluginFeature.AutomationManage).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["mcsl.instance.event-rules.get", "mcsl.instance.event-rules.update"],
+            FeatureCatalog.MethodsFor(PluginFeature.EventRuleManage).Order(StringComparer.Ordinal));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.AuthVerify));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.NetworkHttpListen));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.StoragePrivate));
@@ -114,12 +119,12 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AuditQuery));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.MonitoringQuery));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AutomationManage));
+        Assert.True(FeatureCatalog.IsImplemented(PluginFeature.EventRuleManage));
 
         // Remaining domains stay unimplemented and contribute nothing to host expansion.
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileRead));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileWrite));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventSubscribe));
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventRuleManage));
     }
 
     [Fact]
