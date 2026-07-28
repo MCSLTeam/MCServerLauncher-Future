@@ -11,28 +11,28 @@ public sealed class PackageContractTests
     private static readonly PinnedPayload[] PinnedPayloads =
     [
         new(
-            "MCServerLauncher.Common.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Common.2.0.0-preview.4.nupkg",
             "lib/net10.0/MCServerLauncher.Common.dll"),
         new(
-            "MCServerLauncher.Daemon.API.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.API.2.0.0-preview.4.nupkg",
             "lib/net10.0/MCServerLauncher.Daemon.API.dll"),
         new(
-            "MCServerLauncher.Daemon.API.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.API.2.0.0-preview.4.nupkg",
             "buildTransitive/MCServerLauncher.Daemon.API.targets"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
             "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
             "analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
             "analyzers/dotnet/cs/NuGet.Versioning.dll"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
             "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
             "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets")
     ];
 
@@ -80,7 +80,7 @@ public sealed class PackageContractTests
                     StringComparer.Ordinal);
 
             Assert.Equal(3, dependencies.Count);
-            Assert.Equal("[2.0.0-preview.3]", dependencies["MCServerLauncher.Common"]);
+            Assert.Equal("[2.0.0-preview.4]", dependencies["MCServerLauncher.Common"]);
             Assert.Equal("[0.10.1]", dependencies["RustyOptions"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.Logging.Abstractions"]);
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.API.dll");
@@ -141,7 +141,7 @@ public sealed class PackageContractTests
             var metadata = nuspec.Descendants(ns + "metadata").Single();
 
             Assert.Equal("MCServerLauncher.Common", (string?)metadata.Element(ns + "id"));
-            Assert.Equal("2.0.0-preview.3", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("2.0.0-preview.4", (string?)metadata.Element(ns + "version"));
             Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
             Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
             Assert.Equal("GPL-3.0-only", metadata.Element(ns + "license")?.Value);
@@ -200,12 +200,12 @@ public sealed class PackageContractTests
                     StringComparer.Ordinal);
 
             Assert.Equal(2, dependencies.Count);
-            Assert.Equal("[2.0.0-preview.3]", dependencies["MCServerLauncher.Daemon.API"]);
+            Assert.Equal("[2.0.0-preview.4]", dependencies["MCServerLauncher.Daemon.API"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.DependencyInjection"]);
 
             var metadata = nuspec.Descendants(ns + "metadata").Single();
             Assert.Equal("MCServerLauncher.Daemon.Plugin.Sdk", (string?)metadata.Element(ns + "id"));
-            Assert.Equal("2.0.0-preview.3", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("2.0.0-preview.4", (string?)metadata.Element(ns + "version"));
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll");
             Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
             Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props");
@@ -353,7 +353,7 @@ public sealed class PackageContractTests
             "MCServerLauncher.Daemon.Plugin.Generators",
             "Release",
             "netstandard2.0");
-        var packagePath = Path.Combine(packageOutput, "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg");
+        var packagePath = Path.Combine(packageOutput, "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg");
         using var package = ZipFile.OpenRead(packagePath);
 
         AssertPackageEntryMatchesFile(
