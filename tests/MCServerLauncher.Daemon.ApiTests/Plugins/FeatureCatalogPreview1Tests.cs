@@ -23,6 +23,8 @@ public sealed class FeatureCatalogPreview1Tests
             PluginFeature.AutomationManage.Value,
             // Preview-2 remaining features.
             PluginFeature.EventRuleManage.Value,
+            PluginFeature.FileRead.Value,
+            PluginFeature.FileWrite.Value,
             PluginFeature.NetworkHttpListen.Value,
             PluginFeature.AuthVerify.Value,
             PluginFeature.StoragePrivate.Value,
@@ -111,6 +113,33 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.Equal(
             ["mcsl.instance.event-rules.get", "mcsl.instance.event-rules.update"],
             FeatureCatalog.MethodsFor(PluginFeature.EventRuleManage).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [
+                "mcsl.directory.info.get",
+                "mcsl.file.download.close",
+                "mcsl.file.download.open",
+                "mcsl.file.download.read",
+                "mcsl.file.info.get",
+            ],
+            FeatureCatalog.MethodsFor(PluginFeature.FileRead).Order(StringComparer.Ordinal));
+        // Twelve names for thirteen interface members: the upload chunk write has no descriptor
+        // and rides the open permission.
+        Assert.Equal(
+            [
+                "mcsl.directory.copy",
+                "mcsl.directory.create",
+                "mcsl.directory.delete",
+                "mcsl.directory.move",
+                "mcsl.directory.rename",
+                "mcsl.file.copy",
+                "mcsl.file.delete",
+                "mcsl.file.move",
+                "mcsl.file.rename",
+                "mcsl.file.upload.cancel",
+                "mcsl.file.upload.close",
+                "mcsl.file.upload.open",
+            ],
+            FeatureCatalog.MethodsFor(PluginFeature.FileWrite).Order(StringComparer.Ordinal));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.AuthVerify));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.NetworkHttpListen));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.StoragePrivate));
@@ -120,11 +149,17 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.MonitoringQuery));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AutomationManage));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.EventRuleManage));
+        Assert.True(FeatureCatalog.IsImplemented(PluginFeature.FileRead));
+        Assert.True(FeatureCatalog.IsImplemented(PluginFeature.FileWrite));
 
-        // Remaining domains stay unimplemented and contribute nothing to host expansion.
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileRead));
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileWrite));
+        // event.subscribe is the only feature left unimplemented, and deliberately so: the
+        // feature-application plan keeps it owned by the separate Phase 7 contracts work.
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventSubscribe));
+        Assert.Equal(
+            [PluginFeature.EventSubscribe.Value],
+            FeatureCatalog.All
+                .Where(descriptor => !descriptor.IsImplemented)
+                .Select(descriptor => descriptor.Feature.Value));
     }
 
     [Fact]

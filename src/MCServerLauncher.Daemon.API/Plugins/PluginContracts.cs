@@ -74,6 +74,10 @@ public interface IPluginAuthorizedApplications
     IAutomationApplication Automation { get; }
 
     IEventRuleApplication EventRules { get; }
+
+    IFileReadApplication FileReads { get; }
+
+    IFileWriteApplication FileWrites { get; }
 }
 
 public interface IPluginContext : IPluginAuthorizedApplications

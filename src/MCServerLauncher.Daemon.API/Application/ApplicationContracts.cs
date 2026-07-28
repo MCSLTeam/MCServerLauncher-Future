@@ -78,7 +78,12 @@ public interface IInstanceApplication : IInstanceQueryApplication, IInstanceMana
 
 }
 
-public interface IFileApplication
+/// <summary>
+/// Contained filesystem metadata plus bounded download reads. Downloads are pull-based — a chunk
+/// read returns its bytes to the caller — so they need no connection of their own; the session
+/// coordinator owns them and expires an abandoned one on its own timer.
+/// </summary>
+public interface IFileReadApplication
 {
     Task<Result<DirectoryDetails, DaemonError>> GetDirectoryInfoAsync(
         PathRequest request,
@@ -88,6 +93,25 @@ public interface IFileApplication
         PathRequest request,
         CancellationToken cancellationToken);
 
+    Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(
+        DownloadOpenRequest request,
+        CancellationToken cancellationToken);
+
+    Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
+        DownloadChunkRequest request,
+        CancellationToken cancellationToken);
+
+    Task<Result<Unit, DaemonError>> CloseDownloadAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Contained filesystem mutation: path operations plus staged uploads. An upload commits only on
+/// close, so an abandoned session leaves no partial file behind.
+/// </summary>
+public interface IFileWriteApplication
+{
     Task<Result<Unit, DaemonError>> CreateDirectoryAsync(
         PathRequest request,
         CancellationToken cancellationToken);
@@ -128,6 +152,11 @@ public interface IFileApplication
         UploadOpenRequest request,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Writes one staged chunk. It has no method name of its own: on the wire the bytes ride a
+    /// binary frame authorized by the lease that <c>mcsl.file.upload.open</c> created, so callers
+    /// are gated on that same permission here.
+    /// </summary>
     Task<Result<Unit, DaemonError>> WriteUploadChunkAsync(
         UploadChunkRequest request,
         CancellationToken cancellationToken);
@@ -139,19 +168,12 @@ public interface IFileApplication
     Task<Result<Unit, DaemonError>> CancelUploadAsync(
         Guid sessionId,
         CancellationToken cancellationToken);
-
-    Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(
-        DownloadOpenRequest request,
-        CancellationToken cancellationToken);
-
-    Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
-        DownloadChunkRequest request,
-        CancellationToken cancellationToken);
-
-    Task<Result<Unit, DaemonError>> CloseDownloadAsync(
-        Guid sessionId,
-        CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// The full contained file surface, composed from the two narrow views a plugin can be granted.
+/// </summary>
+public interface IFileApplication : IFileReadApplication, IFileWriteApplication;
 
 public interface ISystemApplication
 {

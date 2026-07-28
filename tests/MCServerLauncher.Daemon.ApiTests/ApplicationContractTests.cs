@@ -63,11 +63,13 @@ public sealed class ApplicationContractTests
     [Fact]
     public void FileApplicationDoesNotExposeDisposableOrStreamHandles()
     {
-        var exposedTypes = typeof(IFileApplication).GetMethods()
+        var exposedTypes = InterfaceMethods(typeof(IFileApplication))
             .SelectMany(method => method.GetParameters().Select(parameter => parameter.ParameterType)
                 .Append(UnwrapAwaitableResult(method.ReturnType)))
             .SelectMany(UnwrapGenericArguments)
             .ToArray();
+
+        Assert.NotEmpty(exposedTypes);
 
         Assert.DoesNotContain(exposedTypes, type => typeof(IDisposable).IsAssignableFrom(type));
         Assert.DoesNotContain(exposedTypes, type => typeof(Stream).IsAssignableFrom(type));
@@ -76,7 +78,12 @@ public sealed class ApplicationContractTests
     [Fact]
     public void FileApplicationPreservesIndependentFileAndDirectoryOperations()
     {
-        var methods = typeof(IFileApplication).GetMethods().ToDictionary(method => method.Name);
+        // file.read and file.write split the surface into two narrow views, so the composed
+        // interface declares nothing of its own; the operations live one level up the hierarchy.
+        var methods = InterfaceMethods(typeof(IFileApplication)).ToDictionary(method => method.Name);
+
+        Assert.Contains(typeof(IFileReadApplication), typeof(IFileApplication).GetInterfaces());
+        Assert.Contains(typeof(IFileWriteApplication), typeof(IFileApplication).GetInterfaces());
 
         AssertResultType<DirectoryDetails>(methods[nameof(IFileApplication.GetDirectoryInfoAsync)]);
         AssertResultType<FileDetails>(methods[nameof(IFileApplication.GetFileInfoAsync)]);
@@ -93,7 +100,18 @@ public sealed class ApplicationContractTests
         Assert.Equal(
             typeof(DeleteDirectoryRequest),
             methods[nameof(IFileApplication.DeleteDirectoryAsync)].GetParameters()[0].ParameterType);
+
+        // Byte transfer stays reachable through the composed surface after the split.
+        AssertResultType<DownloadSession>(methods[nameof(IFileApplication.OpenDownloadAsync)]);
+        AssertResultType<UploadSession>(methods[nameof(IFileApplication.OpenUploadAsync)]);
     }
+
+    /// <summary>
+    /// Interface reflection does not inherit: GetMethods on a composed interface returns only its
+    /// own declarations, so the narrow views have to be walked explicitly.
+    /// </summary>
+    private static IEnumerable<MethodInfo> InterfaceMethods(Type type) =>
+        type.GetMethods().Concat(type.GetInterfaces().SelectMany(inherited => inherited.GetMethods()));
 
     [Fact]
     public void InstanceApplicationReturnsParityCompleteCreateAndSettingsResults()

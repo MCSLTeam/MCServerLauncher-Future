@@ -458,6 +458,8 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         "Monitoring" => "monitoring.query",
         "Automation" => "automation.manage",
         "EventRules" => "event-rule.manage",
+        "FileReads" => "file.read",
+        "FileWrites" => "file.write",
         "Storage" => "storage.private",
         "HttpEndpoints" => "network.http.listen",
         "Authentication" => "auth.verify",
@@ -492,13 +494,15 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         var hasMonitoring = manifest.Features.Contains("monitoring.query");
         var hasAutomation = manifest.Features.Contains("automation.manage");
         var hasEventRules = manifest.Features.Contains("event-rule.manage");
+        var hasFileRead = manifest.Features.Contains("file.read");
+        var hasFileWrite = manifest.Features.Contains("file.write");
         var hasStorage = manifest.Features.Contains("storage.private");
         var hasHttp = manifest.Features.Contains("network.http.listen");
         var hasAuth = manifest.Features.Contains("auth.verify");
         var hasSystem = manifest.Features.Contains("system.query");
         var hasAuthorizedApps = hasInstanceQuery || hasInstanceManage || hasOperationQuery ||
             hasOperationCancel || hasProvisioning || hasBackups || hasAudit || hasMonitoring ||
-            hasAutomation || hasEventRules || hasSystem;
+            hasAutomation || hasEventRules || hasFileRead || hasFileWrite || hasSystem;
 
         var featureProperties = new StringBuilder();
         if (hasRpc)
@@ -599,6 +603,18 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "        public global::MCServerLauncher.Daemon.API.Application.IEventRuleApplication EventRules { get; }");
         }
 
+        if (hasFileRead)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IFileReadApplication FileReads { get; }");
+        }
+
+        if (hasFileWrite)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IFileWriteApplication FileWrites { get; }");
+        }
+
         var featureBackingFields = new StringBuilder();
         var featureCtorAssignments = new StringBuilder();
         if (hasAuthorizedApps)
@@ -662,6 +678,14 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         if (hasEventRules)
         {
             featureCtorAssignments.AppendLine("            EventRules = context.EventRules;");
+        }
+        if (hasFileRead)
+        {
+            featureCtorAssignments.AppendLine("            FileReads = context.FileReads;");
+        }
+        if (hasFileWrite)
+        {
+            featureCtorAssignments.AppendLine("            FileWrites = context.FileWrites;");
         }
 
         var registrationBody = new StringBuilder();
@@ -839,6 +863,28 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
                 "            EventRules = eventRules ?? throw new global::System.ArgumentNullException(nameof(eventRules));");
             authorizedProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Application.IEventRuleApplication EventRules { get; }");
+        }
+
+        if (hasFileRead)
+        {
+            authorizedParameters.Add(
+                "global::MCServerLauncher.Daemon.API.Application.IFileReadApplication fileReads");
+            authorizedArguments.Add("applications.FileReads");
+            authorizedAssignments.AppendLine(
+                "            FileReads = fileReads ?? throw new global::System.ArgumentNullException(nameof(fileReads));");
+            authorizedProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IFileReadApplication FileReads { get; }");
+        }
+
+        if (hasFileWrite)
+        {
+            authorizedParameters.Add(
+                "global::MCServerLauncher.Daemon.API.Application.IFileWriteApplication fileWrites");
+            authorizedArguments.Add("applications.FileWrites");
+            authorizedAssignments.AppendLine(
+                "            FileWrites = fileWrites ?? throw new global::System.ArgumentNullException(nameof(fileWrites));");
+            authorizedProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Application.IFileWriteApplication FileWrites { get; }");
         }
 
         var authorizedParameterLiteral = string.Join(",\n            ", authorizedParameters);
