@@ -3,6 +3,7 @@ using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -358,6 +359,156 @@ public sealed class AuthorizedBackupApplication(
         return _inner.ExecuteRestoreAsync(
             request with { ExecutorPrincipal = owner.Unwrap() },
             cancellationToken);
+    }
+}
+
+public sealed class AuthorizedFileReadApplication(
+    ICallerContext caller,
+    IFileReadApplication inner) : IFileReadApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IFileReadApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<DirectoryDetails, DaemonError>> GetDirectoryInfoAsync(
+        PathRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.directory.info.get");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<DirectoryDetails, DaemonError>(error!));
+        return _inner.GetDirectoryInfoAsync(request, cancellationToken);
+    }
+
+    public Task<Result<FileDetails, DaemonError>> GetFileInfoAsync(
+        PathRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.file.info.get");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<FileDetails, DaemonError>(error!));
+        return _inner.GetFileInfoAsync(request, cancellationToken);
+    }
+
+    public Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(
+        DownloadOpenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.file.download.open");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<DownloadSession, DaemonError>(error!));
+        return _inner.OpenDownloadAsync(request, cancellationToken);
+    }
+
+    public Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
+        DownloadChunkRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.file.download.read");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<DownloadChunk, DaemonError>(error!));
+        return _inner.ReadDownloadChunkAsync(request, cancellationToken);
+    }
+
+    public Task<Result<Unit, DaemonError>> CloseDownloadAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.file.download.close");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<Unit, DaemonError>(error!));
+        return _inner.CloseDownloadAsync(sessionId, cancellationToken);
+    }
+}
+
+public sealed class AuthorizedFileWriteApplication(
+    ICallerContext caller,
+    IFileWriteApplication inner) : IFileWriteApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IFileWriteApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<Unit, DaemonError>> CreateDirectoryAsync(
+        PathRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.directory.create", () => _inner.CreateDirectoryAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> DeleteFileAsync(
+        PathRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.delete", () => _inner.DeleteFileAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> DeleteDirectoryAsync(
+        DeleteDirectoryRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.directory.delete", () => _inner.DeleteDirectoryAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> RenameFileAsync(
+        PathRenameRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.rename", () => _inner.RenameFileAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> RenameDirectoryAsync(
+        PathRenameRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.directory.rename", () => _inner.RenameDirectoryAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> MoveFileAsync(
+        PathTransferRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.move", () => _inner.MoveFileAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> MoveDirectoryAsync(
+        PathTransferRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.directory.move", () => _inner.MoveDirectoryAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> CopyFileAsync(
+        PathTransferRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.copy", () => _inner.CopyFileAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> CopyDirectoryAsync(
+        PathTransferRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.directory.copy", () => _inner.CopyDirectoryAsync(request, cancellationToken));
+
+    public Task<Result<UploadSession, DaemonError>> OpenUploadAsync(
+        UploadOpenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.file.upload.open");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<UploadSession, DaemonError>(error!));
+        return _inner.OpenUploadAsync(request, cancellationToken);
+    }
+
+    /// <summary>
+    /// Guarded by the open permission on purpose: the chunk write has no method name of its own,
+    /// and on the wire it is authorized by the lease that opening the upload created.
+    /// </summary>
+    public Task<Result<Unit, DaemonError>> WriteUploadChunkAsync(
+        UploadChunkRequest request,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.upload.open", () => _inner.WriteUploadChunkAsync(request, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> CloseUploadAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.upload.close", () => _inner.CloseUploadAsync(sessionId, cancellationToken));
+
+    public Task<Result<Unit, DaemonError>> CancelUploadAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken) =>
+        Guard("mcsl.file.upload.cancel", () => _inner.CancelUploadAsync(sessionId, cancellationToken));
+
+    private Task<Result<Unit, DaemonError>> Guard(
+        string permission,
+        Func<Task<Result<Unit, DaemonError>>> invoke)
+    {
+        var allowed = _caller.EnsurePermission(permission);
+        return allowed.IsErr(out var error)
+            ? Task.FromResult(Result.Err<Unit, DaemonError>(error!))
+            : invoke();
     }
 }
 

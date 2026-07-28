@@ -34,6 +34,8 @@ internal sealed class PluginApplicationAuthorizer
     private readonly IMonitoringApplication? _monitoring;
     private readonly IAutomationApplication? _automation;
     private readonly IEventRuleApplication? _eventRules;
+    private readonly IFileReadApplication? _fileReads;
+    private readonly IFileWriteApplication? _fileWrites;
 
     internal PluginApplicationAuthorizer(
         PluginIdentity identity,
@@ -50,7 +52,8 @@ internal sealed class PluginApplicationAuthorizer
         IAuditApplication? audit,
         IMonitoringApplication? monitoring,
         IAutomationApplication? automation,
-        IEventRuleApplication? eventRules)
+        IEventRuleApplication? eventRules,
+        IFileApplication? files)
     {
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(grantedFeatureIds);
@@ -69,6 +72,10 @@ internal sealed class PluginApplicationAuthorizer
         _monitoring = HasFeature(PluginFeature.MonitoringQuery) ? monitoring : null;
         _automation = HasFeature(PluginFeature.AutomationManage) ? automation : null;
         _eventRules = HasFeature(PluginFeature.EventRuleManage) ? eventRules : null;
+        // One file application feeds both narrow views, mirroring how one instance application
+        // feeds the query and management slots.
+        _fileReads = HasFeature(PluginFeature.FileRead) ? files : null;
+        _fileWrites = HasFeature(PluginFeature.FileWrite) ? files : null;
         Host = Create(_callerContexts.CreateHost(identity, grantedFeatures));
 
         bool HasFeature(PluginFeature feature) => grantedFeatures.Contains(feature.Value);
@@ -96,7 +103,9 @@ internal sealed class PluginApplicationAuthorizer
             _audit is null ? null : new AuthorizedAuditApplication(caller, _audit),
             _monitoring is null ? null : new AuthorizedMonitoringApplication(caller, _monitoring),
             _automation is null ? null : new AuthorizedAutomationApplication(caller, _automation),
-            _eventRules is null ? null : new AuthorizedEventRuleApplication(caller, _eventRules));
+            _eventRules is null ? null : new AuthorizedEventRuleApplication(caller, _eventRules),
+            _fileReads is null ? null : new AuthorizedFileReadApplication(caller, _fileReads),
+            _fileWrites is null ? null : new AuthorizedFileWriteApplication(caller, _fileWrites));
 }
 
 internal sealed class PluginAuthorizedApplications(
@@ -112,7 +121,9 @@ internal sealed class PluginAuthorizedApplications(
     IAuditApplication? audit,
     IMonitoringApplication? monitoring,
     IAutomationApplication? automation,
-    IEventRuleApplication? eventRules) : IPluginAuthorizedApplications
+    IEventRuleApplication? eventRules,
+    IFileReadApplication? fileReads,
+    IFileWriteApplication? fileWrites) : IPluginAuthorizedApplications
 {
     public ICallerContext Caller { get; } = caller ?? throw new ArgumentNullException(nameof(caller));
 
@@ -151,6 +162,12 @@ internal sealed class PluginAuthorizedApplications(
 
     public IEventRuleApplication EventRules =>
         eventRules ?? throw MissingFeature("event-rule.manage");
+
+    public IFileReadApplication FileReads =>
+        fileReads ?? throw MissingFeature("file.read");
+
+    public IFileWriteApplication FileWrites =>
+        fileWrites ?? throw MissingFeature("file.write");
 
     private static InvalidOperationException MissingFeature(string feature) =>
         new($"The plugin did not declare the '{feature}' feature.");
@@ -236,6 +253,10 @@ internal sealed class PluginContext : IPluginContext
     public IAutomationApplication Automation => _applications.Host.Automation;
 
     public IEventRuleApplication EventRules => _applications.Host.EventRules;
+
+    public IFileReadApplication FileReads => _applications.Host.FileReads;
+
+    public IFileWriteApplication FileWrites => _applications.Host.FileWrites;
 
     public IPluginAuthorizedApplications ForPrincipal(VerifiedPrincipal principal) =>
         _applications.ForPrincipal(principal);

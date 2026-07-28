@@ -51,6 +51,7 @@ internal sealed class PluginHost
     private readonly IMonitoringApplication? _monitoringApplication;
     private readonly IAutomationApplication? _automationApplication;
     private readonly IEventRuleApplication? _eventRuleApplication;
+    private readonly IFileApplication? _fileApplication;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -149,6 +150,7 @@ internal sealed class PluginHost
         IMonitoringApplication? monitoringApplication = null,
         IAutomationApplication? automationApplication = null,
         IEventRuleApplication? eventRuleApplication = null,
+        IFileApplication? fileApplication = null,
         VerifiedPrincipalAuthority? verifiedPrincipals = null,
         TimeSpan? rollbackCleanupTimeout = null,
         TimeSpan? shutdownCleanupTimeout = null)
@@ -198,6 +200,7 @@ internal sealed class PluginHost
         _monitoringApplication = monitoringApplication;
         _automationApplication = automationApplication;
         _eventRuleApplication = eventRuleApplication;
+        _fileApplication = fileApplication;
     }
 
     /// <summary>
@@ -562,7 +565,10 @@ internal sealed class PluginHost
                 manifest.HasFeature(PluginFeature.AuditQuery) ? _auditApplication : null,
                 manifest.HasFeature(PluginFeature.MonitoringQuery) ? _monitoringApplication : null,
                 manifest.HasFeature(PluginFeature.AutomationManage) ? _automationApplication : null,
-                manifest.HasFeature(PluginFeature.EventRuleManage) ? _eventRuleApplication : null);
+                manifest.HasFeature(PluginFeature.EventRuleManage) ? _eventRuleApplication : null,
+                manifest.HasFeature(PluginFeature.FileRead) || manifest.HasFeature(PluginFeature.FileWrite)
+                    ? _fileApplication
+                    : null);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,

@@ -26,6 +26,8 @@ public sealed class DaemonPluginSourceGeneratorTests
         { "monitoring.query", "Monitoring" },
         { "automation.manage", "Automation" },
         { "event-rule.manage", "EventRules" },
+        { "file.read", "FileReads" },
+        { "file.write", "FileWrites" },
         { "network.http.listen", "HttpEndpoints" },
         { "auth.verify", "Authentication" },
         { "storage.private", "Storage" },

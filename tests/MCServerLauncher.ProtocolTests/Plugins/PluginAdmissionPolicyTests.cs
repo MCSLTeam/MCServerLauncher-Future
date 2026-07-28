@@ -35,8 +35,9 @@ public sealed class PluginAdmissionPolicyTests
         // Implemented host features at risk <= Medium:
         // rpc.register, event.publish, instance.query, system.query, storage.private, auth.verify,
         // operation.query, operation.cancel, provisioning.manage, instance.manage, backup.manage,
-        // audit.query, monitoring.query, automation.manage, event-rule.manage.
-        Assert.Equal(15, allowed.Length);
+        // audit.query, monitoring.query, automation.manage, event-rule.manage, file.read,
+        // file.write.
+        Assert.Equal(17, allowed.Length);
         Assert.Contains(allowed, f => f == PluginFeature.RpcRegister);
         Assert.Contains(allowed, f => f == PluginFeature.EventPublish);
         Assert.Contains(allowed, f => f == PluginFeature.InstanceQuery);
@@ -52,8 +53,10 @@ public sealed class PluginAdmissionPolicyTests
         Assert.Contains(allowed, f => f == PluginFeature.MonitoringQuery);
         Assert.Contains(allowed, f => f == PluginFeature.AutomationManage);
         Assert.Contains(allowed, f => f == PluginFeature.EventRuleManage);
+        Assert.Contains(allowed, f => f == PluginFeature.FileRead);
+        Assert.Contains(allowed, f => f == PluginFeature.FileWrite);
         // Unimplemented features are never admitted regardless of risk/level.
-        Assert.DoesNotContain(allowed, f => f == PluginFeature.FileRead);
+        Assert.DoesNotContain(allowed, f => f == PluginFeature.EventSubscribe);
         // High-risk implemented features require High grant level.
         Assert.DoesNotContain(allowed, f => f == PluginFeature.NetworkHttpListen);
     }

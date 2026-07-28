@@ -118,8 +118,28 @@ public static class FeatureCatalog
                 "mcsl.instance.settings.update",
             ],
             implemented: true),
-        Descriptor(PluginFeature.FileRead, "Read contained instance filesystem metadata and file contents.", PluginFeatureRisk.Low, [], implemented: false),
-        Descriptor(PluginFeature.FileWrite, "Create, upload, move, rename, or delete contained instance paths.", PluginFeatureRisk.Medium, [], implemented: false),
+        Descriptor(
+            PluginFeature.FileRead,
+            "Read contained instance filesystem metadata and file contents.",
+            PluginFeatureRisk.Low,
+            [
+                "mcsl.directory.info.get", "mcsl.file.info.get",
+                "mcsl.file.download.open", "mcsl.file.download.read", "mcsl.file.download.close"
+            ],
+            implemented: true),
+        // The upload chunk write carries no method name of its own; it is authorized by the open
+        // permission, exactly as the wire authorizes its binary frames by the open lease.
+        Descriptor(
+            PluginFeature.FileWrite,
+            "Create, upload, move, rename, or delete contained instance paths.",
+            PluginFeatureRisk.Medium,
+            [
+                "mcsl.directory.create", "mcsl.directory.copy", "mcsl.directory.delete",
+                "mcsl.directory.move", "mcsl.directory.rename",
+                "mcsl.file.copy", "mcsl.file.delete", "mcsl.file.move", "mcsl.file.rename",
+                "mcsl.file.upload.open", "mcsl.file.upload.close", "mcsl.file.upload.cancel"
+            ],
+            implemented: true),
         Descriptor(
             PluginFeature.SystemQuery,
             "Read host system facts and discovered Java runtimes.",
