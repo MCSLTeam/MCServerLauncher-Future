@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -53,6 +54,11 @@ public partial class InstanceSettingsViewModel : ObservableObject
 
     public ObservableCollection<JvmArgumentModel> JvmArguments { get; } = [];
     public ObservableCollection<JavaRuntimeOption> JavaRuntimeOptions { get; } = [];
+    public IReadOnlyList<ConsoleModeOption> ConsoleModes { get; } =
+    [
+        new(ConsoleMode.Pipe, Lang.Tr["InstanceSettingsConsoleModePipe"]),
+        new(ConsoleMode.Pty, Lang.Tr["InstanceSettingsConsoleModePty"])
+    ];
     public bool CanEditJavaRuntime => Settings.CanEdit && JavaRuntimeScanCompleted && !IsScanningJava;
 
     public InstanceSettingsViewModel(INotificationService notification)
@@ -112,7 +118,8 @@ public partial class InstanceSettingsViewModel : ObservableObject
                 CanEdit = result.CanEdit,
                 EditBlockedReason = result.EditBlockedReason ?? string.Empty,
                 CurrentTargetExists = result.CurrentTargetExists,
-                InstallMetadata = result.InstallMetadata
+                InstallMetadata = result.InstallMetadata,
+                ConsoleMode = result.Config.ConsoleMode
             };
             ResetJvmArguments(result.Config.Arguments.ToArray());
             JavaRuntimeDisplayText = Settings.JavaPath;
@@ -270,7 +277,8 @@ public partial class InstanceSettingsViewModel : ObservableObject
                     Settings.Arguments.ToImmutableArray(),
                     Settings.Version,
                     replacement,
-                    Settings.ForceRerunInstaller),
+                    Settings.ForceRerunInstaller,
+                    Settings.ConsoleMode),
                 default);
             if (updateResult.IsErr(out var updateError))
                 throw DaemonErrorLocalization.ToException(updateError!);
@@ -551,7 +559,8 @@ public partial class InstanceSettingsViewModel : ObservableObject
             Settings.InstanceType,
             GetJvmArguments(),
             Settings.ReplacementCorePath,
-            Settings.ForceRerunInstaller);
+            Settings.ForceRerunInstaller,
+            Settings.ConsoleMode);
     }
 
     private void UpdateHasUnsavedChanges()
@@ -569,6 +578,8 @@ public partial class InstanceSettingsViewModel : ObservableObject
         public override string ToString() => DisplayName;
     }
 
+    public sealed record ConsoleModeOption(ConsoleMode Mode, string DisplayName);
+
     private sealed class SettingsSnapshot : IEquatable<SettingsSnapshot>
     {
         public SettingsSnapshot(
@@ -579,7 +590,8 @@ public partial class InstanceSettingsViewModel : ObservableObject
             InstanceType instanceType,
             string[] arguments,
             string replacementCorePath,
-            bool forceRerunInstaller)
+            bool forceRerunInstaller,
+            ConsoleMode consoleMode)
         {
             Name = name;
             JavaPath = javaPath;
@@ -589,6 +601,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
             Arguments = arguments;
             ReplacementCorePath = replacementCorePath;
             ForceRerunInstaller = forceRerunInstaller;
+            ConsoleMode = consoleMode;
         }
 
         private string Name { get; }
@@ -599,6 +612,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
         private string[] Arguments { get; }
         private string ReplacementCorePath { get; }
         private bool ForceRerunInstaller { get; }
+        private ConsoleMode ConsoleMode { get; }
 
         public bool Equals(SettingsSnapshot? other)
         {
@@ -610,12 +624,13 @@ public partial class InstanceSettingsViewModel : ObservableObject
                    && InstanceType == other.InstanceType
                    && Arguments.SequenceEqual(other.Arguments)
                    && ReplacementCorePath == other.ReplacementCorePath
-                   && ForceRerunInstaller == other.ForceRerunInstaller;
+                   && ForceRerunInstaller == other.ForceRerunInstaller
+                   && ConsoleMode == other.ConsoleMode;
         }
 
         public override int GetHashCode()
         {
-            var hash = HashCode.Combine(Name, JavaPath, Version, Target, InstanceType, ReplacementCorePath, ForceRerunInstaller);
+            var hash = HashCode.Combine(Name, JavaPath, Version, Target, InstanceType, ReplacementCorePath, ForceRerunInstaller, ConsoleMode);
             foreach (var argument in Arguments)
             {
                 hash = HashCode.Combine(hash, argument);

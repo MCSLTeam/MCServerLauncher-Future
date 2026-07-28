@@ -13,7 +13,7 @@ namespace MCServerLauncher.WPF.View.Components
         private static readonly string _windowsIllegalChars = new string(System.IO.Path.GetInvalidFileNameChars()) + System.IO.Path.GetInvalidPathChars();
         private static readonly List<string> _windowsIllegalCharsFolderName = new List<string> { "aux", "com1", "com2", "prn", "con", "lpt1", "lpt2", "nul" };
 
-        public static Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endPoint = "", string port = "", bool isSecure = false, string token = "", string name = "", bool isRetrying = false, bool isEditing = false)
+        public static Task<(ContentDialog, NewDaemonConnectionInput)> ConstructConnectDaemonDialog(string endPoint = "", string port = "11452", bool isSecure = false, string token = "", string name = "", bool isRetrying = false, bool isEditing = false)
         {
             NewDaemonConnectionInput newDaemonConnectionInput = new();
             newDaemonConnectionInput.wsEdit.Text = endPoint;

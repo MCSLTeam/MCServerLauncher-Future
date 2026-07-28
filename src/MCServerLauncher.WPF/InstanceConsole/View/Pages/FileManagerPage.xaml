@@ -92,46 +92,53 @@
             
             <GridSplitter Grid.Row="1" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" />
             
-            <ListView Grid.Row="1" Grid.Column="2" x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" Margin="5,0,0,0" VirtualizingPanel.VirtualizationMode="Recycling" SelectionMode="Extended">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Static GridView.GridViewItemContainerStyleKey}}">
-                        <Setter Property="MinHeight" Value="28" />
-                        <Setter Property="Padding" Value="2" />
-                        <Setter Property="Margin" Value="1" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="{Binding [Name], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="300">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="4,2">
-                                        <ui:FontIcon Glyph="{Binding Icon}" Margin="0,0,6,0" FontSize="14" />
-                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{Binding [ModifiedDate], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="150" DisplayMemberBinding="{Binding ModifiedDate}" />
-                        <GridViewColumn Header="{Binding [Type], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="100" DisplayMemberBinding="{Binding Type}" />
-                        <GridViewColumn Header="{Binding [Size], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="100" DisplayMemberBinding="{Binding Size}" />
-                    </GridView>
-                </ListView.View>
-                <ListView.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="{Binding [Open], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding OpenCommand}" />
-                        <Separator />
-                        <MenuItem Header="{Binding [Download], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding DownloadCommand}" />
-                        <MenuItem Header="{Binding [UploadFile], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding UploadFileCommand}" />
-                        <Separator />
-                        <MenuItem Header="{Binding [Rename], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding RenameCommand}" />
-                        <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding DeleteCommand}" />
-                        <Separator />
-                        <MenuItem Header="{Binding [CreateDirectory], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding CreateDirectoryCommand}" />
-                        <MenuItem Header="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding RefreshCommand}" />
-                    </ContextMenu>
-                </ListView.ContextMenu>
-            </ListView>
+            <Grid Grid.Row="1" Grid.Column="2" Margin="5,0,0,0">
+                <ListView x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" VirtualizingPanel.VirtualizationMode="Recycling" SelectionMode="Extended"
+                          PreviewMouseLeftButtonDown="FileListView_PreviewMouseLeftButtonDown"
+                          PreviewMouseMove="FileListView_PreviewMouseMove"
+                          PreviewMouseLeftButtonUp="FileListView_PreviewMouseLeftButtonUp">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Static GridView.GridViewItemContainerStyleKey}}">
+                            <Setter Property="MinHeight" Value="28" />
+                            <Setter Property="Padding" Value="2" />
+                            <Setter Property="Margin" Value="1" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="{Binding [Name], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="300">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="4,2">
+                                            <ui:FontIcon Glyph="{Binding Icon}" Margin="0,0,6,0" FontSize="14" />
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="{Binding [ModifiedDate], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="150" DisplayMemberBinding="{Binding ModifiedDate}" />
+                            <GridViewColumn Header="{Binding [Type], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="100" DisplayMemberBinding="{Binding Type}" />
+                            <GridViewColumn Header="{Binding [Size], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Width="100" DisplayMemberBinding="{Binding Size}" />
+                        </GridView>
+                    </ListView.View>
+                    <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{Binding [Open], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding OpenCommand}" />
+                            <Separator />
+                            <MenuItem Header="{Binding [Download], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding DownloadCommand}" />
+                            <MenuItem Header="{Binding [UploadFile], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding UploadFileCommand}" />
+                            <Separator />
+                            <MenuItem Header="{Binding [Rename], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding RenameCommand}" />
+                            <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding DeleteCommand}" />
+                            <Separator />
+                            <MenuItem Header="{Binding [CreateDirectory], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding CreateDirectoryCommand}" />
+                            <MenuItem Header="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Command="{Binding RefreshCommand}" />
+                        </ContextMenu>
+                    </ListView.ContextMenu>
+                </ListView>
+                <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
+                        Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
+            </Grid>
         </Grid>
     </Grid>
 </Page>

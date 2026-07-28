@@ -1,11 +1,46 @@
 using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.WPF.InstanceConsole.View.Pages;
 using MCServerLauncher.WPF.InstanceConsole.ViewModels.Models;
 
 namespace MCServerLauncher.WPF.Tests.Models;
 
 public sealed class InstanceSettingsModelTests
 {
+    [Fact]
+    public void ConsoleModeDefaultsToPipeAndRaisesChangeNotifications()
+    {
+        var model = new InstanceSettingsModel();
+        var changed = new List<string>();
+        model.PropertyChanged += (_, args) => changed.Add(args.PropertyName!);
+
+        Assert.Equal(ConsoleMode.Pipe, model.ConsoleMode);
+
+        model.ConsoleMode = ConsoleMode.Pty;
+
+        Assert.Equal(ConsoleMode.Pty, model.ConsoleMode);
+        Assert.Contains(nameof(InstanceSettingsModel.ConsoleMode), changed);
+    }
+
+    [Theory]
+    [InlineData(ConsoleMode.Pipe, true)]
+    [InlineData(ConsoleMode.Pty, false)]
+    public void CommandInputPanelVisibilityFollowsConsoleMode(ConsoleMode consoleMode, bool expected)
+    {
+        Assert.Equal(expected, CommandPage.ShouldShowCommandInput(consoleMode));
+    }
+
+    [Fact]
+    public void PipeHistoryMergeRemovesOnlyOverlappingLiveSuffix()
+    {
+        var merged = CommandPage.MergePipeHistory(
+            ["one", "two", "three"],
+            ["three", "four"]);
+
+        Assert.Equal(["one", "two", "three", "four"], merged);
+    }
+
     [Fact]
     public void InstallMetadata_UsesCanonicalContractAndPreservesImmutableGeneratedPaths()
     {

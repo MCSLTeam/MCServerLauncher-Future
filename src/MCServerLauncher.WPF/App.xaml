@@ -35,6 +35,9 @@
             <Style TargetType="ui:ToggleSwitch">
                 <Setter Property="MinWidth" Value="0" />
             </Style>
+            <Style TargetType="ui:IconAndText">
+                <Setter Property="Background" Value="Transparent" />
+            </Style>
             <Style x:Key="DisplayTextBlock" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="68" />
                 <Setter Property="FontWeight" Value="SemiBold" />

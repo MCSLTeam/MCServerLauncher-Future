@@ -26,6 +26,7 @@ public partial class InstanceSettingsModel : ObservableObject
     [ObservableProperty] private bool _currentTargetExists;
     [ObservableProperty] private string _replacementCorePath = string.Empty;
     [ObservableProperty] private bool _forceRerunInstaller;
+    [ObservableProperty] private ConsoleMode _consoleMode = ConsoleMode.Pipe;
     [ObservableProperty] private InstanceInstallMetadata? _installMetadata;
 
     public IReadOnlyList<InstanceType> EditableInstanceTypes =>

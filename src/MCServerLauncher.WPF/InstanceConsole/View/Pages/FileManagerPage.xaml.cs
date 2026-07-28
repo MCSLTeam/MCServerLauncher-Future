@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Collections.Generic;
 using System.Windows.Input;
+using System.Windows.Controls;
+using System.Windows.Media;
 using MCServerLauncher.Common.Helpers;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
@@ -24,6 +26,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
     public partial class FileManagerPage
     {
         private FileManagerViewModel _viewModel;
+        private Point _selectionStart;
+        private bool _isBoxSelecting;
+        private HashSet<FileItem> _initialSelection = [];
 
         public FileManagerPage()
         {
@@ -88,6 +93,77 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     _viewModel.OpenCommand.Execute(null);
                 }
             }
+        }
+
+        private void FileListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject) is not null)
+                return;
+
+            _selectionStart = e.GetPosition(FileListView);
+            _initialSelection = FileListView.SelectedItems.Cast<FileItem>().ToHashSet();
+            _isBoxSelecting = true;
+            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                FileListView.SelectedItems.Clear();
+            FileListView.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void FileListView_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isBoxSelecting || e.LeftButton != MouseButtonState.Pressed)
+                return;
+
+            var current = e.GetPosition(FileListView);
+            var selection = new Rect(_selectionStart, current);
+            SelectionBox.Visibility = Visibility.Visible;
+            SelectionBox.HorizontalAlignment = HorizontalAlignment.Left;
+            SelectionBox.VerticalAlignment = VerticalAlignment.Top;
+            SelectionBox.Margin = new Thickness(selection.Left, selection.Top, 0, 0);
+            SelectionBox.Width = selection.Width;
+            SelectionBox.Height = selection.Height;
+
+            var ctrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+            foreach (var item in _viewModel.Items)
+            {
+                if (FileListView.ItemContainerGenerator.ContainerFromItem(item) is not ListViewItem container)
+                    continue;
+
+                var itemBounds = container.TransformToAncestor(FileListView)
+                    .TransformBounds(new Rect(new Point(), container.RenderSize));
+                var shouldSelect = IntersectsSelection(selection, itemBounds) ||
+                    (ctrlPressed && _initialSelection.Contains(item));
+                if (shouldSelect && !FileListView.SelectedItems.Contains(item))
+                    FileListView.SelectedItems.Add(item);
+                else if (!shouldSelect && FileListView.SelectedItems.Contains(item))
+                    FileListView.SelectedItems.Remove(item);
+            }
+        }
+
+        private void FileListView_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isBoxSelecting)
+                return;
+
+            _isBoxSelecting = false;
+            SelectionBox.Visibility = Visibility.Collapsed;
+            FileListView.ReleaseMouseCapture();
+            _viewModel.SelectedItem = FileListView.SelectedItems.Cast<FileItem>().FirstOrDefault();
+        }
+
+        internal static bool IntersectsSelection(Rect selection, Rect itemBounds) =>
+            selection.IntersectsWith(itemBounds);
+
+        private static T? FindVisualParent<T>(DependencyObject? source) where T : DependencyObject
+        {
+            while (source is not null)
+            {
+                if (source is T match)
+                    return match;
+                source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            }
+
+            return null;
         }
     }
 

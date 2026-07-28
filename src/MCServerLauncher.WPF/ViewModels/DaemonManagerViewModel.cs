@@ -257,14 +257,7 @@ public partial class DaemonManagerViewModel : ObservableObject
                 throw DaemonErrorLocalization.ToException(systemInfoError!);
 
             var systemInfo = systemInfoResult.Unwrap();
-            var systemName = systemInfo.Os.Name;
-            var cpuVendor = systemInfo.Cpu.Vendor;
-
-            if (systemName.Contains("Windows NT")) model.SystemType = "Windows";
-            else if (systemName.Contains("Unix"))
-            {
-                model.SystemType = cpuVendor.Contains("Apple") ? "Darwin" : "Linux";
-            }
+            model.SystemType = ClassifySystemType(systemInfo.Os.Name, systemInfo.Cpu.Vendor);
 
             UpdateResourceUsage(model, systemInfo);
             model.LastErrorMessage = string.Empty;
@@ -315,6 +308,23 @@ public partial class DaemonManagerViewModel : ObservableObject
         return string.IsNullOrWhiteSpace(config.FriendlyName)
             ? Lang.Tr["Main_DaemonManagerNavMenu"]
             : config.FriendlyName;
+    }
+
+    internal static string ClassifySystemType(string systemName, string cpuVendor)
+    {
+        if (systemName.Contains("Windows", StringComparison.OrdinalIgnoreCase))
+            return "Windows";
+
+        if (systemName.Contains("Darwin", StringComparison.OrdinalIgnoreCase) ||
+            systemName.Contains("macOS", StringComparison.OrdinalIgnoreCase) ||
+            systemName.Contains("Mac OS", StringComparison.OrdinalIgnoreCase) ||
+            (systemName.Contains("Unix", StringComparison.OrdinalIgnoreCase) &&
+             cpuVendor.Contains("Apple", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "Darwin";
+        }
+
+        return "Linux";
     }
 
     private static void ApplyModel(DaemonCardModel target, DaemonCardModel source)

@@ -138,6 +138,26 @@
                     </Grid>
                 </Border>
 
+                <Border Style="{StaticResource InstanceSettingsCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Style="{StaticResource InstanceSettingsFieldLabelStyle}"
+                                   Text="{Binding [InstanceSettingsConsoleMode], Source={x:Static i18n:Lang.Tr}}" />
+                        <ComboBox Grid.Row="1"
+                                  ItemsSource="{Binding ConsoleModes}"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Mode"
+                                  SelectedValue="{Binding Settings.ConsoleMode, Mode=TwoWay}"
+                                  IsEnabled="{Binding Settings.CanEdit}" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource InstanceSettingsCardDescriptionStyle}"
+                                   Text="{Binding [InstanceSettingsConsoleModeDescription], Source={x:Static i18n:Lang.Tr}}" />
+                    </Grid>
+                </Border>
+
                 <Border IsEnabled="{Binding CanEditJavaRuntime}">
                     <Border.Style>
                         <Style TargetType="Border" BasedOn="{StaticResource InstanceSettingsCardStyle}">
