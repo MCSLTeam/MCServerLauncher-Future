@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.Management;
@@ -327,6 +328,41 @@ public sealed class InstanceProcessEventPumpTests
         finally
         {
             releaseBlocked.TrySetResult();
+            if (!process.HasExit)
+                process.KillProcess();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+        }
+    }
+
+    [Fact]
+    public async Task PtyConsoleSubscriberReceivesOutputProducedBeforeItAttached()
+    {
+        using var process = new InstanceProcess(
+            CreatePtyHistoryStartInfo(),
+            InstanceType.Universal,
+            ConsoleMode.Pty);
+        var output = new List<byte>();
+        var replayed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        try
+        {
+            Assert.True(await process.StartAsync(delayToCheck: 20));
+            Assert.True(process.IsPty, "The supported test platform must exercise the PTY output path.");
+            await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"));
+
+            process.AttachConsoleSubscriber((chunk, _, _) =>
+            {
+                output.AddRange(chunk.ToArray());
+                if (Encoding.UTF8.GetString([.. output]).Contains("history-ready", StringComparison.Ordinal))
+                    replayed.TrySetResult();
+                return Task.CompletedTask;
+            });
+
+            await replayed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.Contains("history-ready", Encoding.UTF8.GetString([.. output]));
+        }
+        finally
+        {
             if (!process.HasExit)
                 process.KillProcess();
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
@@ -1202,6 +1238,25 @@ public sealed class InstanceProcessEventPumpTests
             {
                 FileName = "/bin/sh",
                 Arguments = "-c \"printf 'booted\\n'; read line; printf 'Minecraft has crashed\\n'; exit 1\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+    }
+
+    private static ProcessStartInfo CreatePtyHistoryStartInfo()
+    {
+        return OperatingSystem.IsWindows()
+            ? new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/d /q /c \"echo history-ready&set /p line=\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+            : new ProcessStartInfo
+            {
+                FileName = "/bin/sh",
+                Arguments = "-c \"printf 'history-ready\\n'; read line\"",
                 UseShellExecute = false,
                 CreateNoWindow = true
             };

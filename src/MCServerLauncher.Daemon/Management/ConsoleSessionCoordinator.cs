@@ -118,7 +118,7 @@ internal sealed class ConsoleSessionCoordinator(IInstanceManager instanceManager
         return Result.Ok<Unit, DaemonError>(Unit.Default);
     }
 
-    public Result<Unit, DaemonError> Write(Guid sessionId, ReadOnlyMemory<byte> data)
+    public Result<Unit, DaemonError> Write(Guid sessionId, long offset, ReadOnlyMemory<byte> data)
     {
         if (!_leases.TryGetValue(sessionId, out var lease))
         {
@@ -132,13 +132,32 @@ internal sealed class ConsoleSessionCoordinator(IInstanceManager instanceManager
                 new ValidationDaemonError("console.chunk_too_large", "The console input chunk exceeds the session maximum."));
         }
 
+            if (offset != lease.NextInputOffset)
+            {
+                return Result.Err<Unit, DaemonError>(
+                new ValidationDaemonError("console.input.offset.invalid", "The console input offset must be the next expected offset for this session."));
+            }
+
         if (!instanceManager.TryWriteConsole(lease.InstanceId, data))
         {
             return Result.Err<Unit, DaemonError>(
                 new ConflictDaemonError("instance.not_running", "The instance is not running."));
         }
 
+            _leases[sessionId] = lease with { NextInputOffset = checked(offset + data.Length) };
+
         return Result.Ok<Unit, DaemonError>(Unit.Default);
+    }
+
+    public Result<Unit, DaemonError> Write(Guid sessionId, ReadOnlyMemory<byte> data)
+    {
+        if (!_leases.TryGetValue(sessionId, out var lease))
+        {
+            return Result.Err<Unit, DaemonError>(
+                new NotFoundDaemonError("console.session_not_found", "The console session was not found."));
+        }
+
+        return Write(sessionId, lease.NextInputOffset, data);
     }
 
     public Result<Unit, DaemonError> Close(ConsoleSessionReference request)
@@ -170,5 +189,6 @@ internal sealed class ConsoleSessionCoordinator(IInstanceManager instanceManager
         DateTimeOffset ExpiresAt,
         int MaxChunkSize,
         ushort Columns,
-        ushort Rows);
+        ushort Rows,
+        long NextInputOffset = 0);
 }

@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Pty;
@@ -17,7 +16,8 @@ namespace MCServerLauncher.Daemon.Management.Communicate;
 public class InstanceProcess : DisposableObject
 {
     private const int LogSubscriberCapacity = 256;
-    private const int ConsoleSubscriberCapacity = 64;
+    private const int ConsoleSubscriberCapacity = 512;
+    private const int ConsoleHistoryCapacity = 1024 * 1024;
     private readonly ProcessStartInfo _startInfo;
     private readonly IInstanceLifecycleObserver _lifecycleObserver;
     private readonly TimeProvider _timeProvider;
@@ -29,6 +29,9 @@ public class InstanceProcess : DisposableObject
     private readonly object _logSubscriberGate = new();
     private readonly List<LogSubscriber> _logSubscribers = [];
     private readonly ConcurrentDictionary<Guid, ConsoleSubscriber> _consoleSubscribers = new();
+    private readonly object _consoleHistoryGate = new();
+    private readonly Queue<ConsoleOutput> _consoleHistory = [];
+    private int _consoleHistoryBytes;
     private readonly object _lineBufferGate = new();
     private Process? _process;
     private IInstanceConsoleHost? _consoleHost;
@@ -39,13 +42,14 @@ public class InstanceProcess : DisposableObject
     private Task? _processReadyTask;
     private Task _publicationTail = Task.CompletedTask;
     private ITimer? _readyTimeoutTimer;
+    private Task _ptyLogPublicationTail = Task.CompletedTask;
     private int _processStarted;
     private int _readyTimedOut;
     private int _terminalCommitted;
     private int _finalized;
     private int _status = (int)InstanceStatus.Stopped;
     private long _consoleOutputOffset;
-    private string _lineCarry = string.Empty;
+    private PtyLogDecoder? _ptyLogDecoder;
     private Encoding _outputEncoding = Encoding.UTF8;
     private Encoding _inputEncoding = Encoding.UTF8;
 
@@ -154,6 +158,7 @@ public class InstanceProcess : DisposableObject
                 _outputEncoding = _startInfo.StandardOutputEncoding;
             if (_startInfo.StandardInputEncoding is not null)
                 _inputEncoding = _startInfo.StandardInputEncoding;
+            _ptyLogDecoder = new PtyLogDecoder(_outputEncoding);
 
             if (!externalLifecycle)
             {
@@ -378,7 +383,13 @@ public class InstanceProcess : DisposableObject
     {
         ArgumentNullException.ThrowIfNull(handler);
         var id = Guid.CreateVersion7();
-        _consoleSubscribers[id] = new ConsoleSubscriber(id, handler, RemoveConsoleSubscriber);
+        var subscriber = new ConsoleSubscriber(id, handler, RemoveConsoleSubscriber);
+        lock (_consoleHistoryGate)
+        {
+            _consoleSubscribers[id] = subscriber;
+            foreach (var output in _consoleHistory)
+                subscriber.TryEnqueue(output);
+        }
         return id;
     }
 
@@ -457,8 +468,7 @@ public class InstanceProcess : DisposableObject
                 var chunk = buffer.AsMemory(0, read);
                 var offset = Interlocked.Add(ref _consoleOutputOffset, read) - read;
                 FanOutConsoleOutput(chunk, offset);
-                foreach (var line in ExtractCompleteLines(chunk.Span))
-                    await PublishLogLineAsync(line, isStandardError: false).ConfigureAwait(false);
+                QueuePtyLogPublication(ExtractCompleteLines(chunk.Span));
             }
         }
         catch (OperationCanceledException) when (_pumpCancellation.IsCancellationRequested)
@@ -474,43 +484,11 @@ public class InstanceProcess : DisposableObject
 
     private IReadOnlyList<string> ExtractCompleteLines(ReadOnlySpan<byte> chunk)
     {
-        string text;
-        try
-        {
-            text = _outputEncoding.GetString(chunk);
-        }
-        catch
-        {
-            text = Encoding.UTF8.GetString(chunk);
-        }
-
-        text = StripAnsi(text);
-        List<string>? lines = null;
         lock (_lineBufferGate)
         {
-            _lineCarry += text;
-            while (true)
-            {
-                var idx = _lineCarry.IndexOf('\n');
-                if (idx < 0)
-                    break;
-                var line = _lineCarry[..idx].TrimEnd('\r');
-                _lineCarry = _lineCarry[(idx + 1)..];
-                (lines ??= []).Add(line);
-            }
+            return (_ptyLogDecoder ??= new PtyLogDecoder(_outputEncoding)).Append(chunk);
         }
-
-        return lines ?? [];
     }
-
-    private static string StripAnsi(string input)
-    {
-        if (input.IndexOf('\u001b') < 0)
-            return input;
-        return AnsiRegex.Replace(input, string.Empty);
-    }
-
-    private static readonly Regex AnsiRegex = new(@"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", RegexOptions.Compiled);
 
     private async Task PublishLogLineAsync(string message, bool isStandardError)
     {
@@ -536,14 +514,20 @@ public class InstanceProcess : DisposableObject
         if (chunk.Length == 0)
             return;
 
-        // Snapshot subscribers so a failing handler cannot mutate the collection mid-fan-out.
-        var subscribers = _consoleSubscribers.ToArray();
-        if (subscribers.Length == 0)
-            return;
-
         // Copy once: handlers may run concurrently and the pump reuses its read buffer.
         var owned = chunk.ToArray();
         var output = new ConsoleOutput(owned, offset);
+        KeyValuePair<Guid, ConsoleSubscriber>[] subscribers;
+        lock (_consoleHistoryGate)
+        {
+            _consoleHistory.Enqueue(output);
+            _consoleHistoryBytes += output.Buffer.Length;
+            while (_consoleHistoryBytes > ConsoleHistoryCapacity && _consoleHistory.TryDequeue(out var discarded))
+                _consoleHistoryBytes -= discarded.Buffer.Length;
+            // Snapshot under the same lock used by AttachConsoleSubscriber so replay is followed
+            // by every newer frame without an offset gap.
+            subscribers = _consoleSubscribers.ToArray();
+        }
         foreach (var pair in subscribers)
             pair.Value.TryEnqueue(output);
     }
@@ -583,18 +567,14 @@ public class InstanceProcess : DisposableObject
             pumpFailure = exception;
         }
 
-        string? remaining = null;
+        IReadOnlyList<string> remaining;
         lock (_lineBufferGate)
         {
-            if (_lineCarry.Length > 0)
-            {
-                remaining = _lineCarry;
-                _lineCarry = string.Empty;
-            }
+            remaining = _ptyLogDecoder?.Complete() ?? [];
         }
 
-        if (remaining is not null)
-            await PublishLogLineAsync(remaining, isStandardError: false).ConfigureAwait(false);
+        QueuePtyLogPublication(remaining);
+        await _ptyLogPublicationTail.ConfigureAwait(false);
 
         await PublishStoppedAsync().ConfigureAwait(false);
         if (pumpFailure is not null)
@@ -649,6 +629,29 @@ public class InstanceProcess : DisposableObject
         const int maxLogHistory = 500;
         while (_logHistory.Count > maxLogHistory)
             _logHistory.TryDequeue(out _);
+    }
+
+    private void QueuePtyLogPublication(IReadOnlyList<string> lines)
+    {
+        if (lines.Count == 0)
+            return;
+        var previous = _ptyLogPublicationTail;
+        _ptyLogPublicationTail = PublishPtyLogLinesAsync(previous, lines);
+    }
+
+    private async Task PublishPtyLogLinesAsync(Task previous, IReadOnlyList<string> lines)
+    {
+        try
+        {
+            await previous.ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "[InstanceProcess] Earlier PTY log publication failed.");
+        }
+
+        foreach (var line in lines)
+            await PublishLogLineAsync(line, isStandardError: false).ConfigureAwait(false);
     }
 
     private void StartReadyTimeout()
@@ -1051,7 +1054,7 @@ public class InstanceProcess : DisposableObject
                 SingleReader = true,
                 SingleWriter = false,
                 AllowSynchronousContinuations = false,
-                FullMode = BoundedChannelFullMode.DropOldest,
+                FullMode = BoundedChannelFullMode.Wait,
             });
             _ = ConsumeAsync();
         }
@@ -1059,8 +1062,17 @@ public class InstanceProcess : DisposableObject
         internal bool Matches(Func<string, CancellationToken, Task> handler) =>
             _handler == handler;
 
-        internal bool TryEnqueue(string message) =>
-            Volatile.Read(ref _disposed) == 0 && _queue.Writer.TryWrite(message);
+        internal bool TryEnqueue(string message)
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+                return false;
+
+            if (_queue.Writer.TryWrite(message))
+                return true;
+
+            Dispose();
+            return false;
+        }
 
         public void Dispose()
         {
@@ -1137,13 +1149,22 @@ public class InstanceProcess : DisposableObject
                 SingleReader = true,
                 SingleWriter = false,
                 AllowSynchronousContinuations = false,
-                FullMode = BoundedChannelFullMode.DropOldest,
+                FullMode = BoundedChannelFullMode.Wait,
             });
             _ = ConsumeAsync();
         }
 
-        internal bool TryEnqueue(ConsoleOutput output) =>
-            Volatile.Read(ref _disposed) == 0 && _queue.Writer.TryWrite(output);
+        internal bool TryEnqueue(ConsoleOutput output)
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+                return false;
+
+            if (_queue.Writer.TryWrite(output))
+                return true;
+
+            Dispose();
+            return false;
+        }
 
         public void Dispose()
         {

@@ -40,7 +40,7 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
         _owner = owner ?? throw new ArgumentNullException(nameof(owner));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _invoker = new V2RemoteApplicationInvoker(owner);
-        Instances = new RemoteInstanceApplication(_invoker);
+        Instances = new RemoteInstanceApplication(_invoker, owner);
         Files = new RemoteFileApplication(_invoker, owner);
         System = new RemoteSystemApplication(_invoker);
         EventRules = new RemoteEventRuleApplication(_invoker);
@@ -82,6 +82,43 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
     public Task<Result<OpenRpcDocument, DaemonError>> DiscoverAsync(
         CancellationToken cancellationToken = default) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.DiscoverRpc, new EmptyRequest(), cancellationToken);
+
+    public async Task<Result<DaemonConsoleSession, DaemonError>> OpenConsoleAsync(
+        ConsoleOpenRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!_owner.TryGetReadyCore(out var core))
+        {
+            return Result.Err<DaemonConsoleSession, DaemonError>(new TransportDaemonError(
+                "client.not_ready",
+                "The daemon client is not connected and ready."));
+        }
+
+        var opened = await core.InvokeAsync(
+            BuiltInProtocolDefinitions.OpenConsole,
+            request,
+            cancellationToken).ConfigureAwait(false);
+        if (opened.IsErr(out var openError))
+            return Result.Err<DaemonConsoleSession, DaemonError>(openError!);
+
+        var session = opened.Unwrap();
+        var registered = core.RegisterConsoleSession(session.SessionId, session.MaxChunkSize);
+        if (registered.IsErr(out var registrationError))
+        {
+            await core.InvokeUnitAsync(
+                BuiltInProtocolDefinitions.CloseConsole,
+                new ConsoleSessionReference(session.SessionId),
+                CancellationToken.None).ConfigureAwait(false);
+            return Result.Err<DaemonConsoleSession, DaemonError>(registrationError!);
+        }
+
+        return Result.Ok<DaemonConsoleSession, DaemonError>(new DaemonConsoleSession(
+            session,
+            registered.Unwrap(),
+            core));
+    }
 
     public Task<Result<TResult, DaemonError>> InvokeAsync<TRequest, TResult>(
         RpcDescriptor<TRequest, TResult> descriptor,

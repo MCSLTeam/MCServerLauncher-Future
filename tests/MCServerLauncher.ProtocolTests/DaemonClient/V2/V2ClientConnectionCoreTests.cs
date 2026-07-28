@@ -5,6 +5,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient.Connection.V2;
+using MCServerLauncher.DaemonClient.Application;
 using RustyOptions;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
@@ -315,6 +316,60 @@ public sealed class V2ClientConnectionCoreTests
         Assert.True(chunk.IsFinal);
         Assert.Equal(0, core.PendingCount);
         Assert.Equal(0, core.DownloadPendingCount);
+    }
+
+    [Fact]
+    public async Task ConsoleOutputRoutesToRegisteredSessionAndInputUsesConsoleBinaryFrame()
+    {
+        var transport = new RecordingTransport();
+        var core = Core(transport, JsonRpcRequestId.FromString("console"));
+        var sessionId = Guid.NewGuid();
+        var output = core.RegisterConsoleSession(sessionId, maximumChunkSize: 1024).Unwrap();
+
+        core.RouteBinary(ConsoleFrame(BinaryFrameKind.ConsoleOutput, sessionId, 0, "ready> "u8.ToArray()));
+        var chunk = await output.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(0, chunk.Offset);
+        Assert.Equal("ready> ", Encoding.UTF8.GetString(chunk.Data.Span));
+
+        var result = await core.SendConsoleInputAsync(sessionId, "help\r"u8.ToArray(), CancellationToken.None);
+        Assert.True(result.IsOk(out _));
+        Assert.True(BinaryFrameCodec.TryRead(transport.Binary.AsSpan(), out var header, out var error));
+        Assert.Equal(BinaryFrameReadError.None, error);
+        Assert.Equal(BinaryFrameKind.ConsoleInput, header!.Kind);
+        Assert.Equal(sessionId, header.SessionId);
+        Assert.Equal("help\r", Encoding.UTF8.GetString(transport.Binary.AsSpan()[BinaryFrameCodec.HeaderSize..]));
+    }
+
+    [Fact]
+    public async Task ConsoleOutputArrivingBeforeRegistrationIsReplayedAndCoreCloseCompletesSession()
+    {
+        var core = Core(new RecordingTransport(), JsonRpcRequestId.FromString("console-early"));
+        var sessionId = Guid.NewGuid();
+        core.RouteBinary(ConsoleFrame(BinaryFrameKind.ConsoleOutput, sessionId, 0, "early"u8.ToArray()));
+
+        var output = core.RegisterConsoleSession(sessionId, maximumChunkSize: 1024).Unwrap();
+        var chunk = await output.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1));
+        Assert.Equal("early", Encoding.UTF8.GetString(chunk.Data.Span));
+
+        core.Close();
+        var closed = await Assert.ThrowsAsync<ConsoleSessionClosedException>(
+            () => output.WaitToReadAsync().AsTask());
+        Assert.Equal("connection.closed", closed.Error.Code);
+    }
+
+    [Fact]
+    public async Task ConsoleInputRequiresRegisteredSession()
+    {
+        var core = Core(new RecordingTransport(), JsonRpcRequestId.FromString("console-unregistered"));
+
+        var result = await core.SendConsoleInputAsync(
+            Guid.NewGuid(),
+            "x"u8.ToArray(),
+            CancellationToken.None);
+
+        Assert.True(result.IsErr(out var error));
+        Assert.Equal("console.session_not_found", error!.Code);
     }
 
     [Fact]
@@ -1075,9 +1130,22 @@ public sealed class V2ClientConnectionCoreTests
         return frame;
     }
 
+    private static byte[] ConsoleFrame(BinaryFrameKind kind, Guid sessionId, long offset, byte[] payload)
+    {
+        var frame = new byte[BinaryFrameCodec.HeaderSize + payload.Length];
+        Assert.True(BinaryFrameCodec.TryWrite(
+            frame,
+            new BinaryFrameHeader(kind, sessionId, offset, checked((uint)payload.Length)),
+            payload,
+            out var error));
+        Assert.Equal(BinaryFrameWriteError.None, error);
+        return frame;
+    }
+
     private sealed class RecordingTransport(bool fail = false) : IV2ClientWireTransport
     {
         private ImmutableArray<byte> _bytes;
+        internal ImmutableArray<byte> Binary { get; private set; }
         public string Text => Encoding.UTF8.GetString(_bytes.AsSpan());
 
         public ValueTask SendTextAsync(ImmutableArray<byte> utf8Json, CancellationToken cancellationToken)
@@ -1087,8 +1155,11 @@ public sealed class V2ClientConnectionCoreTests
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken) =>
-            ValueTask.CompletedTask;
+        public ValueTask SendBinaryAsync(ImmutableArray<byte> frame, CancellationToken cancellationToken)
+        {
+            Binary = frame;
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed class AsynchronousTextFailureTransport : IV2ClientWireTransport

@@ -133,6 +133,7 @@ internal sealed class V2InboundMessagePipeline
                     _context.ConnectionCancellationToken);
                 var consoleResult = await _consoles.ReceiveConsoleInputAsync(
                     header.SessionId,
+                    header.Offset,
                     frame[BinaryFrameCodec.HeaderSize..],
                     linkedCancellation.Token).ConfigureAwait(false);
                 return new(

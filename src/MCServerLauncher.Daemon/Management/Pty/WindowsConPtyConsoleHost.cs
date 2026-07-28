@@ -170,8 +170,11 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
             pseudoConsoleOutputWrite: pseudoConsoleOutputWrite);
     }
 
-    public Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
-        => _input.WriteAsync(data, cancellationToken).AsTask();
+    public async Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+    {
+        await _input.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+        await _input.FlushAsync(cancellationToken).ConfigureAwait(false);
+    }
 
     public void Write(ReadOnlyMemory<byte> data)
     {

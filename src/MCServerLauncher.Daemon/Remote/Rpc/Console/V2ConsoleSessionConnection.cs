@@ -96,6 +96,7 @@ internal sealed class V2ConsoleSessionConnection : IProtocolConsoleSessionOperat
 
     public Task<Result<Unit, DaemonError>> ReceiveConsoleInputAsync(
         Guid sessionId,
+        long offset,
         ReadOnlyMemory<byte> data,
         CancellationToken cancellationToken)
     {
@@ -106,7 +107,7 @@ internal sealed class V2ConsoleSessionConnection : IProtocolConsoleSessionOperat
                 new NotFoundDaemonError("console.session_not_found", "The console session was not found.")));
         }
 
-        return Task.FromResult(_coordinator.Write(sessionId, data));
+        return Task.FromResult(_coordinator.Write(sessionId, offset, data));
     }
 
     public ValueTask CleanupAsync(CancellationToken cancellationToken)

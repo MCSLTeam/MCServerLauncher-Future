@@ -159,7 +159,7 @@ internal interface IProtocolConsoleSessionOperations
     Task<Result<ConsoleSession, DaemonError>> OpenConsoleAsync(ConsoleOpenRequest request, CancellationToken cancellationToken);
     Task<Result<Unit, DaemonError>> ResizeConsoleAsync(ConsoleResizeRequest request, CancellationToken cancellationToken);
     Task<Result<Unit, DaemonError>> CloseConsoleAsync(ConsoleSessionReference request, CancellationToken cancellationToken);
-    Task<Result<Unit, DaemonError>> ReceiveConsoleInputAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken);
+    Task<Result<Unit, DaemonError>> ReceiveConsoleInputAsync(Guid sessionId, long offset, ReadOnlyMemory<byte> data, CancellationToken cancellationToken);
 }
 
 internal sealed class ProtocolInvocationContext(

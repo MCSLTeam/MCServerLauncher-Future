@@ -6,13 +6,17 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.DaemonClient.Connection.V2;
 using RustyOptions;
 
 namespace MCServerLauncher.DaemonClient.Application;
 
-internal sealed class RemoteInstanceApplication(IRemoteApplicationInvoker invoker) : IInstanceApplication
+internal sealed class RemoteInstanceApplication(
+    IRemoteApplicationInvoker invoker,
+    V2ClientConnectionOwner? owner = null) : IInstanceApplication
 {
     private readonly IRemoteApplicationInvoker _invoker = invoker ?? throw new ArgumentNullException(nameof(invoker));
+    private readonly V2ClientConnectionOwner? _owner = owner;
 
     public Task<Result<CreateInstanceResult, DaemonError>> CreateInstanceAsync(CreateInstanceRequest request, CancellationToken cancellationToken) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.CreateInstance, request, cancellationToken);
@@ -42,7 +46,11 @@ internal sealed class RemoteInstanceApplication(IRemoteApplicationInvoker invoke
         _invoker.InvokeUnitAsync(BuiltInProtocolDefinitions.CloseConsole, request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> WriteConsoleAsync(Guid sessionId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Console binary input must be sent through the V2 client binary frame path.");
+        _owner is not null && _owner.TryGetReadyCore(out var core)
+            ? core.SendConsoleInputAsync(sessionId, data, cancellationToken)
+            : Task.FromResult(Result.Err<Unit, DaemonError>(new TransportDaemonError(
+                "client.not_ready",
+                "The daemon client is not connected and ready.")));
 
     public Task<Result<InstanceReport, DaemonError>> GetInstanceReportAsync(InstanceReference request, CancellationToken cancellationToken) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.GetInstanceReport, request, cancellationToken);

@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
@@ -91,7 +92,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DiscoverAsync", "DisposeAsync", "InvokeAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DiscoverAsync", "DisposeAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
@@ -102,6 +103,13 @@ public sealed class DaemonClientFacadeTests
         var pingCancellation = Assert.Single(ping.GetParameters());
         Assert.Equal(typeof(CancellationToken), pingCancellation.ParameterType);
         Assert.True(pingCancellation.IsOptional);
+        var openConsole = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.OpenConsoleAsync));
+        Assert.NotNull(openConsole);
+        Assert.Equal(typeof(Task<Result<DaemonConsoleSession, DaemonError>>), openConsole.ReturnType);
+        Assert.Equal(
+            [typeof(ConsoleOpenRequest), typeof(CancellationToken)],
+            openConsole.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(openConsole.GetParameters()[1].IsOptional);
         var restart = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.RestartInstanceAsync));
         Assert.NotNull(restart);
         Assert.Equal(typeof(Task<Result<Unit, DaemonError>>), restart.ReturnType);

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
@@ -31,6 +32,7 @@ internal sealed class V2ClientConnectionCore
     private readonly Func<JsonRpcRequestId, IV2ClientPendingRequest, bool> _removePendingCallback;
     private readonly V2ClientUploadCoordinator _uploadCoordinator;
     private readonly V2ClientDownloadCoordinator _downloadCoordinator;
+    private readonly V2ClientConsoleCoordinator _consoleCoordinator;
     private readonly ConcurrentDictionary<JsonRpcRequestId, IV2ClientPendingRequest> _pending = new();
     private readonly CancellationTokenSource _connectionCancellation = new();
     private readonly TaskCompletionSource _closed =
@@ -112,6 +114,7 @@ internal sealed class V2ClientConnectionCore
             _sendLifetimeDisposedCallback,
             uploadAdmissionTestGate);
         _downloadCoordinator = new(timeProvider, requestTimeout, ProtocolFault);
+        _consoleCoordinator = new(ProtocolFault);
     }
 
     internal int PendingCount => _pending.Count;
@@ -345,6 +348,75 @@ internal sealed class V2ClientConnectionCore
     internal bool TryRemoveDownloadSession(Guid sessionId, out DaemonError? error) =>
         _downloadCoordinator.TryRemoveSession(sessionId, out error);
 
+    internal Result<ChannelReader<DaemonConsoleOutput>, DaemonError> RegisterConsoleSession(
+        Guid sessionId,
+        int maximumChunkSize) =>
+        _consoleCoordinator.Register(sessionId, maximumChunkSize);
+
+    internal void UnregisterConsoleSession(Guid sessionId) =>
+        _consoleCoordinator.Unregister(sessionId);
+
+    internal async Task<Result<Unit, DaemonError>> SendConsoleInputAsync(
+        Guid sessionId,
+        ReadOnlyMemory<byte> data,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var reservation = _consoleCoordinator.ReserveInput(sessionId, data.Length);
+        if (reservation.IsErr(out var reservationError))
+            return Result.Err<Unit, DaemonError>(reservationError!);
+
+        var bytes = new byte[checked(BinaryFrameCodec.HeaderSize + data.Length)];
+        var header = new BinaryFrameHeader(
+            BinaryFrameKind.ConsoleInput,
+            sessionId,
+            reservation.Unwrap(),
+            checked((uint)data.Length));
+        if (!BinaryFrameCodec.TryWrite(bytes, header, data.Span, out var writeError))
+        {
+            return Result.Err<Unit, DaemonError>(new InternalDaemonError(
+                "console.frame_encode_failed",
+                $"The console input frame could not be encoded: {writeError}."));
+        }
+
+        var frame = ImmutableCollectionsMarshal.AsImmutableArray(bytes);
+        lock (_admissionLock)
+        {
+            if (_closing)
+                return Result.Err<Unit, DaemonError>(ClosedError());
+            RegisterSendObserver();
+        }
+
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _connectionCancellation.Token);
+        try
+        {
+            await _transport.SendBinaryAsync(frame, linked.Token).ConfigureAwait(false);
+            return Result.Ok<Unit, DaemonError>(Unit.Default);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw;
+        }
+        catch (OperationCanceledException) when (_connectionCancellation.IsCancellationRequested)
+        {
+            return Result.Err<Unit, DaemonError>(ClosedError());
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            ProtocolFault("The V2 console input binary send failed.");
+            return Result.Err<Unit, DaemonError>(new TransportDaemonError(
+                "transport.send_failed",
+                "The console input could not be sent."));
+        }
+        finally
+        {
+            CompleteSendObserver();
+        }
+    }
+
     internal Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
         DownloadChunkRequest request,
         CancellationToken cancellationToken)
@@ -466,7 +538,20 @@ internal sealed class V2ClientConnectionCore
             return;
         }
 
-        _downloadCoordinator.RouteBinary(result.Header!, frame[BinaryFrameCodec.HeaderSize..]);
+        var header = result.Header!;
+        var payload = frame[BinaryFrameCodec.HeaderSize..];
+        switch (header.Kind)
+        {
+            case BinaryFrameKind.DownloadChunk:
+                _downloadCoordinator.RouteBinary(header, payload);
+                break;
+            case BinaryFrameKind.ConsoleOutput:
+                _consoleCoordinator.Route(header, payload);
+                break;
+            default:
+                ProtocolFault($"The daemon sent an invalid inbound binary frame kind: {header.Kind}.");
+                break;
+        }
     }
 
     public void Close()
@@ -505,6 +590,14 @@ internal sealed class V2ClientConnectionCore
             try
             {
                 _downloadCoordinator.Close(ClosedError());
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
+
+            try
+            {
+                _consoleCoordinator.Close(ClosedError());
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
