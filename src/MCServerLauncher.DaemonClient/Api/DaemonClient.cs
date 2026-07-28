@@ -46,6 +46,10 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
         EventRules = new RemoteEventRuleApplication(_invoker);
         Operations = new RemoteOperationApplication(_invoker);
         Provisioning = new RemoteProvisioningApplication(_invoker);
+        Backups = new RemoteBackupApplication(_invoker);
+        Monitoring = new RemoteMonitoringApplication(_invoker);
+        Automation = new RemoteAutomationApplication(_invoker);
+        Audit = new RemoteAuditApplication(_invoker);
         InstanceCatalog = owner.Mirror;
     }
 
@@ -60,6 +64,14 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
     public IOperationApplication Operations { get; }
 
     public IProvisioningApplication Provisioning { get; }
+
+    public IBackupApplication Backups { get; }
+
+    public IMonitoringApplication Monitoring { get; }
+
+    public IAutomationApplication Automation { get; }
+
+    public IAuditApplication Audit { get; }
 
     public IInstanceSnapshotSource InstanceCatalog { get; }
 

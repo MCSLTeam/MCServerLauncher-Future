@@ -602,6 +602,10 @@ public sealed class DomainEventPortAndTriggerTests
 
         public IOperationApplication Operations { get; } = null!;
         public IProvisioningApplication Provisioning { get; } = null!;
+        public IBackupApplication Backups { get; } = null!;
+        public IMonitoringApplication Monitoring { get; } = null!;
+        public IAutomationApplication Automation { get; } = null!;
+        public IAuditApplication Audit { get; } = null!;
     }
 
     private class InterfaceDispatchProxy : DispatchProxy

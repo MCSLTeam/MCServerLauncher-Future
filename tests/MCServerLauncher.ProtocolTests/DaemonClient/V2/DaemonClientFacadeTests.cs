@@ -86,8 +86,14 @@ public sealed class DaemonClientFacadeTests
             [typeof(DaemonClientOptions)],
             type.GetConstructors().Single().GetParameters().Select(static parameter => parameter.ParameterType));
 
+        // SDK-4b: the client exposes the Preview-2 domains too, so remote callers reach the same
+        // application surface a local caller does.
         Assert.Equal(
-            ["ConnectionState", "EventRules", "Files", "InstanceCatalog", "Instances", "LastFailure", "Operations", "Provisioning", "System"],
+            [
+                "Audit", "Automation", "Backups", "ConnectionState", "EventRules", "Files",
+                "InstanceCatalog", "Instances", "LastFailure", "Monitoring", "Operations",
+                "Provisioning", "System"
+            ],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Select(static property => property.Name)
                 .Order());

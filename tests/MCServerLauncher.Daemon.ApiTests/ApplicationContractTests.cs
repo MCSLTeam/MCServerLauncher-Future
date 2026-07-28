@@ -10,15 +10,21 @@ namespace MCServerLauncher.Daemon.ApiTests;
 public sealed class ApplicationContractTests
 {
     [Fact]
-    public void DaemonApplicationComposesTheSixDomainServices()
+    public void DaemonApplicationComposesEveryDomainService()
     {
+        // SDK-4b: the aggregate root carries the Preview-2 domains too, so a remote client reaches
+        // the same surface a local caller does.
         var properties = typeof(IDaemonApplication).GetProperties();
 
         Assert.Collection(
-            properties.OrderBy(property => property.Name),
+            properties.OrderBy(property => property.Name, StringComparer.Ordinal),
+            property => Assert.Equal(typeof(IAuditApplication), property.PropertyType),
+            property => Assert.Equal(typeof(IAutomationApplication), property.PropertyType),
+            property => Assert.Equal(typeof(IBackupApplication), property.PropertyType),
             property => Assert.Equal(typeof(IEventRuleApplication), property.PropertyType),
             property => Assert.Equal(typeof(IFileApplication), property.PropertyType),
             property => Assert.Equal(typeof(IInstanceApplication), property.PropertyType),
+            property => Assert.Equal(typeof(IMonitoringApplication), property.PropertyType),
             property => Assert.Equal(typeof(IOperationApplication), property.PropertyType),
             property => Assert.Equal(typeof(IProvisioningApplication), property.PropertyType),
             property => Assert.Equal(typeof(ISystemApplication), property.PropertyType));
