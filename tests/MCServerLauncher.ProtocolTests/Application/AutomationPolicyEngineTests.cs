@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType.Instance;
@@ -130,6 +131,211 @@ public sealed class AutomationPolicyEngineTests
     }
 
     [Fact]
+    public async Task Evaluator_WildcardCrashTriggerRepairsEveryInstanceThatCrashedInTheSameTick()
+    {
+        using var harness = new Harness();
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "fleet-guard",
+            Trigger = new UnexpectedExitTrigger(),
+            Actions = [new RestartInstanceAction { BackoffBaseSeconds = 30, BackoffMaxSeconds = 1800 }],
+            CooldownSeconds = 3600
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        var second = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var third = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var a = harness.AddInstance(InstanceId, InstanceStatus.Running);
+        var b = harness.AddInstance(second, InstanceStatus.Running);
+        var c = harness.AddInstance(third, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // One correlated failure, one firing: the cooldown must not strand the other instances.
+        a.Status = InstanceStatus.Crashed;
+        b.Status = InstanceStatus.Crashed;
+        c.Status = InstanceStatus.Crashed;
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        Assert.Equal([InstanceId, second, third], harness.Instances.Started.Order());
+    }
+
+    [Fact]
+    public async Task Evaluator_CrashLoopEvidenceIsConsumedSoARecoveredInstanceIsNotRestartedAgain()
+    {
+        using var harness = new Harness();
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "loop-guard",
+            Trigger = new CrashLoopTrigger { InstanceId = InstanceId, MaxCrashes = 2, WindowSeconds = 600 },
+            Actions = [new RestartInstanceAction { BackoffBaseSeconds = 1, BackoffMaxSeconds = 2 }],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        for (var index = 0; index < 2; index++)
+        {
+            instance.Status = InstanceStatus.Crashed;
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+            await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+            instance.Status = InstanceStatus.Running;
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+            await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        }
+
+        var afterLoop = harness.Instances.Started.Count;
+        Assert.True(afterLoop >= 1, "the crash loop should have been repaired at least once");
+
+        // The instance is healthy now. Stale crash timestamps inside the window must not keep
+        // re-firing the trigger and restarting a server that already recovered.
+        for (var index = 0; index < 5; index++)
+        {
+            harness.Time.Advance(TimeSpan.FromSeconds(60));
+            await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        }
+
+        Assert.Equal(afterLoop, harness.Instances.Started.Count);
+    }
+
+    [Fact]
+    public async Task Evaluator_DeferredRestartAuditsBothHalves()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:10:00+00:00"));
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "window-restart",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 60 },
+            Actions = [new RestartInstanceAction { InstanceId = InstanceId, BackoffBaseSeconds = 1, BackoffMaxSeconds = 2 }],
+            CooldownSeconds = 3600
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        // A running instance is stopped first; only that half has happened, so only that half is
+        // claimed in the audit history.
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([InstanceId], harness.Instances.Stopped);
+        Assert.Empty(harness.Instances.Started);
+        Assert.Contains(harness.Audit.Events, entry => entry.Permission == "instance.restart.stop" && entry.Succeeded);
+        Assert.DoesNotContain(harness.Audit.Events, entry => entry.Permission == "instance.restart");
+
+        // The second half runs on a later tick and carries its own record.
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([InstanceId], harness.Instances.Started);
+        Assert.Contains(harness.Audit.Events, entry =>
+            entry.Permission == "instance.restart.start" &&
+            entry.Succeeded &&
+            entry.Target == InstanceId.ToString("D"));
+    }
+
+    [Fact]
+    public async Task Evaluator_SustainedMetricRefusesToFireAcrossAnUnobservedHole()
+    {
+        using var harness = new Harness();
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 600
+        };
+        harness.SystemCpu = 95;
+        for (var index = 0; index < 4; index++)
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        // The daemon was down for five minutes; restarting writes the gap marker.
+        harness.Time.Advance(TimeSpan.FromMinutes(5));
+        using var afterRestart = harness.CreateSamplerOnSameHistory();
+        for (var index = 0; index < 4; index++)
+        {
+            await afterRestart.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        // Above threshold on both sides of the hole, but nobody observed the middle.
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
+        Assert.False(evaluation.Fires);
+        Assert.Contains("gap", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Test_RunsConcurrentlyWithTicksWithoutCorruptingSharedState()
+    {
+        using var harness = new Harness();
+        harness.Store.Apply(Document(CrashGuardPolicy(cooldownSeconds: 0), version: 0)).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        // mcsl.automation.test reaches Test() on RPC threads while the tick loop mutates the same
+        // fact and guard state.
+        var stop = false;
+        var dryRuns = Task.Run(() =>
+        {
+            while (!Volatile.Read(ref stop))
+                harness.Evaluator.Test();
+        });
+
+        for (var index = 0; index < 200; index++)
+        {
+            instance.Status = index % 2 == 0 ? InstanceStatus.Crashed : InstanceStatus.Running;
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+            await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        }
+
+        Volatile.Write(ref stop, true);
+        await dryRuns;
+    }
+
+    [Fact]
+    public async Task Provisioning_RefusesToExecuteAnAutomationIntentPlan()
+    {
+        using var harness = new Harness();
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "guarded-stop",
+            Trigger = new UnexpectedExitTrigger { InstanceId = InstanceId },
+            Actions =
+            [
+                new ConfirmationPlanAction
+                {
+                    Summary = "approve the stop",
+                    Deferred = new StopInstanceAction { InstanceId = InstanceId }
+                }
+            ],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        instance.Status = InstanceStatus.Crashed;
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        var plan = Assert.Single(harness.PlanKernel.ListActive(AutomationIntents.PlanKind));
+        harness.PlanKernel.Confirm(plan.PlanId, plan.PlanHash, "user-a").Unwrap();
+
+        // Plan kinds are not interchangeable: a confirmed automation intent must not be consumable
+        // through the provisioning executor, which would read its payload as a factory config.
+        var provisioning = new LocalProvisioningApplication(
+            harness.PlanKernel,
+            harness.Instances,
+            new ThrowingOperationApplication());
+        var executed = await provisioning.ExecuteAsync(
+            new ProvisioningExecuteRequest(plan.PlanId, "user-a"),
+            CancellationToken.None);
+
+        Assert.True(executed.IsErr(out var error));
+        Assert.Equal("plan.kind_mismatch", error!.Code);
+        // The rejected admission re-opens the plan instead of consuming it.
+        Assert.Equal(PlanStatus.Ready, harness.PlanKernel.Get(plan.PlanId).Unwrap().Status);
+    }
+
+    [Fact]
     public async Task Evaluator_DailyCapStopsExecutionsUntilTheNextUtcDay()
     {
         using var harness = new Harness();
@@ -238,6 +444,12 @@ public sealed class AutomationPolicyEngineTests
         await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
         Assert.Single(harness.PlanKernel.ListActive(AutomationIntents.PlanKind));
 
+        // The filing service can never close the confirmation gate it opened.
+        Assert.True(harness.PlanKernel
+            .Confirm(plan.PlanId, plan.PlanHash, AutomationEvaluator.ServicePrincipalSubject)
+            .IsErr(out var selfConfirm));
+        Assert.Equal("plan.forbidden", selfConfirm!.Code);
+
         // Service-filed plans bind to the first human confirmer, and execution requires that human.
         var confirmed = harness.PlanKernel.Confirm(plan.PlanId, plan.PlanHash, "user-a");
         Assert.Equal("user-a", confirmed.Unwrap().ConfirmedBy);
@@ -318,22 +530,11 @@ public sealed class AutomationPolicyEngineTests
         internal Harness(DateTimeOffset? start = null)
         {
             Time = new ManualTimeProvider(start ?? DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
-            var monitoringRoot = Directory.CreateTempSubdirectory("mcsl-automation-metrics-").FullName;
+            MonitoringRoot = Directory.CreateTempSubdirectory("mcsl-automation-metrics-").FullName;
             var storeRoot = Directory.CreateTempSubdirectory("mcsl-automation-policies-").FullName;
             var planRoot = Directory.CreateTempSubdirectory("mcsl-automation-plans-").FullName;
             Manager = new FakeInstanceManager();
-            Metrics = new MonitoringSampler(
-                new DaemonMonitoringConfig(),
-                Manager,
-                new DelegateSystemInfoCell(() => new SystemInfo(
-                    new OperatingSystemInfo("Windows", "x64"),
-                    new ProcessorInfo("vendor", "cpu", 16, SystemCpu, 8, 16),
-                    new MemoryInfo(32768, 16384),
-                    new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\"),
-                    [new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\")],
-                    "2.0.0")),
-                Time,
-                monitoringRoot);
+            Metrics = CreateSamplerOnSameHistory();
             Store = new AutomationPolicyStore(storeRoot);
             PlanKernel = new PlanKernel(Time, planRoot);
             Instances = new RecordingInstanceApplication(Manager);
@@ -352,6 +553,7 @@ public sealed class AutomationPolicyEngineTests
 
         internal ManualTimeProvider Time { get; }
         internal FakeInstanceManager Manager { get; }
+        internal string MonitoringRoot { get; }
         internal MonitoringSampler Metrics { get; }
         internal AutomationPolicyStore Store { get; }
         internal PlanKernel PlanKernel { get; }
@@ -368,11 +570,36 @@ public sealed class AutomationPolicyEngineTests
             return instance;
         }
 
+        /// <summary>
+        /// A second sampler over the same retained history, which is how a daemon restart appears
+        /// to the metrics log: it writes the gap marker for the time nobody observed.
+        /// </summary>
+        internal MonitoringSampler CreateSamplerOnSameHistory() =>
+            new(
+                new DaemonMonitoringConfig(),
+                Manager,
+                new DelegateSystemInfoCell(() => new SystemInfo(
+                    new OperatingSystemInfo("Windows", "x64"),
+                    new ProcessorInfo("vendor", "cpu", 16, SystemCpu, 8, 16),
+                    new MemoryInfo(32768, 16384),
+                    new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\"),
+                    [new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\")],
+                    "2.0.0")),
+                Time,
+                MonitoringRoot);
+
         public void Dispose()
         {
             Evaluator.Dispose();
             Metrics.Dispose();
         }
+    }
+
+    private sealed class ThrowingOperationApplication : IOperationApplication
+    {
+        public Task<Result<OperationListResult, DaemonError>> ListOperationsAsync(OperationListQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationSnapshot, DaemonError>> GetOperationAsync(OperationReference request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<OperationCancelResult, DaemonError>> CancelOperationAsync(OperationCancelRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class RecordingAuditSink : IAuditSink

@@ -82,18 +82,23 @@ internal sealed class BoundedJsonlLog<T>
                     _currentSegmentBytes = 0;
                 }
 
-                using (var stream = new FileStream(
-                    SegmentPath(_currentSegment),
-                    FileMode.Append,
-                    FileAccess.Write,
-                    FileShare.Read))
+                var path = SegmentPath(_currentSegment);
+                try
                 {
+                    using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
                     stream.Write(line);
                     stream.WriteByte((byte)'\n');
                 }
+                catch
+                {
+                    // A write that fails partway leaves an unterminated line. The next append would
+                    // otherwise land on the same physical line and silently destroy that later,
+                    // acknowledged record, so roll the segment back to the last complete one.
+                    TruncateToLocked(path, _currentSegmentBytes);
+                    throw;
+                }
 
                 _currentSegmentBytes += line.Length + 1;
-                EnforceRetentionLocked();
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -102,6 +107,42 @@ internal sealed class BoundedJsonlLog<T>
             _logger.LogWarning(
                 exception,
                 "[BoundedJsonlLog] Dropped a '{Prefix}' history record after a write failure.",
+                _prefix);
+            return;
+        }
+
+        // Retention runs after the record is durably written and outside the drop accounting: a
+        // retention failure loses no record, so counting it as a dropped record would report a
+        // hole in a history that has none.
+        try
+        {
+            lock (_gate)
+            {
+                EnforceRetentionLocked();
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(
+                exception,
+                "[BoundedJsonlLog] Failed to enforce '{Prefix}' history retention.",
+                _prefix);
+        }
+    }
+
+    private void TruncateToLocked(string path, long length)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None);
+            if (stream.Length > length)
+                stream.SetLength(length);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(
+                exception,
+                "[BoundedJsonlLog] Failed to roll back a torn '{Prefix}' append.",
                 _prefix);
         }
     }
@@ -118,27 +159,27 @@ internal sealed class BoundedJsonlLog<T>
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumRecords, 1);
         var results = new List<T>(Math.Min(maximumRecords, 256));
-        lock (_gate)
+        // Segments are append-only, so reading them outside the gate is safe and keeps a long
+        // query from stalling every mutation waiting to append.
+        var segments = SnapshotSegments();
+        for (var index = segments.Count - 1; index >= 0 && results.Count < maximumRecords; index--)
         {
-            for (var segment = _currentSegment; segment >= 0 && results.Count < maximumRecords; segment--)
-            {
-                var path = SegmentPath(segment);
-                if (!File.Exists(path))
-                    continue;
+            var path = SegmentPath(segments[index]);
+            if (!File.Exists(path))
+                continue;
 
-                var records = ReadSegment(path);
-                for (var index = records.Count - 1; index >= 0 && results.Count < maximumRecords; index--)
-                {
-                    var record = records[index];
-                    var at = _timestamp(record);
-                    if (notBefore is { } floor && at < floor)
-                        continue;
-                    if (notAfter is { } ceiling && at > ceiling)
-                        continue;
-                    if (filter is not null && !filter(record))
-                        continue;
-                    results.Add(record);
-                }
+            var records = ReadSegment(path);
+            for (var position = records.Count - 1; position >= 0 && results.Count < maximumRecords; position--)
+            {
+                var record = records[position];
+                var at = _timestamp(record);
+                if (notBefore is { } floor && at < floor)
+                    continue;
+                if (notAfter is { } ceiling && at > ceiling)
+                    continue;
+                if (filter is not null && !filter(record))
+                    continue;
+                results.Add(record);
             }
         }
 
@@ -146,7 +187,9 @@ internal sealed class BoundedJsonlLog<T>
     }
 
     /// <summary>
-    /// Oldest-first read across the window, capped. Monitoring range queries use this shape.
+    /// Oldest-first read across the window, capped. When the window holds more than the cap the
+    /// OLDEST records are dropped, so a truncated range still ends at the newest data the caller
+    /// asked for instead of stopping short of it.
     /// </summary>
     internal IReadOnlyList<T> ReadRange(
         DateTimeOffset notBefore,
@@ -154,28 +197,37 @@ internal sealed class BoundedJsonlLog<T>
         int maximumRecords)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumRecords, 1);
-        var results = new List<T>();
-        lock (_gate)
+        var window = new Queue<T>();
+        var segments = SnapshotSegments();
+        foreach (var segment in segments)
         {
-            for (var segment = 0; segment <= _currentSegment && results.Count < maximumRecords; segment++)
-            {
-                var path = SegmentPath(segment);
-                if (!File.Exists(path))
-                    continue;
+            var path = SegmentPath(segment);
+            if (!File.Exists(path))
+                continue;
 
-                foreach (var record in ReadSegment(path))
-                {
-                    var at = _timestamp(record);
-                    if (at < notBefore || at > notAfter)
-                        continue;
-                    results.Add(record);
-                    if (results.Count >= maximumRecords)
-                        break;
-                }
+            foreach (var record in ReadSegment(path))
+            {
+                var at = _timestamp(record);
+                if (at < notBefore || at > notAfter)
+                    continue;
+                window.Enqueue(record);
+                if (window.Count > maximumRecords)
+                    window.Dequeue();
             }
         }
 
-        return results;
+        return [.. window];
+    }
+
+    private List<int> SnapshotSegments()
+    {
+        lock (_gate)
+        {
+            var segments = ListSegments();
+            if (!segments.Contains(_currentSegment))
+                segments.Add(_currentSegment);
+            return segments;
+        }
     }
 
     private void Load()
@@ -193,9 +245,21 @@ internal sealed class BoundedJsonlLog<T>
         var tailPath = SegmentPath(_currentSegment);
         var recovered = RecoverSegmentTail(tailPath);
         _currentSegmentBytes = recovered;
-        lock (_gate)
+        try
         {
-            EnforceRetentionLocked();
+            lock (_gate)
+            {
+                EnforceRetentionLocked();
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Startup retention is best-effort: the log opens fail-open rather than failing daemon
+            // composition, and the next append retries.
+            _logger.LogWarning(
+                exception,
+                "[BoundedJsonlLog] Failed to enforce '{Prefix}' history retention at startup.",
+                _prefix);
         }
     }
 
@@ -329,11 +393,21 @@ internal sealed class BoundedJsonlLog<T>
     private List<int> ListSegments()
     {
         var segments = new List<int>();
-        foreach (var path in Directory.EnumerateFiles(_root, $"{_prefix}-*.jsonl"))
+        try
         {
-            var name = Path.GetFileNameWithoutExtension(path);
-            if (int.TryParse(name.AsSpan(_prefix.Length + 1), out var number))
-                segments.Add(number);
+            foreach (var path in Directory.EnumerateFiles(_root, $"{_prefix}-*.jsonl"))
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                if (int.TryParse(name.AsSpan(_prefix.Length + 1), out var number))
+                    segments.Add(number);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // An unreadable log directory must not fail a bounded read or a retention pass; both
+            // degrade to what they can still see.
+            _logger.LogWarning(exception, "[BoundedJsonlLog] Failed to enumerate '{Prefix}' segments.", _prefix);
+            return [];
         }
 
         segments.Sort();

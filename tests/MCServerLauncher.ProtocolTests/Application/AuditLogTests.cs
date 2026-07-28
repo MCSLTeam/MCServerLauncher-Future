@@ -189,8 +189,10 @@ public sealed class AuditLogTests
 
         var range = log.ReadRange(start.AddMinutes(1), start.AddMinutes(3), maximumRecords: 10);
         Assert.Equal(["target-1", "target-2", "target-3"], range.Select(record => record.Target));
+        // A capped range keeps the newest records: a monitoring window that overflows the read
+        // ceiling must still end at the data the caller is watching, not stop short of it.
         var capped = log.ReadRange(start, start.AddMinutes(10), maximumRecords: 2);
-        Assert.Equal(["target-0", "target-1"], capped.Select(record => record.Target));
+        Assert.Equal(["target-3", "target-4"], capped.Select(record => record.Target));
     }
 
     private static AuditEvent Event(string principal, string method, string? target = null) =>

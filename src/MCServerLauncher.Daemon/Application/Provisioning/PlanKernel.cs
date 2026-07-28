@@ -272,9 +272,17 @@ internal sealed class PlanKernel
 
             // Match TryBeginExecute: do not trust client-supplied admin wildcards. A service-filed
             // automation intent is confirmable by any permitted human; the first confirmation then
-            // binds the plan to that identity.
-            if (!AllowsForeignConfirmer(snapshot.Kind) &&
-                !string.Equals(snapshot.CreatorPrincipal, confirmerPrincipal, StringComparison.Ordinal))
+            // binds the plan to that identity. The filing service itself is never that human, so
+            // the confirmation gate cannot be closed by whoever opened it.
+            if (AllowsForeignConfirmer(snapshot.Kind))
+            {
+                if (string.Equals(snapshot.CreatorPrincipal, confirmerPrincipal, StringComparison.Ordinal))
+                {
+                    return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
+                        new PermissionDaemonError("plan.forbidden", "The plan creator cannot confirm its own plan."));
+                }
+            }
+            else if (!string.Equals(snapshot.CreatorPrincipal, confirmerPrincipal, StringComparison.Ordinal))
             {
                 return Result.Err<ProvisioningPlanSnapshot, DaemonError>(
                     new PermissionDaemonError("plan.forbidden", "The caller cannot confirm this plan."));

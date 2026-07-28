@@ -16,6 +16,8 @@ internal sealed class LocalProvisioningApplication(
     IInstanceApplication instances,
     IOperationApplication operations) : IProvisioningApplication
 {
+    internal const string InstancePlanKind = "provisioning.instance";
+
     private OperationCoordinator Coordinator =>
         operations as OperationCoordinator
         ?? throw new InvalidOperationException("Provisioning requires OperationCoordinator as IOperationApplication.");
@@ -47,7 +49,7 @@ internal sealed class LocalProvisioningApplication(
         }
 
         var put = planKernel.Put(
-            kind: "provisioning.instance",
+            kind: InstancePlanKind,
             riskClass: PlanRiskClass.Routine,
             requiredPermissions: RequiredPermissions,
             requiresConfirmation: false,
@@ -58,7 +60,7 @@ internal sealed class LocalProvisioningApplication(
             materialize: (planId, planHash, createdAt, expiresAt, payload) => new ProvisioningPlanSnapshot(
                 PlanId: planId,
                 PlanHash: planHash,
-                Kind: "provisioning.instance",
+                Kind: InstancePlanKind,
                 Status: PlanStatus.Ready,
                 RiskClass: PlanRiskClass.Routine,
                 RequiredPermissions: RequiredPermissions,
@@ -116,6 +118,16 @@ internal sealed class LocalProvisioningApplication(
             return Result.Err<ProvisioningExecuteResult, DaemonError>(beginError!);
 
         var plan = begin.Unwrap();
+        // Plan kinds are not interchangeable: every other kind carries a payload this executor
+        // would misread, and a non-empty Source plus a mappable provider is not enough to tell
+        // them apart.
+        if (!string.Equals(plan.Kind, InstancePlanKind, StringComparison.Ordinal))
+        {
+            planKernel.AbortExecuteAdmission(plan.PlanId);
+            return Result.Err<ProvisioningExecuteResult, DaemonError>(
+                new ValidationDaemonError("plan.kind_mismatch", "The plan is not a provisioning plan."));
+        }
+
         if (!TryMapProvider(plan.Provider, out var instanceType))
         {
             planKernel.AbortExecuteAdmission(plan.PlanId);
