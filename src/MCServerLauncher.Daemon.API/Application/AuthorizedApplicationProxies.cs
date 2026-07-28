@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Backup;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
@@ -355,6 +356,33 @@ public sealed class AuthorizedBackupApplication(
         return _inner.ExecuteRestoreAsync(
             request with { ExecutorPrincipal = owner.Unwrap() },
             cancellationToken);
+    }
+}
+
+public sealed class AuthorizedMonitoringApplication(
+    ICallerContext caller,
+    IMonitoringApplication inner) : IMonitoringApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IMonitoringApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<MonitoringCurrentResult, DaemonError>> GetCurrentAsync(
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.monitoring.current.get");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<MonitoringCurrentResult, DaemonError>(error!));
+        return _inner.GetCurrentAsync(cancellationToken);
+    }
+
+    public Task<Result<MonitoringQueryResult, DaemonError>> QueryAsync(
+        MonitoringQuery request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.monitoring.query");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<MonitoringQueryResult, DaemonError>(error!));
+        return _inner.QueryAsync(request, cancellationToken);
     }
 }
 

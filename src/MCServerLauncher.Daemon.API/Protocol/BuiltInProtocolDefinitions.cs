@@ -6,6 +6,7 @@ using System.Text.Json.Serialization.Metadata;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
@@ -80,6 +81,8 @@ public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions 
     public static RpcDescriptor<BackupRestoreConfirmRequest, ProvisioningPlanSnapshot> ConfirmBackupRestore { get; } = Rpc("mcsl.backup.restore.confirm", new("mcsl.backup.restore.confirm"), Application.BackupRestoreConfirmRequest, Application.ProvisioningPlanSnapshot, "backup", "Confirm backup restore", "Confirms a restore plan by echoing its hash, making it executable.");
     public static RpcDescriptor<BackupRestoreExecuteRequest, BackupRestoreExecuteResult> ExecuteBackupRestore { get; } = Rpc("mcsl.backup.restore.execute", new("mcsl.backup.restore.execute"), Application.BackupRestoreExecuteRequest, Application.BackupRestoreExecuteResult, "backup", "Execute backup restore", "Executes a confirmed restore plan as a long-running operation.");
     public static RpcDescriptor<AuditQuery, AuditQueryResult> QueryAudit { get; } = Rpc("mcsl.audit.query", new("mcsl.audit.query"), Application.AuditQuery, Application.AuditQueryResult, "audit", "Query audit records", "Queries bounded structured audit records visible to the caller.");
+    public static RpcDescriptor<EmptyRequest, MonitoringCurrentResult> GetMonitoringCurrent { get; } = Rpc("mcsl.monitoring.current.get", new("mcsl.monitoring.current.get"), Protocol.EmptyRequest, Application.MonitoringCurrentResult, "monitoring", "Get current metrics", "Gets the newest retained daemon metrics sample.");
+    public static RpcDescriptor<MonitoringQuery, MonitoringQueryResult> QueryMonitoring { get; } = Rpc("mcsl.monitoring.query", new("mcsl.monitoring.query"), Application.MonitoringQuery, Application.MonitoringQueryResult, "monitoring", "Query metrics history", "Queries the bounded metrics history with deterministic downsampling.");
     public static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo { get; } = Rpc("mcsl.system.info.get", new("mcsl.system.info.get"), Protocol.EmptyRequest, Application.SystemInfo, "system", "Get system information", "Gets daemon host system information.");
     public static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc { get; } = Rpc("rpc.discover", new("rpc.discover"), Protocol.EmptyRequest, Protocol.OpenRpcDocument, "discovery", "Discover protocol", "Gets the frozen runtime OpenRPC protocol document.");
 
@@ -110,7 +113,7 @@ public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions 
             UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
             UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, ListOperations, GetOperation, CancelOperation, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
             ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore,
-            QueryAudit,
+            QueryAudit, GetMonitoringCurrent, QueryMonitoring,
             GetSystemInfo, DiscoverRpc)
         .Sort(CompareRpcs);
 

@@ -7,6 +7,7 @@ using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.ApplicationCore.Backups;
+using MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.ApplicationCore.Auth;
 using MCServerLauncher.Daemon.ApplicationCore.Provisioning;
@@ -93,6 +94,9 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IAuditApplication, LocalAuditApplication>();
         collection.AddSingleton(auditLog);
         collection.AddSingleton<IAuditSink>(auditLog);
+        a.RegisterSingleton(appConfig.Monitoring);
+        a.RegisterSingleton<MonitoringSampler>();
+        a.RegisterSingleton<IMonitoringApplication, LocalMonitoringApplication>();
         var verifiedPrincipals = new VerifiedPrincipalAuthority();
         var callerContextFactory = new CallerContextFactory(verifiedPrincipals);
         a.RegisterSingleton(verifiedPrincipals);
@@ -138,6 +142,7 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<PluginAdmissionPreflight>(),
             serviceProvider.GetRequiredService<IBackupApplication>(),
             serviceProvider.GetRequiredService<IAuditApplication>(),
+            serviceProvider.GetRequiredService<IMonitoringApplication>(),
             serviceProvider.GetRequiredService<VerifiedPrincipalAuthority>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
@@ -207,6 +212,7 @@ internal static class DaemonServiceComposition
             httpService.Resolver.GetRequiredService<InstanceDomainEventBridge>(),
             httpService.Resolver.GetRequiredService<InstanceCatalogDomainEventBridge>(),
             httpService.Resolver.GetRequiredService<DaemonReportPublisher>(),
+            httpService.Resolver.GetRequiredService<MonitoringSampler>(),
             httpService.Resolver.GetRequiredService<ConsoleApplication>(),
             remoteEvents,
             httpService.Resolver.GetRequiredService<IV2ConnectionAdministration>());
@@ -237,6 +243,7 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
         InstanceDomainEventBridge instanceEvents,
         InstanceCatalogDomainEventBridge catalogEvents,
         DaemonReportPublisher reports,
+        MonitoringSampler metrics,
         ConsoleApplication console,
         V2RemoteEventBridge remoteEvents,
         IV2ConnectionAdministration connections)
@@ -248,6 +255,7 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
                 _ = instanceEvents;
                 catalogEvents.Start();
                 reports.Start();
+                metrics.Start();
                 console.Serve();
                 return Task.CompletedTask;
             },
@@ -284,6 +292,15 @@ internal sealed class DaemonLifecycleAttachment : IAsyncDisposable
                 try
                 {
                     reports.RequestStop();
+                }
+                catch (Exception exception)
+                {
+                    failures.Add(exception);
+                }
+
+                try
+                {
+                    metrics.RequestStop();
                 }
                 catch (Exception exception)
                 {

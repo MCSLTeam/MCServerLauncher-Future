@@ -5,6 +5,7 @@ using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
@@ -131,4 +132,9 @@ typeof(OperationStatusJsonConverter),
 [JsonSerializable(typeof(AuditRecord))]
 [JsonSerializable(typeof(AuditQuery))]
 [JsonSerializable(typeof(AuditQueryResult))]
+[JsonSerializable(typeof(MonitoringInstanceSample))]
+[JsonSerializable(typeof(MonitoringSample))]
+[JsonSerializable(typeof(MonitoringCurrentResult))]
+[JsonSerializable(typeof(MonitoringQuery))]
+[JsonSerializable(typeof(MonitoringQueryResult))]
 public partial class ApplicationContractJsonContext : JsonSerializerContext;

@@ -33,5 +33,9 @@
   "audit": {
     "retention_days": 30,
     "maximum_bytes": 67108864
+  },
+  "monitoring": {
+    "retention_days": 7,
+    "maximum_bytes": 268435456
   }
 }

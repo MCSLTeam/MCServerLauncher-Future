@@ -82,6 +82,8 @@ internal static class RpcAuditPolicy
         "mcsl.instance.report.list",
         "mcsl.instance.settings.get",
         "mcsl.java.list",
+        "mcsl.monitoring.current.get",
+        "mcsl.monitoring.query",
         "mcsl.operation.get",
         "mcsl.operation.list",
         "mcsl.provisioning.get",

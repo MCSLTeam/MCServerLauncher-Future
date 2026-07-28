@@ -68,6 +68,8 @@ public interface IPluginAuthorizedApplications
     IBackupApplication Backups { get; }
 
     IAuditApplication Audit { get; }
+
+    IMonitoringApplication Monitoring { get; }
 }
 
 public interface IPluginContext : IPluginAuthorizedApplications

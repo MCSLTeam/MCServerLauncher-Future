@@ -17,8 +17,9 @@ public sealed class FeatureCatalogPreview1Tests
             PluginFeature.ProvisioningManage.Value,
             // SDK-7 (Preview-2): cold backup and confirmed restore.
             PluginFeature.BackupManage.Value,
-            // SDK-8 (Preview-2): bounded audit history queries.
+            // SDK-8 (Preview-2): bounded audit history queries and retained metrics.
             PluginFeature.AuditQuery.Value,
+            PluginFeature.MonitoringQuery.Value,
             PluginFeature.NetworkHttpListen.Value,
             PluginFeature.AuthVerify.Value,
             PluginFeature.StoragePrivate.Value,
@@ -90,15 +91,18 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.Equal(
             ["mcsl.audit.query"],
             FeatureCatalog.MethodsFor(PluginFeature.AuditQuery).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["mcsl.monitoring.current.get", "mcsl.monitoring.query"],
+            FeatureCatalog.MethodsFor(PluginFeature.MonitoringQuery).Order(StringComparer.Ordinal));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.AuthVerify));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.NetworkHttpListen));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.StoragePrivate));
 
-        // SDK-8 (Preview-2): audit lands first in the monitoring/automation/audit trio.
+        // SDK-8 (Preview-2): audit and monitoring are implemented; automation lands last.
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AuditQuery));
+        Assert.True(FeatureCatalog.IsImplemented(PluginFeature.MonitoringQuery));
 
         // Remaining Preview-2 domains stay unimplemented and contribute nothing to host expansion.
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.MonitoringQuery));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.AutomationManage));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileRead));
         Assert.False(FeatureCatalog.IsImplemented(PluginFeature.FileWrite));

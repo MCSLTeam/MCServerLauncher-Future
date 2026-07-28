@@ -3,6 +3,7 @@ using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.ApplicationCore.Backups;
+using MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Plugins.Configuration;
@@ -18,6 +19,7 @@ namespace MCServerLauncher.Daemon.Serialization;
 [JsonSerializable(typeof(DaemonOperationsConfig))]
 [JsonSerializable(typeof(DaemonBackupConfig))]
 [JsonSerializable(typeof(DaemonAuditConfig))]
+[JsonSerializable(typeof(DaemonMonitoringConfig))]
 [JsonSerializable(typeof(PluginStorageConfig))]
 [JsonSerializable(typeof(PluginEntryConfig))]
 [JsonSerializable(typeof(PluginAdmissionConfig))]
