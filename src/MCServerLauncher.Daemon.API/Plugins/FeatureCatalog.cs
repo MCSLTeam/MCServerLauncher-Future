@@ -154,7 +154,12 @@ public static class FeatureCatalog
                 "mcsl.backup.restore.plan", "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute"
             ],
             implemented: true),
-        Descriptor(PluginFeature.MonitoringQuery, "Read retained system and instance metrics.", PluginFeatureRisk.None, [], implemented: false),
+        Descriptor(
+            PluginFeature.MonitoringQuery,
+            "Read retained system and instance metrics.",
+            PluginFeatureRisk.None,
+            ["mcsl.monitoring.current.get", "mcsl.monitoring.query"],
+            implemented: true),
         Descriptor(PluginFeature.AutomationManage, "Validate, test, apply, and enable typed automation policies.", PluginFeatureRisk.Medium, [], implemented: false),
         Descriptor(
             PluginFeature.AuditQuery,

@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.Audit;
@@ -51,6 +52,7 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolDefinitions.PruneBackups, BuiltInProtocolDefinitions.PlanBackupRestore,
             BuiltInProtocolDefinitions.ConfirmBackupRestore, BuiltInProtocolDefinitions.ExecuteBackupRestore,
             BuiltInProtocolDefinitions.QueryAudit,
+            BuiltInProtocolDefinitions.GetMonitoringCurrent, BuiltInProtocolDefinitions.QueryMonitoring,
             BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
         ];
         EventDescriptor[] namedEvents =
@@ -86,6 +88,7 @@ public sealed class BuiltInProtocolDefinitionTests
             "mcsl.instance.event-rules.update", "mcsl.instance.halt", "mcsl.instance.log.get", "mcsl.instance.remove",
             "mcsl.instance.report.get", "mcsl.instance.report.list", "mcsl.instance.settings.get", "mcsl.instance.settings.update",
             "mcsl.instance.start", "mcsl.instance.stop", "mcsl.java.list",
+            "mcsl.monitoring.current.get", "mcsl.monitoring.query",
             "mcsl.operation.cancel", "mcsl.operation.get", "mcsl.operation.list",
             "mcsl.provisioning.execute", "mcsl.provisioning.get", "mcsl.provisioning.resolve",
             "mcsl.system.info.get", "rpc.discover"
@@ -154,6 +157,8 @@ public sealed class BuiltInProtocolDefinitionTests
             ["mcsl.instance.start"] = ("mcsl.instance.start", typeof(InstanceReference), typeof(UnitResult)),
             ["mcsl.instance.stop"] = ("mcsl.instance.stop", typeof(InstanceReference), typeof(UnitResult)),
             ["mcsl.java.list"] = ("mcsl.java.list", typeof(EmptyRequest), typeof(JavaRuntimeList)),
+            ["mcsl.monitoring.current.get"] = ("mcsl.monitoring.current.get", typeof(EmptyRequest), typeof(MonitoringCurrentResult)),
+            ["mcsl.monitoring.query"] = ("mcsl.monitoring.query", typeof(MonitoringQuery), typeof(MonitoringQueryResult)),
             ["mcsl.operation.cancel"] = ("mcsl.operation.cancel", typeof(OperationCancelRequest), typeof(OperationCancelResult)),
             ["mcsl.operation.get"] = ("mcsl.operation.get", typeof(OperationReference), typeof(OperationSnapshot)),
             ["mcsl.operation.list"] = ("mcsl.operation.list", typeof(OperationListQuery), typeof(OperationListResult)),

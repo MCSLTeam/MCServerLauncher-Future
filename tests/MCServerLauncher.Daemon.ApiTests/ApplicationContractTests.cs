@@ -36,7 +36,8 @@ public sealed class ApplicationContractTests
             typeof(IOperationApplication),
             typeof(IProvisioningApplication),
             typeof(IBackupApplication),
-            typeof(IAuditApplication)
+            typeof(IAuditApplication),
+            typeof(IMonitoringApplication)
         };
 
         foreach (var method in applicationInterfaces.SelectMany(type => type.GetMethods()))

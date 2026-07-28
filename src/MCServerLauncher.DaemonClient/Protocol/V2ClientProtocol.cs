@@ -8,6 +8,7 @@ using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Backup;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Daemon.API.Protocol;
 
@@ -68,6 +69,8 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<BackupRestoreConfirmRequest, ProvisioningPlanSnapshot> ConfirmBackupRestore => BuiltInProtocolDefinitions.ConfirmBackupRestore;
     internal static RpcDescriptor<BackupRestoreExecuteRequest, BackupRestoreExecuteResult> ExecuteBackupRestore => BuiltInProtocolDefinitions.ExecuteBackupRestore;
     internal static RpcDescriptor<AuditQuery, AuditQueryResult> QueryAudit => BuiltInProtocolDefinitions.QueryAudit;
+    internal static RpcDescriptor<EmptyRequest, MonitoringCurrentResult> GetMonitoringCurrent => BuiltInProtocolDefinitions.GetMonitoringCurrent;
+    internal static RpcDescriptor<MonitoringQuery, MonitoringQueryResult> QueryMonitoring => BuiltInProtocolDefinitions.QueryMonitoring;
     internal static RpcDescriptor<EmptyRequest, SystemInfo> GetSystemInfo => BuiltInProtocolDefinitions.GetSystemInfo;
     internal static RpcDescriptor<EmptyRequest, OpenRpcDocument> DiscoverRpc => BuiltInProtocolDefinitions.DiscoverRpc;
 
@@ -83,7 +86,8 @@ internal static class V2ClientProtocol
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
         UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
-        ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore, QueryAudit, GetSystemInfo,
+        ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore, QueryAudit,
+        GetMonitoringCurrent, QueryMonitoring, GetSystemInfo,
         DiscoverRpc
     ];
 

@@ -142,7 +142,7 @@ public sealed class PluginManifestAndDiscoveryTests
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
             "[2.0.0,3.0.0)",
-            "monitoring.query");
+            "automation.manage");
 
         var exception = Assert.Throws<PluginManifestException>(
             () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));

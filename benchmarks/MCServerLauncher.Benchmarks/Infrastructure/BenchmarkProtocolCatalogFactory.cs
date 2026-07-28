@@ -1,5 +1,6 @@
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -35,6 +36,7 @@ internal static class BenchmarkProtocolCatalogFactory
             new ThrowingProvisioningApplication(),
             new ThrowingBackupApplication(),
             new ThrowingAuditApplication(),
+            new ThrowingMonitoringApplication(),
             new ThrowingTokenIssueApplication(),
             new EmptySnapshotSource(),
             TimeProvider.System,
@@ -89,6 +91,12 @@ internal static class BenchmarkProtocolCatalogFactory
     private sealed class ThrowingAuditApplication : IAuditApplication
     {
         public Task<Result<AuditQueryResult, DaemonError>> QueryAsync(AuditQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingMonitoringApplication : IMonitoringApplication
+    {
+        public Task<Result<MonitoringCurrentResult, DaemonError>> GetCurrentAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<MonitoringQueryResult, DaemonError>> QueryAsync(MonitoringQuery request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingOperationApplication : IOperationApplication
