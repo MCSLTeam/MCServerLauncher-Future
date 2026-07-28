@@ -29,5 +29,9 @@
     "retention_days": 30,
     "maximum_count": 16,
     "maximum_bytes": 8589934592
+  },
+  "audit": {
+    "retention_days": 30,
+    "maximum_bytes": 67108864
   }
 }

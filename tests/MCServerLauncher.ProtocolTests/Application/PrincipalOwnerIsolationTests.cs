@@ -209,7 +209,8 @@ public sealed class PrincipalOwnerIsolationTests
                 operationQueries: coordinator,
                 operationControl: coordinator,
                 provisioning: null,
-            backups: null);
+            backups: null,
+            audit: null);
             var foreign = authorizer.ForPrincipal(verifiedPrincipals.Register(pluginIdentity, CreatePrincipal(
                 "owner-b",
                 ["mcsl.operation.list", "mcsl.operation.get", "mcsl.operation.cancel"])));
@@ -278,7 +279,8 @@ public sealed class PrincipalOwnerIsolationTests
             operationQueries: null,
             operationControl: null,
             provisioning,
-            backups: null);
+            backups: null,
+            audit: null);
         var applications = authorizer.ForPrincipal(verifiedPrincipals.Register(pluginIdentity, CreatePrincipal(
             "owner-a",
             ["mcsl.provisioning.resolve", "mcsl.provisioning.get", "mcsl.provisioning.execute"])));

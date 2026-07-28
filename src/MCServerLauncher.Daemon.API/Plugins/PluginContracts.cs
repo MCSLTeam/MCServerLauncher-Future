@@ -66,6 +66,8 @@ public interface IPluginAuthorizedApplications
     IProvisioningApplication Provisioning { get; }
 
     IBackupApplication Backups { get; }
+
+    IAuditApplication Audit { get; }
 }
 
 public interface IPluginContext : IPluginAuthorizedApplications

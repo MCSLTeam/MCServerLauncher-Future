@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -353,6 +354,29 @@ public sealed class AuthorizedBackupApplication(
             return Task.FromResult(Result.Err<BackupRestoreExecuteResult, DaemonError>(error!));
         return _inner.ExecuteRestoreAsync(
             request with { ExecutorPrincipal = owner.Unwrap() },
+            cancellationToken);
+    }
+}
+
+public sealed class AuthorizedAuditApplication(
+    ICallerContext caller,
+    IAuditApplication inner) : IAuditApplication
+{
+    private readonly ICallerContext _caller = caller ?? throw new ArgumentNullException(nameof(caller));
+    private readonly IAuditApplication _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+    public Task<Result<AuditQueryResult, DaemonError>> QueryAsync(
+        AuditQuery request,
+        CancellationToken cancellationToken)
+    {
+        var permission = _caller.EnsurePermission("mcsl.audit.query");
+        if (permission.IsErr(out var error))
+            return Task.FromResult(Result.Err<AuditQueryResult, DaemonError>(error!));
+        var owner = AuthorizedApplicationGuard.ResolveOwnershipSubject(_caller, useGlobalOwnerForMainToken: true);
+        if (owner.IsErr(out error))
+            return Task.FromResult(Result.Err<AuditQueryResult, DaemonError>(error!));
+        return _inner.QueryAsync(
+            request with { OwnerPrincipal = owner.Unwrap() },
             cancellationToken);
     }
 }

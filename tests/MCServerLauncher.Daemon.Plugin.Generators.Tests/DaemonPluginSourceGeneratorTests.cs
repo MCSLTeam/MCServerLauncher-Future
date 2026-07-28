@@ -22,6 +22,7 @@ public sealed class DaemonPluginSourceGeneratorTests
         { "operation.cancel", "OperationControl" },
         { "provisioning.manage", "Provisioning" },
         { "backup.manage", "Backups" },
+        { "audit.query", "Audit" },
         { "network.http.listen", "HttpEndpoints" },
         { "auth.verify", "Authentication" },
         { "storage.private", "Storage" },

@@ -156,7 +156,12 @@ public static class FeatureCatalog
             implemented: true),
         Descriptor(PluginFeature.MonitoringQuery, "Read retained system and instance metrics.", PluginFeatureRisk.None, [], implemented: false),
         Descriptor(PluginFeature.AutomationManage, "Validate, test, apply, and enable typed automation policies.", PluginFeatureRisk.Medium, [], implemented: false),
-        Descriptor(PluginFeature.AuditQuery, "Query bounded structured audit records.", PluginFeatureRisk.None, [], implemented: false),
+        Descriptor(
+            PluginFeature.AuditQuery,
+            "Query bounded structured audit records.",
+            PluginFeatureRisk.None,
+            ["mcsl.audit.query"],
+            implemented: true),
         Descriptor(PluginFeature.StoragePrivate, "Read and write plugin-private bounded storage.", PluginFeatureRisk.Low, [], implemented: true),
         Descriptor(PluginFeature.NetworkHttpListen, "Validate and open plugin-owned HTTP listeners.", PluginFeatureRisk.High, [], implemented: true),
         Descriptor(PluginFeature.AuthVerify, "Verify audience-bound daemon tokens into principals.", PluginFeatureRisk.Medium, [], implemented: true),

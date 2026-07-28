@@ -6,6 +6,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Auth;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -49,6 +50,7 @@ public sealed class BuiltInProtocolDefinitionTests
             BuiltInProtocolDefinitions.ListBackups, BuiltInProtocolDefinitions.CreateBackup,
             BuiltInProtocolDefinitions.PruneBackups, BuiltInProtocolDefinitions.PlanBackupRestore,
             BuiltInProtocolDefinitions.ConfirmBackupRestore, BuiltInProtocolDefinitions.ExecuteBackupRestore,
+            BuiltInProtocolDefinitions.QueryAudit,
             BuiltInProtocolDefinitions.GetSystemInfo, BuiltInProtocolDefinitions.DiscoverRpc
         ];
         EventDescriptor[] namedEvents =
@@ -70,6 +72,7 @@ public sealed class BuiltInProtocolDefinitionTests
     {
         var expectedRpcs = new[]
         {
+            "mcsl.audit.query",
             "mcsl.auth.permissions.get", "mcsl.auth.token.issue",
             "mcsl.backup.create", "mcsl.backup.list", "mcsl.backup.prune",
             "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute", "mcsl.backup.restore.plan",
@@ -104,6 +107,7 @@ public sealed class BuiltInProtocolDefinitionTests
     {
         var expected = new Dictionary<string, (string Permission, Type Request, Type Result)>(StringComparer.Ordinal)
         {
+            ["mcsl.audit.query"] = ("mcsl.audit.query", typeof(AuditQuery), typeof(AuditQueryResult)),
 ["mcsl.auth.permissions.get"] = ("mcsl.auth.permissions.get", typeof(EmptyRequest), typeof(PermissionsResult)),
             ["mcsl.auth.token.issue"] = ("mcsl.auth.token.issue", typeof(TokenIssueRequest), typeof(TokenIssueResult)),
             ["mcsl.backup.create"] = ("mcsl.backup.create", typeof(BackupCreateRequest), typeof(BackupCreateResult)),

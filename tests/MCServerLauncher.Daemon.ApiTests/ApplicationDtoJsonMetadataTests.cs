@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
@@ -136,6 +137,19 @@ public sealed class ApplicationDtoJsonMetadataTests
             21,
             "deflate",
             new string('c', 64));
+        var auditRecord = new AuditRecord(
+            DateTimeOffset.UnixEpoch,
+            "owner-a",
+            null,
+            "mcsl.instance.start",
+            "mcsl.instance.start",
+            "t1",
+            null,
+            null,
+            null,
+            true,
+            null,
+            null);
         var drive = new ContractDriveInfo("NTFS", 1024, 512, "C:\\");
         var systemInfo = new SystemInfo(
             new OperatingSystemInfo("Windows", "x64"),
@@ -214,7 +228,10 @@ public sealed class ApplicationDtoJsonMetadataTests
             new BackupRestorePlanRequest(sessionId, instanceId, "owner-a", "idem-1", TimeSpan.FromMinutes(30)),
             new BackupRestoreConfirmRequest(sessionId, new string('a', 64), "owner-a"),
             new BackupRestoreExecuteRequest(sessionId, "owner-a"),
-            new BackupRestoreExecuteResult(sessionId, instanceId)
+            new BackupRestoreExecuteResult(sessionId, instanceId),
+            auditRecord,
+            new AuditQuery(100, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(1), "owner-a", "mcsl.instance.start", "t1", "owner-a"),
+            new AuditQueryResult([auditRecord], 0)
         ];
     }
 
