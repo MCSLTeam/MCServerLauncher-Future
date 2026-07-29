@@ -196,7 +196,6 @@
             </WrapPanel>
         </Grid>
         <Grid Grid.Row="3" Grid.Column="0" Margin="0,10,35,0" ClipToBounds="True">
-            <ui:ScrollViewerEx Margin="0">
             <ListBox x:Name="DaemonCardItemsControl"
                           ItemsSource="{Binding FilteredDaemons}"
                           SelectionMode="Extended"
@@ -210,7 +209,6 @@
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>
             </ListBox>
-            </ui:ScrollViewerEx>
             <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
                     Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
         </Grid>

@@ -209,31 +209,21 @@
             </WrapPanel>
         </Grid>
             <Grid Grid.Row="3" Margin="0,15,0,0" ClipToBounds="True">
-                <ui:ScrollViewerEx Margin="0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <ge:LoadingLayer Grid.Row="0" Grid.Column="0" x:Name="LoadingLayer" />
-                        <ge:StopTipLayer Grid.Row="0" Grid.Column="0" x:Name="StopTipLayer" Visibility="Collapsed" />
-                        <ListBox Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid"
-                                 ItemsSource="{Binding FilteredInstances}"
-                                 SelectionMode="Extended"
-                                 VirtualizingPanel.IsVirtualizing="False"
-                                 PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
-                                 PreviewMouseMove="CardListView_PreviewMouseMove"
-                                 PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                        </ListBox>
-                    </Grid>
-                </ui:ScrollViewerEx>
+                <ge:LoadingLayer x:Name="LoadingLayer" />
+                <ge:StopTipLayer x:Name="StopTipLayer" Visibility="Collapsed" />
+                <ListBox x:Name="InstanceCardGrid"
+                         ItemsSource="{Binding FilteredInstances}"
+                         SelectionMode="Extended"
+                         VirtualizingPanel.IsVirtualizing="False"
+                         PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="CardListView_PreviewMouseMove"
+                         PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                </ListBox>
                 <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
                         Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
             </Grid>
