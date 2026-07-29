@@ -8,4 +8,4 @@
 
 ## 2026-07-15
 
-- Completed the release-atomic V2 cutover and Phase 5 startup-plugin milestone. See [the execution plan](docs/superpowers/plans/2026-06-27-daemon-api-inprocess-plugin-v2-plan.md) for acceptance evidence.
+- Completed the release-atomic V2 cutover and Phase 5 startup-plugin milestone. Acceptance evidence lived in a working-note plan that was never tracked and no longer exists; `EXECUTE_PLAN.md` carries what survived of it.

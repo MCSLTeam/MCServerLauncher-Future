@@ -70,7 +70,7 @@ MCServerLauncher-Future/
 ├── src/MCServerLauncher.Common/            # Shared models, utilities, protocol contracts
 ├── src/MCServerLauncher.Daemon.API/         # Transport-neutral application and plugin contracts
 ├── src/MCServerLauncher.Daemon/            # Background daemon managing instances
-├── generators/MCServerLauncher.Daemon.Generators/ # Transitional V1 action generator; delete at V2 cutover
+├── generators/MCServerLauncher.Daemon.Plugin.Generators/ # Plugin manifest/adapter source generator, packed into the SDK
 ├── src/MCServerLauncher.DaemonClient/      # .NET daemon client library
 ├── src/MCServerLauncher.WPF/               # Windows WPF client
 ├── tests/MCServerLauncher.ProtocolTests/     # Protocol and integration tests
@@ -131,10 +131,10 @@ MCServerLauncher-Future/
 - Use `System.Text.Json` exclusively for shared serialization assumptions.
 - Keep serialized contracts source-generation friendly and free of logging/runtime implementation dependencies.
 
-### V1 Action Generator
+### Plugin Source Generator
 
-- `generators/MCServerLauncher.Daemon.Generators` is transitional V1-only code.
-- Do not extend it. Remove the project, tests, benchmarks, solution entry, and runtime switch at the V2 deletion gate.
+- `generators/MCServerLauncher.Daemon.Plugin.Generators` produces plugin manifest and adapter code and is packed into the SDK package under `analyzers/dotnet/cs`. It is current, not transitional.
+- The transitional V1 action generator it is sometimes confused with is already deleted. `tools/VerifyNoV1Runtime.ps1` asserts it stays deleted, and that gate passes — do not go looking for a V1 generator to remove.
 
 ### Tests And Benchmarks
 
@@ -160,7 +160,7 @@ MCServerLauncher-Future/
 - Keep edits scoped to the requested behavior and touched areas.
 - Do not revert user or teammate changes without explicit instruction.
 - When the work changes behavior, update docs and tests in the same task.
-- Do not create or update `docs/superpowers/plans` history files, plan checklists, or plan changelogs unless the user explicitly asks for a durable plan.
+- Do not create or update plan history files, plan checklists, or plan changelogs under `docs/plan` or `docs/superpowers/plans` unless the user explicitly asks for a durable plan.
 - Before every commit, run `dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj /m:1` and confirm the full protocol test suite passes.
 - Commit messages use `type(scope): subject`.
 

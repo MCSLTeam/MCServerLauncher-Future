@@ -6,7 +6,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 
 ## Global Rules
 
-- Do not create or update `docs/superpowers/plans` history files, plan checklists, or plan changelogs unless the user explicitly asks for a durable plan.
+- Do not create or update plan history files, plan checklists, or plan changelogs under `docs/plan` or `docs/superpowers/plans` unless the user explicitly asks for a durable plan.
 - Git commit messages must use concise Conventional Commits: `type(scope): subject`.
 - Commit message titles must not contain long explanations.
 - Do not revert user or teammate changes without explicit instruction.
@@ -32,7 +32,7 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 - JSON-RPC V2 execution and connection-owned outbound queues belong in `src/MCServerLauncher.Daemon/Remote/Rpc`.
 - WPF presentation and interaction logic belongs in `src/MCServerLauncher.WPF`.
 - Daemon connection and transport code belongs in `src/MCServerLauncher.DaemonClient`.
-- The retiring V1 action generator must not be extended; delete it when the V2 deletion gate is reached.
+- The V1 action generator is deleted and `tools/VerifyNoV1Runtime.ps1` keeps it that way; `generators/MCServerLauncher.Daemon.Plugin.Generators` is a different, current project and is not covered by that rule.
 
 ## Serialization And Protocol
 
