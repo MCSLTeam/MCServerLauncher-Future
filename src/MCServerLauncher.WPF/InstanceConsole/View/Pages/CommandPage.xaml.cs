@@ -194,7 +194,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 !InstanceLogLocalization.TryLocalize(logMessage, out var localizedLogMessage))
                 return;
 
-            var bytes = Encoding.UTF8.GetBytes(localizedLogMessage + "\r\n");
+            var bytes = Encoding.UTF8.GetBytes(InstanceLogLocalization.FormatForPty(localizedLogMessage) + "\r\n");
             _ = Dispatcher.BeginInvoke(() =>
             {
                 if (_isDisposed)
@@ -405,7 +405,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                         await InstanceDataManager.Instance.GetInstanceLogHistoryAsync());
                     if (history.Length > 0)
                     {
-                        var retainedText = string.Join("\r\n", history) + "\r\n";
+                        var retainedText = string.Join(
+                            "\r\n",
+                            history.Select(InstanceLogLocalization.FormatForPty)) + "\r\n";
                         PtyTerminal.Feed(Encoding.UTF8.GetBytes(retainedText));
                     }
                 }

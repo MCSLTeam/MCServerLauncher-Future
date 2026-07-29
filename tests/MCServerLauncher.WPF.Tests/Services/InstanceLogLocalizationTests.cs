@@ -40,9 +40,20 @@ public class InstanceLogLocalizationTests
         ]);
 
         Assert.Equal(3, localized.Length);
+        Assert.StartsWith("[MCSL] ", localized[0]);
+        Assert.StartsWith("[MCSL] ", localized[2]);
         Assert.Contains("server output", localized);
         Assert.DoesNotContain("[MCSL] Instance running.", localized);
         Assert.DoesNotContain("   ", localized);
+    }
+
+    [Fact]
+    public void FormatForPty_ColorsOnlyLocalizedMcslMessages()
+    {
+        Assert.Equal(
+            "\u001b[94m[MCSL] Instance is starting.\u001b[0m",
+            InstanceLogLocalization.FormatForPty("[MCSL] Instance is starting."));
+        Assert.Equal("server output", InstanceLogLocalization.FormatForPty("server output"));
     }
 
     [Fact]

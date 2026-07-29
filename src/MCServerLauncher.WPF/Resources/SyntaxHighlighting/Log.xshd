@@ -11,8 +11,14 @@
 	<Color name="Exception" foreground="DarkRed" />
 	<Color name="ClassName" foreground="Teal" />
 	<Color name="Link" foreground="Blue" />
+	<Color name="McsL" foreground="Blue" fontWeight="bold" />
 
 	<RuleSet>
+		<!-- MCSL lifecycle messages -->
+		<Rule color="McsL">
+			^\[MCSL\].*$
+		</Rule>
+
 		<!-- Time: [HH:mm:ss] or HH:mm:ss -->
 		<Rule color="Time">
 			\b\d{2}:\d{2}:\d{2}(,\d{3})?
@@ -20,7 +26,7 @@
 
 		<!-- Thread: [Thread-Name] -->
 		<Rule color="Thread">
-			\[[^\]]+\]
+			\[(?!MCSL\])[^\]]+\]
 		</Rule>
 
 		<!-- Log Levels -->

@@ -8,19 +8,25 @@ namespace MCServerLauncher.WPF.Services;
 internal static class InstanceLogLocalization
 {
     private const string LifecyclePrefix = "[MCSL] Instance ";
+    public const string LocalizedLifecyclePrefix = "[MCSL] ";
 
     public static bool IsLifecycleMessage(string message) =>
         message.StartsWith(LifecyclePrefix, StringComparison.Ordinal);
+
+    public static string FormatForPty(string message) =>
+        message.StartsWith(LocalizedLifecyclePrefix, StringComparison.Ordinal)
+            ? "\u001b[94m" + message + "\u001b[0m"
+            : message;
 
     public static bool TryLocalize(string message, out string localizedMessage)
     {
         switch (message.TrimEnd('\r', '\n'))
         {
             case LifecyclePrefix + "starting.":
-                localizedMessage = Lang.Tr["InstanceLog_Starting"];
+                localizedMessage = LocalizedLifecyclePrefix + Lang.Tr["InstanceLog_Starting"];
                 return true;
             case LifecyclePrefix + "stopped.":
-                localizedMessage = Lang.Tr["InstanceLog_Stopped"];
+                localizedMessage = LocalizedLifecyclePrefix + Lang.Tr["InstanceLog_Stopped"];
                 return true;
             case LifecyclePrefix + "running.":
             case LifecyclePrefix + "stopping.":
