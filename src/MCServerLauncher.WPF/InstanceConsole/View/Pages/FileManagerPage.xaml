@@ -71,8 +71,6 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             
-            <ui:InfoBar Grid.Row="0" Grid.ColumnSpan="3" x:Name="MultiSelectTipBar" IsOpen="True" Severity="Informational" Message="{Binding [MultiSelectTip], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="0,0,0,10" IsClosable="True" Closed="MultiSelectTipBar_DoNotShowAgain_Click" />
-            
             <TreeView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding TreeItems}" BorderThickness="1" ui:ControlHelper.CornerRadius="4" Margin="0,0,5,0">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
@@ -92,8 +90,9 @@
             
             <GridSplitter Grid.Row="1" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" />
             
-            <Grid Grid.Row="1" Grid.Column="2" Margin="5,0,0,0">
-                <ListView x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" VirtualizingPanel.VirtualizationMode="Recycling" SelectionMode="Extended"
+            <Grid Grid.Row="1" Grid.Column="2" Margin="5,0,0,0" ClipToBounds="True">
+                <ListView x:Name="FileListView" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" MouseDoubleClick="ListView_MouseDoubleClick" SelectionMode="Extended"
+                          VirtualizingPanel.IsVirtualizing="False"
                           PreviewMouseLeftButtonDown="FileListView_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="FileListView_PreviewMouseMove"
                           PreviewMouseLeftButtonUp="FileListView_PreviewMouseLeftButtonUp">

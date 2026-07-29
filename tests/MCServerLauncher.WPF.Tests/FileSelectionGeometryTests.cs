@@ -13,4 +13,20 @@ public sealed class FileSelectionGeometryTests
         Assert.True(FileManagerPage.IntersectsSelection(selection, new Rect(20, 20, 60, 20)));
         Assert.False(FileManagerPage.IntersectsSelection(selection, new Rect(100, 20, 30, 20)));
     }
+
+    [Fact]
+    public void SelectionPointIsClampedToListBounds()
+    {
+        var clamped = FileManagerPage.ClampSelectionPoint(new Point(-10, 250), new Size(100, 200));
+
+        Assert.Equal(new Point(0, 200), clamped);
+    }
+
+    [Fact]
+    public void BoxScrollStepScalesWithDistanceAndHasAnUpperBound()
+    {
+        Assert.Equal(0, FileManagerPage.GetBoxScrollStep(0));
+        Assert.True(FileManagerPage.GetBoxScrollStep(80) > FileManagerPage.GetBoxScrollStep(10));
+        Assert.Equal(14, FileManagerPage.GetBoxScrollStep(1000));
+    }
 }

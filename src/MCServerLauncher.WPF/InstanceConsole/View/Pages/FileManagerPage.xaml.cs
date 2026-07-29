@@ -27,6 +27,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
     {
         private FileManagerViewModel _viewModel;
         private Point _selectionStart;
+        private Point _pendingSelectionStart;
+        private bool _hasPendingBoxSelection;
         private bool _isBoxSelecting;
         private HashSet<FileItem> _initialSelection = [];
 
@@ -61,28 +63,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             }
         }
 
-        private async void FileManagerPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (SettingsManager.Get?.App?.HideTips != null &&
-                SettingsManager.Get.App.HideTips.TryGetValue("FileManagerMultiSelect", out var hide) && hide)
-            {
-                MultiSelectTipBar.IsOpen = false;
-            }
+        private async void FileManagerPage_Loaded(object sender, RoutedEventArgs e) =>
             await _viewModel.InitializeAsync();
-        }
-
-        private void MultiSelectTipBar_DoNotShowAgain_Click(iNKORE.UI.WPF.Modern.Controls.InfoBar sender, object args)
-        {
-            if (SettingsManager.Get?.App != null)
-            {
-                if (SettingsManager.Get.App.HideTips == null)
-                {
-                    SettingsManager.Get.App.HideTips = new Dictionary<string, bool>();
-                }
-                SettingsManager.Get.App.HideTips["FileManagerMultiSelect"] = true;
-                SettingsManager.SaveSetting("App.HideTips", SettingsManager.Get.App.HideTips);
-            }
-        }
 
         private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -97,31 +79,76 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private void FileListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            _pendingSelectionStart = e.GetPosition(FileListView);
+            _selectionStart = GetContentPoint(_pendingSelectionStart);
+            _initialSelection = FileListView.SelectedItems.Cast<FileItem>().ToHashSet();
+            _hasPendingBoxSelection = true;
+
             if (FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject) is not null)
                 return;
 
-            _selectionStart = e.GetPosition(FileListView);
-            _initialSelection = FileListView.SelectedItems.Cast<FileItem>().ToHashSet();
-            _isBoxSelecting = true;
-            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                FileListView.SelectedItems.Clear();
-            FileListView.CaptureMouse();
+            BeginBoxSelection();
+            UpdateBoxSelection(_pendingSelectionStart);
             e.Handled = true;
         }
 
         private void FileListView_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (!_isBoxSelecting || e.LeftButton != MouseButtonState.Pressed)
+            if (e.LeftButton != MouseButtonState.Pressed)
                 return;
 
             var current = e.GetPosition(FileListView);
-            var selection = new Rect(_selectionStart, current);
+            if (!_isBoxSelecting && _hasPendingBoxSelection)
+            {
+                var horizontalDistance = Math.Abs(current.X - _pendingSelectionStart.X);
+                var verticalDistance = Math.Abs(current.Y - _pendingSelectionStart.Y);
+                if (horizontalDistance < SystemParameters.MinimumHorizontalDragDistance &&
+                    verticalDistance < SystemParameters.MinimumVerticalDragDistance)
+                    return;
+
+                BeginBoxSelection();
+            }
+
+            if (!_isBoxSelecting)
+                return;
+
+            ScrollForBoxSelection(current);
+            UpdateBoxSelection(current);
+            e.Handled = true;
+        }
+
+        private void BeginBoxSelection()
+        {
+            _selectionStart = GetContentPoint(_pendingSelectionStart);
+            _hasPendingBoxSelection = false;
+            _isBoxSelecting = true;
+            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                FileListView.SelectedItems.Clear();
+            FileListView.CaptureMouse();
+        }
+
+        private void UpdateBoxSelection(Point viewportPoint)
+        {
+            var scrollViewer = FindVisualChild<ScrollViewer>(FileListView);
+            var horizontalOffset = scrollViewer?.HorizontalOffset ?? 0;
+            var verticalOffset = scrollViewer?.VerticalOffset ?? 0;
+            var current = GetContentPoint(viewportPoint);
+            var contentSelection = new Rect(_selectionStart, current);
+            var itemArea = GetItemAreaBounds();
+            var viewportSelection = new Rect(
+                new Point(contentSelection.Left - horizontalOffset, contentSelection.Top - verticalOffset),
+                new Point(contentSelection.Right - horizontalOffset, contentSelection.Bottom - verticalOffset));
+            var listBounds = new Rect(0, 0, FileListView.ActualWidth, FileListView.ActualHeight);
+            if (itemArea is { } visibleItemArea)
+                viewportSelection.Intersect(visibleItemArea);
+            viewportSelection.Intersect(listBounds);
+
             SelectionBox.Visibility = Visibility.Visible;
             SelectionBox.HorizontalAlignment = HorizontalAlignment.Left;
             SelectionBox.VerticalAlignment = VerticalAlignment.Top;
-            SelectionBox.Margin = new Thickness(selection.Left, selection.Top, 0, 0);
-            SelectionBox.Width = selection.Width;
-            SelectionBox.Height = selection.Height;
+            SelectionBox.Margin = new Thickness(viewportSelection.Left, viewportSelection.Top, 0, 0);
+            SelectionBox.Width = Math.Max(0, viewportSelection.Width);
+            SelectionBox.Height = Math.Max(0, viewportSelection.Height);
 
             var ctrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
             foreach (var item in _viewModel.Items)
@@ -131,7 +158,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
                 var itemBounds = container.TransformToAncestor(FileListView)
                     .TransformBounds(new Rect(new Point(), container.RenderSize));
-                var shouldSelect = IntersectsSelection(selection, itemBounds) ||
+                itemBounds.Offset(horizontalOffset, verticalOffset);
+                var shouldSelect = IntersectsSelection(contentSelection, itemBounds) ||
                     (ctrlPressed && _initialSelection.Contains(item));
                 if (shouldSelect && !FileListView.SelectedItems.Contains(item))
                     FileListView.SelectedItems.Add(item);
@@ -143,8 +171,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         private void FileListView_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (!_isBoxSelecting)
+            {
+                _hasPendingBoxSelection = false;
                 return;
+            }
 
+            UpdateBoxSelection(e.GetPosition(FileListView));
             _isBoxSelecting = false;
             SelectionBox.Visibility = Visibility.Collapsed;
             FileListView.ReleaseMouseCapture();
@@ -154,6 +186,67 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         internal static bool IntersectsSelection(Rect selection, Rect itemBounds) =>
             selection.IntersectsWith(itemBounds);
 
+        internal static Point ClampSelectionPoint(Point point, Size bounds) => new(
+            Math.Clamp(point.X, 0, Math.Max(0, bounds.Width)),
+            Math.Clamp(point.Y, 0, Math.Max(0, bounds.Height)));
+
+        internal static double GetBoxScrollStep(double distance) =>
+            distance <= 0 ? 0 : Math.Min(14, Math.Max(1, distance * 0.12));
+
+        private Point GetContentPoint(Point viewportPoint)
+        {
+            var scrollViewer = FindVisualChild<ScrollViewer>(FileListView);
+            var point = ClampSelectionPoint(
+                viewportPoint,
+                new Size(FileListView.ActualWidth, FileListView.ActualHeight));
+            var itemArea = GetItemAreaBounds();
+            if (itemArea is { } bounds)
+                point.Y = Math.Clamp(point.Y, bounds.Top, bounds.Bottom);
+            return new Point(
+                point.X + (scrollViewer?.HorizontalOffset ?? 0),
+                point.Y + (scrollViewer?.VerticalOffset ?? 0));
+        }
+
+        private Rect? GetItemAreaBounds()
+        {
+            var itemBounds = _viewModel.Items
+                .Select(item => FileListView.ItemContainerGenerator.ContainerFromItem(item))
+                .OfType<ListViewItem>()
+                .Select(container => container.TransformToAncestor(FileListView)
+                    .TransformBounds(new Rect(new Point(), container.RenderSize)))
+                .ToArray();
+            if (itemBounds.Length == 0)
+                return null;
+
+            var top = itemBounds.Min(bounds => bounds.Top);
+            var bottom = itemBounds.Max(bounds => bounds.Bottom);
+            return new Rect(0, top, FileListView.ActualWidth, bottom - top);
+        }
+
+        private void ScrollForBoxSelection(Point point)
+        {
+            var scrollViewer = FindVisualChild<ScrollViewer>(FileListView);
+            if (scrollViewer is null)
+                return;
+
+            var itemArea = GetItemAreaBounds();
+            if (itemArea is not { } bounds)
+                return;
+
+            if (point.Y < bounds.Top)
+            {
+                var distance = bounds.Top - point.Y;
+                scrollViewer.ScrollToVerticalOffset(
+                    scrollViewer.VerticalOffset - GetBoxScrollStep(distance));
+            }
+            else if (point.Y > bounds.Bottom)
+            {
+                var distance = point.Y - bounds.Bottom;
+                scrollViewer.ScrollToVerticalOffset(
+                    scrollViewer.VerticalOffset + GetBoxScrollStep(distance));
+            }
+        }
+
         private static T? FindVisualParent<T>(DependencyObject? source) where T : DependencyObject
         {
             while (source is not null)
@@ -161,6 +254,24 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 if (source is T match)
                     return match;
                 source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            }
+
+            return null;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject? source) where T : DependencyObject
+        {
+            if (source is null)
+                return null;
+
+            for (var index = 0; index < System.Windows.Media.VisualTreeHelper.GetChildrenCount(source); index++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(source, index);
+                if (child is T match)
+                    return match;
+
+                if (FindVisualChild<T>(child) is { } descendant)
+                    return descendant;
             }
 
             return null;
