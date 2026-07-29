@@ -6,6 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!--
+      The plugin fixtures are not solution members, so a solution build unsets their Configuration
+      and they fall back to Debug even under -c Release. See the same property in
+      MCServerLauncher.ProtocolTests.csproj for the full explanation.
+    -->
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
   </PropertyGroup>
 
   <ItemGroup>
