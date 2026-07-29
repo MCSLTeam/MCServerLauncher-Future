@@ -835,6 +835,34 @@ Suggested commit: `release(plugin-sdk): prepare feature sdk preview.2`
 - Protocol-sensitive changes update an existing benchmark or document why its
   current gate fully covers the path.
 
+### Deferral for Preview-2 internal acceptance (amendment, 2026-07-29)
+
+The first and third gates above — authorized proxy overhead, and monitoring 100
+instances at the 15-second cadence — are **not implemented**. Preview-2 closes
+as an internal implementation and test acceptance state without them.
+
+This deferral is recorded here rather than only in the tracking issue, because
+an issue does not amend an acceptance contract. The gates are stated in this
+plan, so this plan is where they can be relaxed; leaving them written as binding
+while treating them as waived is the same "decision living outside the
+authoritative document" that moving these files under version control was meant
+to end.
+
+Scope of the deferral:
+
+- It covers **internal** acceptance only. Both gates become hard requirements
+  again before any public package distribution or an RC, and reopening SDK-9a/9b
+  must not proceed while they are outstanding.
+- Tracked as **#66**, which also records that `.github/workflows/benchmarks.yml`
+  runs only on `workflow_call`, `workflow_dispatch` and a weekly cron, so it
+  gates nothing at PR time. Adding benchmark cases without changing that leaves
+  them inert.
+- #66 closes when both gates have committed thresholds with the target hardware
+  and run parameters recorded, and an explicit decision — not a default — about
+  whether they run per-PR or as a separate acceptance job.
+
+The other three gates in this section remain in force and are unaffected.
+
 ## Verification Commands
 
 ```powershell
