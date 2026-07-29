@@ -6,6 +6,7 @@ using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.API.Application;
+using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.ApplicationCore.Auth;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Plugins.Configuration;
@@ -52,6 +53,7 @@ internal sealed class PluginHost
     private readonly IAutomationApplication? _automationApplication;
     private readonly IEventRuleApplication? _eventRuleApplication;
     private readonly IFileApplication? _fileApplication;
+    private readonly IAuditSink? _auditSink;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -153,7 +155,8 @@ internal sealed class PluginHost
         IFileApplication? fileApplication = null,
         VerifiedPrincipalAuthority? verifiedPrincipals = null,
         TimeSpan? rollbackCleanupTimeout = null,
-        TimeSpan? shutdownCleanupTimeout = null)
+        TimeSpan? shutdownCleanupTimeout = null,
+        IAuditSink? auditSink = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -201,6 +204,7 @@ internal sealed class PluginHost
         _automationApplication = automationApplication;
         _eventRuleApplication = eventRuleApplication;
         _fileApplication = fileApplication;
+        _auditSink = auditSink;
     }
 
     /// <summary>
@@ -568,7 +572,8 @@ internal sealed class PluginHost
                 manifest.HasFeature(PluginFeature.EventRuleManage) ? _eventRuleApplication : null,
                 manifest.HasFeature(PluginFeature.FileRead) || manifest.HasFeature(PluginFeature.FileWrite)
                     ? _fileApplication
-                    : null);
+                    : null,
+                _auditSink);
             var context = new PluginContext(
                 manifest.Identity,
                 pluginLogger,

@@ -5,6 +5,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.ApplicationCore.Auth;
 using Microsoft.Extensions.Logging;
 using RustyOptions;
@@ -22,6 +23,8 @@ internal sealed class PluginErrorFactory(PluginIdentity identity) : IPluginError
 internal sealed class PluginApplicationAuthorizer
 {
     private readonly CallerContextFactory _callerContexts;
+    private readonly string _pluginId;
+    private readonly IAuditSink? _auditSink;
     private readonly IInstanceSnapshotSource? _instanceCatalog;
     private readonly IInstanceQueryApplication? _instanceQueries;
     private readonly ISystemQueryApplication? _system;
@@ -54,11 +57,14 @@ internal sealed class PluginApplicationAuthorizer
         IMonitoringApplication? monitoring,
         IAutomationApplication? automation,
         IEventRuleApplication? eventRules,
-        IFileApplication? files)
+        IFileApplication? files,
+        IAuditSink? auditSink = null)
     {
         ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(grantedFeatureIds);
         var grantedFeatures = grantedFeatureIds.ToHashSet(StringComparer.Ordinal);
+        _pluginId = identity.Id;
+        _auditSink = auditSink;
         _callerContexts = (callerContexts ?? throw new ArgumentNullException(nameof(callerContexts)))
             .ForPlugin(identity);
         _instanceCatalog = HasFeature(PluginFeature.InstanceQuery) ? instanceCatalog : null;
@@ -104,20 +110,73 @@ internal sealed class PluginApplicationAuthorizer
     private IPluginAuthorizedApplications Create(ICallerContext caller) =>
         new PluginAuthorizedApplications(
             caller,
-            _instanceCatalog is null ? null : new AuthorizedInstanceCatalog(caller, _instanceCatalog),
-            _instanceQueries is null ? null : new AuthorizedInstanceQueryApplication(caller, _instanceQueries),
-            _system is null ? null : new AuthorizedSystemQueryApplication(caller, _system),
-            _instanceManagement is null ? null : new AuthorizedInstanceManagementApplication(caller, _instanceManagement),
-            _operationQueries is null ? null : new AuthorizedOperationQueryApplication(caller, _operationQueries),
-            _operationControl is null ? null : new AuthorizedOperationControlApplication(caller, _operationControl),
-            _provisioning is null ? null : new AuthorizedProvisioningApplication(caller, _provisioning),
-            _backups is null ? null : new AuthorizedBackupApplication(caller, _backups),
-            _audit is null ? null : new AuthorizedAuditApplication(caller, _audit),
-            _monitoring is null ? null : new AuthorizedMonitoringApplication(caller, _monitoring),
-            _automation is null ? null : new AuthorizedAutomationApplication(caller, _automation),
-            _eventRules is null ? null : new AuthorizedEventRuleApplication(caller, _eventRules),
-            _fileReads is null ? null : new AuthorizedFileReadApplication(caller, _fileReads),
-            _fileWrites is null ? null : new AuthorizedFileWriteApplication(caller, _fileWrites));
+            _instanceCatalog is null ? null : Audited<IInstanceSnapshotSource>(
+                new AuthorizedInstanceCatalog(caller, _instanceCatalog),
+                caller,
+                static (inner, _, _, _) => new AuditedInstanceCatalog(inner)),
+            _instanceQueries is null ? null : Audited<IInstanceQueryApplication>(
+                new AuthorizedInstanceQueryApplication(caller, _instanceQueries),
+                caller,
+                static (inner, c, p, s) => new AuditedInstanceQueryApplication(inner, c, p, s)),
+            _system is null ? null : Audited<ISystemQueryApplication>(
+                new AuthorizedSystemQueryApplication(caller, _system),
+                caller,
+                static (inner, c, p, s) => new AuditedSystemQueryApplication(inner, c, p, s)),
+            _instanceManagement is null ? null : Audited<IInstanceManagementApplication>(
+                new AuthorizedInstanceManagementApplication(caller, _instanceManagement),
+                caller,
+                static (inner, c, p, s) => new AuditedInstanceManagementApplication(inner, c, p, s)),
+            _operationQueries is null ? null : Audited<IOperationQueryApplication>(
+                new AuthorizedOperationQueryApplication(caller, _operationQueries),
+                caller,
+                static (inner, c, p, s) => new AuditedOperationQueryApplication(inner, c, p, s)),
+            _operationControl is null ? null : Audited<IOperationControlApplication>(
+                new AuthorizedOperationControlApplication(caller, _operationControl),
+                caller,
+                static (inner, c, p, s) => new AuditedOperationControlApplication(inner, c, p, s)),
+            _provisioning is null ? null : Audited<IProvisioningApplication>(
+                new AuthorizedProvisioningApplication(caller, _provisioning),
+                caller,
+                static (inner, c, p, s) => new AuditedProvisioningApplication(inner, c, p, s)),
+            _backups is null ? null : Audited<IBackupApplication>(
+                new AuthorizedBackupApplication(caller, _backups),
+                caller,
+                static (inner, c, p, s) => new AuditedBackupApplication(inner, c, p, s)),
+            _audit is null ? null : Audited<IAuditApplication>(
+                new AuthorizedAuditApplication(caller, _audit),
+                caller,
+                static (inner, c, p, s) => new AuditedAuditApplication(inner, c, p, s)),
+            _monitoring is null ? null : Audited<IMonitoringApplication>(
+                new AuthorizedMonitoringApplication(caller, _monitoring),
+                caller,
+                static (inner, c, p, s) => new AuditedMonitoringApplication(inner, c, p, s)),
+            _automation is null ? null : Audited<IAutomationApplication>(
+                new AuthorizedAutomationApplication(caller, _automation),
+                caller,
+                static (inner, c, p, s) => new AuditedAutomationApplication(inner, c, p, s)),
+            _eventRules is null ? null : Audited<IEventRuleApplication>(
+                new AuthorizedEventRuleApplication(caller, _eventRules),
+                caller,
+                static (inner, c, p, s) => new AuditedEventRuleApplication(inner, c, p, s)),
+            _fileReads is null ? null : Audited<IFileReadApplication>(
+                new AuthorizedFileReadApplication(caller, _fileReads),
+                caller,
+                static (inner, c, p, s) => new AuditedFileReadApplication(inner, c, p, s)),
+            _fileWrites is null ? null : Audited<IFileWriteApplication>(
+                new AuthorizedFileWriteApplication(caller, _fileWrites),
+                caller,
+                static (inner, c, p, s) => new AuditedFileWriteApplication(inner, c, p, s)));
+
+    /// <summary>
+    /// Wraps an already-permission-checked proxy with its audit decorator, only when a sink is
+    /// configured - absent a sink, behavior is exactly what it was before this boundary existed.
+    /// </summary>
+    private TInterface Audited<TInterface>(
+        TInterface authorized,
+        ICallerContext caller,
+        Func<TInterface, ICallerContext, string, IAuditSink, TInterface> decorate)
+        where TInterface : class =>
+        _auditSink is null ? authorized : decorate(authorized, caller, _pluginId, _auditSink);
 }
 
 internal sealed class PluginAuthorizedApplications(
