@@ -15,7 +15,7 @@
     <ui:Page.Resources>
         <converters:CardWidthConverter x:Key="InstanceCardWidthConverter" MinWidth="360" HorizontalGap="8" />
         <DataTemplate DataType="{x:Type models:InstanceCardModel}">
-            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top" Height="220"
+                <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Stretch" MinHeight="220"
                     MinWidth="360"
                     Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}, Converter={StaticResource InstanceCardWidthConverter}}">
                 <Grid>
@@ -213,13 +213,21 @@
                 <ge:StopTipLayer x:Name="StopTipLayer" Visibility="Collapsed" />
                 <ui:GridView x:Name="InstanceCardGrid"
                          ItemsSource="{Binding FilteredInstances}"
+                         VerticalAlignment="Stretch"
                          SelectionMode="Extended"
                          PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
                          PreviewMouseMove="CardListView_PreviewMouseMove"
                          PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
+                    <ui:GridView.ItemContainerStyle>
+                        <Style TargetType="ui:GridViewItem">
+                            <Setter Property="VerticalAlignment" Value="Stretch" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ui:GridView.ItemContainerStyle>
                 </ui:GridView>
                 <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
-                        Background="Transparent" BorderBrush="#FF3B82F6" BorderThickness="1" />
+                    Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
             </Grid>
     </Grid>
 </ui:Page>

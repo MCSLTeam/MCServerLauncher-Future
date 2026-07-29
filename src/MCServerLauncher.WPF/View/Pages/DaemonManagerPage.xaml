@@ -14,7 +14,7 @@
     <ui:Page.Resources>
         <converters:CardWidthConverter x:Key="DaemonCardWidthConverter" MinWidth="390" HorizontalGap="8" />
         <DataTemplate DataType="{x:Type models:DaemonCardModel}">
-            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Top"
+                <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Stretch" MinHeight="230"
                     MinWidth="390"
                     Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}, Converter={StaticResource DaemonCardWidthConverter}}">
                 <Grid Margin="16,14,16,12">
@@ -198,13 +198,21 @@
         <Grid Grid.Row="3" Grid.Column="0" Margin="0,10,35,0" ClipToBounds="True">
             <ui:GridView x:Name="DaemonCardItemsControl"
                           ItemsSource="{Binding FilteredDaemons}"
+                          VerticalAlignment="Stretch"
                           SelectionMode="Extended"
                           PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="CardListView_PreviewMouseMove"
                           PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
+                <ui:GridView.ItemContainerStyle>
+                    <Style TargetType="ui:GridViewItem">
+                        <Setter Property="VerticalAlignment" Value="Stretch" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ui:GridView.ItemContainerStyle>
             </ui:GridView>
             <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
-                    Background="Transparent" BorderBrush="#FF3B82F6" BorderThickness="1" />
+                    Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
         </Grid>
     </Grid>
 </ui:Page>
