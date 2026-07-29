@@ -242,7 +242,11 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         var normalizedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (candidate.Length <= normalizedRoot.Length)
             return false;
-        if (!candidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+        // Case sensitivity must follow the filesystem, not the host that wrote this code. The
+        // daemon also ships linux-x64 and osx-*, where "Instances" and "instances" are different
+        // directories; comparing case-insensitively there would admit a sibling of the approved
+        // root as if it were inside it.
+        if (!candidate.StartsWith(normalizedRoot, FileSessionCoordinator.GetPathComparison()))
             return false;
         return candidate[normalizedRoot.Length] is var separator &&
                (separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar);

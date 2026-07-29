@@ -1321,7 +1321,7 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         return OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
     }
 
-    private static StringComparison GetPathComparison()
+    internal static StringComparison GetPathComparison()
     {
         return OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
