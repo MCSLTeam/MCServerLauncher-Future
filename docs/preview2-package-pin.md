@@ -5,7 +5,7 @@ No public release exists or is planned. SDK-9b closes the Preview-2 gate as an
 **internal implementation and test acceptance state only**; public package
 distribution (GitHub Release assets or nuget.org) requires explicitly
 reopening SDK-9a/9b, exactly as recorded for Preview-1.
-Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`,
+Decision source: `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`,
 sections 1, 10, and 12. Preview-1 history: `docs/preview1-package-pin.md`.
 
 ## Why preview.4 and not preview.3
