@@ -1,15 +1,17 @@
-using System.Collections.Concurrent;
 using MCServerLauncher.Common.Contracts.Files;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Storage;
 using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Plugins;
 
 /// <summary>
-/// Confines a plugin's file surface to an explicitly approved subtree and makes its download and
-/// upload sessions owned, counted, and releasable.
+/// Confines a plugin's file surface to the instance data a catalogued instance owns, and makes its
+/// download and upload sessions owned, counted, and revocable.
 /// </summary>
 /// <remarks>
 /// The daemon data root holds the audit log, plan store, automation policies, backup archives,
@@ -21,6 +23,12 @@ namespace MCServerLauncher.Daemon.Plugins;
 ///
 /// Containment is an allow-list rather than a deny-list of control directories, so a future store
 /// added under the data root is out of reach by default instead of by remembering to exclude it.
+/// The allow-list is not the instances root as a whole: the instance directory and the daemon's own
+/// persisted instance files inside it are daemon-owned lifecycle state, not plugin payload. Removing
+/// an instance checks running state, holds a mutation lease, updates the catalog and the published
+/// snapshot, then stages the rename and the delete; a plugin renaming or deleting
+/// <c>instances/{id}</c> through this facade would satisfy none of that. Creating
+/// <c>instances/{anything}</c> would likewise mint a directory the catalog knows nothing about.
 ///
 /// Sessions are tracked here as well because the shared coordinator records no owner: without this
 /// a plugin's sessions count against no budget, and any session id that leaked to a plugin could be
@@ -35,187 +43,387 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     /// </summary>
     internal const int MaximumConcurrentSessions = 8;
 
-    private readonly IFileApplication _inner;
-    private readonly string _allowedRoot;
-    private readonly ConcurrentDictionary<Guid, byte> _downloadSessions = new();
-    private readonly ConcurrentDictionary<Guid, byte> _uploadSessions = new();
+    /// <summary>
+    /// The daemon's persistence writer replaces a config through <c>File.Replace</c> and keeps the
+    /// previous revision beside it under this suffix, so it owns the backup as much as the original.
+    /// </summary>
+    private const string BackupSuffix = ".bak";
 
-    internal ContainedPluginFileApplication(IFileApplication inner, string? allowedRoot = null)
+    /// <summary>
+    /// Daemon-owned files inside an instance directory. They are refused for reads as well as
+    /// writes: the persisted instance config is what <c>instance.query</c> answers from, and a
+    /// plugin holding only the Low-risk <c>file.read</c> feature must not read it around that gate.
+    /// </summary>
+    private static readonly HashSet<string> DaemonOwnedFileNames = new(StringComparer.Ordinal)
+    {
+        InstanceConfig.FileName,
+        InstanceConfig.FileName + BackupSuffix,
+        InstanceInstallMetadataStore.FileName,
+        InstanceInstallMetadataStore.FileName + BackupSuffix
+    };
+
+    private readonly IFileApplication _inner;
+    private readonly IInstanceSnapshotSource? _instances;
+    private readonly string _allowedRoot;
+    private readonly object _gate = new();
+    private readonly HashSet<Guid> _downloadSessions = [];
+    private readonly HashSet<Guid> _uploadSessions = [];
+    private readonly TaskCompletionSource _quiesced = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private int _reservations;
+    private FacadeState _state = FacadeState.Active;
+
+    internal ContainedPluginFileApplication(
+        IFileApplication inner,
+        IInstanceSnapshotSource? instances,
+        string? allowedRoot = null)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-        _allowedRoot = Path.GetFullPath(allowedRoot ?? FileManager.InstancesRoot);
+        // A missing catalog is not a reason to widen: with nothing to confirm an instance exists,
+        // every path fails the membership check and the whole surface is refused.
+        _instances = instances;
+        _allowedRoot = Path.GetFullPath(allowedRoot ?? FileManager.InstancesRoot)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
     public Task<Result<DirectoryDetails, DaemonError>> GetDirectoryInfoAsync(
         PathRequest request,
         CancellationToken cancellationToken) =>
-        Contained<DirectoryDetails>(request.Path) ??
+        Refused<DirectoryDetails>(PathAccess.Readable, request.Path) ??
         _inner.GetDirectoryInfoAsync(request, cancellationToken);
 
     public Task<Result<FileDetails, DaemonError>> GetFileInfoAsync(
         PathRequest request,
         CancellationToken cancellationToken) =>
-        Contained<FileDetails>(request.Path) ?? _inner.GetFileInfoAsync(request, cancellationToken);
+        Refused<FileDetails>(PathAccess.Readable, request.Path) ??
+        _inner.GetFileInfoAsync(request, cancellationToken);
 
     public async Task<Result<DownloadSession, DaemonError>> OpenDownloadAsync(
         DownloadOpenRequest request,
         CancellationToken cancellationToken)
     {
-        var contained = Contained<DownloadSession>(request.Path);
-        if (contained is not null)
-            return await contained;
-        if (TotalSessions >= MaximumConcurrentSessions)
-            return Result.Err<DownloadSession, DaemonError>(SessionLimitReached());
+        var refused = Refused<DownloadSession>(PathAccess.Readable, request.Path);
+        if (refused is not null)
+            return await refused;
 
-        var result = await _inner.OpenDownloadAsync(request, cancellationToken);
-        if (result.IsOk(out var session))
-            _downloadSessions.TryAdd(session!.SessionId, 0);
-        return result;
+        return await OpenSessionAsync(
+            SessionKind.Download,
+            () => _inner.OpenDownloadAsync(request, cancellationToken),
+            static session => session.SessionId);
     }
 
     public Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
         DownloadChunkRequest request,
         CancellationToken cancellationToken) =>
-        _downloadSessions.ContainsKey(request.SessionId)
+        Owns(SessionKind.Download, request.SessionId)
             ? _inner.ReadDownloadChunkAsync(request, cancellationToken)
             : Task.FromResult(Result.Err<DownloadChunk, DaemonError>(UnownedSession()));
 
-    public async Task<Result<Unit, DaemonError>> CloseDownloadAsync(
+    public Task<Result<Unit, DaemonError>> CloseDownloadAsync(
         Guid sessionId,
-        CancellationToken cancellationToken)
-    {
-        if (!_downloadSessions.TryRemove(sessionId, out _))
-            return Result.Err<Unit, DaemonError>(UnownedSession());
-        return await _inner.CloseDownloadAsync(sessionId, cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        EndSessionAsync(
+            SessionKind.Download,
+            sessionId,
+            () => _inner.CloseDownloadAsync(sessionId, cancellationToken));
 
     public Task<Result<Unit, DaemonError>> CreateDirectoryAsync(
         PathRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.Path) ?? _inner.CreateDirectoryAsync(request, cancellationToken);
+        Refused<Unit>(PathAccess.Mutable, request.Path) ??
+        _inner.CreateDirectoryAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> DeleteFileAsync(
         PathRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.Path) ?? _inner.DeleteFileAsync(request, cancellationToken);
+        Refused<Unit>(PathAccess.Mutable, request.Path) ??
+        _inner.DeleteFileAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> DeleteDirectoryAsync(
         DeleteDirectoryRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.Path) ?? _inner.DeleteDirectoryAsync(request, cancellationToken);
+        Refused<Unit>(PathAccess.Mutable, request.Path) ??
+        _inner.DeleteDirectoryAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> RenameFileAsync(
         PathRenameRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.Path) ?? _inner.RenameFileAsync(request, cancellationToken);
+        RefusedRename<Unit>(request) ?? _inner.RenameFileAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> RenameDirectoryAsync(
         PathRenameRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.Path) ?? _inner.RenameDirectoryAsync(request, cancellationToken);
+        RefusedRename<Unit>(request) ?? _inner.RenameDirectoryAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> MoveFileAsync(
         PathTransferRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.SourcePath, request.DestinationPath) ??
+        RefusedTransfer<Unit>(PathAccess.Mutable, request) ??
         _inner.MoveFileAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> MoveDirectoryAsync(
         PathTransferRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.SourcePath, request.DestinationPath) ??
+        RefusedTransfer<Unit>(PathAccess.Mutable, request) ??
         _inner.MoveDirectoryAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> CopyFileAsync(
         PathTransferRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.SourcePath, request.DestinationPath) ??
+        RefusedTransfer<Unit>(PathAccess.Readable, request) ??
         _inner.CopyFileAsync(request, cancellationToken);
 
     public Task<Result<Unit, DaemonError>> CopyDirectoryAsync(
         PathTransferRequest request,
         CancellationToken cancellationToken) =>
-        Contained<Unit>(request.SourcePath, request.DestinationPath) ??
+        RefusedTransfer<Unit>(PathAccess.Readable, request) ??
         _inner.CopyDirectoryAsync(request, cancellationToken);
 
     public async Task<Result<UploadSession, DaemonError>> OpenUploadAsync(
         UploadOpenRequest request,
         CancellationToken cancellationToken)
     {
-        var contained = Contained<UploadSession>(request.Path);
-        if (contained is not null)
-            return await contained;
-        if (TotalSessions >= MaximumConcurrentSessions)
-            return Result.Err<UploadSession, DaemonError>(SessionLimitReached());
+        var refused = Refused<UploadSession>(PathAccess.Mutable, request.Path);
+        if (refused is not null)
+            return await refused;
 
-        var result = await _inner.OpenUploadAsync(request, cancellationToken);
-        if (result.IsOk(out var session))
-            _uploadSessions.TryAdd(session!.SessionId, 0);
-        return result;
+        return await OpenSessionAsync(
+            SessionKind.Upload,
+            () => _inner.OpenUploadAsync(request, cancellationToken),
+            static session => session.SessionId);
     }
 
     public Task<Result<Unit, DaemonError>> WriteUploadChunkAsync(
         UploadChunkRequest request,
         CancellationToken cancellationToken) =>
-        _uploadSessions.ContainsKey(request.SessionId)
+        Owns(SessionKind.Upload, request.SessionId)
             ? _inner.WriteUploadChunkAsync(request, cancellationToken)
             : Task.FromResult(Result.Err<Unit, DaemonError>(UnownedSession()));
 
-    public async Task<Result<Unit, DaemonError>> CloseUploadAsync(
+    public Task<Result<Unit, DaemonError>> CloseUploadAsync(
         Guid sessionId,
-        CancellationToken cancellationToken)
-    {
-        if (!_uploadSessions.TryRemove(sessionId, out _))
-            return Result.Err<Unit, DaemonError>(UnownedSession());
-        return await _inner.CloseUploadAsync(sessionId, cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        EndSessionAsync(
+            SessionKind.Upload,
+            sessionId,
+            () => _inner.CloseUploadAsync(sessionId, cancellationToken));
 
-    public async Task<Result<Unit, DaemonError>> CancelUploadAsync(
+    public Task<Result<Unit, DaemonError>> CancelUploadAsync(
         Guid sessionId,
-        CancellationToken cancellationToken)
-    {
-        if (!_uploadSessions.TryRemove(sessionId, out _))
-            return Result.Err<Unit, DaemonError>(UnownedSession());
-        return await _inner.CancelUploadAsync(sessionId, cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        EndSessionAsync(
+            SessionKind.Upload,
+            sessionId,
+            () => _inner.CancelUploadAsync(sessionId, cancellationToken));
 
     /// <summary>
-    /// Releases every session this plugin still holds. Called when the plugin stops so a crashed or
-    /// sloppy plugin cannot leave file handles and staging bytes pinned until session expiry.
+    /// Revokes the plugin's file capability and releases every session it still holds. Admission
+    /// closes first, then in-flight opens are allowed to settle, and only then is the remainder
+    /// swept - sweeping without those two steps races an open that is already past the admission
+    /// check and would leave its session pinned until expiry.
     /// </summary>
     internal async Task ReleaseSessionsAsync()
     {
-        foreach (var sessionId in _downloadSessions.Keys)
+        lock (_gate)
         {
-            if (_downloadSessions.TryRemove(sessionId, out _))
-                await SuppressAsync(() => _inner.CloseDownloadAsync(sessionId, CancellationToken.None));
+            if (_state == FacadeState.Active)
+                _state = FacadeState.Revoking;
+            SignalQuiescedWhenSettled();
         }
 
-        foreach (var sessionId in _uploadSessions.Keys)
+        // Every in-flight open holds a reservation, so a zero reservation count is what makes the
+        // sweep total. An open that settles after this point sees the revoked state, closes its own
+        // inner session and never registers it here.
+        await _quiesced.Task;
+
+        Guid[] downloads;
+        Guid[] uploads;
+        lock (_gate)
         {
-            if (_uploadSessions.TryRemove(sessionId, out _))
-                await SuppressAsync(() => _inner.CancelUploadAsync(sessionId, CancellationToken.None));
+            downloads = [.. _downloadSessions];
+            _downloadSessions.Clear();
+            uploads = [.. _uploadSessions];
+            _uploadSessions.Clear();
+        }
+
+        foreach (var sessionId in downloads)
+            await SuppressAsync(() => _inner.CloseDownloadAsync(sessionId, CancellationToken.None));
+
+        foreach (var sessionId in uploads)
+            await SuppressAsync(() => _inner.CancelUploadAsync(sessionId, CancellationToken.None));
+
+        lock (_gate)
+        {
+            _state = FacadeState.Revoked;
         }
     }
-
-    private int TotalSessions => _downloadSessions.Count + _uploadSessions.Count;
 
     /// <summary>
-    /// Returns a faulted result when any supplied path escapes the allowed subtree, or
-    /// <see langword="null"/> when every path is contained and the call may proceed.
+    /// Reserves a slot, opens through the inner application, then converts the reservation into an
+    /// owned session. Reserving first is what makes the cap hold: reading the count, awaiting an
+    /// open and registering afterwards lets every concurrent caller observe the same headroom.
     /// </summary>
-    private Task<Result<T, DaemonError>>? Contained<T>(params string[] paths) where T : notnull
+    private async Task<Result<TSession, DaemonError>> OpenSessionAsync<TSession>(
+        SessionKind kind,
+        Func<Task<Result<TSession, DaemonError>>> open,
+        Func<TSession, Guid> identify)
+        where TSession : notnull
     {
-        foreach (var path in paths)
+        var refusal = TryReserve();
+        if (refusal is not null)
+            return Result.Err<TSession, DaemonError>(refusal);
+
+        Result<TSession, DaemonError> result;
+        try
         {
-            if (!IsContained(path))
-                return Task.FromResult(Result.Err<T, DaemonError>(OutOfContainment()));
+            result = await open();
+        }
+        catch
+        {
+            ReleaseReservation();
+            throw;
         }
 
-        return null;
+        if (!result.IsOk(out var session))
+        {
+            ReleaseReservation();
+            return result;
+        }
+
+        var sessionId = identify(session!);
+        if (TryRegister(kind, sessionId))
+            return result;
+
+        // Revocation began while this open was in flight. The inner session exists but nothing owns
+        // it any more, so close it here rather than leave it pinned until expiry.
+        await SuppressAsync(() => TerminateAsync(kind, sessionId));
+        return Result.Err<TSession, DaemonError>(SessionsRevoked());
     }
 
-    private bool IsContained(string path)
+    /// <summary>
+    /// Drops ownership only once the inner application has actually terminated the session, or has
+    /// reported it already gone. A cancelled or otherwise failed call leaves the inner handle and
+    /// any staging bytes alive, so freeing the slot there would let a plugin repeat the call and
+    /// walk straight past its quota.
+    /// </summary>
+    private async Task<Result<Unit, DaemonError>> EndSessionAsync(
+        SessionKind kind,
+        Guid sessionId,
+        Func<Task<Result<Unit, DaemonError>>> end)
+    {
+        if (!Owns(kind, sessionId))
+            return Result.Err<Unit, DaemonError>(UnownedSession());
+
+        var result = await end();
+        if (result.IsErr(out var error))
+        {
+            // The coordinator answers NotFound for a session it already expired or closed. Holding
+            // the slot for one of those would wedge it until the plugin stops.
+            if (error!.Kind == DaemonErrorKind.NotFound)
+                Forget(kind, sessionId);
+            return result;
+        }
+
+        Forget(kind, sessionId);
+        return result;
+    }
+
+    private Task<Result<Unit, DaemonError>> TerminateAsync(SessionKind kind, Guid sessionId) =>
+        kind == SessionKind.Download
+            ? _inner.CloseDownloadAsync(sessionId, CancellationToken.None)
+            : _inner.CancelUploadAsync(sessionId, CancellationToken.None);
+
+    private DaemonError? TryReserve()
+    {
+        lock (_gate)
+        {
+            if (_state != FacadeState.Active)
+                return SessionsRevoked();
+            if (_downloadSessions.Count + _uploadSessions.Count + _reservations >= MaximumConcurrentSessions)
+                return SessionLimitReached();
+
+            _reservations++;
+            return null;
+        }
+    }
+
+    private void ReleaseReservation()
+    {
+        lock (_gate)
+        {
+            _reservations--;
+            SignalQuiescedWhenSettled();
+        }
+    }
+
+    private bool TryRegister(SessionKind kind, Guid sessionId)
+    {
+        lock (_gate)
+        {
+            _reservations--;
+            if (_state != FacadeState.Active)
+            {
+                SignalQuiescedWhenSettled();
+                return false;
+            }
+
+            Sessions(kind).Add(sessionId);
+            return true;
+        }
+    }
+
+    private bool Owns(SessionKind kind, Guid sessionId)
+    {
+        lock (_gate)
+        {
+            return Sessions(kind).Contains(sessionId);
+        }
+    }
+
+    private void Forget(SessionKind kind, Guid sessionId)
+    {
+        lock (_gate)
+        {
+            Sessions(kind).Remove(sessionId);
+        }
+    }
+
+    private HashSet<Guid> Sessions(SessionKind kind) =>
+        kind == SessionKind.Download ? _downloadSessions : _uploadSessions;
+
+    private void SignalQuiescedWhenSettled()
+    {
+        if (_state != FacadeState.Active && _reservations == 0)
+            _quiesced.TrySetResult();
+    }
+
+    /// <summary>
+    /// Returns a faulted result when the path is not reachable at the requested access level, or
+    /// <see langword="null"/> when the call may proceed.
+    /// </summary>
+    private Task<Result<T, DaemonError>>? Refused<T>(PathAccess access, string path) where T : notnull =>
+        IsAllowed(path, access) ? null : Task.FromResult(Result.Err<T, DaemonError>(OutOfContainment()));
+
+    /// <summary>
+    /// A transfer's destination is always written, so it is checked as a mutation regardless of what
+    /// the source end requires.
+    /// </summary>
+    private Task<Result<T, DaemonError>>? RefusedTransfer<T>(PathAccess source, PathTransferRequest request)
+        where T : notnull =>
+        IsAllowed(request.SourcePath, source) && IsAllowed(request.DestinationPath, PathAccess.Mutable)
+            ? null
+            : Task.FromResult(Result.Err<T, DaemonError>(OutOfContainment()));
+
+    /// <summary>
+    /// The coordinator requires a rename target to be a single file-system name resolved against the
+    /// source's parent, so refusing a daemon-owned name here is what stops a rename from producing
+    /// one where the mutation check on the source path cannot see it.
+    /// </summary>
+    private Task<Result<T, DaemonError>>? RefusedRename<T>(PathRenameRequest request) where T : notnull =>
+        IsAllowed(request.Path, PathAccess.Mutable) && !IsDaemonOwnedFileName(request.NewName)
+            ? null
+            : Task.FromResult(Result.Err<T, DaemonError>(OutOfContainment()));
+
+    private bool IsAllowed(string path, PathAccess access)
     {
         string resolved;
         try
@@ -230,27 +438,60 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             return false;
         }
 
-        return IsStrictlyUnder(resolved, _allowedRoot);
+        var segments = SegmentsUnderAllowedRoot(resolved);
+        // Zero segments is the instances root itself, which is never reachable at any access level.
+        if (segments is not { Length: > 0 })
+            return false;
+
+        if (!IsCatalogedInstanceDirectory(segments[0]))
+            return false;
+
+        // The instance directory is the unit the manager creates, renames and deletes while holding
+        // a mutation lease and updating the catalog; mutating it here would bypass all of that.
+        if (access == PathAccess.Mutable && segments.Length == 1)
+            return false;
+
+        return !IsDaemonOwnedFileName(segments[^1]);
     }
 
     /// <summary>
-    /// Containment excludes the allowed root itself, so a plugin cannot recursively delete or
-    /// rename the subtree it was granted access within.
+    /// Splits the part of an already-resolved path that lies strictly under the allowed root, or
+    /// returns <see langword="null"/> when the path is the root itself or outside it.
     /// </summary>
-    private static bool IsStrictlyUnder(string candidate, string root)
+    /// <remarks>
+    /// The comparison is <see cref="StringComparison.Ordinal"/> on every platform rather than the
+    /// filesystem-dependent comparison the coordinator uses. The root is a fixed internal name the
+    /// daemon writes itself, so demanding the exact spelling is fail-closed everywhere; Windows
+    /// supports per-directory case sensitivity, where a case-insensitive compare would admit an
+    /// "Instances" sibling as though it were the approved root.
+    /// </remarks>
+    private string[]? SegmentsUnderAllowedRoot(string resolved)
     {
-        var normalizedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        if (candidate.Length <= normalizedRoot.Length)
-            return false;
-        // Case sensitivity must follow the filesystem, not the host that wrote this code. The
-        // daemon also ships linux-x64 and osx-*, where "Instances" and "instances" are different
-        // directories; comparing case-insensitively there would admit a sibling of the approved
-        // root as if it were inside it.
-        if (!candidate.StartsWith(normalizedRoot, FileSessionCoordinator.GetPathComparison()))
-            return false;
-        return candidate[normalizedRoot.Length] is var separator &&
-               (separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar);
+        if (resolved.Length <= _allowedRoot.Length)
+            return null;
+        if (!resolved.StartsWith(_allowedRoot, StringComparison.Ordinal))
+            return null;
+        var separator = resolved[_allowedRoot.Length];
+        if (separator != Path.DirectorySeparatorChar && separator != Path.AltDirectorySeparatorChar)
+            return null;
+
+        return resolved[(_allowedRoot.Length + 1)..].Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
     }
+
+    /// <summary>
+    /// The daemon names an instance directory with the invariant "D" form of its identifier, so the
+    /// spelling is required to match exactly: any other rendering of the same value would be a
+    /// second directory the catalog does not describe.
+    /// </summary>
+    private bool IsCatalogedInstanceDirectory(string segment) =>
+        Guid.TryParse(segment, out var instanceId) &&
+        segment.Equals(instanceId.ToString(), StringComparison.Ordinal) &&
+        _instances is not null &&
+        _instances.TryGet(instanceId, out _);
+
+    private static bool IsDaemonOwnedFileName(string name) => DaemonOwnedFileNames.Contains(name);
 
     private static async Task SuppressAsync(Func<Task<Result<Unit, DaemonError>>> release)
     {
@@ -276,4 +517,27 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     private static ConflictDaemonError SessionLimitReached() =>
         new("plugin.file.session_limit",
             $"A plugin may hold at most {MaximumConcurrentSessions} concurrent file sessions.");
+
+    private static ConflictDaemonError SessionsRevoked() =>
+        new("plugin.file.sessions_revoked",
+            "The plugin's file sessions have been revoked.");
+
+    private enum PathAccess
+    {
+        Readable,
+        Mutable
+    }
+
+    private enum SessionKind
+    {
+        Download,
+        Upload
+    }
+
+    private enum FacadeState
+    {
+        Active,
+        Revoking,
+        Revoked
+    }
 }

@@ -85,10 +85,14 @@ internal sealed class PluginApplicationAuthorizer
         // backup, operation and monitoring stores. Containment wraps the singleton rather than the
         // per-caller proxies so a plugin acting for a foreign principal is confined too — the
         // plugin code is the untrusted party regardless of whose token it presents.
+        //
+        // Containment consults the ungated catalog, not the feature-gated _instanceCatalog: whether
+        // a path belongs to a real instance is a property of the daemon, not of what this plugin was
+        // granted, and a plugin holding only the file features must still be confined to it.
         _containedFiles = files is null ||
                           !(HasFeature(PluginFeature.FileRead) || HasFeature(PluginFeature.FileWrite))
             ? null
-            : new ContainedPluginFileApplication(files);
+            : new ContainedPluginFileApplication(files, instanceCatalog);
         _fileReads = HasFeature(PluginFeature.FileRead) ? _containedFiles : null;
         _fileWrites = HasFeature(PluginFeature.FileWrite) ? _containedFiles : null;
         Host = Create(_callerContexts.CreateHost(identity, grantedFeatures));
@@ -289,8 +293,9 @@ internal sealed class PluginContext : IPluginContext
     public IPluginEventRegistrar Events { get; }
 
     /// <summary>
-    /// Closes every file session this plugin still holds. The host calls it once the plugin has
-    /// stopped, so a crashed plugin cannot pin file handles and staging bytes until session expiry.
+    /// Revokes the plugin's file capability and closes every session it still holds. The host calls
+    /// it once the plugin's stop attempt has terminated, so a crashed, throwing or hanging plugin
+    /// cannot pin file handles and staging bytes until session expiry.
     /// </summary>
     internal Task ReleaseFileSessionsAsync() => _applications.ReleaseFileSessionsAsync();
 
