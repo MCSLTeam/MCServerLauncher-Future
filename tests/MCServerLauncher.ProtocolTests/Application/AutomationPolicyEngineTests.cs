@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Common.Contracts.System;
@@ -266,6 +267,161 @@ public sealed class AutomationPolicyEngineTests
     }
 
     [Fact]
+    public async Task Evaluator_SustainedMetricRefusesToFireAcrossAFailedSamplerTick()
+    {
+        using var harness = new Harness();
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 60
+        };
+        harness.SystemCpu = 95;
+        for (var index = 0; index < 2; index++)
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        // One tick cannot read the machine. It observed nothing, so it leaves a marked hole rather
+        // than a silence the evaluator would read as an uninterrupted stretch above the threshold.
+        harness.SamplingFails = true;
+        await Assert.ThrowsAsync<IOException>(() => harness.Metrics.SampleOnceAsync(CancellationToken.None));
+        harness.SamplingFails = false;
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+
+        for (var index = 0; index < 2; index++)
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
+        Assert.False(evaluation.Fires);
+        Assert.Contains("recorded gap", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Evaluator_SustainedMetricRefusesAWindowLongerThanItCanReadLosslessly()
+    {
+        using var harness = new Harness();
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 40000
+        };
+        harness.SystemCpu = 95;
+
+        // Two samples eleven hours apart say nothing about the eleven hours between them, and the
+        // window is longer than the lossless read budget, so it cannot be judged at all.
+        await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        harness.Time.Advance(TimeSpan.FromSeconds(40000));
+        await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
+        Assert.False(evaluation.Fires);
+        Assert.Contains("2000-sample lossless evaluation budget", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Evaluator_SustainedMetricSeesADipThatDownsamplingHides()
+    {
+        using var harness = new Harness(sampleInterval: TimeSpan.FromSeconds(1));
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 60
+        };
+
+        for (var second = 0; second <= 60; second++)
+        {
+            if (second > 0)
+                harness.Time.Advance(TimeSpan.FromSeconds(1));
+            // The dip sits inside the first downsampling bucket, whose last point is above the
+            // threshold, so only the raw series still carries it.
+            harness.SystemCpu = second == 3 ? 10 : 95;
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        }
+
+        var now = harness.Time.GetUtcNow();
+        var downsampled = harness.Metrics.Query(new MonitoringQuery(now - TimeSpan.FromSeconds(60), now, 6));
+        Assert.All(downsampled.Samples, sample => Assert.True(sample.SystemCpuPercent >= 90));
+
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, now);
+        Assert.False(evaluation.Fires);
+        Assert.Contains("below threshold", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Evaluator_SustainedMetricRefusesWhenRetentionRetiredTheWindowHead()
+    {
+        using var harness = new Harness();
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 600
+        };
+        harness.SystemCpu = 95;
+        for (var index = 0; index < 20; index++)
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        // Retention retires the oldest segment: the first half of the window is no longer evidence
+        // anybody holds, however healthy the retained half looks.
+        foreach (var segment in Directory.EnumerateFiles(harness.MonitoringRoot, "metrics-*.jsonl"))
+            File.Delete(segment);
+
+        for (var index = 0; index < 20; index++)
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
+        Assert.False(evaluation.Fires);
+        Assert.Contains("retention", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Evaluator_SustainedMetricRefusesWhenTheHistoryDroppedARecord()
+    {
+        using var harness = new Harness();
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 60
+        };
+        harness.SystemCpu = 95;
+        for (var index = 0; index < 3; index++)
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        // The segment is readable but not writable, so the next append is counted as a dropped
+        // record instead of thrown; the point it carried is simply gone.
+        var segment = Directory.EnumerateFiles(harness.MonitoringRoot, "metrics-*.jsonl").Single();
+        using (new FileStream(segment, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        }
+
+        Assert.Equal(1, harness.Metrics.DroppedRecords);
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
+        Assert.False(evaluation.Fires);
+        Assert.Contains("dropped 1 record(s)", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Test_RunsConcurrentlyWithTicksWithoutCorruptingSharedState()
     {
         using var harness = new Harness();
@@ -527,8 +683,11 @@ public sealed class AutomationPolicyEngineTests
 
     private sealed class Harness : IDisposable
     {
-        internal Harness(DateTimeOffset? start = null)
+        private readonly TimeSpan? _sampleInterval;
+
+        internal Harness(DateTimeOffset? start = null, TimeSpan? sampleInterval = null)
         {
+            _sampleInterval = sampleInterval;
             Time = new ManualTimeProvider(start ?? DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
             MonitoringRoot = Directory.CreateTempSubdirectory("mcsl-automation-metrics-").FullName;
             var storeRoot = Directory.CreateTempSubdirectory("mcsl-automation-policies-").FullName;
@@ -563,6 +722,9 @@ public sealed class AutomationPolicyEngineTests
         internal AutomationEvaluator Evaluator { get; }
         internal double SystemCpu { get; set; } = 5.5;
 
+        /// <summary>When set, a sampling tick cannot read the machine and fails.</summary>
+        internal bool SamplingFails { get; set; }
+
         internal TestInstance AddInstance(Guid id, InstanceStatus status)
         {
             var instance = new TestInstance(id, $"instance-{id:N}", status);
@@ -578,15 +740,18 @@ public sealed class AutomationPolicyEngineTests
             new(
                 new DaemonMonitoringConfig(),
                 Manager,
-                new DelegateSystemInfoCell(() => new SystemInfo(
-                    new OperatingSystemInfo("Windows", "x64"),
-                    new ProcessorInfo("vendor", "cpu", 16, SystemCpu, 8, 16),
-                    new MemoryInfo(32768, 16384),
-                    new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\"),
-                    [new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\")],
-                    "2.0.0")),
+                new DelegateSystemInfoCell(() => SamplingFails
+                    ? throw new IOException("the machine counters are unavailable")
+                    : new SystemInfo(
+                        new OperatingSystemInfo("Windows", "x64"),
+                        new ProcessorInfo("vendor", "cpu", 16, SystemCpu, 8, 16),
+                        new MemoryInfo(32768, 16384),
+                        new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\"),
+                        [new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\")],
+                        "2.0.0")),
                 Time,
-                MonitoringRoot);
+                MonitoringRoot,
+                interval: _sampleInterval);
 
         public void Dispose()
         {

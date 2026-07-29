@@ -313,31 +313,68 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Sustained conditions are judged only on lossless raw evidence. Every way the evidence can be
+    /// incomplete — a window too long to read raw, a truncated read, a dropped record, a gap marker,
+    /// an unobserved stretch between samples, or an uncovered window edge — is non-firing and says
+    /// which one it was: absence of contrary evidence is not evidence that the metric held.
+    /// </summary>
     private TriggerEvaluation EvaluateSustainedMetric(
         SustainedMetricTrigger sustained,
         DateTimeOffset now)
     {
         var window = TimeSpan.FromSeconds(sustained.SustainedSeconds);
-        // Ask for enough points to cover the window at the sampling interval: a downsampled series
-        // would hide the below-threshold dips that must veto a "sustained" verdict.
-        var wanted = Math.Clamp(
-            (int)(window.TotalSeconds / Math.Max(1, _interval.TotalSeconds)) + 2,
-            1,
-            MonitoringSampler.MaximumQueryPoints);
-        var result = _metrics.Query(new Common.Contracts.Monitoring.MonitoringQuery(now - window, now, wanted));
-        var samples = result.Samples;
+        // The sampler's own cadence, not this engine's tick rate, decides how many points the
+        // window holds and how far apart two samples may sit before the space between them is a
+        // stretch nobody observed.
+        var interval = _metrics.SampleInterval;
+        var needed = Math.Max(1, window.Ticks / interval.Ticks + 2);
+        if (needed > MonitoringSampler.MaximumQueryPoints)
+        {
+            // A longer window could only be read downsampled, and a downsampled series cannot show
+            // the dips that must veto a "sustained" verdict.
+            return TriggerEvaluation.Quiet(
+                $"sustained window needs {needed} samples, above the {MonitoringSampler.MaximumQueryPoints}-sample lossless evaluation budget");
+        }
+
+        var evidence = _metrics.ReadRawWindow(now - window, now, (int)needed);
+        if (evidence.DroppedRecords > 0)
+        {
+            return TriggerEvaluation.Quiet(
+                $"metric history dropped {evidence.DroppedRecords} record(s) to write failures");
+        }
+
+        if (evidence.Truncated)
+        {
+            return TriggerEvaluation.Quiet("metric history read was truncated inside the window");
+        }
+
+        var samples = evidence.Samples;
         // A gap marks time nobody observed. Treating it as absence of evidence would let a policy
         // claim a metric was sustained across a stretch the daemon never saw.
         if (samples.Any(static sample => sample.Gap))
         {
-            return TriggerEvaluation.Quiet("metric history has a gap in the window");
+            return TriggerEvaluation.Quiet("metric history has a recorded gap in the window");
         }
 
-        // Sustained means evidence across the whole window: the oldest sample must sit in the
-        // window's first sampling interval, and no sample inside may dip below the threshold.
-        if (samples.Length == 0 || samples[0].Timestamp > now - window + _interval)
+        // Sustained means evidence across the whole window: it must reach both edges, and no two
+        // consecutive samples may sit further apart than the sampler's own hole threshold.
+        if (samples.Length == 0 || samples[0].Timestamp > now - window + interval)
         {
-            return TriggerEvaluation.Quiet("insufficient metric history");
+            return TriggerEvaluation.Quiet("metric history does not cover the window start (retention or startup)");
+        }
+
+        if (now - samples[^1].Timestamp > interval * 2)
+        {
+            return TriggerEvaluation.Quiet("metric history stops before the window end");
+        }
+
+        for (var index = 1; index < samples.Length; index++)
+        {
+            if (samples[index].Timestamp - samples[index - 1].Timestamp > interval * 2)
+            {
+                return TriggerEvaluation.Quiet("metric history has an unobserved stretch in the window");
+            }
         }
 
         switch (sustained.Metric)
