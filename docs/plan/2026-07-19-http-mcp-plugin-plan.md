@@ -4,7 +4,7 @@
 
 - Planning date: 2026-07-19.
 - **Decision freeze:** 2026-07-20. Authoritative overrides live in
-  `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`.
+  `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`.
   When this plan and that spec disagree, **the spec wins**.
 - Delivery stages: **MCP-0..5** after SDK Preview-1 packages; **MCP-6..7**
   after SDK Preview-2. Full end-state inventory remains mandatory.

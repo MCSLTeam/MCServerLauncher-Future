@@ -4,7 +4,7 @@
 
 - Planning date: 2026-07-19.
 - **Decision freeze:** 2026-07-20. Authoritative overrides live in
-  `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`.
+  `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`.
   When this plan and that spec disagree, **the spec wins**.
 - Delivery is staged as **Preview-1** (MCP main path) then **Preview-2**
   (backup/monitoring/automation/audit and remaining features). Full end-state
@@ -370,7 +370,7 @@ references. FeatureCatalog supplies risk text for preflight display.
 
 ## Method-Level Authorization Model
 
-> **Authoritative detail:** `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md` §5.
+> **Authoritative detail:** `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md` §5.
 > The 2026-07-20 freeze **removes** permission-graph Requires edges, login
 > prebake, and callee inference. Implement CallerContext proxies instead.
 
