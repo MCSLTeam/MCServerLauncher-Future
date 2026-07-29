@@ -47,6 +47,16 @@ consumer build or runtime path, plus every `buildTransitive` asset.
 Built from branch `feat/sdk-preview-2` with .NET SDK `10.0.201`; reproducibility
 requires that exact SDK. `global.json` pins it for both local and CI builds.
 
+The `buildTransitive` assets are packed as verbatim byte copies, so their nupkg
+entry hash is the hash of the checked-out file. `.gitattributes` declares those
+paths `text eol=lf`, so derive their fingerprints from the committed blob rather
+than from an ambient working tree — a tree left over from before that rule, or
+one written by a client that ignores it, carries CRLF and hashes differently:
+
+```bash
+git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props | sha256sum
+```
+
 ### `MCServerLauncher.Common.2.0.0-preview.4.nupkg`
 
 | Entry | SHA-256 |
@@ -58,7 +68,7 @@ requires that exact SDK. `global.json` pins it for both local and CI builds.
 | Entry | SHA-256 |
 |---|---|
 | `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `9c3eff44e6a5b5b4620d6a46a92bb778cb415cfcf764ea0d0ac0439bd3c03c3d` |
-| `buildTransitive/MCServerLauncher.Daemon.API.targets` | `24aa062b14faccf3c2fbf74346716462bbbfe2f68a21bdb31d158a0831381d49` |
+| `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
 ### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg`
 
@@ -67,8 +77,8 @@ requires that exact SDK. `global.json` pins it for both local and CI builds.
 | `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `7b675275b82cc6ecbd51793cd2c4cfd217dbf6b784bf5aeb21bda36cf51a850c` |
 | `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `dd0e1a4f4b7b49d994910ae0afd63347e1d6f342fadd5f04f0511f501da6fcbb` |
 | `analyzers/dotnet/cs/NuGet.Versioning.dll` | `5ccab32f44a29834becbf640cfac4b119edce8496a02e94ef20e1b1d2e652b26` |
-| `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `29d513a95f605657abed8ff15e8cf70511c2eaaa12e3ce09e4b39effd3fc4bbd` |
-| `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `f178240f44ef804fe9c34d436ee718f316129c2d3d0afe088aa4e4430908e73c` |
+| `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `c0dd9844c62950e9cf678c9bb067dd030876afa4d263eedd0d146ce52e5eb895` |
+| `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |
 
 The SDK payload DLL fingerprint is unchanged from preview.2/preview.3: the SDK
 assembly itself carries no Preview-2 surface, only the generator does.
@@ -84,8 +94,11 @@ dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugi
 
 ## Preview-2 implemented FeatureCatalog freeze
 
-Preview-2 completes the grantable feature vocabulary. Implemented and
-grantable for admission:
+Preview-2 completes the grantable feature *vocabulary* — every feature name a
+manifest may declare is now implemented except `event.subscribe`. It does not
+follow that every domain behind those names is feature-complete: monitoring and
+automation ship a subset of their planned surface (see "Scope delivered" below).
+Implemented and grantable for admission:
 
 | Feature | Risk |
 |---|---|
@@ -129,6 +142,24 @@ A `grant_level` of Medium now admits 17 features; Low admits 7.
   `DaemonClient` exposes them, so a remote caller composes the surface a local
   caller does.
 - Remaining plugin features `file.read`, `file.write`, `event-rule.manage`.
+
+## Scope delivered vs planned
+
+The feature-application plan specifies more monitoring and automation surface
+than Preview-2 ships. The gap is deliberate and bounded; it is recorded here
+rather than left implicit so the delivered state is not mistaken for the planned
+one.
+
+| Area | Delivered | Planned but deferred |
+|---|---|---|
+| Monitoring metrics | system CPU, memory used/total, per-instance status | disk, responsiveness, significant events |
+| Automation triggers | `crash-loop`, `unexpected-exit`, `sustained-metric`, `maintenance-window` | unresponsive, disk, duration |
+| Automation actions | `restart-instance`, `stop-instance`, `notification`, `confirmation-plan` | maintenance-state, restart-suppression, diagnostics, explicit-audit |
+
+Each deferred item widens a closed union, so adding one is not a drop-in: it
+needs its `JsonTypeInfo`, converter discriminator, daemon/RPC/DaemonClient
+parity, validation, and protocol tests. They are tracked as follow-up issues
+with acceptance criteria rather than folded into this baseline.
 
 ## Consumer pin
 

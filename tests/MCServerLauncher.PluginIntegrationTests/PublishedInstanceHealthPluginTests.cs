@@ -569,9 +569,9 @@ public sealed class PublishedInstanceHealthPluginTests
             {
                 var requiredPackages = new[]
                 {
-                    "MCServerLauncher.Common.2.0.0-preview.3.nupkg",
-                    "MCServerLauncher.Daemon.API.2.0.0-preview.3.nupkg",
-                    "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.3.nupkg"
+                    "MCServerLauncher.Common.2.0.0-preview.4.nupkg",
+                    "MCServerLauncher.Daemon.API.2.0.0-preview.4.nupkg",
+                    "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg"
                 };
                 foreach (var packageName in requiredPackages)
                 {
