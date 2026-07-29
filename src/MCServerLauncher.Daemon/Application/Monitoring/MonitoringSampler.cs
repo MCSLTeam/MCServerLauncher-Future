@@ -255,6 +255,7 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         var window = query.NotAfter - query.NotBefore;
         var bucketTicks = Math.Max(1, (long)Math.Ceiling(window.Ticks / (double)cap));
         var buckets = new SortedDictionary<long, MonitoringSample>();
+        var bucketEvents = new SortedDictionary<long, ImmutableArray<MonitoringInstanceEvent>.Builder>();
         foreach (var sample in raw)
         {
             // Buckets are relative to the window, not the epoch: an epoch-aligned grid splits an
@@ -262,12 +263,35 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             // The closing boundary folds into the last bucket for the same reason.
             var offset = sample.Timestamp.UtcTicks - query.NotBefore.UtcTicks;
             var bucket = Math.Clamp(offset / bucketTicks, 0, cap - 1);
+
+            // A metric is a reading taken at an instant, so keeping one per bucket loses nothing
+            // but resolution. An event is something that happened during the bucket's span, so
+            // letting it ride the single surviving sample would discard most of them outright —
+            // the same silent loss the gap rule below exists to prevent. Accumulate instead.
+            var events = sample.Events;
+            if (events is not null && events.Value.Length > 0)
+            {
+                if (!bucketEvents.TryGetValue(bucket, out var collected))
+                    bucketEvents[bucket] = collected = ImmutableArray.CreateBuilder<MonitoringInstanceEvent>();
+                collected.AddRange(events.Value);
+            }
+
             if (buckets.TryGetValue(bucket, out var existing) && existing.Gap && !sample.Gap)
                 continue;
             buckets[bucket] = sample;
         }
 
-        return new MonitoringQueryResult([.. buckets.Values], _log.DroppedRecords);
+        var points = ImmutableArray.CreateBuilder<MonitoringSample>(buckets.Count);
+        foreach (var pair in buckets)
+        {
+            // A gap winner still carries the bucket's events: the hole and the transitions are
+            // both things the reader needs, and the gap flag already says the span is incomplete.
+            points.Add(bucketEvents.TryGetValue(pair.Key, out var collected)
+                ? pair.Value with { Events = collected.ToImmutable() }
+                : pair.Value);
+        }
+
+        return new MonitoringQueryResult(points.ToImmutable(), _log.DroppedRecords);
     }
 
     private void RecordStartupGapIfNeeded()

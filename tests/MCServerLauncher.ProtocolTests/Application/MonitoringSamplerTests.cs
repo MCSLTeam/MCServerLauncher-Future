@@ -121,6 +121,37 @@ public sealed class MonitoringSamplerTests
     }
 
     [Fact]
+    public async Task Query_DownsamplingKeepsEveryEventItCannotKeepASampleFor()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-event-downsample-").FullName;
+        var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
+        var time = new ManualTimeProvider(start);
+        var instance = new TestInstance(RunningId, "flapping-demo", InstanceStatus.Running);
+        using var sampler = CreateSampler(root, time, instance);
+
+        await sampler.SampleOnceAsync(CancellationToken.None); // baseline tick emits nothing
+        var expected = 0;
+        for (var index = 0; index < 40; index++)
+        {
+            instance.SetStatus(index % 2 == 0 ? InstanceStatus.Stopped : InstanceStatus.Running);
+            time.Advance(TimeSpan.FromSeconds(15));
+            var sample = await sampler.SampleOnceAsync(CancellationToken.None);
+            expected += sample.Events!.Value.Length;
+        }
+
+        // Far fewer points than samples, so every bucket holds several ticks: the condition under
+        // which keeping one sample per bucket used to discard the events the others carried.
+        var downsampled = sampler.Query(
+            new MonitoringQuery(start.AddMinutes(-1), time.GetUtcNow().AddMinutes(1), MaximumPoints: 5));
+
+        Assert.True(downsampled.Samples.Length <= 5);
+        Assert.Equal(40, expected);
+        Assert.Equal(
+            expected,
+            downsampled.Samples.Sum(static sample => sample.Events?.Length ?? 0));
+    }
+
+    [Fact]
     public async Task LocalApplication_ExposesCurrentAndQuery()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-monitoring-app-").FullName;
