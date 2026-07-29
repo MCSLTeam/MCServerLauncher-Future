@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Daemon.ApplicationCore.Audit;
@@ -79,6 +80,89 @@ public sealed class AuditLogTests
         var records = reloaded.Query(new AuditQuery(OwnerPrincipal: "*")).Records;
         Assert.Equal(3, records.Length);
         Assert.Equal("mcsl.backup.create", records[0].Method);
+    }
+
+    [Fact]
+    public void Load_SkipsInteriorCorruptionWithoutTruncatingSurroundingValidRecords()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-audit-interior-").FullName;
+        var typeInfo = ApplicationContractJsonContext.Default.AuditRecord;
+        var first = JsonSerializer.SerializeToUtf8Bytes(Record("user-a", "mcsl.instance.start", "target-0"), typeInfo);
+        var last = JsonSerializer.SerializeToUtf8Bytes(Record("user-a", "mcsl.instance.stop", "target-2"), typeInfo);
+        var corrupt = "{ this is not a valid audit record"u8.ToArray();
+
+        var segment = Path.Combine(root, "audit-000000.jsonl");
+        using (var stream = File.Create(segment))
+        {
+            stream.Write(first);
+            stream.WriteByte((byte)'\n');
+            stream.Write(corrupt);
+            stream.WriteByte((byte)'\n');
+            stream.Write(last);
+            stream.WriteByte((byte)'\n');
+        }
+
+        var expectedLength = new FileInfo(segment).Length;
+        var log = new BoundedJsonlLog<AuditRecord>(
+            root,
+            "audit",
+            typeInfo,
+            static record => record.Timestamp,
+            maximumBytes: 64 * 1024 * 1024,
+            retention: TimeSpan.FromDays(30));
+
+        // Interior corruption must not truncate the segment: every byte after the bad record
+        // survives, unlike the original recovery that froze the valid length at the first
+        // unparseable line and threw away everything past it.
+        Assert.Equal(expectedLength, new FileInfo(segment).Length);
+
+        var records = log.ReadNewestFirst(10);
+        Assert.Equal(["target-2", "target-0"], records.Select(record => record.Target));
+
+        // The log must still be safe to append to afterward.
+        log.Append(Record("user-a", "mcsl.instance.start", "target-3"));
+        Assert.Equal(
+            ["target-3", "target-2", "target-0"],
+            log.ReadNewestFirst(10).Select(record => record.Target));
+    }
+
+    [Fact]
+    public void Load_StillTruncatesATornFinalRecord()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-audit-torn-tail-").FullName;
+        var typeInfo = ApplicationContractJsonContext.Default.AuditRecord;
+        var first = JsonSerializer.SerializeToUtf8Bytes(Record("user-a", "mcsl.instance.start", "target-0"), typeInfo);
+        var second = JsonSerializer.SerializeToUtf8Bytes(Record("user-a", "mcsl.instance.stop", "target-1"), typeInfo);
+        var torn = "{\"timestamp\":\"2026-07-27T00:0"u8.ToArray();
+
+        var segment = Path.Combine(root, "audit-000000.jsonl");
+        using (var stream = File.Create(segment))
+        {
+            stream.Write(first);
+            stream.WriteByte((byte)'\n');
+            stream.Write(second);
+            stream.WriteByte((byte)'\n');
+            stream.Write(torn);
+            // Deliberately no trailing newline: this is the crash-mid-append case.
+        }
+
+        var log = new BoundedJsonlLog<AuditRecord>(
+            root,
+            "audit",
+            typeInfo,
+            static record => record.Timestamp,
+            maximumBytes: 64 * 1024 * 1024,
+            retention: TimeSpan.FromDays(30));
+
+        Assert.Equal(first.Length + second.Length + 2, new FileInfo(segment).Length);
+        Assert.Equal(
+            ["target-1", "target-0"],
+            log.ReadNewestFirst(10).Select(record => record.Target));
+
+        log.Append(Record("user-a", "mcsl.instance.start", "target-2"));
+        Assert.Equal(
+            ["target-2", "target-1", "target-0"],
+            log.ReadNewestFirst(10).Select(record => record.Target));
     }
 
     [Fact]
