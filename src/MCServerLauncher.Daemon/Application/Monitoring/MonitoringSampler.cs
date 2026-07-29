@@ -2,8 +2,10 @@ using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.ApplicationCore.Audit;
 using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
 using Microsoft.Extensions.Logging;
@@ -12,10 +14,11 @@ namespace MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 
 /// <summary>
 /// Periodic daemon metrics sampler over the shared bounded JSONL history. Each tick records the
-/// cached system info plus every managed instance with its cached process counters — sampling is
-/// passive and never queries a game server. A restart hole larger than two intervals, and every
-/// tick that fails to produce a point, are recorded as explicit gap markers so absence in the
-/// history is always structured, never silent.
+/// cached system info (CPU, memory, disk) plus every managed instance with its cached process
+/// counters and how long it has been silent, and the lifecycle transitions observed since the
+/// previous tick — sampling is passive and never queries a game server. A restart hole larger than
+/// two intervals, and every tick that fails to produce a point, are recorded as explicit gap
+/// markers so absence in the history is always structured, never silent.
 /// </summary>
 internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 {
@@ -29,6 +32,14 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(15);
 
     private readonly object _gate = new();
+
+    /// <summary>
+    /// Guards the cross-tick lifecycle memory below. <see cref="SampleOnceAsync" /> is reachable
+    /// from the tick loop and directly, so the two must not interleave over it.
+    /// </summary>
+    private readonly object _lifecycleGate = new();
+    private readonly Dictionary<Guid, InstanceStatus> _lastStatuses = new();
+    private readonly HashSet<Guid> _reportedReadyTimeouts = [];
     private readonly BoundedJsonlLog<MonitoringSample> _log;
     private readonly IInstanceManager _instances;
     private readonly IAsyncTimedLazyCell<SystemInfo> _systemInfo;
@@ -141,32 +152,45 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     {
         try
         {
+            var now = _timeProvider.GetUtcNow();
             var info = await _systemInfo.Value.ConfigureAwait(false);
             var instanceSamples = ImmutableArray.CreateBuilder<MonitoringInstanceSample>();
+            var observed = new List<(Guid InstanceId, InstanceStatus Status, bool ReadyTimedOut)>();
             foreach (var instance in _instances.Instances.Values.OrderBy(static entry => entry.Config.Uuid))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var counters = instance.Process is { Monitor: { } monitor }
+                // Deliberately the 2-second cached counters, never GetReportAsync: a report issues a
+                // real server ping per instance per tick, and this sampler must stay passive.
+                var process = instance.Process;
+                var counters = process is { Monitor: { } monitor }
                     ? await monitor.GetMonitorData().ConfigureAwait(false)
                     : default;
+                var status = instance.Status;
+                observed.Add((instance.Config.Uuid, status, process?.ReadyTimedOut == true));
                 instanceSamples.Add(new MonitoringInstanceSample(
                     instance.Config.Uuid,
                     instance.Config.Name,
-                    instance.Status,
+                    status,
                     counters.Cpu,
-                    counters.Memory));
+                    counters.Memory,
+                    MeasureSilence(status, process, now)));
             }
 
             var used = info.Mem.TotalKilobytes >= info.Mem.FreeKilobytes
                 ? info.Mem.TotalKilobytes - info.Mem.FreeKilobytes
                 : 0;
             var sample = new MonitoringSample(
-                _timeProvider.GetUtcNow(),
+                now,
                 Gap: false,
                 info.Cpu.Usage,
                 used,
                 info.Mem.TotalKilobytes,
-                instanceSamples.ToImmutable());
+                instanceSamples.ToImmutable(),
+                // The cached system info is already awaited above; disk comes out of it rather than
+                // from a fresh filesystem call, so a wider record costs the tick nothing.
+                info.Drive.TotalBytes,
+                info.Drive.FreeBytes,
+                CollectSignificantEvents(observed));
             _log.Append(sample);
             Volatile.Write(ref _latest, sample);
             return sample;
@@ -259,6 +283,81 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         AppendGap(now);
     }
 
+    /// <summary>
+    /// How long an instance has gone without producing output, or null when that question has no
+    /// answer: silence carries no meaning for an instance that is not Running, and an instance that
+    /// has produced no output at all was never observed to be responsive in the first place. Null
+    /// is "not measured" — never a measured zero.
+    /// </summary>
+    private static double? MeasureSilence(InstanceStatus status, InstanceProcess? process, DateTimeOffset now)
+    {
+        if (status != InstanceStatus.Running || process?.LastOutputAt is not { } lastOutput)
+            return null;
+
+        var silence = (now - lastOutput).TotalSeconds;
+        return silence > 0 ? silence : 0;
+    }
+
+    /// <summary>
+    /// Lifecycle transitions observed since the previous tick, plus ready-timeout observations.
+    /// Nothing derived from log content is recorded here: the plan keeps full console logs out of
+    /// the metrics history. The first tick that sees an instance establishes its baseline and
+    /// reports no transition, so a daemon restart does not manufacture a burst of fake events.
+    /// </summary>
+    private ImmutableArray<MonitoringInstanceEvent> CollectSignificantEvents(
+        List<(Guid InstanceId, InstanceStatus Status, bool ReadyTimedOut)> observed)
+    {
+        var events = ImmutableArray.CreateBuilder<MonitoringInstanceEvent>();
+        lock (_lifecycleGate)
+        {
+            var present = new HashSet<Guid>(observed.Count);
+            foreach (var (instanceId, status, readyTimedOut) in observed)
+            {
+                present.Add(instanceId);
+                if (_lastStatuses.TryGetValue(instanceId, out var previous) && previous != status)
+                {
+                    events.Add(new MonitoringInstanceEvent(
+                        instanceId,
+                        MonitoringEventKind.StatusChanged,
+                        status,
+                        previous));
+                }
+
+                _lastStatuses[instanceId] = status;
+
+                // A ready timeout latches on the process, so record the edge only: repeating it on
+                // every later tick would drown the history in one stuck start.
+                if (readyTimedOut)
+                {
+                    if (_reportedReadyTimeouts.Add(instanceId))
+                    {
+                        events.Add(new MonitoringInstanceEvent(
+                            instanceId,
+                            MonitoringEventKind.ReadyTimeout,
+                            status,
+                            null));
+                    }
+                }
+                else
+                {
+                    _reportedReadyTimeouts.Remove(instanceId);
+                }
+            }
+
+            // An instance that is gone must not keep a status behind it: were it re-added later, the
+            // stale entry would report a transition that no running process ever made.
+            foreach (var stale in _lastStatuses.Keys.Except(present).ToArray())
+                _lastStatuses.Remove(stale);
+            _reportedReadyTimeouts.RemoveWhere(id => !present.Contains(id));
+        }
+
+        return events.ToImmutable();
+    }
+
+    /// <summary>
+    /// A gap carries null for every metric that was never collected. Zero would be a measurement,
+    /// and a reader judging a sustained condition must not mistake a hole for a reading of zero.
+    /// </summary>
     private void AppendGap(DateTimeOffset at) =>
         _log.Append(new MonitoringSample(
             at,
@@ -266,7 +365,10 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             0,
             0,
             0,
-            ImmutableArray<MonitoringInstanceSample>.Empty));
+            ImmutableArray<MonitoringInstanceSample>.Empty,
+            DiskTotalBytes: null,
+            DiskFreeBytes: null,
+            Events: null));
 
     private async Task RunAsync(CancellationToken cancellationToken)
     {

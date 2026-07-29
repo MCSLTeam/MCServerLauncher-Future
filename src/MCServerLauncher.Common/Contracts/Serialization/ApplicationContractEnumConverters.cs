@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Common.Contracts.Operations;
@@ -21,6 +22,9 @@ internal sealed class InstanceFactoryMirrorJsonConverter()
 
 internal sealed class InstanceStatusJsonConverter()
     : JsonStringEnumConverter<InstanceStatus>(JsonNamingPolicy.SnakeCaseLower);
+
+internal sealed class MonitoringEventKindJsonConverter()
+    : JsonStringEnumConverter<MonitoringEventKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
 
 internal sealed class OperationStatusJsonConverter()
     : JsonStringEnumConverter<OperationStatus>(JsonNamingPolicy.SnakeCaseLower);
