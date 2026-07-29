@@ -79,9 +79,15 @@
             <!-- Mods Tab -->
             <TabItem Header="{Binding [Mods], Source={x:Static i18n:Lang.Tr}}"
                      IsEnabled="{Binding HasMods}">
-                <Grid>
+                 <Grid ClipToBounds="True">
                 <ui:ListView Margin="0,15,0,0"
-                             ItemsSource="{Binding Mods}">
+                            ItemsSource="{Binding Mods}"
+                            x:Name="ModsListView"
+                            SelectionMode="Extended"
+                            VirtualizingPanel.IsVirtualizing="False"
+                            PreviewMouseLeftButtonDown="ComponentListView_PreviewMouseLeftButtonDown"
+                            PreviewMouseMove="ComponentListView_PreviewMouseMove"
+                            PreviewMouseLeftButtonUp="ComponentListView_PreviewMouseLeftButtonUp">
                     <ui:ListView.Style>
                         <Style TargetType="ui:ListView">
                             <Setter Property="Visibility" Value="Visible" />
@@ -179,6 +185,8 @@
                         </DataTemplate>
                     </ui:ListView.ItemTemplate>
                 </ui:ListView>
+                <Border x:Name="ModsSelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
+                        Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
                 <ge:StopTipLayer Symbol="📦"
                                  StopTip="{Binding [NothingHere], Source={x:Static i18n:Lang.Tr}}"
                                  StopDescription="{Binding [ComponentManager_EmptyMods], Source={x:Static i18n:Lang.Tr}}"
@@ -202,9 +210,15 @@
             <!-- Plugins Tab -->
             <TabItem Header="{Binding [Plugins], Source={x:Static i18n:Lang.Tr}}"
                      IsEnabled="{Binding HasPlugins}">
-                <Grid>
+                 <Grid ClipToBounds="True">
                 <ui:ListView Margin="0,15,0,0"
-                             ItemsSource="{Binding Plugins}">
+                            ItemsSource="{Binding Plugins}"
+                            x:Name="PluginsListView"
+                            SelectionMode="Extended"
+                            VirtualizingPanel.IsVirtualizing="False"
+                            PreviewMouseLeftButtonDown="ComponentListView_PreviewMouseLeftButtonDown"
+                            PreviewMouseMove="ComponentListView_PreviewMouseMove"
+                            PreviewMouseLeftButtonUp="ComponentListView_PreviewMouseLeftButtonUp">
                     <ui:ListView.Style>
                         <Style TargetType="ui:ListView">
                             <Setter Property="Visibility" Value="Visible" />
@@ -299,6 +313,8 @@
                         </DataTemplate>
                     </ui:ListView.ItemTemplate>
                 </ui:ListView>
+                <Border x:Name="PluginsSelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
+                        Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
                 <ge:StopTipLayer Symbol="🧩"
                                  StopTip="{Binding [NothingHere], Source={x:Static i18n:Lang.Tr}}"
                                  StopDescription="{Binding [ComponentManager_EmptyPlugins], Source={x:Static i18n:Lang.Tr}}"
