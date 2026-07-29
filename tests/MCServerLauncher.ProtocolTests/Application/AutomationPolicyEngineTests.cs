@@ -418,7 +418,43 @@ public sealed class AutomationPolicyEngineTests
 
         var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
         Assert.False(evaluation.Fires);
-        Assert.Contains("dropped 1 record(s)", evaluation.Reason, StringComparison.Ordinal);
+        Assert.Contains("write failure inside the window", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Evaluator_SustainedMetricRecoversOnceTheWindowClearsTheDroppedRecord()
+    {
+        using var harness = new Harness();
+        var trigger = new SustainedMetricTrigger
+        {
+            Metric = "system_cpu",
+            Threshold = 90,
+            SustainedSeconds = 60
+        };
+        harness.SystemCpu = 95;
+        await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+
+        var segment = Directory.EnumerateFiles(harness.MonitoringRoot, "metrics-*.jsonl").Single();
+        using (new FileStream(segment, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        }
+
+        Assert.Equal(1, harness.Metrics.DroppedRecords);
+
+        // Sample past the hole until the sustained window no longer reaches back to it. The drop
+        // count stays at 1 forever, so an evaluator judging on the count could never recover.
+        for (var index = 0; index < 8; index++)
+        {
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        }
+
+        var evaluation = harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow());
+
+        Assert.Equal(1, harness.Metrics.DroppedRecords);
+        Assert.True(evaluation.Fires, evaluation.Reason);
     }
 
     [Fact]
@@ -902,7 +938,7 @@ public sealed class AutomationPolicyEngineTests
         public bool SendToInstance(Guid instanceId, string message) => throw new NotSupportedException();
         public bool TryWriteConsole(Guid instanceId, ReadOnlyMemory<byte> data) => throw new NotSupportedException();
         public bool TryResizeConsole(Guid instanceId, ushort columns, ushort rows) => throw new NotSupportedException();
-        public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler) => throw new NotSupportedException();
+        public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler, bool replayHistory = true) => throw new NotSupportedException();
         public void DetachConsole(Guid instanceId, Guid subscriberId) => throw new NotSupportedException();
         public Task KillInstanceAsync(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<ProtoInstanceReport?> GetInstanceReport(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();

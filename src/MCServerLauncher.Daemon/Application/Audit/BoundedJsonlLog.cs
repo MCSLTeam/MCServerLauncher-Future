@@ -26,6 +26,7 @@ internal sealed class BoundedJsonlLog<T>
     private readonly long _maximumBytes;
     private readonly TimeSpan _retention;
     private long _droppedRecords;
+    private long _newestDropTicks;
     private int _currentSegment;
     private long _currentSegmentBytes;
 
@@ -66,8 +67,40 @@ internal sealed class BoundedJsonlLog<T>
     internal long DroppedRecords => Interlocked.Read(ref _droppedRecords);
 
     /// <summary>
+    /// When the newest dropped record would have been timestamped, or <see langword="null" /> if
+    /// nothing has been dropped. Readers judging whether a time range is fully observed need to
+    /// know <em>where</em> the holes are: the count alone is monotonic for the process lifetime, so
+    /// treating it as evidence would condemn every later range for one transient write failure.
+    /// </summary>
+    internal DateTimeOffset? NewestDropAt
+    {
+        get
+        {
+            var ticks = Interlocked.Read(ref _newestDropTicks);
+            return ticks == 0 ? null : new DateTimeOffset(ticks, TimeSpan.Zero);
+        }
+    }
+
+    /// <summary>
     /// Appends one record. Never throws: history is an observer of mutations, not a participant.
     /// </summary>
+    /// <summary>
+    /// Keeps the newest drop instant under concurrent appends. Out-of-order drops must not move the
+    /// marker backwards, or a range after the real hole would look clean.
+    /// </summary>
+    private void RecordDropAt(DateTimeOffset at)
+    {
+        var ticks = at.UtcTicks;
+        var observed = Interlocked.Read(ref _newestDropTicks);
+        while (ticks > observed)
+        {
+            var previous = Interlocked.CompareExchange(ref _newestDropTicks, ticks, observed);
+            if (previous == observed)
+                return;
+            observed = previous;
+        }
+    }
+
     internal void Append(T record)
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -104,6 +137,7 @@ internal sealed class BoundedJsonlLog<T>
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             Interlocked.Increment(ref _droppedRecords);
+            RecordDropAt(_timestamp(record));
             _logger.LogWarning(
                 exception,
                 "[BoundedJsonlLog] Dropped a '{Prefix}' history record after a write failure.",

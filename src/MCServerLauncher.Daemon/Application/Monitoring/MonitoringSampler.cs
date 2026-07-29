@@ -223,13 +223,19 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumRecords, 1);
         if (notAfter < notBefore)
         {
-            return new MonitoringRawWindow(ImmutableArray<MonitoringSample>.Empty, false, _log.DroppedRecords);
+            return new MonitoringRawWindow(ImmutableArray<MonitoringSample>.Empty, false, false);
         }
 
         // One record over the budget: ReadRange silently drops its oldest records past the cap, so
         // an overflow has to be seen here rather than inferred from a result that looks complete.
         var raw = _log.ReadRange(notBefore, notAfter, maximumRecords + 1);
-        return new MonitoringRawWindow([.. raw], raw.Count > maximumRecords, _log.DroppedRecords);
+
+        // Only a drop inside this window makes this window incomplete. The log's drop counter is
+        // monotonic for the process lifetime, so reading it as evidence would condemn every later
+        // window for one transient write failure and never recover short of a daemon restart.
+        var newestDrop = _log.NewestDropAt;
+        var droppedInside = newestDrop is not null && newestDrop >= notBefore && newestDrop <= notAfter;
+        return new MonitoringRawWindow([.. raw], raw.Count > maximumRecords, droppedInside);
     }
 
     /// <summary>
@@ -429,10 +435,16 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 
 /// <summary>
 /// A raw metrics window exactly as it was retained. <see cref="Truncated" /> means the window held
-/// more records than the caller's budget, and <see cref="DroppedRecords" /> counts history records
-/// lost to write failures; either one means the evidence is incomplete.
+/// more records than the caller's budget, and <see cref="DroppedInside" /> means a write failure
+/// lost a record whose timestamp falls in this window; either one means the evidence is incomplete.
 /// </summary>
+/// <remarks>
+/// <see cref="DroppedInside" /> is scoped to the window rather than reporting the log's lifetime
+/// drop count on purpose. A drop before the window start lost a record this window never covered,
+/// so it says nothing about this window's completeness — and a lifetime counter never falls, so
+/// judging on it would disable every later evaluation until the daemon restarted.
+/// </remarks>
 internal sealed record MonitoringRawWindow(
     ImmutableArray<MonitoringSample> Samples,
     bool Truncated,
-    long DroppedRecords);
+    bool DroppedInside);
