@@ -338,10 +338,10 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         }
 
         var evidence = _metrics.ReadRawWindow(now - window, now, (int)needed);
-        if (evidence.DroppedRecords > 0)
+        if (evidence.DroppedInside)
         {
             return TriggerEvaluation.Quiet(
-                $"metric history dropped {evidence.DroppedRecords} record(s) to write failures");
+                "metric history lost a record to a write failure inside the window");
         }
 
         if (evidence.Truncated)

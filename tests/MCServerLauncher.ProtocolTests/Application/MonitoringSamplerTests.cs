@@ -622,7 +622,7 @@ public sealed class MonitoringSamplerTests
 
         public bool TryResizeConsole(Guid instanceId, ushort columns, ushort rows) => throw new NotSupportedException();
 
-        public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler) => throw new NotSupportedException();
+        public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler, bool replayHistory = true) => throw new NotSupportedException();
 
         public void DetachConsole(Guid instanceId, Guid subscriberId) => throw new NotSupportedException();
 
