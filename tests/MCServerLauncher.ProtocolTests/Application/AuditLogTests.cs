@@ -165,6 +165,49 @@ public sealed class AuditLogTests
             log.ReadNewestFirst(10).Select(record => record.Target));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Load_KeepsACorruptFinalRecordThatTheWriterFinished(bool tornAfterIt)
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-audit-corrupt-final-").FullName;
+        var typeInfo = ApplicationContractJsonContext.Default.AuditRecord;
+        var first = JsonSerializer.SerializeToUtf8Bytes(Record("user-a", "mcsl.instance.start", "target-0"), typeInfo);
+        var corrupt = "{\"timestamp\":\"not-a-timestamp\",\"broken\":true}"u8.ToArray();
+        var torn = "{\"timestamp\":\"2026-07-27T00:0"u8.ToArray();
+
+        var segment = Path.Combine(root, "audit-000000.jsonl");
+        using (var stream = File.Create(segment))
+        {
+            stream.Write(first);
+            stream.WriteByte((byte)'\n');
+            // Newline-terminated: the writer finished this record, so it was acknowledged even
+            // though nothing can parse it. Recovery must not treat corrupt content as a torn write.
+            stream.Write(corrupt);
+            stream.WriteByte((byte)'\n');
+            if (tornAfterIt)
+                stream.Write(torn); // no trailing newline: this one really is a crash mid-append
+        }
+
+        var expected = first.Length + corrupt.Length + 2;
+        var log = new BoundedJsonlLog<AuditRecord>(
+            root,
+            "audit",
+            typeInfo,
+            static record => record.Timestamp,
+            maximumBytes: 64 * 1024 * 1024,
+            retention: TimeSpan.FromDays(30));
+
+        // Only the unterminated bytes go, never the completed ones before them.
+        Assert.Equal(expected, new FileInfo(segment).Length);
+        Assert.Equal(["target-0"], log.ReadNewestFirst(10).Select(record => record.Target));
+
+        log.Append(Record("user-a", "mcsl.instance.start", "target-1"));
+        Assert.Equal(
+            ["target-1", "target-0"],
+            log.ReadNewestFirst(10).Select(record => record.Target));
+    }
+
     [Fact]
     public void Append_WriteFailureIsCountedInsteadOfThrown()
     {
