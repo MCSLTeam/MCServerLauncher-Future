@@ -2,8 +2,8 @@
 
 - Status: accepted grill-me decisions (2026-07-20)
 - Supersedes conflicting text in:
-  - `docs/superpowers/plans/2026-07-19-plugin-sdk-feature-application-plan.md`
-  - `docs/superpowers/plans/2026-07-19-http-mcp-plugin-plan.md`
+  - `docs/plan/2026-07-19-plugin-sdk-feature-application-plan.md`
+  - `docs/plan/2026-07-19-http-mcp-plugin-plan.md`
   - related `EXECUTE_PLAN.md` backlog wording
 - Principle: **the full plans still ship completely**. Preview-1 / Preview-2 only stage
   merge order; they do not permanently delete scope.
