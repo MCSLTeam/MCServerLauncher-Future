@@ -361,7 +361,8 @@ as above.
 
 ### Consumers in P1
 
-Daemon + Common DTO + domain events + protocol tests required.  
+Daemon + Common DTO + domain events + protocol tests required.
+
 WPF: **minimum compatibility** (no crash on new statuses); full UX polish may follow.
 
 ---
@@ -580,25 +581,43 @@ Remote application parity is **mandatory eventually**; plugin-first staging is O
 ### 12.1 Preview-2 amendment (2026-07-29)
 
 The original clause required publishing exact preview nupkgs as GitHub Release
-assets. That is **suspended for `2.0.0-preview.2`, `.3` and `.4`**: those are
-internal baselines consumed only by the MCP repo through a local feed, and no
-Release, tag, or nuget.org publication is created for them.
+assets. Where that stands per version:
+
+| Version | State |
+|---|---|
+| `2.0.0-preview.2` | **Published** — Release `2.0.0-preview.2`, 2026-07-24, carries all three nupkgs. Superseded; retained as history, not a supported baseline. |
+| `2.0.0-preview.3` | Not published. Frozen Preview-1 baseline, consumed by the MCP repo through a local feed. |
+| `2.0.0-preview.4` | Not published. Preview-2 internal baseline, same local-feed consumption. |
+
+So publication is **suspended from `.3` onward**, not retroactively denied. An
+earlier revision of this amendment claimed no Release existed for any of the
+three; that was wrong about `.2`, which is public and discoverable.
 
 **Why this is written down rather than silently diverged from:** the
 implementation had already stopped publishing while this section still required
 it, so a reviewer auditing against the spec correctly read the delivery as
 incomplete. The spec is the authority; when the decision changes, the spec
-changes with it.
+changes with it — including when the change is a correction like the one above.
 
-**Reopening conditions.** Publication of any preview package resumes only when
-SDK-9a/9b is explicitly reopened, which requires all of:
+**Reopening conditions.** Publication resumes only when SDK-9a/9b is explicitly
+reopened. The order matters, because acceptance cannot precede the artifact it
+tests:
 
 1. A named consumer outside this organization needs the package from a public
    source — a local feed no longer suffices.
 2. The payload fingerprints in `docs/preview2-package-pin.md` reproduce from a
    canonical checkout on a machine other than the authoring one.
-3. The published-host acceptance suite runs green against that exact external
-   package source, not the self-pack path.
+3. The packages are published to an explicit **candidate source** — a draft
+   Release or a staging feed — which is not the supported public artifact.
+4. The published-host acceptance suite runs green against that candidate source
+   as an external feed, not the self-pack path.
+5. Only then is the candidate promoted to a public Release.
+
+Steps 3 and 5 are separate on purpose. Requiring acceptance "against the exact
+external source" before any publication existed made the gate unsatisfiable: the
+suite needs a real feed to point at, so something must be published for it to
+test. A candidate source supplies that without committing to a supported
+artifact.
 
 Until then `docs/preview{1,2}-package-pin.md` are the acceptance record, and
 SDK-9b closes on internal implementation and test state only.

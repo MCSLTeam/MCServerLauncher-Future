@@ -1,10 +1,12 @@
 # Preview-2 Package Pin
 
 Status: internal baseline `2.0.0-preview.4` (2026-07-29) for MCP-6+.
-No public release exists or is planned. SDK-9b closes the Preview-2 gate as an
-**internal implementation and test acceptance state only**; public package
-distribution (GitHub Release assets or nuget.org) requires explicitly
-reopening SDK-9a/9b, exactly as recorded for Preview-1.
+No Release exists for `preview.4`, and none is planned. `2.0.0-preview.2` was
+published as a Release on 2026-07-24 and is superseded — it is history, not a
+supported baseline, and preview.3/.4 deliberately did not follow it. SDK-9b
+closes the Preview-2 gate as an **internal implementation and test acceptance
+state only**; public package distribution (GitHub Release assets or nuget.org)
+requires explicitly reopening SDK-9a/9b via the staged conditions in the spec.
 Decision source: `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`,
 sections 1, 10, and 12. Preview-1 history: `docs/preview1-package-pin.md`.
 
