@@ -4,7 +4,7 @@ Status: internal baseline `2.0.0-preview.3` (2026-07-25) for MCP-0..5.
 No public release exists or is planned for Preview-1 packages; SDK-9a public
 distribution stays an explicitly reopened gate. The `2.0.0-preview.2`
 acceptance record below is historical.
-Decision source: `docs/superpowers/specs/2026-07-20-plugin-sdk-mcp-decisions.md`, sections 1, 10, and 12.
+Decision source: `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`, sections 1, 10, and 12.
 
 ## Internal `2.0.0-preview.3` baseline (2026-07-25)
 

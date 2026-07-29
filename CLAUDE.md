@@ -7,6 +7,10 @@
 1. `PROJECT_PLAN.md` for product direction and fixed invariants.
 2. `RULES.md` for activation-scoped implementation rules.
 3. `EXECUTE_PLAN.md` for phase status and backlog.
+3a. `docs/spec/` for frozen decisions — these win on conflict with any plan or
+    doc. `docs/plan/` holds the plans they govern. Amend the spec rather than
+    diverging from it: a decision that lives only in a working note is not a
+    decision anyone can review.
 4. `AGENTS.md` (auto-loaded every session via the import above) for the full operating guide.
 5. `skills/mcsl-future/SKILL.md` for domain-sensitive changes.
 6. `harness.md` for agent runtime workflow requirements (e.g. verify against `microsoft-docs` before writing .NET / Microsoft code).
