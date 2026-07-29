@@ -15,6 +15,22 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+</ItemGroup>
+
+  <!--
+    The plugin fixtures under tests/Fixtures are not members of MCServerLauncher.slnx, so during a
+    solution build MSBuild cannot resolve them against the solution configuration and unsets their
+    Configuration entirely (Microsoft.Common.CurrentVersion.targets, AssignProjectConfiguration).
+    They then fell back to the SDK default, Debug, and those Debug binaries were what a
+    `-c Release` run actually loaded. Keeping the parent configuration makes the fixtures match the
+    run that consumes them, and stops their obj/bin being rebuilt in the opposite configuration
+    every time the entry point changes between a solution build and `dotnet test <csproj>`.
+  -->
+  <PropertyGroup>
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+  </PropertyGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="RustyOptions" Version="0.10.1" />
