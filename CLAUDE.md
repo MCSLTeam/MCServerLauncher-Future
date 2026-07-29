@@ -1,11 +1,13 @@
 # MCServerLauncher Future Agent Index
 
+@AGENTS.md
+
 ## Read First
 
 1. `PROJECT_PLAN.md` for product direction and fixed invariants.
 2. `RULES.md` for activation-scoped implementation rules.
 3. `EXECUTE_PLAN.md` for phase status and backlog.
-4. `AGENTS.md` for the full operating guide.
+4. `AGENTS.md` (auto-loaded every session via the import above) for the full operating guide.
 5. `skills/mcsl-future/SKILL.md` for domain-sensitive changes.
 6. `harness.md` for agent runtime workflow requirements (e.g. verify against `microsoft-docs` before writing .NET / Microsoft code).
 
