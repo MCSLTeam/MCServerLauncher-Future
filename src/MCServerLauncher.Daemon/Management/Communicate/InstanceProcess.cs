@@ -46,6 +46,9 @@ public class InstanceProcess : DisposableObject
     private Task _ptyLogPublicationTail = Task.CompletedTask;
     private int _processStarted;
     private int _readyTimedOut;
+    // UTC ticks of the newest published output line; 0 until the process has produced one. A
+    // process is created per start, so this never carries a previous run's value.
+    private long _lastOutputAtUtcTicks;
     private int _terminalCommitted;
     private int _finalized;
     private int _status = (int)InstanceStatus.Stopped;
@@ -93,6 +96,16 @@ public class InstanceProcess : DisposableObject
 
     public InstanceStatus Status => (InstanceStatus)Volatile.Read(ref _status);
     public bool ReadyTimedOut => Volatile.Read(ref _readyTimedOut) != 0;
+
+    /// <summary>
+    /// When the process last produced an output line, or null while it has produced none. This is
+    /// passive liveness evidence recorded on the pump path that already runs: a reader learns how
+    /// long the process has been silent without sending it anything.
+    /// </summary>
+    public DateTimeOffset? LastOutputAt =>
+        Volatile.Read(ref _lastOutputAtUtcTicks) is var ticks && ticks != 0
+            ? new DateTimeOffset(ticks, TimeSpan.Zero)
+            : null;
     public int ServerProcessId { get; private set; } = -1;
     /// <summary>
     /// True when the managed process has exited or lifecycle was force-finalized.
@@ -498,6 +511,9 @@ public class InstanceProcess : DisposableObject
 
     private async Task PublishLogLineAsync(string message, bool isStandardError)
     {
+        // The line has already been read off the process, so this is the cheapest honest liveness
+        // stamp available: no extra syscall, no probe, and it covers stdout, stderr and PTY alike.
+        Volatile.Write(ref _lastOutputAtUtcTicks, _timeProvider.GetUtcNow().UtcTicks);
         AddLogHistory(message);
         var lifecycleSignal = _lifecycleObserver.ObserveLog(message, isStandardError);
         if (lifecycleSignal != InstanceLifecycleSignal.None)

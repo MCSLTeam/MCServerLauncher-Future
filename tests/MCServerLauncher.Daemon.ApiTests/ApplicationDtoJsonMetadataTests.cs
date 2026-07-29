@@ -176,13 +176,21 @@ public sealed class ApplicationDtoJsonMetadataTests
                 }
             ]
         };
+        var monitoringEvent = new MonitoringInstanceEvent(
+            instanceId,
+            MonitoringEventKind.StatusChanged,
+            InstanceStatus.Crashed,
+            InstanceStatus.Running);
         var monitoringSample = new MonitoringSample(
             DateTimeOffset.UnixEpoch,
             false,
             5.5,
             16384,
             32768,
-            [new MonitoringInstanceSample(instanceId, "Example", InstanceStatus.Running, 12.5, 1024)]);
+            [new MonitoringInstanceSample(instanceId, "Example", InstanceStatus.Running, 12.5, 1024, 42.5)],
+            1024,
+            512,
+            [monitoringEvent]);
         var drive = new ContractDriveInfo("NTFS", 1024, 512, "C:\\");
         var systemInfo = new SystemInfo(
             new OperatingSystemInfo("Windows", "x64"),
@@ -266,7 +274,8 @@ public sealed class ApplicationDtoJsonMetadataTests
             new AuditQuery(100, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(1), "owner-a", "mcsl.instance.start", "t1", "owner-a"),
             new AuditQueryResult([auditRecord], 0),
             monitoringSample,
-            new MonitoringInstanceSample(instanceId, "Example", InstanceStatus.Running, 12.5, 1024),
+            monitoringEvent,
+            new MonitoringInstanceSample(instanceId, "Example", InstanceStatus.Running, 12.5, 1024, 42.5),
             new MonitoringCurrentResult(monitoringSample, 0),
             new MonitoringQuery(DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(1), 100),
             new MonitoringQueryResult([monitoringSample], 0),

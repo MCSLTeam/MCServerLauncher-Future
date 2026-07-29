@@ -30,6 +30,7 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(SourceTypeJsonConverter),
         typeof(InstanceFactoryMirrorJsonConverter),
         typeof(InstanceStatusJsonConverter),
+        typeof(MonitoringEventKindJsonConverter),
 typeof(OperationStatusJsonConverter),
         typeof(OperationStageJsonConverter),
         typeof(PlanStatusJsonConverter),
@@ -133,6 +134,7 @@ typeof(OperationStatusJsonConverter),
 [JsonSerializable(typeof(AuditRecord))]
 [JsonSerializable(typeof(AuditQuery))]
 [JsonSerializable(typeof(AuditQueryResult))]
+[JsonSerializable(typeof(MonitoringInstanceEvent))]
 [JsonSerializable(typeof(MonitoringInstanceSample))]
 [JsonSerializable(typeof(MonitoringSample))]
 [JsonSerializable(typeof(MonitoringCurrentResult))]

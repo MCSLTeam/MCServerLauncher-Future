@@ -1,6 +1,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Monitoring;
+using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
@@ -138,11 +141,357 @@ public sealed class MonitoringSamplerTests
         Assert.Single(queried.Samples);
     }
 
-    private static MonitoringSampler CreateSampler(string root, TimeProvider time)
+    [Fact]
+    public async Task SampleOnce_RecordsDiskFromTheAlreadyCachedSystemInfo()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-disk-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        using var sampler = CreateSampler(root, time);
+
+        var sample = await sampler.SampleOnceAsync(CancellationToken.None);
+
+        Assert.Equal(1024UL, sample.DiskTotalBytes);
+        Assert.Equal(512UL, sample.DiskFreeBytes);
+
+        // The persisted record carries it too, not just the in-memory sample.
+        var persisted = Assert.Single(sampler
+            .Query(new MonitoringQuery(sample.Timestamp.AddMinutes(-1), sample.Timestamp.AddMinutes(1)))
+            .Samples);
+        Assert.Equal(1024UL, persisted.DiskTotalBytes);
+        Assert.Equal(512UL, persisted.DiskFreeBytes);
+    }
+
+    [Fact]
+    public async Task SampleOnce_RecordsStatusTransitionsBetweenTicksAsSignificantEvents()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-events-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var running = new TestInstance(RunningId, "running-demo", InstanceStatus.Running);
+        var stopped = new TestInstance(StoppedId, "stopped-demo", InstanceStatus.Stopped);
+        using var sampler = CreateSampler(root, time, running, stopped);
+
+        // The first tick only establishes a baseline: a restart must not manufacture transitions.
+        var baseline = await sampler.SampleOnceAsync(CancellationToken.None);
+        Assert.Empty(baseline.Events!.Value);
+
+        running.SetStatus(InstanceStatus.Crashed);
+        stopped.SetStatus(InstanceStatus.Starting);
+        time.Advance(TimeSpan.FromSeconds(15));
+        var transitioned = await sampler.SampleOnceAsync(CancellationToken.None);
+
+        Assert.Equal(2, transitioned.Events!.Value.Length);
+        var crash = Assert.Single(transitioned.Events!.Value, entry => entry.InstanceId == RunningId);
+        Assert.Equal(MonitoringEventKind.StatusChanged, crash.Kind);
+        Assert.Equal(InstanceStatus.Running, crash.PreviousStatus);
+        Assert.Equal(InstanceStatus.Crashed, crash.Status);
+        var starting = Assert.Single(transitioned.Events!.Value, entry => entry.InstanceId == StoppedId);
+        Assert.Equal(InstanceStatus.Stopped, starting.PreviousStatus);
+        Assert.Equal(InstanceStatus.Starting, starting.Status);
+
+        // A steady tick reports nothing: events are transitions, not repeated state.
+        time.Advance(TimeSpan.FromSeconds(15));
+        Assert.Empty((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
+    }
+
+    [Fact]
+    public async Task SampleOnce_NeverRequestsAnInstanceReport()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-passive-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var running = new TestInstance(RunningId, "running-demo", InstanceStatus.Running);
+        var stopped = new TestInstance(StoppedId, "stopped-demo", InstanceStatus.Stopped);
+        using var sampler = CreateSampler(root, time, running, stopped);
+
+        for (var tick = 0; tick < 3; tick++)
+        {
+            await sampler.SampleOnceAsync(CancellationToken.None);
+            time.Advance(TimeSpan.FromSeconds(15));
+        }
+
+        // GetReportAsync issues a real server ping per instance per tick. Sampling reads the
+        // 2-second cached process counters instead, and must keep doing so.
+        Assert.Equal(0, Volatile.Read(ref running.ReportCalls));
+        Assert.Equal(0, Volatile.Read(ref stopped.ReportCalls));
+    }
+
+    [Fact]
+    public async Task Responsiveness_MeasuresSilenceOnlyWhileTheInstanceIsRunning()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-silence-").FullName;
+        using var process = new InstanceProcess(CreateReadyThenWaitingStartInfo(), InstanceType.Universal);
+        await StartAndAwaitOutputAsync(process);
+
+        Assert.NotNull(process.LastOutputAt);
+
+        var instance = new TestInstance(RunningId, "running-demo", InstanceStatus.Running) { Process = process };
+        using var sampler = CreateSampler(root, TimeProvider.System, instance);
+
+        var running = Assert.Single((await sampler.SampleOnceAsync(CancellationToken.None)).Instances);
+        Assert.NotNull(running.SilentSeconds);
+        Assert.InRange(running.SilentSeconds!.Value, 0, 120);
+
+        // Silence carries no meaning once the instance is no longer Running: recording a growing
+        // number there would let a responsiveness trigger fire on a process that simply stopped.
+        instance.SetStatus(InstanceStatus.Stopped);
+        var notRunning = Assert.Single((await sampler.SampleOnceAsync(CancellationToken.None)).Instances);
+        Assert.Null(notRunning.SilentSeconds);
+    }
+
+    [Fact]
+    public async Task Responsiveness_IsUnmeasuredWhenTheInstanceHasProducedNoOutput()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-silent-start-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        // No process at all: nothing observed the instance's output, so the honest answer is null.
+        using var sampler = CreateSampler(root, time, new TestInstance(RunningId, "running-demo", InstanceStatus.Running));
+
+        var entry = Assert.Single((await sampler.SampleOnceAsync(CancellationToken.None)).Instances);
+        Assert.Equal(InstanceStatus.Running, entry.Status);
+        Assert.Null(entry.SilentSeconds);
+    }
+
+    [Fact]
+    public async Task ReadyTimeout_IsRecordedOnceAsASignificantEvent()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-ready-timeout-").FullName;
+        // The Minecraft observer never treats process start as ready, so the instance stays in
+        // Starting until its ready deadline elapses.
+        using var process = new InstanceProcess(
+            CreateReadyThenWaitingStartInfo(),
+            MinecraftInstanceLifecycleObserver.Instance,
+            ConsoleMode.Pipe,
+            monitorFrequency: 2000,
+            TimeProvider.System,
+            readyTimeout: TimeSpan.FromMilliseconds(100));
+        await StartAndAwaitOutputAsync(process);
+        await WaitUntilAsync(() => process.ReadyTimedOut);
+
+        var instance = new TestInstance(RunningId, "starting-demo", InstanceStatus.Starting) { Process = process };
+        using var sampler = CreateSampler(root, TimeProvider.System, instance);
+
+        var first = Assert.Single((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
+        Assert.Equal(RunningId, first.InstanceId);
+        Assert.Equal(MonitoringEventKind.ReadyTimeout, first.Kind);
+        Assert.Equal(InstanceStatus.Starting, first.Status);
+        Assert.Null(first.PreviousStatus);
+
+        // The flag latches on the process; repeating it every tick would drown the history in one
+        // stuck start.
+        Assert.Empty((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
+    }
+
+    [Fact]
+    public async Task Gap_CarriesNullForEveryMetricItNeverCollected()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-gap-nulls-").FullName;
+        var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
+        var time = new ManualTimeProvider(start);
+        using (var first = CreateSampler(root, time))
+        {
+            await first.SampleOnceAsync(CancellationToken.None);
+        }
+
+        time.Advance(TimeSpan.FromMinutes(10));
+        using var afterHole = CreateSampler(root, time);
+
+        var samples = afterHole.Query(new MonitoringQuery(start.AddMinutes(-1), start.AddMinutes(30))).Samples;
+        var gap = Assert.Single(samples, sample => sample.Gap);
+        // A hole is time nobody observed. Zero would be a measurement, and a sustained disk trigger
+        // reading 0 free bytes off a gap would fire on evidence that was never collected.
+        Assert.Null(gap.DiskTotalBytes);
+        Assert.Null(gap.DiskFreeBytes);
+        Assert.Null(gap.Events);
+    }
+
+    [Fact]
+    public async Task Retention_TheWiderRecordLeavesTheAgeFloorInChargeAtTheDefaultConfig()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-retention-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var config = new DaemonMonitoringConfig();
+        using var sampler = CreateSampler(root, time);
+
+        await sampler.SampleOnceAsync(CancellationToken.None);
+        var recordBytes = Directory.EnumerateFiles(root, "metrics-*.jsonl").Sum(path => new FileInfo(path).Length);
+
+        // Every metric added widens the record, and a fixed byte cap therefore retains fewer of
+        // them. At the default cadence a full retention window holds this many records, so the cap
+        // only starts deciding retention once one record exceeds cap/records. Keeping a normal
+        // record far below that line is what keeps the age floor — not the byte cap — in charge.
+        var recordsPerWindow = TimeSpan.FromDays(config.RetentionDays).Ticks / sampler.SampleInterval.Ticks;
+        var projected = recordBytes * recordsPerWindow;
+        Assert.True(
+            projected < config.MaximumBytes,
+            $"A {recordBytes}-byte record over {recordsPerWindow} records projects to {projected} bytes, " +
+            $"past the {config.MaximumBytes}-byte cap: the byte cap would start truncating the retention window.");
+    }
+
+    [Fact]
+    public void Json_RoundTripsEveryMetricAddedToTheSample()
+    {
+        var sample = new MonitoringSample(
+            DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"),
+            Gap: false,
+            5.5,
+            16384,
+            32768,
+            [new MonitoringInstanceSample(RunningId, "running-demo", InstanceStatus.Running, 12.5, 1024, 42.5)],
+            DiskTotalBytes: 1024,
+            DiskFreeBytes: 512,
+            Events:
+            [
+                new MonitoringInstanceEvent(RunningId, MonitoringEventKind.StatusChanged, InstanceStatus.Crashed, InstanceStatus.Running),
+                new MonitoringInstanceEvent(StoppedId, MonitoringEventKind.ReadyTimeout, InstanceStatus.Starting, null),
+            ]);
+
+        var json = JsonSerializer.Serialize(sample, ApplicationContractJsonContext.Default.MonitoringSample);
+        var restored = JsonSerializer.Deserialize(json, ApplicationContractJsonContext.Default.MonitoringSample);
+
+        Assert.NotNull(restored);
+        Assert.Equal(1024UL, restored.DiskTotalBytes);
+        Assert.Equal(512UL, restored.DiskFreeBytes);
+        Assert.Equal(42.5, Assert.Single(restored.Instances).SilentSeconds);
+        Assert.NotNull(restored.Events);
+        Assert.Equal(2, restored.Events!.Value.Length);
+        Assert.Equal(
+            new MonitoringInstanceEvent(RunningId, MonitoringEventKind.StatusChanged, InstanceStatus.Crashed, InstanceStatus.Running),
+            restored.Events!.Value[0]);
+        Assert.Equal(
+            new MonitoringInstanceEvent(StoppedId, MonitoringEventKind.ReadyTimeout, InstanceStatus.Starting, null),
+            restored.Events!.Value[1]);
+
+        // The wire names are part of the contract, and the events are lifecycle only.
+        Assert.Contains("\"disk_total_bytes\":1024", json);
+        Assert.Contains("\"disk_free_bytes\":512", json);
+        Assert.Contains("\"silent_seconds\":42.5", json);
+        Assert.Contains("\"kind\":\"status_changed\"", json);
+        Assert.Contains("\"kind\":\"ready_timeout\"", json);
+        Assert.Contains("\"previous_status\":null", json);
+    }
+
+    [Fact]
+    public void Json_ARecordWrittenBeforeTheWideningReadsAsUnmeasuredNotAsZero()
+    {
+        // Byte-for-byte the shape the sampler wrote before disk, responsiveness and events existed.
+        const string legacy =
+            """
+            {"timestamp":"2026-07-28T00:00:00+00:00","gap":false,"system_cpu_percent":5.5,"memory_used_kilobytes":16384,"memory_total_kilobytes":32768,"instances":[{"instance_id":"11111111-1111-1111-1111-111111111111","name":"running-demo","status":"running","cpu_percent":12.5,"memory_bytes":1024}]}
+            """;
+
+        var restored = JsonSerializer.Deserialize(legacy, ApplicationContractJsonContext.Default.MonitoringSample);
+
+        Assert.NotNull(restored);
+        // The whole point: "never collected" must not be indistinguishable from "measured zero".
+        Assert.Null(restored.DiskTotalBytes);
+        Assert.Null(restored.DiskFreeBytes);
+        Assert.Null(restored.Events);
+        Assert.Null(Assert.Single(restored.Instances).SilentSeconds);
+        Assert.NotEqual(0UL, restored.DiskFreeBytes.GetValueOrDefault(ulong.MaxValue));
+
+        // The fields that always existed still read normally.
+        Assert.Equal(5.5, restored.SystemCpuPercent);
+        Assert.Equal(16384UL, restored.MemoryUsedKilobytes);
+        Assert.Equal(InstanceStatus.Running, Assert.Single(restored.Instances).Status);
+    }
+
+    [Fact]
+    public void Query_ReadsAHistoryWrittenBeforeTheWideningWithoutInventingZeros()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-legacy-history-").FullName;
+        var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
+        // A segment exactly as the previous daemon build left it on disk.
+        File.WriteAllText(
+            Path.Combine(root, "metrics-000000.jsonl"),
+            """
+            {"timestamp":"2026-07-28T00:00:00+00:00","gap":false,"system_cpu_percent":5.5,"memory_used_kilobytes":16384,"memory_total_kilobytes":32768,"instances":[{"instance_id":"11111111-1111-1111-1111-111111111111","name":"running-demo","status":"running","cpu_percent":12.5,"memory_bytes":1024}]}
+            """ + "\n");
+
+        // Within two intervals of the newest record, so opening the log records no startup gap.
+        var time = new ManualTimeProvider(start.AddSeconds(10));
+        using var sampler = CreateSampler(root, time);
+
+        var restored = Assert.Single(sampler.Query(new MonitoringQuery(start.AddMinutes(-1), start.AddMinutes(1))).Samples);
+        Assert.False(restored.Gap);
+        Assert.Equal(5.5, restored.SystemCpuPercent);
+        // The record survived the crash-recovery and read paths intact, and everything it never
+        // measured still reads as unmeasured rather than as a reading of zero.
+        Assert.Null(restored.DiskTotalBytes);
+        Assert.Null(restored.DiskFreeBytes);
+        Assert.Null(restored.Events);
+        Assert.Null(Assert.Single(restored.Instances).SilentSeconds);
+    }
+
+    [Fact]
+    public async Task InstanceProcess_LastOutputAtStampsTheNewestOutputLine()
+    {
+        using var process = new InstanceProcess(CreateReadyThenWaitingStartInfo(), InstanceType.Universal);
+        Assert.Null(process.LastOutputAt);
+
+        var before = DateTimeOffset.UtcNow;
+        await StartAndAwaitOutputAsync(process);
+
+        var stamped = process.LastOutputAt;
+        Assert.NotNull(stamped);
+        Assert.InRange(stamped!.Value, before.AddSeconds(-1), DateTimeOffset.UtcNow.AddSeconds(1));
+    }
+
+    private static async Task StartAndAwaitOutputAsync(InstanceProcess process)
+    {
+        var sawOutput = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        process.OnLog += (message, _) =>
+        {
+            if (message == "ready")
+                sawOutput.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        Assert.True(await process.StartAsync(delayToCheck: 10));
+        await sawOutput.Task.WaitAsync(TimeSpan.FromSeconds(20));
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(20);
+        while (!condition() && DateTimeOffset.UtcNow < deadline)
+            await Task.Delay(20);
+        Assert.True(condition());
+    }
+
+    private static ProcessStartInfo CreateReadyThenWaitingStartInfo()
+    {
+        return OperatingSystem.IsWindows()
+            ? CreateStartInfo("cmd.exe", "/d", "/c", "echo ready&set /p line=")
+            : CreateStartInfo("/bin/sh", "-c", "printf 'ready\\n'; read line");
+    }
+
+    private static ProcessStartInfo CreateStartInfo(string fileName, params string[] arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            RedirectStandardInput = true,
+            CreateNoWindow = true
+        };
+        foreach (var argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+        return startInfo;
+    }
+
+    private static MonitoringSampler CreateSampler(string root, TimeProvider time) =>
+        CreateSampler(
+            root,
+            time,
+            new TestInstance(RunningId, "running-demo", InstanceStatus.Running),
+            new TestInstance(StoppedId, "stopped-demo", InstanceStatus.Stopped));
+
+    private static MonitoringSampler CreateSampler(string root, TimeProvider time, params TestInstance[] instances)
     {
         var manager = new FakeInstanceManager();
-        manager.Instances[RunningId] = new TestInstance(RunningId, "running-demo", InstanceStatus.Running);
-        manager.Instances[StoppedId] = new TestInstance(StoppedId, "stopped-demo", InstanceStatus.Stopped);
+        foreach (var instance in instances)
+            manager.Instances[instance.Config.Uuid] = instance;
         return new MonitoringSampler(
             new DaemonMonitoringConfig(),
             manager,
@@ -172,13 +521,23 @@ public sealed class MonitoringSamplerTests
 
     private sealed class TestInstance(Guid id, string name, InstanceStatus status) : IInstance
     {
+        private InstanceStatus _status = status;
+
+        /// <summary>
+        /// How many times anything asked this instance for a report. The monitoring sampler must
+        /// leave it at zero: a report pings the game server, and sampling is passive by contract.
+        /// </summary>
+        internal int ReportCalls;
+
         public InstanceConfig Config { get; } = new() { Uuid = id, Name = name, Target = "server.jar" };
 
-        public InstanceProcess? Process => null;
+        public InstanceProcess? Process { get; init; }
 
-        public InstanceStatus Status => status;
+        public InstanceStatus Status => _status;
 
         public int ServerProcessId => -1;
+
+        internal void SetStatus(InstanceStatus next) => _status = next;
 
         public event Func<Guid, string, CancellationToken, Task>? OnLog
         {
@@ -192,7 +551,12 @@ public sealed class MonitoringSamplerTests
             remove { }
         }
 
-        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<InstanceReport> GetReportAsync(CancellationToken ct = default)
+        {
+            Interlocked.Increment(ref ReportCalls);
+            throw new InvalidOperationException(
+                "The monitoring sampler must never request an instance report: it issues a real server ping.");
+        }
 
         public Task<bool> StartAsync(int delayToCheck = 500, CancellationToken ct = default) => throw new NotSupportedException();
 

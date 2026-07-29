@@ -7919,6 +7919,13 @@
                           },
                           "memory_bytes": {
                             "type": "integer"
+                          },
+                          "silent_seconds": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "default": null
                           }
                         },
                         "required": [
@@ -7930,6 +7937,68 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "disk_total_bytes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "default": null
+                    },
+                    "disk_free_bytes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "default": null
+                    },
+                    "events": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "instance_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "kind": {
+                            "enum": [
+                              "status_changed",
+                              "ready_timeout"
+                            ]
+                          },
+                          "status": {
+                            "enum": [
+                              "running",
+                              "stopped",
+                              "crashed",
+                              "starting",
+                              "stopping"
+                            ]
+                          },
+                          "previous_status": {
+                            "enum": [
+                              "running",
+                              "stopped",
+                              "crashed",
+                              "starting",
+                              "stopping",
+                              null
+                            ]
+                          }
+                        },
+                        "required": [
+                          "instance_id",
+                          "kind",
+                          "status",
+                          "previous_status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "default": null
                     }
                   },
                   "required": [
@@ -8049,6 +8118,13 @@
                             },
                             "memory_bytes": {
                               "type": "integer"
+                            },
+                            "silent_seconds": {
+                              "type": [
+                                "number",
+                                "null"
+                              ],
+                              "default": null
                             }
                           },
                           "required": [
@@ -8060,6 +8136,68 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "disk_total_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "default": null
+                      },
+                      "disk_free_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "default": null
+                      },
+                      "events": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "instance_id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "kind": {
+                              "enum": [
+                                "status_changed",
+                                "ready_timeout"
+                              ]
+                            },
+                            "status": {
+                              "enum": [
+                                "running",
+                                "stopped",
+                                "crashed",
+                                "starting",
+                                "stopping"
+                              ]
+                            },
+                            "previous_status": {
+                              "enum": [
+                                "running",
+                                "stopped",
+                                "crashed",
+                                "starting",
+                                "stopping",
+                                null
+                              ]
+                            }
+                          },
+                          "required": [
+                            "instance_id",
+                            "kind",
+                            "status",
+                            "previous_status"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "default": null
                       }
                     },
                     "required": [
