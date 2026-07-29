@@ -31,6 +31,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         private bool _hasPendingBoxSelection;
         private bool _isBoxSelecting;
         private HashSet<FileItem> _initialSelection = [];
+        private System.Windows.Window? _hostWindow;
 
         public FileManagerPage()
         {
@@ -39,7 +40,30 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             Loaded += FileManagerPage_Loaded;
+            Loaded += (_, _) => AttachHostWindow();
+            Unloaded += (_, _) => DetachHostWindow();
+            IsVisibleChanged += (_, _) =>
+            {
+                if (!IsVisible)
+                    CancelBoxSelection();
+            };
         }
+
+        private void AttachHostWindow()
+        {
+            _hostWindow = System.Windows.Window.GetWindow(this);
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated += HostWindow_Deactivated;
+        }
+
+        private void DetachHostWindow()
+        {
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated -= HostWindow_Deactivated;
+            _hostWindow = null;
+        }
+
+        private void HostWindow_Deactivated(object? sender, EventArgs e) => CancelBoxSelection();
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
@@ -180,6 +204,27 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             _isBoxSelecting = false;
             SelectionBox.Visibility = Visibility.Collapsed;
             FileListView.ReleaseMouseCapture();
+            _viewModel.SelectedItem = FileListView.SelectedItems.Cast<FileItem>().FirstOrDefault();
+        }
+
+        private void FileListView_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (_isBoxSelecting)
+                CancelBoxSelection();
+        }
+
+        private void CancelBoxSelection()
+        {
+            _hasPendingBoxSelection = false;
+            if (!_isBoxSelecting)
+                return;
+
+            _isBoxSelecting = false;
+            FileListView.ReleaseMouseCapture();
+            FileListView.SelectedItems.Clear();
+            foreach (var item in _initialSelection)
+                FileListView.SelectedItems.Add(item);
+            SelectionBox.Visibility = Visibility.Collapsed;
             _viewModel.SelectedItem = FileListView.SelectedItems.Cast<FileItem>().FirstOrDefault();
         }
 

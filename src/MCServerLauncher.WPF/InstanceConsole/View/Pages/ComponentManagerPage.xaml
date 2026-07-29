@@ -87,7 +87,8 @@
                             VirtualizingPanel.IsVirtualizing="False"
                             PreviewMouseLeftButtonDown="ComponentListView_PreviewMouseLeftButtonDown"
                             PreviewMouseMove="ComponentListView_PreviewMouseMove"
-                            PreviewMouseLeftButtonUp="ComponentListView_PreviewMouseLeftButtonUp">
+                            PreviewMouseLeftButtonUp="ComponentListView_PreviewMouseLeftButtonUp"
+                            LostMouseCapture="ComponentListView_LostMouseCapture">
                     <ui:ListView.Style>
                         <Style TargetType="ui:ListView">
                             <Setter Property="Visibility" Value="Visible" />
@@ -218,7 +219,8 @@
                             VirtualizingPanel.IsVirtualizing="False"
                             PreviewMouseLeftButtonDown="ComponentListView_PreviewMouseLeftButtonDown"
                             PreviewMouseMove="ComponentListView_PreviewMouseMove"
-                            PreviewMouseLeftButtonUp="ComponentListView_PreviewMouseLeftButtonUp">
+                             PreviewMouseLeftButtonUp="ComponentListView_PreviewMouseLeftButtonUp"
+                             LostMouseCapture="ComponentListView_LostMouseCapture">
                     <ui:ListView.Style>
                         <Style TargetType="ui:ListView">
                             <Setter Property="Visibility" Value="Visible" />

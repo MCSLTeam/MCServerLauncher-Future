@@ -21,6 +21,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         private bool _hasPendingBoxSelection;
         private bool _isBoxSelecting;
         private HashSet<EventRule> _initialSelection = [];
+        private System.Windows.Window? _hostWindow;
 
         public EventTriggerPage()
         {
@@ -28,7 +29,30 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             _viewModel = App.Services.GetRequiredService<EventTriggerViewModel>();
             DataContext = _viewModel;
             Loaded += EventTriggerPage_Loaded;
+            Loaded += (_, _) => AttachHostWindow();
+            Unloaded += (_, _) => DetachHostWindow();
+            IsVisibleChanged += (_, _) =>
+            {
+                if (!IsVisible)
+                    CancelBoxSelection();
+            };
         }
+
+        private void AttachHostWindow()
+        {
+            _hostWindow = System.Windows.Window.GetWindow(this);
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated += HostWindow_Deactivated;
+        }
+
+        private void DetachHostWindow()
+        {
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated -= HostWindow_Deactivated;
+            _hostWindow = null;
+        }
+
+        private void HostWindow_Deactivated(object? sender, EventArgs e) => CancelBoxSelection();
 
         private async void EventTriggerPage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -138,6 +162,26 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             _hasPendingBoxSelection = false;
             SelectionBox.Visibility = Visibility.Collapsed;
             RulesListView.ReleaseMouseCapture();
+        }
+
+        private void RulesListView_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (_isBoxSelecting)
+                CancelBoxSelection();
+        }
+
+        private void CancelBoxSelection()
+        {
+            _hasPendingBoxSelection = false;
+            if (!_isBoxSelecting)
+                return;
+
+            _isBoxSelecting = false;
+            RulesListView.ReleaseMouseCapture();
+            RulesListView.SelectedItems.Clear();
+            foreach (var rule in _initialSelection)
+                RulesListView.SelectedItems.Add(rule);
+            SelectionBox.Visibility = Visibility.Collapsed;
         }
 
         private Point GetContentPoint(Point viewportPoint)

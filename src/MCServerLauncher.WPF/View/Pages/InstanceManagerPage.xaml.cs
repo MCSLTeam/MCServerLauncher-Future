@@ -24,6 +24,7 @@ namespace MCServerLauncher.WPF.View.Pages
         private bool _hasPendingBoxSelection;
         private bool _isBoxSelecting;
         private HashSet<InstanceCardModel> _initialSelection = [];
+        private Window? _hostWindow;
 
         public InstanceManagerPage()
         {
@@ -44,10 +45,29 @@ namespace MCServerLauncher.WPF.View.Pages
                 }
                 else
                 {
+                    CancelBoxSelection();
                     StopAutoRefresh();
                 }
             };
+            Loaded += (_, _) => AttachHostWindow();
+            Unloaded += (_, _) => DetachHostWindow();
         }
+
+        private void AttachHostWindow()
+        {
+            _hostWindow = Window.GetWindow(this);
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated += HostWindow_Deactivated;
+        }
+
+        private void DetachHostWindow()
+        {
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated -= HostWindow_Deactivated;
+            _hostWindow = null;
+        }
+
+        private void HostWindow_Deactivated(object? sender, EventArgs e) => CancelBoxSelection();
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
@@ -226,6 +246,26 @@ namespace MCServerLauncher.WPF.View.Pages
             _hasPendingBoxSelection = false;
             SelectionBox.Visibility = Visibility.Collapsed;
             InstanceCardGrid.ReleaseMouseCapture();
+        }
+
+        private void CardListView_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (_isBoxSelecting)
+                CancelBoxSelection();
+        }
+
+        private void CancelBoxSelection()
+        {
+            _hasPendingBoxSelection = false;
+            if (!_isBoxSelecting)
+                return;
+
+            _isBoxSelecting = false;
+            InstanceCardGrid.ReleaseMouseCapture();
+            InstanceCardGrid.SelectedItems.Clear();
+            foreach (var item in _initialSelection)
+                InstanceCardGrid.SelectedItems.Add(item);
+            SelectionBox.Visibility = Visibility.Collapsed;
         }
 
         private void UpdateBoxSelection(Point viewportPoint)

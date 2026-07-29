@@ -64,7 +64,8 @@
                          VirtualizingPanel.IsVirtualizing="False"
                          PreviewMouseLeftButtonDown="RulesListView_PreviewMouseLeftButtonDown"
                          PreviewMouseMove="RulesListView_PreviewMouseMove"
-                         PreviewMouseLeftButtonUp="RulesListView_PreviewMouseLeftButtonUp">
+                         PreviewMouseLeftButtonUp="RulesListView_PreviewMouseLeftButtonUp"
+                         LostMouseCapture="RulesListView_LostMouseCapture">
             <ui:ListView.Style>
                 <Style TargetType="ui:ListView">
                     <Setter Property="Visibility" Value="Visible" />

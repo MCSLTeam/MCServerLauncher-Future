@@ -95,7 +95,8 @@
                           VirtualizingPanel.IsVirtualizing="False"
                           PreviewMouseLeftButtonDown="FileListView_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="FileListView_PreviewMouseMove"
-                          PreviewMouseLeftButtonUp="FileListView_PreviewMouseLeftButtonUp">
+                          PreviewMouseLeftButtonUp="FileListView_PreviewMouseLeftButtonUp"
+                          LostMouseCapture="FileListView_LostMouseCapture">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Static GridView.GridViewItemContainerStyleKey}}">
                             <Setter Property="MinHeight" Value="28" />

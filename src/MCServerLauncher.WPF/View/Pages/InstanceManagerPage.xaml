@@ -217,7 +217,8 @@
                          SelectionMode="Extended"
                          PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
                          PreviewMouseMove="CardListView_PreviewMouseMove"
-                         PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
+                         PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp"
+                         LostMouseCapture="CardListView_LostMouseCapture">
                     <ui:GridView.ItemContainerStyle>
                         <Style TargetType="ui:GridViewItem">
                             <Setter Property="VerticalAlignment" Value="Stretch" />

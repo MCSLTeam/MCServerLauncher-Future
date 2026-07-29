@@ -20,6 +20,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
         private bool _hasPendingBoxSelection;
         private bool _isBoxSelecting;
         private HashSet<ComponentItemModel> _initialSelection = [];
+        private System.Windows.Window? _hostWindow;
 
         public ComponentManagerPage()
         {
@@ -27,7 +28,30 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             _viewModel = App.Services.GetRequiredService<ComponentManagerViewModel>();
             DataContext = _viewModel;
             Loaded += async (_, _) => await _viewModel.InitializeAsync();
+            Loaded += (_, _) => AttachHostWindow();
+            Unloaded += (_, _) => DetachHostWindow();
+            IsVisibleChanged += (_, _) =>
+            {
+                if (!IsVisible)
+                    CancelBoxSelection();
+            };
         }
+
+        private void AttachHostWindow()
+        {
+            _hostWindow = System.Windows.Window.GetWindow(this);
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated += HostWindow_Deactivated;
+        }
+
+        private void DetachHostWindow()
+        {
+            if (_hostWindow is not null)
+                _hostWindow.Deactivated -= HostWindow_Deactivated;
+            _hostWindow = null;
+        }
+
+        private void HostWindow_Deactivated(object? sender, EventArgs e) => CancelBoxSelection();
 
         private async void Page_Drop(object sender, DragEventArgs e)
         {
@@ -131,6 +155,27 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             if (_selectionBox is not null)
                 _selectionBox.Visibility = Visibility.Collapsed;
             listView.ReleaseMouseCapture();
+        }
+
+        private void ComponentListView_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (_isBoxSelecting)
+                CancelBoxSelection();
+        }
+
+        private void CancelBoxSelection()
+        {
+            _hasPendingBoxSelection = false;
+            if (_selectionListView is null || !_isBoxSelecting)
+                return;
+
+            _isBoxSelecting = false;
+            _selectionListView.ReleaseMouseCapture();
+            _selectionListView.SelectedItems.Clear();
+            foreach (var item in _initialSelection)
+                _selectionListView.SelectedItems.Add(item);
+            if (_selectionBox is not null)
+                _selectionBox.Visibility = Visibility.Collapsed;
         }
 
         private void UpdateBoxSelection(Point viewportPoint)

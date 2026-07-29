@@ -76,6 +76,18 @@
                                         </Setter.Value>
                                     </Setter>
                                     <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderBrush" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <ContentPresenter HorizontalAlignment="Left"
+                                                                  VerticalAlignment="Center" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Status}" Value="ok">
                                             <Setter Property="Content">
@@ -202,7 +214,8 @@
                           SelectionMode="Extended"
                           PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="CardListView_PreviewMouseMove"
-                          PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
+                          PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp"
+                          LostMouseCapture="CardListView_LostMouseCapture">
                 <ui:GridView.ItemContainerStyle>
                     <Style TargetType="ui:GridViewItem">
                         <Setter Property="VerticalAlignment" Value="Stretch" />
