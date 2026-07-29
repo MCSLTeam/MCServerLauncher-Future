@@ -369,6 +369,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 if (_consoleSession is not null)
                     return;
 
+                ClearQueuedPtyOutput();
+                PtyTerminal.ClearTerminal();
                 var (columns, rows) = GetTerminalSize();
                 var session = await InstanceDataManager.Instance.OpenConsoleAsync(columns, rows);
                 _consoleSession = session;
@@ -422,8 +424,13 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             cancellation?.Dispose();
             if (session is not null)
                 await session.DisposeAsync();
-            ClearQueuedPtyOutput();
-            await Dispatcher.InvokeAsync(PtyTerminal.ClearTerminal, DispatcherPriority.Background);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (_consoleSession is not null)
+                    return;
+                ClearQueuedPtyOutput();
+                PtyTerminal.ClearTerminal();
+            }, DispatcherPriority.Background);
         }
 
         private async Task PumpPtyOutputAsync(DaemonConsoleSession session, CancellationToken cancellationToken)
@@ -495,7 +502,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             }
 
             if (shouldSchedule)
-                _ = Dispatcher.BeginInvoke(() => FlushQueuedPtyOutput(session), DispatcherPriority.Background);
+                _ = Dispatcher.BeginInvoke(() => FlushQueuedPtyOutput(session), DispatcherPriority.Render);
         }
 
         private void FlushQueuedPtyOutput(DaemonConsoleSession session)
@@ -505,11 +512,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             lock (_ptyOutputGate)
             {
                 if (!ReferenceEquals(session, _consoleSession))
-                {
-                    _queuedPtyOutput.Clear();
-                    _isPtyOutputFlushScheduled = false;
                     return;
-                }
 
                 while (chunks.Count < MaximumPtyOutputChunksPerFlush && _queuedPtyOutput.TryDequeue(out var chunk))
                     chunks.Add(chunk);
@@ -528,7 +531,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             }
 
             if (shouldReschedule)
-                _ = Dispatcher.BeginInvoke(() => FlushQueuedPtyOutput(session), DispatcherPriority.Background);
+                _ = Dispatcher.BeginInvoke(() => FlushQueuedPtyOutput(session), DispatcherPriority.Render);
         }
 
         private void ClearQueuedPtyOutput()

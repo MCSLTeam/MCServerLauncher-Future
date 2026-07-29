@@ -370,6 +370,24 @@ public sealed class InstanceProcessEventPumpTests
     }
 
     [Fact]
+    public async Task PtyStoppingTransitionsToStoppedAfterProcessExit()
+    {
+        using var process = new InstanceProcess(
+            CreatePtyHistoryStartInfo(),
+            InstanceType.Universal,
+            ConsoleMode.Pty);
+
+        Assert.True(await process.StartAsync(delayToCheck: 20));
+        Assert.True(await process.RequestStoppingAsync());
+        process.WriteRaw("exit\r"u8.ToArray());
+
+        await process.WaitForExitAsync().WaitAsync(TestTimeout);
+
+        Assert.Equal(InstanceStatus.Stopped, process.Status);
+        Assert.True(process.HasExit);
+    }
+
+    [Fact]
     public async Task GenericProcess_ProcessReadyCancelsReadyTimeout()
     {
         var time = new ManualTimeProvider();

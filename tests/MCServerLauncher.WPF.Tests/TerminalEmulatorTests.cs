@@ -28,13 +28,13 @@ public sealed class TerminalEmulatorTests
     }
 
     [Fact]
-    public void ViewTextPadsCurrentLineToCursorColumn()
+    public void ViewTextDoesNotPadCurrentLineToCursorColumn()
     {
         var terminal = new TerminalBuffer(8, 2);
 
         terminal.Feed("ab"u8);
 
-        Assert.Equal("ab ", terminal.ViewText);
+        Assert.Equal("ab", terminal.ViewText);
         Assert.Equal("ab", terminal.Text);
         Assert.Equal(2, terminal.CursorColumn);
     }
@@ -83,6 +83,18 @@ public sealed class TerminalEmulatorTests
         terminal.Clear();
 
         Assert.Equal(string.Empty, terminal.ViewText);
+        Assert.Equal(string.Empty, terminal.Text);
+    }
+
+    [Fact]
+    public void EraseDisplayDoesNotMoveCursor()
+    {
+        var terminal = new TerminalBuffer(12, 3);
+
+        terminal.Feed("hello\u001b[2J"u8);
+
+        Assert.Equal(0, terminal.CursorRow);
+        Assert.Equal(5, terminal.CursorColumn);
         Assert.Equal(string.Empty, terminal.Text);
     }
 }

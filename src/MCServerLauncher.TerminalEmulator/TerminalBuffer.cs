@@ -65,7 +65,7 @@ public sealed class TerminalBuffer
 
     public string Text => string.Join(Environment.NewLine, TrimTrailingEmptyLines(GetTextLines(includeScrollback: true)));
 
-    public string ViewText => string.Join(Environment.NewLine, TrimTrailingEmptyLines(GetTextLines(includeScrollback: true, padCursorLine: true)));
+    public string ViewText => Text;
 
     public TerminalCell GetCell(int row, int column)
     {
@@ -355,9 +355,15 @@ public sealed class TerminalBuffer
 
     private void EraseDisplay(int mode)
     {
-        if (mode is 2 or 3)
+        if (mode == 3)
         {
-            ClearDisplay();
+            _scrollback.Clear();
+            Array.Clear(_cells);
+            return;
+        }
+        if (mode == 2)
+        {
+            Array.Clear(_cells);
             return;
         }
         if (mode == 0)
@@ -384,13 +390,6 @@ public sealed class TerminalBuffer
             _cells[_row, column] = default;
     }
 
-    private void ClearDisplay()
-    {
-        Array.Clear(_cells);
-        _row = 0;
-        _column = 0;
-    }
-
     private void AddScrollback(TerminalCell[] line)
     {
         _scrollback.Add(line);
@@ -406,7 +405,7 @@ public sealed class TerminalBuffer
         return line;
     }
 
-    private IEnumerable<string> GetTextLines(bool includeScrollback, bool padCursorLine = false)
+    private IEnumerable<string> GetTextLines(bool includeScrollback)
     {
         if (includeScrollback)
         {
@@ -414,7 +413,7 @@ public sealed class TerminalBuffer
                 yield return CellsToString(line);
         }
         for (var row = 0; row < Rows; row++)
-            yield return CellsToString(RowToArray(row), padCursorLine && row == _row && _column > 0 ? _column + 1 : 0);
+            yield return CellsToString(RowToArray(row));
     }
 
     public static string CellsToString(IReadOnlyList<TerminalCell> cells, int minimumLength = 0)

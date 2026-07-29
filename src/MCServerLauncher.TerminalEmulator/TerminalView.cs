@@ -33,7 +33,7 @@ public sealed class TerminalView : TextEditor
         FontSize = 13;
         Background = Brushes.Transparent;
         BorderThickness = new Thickness(0);
-        IsReadOnly = true;
+        IsReadOnly = false;
         WordWrap = false;
         ShowLineNumbers = false;
         HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Disabled;
@@ -46,8 +46,8 @@ public sealed class TerminalView : TextEditor
         TextArea.Caret.Hide();
         InputMethod.SetIsInputMethodEnabled(this, true);
         InputMethod.SetIsInputMethodEnabled(TextArea, true);
-        AddHandler(TextCompositionManager.PreviewTextInputEvent, new TextCompositionEventHandler(OnPreviewTextInput), true);
         AddHandler(Keyboard.PreviewKeyDownEvent, new KeyEventHandler(OnPreviewKeyDown), true);
+        TextArea.TextEntering += OnTextEntering;
         TextArea.PreviewMouseDown += (_, _) => TextArea.Focus();
         _caretTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(530), DispatcherPriority.Background, (_, _) => ToggleCaret(), Dispatcher);
         _caretTimer.Start();
@@ -82,7 +82,6 @@ public sealed class TerminalView : TextEditor
             return;
         _buffer.Feed(bytes);
         ReplaceDocumentText(_buffer.ViewText);
-        MoveCaretToEnd();
         if (_usesExternalViewport)
             UpdateDocumentExtent();
         else
@@ -106,7 +105,6 @@ public sealed class TerminalView : TextEditor
             return;
 
         ReplaceDocumentText(_buffer.ViewText);
-        MoveCaretToEnd();
         if (_usesExternalViewport)
             UpdateDocumentExtent();
         else
@@ -185,16 +183,32 @@ public sealed class TerminalView : TextEditor
     private void ReplaceDocumentText(string text)
     {
         if (string.Equals(_documentText, text, StringComparison.Ordinal))
+        {
+            InvalidateTerminalCaret(redrawText: true);
             return;
+        }
+
+        var prefixLength = 0;
+        var commonLength = Math.Min(_documentText.Length, text.Length);
+        while (prefixLength < commonLength && _documentText[prefixLength] == text[prefixLength])
+            prefixLength++;
+
+        var oldSuffix = _documentText.Length;
+        var newSuffix = text.Length;
+        while (oldSuffix > prefixLength && newSuffix > prefixLength &&
+               _documentText[oldSuffix - 1] == text[newSuffix - 1])
+        {
+            oldSuffix--;
+            newSuffix--;
+        }
 
         _documentText = text;
-        Document.Replace(0, Document.TextLength, text);
-        TextArea.TextView.EnsureVisualLines();
-        TextArea.TextView.Redraw();
-        TextArea.TextView.InvalidateLayer(KnownLayer.Caret);
+        Document.Replace(prefixLength, oldSuffix - prefixLength,
+            text.Substring(prefixLength, newSuffix - prefixLength));
+        InvalidateTerminalCaret();
     }
 
-    private void OnPreviewTextInput(object sender, TextCompositionEventArgs e)
+    private void OnTextEntering(object sender, TextCompositionEventArgs e)
     {
         if (string.IsNullOrEmpty(e.Text))
             return;
@@ -255,10 +269,7 @@ public sealed class TerminalView : TextEditor
     private void EmitInput(string data)
     {
         if (!string.IsNullOrEmpty(data))
-        {
-            FocusInput();
             Input?.Invoke(this, data);
-        }
     }
 
     private void MoveCaretToEnd()
@@ -267,8 +278,14 @@ public sealed class TerminalView : TextEditor
             TextArea.Caret.Offset = Document.TextLength;
         TextArea.Caret.Hide();
         _caretVisible = true;
-        TextArea.TextView.EnsureVisualLines();
-        TextArea.TextView.Redraw();
+        InvalidateTerminalCaret();
+    }
+
+    private void InvalidateTerminalCaret(bool redrawText = false)
+    {
+        _caretVisible = true;
+        if (redrawText)
+            TextArea.TextView.Redraw();
         TextArea.TextView.InvalidateLayer(KnownLayer.Caret);
     }
 
@@ -364,6 +381,7 @@ public sealed class TerminalView : TextEditor
             var column = Math.Clamp(owner._buffer.CursorColumn, 0, line.Length);
             var position = new TextViewPosition(lineNumber, column + 1);
             var point = textView.GetVisualPosition(position, VisualYPosition.TextTop);
+            point.X += Math.Max(0, owner._buffer.CursorColumn - line.Length) * owner._cellWidth;
             var foreground = owner.Foreground as Brush ?? Brushes.White;
             drawingContext.DrawRectangle(foreground, null, new Rect(point.X, point.Y, 1.5, owner._cellHeight));
         }

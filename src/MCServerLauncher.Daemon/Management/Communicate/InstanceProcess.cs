@@ -18,6 +18,7 @@ public class InstanceProcess : DisposableObject
     private const int LogSubscriberCapacity = 256;
     private const int ConsoleSubscriberCapacity = 512;
     private const int ConsoleHistoryCapacity = 1024 * 1024;
+    private static readonly TimeSpan PtyExitDrainTimeout = TimeSpan.FromSeconds(2);
     private readonly ProcessStartInfo _startInfo;
     private readonly IInstanceLifecycleObserver _lifecycleObserver;
     private readonly TimeProvider _timeProvider;
@@ -560,7 +561,25 @@ public class InstanceProcess : DisposableObject
         {
             // A terminal lifecycle fact follows complete pipe/PTY drain. External consumers
             // are isolated by bounded queues, so they cannot hold this path open.
-            await Task.WhenAll(stdoutPumpTask, stderrPumpTask).ConfigureAwait(false);
+            var pumps = Task.WhenAll(stdoutPumpTask, stderrPumpTask);
+            if (_consoleHost?.IsPty == true)
+            {
+                try
+                {
+                    await pumps.WaitAsync(PtyExitDrainTimeout).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    Log.Warning("[InstanceProcess] PTY output did not reach EOF after process exit; forcing terminal drain.");
+                    _pumpCancellation.Cancel();
+                    _consoleHost.Dispose();
+                    await pumps.ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                await pumps.ConfigureAwait(false);
+            }
         }
         catch (Exception exception)
         {
