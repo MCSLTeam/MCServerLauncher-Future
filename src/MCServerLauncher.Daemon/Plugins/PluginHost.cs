@@ -396,6 +396,10 @@ internal sealed class PluginHost
                         {
                             _logger.LogError("Plugin {PluginId} stop timed out.", runtime.Manifest.Identity.Id);
                         }
+                        // The plugin missed its stop deadline, so it will never release the file
+                        // sessions itself. Revoke the capability here rather than leaving download
+                        // handles and upload staging bytes pinned until session expiry.
+                        await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
                         continue;
                     }
 
@@ -419,6 +423,8 @@ internal sealed class PluginHost
                         .ConfigureAwait(false);
                     if (disposeOutcome == PluginDisposeOutcome.Completed)
                         await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
+                    else
+                        await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
                     DisposeLifetime(runtime);
                     runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
                         ? PluginRuntimeState.CleanupAbandoned
@@ -440,6 +446,8 @@ internal sealed class PluginHost
                     .ConfigureAwait(false);
                 if (disposeOutcome == PluginDisposeOutcome.Completed)
                     await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
+                else
+                    await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
                 DisposeLifetime(runtime);
                 runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
                     ? PluginRuntimeState.CleanupAbandoned
@@ -558,7 +566,10 @@ internal sealed class PluginHost
                 manifest.Identity,
                 manifest.Features.Select(static feature => feature.Value),
                 _callerContexts,
-                manifest.HasFeature(PluginFeature.InstanceQuery) ? _instances : null,
+                // Passed ungated: the authorizer re-gates the queryable catalog on instance.query,
+                // and file containment needs the catalog to tell a real instance directory from a
+                // fabricated one whatever features the plugin holds.
+                _instances,
                 manifest.HasFeature(PluginFeature.InstanceQuery) ? _instanceApplication : null,
                 system,
                 manifest.HasFeature(PluginFeature.InstanceManage) ? _instanceApplication : null,
@@ -1203,6 +1214,12 @@ internal sealed class PluginHost
             if (stopBeforeDispose)
                 await StopRollbackAsync(runtime).ConfigureAwait(false);
 
+            // The stop attempt has terminated, so the plugin will not hand its file sessions back.
+            // Endpoint ownership stays fail-closed until disposal succeeds, but the file capability
+            // is revoked here instead: a plugin that throws from Dispose, or never returns from it,
+            // would otherwise keep handles and staging bytes pinned until session expiry.
+            await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
+
             if (_shutdownCleanupBoundary.Task.IsCompleted)
             {
                 MarkCleanupAbandoned(runtime, null, cleanupStage);
@@ -1472,14 +1489,23 @@ internal sealed class PluginHost
         runtime.HttpEndpointPolicy?.ReleaseAll();
 
     /// <summary>
-    /// Releases the host-held resources a stopped plugin can no longer release itself. Endpoint
-    /// ownership and file sessions are freed together so the two cannot drift apart.
+    /// Releases the host-held resources a stopped plugin can no longer release itself.
     /// </summary>
     private static Task ReleasePluginResourcesAsync(PluginRuntime runtime)
     {
         ReleaseHttpEndpoints(runtime);
-        return runtime.Context.ReleaseFileSessionsAsync();
+        return RevokeFileCapabilityAsync(runtime);
     }
+
+    /// <summary>
+    /// Revokes the plugin's file capability: new sessions are refused and every session it still
+    /// holds is closed. Unlike endpoint ownership this is deliberately not conditional on the plugin
+    /// disposing cleanly - a throwing or hanging plugin is exactly the case where the daemon must
+    /// take the handles back - and it is idempotent, so the paths that also release endpoints can
+    /// keep calling it through <see cref="ReleasePluginResourcesAsync"/>.
+    /// </summary>
+    private static Task RevokeFileCapabilityAsync(PluginRuntime runtime) =>
+        runtime.Context.ReleaseFileSessionsAsync();
 
     private void DisposeLifetime(PluginRuntime runtime)
     {
