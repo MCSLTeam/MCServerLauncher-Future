@@ -22,8 +22,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\..\README.md"
-              Pack="true"
-              PackagePath="README.md" />
+      <Compile Remove="artifacts\**" />
+      <EmbeddedResource Remove="artifacts\**" />
+      <None Remove="artifacts\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     </ItemGroup>
 </Project>

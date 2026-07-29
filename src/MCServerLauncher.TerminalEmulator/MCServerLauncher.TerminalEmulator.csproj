@@ -8,6 +8,12 @@
     <LangVersion>14</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+    <Page Remove="artifacts\**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
   </ItemGroup>
 </Project>

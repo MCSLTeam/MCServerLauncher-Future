@@ -25,6 +25,11 @@
     <PackageValidationBaselineName>$(PackageId)</PackageValidationBaselineName>
     <PackageValidationBaselineVersion>$(MCSL_PACKAGE_VALIDATION_BASELINE_VERSION)</PackageValidationBaselineVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[10.0.9]" />
@@ -33,12 +38,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md"
-          Pack="true"
-          PackagePath="README.md" />
-    <None Include="buildTransitive\MCServerLauncher.Daemon.API.targets"
-          Pack="true"
-          PackagePath="buildTransitive\MCServerLauncher.Daemon.API.targets" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+    <None Include="buildTransitive\MCServerLauncher.Daemon.API.targets" Pack="true" PackagePath="buildTransitive\MCServerLauncher.Daemon.API.targets" />
   </ItemGroup>
 
   <!--
@@ -46,13 +47,9 @@
     Common is part of the Daemon API ABI and release line, so pin its generated dependency
     range after the SDK resolves project-reference versions and before it writes the nuspec.
   -->
-  <Target Name="PinDaemonApiProjectReferenceVersions"
-          AfterTargets="_GetProjectReferenceVersions"
-          BeforeTargets="GenerateNuspec">
+  <Target Name="PinDaemonApiProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <_ProjectReferencesWithVersions
-          Update="@(_ProjectReferencesWithVersions)"
-          Condition="'%(_ProjectReferencesWithVersions.Filename)' == 'MCServerLauncher.Common'">
+      <_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)" Condition="'%(_ProjectReferencesWithVersions.Filename)' == 'MCServerLauncher.Common'">
         <ProjectVersion>[%(_ProjectReferencesWithVersions.ProjectVersion)]</ProjectVersion>
       </_ProjectReferencesWithVersions>
     </ItemGroup>

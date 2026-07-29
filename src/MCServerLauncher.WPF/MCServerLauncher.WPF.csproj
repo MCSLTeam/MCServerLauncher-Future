@@ -63,6 +63,12 @@
     <EmbeddedResource Include="Resources\SyntaxHighlighting\*.xshd" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+    <Page Remove="artifacts\**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />

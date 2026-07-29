@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
     <ProjectReference Include="..\..\src\MCServerLauncher.Daemon.API\MCServerLauncher.Daemon.API.csproj" />
   </ItemGroup>
