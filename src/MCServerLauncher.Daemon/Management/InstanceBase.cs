@@ -422,10 +422,7 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
     private static string? FormatLifecycleLog(InstanceStatus status) => status switch
     {
         InstanceStatus.Starting => LifecycleLogPrefix + " starting.",
-        InstanceStatus.Running => LifecycleLogPrefix + " running.",
-        InstanceStatus.Stopping => LifecycleLogPrefix + " stopping.",
         InstanceStatus.Stopped => LifecycleLogPrefix + " stopped.",
-        InstanceStatus.Crashed => LifecycleLogPrefix + " crashed.",
         _ => null
     };
 

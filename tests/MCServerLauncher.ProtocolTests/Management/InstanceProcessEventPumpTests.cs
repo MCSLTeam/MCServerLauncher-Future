@@ -909,17 +909,18 @@ public sealed class InstanceProcessEventPumpTests
         try
         {
             Assert.True(await instance.StartAsync());
-            await WaitUntilAsync(() => instance.GetLogHistory().Contains("[MCSL] Instance running."));
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("[MCSL] Instance starting."));
 
             Assert.Contains("[MCSL] Instance starting.", instance.GetLogHistory());
-            Assert.Contains("[MCSL] Instance running.", instance.GetLogHistory());
+            Assert.DoesNotContain("[MCSL] Instance running.", instance.GetLogHistory());
+            Assert.DoesNotContain("[MCSL] Instance stopping.", instance.GetLogHistory());
+            Assert.DoesNotContain("[MCSL] Instance crashed.", instance.GetLogHistory());
 
             Assert.True(await instance.StopAsync());
             await process.WaitForExitAsync().WaitAsync(TestTimeout);
             await WaitUntilAsync(() => instance.GetLogHistory().Contains("[MCSL] Instance stopped."));
 
             var history = instance.GetLogHistory();
-            Assert.Contains("[MCSL] Instance stopping.", history);
             Assert.Contains("[MCSL] Instance stopped.", history);
             Assert.True(
                 Array.IndexOf(history.ToArray(), "[MCSL] Instance starting.") <

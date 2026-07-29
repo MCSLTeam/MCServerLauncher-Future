@@ -4,6 +4,7 @@ using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.InstanceConsole.Modules;
 using MCServerLauncher.WPF.InstanceConsole.View.Dialogs;
+using MCServerLauncher.WPF.Services;
 using MCServerLauncher.WPF.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -162,16 +163,19 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private void OnLogReceived(object? sender, string logMessage)
         {
+            if (!InstanceLogLocalization.TryLocalize(logMessage, out var localizedLogMessage))
+                return;
+
             var shouldScheduleFlush = false;
             lock (_pipeHistoryGate)
             {
                 if (_isLoadingPipeHistory)
                 {
-                    _pendingPipeLogs.Add(logMessage);
+                    _pendingPipeLogs.Add(localizedLogMessage);
                     return;
                 }
 
-                _queuedPipeLogs.Add(logMessage);
+                _queuedPipeLogs.Add(localizedLogMessage);
                 if (!_isPipeLogFlushScheduled)
                 {
                     _isPipeLogFlushScheduled = true;
@@ -185,10 +189,12 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private void OnPtyLifecycleLogReceived(object? sender, string logMessage)
         {
-            if (!IsLifecycleLogMessage(logMessage) || !IsPtyConfigured())
+            if (!IsPtyConfigured() ||
+                !InstanceLogLocalization.IsLifecycleMessage(logMessage) ||
+                !InstanceLogLocalization.TryLocalize(logMessage, out var localizedLogMessage))
                 return;
 
-            var bytes = Encoding.UTF8.GetBytes(logMessage + "\r\n");
+            var bytes = Encoding.UTF8.GetBytes(localizedLogMessage + "\r\n");
             _ = Dispatcher.BeginInvoke(() =>
             {
                 if (_isDisposed)
@@ -201,9 +207,6 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     PtyTerminalScrollViewer.ScrollToEnd();
             }, DispatcherPriority.Background);
         }
-
-        private static bool IsLifecycleLogMessage(string message) =>
-            message.StartsWith("[MCSL] Instance ", StringComparison.Ordinal);
 
         private void FlushPipeLogQueue()
         {
@@ -276,7 +279,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 _isLoadingPipeHistory = true;
             try
             {
-                var history = await InstanceDataManager.Instance.GetInstanceLogHistoryAsync();
+                var history = InstanceLogLocalization.LocalizeHistory(
+                    await InstanceDataManager.Instance.GetInstanceLogHistoryAsync());
                 await Dispatcher.InvokeAsync(() =>
                 {
                     List<string> pending;
@@ -288,9 +292,9 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                     }
 
                     ConsoleLogEditor.Clear();
-                    if (history is { Length: > 0 })
+                    if (history.Length > 0)
                         ConsoleLogEditor.AppendText(string.Join(Environment.NewLine, history) + Environment.NewLine);
-                    foreach (var line in MergePipeHistory(history ?? [], pending).Skip(history?.Length ?? 0))
+                    foreach (var line in MergePipeHistory(history, pending).Skip(history.Length))
                         ConsoleLogEditor.AppendText(line + Environment.NewLine);
                     UpdatePipeLogExtent();
                     PipeLogScrollViewer.ScrollToEnd();
@@ -397,7 +401,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 PtyTerminal.ClearTerminal();
                 try
                 {
-                    var history = await InstanceDataManager.Instance.GetInstanceLogHistoryAsync();
+                    var history = InstanceLogLocalization.LocalizeHistory(
+                        await InstanceDataManager.Instance.GetInstanceLogHistoryAsync());
                     if (history.Length > 0)
                     {
                         var retainedText = string.Join("\r\n", history) + "\r\n";
