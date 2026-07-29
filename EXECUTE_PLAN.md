@@ -2,7 +2,9 @@
 
 ## Current Status
 
-The active architecture initiative is `docs/superpowers/plans/2026-06-27-daemon-api-inprocess-plugin-v2-plan.md`. It replaces the earlier additive V1/V2 design with an application-core-first, release-atomic V2 cutover followed by a startup-only trusted plugin host.
+The active architecture initiative replaced the earlier additive V1/V2 design with an application-core-first, release-atomic V2 cutover followed by a startup-only trusted plugin host. That cutover is complete; the plan document that drove it was a working note under the ignored `docs/superpowers/` tree and no longer exists, so this section is the surviving record of it rather than a pointer to one.
+
+Plans that still govern current work are tracked under `docs/plan/`, and the frozen decisions they answer to are under `docs/spec/`.
 
 The 2026-07-11 baseline is the V1 daemon at commit `925666a4`: Release protocol tests pass 382/382 after adding migration-only raw-binary, restart, file-transfer, file-operation, notification-producer, and subscription/reconnect characterization. The working tree also contains user-owned governance, review, harness, plan, and local-tool files; implementation must preserve those changes.
 
