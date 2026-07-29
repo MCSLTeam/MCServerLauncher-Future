@@ -114,7 +114,7 @@ namespace MCServerLauncher.WPF.View.Pages
             _initialSelection = DaemonCardItemsControl.SelectedItems.Cast<DaemonCardModel>().ToHashSet();
             _hasPendingBoxSelection = true;
 
-            if (FindVisualParent<ListBoxItem>(e.OriginalSource as DependencyObject) is not null)
+            if (FindVisualParent<iNKORE.UI.WPF.Modern.Controls.GridViewItem>(e.OriginalSource as DependencyObject) is not null)
                 return;
 
             BeginBoxSelection();
@@ -194,7 +194,7 @@ namespace MCServerLauncher.WPF.View.Pages
             var ctrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
             foreach (var item in _viewModel.FilteredDaemons)
             {
-                if (DaemonCardItemsControl.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container)
+                if (DaemonCardItemsControl.ItemContainerGenerator.ContainerFromItem(item) is not iNKORE.UI.WPF.Modern.Controls.GridViewItem container)
                     continue;
 
                 var itemBounds = container.TransformToAncestor(DaemonCardItemsControl)

@@ -196,21 +196,15 @@
             </WrapPanel>
         </Grid>
         <Grid Grid.Row="3" Grid.Column="0" Margin="0,10,35,0" ClipToBounds="True">
-            <ListBox x:Name="DaemonCardItemsControl"
+            <ui:GridView x:Name="DaemonCardItemsControl"
                           ItemsSource="{Binding FilteredDaemons}"
                           SelectionMode="Extended"
-                          VirtualizingPanel.IsVirtualizing="False"
                           PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="CardListView_PreviewMouseMove"
                           PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-            </ListBox>
+            </ui:GridView>
             <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
-                    Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
+                    Background="Transparent" BorderBrush="#FF3B82F6" BorderThickness="1" />
         </Grid>
     </Grid>
 </ui:Page>

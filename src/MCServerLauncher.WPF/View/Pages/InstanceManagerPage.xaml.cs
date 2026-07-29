@@ -172,7 +172,7 @@ namespace MCServerLauncher.WPF.View.Pages
             _initialSelection = InstanceCardGrid.SelectedItems.Cast<InstanceCardModel>().ToHashSet();
             _hasPendingBoxSelection = true;
 
-            if (FindVisualParent<ListBoxItem>(e.OriginalSource as DependencyObject) is not null)
+            if (FindVisualParent<iNKORE.UI.WPF.Modern.Controls.GridViewItem>(e.OriginalSource as DependencyObject) is not null)
                 return;
 
             BeginBoxSelection();
@@ -252,7 +252,7 @@ namespace MCServerLauncher.WPF.View.Pages
             var ctrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
             foreach (var item in _viewModel.FilteredInstances)
             {
-                if (InstanceCardGrid.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container)
+                if (InstanceCardGrid.ItemContainerGenerator.ContainerFromItem(item) is not iNKORE.UI.WPF.Modern.Controls.GridViewItem container)
                     continue;
 
                 var itemBounds = container.TransformToAncestor(InstanceCardGrid)
