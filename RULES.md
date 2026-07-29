@@ -55,7 +55,9 @@ Start by declaring touched areas: `docs`, `agent-docs`, `frontend`, `backend`, `
 ## Plugin Rules
 
 - First-milestone plugins are trusted, startup-only, and loaded in one non-collectible `AssemblyLoadContext` per plugin bundle.
-- Public plugin features are declared in `mcsl-plugin.json`. The host currently implements `rpc.register`, `event.publish`, and `instance.query`; Preview-1 expands the vocabulary (operations/provisioning/auth/HTTP) under the approved SDK 2.0 plan.
+- Public plugin features are declared in `mcsl-plugin.json`. Preview-2 closes the grantable vocabulary: every declared feature is implemented except `event.subscribe`, which stays owned by the Phase 7 contracts plan. Host infrastructure implements `rpc.register` and `event.publish`. `docs/preview2-package-pin.md` holds the frozen list with risk levels; `FeatureCatalogPreview1Tests` fails if a feature ever lands unimplemented, so that list cannot widen silently.
+- A feature granting file access does not grant the daemon data root. Plugin file surfaces are confined to an approved subtree by allow-list, so a store added under the data root later is out of reach by default rather than by remembering to exclude it.
+- Mutations reaching the application surface through a plugin are audited at the plugin authorized-application boundary, using the same frozen `RpcAuditPolicy` classification the RPC dispatcher uses. Do not add audit to the shared `Authorized*Application` proxies: they also serve the RPC path, which already records, and would double-count.
 - Do not expose root `IServiceProvider`, TouchSocket, MessagePipe, Serilog, daemon implementation types, mutable instance collections, hooks, factory/installer extension points, or plugin filesystem writes.
 - Plugin manifest identity and feature declarations are authoritative; invalid or conflicting plugins log an Error and are skipped atomically without preventing daemon startup.
 - Plugin failures must not leave RPC definitions, event slots, cancellation sources, or catalog metadata behind. Successful plugins stop in reverse startup order.
