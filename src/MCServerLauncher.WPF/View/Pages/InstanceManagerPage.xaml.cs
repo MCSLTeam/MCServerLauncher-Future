@@ -238,8 +238,6 @@ namespace MCServerLauncher.WPF.View.Pages
             var viewportSelection = new Rect(
                 new Point(contentSelection.Left - horizontalOffset, contentSelection.Top - verticalOffset),
                 new Point(contentSelection.Right - horizontalOffset, contentSelection.Bottom - verticalOffset));
-            if (GetItemAreaBounds() is { } itemArea)
-                viewportSelection.Intersect(itemArea);
             viewportSelection.Intersect(new Rect(0, 0, InstanceCardGrid.ActualWidth, InstanceCardGrid.ActualHeight));
 
             SelectionBox.Visibility = Visibility.Visible;
@@ -271,8 +269,6 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             var scrollViewer = FindVisualChild<ScrollViewer>(InstanceCardGrid);
             var point = ClampSelectionPoint(viewportPoint, new Size(InstanceCardGrid.ActualWidth, InstanceCardGrid.ActualHeight));
-            if (GetItemAreaBounds() is { } itemArea)
-                point.Y = Math.Clamp(point.Y, itemArea.Top, itemArea.Bottom);
             return new Point(point.X + (scrollViewer?.HorizontalOffset ?? 0), point.Y + (scrollViewer?.VerticalOffset ?? 0));
         }
 
@@ -280,7 +276,7 @@ namespace MCServerLauncher.WPF.View.Pages
         {
             var itemBounds = _viewModel.FilteredInstances
                 .Select(item => InstanceCardGrid.ItemContainerGenerator.ContainerFromItem(item))
-                .OfType<ListBoxItem>()
+                .OfType<iNKORE.UI.WPF.Modern.Controls.GridViewItem>()
                 .Select(container => container.TransformToAncestor(InstanceCardGrid).TransformBounds(new Rect(new Point(), container.RenderSize)))
                 .ToArray();
             if (itemBounds.Length == 0)
@@ -294,13 +290,13 @@ namespace MCServerLauncher.WPF.View.Pages
         private void ScrollForBoxSelection(Point point)
         {
             var scrollViewer = FindVisualChild<ScrollViewer>(InstanceCardGrid);
-            if (scrollViewer is null || GetItemAreaBounds() is not { } itemArea)
+            if (scrollViewer is null)
                 return;
 
-            if (point.Y < itemArea.Top)
-                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - GetBoxScrollStep(itemArea.Top - point.Y));
-            else if (point.Y > itemArea.Bottom)
-                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + GetBoxScrollStep(point.Y - itemArea.Bottom));
+            if (point.Y < 0)
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - GetBoxScrollStep(-point.Y));
+            else if (point.Y > InstanceCardGrid.ActualHeight)
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + GetBoxScrollStep(point.Y - InstanceCardGrid.ActualHeight));
         }
 
         internal static Point ClampSelectionPoint(Point point, Size bounds) => new(
