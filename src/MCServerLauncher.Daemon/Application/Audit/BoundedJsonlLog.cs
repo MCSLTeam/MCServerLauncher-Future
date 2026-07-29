@@ -305,64 +305,32 @@ internal sealed class BoundedJsonlLog<T>
             if (bytes.Length == 0)
                 return 0;
 
-            var validLength = 0;
-            var lineStart = 0;
-            for (var index = 0; index < bytes.Length; index++)
+            // Recovery answers one question: did the writer finish the last record? A trailing
+            // newline means it did, so those bytes are an acknowledged record and stay, however
+            // corrupt their content — the read path skips lines it cannot parse. Judging content
+            // here instead would let one bad-but-complete record cost every record after it, and
+            // would still leave a torn tail in place whenever corruption appeared earlier in the
+            // segment.
+            var completeLength = bytes.AsSpan().LastIndexOf((byte)'\n') + 1;
+            if (completeLength == bytes.Length)
+                return bytes.Length;
+
+            _logger.LogWarning(
+                "[BoundedJsonlLog] Truncating '{Path}' from {Original} to {Recovered} bytes after crash recovery.",
+                path,
+                bytes.Length,
+                completeLength);
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None))
             {
-                if (bytes[index] != (byte)'\n')
-                    continue;
-
-                var line = bytes.AsSpan(lineStart, index - lineStart);
-                if (IsValidRecord(line))
-                {
-                    validLength = index + 1;
-                    lineStart = index + 1;
-                    continue;
-                }
-
-                // A bad record that still has more data after it is interior corruption, not a
-                // torn tail: the segment is otherwise intact, so leave every byte in place and let
-                // the read path skip the one unparseable line instead of destroying everything that
-                // follows it.
-                if (index + 1 < bytes.Length)
-                    return bytes.Length;
-
-                // The bad record is the last thing in the file and is newline-terminated; treat it
-                // the same as an unterminated tail below - truncate it away.
-                break;
+                stream.SetLength(completeLength);
             }
 
-            if (validLength != bytes.Length)
-            {
-                _logger.LogWarning(
-                    "[BoundedJsonlLog] Truncating '{Path}' from {Original} to {Recovered} bytes after crash recovery.",
-                    path,
-                    bytes.Length,
-                    validLength);
-                using var stream = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None);
-                stream.SetLength(validLength);
-            }
-
-            return validLength;
+            return completeLength;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             _logger.LogWarning(exception, "[BoundedJsonlLog] Failed to recover '{Path}'.", path);
             return 0;
-        }
-    }
-
-    private bool IsValidRecord(ReadOnlySpan<byte> line)
-    {
-        if (line.Length == 0)
-            return false;
-        try
-        {
-            return JsonSerializer.Deserialize(line, _typeInfo) is not null;
-        }
-        catch (JsonException)
-        {
-            return false;
         }
     }
 
