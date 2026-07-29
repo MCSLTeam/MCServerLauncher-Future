@@ -25,7 +25,6 @@ namespace MCServerLauncher.WPF.View.Pages
             InitDownloadSourceSelection();
             ResDownload_DownloadThreadCnt.SettingSlider.Value = _viewModel.DownloadThreadCount;
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex = _viewModel.ActionWhenDownloadErrorIndex;
-            Instance_AutoRefreshInterval.SettingSlider.Value = _viewModel.AutoRefreshInterval;
             Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex = _viewModel.ActionOnDoubleClickIndex;
             More_LauncherTheme.SettingComboBox.SelectedIndex = _viewModel.LauncherThemeIndex;
             More_LauncherLanguage.SettingComboBox.SelectedIndex = _viewModel.LauncherLanguageIndex;
@@ -56,8 +55,6 @@ namespace MCServerLauncher.WPF.View.Pages
             ResDownload_ActionWhenDownloadError.SettingComboBox.SelectionChanged += (s, e) =>
                 _viewModel.ActionWhenDownloadErrorIndex = ResDownload_ActionWhenDownloadError.SettingComboBox.SelectedIndex;
 
-            Instance_AutoRefreshInterval.SettingSlider.ValueChanged += (s, e) =>
-                _viewModel.AutoRefreshInterval = (int)Instance_AutoRefreshInterval.SettingSlider.Value;
             Instance_ActionOnDoubleClick.SettingComboBox.SelectionChanged += (s, e) =>
                 _viewModel.ActionOnDoubleClickIndex = Instance_ActionOnDoubleClick.SettingComboBox.SelectedIndex;
 

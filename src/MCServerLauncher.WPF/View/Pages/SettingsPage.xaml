@@ -130,12 +130,6 @@
                                      ComboBoxItems="{Binding Path=ActionWhenDownloadErrorItems}" />
 
                 <TextBlock Text="{Binding [Main_InstanceManagerNavMenu], Source={x:Static i18n:Lang.Tr}}" FontSize="18" Margin="0,10,0,0" />
-                <sc:RangeSettingCard x:Name="Instance_AutoRefreshInterval"
-                                     Icon="{x:Static ui:SegoeFluentIcons.Sync}"
-                                     Title="{Binding [Settings_Instance_AutoRefreshInterval], Source={x:Static i18n:Lang.Tr}}"
-                                     Description="{Binding [Settings_Instance_AutoRefreshInterval_Description], Source={x:Static i18n:Lang.Tr}}"
-                                     MinValue="0" MaxValue="5" SliderValue="{Binding Path=AutoRefreshInterval}"
-                                     ShowSliderTick="True" SliderTickPlacement="BottomRight" />
                 <sc:ComboSettingCard x:Name="Instance_ActionOnDoubleClick"
                                      Icon="{x:Static ui:SegoeFluentIcons.TouchPointer}"
                                      Title="{Binding [Settings_Instance_ActionOnDoubleClick], Source={x:Static i18n:Lang.Tr}}"

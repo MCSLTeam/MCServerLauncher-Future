@@ -26,11 +26,7 @@ public partial class DaemonManagerViewModel : ObservableObject
 
     public ObservableCollection<DaemonCardModel> Daemons { get; } = [];
     public ObservableCollection<DaemonCardModel> FilteredDaemons { get; } = [];
-    public IReadOnlyList<RefreshIntervalOption> RefreshIntervalOptions { get; } = RefreshIntervalOptionCatalog.All;
-
     [ObservableProperty] private string _searchText = string.Empty;
-    [ObservableProperty] private bool _autoRefreshEnabled = GetStoredRefreshInterval() > 0;
-    [ObservableProperty] private int _refreshIntervalSeconds = RefreshIntervalOptionCatalog.Normalize(GetStoredRefreshInterval());
 
     public DaemonManagerViewModel(
         IDaemonConnectionService daemonService,
@@ -369,26 +365,6 @@ public partial class DaemonManagerViewModel : ObservableObject
         model.ResourceSummary = $"{Lang.Tr["Daemon_CpuUsage"]} {model.CpuUsage:F2}% | {Lang.Tr["Daemon_MemoryUsage"]} {model.MemoryUsage:F2}% | {Lang.Tr["Daemon_DriveUsage"]} {model.DriveUsage:F2}%";
     }
 
-    partial void OnAutoRefreshEnabledChanged(bool value)
-    {
-        SettingsManager.SaveSetting("Instance.AutoRefreshInterval", value ? RefreshIntervalSeconds : 0);
-    }
-
-    partial void OnRefreshIntervalSecondsChanged(int value)
-    {
-        var normalizedValue = RefreshIntervalOptionCatalog.Normalize(value);
-        if (value != normalizedValue)
-        {
-            RefreshIntervalSeconds = normalizedValue;
-            return;
-        }
-
-        if (AutoRefreshEnabled)
-        {
-            SettingsManager.SaveSetting("Instance.AutoRefreshInterval", RefreshIntervalSeconds);
-        }
-    }
-
     partial void OnSearchTextChanged(string value)
     {
         ApplyFilters();
@@ -483,9 +459,5 @@ public partial class DaemonManagerViewModel : ObservableObject
         var name = string.IsNullOrWhiteSpace(drive.Name) ? drive.DriveFormat : drive.Name;
         return $"{name} {usage:F2}% ({FormatSize(used)} / {FormatSize(drive.TotalBytes)})";
     }
-
-    private static int GetStoredRefreshInterval()
-    {
-        return SettingsManager.Get?.Instance?.AutoRefreshInterval ?? 5;
-    }
 }
+

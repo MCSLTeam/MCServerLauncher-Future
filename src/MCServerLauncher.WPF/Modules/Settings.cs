@@ -168,7 +168,6 @@ namespace MCServerLauncher.WPF.Modules
         public class InstanceSettingsModel
         {
             public List<string?>? FollowStart { get; set; }
-            public int AutoRefreshInterval { get; set; } = 3;
             public string? ActionOnDoubleClick { get; set; } = "Console";
         }
 

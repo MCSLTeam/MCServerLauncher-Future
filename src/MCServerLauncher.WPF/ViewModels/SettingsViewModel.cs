@@ -47,7 +47,6 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private int _actionWhenDownloadErrorIndex = GetSelectedIndex(ActionWhenDownloadErrorKeys, DownloadSettings.ActionWhenDownloadError, DefaultActionWhenDownloadError);
 
     // Instance settings
-    [ObservableProperty] private int _autoRefreshInterval = InstanceSettings.AutoRefreshInterval;
     [ObservableProperty] private int _actionOnDoubleClickIndex = GetSelectedIndex(ActionOnDoubleClickKeys, InstanceSettings.ActionOnDoubleClick, DefaultActionOnDoubleClick);
 
     // App settings
@@ -119,9 +118,6 @@ public partial class SettingsViewModel : ObservableObject
         if (value >= 0 && value < ActionWhenDownloadErrorKeys.Count)
             SettingsManager.SaveSetting("ResDownload.ActionWhenDownloadError", ActionWhenDownloadErrorKeys[value]);
     }
-
-    partial void OnAutoRefreshIntervalChanged(int value) =>
-        SettingsManager.SaveSetting("Instance.AutoRefreshInterval", value);
 
     partial void OnActionOnDoubleClickIndexChanged(int value)
     {

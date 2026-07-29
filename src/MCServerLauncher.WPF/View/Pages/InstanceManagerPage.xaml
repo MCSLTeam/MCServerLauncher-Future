@@ -197,15 +197,6 @@
                     <ComboBoxItem Tag="Stopped" Content="{Binding [Stopped], Source={x:Static i18n:Lang.Tr}}" />
                     <ComboBoxItem Tag="Crashed" Content="{Binding [Crashed], Source={x:Static i18n:Lang.Tr}}" />
                 </ComboBox>
-                <ui:ToggleSwitch MinWidth="96" Margin="0,0,10,8"
-                                 OffContent="{Binding [AutoRefresh_Off], Source={x:Static i18n:Lang.Tr}}"
-                                 OnContent="{Binding [AutoRefresh_On], Source={x:Static i18n:Lang.Tr}}"
-                                 IsOn="{Binding AutoRefreshEnabled, Mode=TwoWay}" />
-                <ComboBox Width="90" Margin="0,0,10,8"
-                          ItemsSource="{Binding RefreshIntervalOptions}"
-                          DisplayMemberPath="Display"
-                          SelectedValuePath="Seconds"
-                          SelectedValue="{Binding RefreshIntervalSeconds, Mode=TwoWay}" />
                 <TextBox Width="220" MaxWidth="400" MinWidth="120" Margin="0,0,10,8" x:Name="SearchTextBox"
                          Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
@@ -217,26 +208,34 @@
                 </Button>
             </WrapPanel>
         </Grid>
-        <ui:ScrollViewerEx Grid.Row="3" Margin="0,15,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <ge:LoadingLayer Grid.Row="0" Grid.Column="0" x:Name="LoadingLayer" />
-                <ge:StopTipLayer Grid.Row="0" Grid.Column="0" x:Name="StopTipLayer" Visibility="Collapsed" />
-                <ItemsControl Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid"
-                              ItemsSource="{Binding FilteredInstances}"
-                              Margin="0,0,0,15">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+            <Grid Grid.Row="3" Margin="0,15,0,0" ClipToBounds="True">
+                <ui:ScrollViewerEx Margin="0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <ge:LoadingLayer Grid.Row="0" Grid.Column="0" x:Name="LoadingLayer" />
+                        <ge:StopTipLayer Grid.Row="0" Grid.Column="0" x:Name="StopTipLayer" Visibility="Collapsed" />
+                        <ListBox Grid.Row="0" Grid.Column="0" x:Name="InstanceCardGrid"
+                                 ItemsSource="{Binding FilteredInstances}"
+                                 SelectionMode="Extended"
+                                 VirtualizingPanel.IsVirtualizing="False"
+                                 PreviewMouseLeftButtonDown="CardListView_PreviewMouseLeftButtonDown"
+                                 PreviewMouseMove="CardListView_PreviewMouseMove"
+                                 PreviewMouseLeftButtonUp="CardListView_PreviewMouseLeftButtonUp">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                        </ListBox>
+                    </Grid>
+                </ui:ScrollViewerEx>
+                <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
+                        Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
             </Grid>
-        </ui:ScrollViewerEx>
     </Grid>
 </ui:Page>
