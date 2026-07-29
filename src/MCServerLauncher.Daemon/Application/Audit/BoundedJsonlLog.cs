@@ -286,8 +286,15 @@ internal sealed class BoundedJsonlLog<T>
                     continue;
                 }
 
-                // An interior corrupt record means the file is damaged beyond a torn tail; keep
-                // everything before it and drop the rest rather than serving garbage.
+                // A bad record that still has more data after it is interior corruption, not a
+                // torn tail: the segment is otherwise intact, so leave every byte in place and let
+                // the read path skip the one unparseable line instead of destroying everything that
+                // follows it.
+                if (index + 1 < bytes.Length)
+                    return bytes.Length;
+
+                // The bad record is the last thing in the file and is newline-terminated; treat it
+                // the same as an unterminated tail below - truncate it away.
                 break;
             }
 
