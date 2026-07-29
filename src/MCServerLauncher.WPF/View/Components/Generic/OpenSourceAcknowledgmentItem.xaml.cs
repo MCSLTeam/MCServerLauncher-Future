@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using MCServerLauncher.WPF.Modules;
 
 namespace MCServerLauncher.WPF.View.Components.Generic
 {
@@ -68,7 +68,7 @@ namespace MCServerLauncher.WPF.View.Components.Generic
         {
             if (string.IsNullOrWhiteSpace(ButtonUrl)) return;
 
-            Process.Start(ButtonUrl);
+            BrowserHelper.OpenUrl(ButtonUrl);
         }
     }
 }

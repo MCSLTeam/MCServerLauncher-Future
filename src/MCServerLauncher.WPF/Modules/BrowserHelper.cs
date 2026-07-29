@@ -6,17 +6,23 @@ namespace MCServerLauncher.WPF.Modules
 {
     public static class BrowserHelper
     {
-    public static void OpenUrl(string url)
-      {
+                public static void OpenUrl(string url)
+                {
             try
-  {
-     Process.Start(url);
-      Log.Information($"[Net] Try to open url \"{url}\"");
+                        {
+                                Process.Start(CreateBrowserStartInfo(url));
+                                Log.Information($"[Net] Try to open url \"{url}\"");
             }
-    catch (Exception ex)
+                        catch (Exception ex)
             {
-           Log.Error($"[Net] Failed to open url \"{url}\". Reason: {ex.Message}");
+                                Log.Error($"[Net] Failed to open url \"{url}\". Reason: {ex.Message}");
             }
         }
-}
+
+                internal static ProcessStartInfo CreateBrowserStartInfo(string url) => new()
+                {
+                        FileName = url,
+                        UseShellExecute = true
+                };
+        }
 }

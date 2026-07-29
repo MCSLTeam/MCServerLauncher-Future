@@ -343,13 +343,14 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
         /// <summary>
         /// Get daemon latency
         /// </summary>
-        public async Task<long?> GetDaemonLatencyAsync()
+        public async Task<long?> GetDaemonLatencyAsync(CancellationToken cancellationToken = default)
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var daemon = GetReadyDaemon();
                 var started = Stopwatch.GetTimestamp();
-                var result = await daemon.PingAsync();
+                var result = await daemon.PingAsync(cancellationToken);
                 if (result.IsErr(out var error))
                 {
                     Log.Warning(
@@ -360,6 +361,10 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
                 }
 
                 return (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
