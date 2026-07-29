@@ -59,8 +59,12 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <ui:InfoBar Grid.Row="0" x:Name="MultiSelectTipBar" IsOpen="True" Severity="Informational" Message="{Binding [MultiSelectTip], Source={x:Static i18n:Lang.Tr}, Mode=OneWay}" Margin="0,0,0,10" IsClosable="True" Closed="MultiSelectTipBar_DoNotShowAgain_Click" />
-            <ui:ListView Grid.Row="1" ItemsSource="{Binding Rules}" x:Name="RulesListView" SelectionMode="Extended">
+            <Grid Grid.Row="1" ClipToBounds="True">
+            <ui:ListView ItemsSource="{Binding Rules}" x:Name="RulesListView" SelectionMode="Extended"
+                         VirtualizingPanel.IsVirtualizing="False"
+                         PreviewMouseLeftButtonDown="RulesListView_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="RulesListView_PreviewMouseMove"
+                         PreviewMouseLeftButtonUp="RulesListView_PreviewMouseLeftButtonUp">
             <ui:ListView.Style>
                 <Style TargetType="ui:ListView">
                     <Setter Property="Visibility" Value="Visible" />
@@ -110,6 +114,9 @@
                 </DataTemplate>
             </ui:ListView.ItemTemplate>
             </ui:ListView>
+                <Border x:Name="SelectionBox" IsHitTestVisible="False" Visibility="Collapsed"
+                    Background="#303B82F6" BorderBrush="#FF3B82F6" BorderThickness="1" />
+                </Grid>
             <ge:StopTipLayer Grid.Row="1"
                              Symbol="🧾"
                              StopTip="{Binding [NothingHere], Source={x:Static i18n:Lang.Tr}}"
