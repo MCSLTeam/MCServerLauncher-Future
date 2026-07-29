@@ -414,7 +414,7 @@ internal sealed class PluginHost
                             "normal shutdown")
                         .ConfigureAwait(false);
                     if (disposeOutcome == PluginDisposeOutcome.Completed)
-                        ReleaseHttpEndpoints(runtime);
+                        await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
                     DisposeLifetime(runtime);
                     runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
                         ? PluginRuntimeState.CleanupAbandoned
@@ -435,7 +435,7 @@ internal sealed class PluginHost
                         "pre-start shutdown cleanup")
                     .ConfigureAwait(false);
                 if (disposeOutcome == PluginDisposeOutcome.Completed)
-                    ReleaseHttpEndpoints(runtime);
+                    await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
                 DisposeLifetime(runtime);
                 runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
                     ? PluginRuntimeState.CleanupAbandoned
@@ -1215,7 +1215,7 @@ internal sealed class PluginHost
             {
                 var disposed = await disposeTask.ConfigureAwait(false);
                 if (disposed)
-                    ReleaseHttpEndpoints(runtime);
+                    await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
                 else
                 {
                     _logger.LogWarning(
@@ -1242,7 +1242,7 @@ internal sealed class PluginHost
             {
                 if (await disposeTask.ConfigureAwait(false))
                 {
-                    ReleaseHttpEndpoints(runtime);
+                    await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
                     _logger.LogInformation(
                         "Plugin {PluginId} completed delayed {CleanupStage}; endpoint ownership was released.",
                         runtime.Manifest.Identity.Id,
@@ -1465,6 +1465,16 @@ internal sealed class PluginHost
 
     private static void ReleaseHttpEndpoints(PluginRuntime runtime) =>
         runtime.HttpEndpointPolicy?.ReleaseAll();
+
+    /// <summary>
+    /// Releases the host-held resources a stopped plugin can no longer release itself. Endpoint
+    /// ownership and file sessions are freed together so the two cannot drift apart.
+    /// </summary>
+    private static Task ReleasePluginResourcesAsync(PluginRuntime runtime)
+    {
+        ReleaseHttpEndpoints(runtime);
+        return runtime.Context.ReleaseFileSessionsAsync();
+    }
 
     private void DisposeLifetime(PluginRuntime runtime)
     {

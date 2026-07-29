@@ -34,6 +34,7 @@ internal sealed class PluginApplicationAuthorizer
     private readonly IMonitoringApplication? _monitoring;
     private readonly IAutomationApplication? _automation;
     private readonly IEventRuleApplication? _eventRules;
+    private readonly ContainedPluginFileApplication? _containedFiles;
     private readonly IFileReadApplication? _fileReads;
     private readonly IFileWriteApplication? _fileWrites;
 
@@ -73,15 +74,26 @@ internal sealed class PluginApplicationAuthorizer
         _automation = HasFeature(PluginFeature.AutomationManage) ? automation : null;
         _eventRules = HasFeature(PluginFeature.EventRuleManage) ? eventRules : null;
         // One file application feeds both narrow views, mirroring how one instance application
-        // feeds the query and management slots.
-        _fileReads = HasFeature(PluginFeature.FileRead) ? files : null;
-        _fileWrites = HasFeature(PluginFeature.FileWrite) ? files : null;
+        // feeds the query and management slots. It is confined first: the shared application is
+        // rooted at the whole daemon data root, which also holds the audit, plan, automation,
+        // backup, operation and monitoring stores. Containment wraps the singleton rather than the
+        // per-caller proxies so a plugin acting for a foreign principal is confined too — the
+        // plugin code is the untrusted party regardless of whose token it presents.
+        _containedFiles = files is null ||
+                          !(HasFeature(PluginFeature.FileRead) || HasFeature(PluginFeature.FileWrite))
+            ? null
+            : new ContainedPluginFileApplication(files);
+        _fileReads = HasFeature(PluginFeature.FileRead) ? _containedFiles : null;
+        _fileWrites = HasFeature(PluginFeature.FileWrite) ? _containedFiles : null;
         Host = Create(_callerContexts.CreateHost(identity, grantedFeatures));
 
         bool HasFeature(PluginFeature feature) => grantedFeatures.Contains(feature.Value);
     }
 
     internal IPluginAuthorizedApplications Host { get; }
+
+    internal Task ReleaseFileSessionsAsync() =>
+        _containedFiles?.ReleaseSessionsAsync() ?? Task.CompletedTask;
 
     internal IPluginAuthorizedApplications ForPrincipal(VerifiedPrincipal principal)
     {
@@ -216,6 +228,12 @@ internal sealed class PluginContext : IPluginContext
     public IPluginRpcRegistrar Rpc { get; }
 
     public IPluginEventRegistrar Events { get; }
+
+    /// <summary>
+    /// Closes every file session this plugin still holds. The host calls it once the plugin has
+    /// stopped, so a crashed plugin cannot pin file handles and staging bytes until session expiry.
+    /// </summary>
+    internal Task ReleaseFileSessionsAsync() => _applications.ReleaseFileSessionsAsync();
 
     public ICallerContext Caller => _applications.Host.Caller;
 
