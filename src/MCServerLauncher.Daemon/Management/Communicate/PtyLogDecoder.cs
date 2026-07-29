@@ -34,7 +34,9 @@ internal sealed class PtyLogDecoder
         _escapeState = EscapeState.None;
         if (_line.Length > 0)
         {
-            lines.Add(_line.ToString());
+            var line = _line.ToString();
+            if (!string.IsNullOrWhiteSpace(line))
+                lines.Add(line);
             _line.Clear();
         }
 
@@ -84,8 +86,12 @@ internal sealed class PtyLogDecoder
 
             if (character == '\n')
             {
-                lines ??= [];
-                lines.Add(_line.ToString().TrimEnd('\r'));
+                var line = _line.ToString().TrimEnd('\r');
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    lines ??= [];
+                    lines.Add(line);
+                }
                 _line.Clear();
                 continue;
             }

@@ -32,4 +32,14 @@ public sealed class PtyLogDecoderTests
 
         Assert.Equal(["ready"], lines);
     }
+
+    [Fact]
+    public void BlankLinesAreNotPublishedToHistory()
+    {
+        var decoder = new PtyLogDecoder(Encoding.UTF8);
+
+        var lines = decoder.Append("ready\n\n \r\nnext\n"u8);
+
+        Assert.Equal(["ready", "next"], lines);
+    }
 }

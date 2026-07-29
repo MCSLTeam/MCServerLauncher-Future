@@ -377,14 +377,17 @@ internal class InstanceManager : IInstanceManager
         return true;
     }
 
-    public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler)
+    public Guid? AttachConsole(
+        Guid instanceId,
+        Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler,
+        bool replayHistory = true)
     {
         if (!RunningInstances.TryGetValue(instanceId, out var instance))
             return null;
         var process = instance.Process;
         if (process is null)
             return null;
-        return process.AttachConsoleSubscriber(handler);
+        return process.AttachConsoleSubscriber(handler, replayHistory);
     }
 
     public void DetachConsole(Guid instanceId, Guid subscriberId)

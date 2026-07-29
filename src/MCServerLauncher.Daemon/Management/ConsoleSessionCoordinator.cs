@@ -61,7 +61,10 @@ internal sealed class ConsoleSessionCoordinator(IInstanceManager instanceManager
                 new ConflictDaemonError("instance.not_running", "The instance is not running."));
         }
 
-        var subscriberId = instanceManager.AttachConsole(request.InstanceId, outputHandler);
+        var subscriberId = instanceManager.AttachConsole(
+            request.InstanceId,
+            outputHandler,
+            request.ReplayHistory != false);
         if (subscriberId is null)
         {
             return Result.Err<ConsoleSession, DaemonError>(

@@ -151,6 +151,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
             _isDisposed = true;
             InstanceDataManager.Instance.LogReceived -= OnLogReceived;
+            InstanceDataManager.Instance.LogReceived -= OnPtyLifecycleLogReceived;
             InstanceDataManager.Instance.ReportUpdated -= OnReportUpdated;
             iNKORE.UI.WPF.Modern.ThemeManager.Current.ActualApplicationThemeChanged -= OnApplicationThemeChanged;
             await ClosePtySessionAsync();
@@ -181,6 +182,28 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             if (shouldScheduleFlush)
                 _ = Dispatcher.BeginInvoke(FlushPipeLogQueue, DispatcherPriority.Background);
         }
+
+        private void OnPtyLifecycleLogReceived(object? sender, string logMessage)
+        {
+            if (!IsLifecycleLogMessage(logMessage) || !IsPtyConfigured())
+                return;
+
+            var bytes = Encoding.UTF8.GetBytes(logMessage + "\r\n");
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (_isDisposed)
+                    return;
+
+                var wasAtEnd = IsAtBottom(PtyTerminalScrollViewer);
+                PtyTerminal.Feed(bytes);
+                UpdatePtyTerminalViewport();
+                if (wasAtEnd)
+                    PtyTerminalScrollViewer.ScrollToEnd();
+            }, DispatcherPriority.Background);
+        }
+
+        private static bool IsLifecycleLogMessage(string message) =>
+            message.StartsWith("[MCSL] Instance ", StringComparison.Ordinal);
 
         private void FlushPipeLogQueue()
         {
@@ -348,6 +371,7 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
             ApplyConsoleMode(ConsoleMode.Pipe);
             ConsoleLogEditor.TextArea.Caret.Hide();
             InstanceDataManager.Instance.LogReceived -= OnLogReceived;
+            InstanceDataManager.Instance.LogReceived -= OnPtyLifecycleLogReceived;
             InstanceDataManager.Instance.LogReceived += OnLogReceived;
             _ = LoadLogHistoryAsync();
         }
@@ -371,13 +395,30 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
                 ClearQueuedPtyOutput();
                 PtyTerminal.ClearTerminal();
+                try
+                {
+                    var history = await InstanceDataManager.Instance.GetInstanceLogHistoryAsync();
+                    if (history.Length > 0)
+                    {
+                        var retainedText = string.Join("\r\n", history) + "\r\n";
+                        PtyTerminal.Feed(Encoding.UTF8.GetBytes(retainedText));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "[CommandPage] Failed to load retained PTY history");
+                }
                 var (columns, rows) = GetTerminalSize();
-                var session = await InstanceDataManager.Instance.OpenConsoleAsync(columns, rows);
+                var (session, replaysRawHistory) = await InstanceDataManager.Instance.OpenConsoleAsync(columns, rows);
+                if (replaysRawHistory)
+                    PtyTerminal.ClearTerminal();
                 _consoleSession = session;
                 _consoleColumns = columns;
                 _consoleRows = rows;
                 _consoleCancellation = new CancellationTokenSource();
                 InstanceDataManager.Instance.LogReceived -= OnLogReceived;
+                InstanceDataManager.Instance.LogReceived -= OnPtyLifecycleLogReceived;
+                InstanceDataManager.Instance.LogReceived += OnPtyLifecycleLogReceived;
                 UpdatePtyTerminalViewport();
                 PtyTerminal.FocusInput();
                 _consolePump = PumpPtyOutputAsync(session, _consoleCancellation.Token);
@@ -394,6 +435,8 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
 
         private async Task ClosePtySessionAsync()
         {
+            InstanceDataManager.Instance.LogReceived -= OnPtyLifecycleLogReceived;
+
             DaemonConsoleSession? session;
             CancellationTokenSource? cancellation;
             Task? pump;
@@ -429,7 +472,6 @@ namespace MCServerLauncher.WPF.InstanceConsole.View.Pages
                 if (_consoleSession is not null)
                     return;
                 ClearQueuedPtyOutput();
-                PtyTerminal.ClearTerminal();
             }, DispatcherPriority.Background);
         }
 

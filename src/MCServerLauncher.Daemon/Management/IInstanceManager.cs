@@ -58,7 +58,10 @@ internal interface IInstanceManager
 
     bool TryResizeConsole(Guid instanceId, ushort columns, ushort rows);
 
-    Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler);
+    Guid? AttachConsole(
+        Guid instanceId,
+        Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler,
+        bool replayHistory = true);
 
     void DetachConsole(Guid instanceId, Guid subscriberId);
 

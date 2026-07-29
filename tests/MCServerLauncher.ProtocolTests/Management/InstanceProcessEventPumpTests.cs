@@ -370,6 +370,44 @@ public sealed class InstanceProcessEventPumpTests
     }
 
     [Fact]
+    public async Task PtyConsoleSubscriberCanSkipReplayAndReceiveLiveOutput()
+    {
+        using var process = new InstanceProcess(
+            CreatePtyReplayControlStartInfo(),
+            InstanceType.Universal,
+            ConsoleMode.Pty);
+        var output = new List<byte>();
+        var receivedLive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        try
+        {
+            Assert.True(await process.StartAsync(delayToCheck: 20));
+            await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"));
+
+            process.AttachConsoleSubscriber((chunk, _, _) =>
+            {
+                output.AddRange(chunk.ToArray());
+                if (Encoding.UTF8.GetString([.. output]).Contains("live-output", StringComparison.Ordinal))
+                    receivedLive.TrySetResult();
+                return Task.CompletedTask;
+            }, replayHistory: false);
+
+            process.WriteRaw("continue\r"u8.ToArray());
+            await receivedLive.Task.WaitAsync(TimeSpan.FromSeconds(3));
+
+            var text = Encoding.UTF8.GetString([.. output]);
+            Assert.DoesNotContain("history-ready", text);
+            Assert.Contains("live-output", text);
+        }
+        finally
+        {
+            if (!process.HasExit)
+                process.KillProcess();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+        }
+    }
+
+    [Fact]
     public async Task PtyStoppingTransitionsToStoppedAfterProcessExit()
     {
         using var process = new InstanceProcess(
@@ -819,6 +857,79 @@ public sealed class InstanceProcessEventPumpTests
         {
             releaseOldRunning.TrySetResult();
             await instance.ForceKillAndClearAsync();
+            instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task InstanceBase_RetainsSharedPipeAndPtyHistoryAcrossRestart()
+    {
+        using var pipeProcess = new InstanceProcess(
+            CreateTaggedHistoryStartInfo("pipe-history"),
+            InstanceType.Universal);
+        using var ptyProcess = new InstanceProcess(
+            CreatePtyTaggedHistoryStartInfo("pty-history"),
+            InstanceType.Universal,
+            ConsoleMode.Pty);
+        var config = CreateConfig();
+        var instance = new FactoryBackedInstance(config, pipeProcess, ptyProcess);
+
+        try
+        {
+            Assert.True(await instance.StartAsync());
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("pipe-history"));
+
+            await instance.ForceKillAndClearAsync();
+            Assert.Contains("pipe-history", instance.GetLogHistory());
+
+            Assert.True(await instance.StartAsync());
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("pty-history"));
+
+            var history = instance.GetLogHistory();
+            Assert.Contains("pipe-history", history);
+            Assert.Contains("pty-history", history);
+            var historyArray = history.ToArray();
+            Assert.True(
+                Array.IndexOf(historyArray, "pipe-history") <
+                Array.IndexOf(historyArray, "pty-history"));
+        }
+        finally
+        {
+            await instance.ForceKillAndClearAsync();
+            instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task InstanceBase_AppendsLifecycleLogsWithoutClearingHistoryOnStop()
+    {
+        using var process = new InstanceProcess(CreateReadyThenLongRunningStartInfo(), InstanceType.Universal);
+        var instance = new FactoryBackedInstance(CreateConfig(), process);
+
+        try
+        {
+            Assert.True(await instance.StartAsync());
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("[MCSL] Instance running."));
+
+            Assert.Contains("[MCSL] Instance starting.", instance.GetLogHistory());
+            Assert.Contains("[MCSL] Instance running.", instance.GetLogHistory());
+
+            Assert.True(await instance.StopAsync());
+            await process.WaitForExitAsync().WaitAsync(TestTimeout);
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("[MCSL] Instance stopped."));
+
+            var history = instance.GetLogHistory();
+            Assert.Contains("[MCSL] Instance stopping.", history);
+            Assert.Contains("[MCSL] Instance stopped.", history);
+            Assert.True(
+                Array.IndexOf(history.ToArray(), "[MCSL] Instance starting.") <
+                Array.IndexOf(history.ToArray(), "[MCSL] Instance stopped."));
+        }
+        finally
+        {
+            if (!process.HasExit)
+                process.KillProcess();
+            await process.WaitForExitAsync().WaitAsync(TestTimeout);
             instance.Dispose();
         }
     }
@@ -1275,6 +1386,51 @@ public sealed class InstanceProcessEventPumpTests
             {
                 FileName = "/bin/sh",
                 Arguments = "-c \"printf 'history-ready\\n'; read line\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+    }
+
+    private static ProcessStartInfo CreatePtyReplayControlStartInfo()
+    {
+        return OperatingSystem.IsWindows()
+            ? new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/d /q /c \"echo history-ready&set /p line=&echo live-output\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+            : new ProcessStartInfo
+            {
+                FileName = "/bin/sh",
+                Arguments = "-c \"printf 'history-ready\\n'; read line; printf 'live-output\\n'\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+    }
+
+    private static ProcessStartInfo CreateTaggedHistoryStartInfo(string text)
+    {
+        return OperatingSystem.IsWindows()
+            ? CreateStartInfo("cmd.exe", "/d", "/q", "/c", $"echo {text}&set /p line=")
+            : CreateStartInfo("/bin/sh", "-c", $"printf '{text}\\n'; read line");
+    }
+
+    private static ProcessStartInfo CreatePtyTaggedHistoryStartInfo(string text)
+    {
+        return OperatingSystem.IsWindows()
+            ? new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/d /q /c \"echo {text}&set /p line=\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+            : new ProcessStartInfo
+            {
+                FileName = "/bin/sh",
+                Arguments = $"-c \"printf '{text}\\n'; read line\"",
                 UseShellExecute = false,
                 CreateNoWindow = true
             };

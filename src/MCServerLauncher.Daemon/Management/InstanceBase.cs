@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.Management.Communicate;
@@ -10,10 +11,13 @@ namespace MCServerLauncher.Daemon.Management;
 
 public abstract class InstanceBase : DisposableObject, IInstance, IInstanceReportFactSource, IInstanceProcessGenerationSource
 {
+    private const int MaximumLogHistoryLines = 500;
+    private const string LifecycleLogPrefix = "[MCSL] Instance";
     private readonly Func<ProcessStartInfo, InstanceType, ConsoleMode, InstanceProcess> _processFactory;
     private readonly object _processBindingGate = new();
     private ProcessBinding? _processBinding;
     private long _nextProcessGeneration;
+    private readonly ConcurrentQueue<string> _logHistory = new();
     protected InstanceConfig ProtectedConfig;
     private int _lastStatus = (int)InstanceStatus.Stopped;
     private int _lastReadyTimedOut;
@@ -189,7 +193,7 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
 
     public IReadOnlyList<string> GetLogHistory()
     {
-        return Process?.GetLogHistory() ?? [];
+        return _logHistory.ToArray();
     }
 
     protected override void ProtectedDispose()
@@ -203,12 +207,16 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
         string message,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
         Task managerPublication;
         lock (_processBindingGate)
         {
             if (!IsCurrentBinding(binding))
                 return;
 
+            AddLogHistory(message);
             managerPublication = InvokeAsync(
                 ProcessLogReceived,
                 this,
@@ -323,11 +331,45 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
                 cancellationToken);
         }
 
+        var lifecycleLog = FormatLifecycleLog(status);
+        if (lifecycleLog is not null)
+            await PublishLifecycleLogAsync(binding, lifecycleLog, cancellationToken).ConfigureAwait(false);
+
+        if (!IsCurrentBinding(binding))
+            return;
+
         await managerPublication.ConfigureAwait(false);
         if (!IsCurrentBinding(binding))
             return;
 
         await InvokeAsync(OnStatusChanged, Config.Uuid, status, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task PublishLifecycleLogAsync(
+        ProcessBinding binding,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        Task managerPublication;
+        lock (_processBindingGate)
+        {
+            if (!IsCurrentBinding(binding))
+                return;
+
+            AddLogHistory(message);
+            managerPublication = InvokeAsync(
+                ProcessLogReceived,
+                this,
+                binding.Generation,
+                message,
+                cancellationToken);
+        }
+
+        await managerPublication.ConfigureAwait(false);
+        if (!IsCurrentBinding(binding))
+            return;
+
+        await InvokeAsync(OnLog, Config.Uuid, message, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task OnProcessReportFactChangedAsync(
@@ -366,6 +408,26 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
         Volatile.Write(ref _lastStatus, (int)process.Status);
         Volatile.Write(ref _lastReadyTimedOut, process.ReadyTimedOut ? 1 : 0);
     }
+
+    private void AddLogHistory(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        _logHistory.Enqueue(message);
+        while (_logHistory.Count > MaximumLogHistoryLines)
+            _logHistory.TryDequeue(out _);
+    }
+
+    private static string? FormatLifecycleLog(InstanceStatus status) => status switch
+    {
+        InstanceStatus.Starting => LifecycleLogPrefix + " starting.",
+        InstanceStatus.Running => LifecycleLogPrefix + " running.",
+        InstanceStatus.Stopping => LifecycleLogPrefix + " stopping.",
+        InstanceStatus.Stopped => LifecycleLogPrefix + " stopped.",
+        InstanceStatus.Crashed => LifecycleLogPrefix + " crashed.",
+        _ => null
+    };
 
     private bool IsCurrentBinding(ProcessBinding binding)
     {

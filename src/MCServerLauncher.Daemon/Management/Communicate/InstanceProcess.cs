@@ -380,7 +380,9 @@ public class InstanceProcess : DisposableObject
         _consoleHost?.Resize(columns, rows);
     }
 
-    public Guid AttachConsoleSubscriber(Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler)
+    public Guid AttachConsoleSubscriber(
+        Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler,
+        bool replayHistory = true)
     {
         ArgumentNullException.ThrowIfNull(handler);
         var id = Guid.CreateVersion7();
@@ -388,8 +390,11 @@ public class InstanceProcess : DisposableObject
         lock (_consoleHistoryGate)
         {
             _consoleSubscribers[id] = subscriber;
-            foreach (var output in _consoleHistory)
-                subscriber.TryEnqueue(output);
+            if (replayHistory)
+            {
+                foreach (var output in _consoleHistory)
+                    subscriber.TryEnqueue(output);
+            }
         }
         return id;
     }

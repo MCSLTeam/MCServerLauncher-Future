@@ -17,6 +17,29 @@ namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
 public sealed class V2ClientProtocolTests
 {
     [Fact]
+    public void ConsoleOpenRequestLeavesReplayHistoryUnspecifiedWhenFieldIsMissing()
+    {
+        var request = JsonSerializer.Deserialize(
+            "{\"instance_id\":\"11111111-1111-1111-1111-111111111111\",\"columns\":120,\"rows\":40}",
+            BuiltInProtocolDefinitions.OpenConsole.RequestTypeInfo)!;
+
+        Assert.Null(request.ReplayHistory);
+    }
+
+    [Fact]
+    public void ConsoleOpenRequestOnlyWritesReplayHistoryWhenExplicitlySet()
+    {
+        var legacy = new ConsoleOpenRequest(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var noReplay = legacy with { ReplayHistory = false };
+
+        var legacyJson = JsonSerializer.Serialize(legacy, BuiltInProtocolDefinitions.OpenConsole.RequestTypeInfo);
+        var noReplayJson = JsonSerializer.Serialize(noReplay, BuiltInProtocolDefinitions.OpenConsole.RequestTypeInfo);
+
+        Assert.DoesNotContain("replay_history", legacyJson, StringComparison.Ordinal);
+        Assert.Contains("\"replay_history\":false", noReplayJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ClientInventoryIsAnExactIdentityPreservingProjectionOfTheAuthoritativeCatalog()
     {
         Assert.Equal(BuiltInProtocolDefinitions.Rpcs.Length, V2ClientProtocol.Rpcs.Length);

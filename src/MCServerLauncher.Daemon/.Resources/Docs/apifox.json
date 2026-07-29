@@ -1155,7 +1155,7 @@
                 },
                 "requestBody": {
                   "parameters": [],
-                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.instance.console.open\u0022,\n  \u0022params\u0022: {\n    \u0022columns\u0022: 0,\n    \u0022instance_id\u0022: \u0022\u0022,\n    \u0022rows\u0022: 0\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
+                  "message": "{\n  \u0022jsonrpc\u0022: \u00222.0\u0022,\n  \u0022method\u0022: \u0022mcsl.instance.console.open\u0022,\n  \u0022params\u0022: {\n    \u0022columns\u0022: 0,\n    \u0022instance_id\u0022: \u0022\u0022,\n    \u0022replay_history\u0022: {},\n    \u0022rows\u0022: 0\n  },\n  \u0022id\u0022: \u0022{{$string.uuid}}\u0022\n}"
                 },
                 "description": "Opens a binary console session for a running instance.\n\nPermission: \u0060mcsl.instance.console.open\u0060.\n\nRequest schema: \u0060mcsl.schema.mcsl.instance.console.open.request\u0060.\nResult schema: \u0060mcsl.schema.mcsl.instance.console.open.result\u0060.",
                 "tags": [
@@ -3878,6 +3878,13 @@
                 "instance_id": {
                   "type": "string",
                   "format": "uuid"
+                },
+                "replay_history": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "default": null
                 },
                 "rows": {
                   "type": "integer",

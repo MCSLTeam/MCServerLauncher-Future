@@ -317,19 +317,27 @@ namespace MCServerLauncher.WPF.InstanceConsole.Modules
             }
         }
 
-        public async Task<DaemonConsoleSession> OpenConsoleAsync(
+        public async Task<(DaemonConsoleSession Session, bool ReplaysRawHistory)> OpenConsoleAsync(
             ushort columns,
             ushort rows,
             CancellationToken cancellationToken = default)
         {
             var daemon = GetReadyDaemon();
             var result = await daemon.OpenConsoleAsync(
-                new ConsoleOpenRequest(_instanceId, columns, rows),
+                new ConsoleOpenRequest(_instanceId, columns, rows, ReplayHistory: false),
                 cancellationToken);
+            var replaysRawHistory = false;
+            if (result.IsErr(out var initialError) && initialError!.Code == "jsonrpc.-32602")
+            {
+                result = await daemon.OpenConsoleAsync(
+                    new ConsoleOpenRequest(_instanceId, columns, rows),
+                    cancellationToken);
+                replaysRawHistory = true;
+            }
             if (result.IsErr(out var error))
                 throw DaemonErrorLocalization.ToException(error!);
 
-            return result.Unwrap();
+            return (result.Unwrap(), replaysRawHistory);
         }
 
         /// <summary>
