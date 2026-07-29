@@ -399,6 +399,11 @@ internal sealed class PluginHost
                         // The plugin missed its stop deadline, so it will never release the file
                         // sessions itself. Revoke the capability here rather than leaving download
                         // handles and upload staging bytes pinned until session expiry.
+                        //
+                        // The finally below revokes too, and revocation is idempotent, so this looks
+                        // redundant and is not: it closes admission now instead of one dispose
+                        // deadline from now, which is the window a plugin ignoring its stop deadline
+                        // would otherwise keep opening sessions in.
                         await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
                         continue;
                     }

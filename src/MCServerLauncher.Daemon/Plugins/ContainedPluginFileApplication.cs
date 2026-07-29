@@ -44,6 +44,13 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     internal const int MaximumConcurrentSessions = 8;
 
     /// <summary>
+    /// How long revocation waits for in-flight opens before sweeping anyway. Short, because every
+    /// caller of it is on a stop or shutdown path that is itself deadline-bounded, and a plugin
+    /// holding the daemon open is the failure this whole revocation exists to prevent.
+    /// </summary>
+    private static readonly TimeSpan QuiesceDeadline = TimeSpan.FromSeconds(5);
+
+    /// <summary>
     /// The daemon's persistence writer replaces a config through <c>File.Replace</c> and keeps the
     /// previous revision beside it under this suffix, so it owns the backup as much as the original.
     /// </summary>
@@ -54,7 +61,16 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     /// writes: the persisted instance config is what <c>instance.query</c> answers from, and a
     /// plugin holding only the Low-risk <c>file.read</c> feature must not read it around that gate.
     /// </summary>
-    private static readonly HashSet<string> DaemonOwnedFileNames = new(StringComparer.Ordinal)
+    /// <remarks>
+    /// Matched case-insensitively on every platform, unlike the allowed root above. The two rules
+    /// point opposite ways on purpose: an allow-list compared case-sensitively fails closed, since
+    /// a case variant is either a different directory or simply refused, whereas a deny-list
+    /// compared case-sensitively fails <em>open</em> — on Windows <c>DAEMON_INSTANCE.JSON</c> is the
+    /// same file and would sail past an Ordinal set. Over-refusing a case variant on a
+    /// case-sensitive filesystem costs a plugin nothing; under-refusing one costs the daemon its
+    /// config.
+    /// </remarks>
+    private static readonly HashSet<string> DaemonOwnedFileNames = new(StringComparer.OrdinalIgnoreCase)
     {
         InstanceConfig.FileName,
         InstanceConfig.FileName + BackupSuffix,
@@ -233,7 +249,18 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         // Every in-flight open holds a reservation, so a zero reservation count is what makes the
         // sweep total. An open that settles after this point sees the revoked state, closes its own
         // inner session and never registers it here.
-        await _quiesced.Task;
+        //
+        // Bounded, because this runs on the plugin-stop and daemon-shutdown paths and a download
+        // open hashes the whole file: one open on a stalled volume would otherwise hold shutdown
+        // open indefinitely. Past the deadline the sweep proceeds anyway — a straggler that settles
+        // later is refused registration and closes its own inner session, so nothing is stranded.
+        try
+        {
+            await _quiesced.Task.WaitAsync(QuiesceDeadline).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+        }
 
         Guid[] downloads;
         Guid[] uploads;
@@ -245,15 +272,22 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             _uploadSessions.Clear();
         }
 
-        foreach (var sessionId in downloads)
-            await SuppressAsync(() => _inner.CloseDownloadAsync(sessionId, CancellationToken.None));
-
-        foreach (var sessionId in uploads)
-            await SuppressAsync(() => _inner.CancelUploadAsync(sessionId, CancellationToken.None));
-
-        lock (_gate)
+        try
         {
-            _state = FacadeState.Revoked;
+            foreach (var sessionId in downloads)
+                await SuppressAsync(() => _inner.CloseDownloadAsync(sessionId, CancellationToken.None));
+
+            foreach (var sessionId in uploads)
+                await SuppressAsync(() => _inner.CancelUploadAsync(sessionId, CancellationToken.None));
+        }
+        finally
+        {
+            // The snapshot above already cleared the sets, so anything escaping the drain would
+            // otherwise strand the facade in Revoking and refuse every later release attempt.
+            lock (_gate)
+            {
+                _state = FacadeState.Revoked;
+            }
         }
     }
 
@@ -491,7 +525,45 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         _instances is not null &&
         _instances.TryGet(instanceId, out _);
 
-    private static bool IsDaemonOwnedFileName(string name) => DaemonOwnedFileNames.Contains(name);
+    private static bool IsDaemonOwnedFileName(string name) =>
+        DaemonOwnedFileNames.Contains(name) || IsAliasingName(name);
+
+    /// <summary>
+    /// Refuses names that Windows can resolve to a different file than they spell. A deny-list can
+    /// only be as good as the assumption that one file has one name, and NTFS breaks that three
+    /// ways: an alternate data stream suffix (<c>x.json::$DATA</c>) reaches the same file, an 8.3
+    /// short name (<c>DAEMO~1.JSO</c>) is a second name for a long one, and trailing dots or spaces
+    /// are stripped before the name reaches the filesystem.
+    /// </summary>
+    /// <remarks>
+    /// This refuses the shapes rather than trying to resolve them, because resolving an alias back
+    /// to its canonical name needs the file to exist and a Win32 call the BCL does not surface —
+    /// and a check that only works on files that already exist is no guard at all. The cost is that
+    /// a legitimate server file shaped like an 8.3 alias is refused; nothing in a Minecraft server
+    /// tree is named that way, and the alternative is a boundary that holds only on Linux.
+    /// </remarks>
+    private static bool IsAliasingName(string name)
+    {
+        if (name.Contains(':'))
+            return true;
+        if (name.Length > 0 && (name[^1] == '.' || name[^1] == ' '))
+            return true;
+
+        // 8.3 shape: up to eight characters, a tilde, at least one digit, optional short extension.
+        var tilde = name.IndexOf('~');
+        if (tilde <= 0 || tilde > 8)
+            return false;
+
+        var afterTilde = name.AsSpan(tilde + 1);
+        var digits = 0;
+        while (digits < afterTilde.Length && char.IsAsciiDigit(afterTilde[digits]))
+            digits++;
+        if (digits == 0)
+            return false;
+
+        var remainder = afterTilde[digits..];
+        return remainder.IsEmpty || (remainder[0] == '.' && remainder.Length <= 4);
+    }
 
     private static async Task SuppressAsync(Func<Task<Result<Unit, DaemonError>>> release)
     {

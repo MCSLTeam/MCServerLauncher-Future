@@ -156,6 +156,17 @@ public sealed class PluginFileContainmentTests
     [InlineData("daemon_instance.json.bak")]
     [InlineData("daemon_instance.install.json")]
     [InlineData("daemon_instance.install.json.bak")]
+    // A deny-list is only as strong as the assumption that one file has one name. Windows breaks
+    // that three ways, and each of these reached the real file before the names below were refused.
+    [InlineData("DAEMON_INSTANCE.JSON")]
+    [InlineData("Daemon_Instance.Json")]
+    [InlineData("daemon_instance.JSON")]
+    [InlineData("daemon_instance.install.JSON")]
+    [InlineData("daemon_instance.json.BAK")]
+    [InlineData("daemon_instance.json::$DATA")]
+    [InlineData("DAEMO~1.JSO")]
+    [InlineData("daemon_instance.json.")]
+    [InlineData("daemon_instance.json ")]
     public async Task DaemonOwnedInstanceFilesAreRefusedForReadAndWrite(string fileName)
     {
         var inner = new RecordingFileApplication();
