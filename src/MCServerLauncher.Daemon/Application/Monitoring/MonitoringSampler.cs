@@ -13,8 +13,9 @@ namespace MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 /// <summary>
 /// Periodic daemon metrics sampler over the shared bounded JSONL history. Each tick records the
 /// cached system info plus every managed instance with its cached process counters — sampling is
-/// passive and never queries a game server. A restart hole larger than two intervals is recorded
-/// as an explicit gap marker so absence in the history is always structured, never silent.
+/// passive and never queries a game server. A restart hole larger than two intervals, and every
+/// tick that fails to produce a point, are recorded as explicit gap markers so absence in the
+/// history is always structured, never silent.
 /// </summary>
 internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 {
@@ -74,6 +75,12 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 
     internal long DroppedRecords => _log.DroppedRecords;
 
+    /// <summary>
+    /// The cadence the history is written at. Readers that judge coverage of a time range need the
+    /// sampler's own interval, not their own tick rate, to tell a normal spacing from a hole.
+    /// </summary>
+    internal TimeSpan SampleInterval => _interval;
+
     internal void Start()
     {
         lock (_gate)
@@ -132,35 +139,73 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 
     internal async Task<MonitoringSample> SampleOnceAsync(CancellationToken cancellationToken)
     {
-        var info = await _systemInfo.Value.ConfigureAwait(false);
-        var instanceSamples = ImmutableArray.CreateBuilder<MonitoringInstanceSample>();
-        foreach (var instance in _instances.Instances.Values.OrderBy(static entry => entry.Config.Uuid))
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var counters = instance.Process is { Monitor: { } monitor }
-                ? await monitor.GetMonitorData().ConfigureAwait(false)
-                : default;
-            instanceSamples.Add(new MonitoringInstanceSample(
-                instance.Config.Uuid,
-                instance.Config.Name,
-                instance.Status,
-                counters.Cpu,
-                counters.Memory));
+            var info = await _systemInfo.Value.ConfigureAwait(false);
+            var instanceSamples = ImmutableArray.CreateBuilder<MonitoringInstanceSample>();
+            foreach (var instance in _instances.Instances.Values.OrderBy(static entry => entry.Config.Uuid))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var counters = instance.Process is { Monitor: { } monitor }
+                    ? await monitor.GetMonitorData().ConfigureAwait(false)
+                    : default;
+                instanceSamples.Add(new MonitoringInstanceSample(
+                    instance.Config.Uuid,
+                    instance.Config.Name,
+                    instance.Status,
+                    counters.Cpu,
+                    counters.Memory));
+            }
+
+            var used = info.Mem.TotalKilobytes >= info.Mem.FreeKilobytes
+                ? info.Mem.TotalKilobytes - info.Mem.FreeKilobytes
+                : 0;
+            var sample = new MonitoringSample(
+                _timeProvider.GetUtcNow(),
+                Gap: false,
+                info.Cpu.Usage,
+                used,
+                info.Mem.TotalKilobytes,
+                instanceSamples.ToImmutable());
+            _log.Append(sample);
+            Volatile.Write(ref _latest, sample);
+            return sample;
+        }
+        catch (OperationCanceledException)
+        {
+            // A cancelled sample means the sampler is stopping; the hole up to the next start is
+            // the restart hole, and the startup marker already covers it.
+            throw;
+        }
+        catch
+        {
+            // A tick that produced no point is time nobody observed. Marking it keeps a later
+            // reader from reading the silence as an uninterrupted stretch of observation.
+            AppendGap(_timeProvider.GetUtcNow());
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Lossless oldest-first raw read: no bucketing, no downsampling. Callers that must not judge
+    /// an incomplete series read this instead of <see cref="Query" /> and refuse on
+    /// <see cref="MonitoringRawWindow.Truncated" /> or a non-zero dropped-record count.
+    /// </summary>
+    internal MonitoringRawWindow ReadRawWindow(
+        DateTimeOffset notBefore,
+        DateTimeOffset notAfter,
+        int maximumRecords)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maximumRecords, 1);
+        if (notAfter < notBefore)
+        {
+            return new MonitoringRawWindow(ImmutableArray<MonitoringSample>.Empty, false, _log.DroppedRecords);
         }
 
-        var used = info.Mem.TotalKilobytes >= info.Mem.FreeKilobytes
-            ? info.Mem.TotalKilobytes - info.Mem.FreeKilobytes
-            : 0;
-        var sample = new MonitoringSample(
-            _timeProvider.GetUtcNow(),
-            Gap: false,
-            info.Cpu.Usage,
-            used,
-            info.Mem.TotalKilobytes,
-            instanceSamples.ToImmutable());
-        _log.Append(sample);
-        Volatile.Write(ref _latest, sample);
-        return sample;
+        // One record over the budget: ReadRange silently drops its oldest records past the cap, so
+        // an overflow has to be seen here rather than inferred from a result that looks complete.
+        var raw = _log.ReadRange(notBefore, notAfter, maximumRecords + 1);
+        return new MonitoringRawWindow([.. raw], raw.Count > maximumRecords, _log.DroppedRecords);
     }
 
     /// <summary>
@@ -211,14 +256,17 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         if (now - last.Timestamp <= _interval * 2)
             return;
 
+        AppendGap(now);
+    }
+
+    private void AppendGap(DateTimeOffset at) =>
         _log.Append(new MonitoringSample(
-            now,
+            at,
             Gap: true,
             0,
             0,
             0,
             ImmutableArray<MonitoringInstanceSample>.Empty));
-    }
 
     private async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -237,7 +285,8 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
                 }
                 catch (Exception exception)
                 {
-                    // A failed tick loses one point, never the sampler.
+                    // A failed tick loses one point, never the sampler; the sample path already
+                    // recorded the hole it left behind.
                     _logger?.LogWarning(exception, "[MonitoringSampler] Skipped a metrics sample.");
                 }
             }
@@ -251,3 +300,13 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         }
     }
 }
+
+/// <summary>
+/// A raw metrics window exactly as it was retained. <see cref="Truncated" /> means the window held
+/// more records than the caller's budget, and <see cref="DroppedRecords" /> counts history records
+/// lost to write failures; either one means the evidence is incomplete.
+/// </summary>
+internal sealed record MonitoringRawWindow(
+    ImmutableArray<MonitoringSample> Samples,
+    bool Truncated,
+    long DroppedRecords);
