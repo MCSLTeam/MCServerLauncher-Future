@@ -66,36 +66,68 @@
                             <ui:FontIcon Glyph="&#xE74E;" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{Binding [Reload], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ReloadCommand}" />
+                    <MenuItem Header="{Binding [Reload], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ReloadCommand}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" /></MenuItem.Icon>
+                    </MenuItem>
                     <Separator />
-                    <MenuItem Header="{Binding [Encoding], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ChangeEncodingCommand}" />
+                    <MenuItem Header="{Binding [Encoding], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ChangeEncodingCommand}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CharacterAppearance}" /></MenuItem.Icon>
+                    </MenuItem>
                     <Separator />
-                    <MenuItem Header="{Binding [Exit], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ExitCommand}" />
+                    <MenuItem Header="{Binding [Exit], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ExitCommand}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cancel}" /></MenuItem.Icon>
+                    </MenuItem>
                 </MenuItem>
 
                 <MenuItem Header="{Binding [Edit], Source={x:Static i18n:Lang.Tr}}">
-                    <MenuItem Command="Undo" Header="{Binding [Undo], Source={x:Static i18n:Lang.Tr}}" />
-                    <MenuItem Command="Redo" Header="{Binding [Redo], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="Undo" Header="{Binding [Undo], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Undo}" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Command="Redo" Header="{Binding [Redo], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Redo}" /></MenuItem.Icon>
+                    </MenuItem>
                     <Separator />
-                    <MenuItem Command="Cut" Header="{Binding [Cut], Source={x:Static i18n:Lang.Tr}}" />
-                    <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}" />
-                    <MenuItem Command="Paste" Header="{Binding [Paste], Source={x:Static i18n:Lang.Tr}}" />
-                    <MenuItem Command="Delete" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                    <MenuItem Command="Cut" Header="{Binding [Cut], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cut}" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Copy}" /></MenuItem.Icon>
+                    </MenuItem>
+                        <MenuItem Command="Paste" Header="{Binding [Paste], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Paste}" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Command="Delete" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" /></MenuItem.Icon>
+                    </MenuItem>
                     <Separator />
-                    <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
-                    <MenuItem Header="{Binding [TimeDate], Source={x:Static i18n:Lang.Tr}}" Command="{Binding InsertTimeDateCommand}" CommandParameter="{Binding ElementName=TextEditor}" InputGestureText="F5" />
+                    <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SelectAll}" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{Binding [TimeDate], Source={x:Static i18n:Lang.Tr}}" Command="{Binding InsertTimeDateCommand}" CommandParameter="{Binding ElementName=TextEditor}" InputGestureText="F5">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.DateTime}" /></MenuItem.Icon>
+                    </MenuItem>
                 </MenuItem>
 
                 <MenuItem Header="{Binding [Format], Source={x:Static i18n:Lang.Tr}}">
-                    <MenuItem Header="{Binding [WordWrap], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding WordWrap}" />
-                    <MenuItem Header="{Binding [Font], Source={x:Static i18n:Lang.Tr}}" IsEnabled="False" />
+                    <MenuItem Header="{Binding [WordWrap], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding WordWrap}">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.CharacterAppearance}" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{Binding [Font], Source={x:Static i18n:Lang.Tr}}" IsEnabled="False">
+                        <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Font}" /></MenuItem.Icon>
+                    </MenuItem>
                 </MenuItem>
 
                 <MenuItem Header="{Binding [View], Source={x:Static i18n:Lang.Tr}}">
                     <MenuItem Header="{Binding [Zoom], Source={x:Static i18n:Lang.Tr}}">
-                        <MenuItem Header="{Binding [ZoomIn], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl+Plus" />
-                        <MenuItem Header="{Binding [ZoomOut], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+Minus" />
-                        <MenuItem Header="{Binding [RestoreDefaultZoom], Source={x:Static i18n:Lang.Tr}}" Command="{Binding RestoreDefaultZoomCommand}" InputGestureText="Ctrl+0" />
+                        <MenuItem Header="{Binding [ZoomIn], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl+Plus">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ZoomIn}" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="{Binding [ZoomOut], Source={x:Static i18n:Lang.Tr}}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+Minus">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.ZoomOut}" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="{Binding [RestoreDefaultZoom], Source={x:Static i18n:Lang.Tr}}" Command="{Binding RestoreDefaultZoomCommand}" InputGestureText="Ctrl+0">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}" /></MenuItem.Icon>
+                        </MenuItem>
                     </MenuItem>
                     <MenuItem Header="{Binding [StatusBar], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding ShowStatusBar}" />
                     <MenuItem Header="{Binding [ShowLineNumbers], Source={x:Static i18n:Lang.Tr}}" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
@@ -118,15 +150,29 @@
                                    SyntaxHighlighting="{Binding SelectedSyntaxHighlighting}">
                 <avalonEdit:TextEditor.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Command="Undo" Header="{Binding [Undo], Source={x:Static i18n:Lang.Tr}}" />
-                        <MenuItem Command="Redo" Header="{Binding [Redo], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="Undo" Header="{Binding [Undo], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Undo}" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Command="Redo" Header="{Binding [Redo], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Redo}" /></MenuItem.Icon>
+                        </MenuItem>
                         <Separator />
-                        <MenuItem Command="Cut" Header="{Binding [Cut], Source={x:Static i18n:Lang.Tr}}" />
-                        <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}" />
-                        <MenuItem Command="Paste" Header="{Binding [Paste], Source={x:Static i18n:Lang.Tr}}" />
-                        <MenuItem Command="Delete" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="Cut" Header="{Binding [Cut], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Cut}" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Command="Copy" Header="{Binding [Copy], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Copy}" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Command="Paste" Header="{Binding [Paste], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Paste}" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Command="Delete" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" /></MenuItem.Icon>
+                        </MenuItem>
                         <Separator />
-                        <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                        <MenuItem Command="SelectAll" Header="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}">
+                            <MenuItem.Icon><ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.SelectAll}" /></MenuItem.Icon>
+                        </MenuItem>
                     </ContextMenu>
                 </avalonEdit:TextEditor.ContextMenu>
             </avalonEdit:TextEditor>
