@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 using MCServerLauncher.Common.Contracts.Protocol;
 
 namespace MCServerLauncher.Daemon.ApplicationCore;
@@ -15,15 +16,18 @@ internal sealed class AuthoritativeInstanceSnapshotSource : IInstanceSnapshotSou
     private readonly Lock _publicationLock = new();
     private readonly StatePublisher<InstanceCatalogSnapshot> _publisher;
     private readonly InstanceCatalogCommitFeed _commitFeed;
+    private readonly InstanceLifecycleEventBuffer? _lifecycleEvents;
 
     public AuthoritativeInstanceSnapshotSource(
         IEnumerable<KeyValuePair<Guid, IInstance>> instances,
-        InstanceCatalogCommitFeed commitFeed)
+        InstanceCatalogCommitFeed commitFeed,
+        InstanceLifecycleEventBuffer? lifecycleEvents = null)
     {
         ArgumentNullException.ThrowIfNull(instances);
         ArgumentNullException.ThrowIfNull(commitFeed);
         _publisher = new StatePublisher<InstanceCatalogSnapshot>(CreateCatalog(instances));
         _commitFeed = commitFeed;
+        _lifecycleEvents = lifecycleEvents;
     }
 
     public PublishedState<InstanceCatalogSnapshot> Current => _publisher.Current;
@@ -47,6 +51,11 @@ internal sealed class AuthoritativeInstanceSnapshotSource : IInstanceSnapshotSou
             var current = _publisher.Current.Value;
             if (current.TryGet(snapshot.Id, out var existing) && existing == snapshot)
                 return;
+
+            // Under the publication lock, where both states are already in hand. This is the only
+            // point that observes every transition: a sampler comparing its own ticks sees the net
+            // change and loses everything in between.
+            _lifecycleEvents?.Record(existing, snapshot);
 
             _commitFeed.Publish(() =>
             {

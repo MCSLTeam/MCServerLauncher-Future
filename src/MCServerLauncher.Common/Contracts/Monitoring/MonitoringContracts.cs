@@ -18,11 +18,19 @@ public enum MonitoringEventKind
 /// is null for a <see cref="MonitoringEventKind.ReadyTimeout" />, which reports that an instance
 /// overran its ready deadline without moving it out of <see cref="InstanceStatus.Starting" />.
 /// </summary>
+/// <remarks>
+/// <see cref="At" /> is when the transition actually happened, which is not the timestamp of the
+/// sample carrying it: events are recorded where the catalog commits them and persisted by the next
+/// sample, so several can share one sample and each keeps its own instant. It is null on a record
+/// written before the field existed, and on one whose event was derived by comparing samples rather
+/// than observed at its commit.
+/// </remarks>
 public sealed record MonitoringInstanceEvent(
     Guid InstanceId,
     MonitoringEventKind Kind,
     InstanceStatus Status,
-    InstanceStatus? PreviousStatus);
+    InstanceStatus? PreviousStatus,
+    DateTimeOffset? At = null);
 
 /// <summary>
 /// One instance as observed by a metrics sample: identity, lifecycle status, and cached process
@@ -62,7 +70,11 @@ public sealed record MonitoringSample(
     ImmutableArray<MonitoringInstanceSample> Instances,
     ulong? DiskTotalBytes = null,
     ulong? DiskFreeBytes = null,
-    ImmutableArray<MonitoringInstanceEvent>? Events = null);
+    ImmutableArray<MonitoringInstanceEvent>? Events = null,
+    // Non-zero means lifecycle transitions occurred that this sample's Events could not carry,
+    // because the pending buffer was full. Null is "the question was never asked", the same
+    // distinction the metric fields above draw.
+    int? DroppedEvents = null);
 
 /// <summary>
 /// The newest sample, or null before the first sampling tick. <see cref="DroppedRecords" />

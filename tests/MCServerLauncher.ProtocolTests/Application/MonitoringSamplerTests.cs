@@ -7,6 +7,7 @@ using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
@@ -170,14 +171,16 @@ public sealed class MonitoringSamplerTests
         var root = Directory.CreateTempSubdirectory("mcsl-monitoring-event-downsample-").FullName;
         var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
         var time = new ManualTimeProvider(start);
-        var instance = new TestInstance(RunningId, "flapping-demo", InstanceStatus.Running);
-        using var sampler = CreateSampler(root, time, instance);
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
 
         await sampler.SampleOnceAsync(CancellationToken.None); // baseline tick emits nothing
         var expected = 0;
         for (var index = 0; index < 40; index++)
         {
-            instance.SetStatus(index % 2 == 0 ? InstanceStatus.Stopped : InstanceStatus.Running);
+            var from = index % 2 == 0 ? InstanceStatus.Running : InstanceStatus.Stopped;
+            var to = index % 2 == 0 ? InstanceStatus.Stopped : InstanceStatus.Running;
+            events.Record(Snapshot(RunningId, from), Snapshot(RunningId, to));
             time.Advance(TimeSpan.FromSeconds(15));
             var sample = await sampler.SampleOnceAsync(CancellationToken.None);
             expected += sample.Events!.Value.Length;
@@ -237,20 +240,21 @@ public sealed class MonitoringSamplerTests
     }
 
     [Fact]
-    public async Task SampleOnce_RecordsStatusTransitionsBetweenTicksAsSignificantEvents()
+    public async Task SampleOnce_PersistsTheTransitionsRecordedSinceTheLastTick()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-monitoring-events-").FullName;
         var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
-        var running = new TestInstance(RunningId, "running-demo", InstanceStatus.Running);
-        var stopped = new TestInstance(StoppedId, "stopped-demo", InstanceStatus.Stopped);
-        using var sampler = CreateSampler(root, time, running, stopped);
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
 
-        // The first tick only establishes a baseline: a restart must not manufacture transitions.
+        // Nothing has committed yet, and a first observation is a baseline rather than a transition.
         var baseline = await sampler.SampleOnceAsync(CancellationToken.None);
         Assert.Empty(baseline.Events!.Value);
+        events.Record(null, Snapshot(RunningId, InstanceStatus.Running));
+        Assert.Empty((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
 
-        running.SetStatus(InstanceStatus.Crashed);
-        stopped.SetStatus(InstanceStatus.Starting);
+        events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Crashed));
+        events.Record(Snapshot(StoppedId, InstanceStatus.Stopped), Snapshot(StoppedId, InstanceStatus.Starting));
         time.Advance(TimeSpan.FromSeconds(15));
         var transitioned = await sampler.SampleOnceAsync(CancellationToken.None);
 
@@ -263,9 +267,76 @@ public sealed class MonitoringSamplerTests
         Assert.Equal(InstanceStatus.Stopped, starting.PreviousStatus);
         Assert.Equal(InstanceStatus.Starting, starting.Status);
 
-        // A steady tick reports nothing: events are transitions, not repeated state.
+        // Drained, so the next tick does not re-report them.
         time.Advance(TimeSpan.FromSeconds(15));
         Assert.Empty((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
+    }
+
+    /// <summary>
+    /// The repro for why events cannot be derived by comparing ticks. Three transitions inside one
+    /// interval, ending on the status the interval started with: a diff of the two ticks sees no
+    /// change at all and reported nothing, losing a crash entirely.
+    /// </summary>
+    [Fact]
+    public async Task SampleOnce_KeepsEveryTransitionInATickEvenWhenTheLastReturnsToTheFirst()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-flap-").FullName;
+        var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
+        var time = new ManualTimeProvider(start);
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
+
+        await sampler.SampleOnceAsync(CancellationToken.None);
+
+        events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Crashed));
+        time.Advance(TimeSpan.FromSeconds(2));
+        var crashedAt = time.GetUtcNow();
+        events.Record(Snapshot(RunningId, InstanceStatus.Crashed), Snapshot(RunningId, InstanceStatus.Starting));
+        time.Advance(TimeSpan.FromSeconds(3));
+        events.Record(Snapshot(RunningId, InstanceStatus.Starting), Snapshot(RunningId, InstanceStatus.Running));
+
+        time.Advance(TimeSpan.FromSeconds(10));
+        var sample = await sampler.SampleOnceAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new[]
+            {
+                (InstanceStatus.Running, InstanceStatus.Crashed),
+                (InstanceStatus.Crashed, InstanceStatus.Starting),
+                (InstanceStatus.Starting, InstanceStatus.Running)
+            },
+            sample.Events!.Value.Select(entry => (entry.PreviousStatus!.Value, entry.Status)));
+
+        // Each event carries when it happened, not when the sample was written.
+        Assert.Equal(start, sample.Events!.Value[0].At);
+        Assert.Equal(crashedAt, sample.Events!.Value[1].At);
+        Assert.NotEqual(sample.Timestamp, sample.Events!.Value[0].At);
+    }
+
+    /// <summary>
+    /// A full buffer must say so. A silent bound would read as "nothing happened", which is the same
+    /// mistake as a dropped sample leaving no gap record.
+    /// </summary>
+    [Fact]
+    public async Task SampleOnce_ReportsTransitionsTheBufferCouldNotHold()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-flood-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
+
+        var overflow = 5;
+        for (var index = 0; index < InstanceLifecycleEventBuffer.MaximumPendingEvents + overflow; index++)
+        {
+            var from = index % 2 == 0 ? InstanceStatus.Running : InstanceStatus.Stopped;
+            var to = index % 2 == 0 ? InstanceStatus.Stopped : InstanceStatus.Running;
+            events.Record(Snapshot(RunningId, from), Snapshot(RunningId, to));
+        }
+
+        var sample = await sampler.SampleOnceAsync(CancellationToken.None);
+
+        Assert.Equal(InstanceLifecycleEventBuffer.MaximumPendingEvents, sample.Events!.Value.Length);
+        Assert.Equal(overflow, sample.DroppedEvents);
     }
 
     [Fact]
@@ -325,24 +396,22 @@ public sealed class MonitoringSamplerTests
         Assert.Null(entry.SilentSeconds);
     }
 
+    /// <summary>
+    /// A ready timeout is a rising edge. The flag latches on the process, so repeating it would
+    /// drown the history in one stuck start - and because it is now recorded where the catalog
+    /// commits the fact, a timeout cleared before the next tick is no longer invisible.
+    /// </summary>
     [Fact]
-    public async Task ReadyTimeout_IsRecordedOnceAsASignificantEvent()
+    public async Task ReadyTimeout_IsRecordedOnceOnItsRisingEdge()
     {
         var root = Directory.CreateTempSubdirectory("mcsl-monitoring-ready-timeout-").FullName;
-        // The Minecraft observer never treats process start as ready, so the instance stays in
-        // Starting until its ready deadline elapses.
-        using var process = new InstanceProcess(
-            CreateReadyThenWaitingStartInfo(),
-            MinecraftInstanceLifecycleObserver.Instance,
-            ConsoleMode.Pipe,
-            monitorFrequency: 2000,
-            TimeProvider.System,
-            readyTimeout: TimeSpan.FromMilliseconds(100));
-        await StartAndAwaitOutputAsync(process);
-        await WaitUntilAsync(() => process.ReadyTimedOut);
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
 
-        var instance = new TestInstance(RunningId, "starting-demo", InstanceStatus.Starting) { Process = process };
-        using var sampler = CreateSampler(root, TimeProvider.System, instance);
+        var starting = Snapshot(RunningId, InstanceStatus.Starting);
+        var timedOut = Snapshot(RunningId, InstanceStatus.Starting, readyTimedOut: true);
+        events.Record(starting, timedOut);
 
         var first = Assert.Single((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
         Assert.Equal(RunningId, first.InstanceId);
@@ -350,9 +419,18 @@ public sealed class MonitoringSamplerTests
         Assert.Equal(InstanceStatus.Starting, first.Status);
         Assert.Null(first.PreviousStatus);
 
-        // The flag latches on the process; repeating it every tick would drown the history in one
-        // stuck start.
+        // Still latched: the same fact committed again is not a second edge.
+        events.Record(timedOut, timedOut);
+        time.Advance(TimeSpan.FromSeconds(15));
         Assert.Empty((await sampler.SampleOnceAsync(CancellationToken.None)).Events!.Value);
+
+        // Cleared and raised again inside one interval: both edges survive, where a tick comparison
+        // that sampled after the clear would have seen neither.
+        events.Record(timedOut, starting);
+        events.Record(starting, timedOut);
+        time.Advance(TimeSpan.FromSeconds(15));
+        var again = await sampler.SampleOnceAsync(CancellationToken.None);
+        Assert.Equal(MonitoringEventKind.ReadyTimeout, Assert.Single(again.Events!.Value).Kind);
     }
 
     [Fact]
@@ -562,7 +640,18 @@ public sealed class MonitoringSamplerTests
             new TestInstance(RunningId, "running-demo", InstanceStatus.Running),
             new TestInstance(StoppedId, "stopped-demo", InstanceStatus.Stopped));
 
-    private static MonitoringSampler CreateSampler(string root, TimeProvider time, params TestInstance[] instances)
+    private static MonitoringSampler CreateSampler(string root, TimeProvider time, params TestInstance[] instances) =>
+        CreateSampler(root, time, new InstanceLifecycleEventBuffer(time), instances);
+
+    /// <summary>
+    /// Lifecycle events now reach the sampler from the buffer the catalog commits into, not from
+    /// comparing one tick with the next, so a test that wants events records them itself.
+    /// </summary>
+    private static MonitoringSampler CreateSampler(
+        string root,
+        TimeProvider time,
+        InstanceLifecycleEventBuffer events,
+        params TestInstance[] instances)
     {
         var manager = new FakeInstanceManager();
         foreach (var instance in instances)
@@ -578,8 +667,12 @@ public sealed class MonitoringSamplerTests
                 [new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1024, 512, "C:\\")],
                 "2.0.0")),
             time,
-            root);
+            root,
+            lifecycleEvents: events);
     }
+
+    private static InstanceSnapshot Snapshot(Guid id, InstanceStatus status, bool readyTimedOut = false) =>
+        new(id, "demo", InstanceType.Universal, "1", status, readyTimedOut);
 
     private sealed class FixedSystemInfoCell(SystemInfo info) : IAsyncTimedLazyCell<SystemInfo>
     {

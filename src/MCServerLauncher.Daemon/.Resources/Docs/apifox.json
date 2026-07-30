@@ -7988,6 +7988,14 @@
                               "stopping",
                               null
                             ]
+                          },
+                          "at": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "date-time",
+                            "default": null
                           }
                         },
                         "required": [
@@ -7998,6 +8006,13 @@
                         ],
                         "additionalProperties": false
                       },
+                      "default": null
+                    },
+                    "dropped_events": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
                       "default": null
                     }
                   },
@@ -8187,6 +8202,14 @@
                                 "stopping",
                                 null
                               ]
+                            },
+                            "at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time",
+                              "default": null
                             }
                           },
                           "required": [
@@ -8197,6 +8220,13 @@
                           ],
                           "additionalProperties": false
                         },
+                        "default": null
+                      },
+                      "dropped_events": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
                         "default": null
                       }
                     },
