@@ -604,6 +604,11 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             // reparse-point forms are collapsed identically here and there. A path this rejects is
             // already out of the daemon root and equally out of containment.
             resolved = FileSessionCoordinator.ResolveAndValidatePath(path);
+            // Then to the spelling the filesystem agrees on, because everything below compares names:
+            // a Windows 8.3 short name is a second name for the same file, and one can be planted on
+            // a daemon-owned file without elevation. Doing this on the whole resolved path rather than
+            // the last segment also means an aliased directory component is judged as itself.
+            resolved = FileSessionCoordinator.ExpandShortPathName(resolved);
         }
         catch (Exception exception) when (exception is IOException or ArgumentException)
         {
@@ -674,11 +679,17 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     /// are stripped before the name reaches the filesystem.
     /// </summary>
     /// <remarks>
-    /// This refuses the shapes rather than trying to resolve them, because resolving an alias back
-    /// to its canonical name needs the file to exist and a Win32 call the BCL does not surface —
-    /// and a check that only works on files that already exist is no guard at all. The cost is that
-    /// a legitimate server file shaped like an 8.3 alias is refused; nothing in a Minecraft server
-    /// tree is named that way, and the alternative is a boundary that holds only on Linux.
+    /// These are the shapes that cannot be resolved away, so they are refused instead. An existing
+    /// target is already canonicalised before the name check runs, which is what closes 8.3 aliases
+    /// in general — including the tilde-free ones this cannot recognise. What is left for the shapes
+    /// below is the case with nothing to ask the filesystem about: a target that does not exist yet,
+    /// and a rename's new name. An ADS suffix survives canonicalisation entirely, so refusing it here
+    /// is the only thing that stops it.
+    ///
+    /// A hard link is a second directory entry rather than a second name for one entry, so neither
+    /// canonicalisation nor these shapes catch it. That is a known residual: closing it needs a
+    /// volume-scoped file identity comparison, and planting the link needs an actor outside the
+    /// plugin, since nothing in the plugin's file surface creates links.
     /// </remarks>
     private static bool IsAliasingName(string name)
     {

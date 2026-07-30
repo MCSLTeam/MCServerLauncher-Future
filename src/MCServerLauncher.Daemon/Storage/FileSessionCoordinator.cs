@@ -1210,12 +1210,42 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         return (stat.st_dev, stat.st_ino);
     }
 
+    /// <summary>
+    /// Rewrites a path to the spelling the filesystem itself uses, expanding any Windows 8.3 short
+    /// name it contains. Returns the path unchanged where there is nothing to expand, where it does
+    /// not exist, and off Windows.
+    /// </summary>
+    /// <remarks>
+    /// A short name is a second name for the same file, so any check that compares names has to be
+    /// given the one name both spellings agree on. <see cref="Path.GetFullPath(string)" /> is not
+    /// enough: .NET only calls the Win32 expansion when the path contains a tilde, and a short name
+    /// need not contain one — <c>SetFileShortNameW</c> plants a tilde-free alias without elevation,
+    /// even on a volume with 8.3 auto-generation switched off. Win32 has no such shortcut, which is
+    /// why this calls it directly; Microsoft's own guidance is not to assume the tilde is there.
+    ///
+    /// A path that does not exist is returned as spelled, which is correct rather than lenient: it
+    /// aliases nothing. Any other failure also returns the input, leaving the caller exactly as
+    /// strong as it was before this expansion existed.
+    /// </remarks>
+    internal static string ExpandShortPathName(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+            return path;
+
+        var buffer = new StringBuilder(32768);
+        var length = GetLongPathName(path, buffer, buffer.Capacity);
+        return length == 0 || length >= buffer.Capacity ? path : buffer.ToString();
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern uint GetFinalPathNameByHandle(
         IntPtr file,
         StringBuilder path,
         int pathLength,
         uint flags);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetLongPathNameW")]
+    private static extern uint GetLongPathName(string path, StringBuilder buffer, int bufferLength);
 
     // Layout mirrors Darwin arm64/x64 `struct stat` (sizeof 144; st_ino at offset 8).
     // Only used on macOS for post-open identity checks.
