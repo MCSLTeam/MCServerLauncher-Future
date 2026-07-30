@@ -35,9 +35,22 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[10.0.9]" />
   </ItemGroup>
 
-  <!-- Analyzer/generator is packed into analyzers/dotnet/cs and does not flow as a compile asset. -->
+  <!--
+    Analyzer/generator is packed into analyzers/dotnet/cs and does not flow as a compile asset.
+
+    Do not add SetTargetFramework here. The generator is single-targeted, so the SDK already
+    builds it with TargetFramework *undefined* — Microsoft.Common.CurrentVersion.targets removes
+    the property precisely "to avoid another project evaluation". SetTargetFramework is the
+    metadata for a multi-targeted reference: it sets SkipGetTargetFrameworkProperties, which
+    suppresses that removal and then passes the value through as a global property. An MSBuild
+    project instance is keyed on (path, global properties), so the generator would be built once
+    with the property and once without — two instances writing one obj/ and bin/. The solution
+    lists this project as a member and builds it without the property, and no reference metadata
+    can change how the solution metaproject launches a member, so the only spelling that collapses
+    to a single instance is this one.
+  -->
   <ItemGroup>
-    <ProjectReference Include="..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,16 +60,19 @@
   </ItemGroup>
 
   <!--
-    Build the generator, then add it to the package under analyzers/dotnet/cs.
-    The None item is created in a target so the path is resolved after the build
-    (project-evaluation-time Exists() would miss a fresh build output).
+    Add the generator to the package under analyzers/dotnet/cs.
+
+    The item is built in a target so the path is resolved after the build (a
+    project-evaluation-time Exists() would miss a fresh build output). The source is
+    @(Analyzer), which ResolveProjectReferences has already populated from the reference
+    above — deliberately not a second <MSBuild Targets="Build"> call on the generator. Such a
+    call carries its own global properties, and passing TargetFramework there forks the
+    generator into a second project instance exactly as SetTargetFramework would, moving the
+    duplicate build out of the build path and into the pack path where it is easier to miss.
   -->
   <Target Name="PackPluginGeneratorAsAnalyzer" BeforeTargets="GenerateNuspec;_GetPackageFiles" DependsOnTargets="ResolveProjectReferences">
-    <MSBuild Projects="..\..\generators\MCServerLauncher.Daemon.Plugin.Generators\MCServerLauncher.Daemon.Plugin.Generators.csproj" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0">
-      <Output TaskParameter="TargetOutputs" ItemName="_PluginGeneratorBuildOutputs" />
-    </MSBuild>
     <ItemGroup>
-      <_PluginGeneratorOutput Include="@(_PluginGeneratorBuildOutputs)" Condition="'%(Filename)%(Extension)' == 'MCServerLauncher.Daemon.Plugin.Generators.dll'" />
+      <_PluginGeneratorOutput Include="@(Analyzer)" Condition="'%(Filename)%(Extension)' == 'MCServerLauncher.Daemon.Plugin.Generators.dll'" />
       <_PluginGeneratorVersioningOutput Include="@(_PluginGeneratorOutput->'%(RootDir)%(Directory)NuGet.Versioning.dll')" />
     </ItemGroup>
     <Error Condition="'@(_PluginGeneratorOutput)' == '' Or !Exists('@(_PluginGeneratorOutput->'%(FullPath)')')" Text="The plugin generator build did not return its output DLL." />

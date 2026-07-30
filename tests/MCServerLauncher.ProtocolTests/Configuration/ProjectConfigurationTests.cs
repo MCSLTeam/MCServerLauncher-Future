@@ -132,6 +132,70 @@ public class ProjectConfigurationTests
         Assert.Contains($"'\\b{legacyType}\\b'", script, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// MSBuild keys a project instance on (project path, global properties), so two reach paths
+    /// that disagree about whether <c>TargetFramework</c> is defined build the plugin generator
+    /// twice into one <c>obj/</c> and <c>bin/</c> — concurrently, under a parallel build.
+    /// </summary>
+    /// <remarks>
+    /// Convergence has to be onto the *undefined* form. The generator is a member of
+    /// <c>MCServerLauncher.slnx</c>, the solution metaproject builds a member with no
+    /// <c>TargetFramework</c> global property, and no reference metadata in any consuming project
+    /// can change that — so the property can never be added everywhere, only removed everywhere.
+    /// Both spellings that add it are checked here: <c>SetTargetFramework</c>, which is the
+    /// metadata for a *multi*-targeted reference and on this single-targeted one both injects the
+    /// global property and suppresses the SDK negotiation that would have removed it, and an
+    /// explicit <c>&lt;MSBuild&gt;</c> task passing the property in <c>Properties</c>.
+    /// </remarks>
+    [Fact]
+    public void PluginGenerator_IsReachedWithTheSameGlobalPropertiesFromEveryProject()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var projectRoots = new[] { "src", "tests", "generators", "benchmarks", "tools", "samples" };
+        var offenders = projectRoots
+            .Select(root => Path.Combine(repositoryRoot, root))
+            .Where(Directory.Exists)
+            .SelectMany(root => Directory.EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories))
+            .Where(path => !HasGeneratedPathSegment(path))
+            .SelectMany(path => DescribeGeneratorForks(path, repositoryRoot))
+            .ToArray();
+
+        Assert.True(
+            offenders.Length == 0,
+            "The plugin generator would be built as more than one MSBuild instance:"
+            + Environment.NewLine
+            + string.Join(Environment.NewLine, offenders));
+    }
+
+    private static IEnumerable<string> DescribeGeneratorForks(string projectPath, string repositoryRoot)
+    {
+        var document = XDocument.Load(projectPath);
+        var relativePath = Path.GetRelativePath(repositoryRoot, projectPath);
+
+        var references = document
+            .Descendants("ProjectReference")
+            .Where(element => TargetsPluginGenerator(element.Attribute("Include")?.Value))
+            .Where(element =>
+                element.Attribute("SetTargetFramework") is not null ||
+                element.Element("SetTargetFramework") is not null)
+            .Select(_ => $"{relativePath}: ProjectReference carries SetTargetFramework.");
+
+        var invocations = document
+            .Descendants("MSBuild")
+            .Where(element => TargetsPluginGenerator(element.Attribute("Projects")?.Value))
+            .Where(element => (element.Attribute("Properties")?.Value ?? string.Empty)
+                .Contains("TargetFramework", StringComparison.OrdinalIgnoreCase))
+            .Select(_ => $"{relativePath}: <MSBuild> task passes TargetFramework.");
+
+        return references.Concat(invocations);
+    }
+
+    private static bool TargetsPluginGenerator(string? include) =>
+        include is not null &&
+        include.Replace('\\', '/').EndsWith(
+            "generators/MCServerLauncher.Daemon.Plugin.Generators/MCServerLauncher.Daemon.Plugin.Generators.csproj",
+            StringComparison.OrdinalIgnoreCase);
+
     private static string GetRepositoryRoot()
     {
         var directory = AppContext.BaseDirectory;
