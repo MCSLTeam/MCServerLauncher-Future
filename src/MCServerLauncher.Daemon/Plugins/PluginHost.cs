@@ -404,7 +404,12 @@ internal sealed class PluginHost
                         // redundant and is not: it closes admission now instead of one dispose
                         // deadline from now, which is the window a plugin ignoring its stop deadline
                         // would otherwise keep opening sessions in.
-                        await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
+                        await AwaitReleaseWithinShutdownBoundaryAsync(
+                                RevokeFileCapabilityAsync(runtime),
+                                runtime,
+                                shutdownCleanupBoundary,
+                                "stop deadline")
+                            .ConfigureAwait(false);
                         continue;
                     }
 
@@ -426,10 +431,14 @@ internal sealed class PluginHost
                             shutdownCleanupBoundary,
                             "normal shutdown")
                         .ConfigureAwait(false);
-                    if (disposeOutcome == PluginDisposeOutcome.Completed)
-                        await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
-                    else
-                        await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
+                    await AwaitReleaseWithinShutdownBoundaryAsync(
+                            disposeOutcome == PluginDisposeOutcome.Completed
+                                ? ReleasePluginResourcesAsync(runtime)
+                                : RevokeFileCapabilityAsync(runtime),
+                            runtime,
+                            shutdownCleanupBoundary,
+                            "normal shutdown")
+                        .ConfigureAwait(false);
                     DisposeLifetime(runtime);
                     runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
                         ? PluginRuntimeState.CleanupAbandoned
@@ -449,10 +458,14 @@ internal sealed class PluginHost
                         shutdownCleanupBoundary,
                         "pre-start shutdown cleanup")
                     .ConfigureAwait(false);
-                if (disposeOutcome == PluginDisposeOutcome.Completed)
-                    await ReleasePluginResourcesAsync(runtime).ConfigureAwait(false);
-                else
-                    await RevokeFileCapabilityAsync(runtime).ConfigureAwait(false);
+                await AwaitReleaseWithinShutdownBoundaryAsync(
+                        disposeOutcome == PluginDisposeOutcome.Completed
+                            ? ReleasePluginResourcesAsync(runtime)
+                            : RevokeFileCapabilityAsync(runtime),
+                        runtime,
+                        shutdownCleanupBoundary,
+                        "pre-start shutdown cleanup")
+                    .ConfigureAwait(false);
                 DisposeLifetime(runtime);
                 runtime.State = disposeOutcome == PluginDisposeOutcome.Abandoned
                     ? PluginRuntimeState.CleanupAbandoned
@@ -1511,6 +1524,61 @@ internal sealed class PluginHost
     /// </summary>
     private static Task RevokeFileCapabilityAsync(PluginRuntime runtime) =>
         runtime.Context.ReleaseFileSessionsAsync();
+
+    /// <summary>
+    /// Waits for a host-side release without letting it outlast the shutdown cleanup boundary.
+    /// </summary>
+    /// <remarks>
+    /// The file facade bounds each revocation on its own, but one deadline per plugin still adds up
+    /// past a boundary the host has already blown — and two of these call sites are reached precisely
+    /// because it blew. Abandoning the wait does not widen the plugin's surface: admission closes
+    /// synchronously while the release task is being created, before its first await, and the facade
+    /// retains the remaining sweep itself, so the handles still come back when the stalled call
+    /// returns.
+    ///
+    /// This deliberately does not quarantine the runtime. <see cref="PluginRuntimeState.CleanupAbandoned" />
+    /// is owned by the dispose outcome and read as "resources are quarantined"; a revocation still in
+    /// flight is weaker than that, since admission is shut and the sessions are already disowned. A
+    /// plugin that disposed cleanly should not be reported as abandoned because a volume was slow.
+    /// </remarks>
+    private async Task AwaitReleaseWithinShutdownBoundaryAsync(
+        Task release,
+        PluginRuntime runtime,
+        Task shutdownCleanupBoundary,
+        string phase)
+    {
+        var completed = await Task.WhenAny(release, shutdownCleanupBoundary).ConfigureAwait(false);
+        if (ReferenceEquals(completed, release))
+        {
+            await release.ConfigureAwait(false);
+            return;
+        }
+
+        ObserveAbandonedRelease(runtime, release, phase);
+        _logger.LogCritical(
+            "Plugin {PluginId} file-capability revocation exceeded the host shutdown cleanup deadline during {Phase}. Admission is closed and the sessions are disowned, but the daemon has not taken its handles back yet.",
+            runtime.Manifest.Identity.Id,
+            phase);
+    }
+
+    private void ObserveAbandonedRelease(PluginRuntime runtime, Task release, string phase)
+    {
+        _ = release.ContinueWith(
+            static (task, state) =>
+            {
+                var (logger, pluginId, phase) =
+                    ((ILogger<PluginHost> Logger, string PluginId, string Phase))state!;
+                logger.LogWarning(
+                    task.Exception,
+                    "Plugin {PluginId} file-capability revocation faulted after the host shutdown cleanup deadline during {Phase}.",
+                    pluginId,
+                    phase);
+            },
+            (_logger, runtime.Manifest.Identity.Id, phase),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
 
     private void DisposeLifetime(PluginRuntime runtime)
     {

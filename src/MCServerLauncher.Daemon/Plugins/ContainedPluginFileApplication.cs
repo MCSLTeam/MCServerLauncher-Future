@@ -44,11 +44,17 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     internal const int MaximumConcurrentSessions = 8;
 
     /// <summary>
-    /// How long revocation waits for in-flight opens before sweeping anyway. Short, because every
-    /// caller of it is on a stop or shutdown path that is itself deadline-bounded, and a plugin
-    /// holding the daemon open is the failure this whole revocation exists to prevent.
+    /// How long a release waits for the sessions to actually come back. Short, because every caller
+    /// of it is on a stop or shutdown path that is itself deadline-bounded, and a plugin holding the
+    /// daemon open is the failure this whole revocation exists to prevent.
     /// </summary>
-    private static readonly TimeSpan QuiesceDeadline = TimeSpan.FromSeconds(5);
+    /// <remarks>
+    /// This bounds the whole sequence — closing admission, letting in-flight opens settle, and
+    /// releasing what is left — not just the first step. Bounding only the wait for opens leaves the
+    /// release of an already-registered session unbounded, and a download close hashes the file
+    /// while an upload cancel disposes a staging stream, so either can park on a stalled volume.
+    /// </remarks>
+    private static readonly TimeSpan DefaultReleaseDeadline = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// The daemon's persistence writer replaces a config through <c>File.Replace</c> and keeps the
@@ -85,13 +91,21 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     private readonly HashSet<Guid> _downloadSessions = [];
     private readonly HashSet<Guid> _uploadSessions = [];
     private readonly TaskCompletionSource _quiesced = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TimeSpan _releaseDeadline;
     private int _reservations;
     private FacadeState _state = FacadeState.Active;
+
+    /// <summary>
+    /// The sweep, started once and retained, so a drain parked on a stalled inner call is held and
+    /// observed rather than dropped when a caller's deadline elapses.
+    /// </summary>
+    private Task? _sweep;
 
     internal ContainedPluginFileApplication(
         IFileApplication inner,
         IInstanceSnapshotSource? instances,
-        string? allowedRoot = null)
+        string? allowedRoot = null,
+        TimeSpan? releaseDeadline = null)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         // A missing catalog is not a reason to widen: with nothing to confirm an instance exists,
@@ -99,6 +113,8 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         _instances = instances;
         _allowedRoot = Path.GetFullPath(allowedRoot ?? FileManager.InstancesRoot)
             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        _releaseDeadline = releaseDeadline ?? DefaultReleaseDeadline;
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_releaseDeadline, TimeSpan.Zero);
     }
 
     public Task<Result<DirectoryDetails, DaemonError>> GetDirectoryInfoAsync(
@@ -237,8 +253,12 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     /// swept - sweeping without those two steps races an open that is already past the admission
     /// check and would leave its session pinned until expiry.
     /// </summary>
-    internal async Task ReleaseSessionsAsync()
+    internal Task ReleaseSessionsAsync() => ReleaseSessionsAsync(_releaseDeadline);
+
+    internal async Task ReleaseSessionsAsync(TimeSpan deadline)
     {
+        // Before the first await, so admission is closed by the time this returns even when the
+        // caller abandons the wait below.
         lock (_gate)
         {
             if (_state == FacadeState.Active)
@@ -246,17 +266,67 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             SignalQuiescedWhenSettled();
         }
 
-        // Every in-flight open holds a reservation, so a zero reservation count is what makes the
-        // sweep total. An open that settles after this point sees the revoked state, closes its own
-        // inner session and never registers it here.
-        //
-        // Bounded, because this runs on the plugin-stop and daemon-shutdown paths and a download
-        // open hashes the whole file: one open on a stalled volume would otherwise hold shutdown
-        // open indefinitely. Past the deadline the sweep proceeds anyway — a straggler that settles
-        // later is refused registration and closes its own inner session, so nothing is stranded.
         try
         {
-            await _quiesced.Task.WaitAsync(QuiesceDeadline).ConfigureAwait(false);
+            // WaitAsync bounds this wait, never the work behind it: a session whose inner close is
+            // parked on a stalled volume is still released when that call finally returns, it just
+            // stops holding the stop or shutdown path open while it does.
+            await EnsureSweep().WaitAsync(deadline).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+        }
+        finally
+        {
+            // Reached on the deadline as well as on completion. The sweep clears the sets before its
+            // first inner call, so leaving the facade in Revoking would refuse every later release
+            // attempt and strand the invariant on a straggler nobody is waiting for.
+            lock (_gate)
+            {
+                _state = FacadeState.Revoked;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The detached sweep, for tests and for callers that want to observe the point where the inner
+    /// application has finally let go of everything the plugin held. Completed before any release
+    /// has begun.
+    /// </summary>
+    internal Task PendingRelease
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _sweep ?? Task.CompletedTask;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Starts the sweep once. Memoized so a second release shares the first sweep instead of
+    /// starting a second drain over an already-cleared set, and dispatched so none of it runs under
+    /// <see cref="_gate" />.
+    /// </summary>
+    private Task EnsureSweep()
+    {
+        lock (_gate)
+        {
+            return _sweep ??= Task.Run(SweepAsync);
+        }
+    }
+
+    private async Task SweepAsync()
+    {
+        // Every in-flight open holds a reservation, so a zero reservation count is what makes the
+        // sweep total. An open that settles after this point sees the revoked state, closes its own
+        // inner session and never registers it here. Past the deadline the sweep proceeds anyway —
+        // a straggler that settles later is refused registration and closes its own inner session,
+        // so nothing is stranded.
+        try
+        {
+            await _quiesced.Task.WaitAsync(_releaseDeadline).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
@@ -272,22 +342,22 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             _uploadSessions.Clear();
         }
 
+        // Concurrently, so one handle parked on a stalled volume does not pin the other seven and N
+        // slow releases cost the slowest rather than their sum. Nothing here is allowed to throw: a
+        // faulted sweep is retained in a field with no certain observer, and every individual
+        // release is already best-effort.
         try
         {
-            foreach (var sessionId in downloads)
-                await SuppressAsync(() => _inner.CloseDownloadAsync(sessionId, CancellationToken.None));
-
-            foreach (var sessionId in uploads)
-                await SuppressAsync(() => _inner.CancelUploadAsync(sessionId, CancellationToken.None));
+            await Task.WhenAll([
+                .. downloads.Select(id => SuppressAsync(() => _inner.CloseDownloadAsync(id, CancellationToken.None))),
+                .. uploads.Select(id => SuppressAsync(() => _inner.CancelUploadAsync(id, CancellationToken.None)))
+            ]).ConfigureAwait(false);
         }
-        finally
+        catch (OperationCanceledException)
         {
-            // The snapshot above already cleared the sets, so anything escaping the drain would
-            // otherwise strand the facade in Revoking and refuse every later release attempt.
-            lock (_gate)
-            {
-                _state = FacadeState.Revoked;
-            }
+            // The releases above pass CancellationToken.None, so this is an inner implementation
+            // cancelling itself. It has still surrendered the session, and a shutdown sweep is the
+            // wrong place to escalate.
         }
     }
 
