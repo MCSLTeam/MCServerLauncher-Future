@@ -556,6 +556,71 @@ public sealed class PluginFileContainmentTests
     }
 
     /// <summary>
+    /// The coordinator expires sessions on its own schedule and tells nobody, so the facade cannot
+    /// learn a lease lapsed by being told. A plugin that lets its whole budget expire instead of
+    /// closing it must not be capped for the rest of its life: reaching the cap has to make the
+    /// facade ask the inner application about the lapsed leases before it refuses.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately never closes or cancels the old sessions — that is the path that already worked.
+    /// The only thing that happens here is the clock moving.
+    /// </remarks>
+    [Fact]
+    public async Task LapsedLeasesAreReconciledWhenTheCapIsReached()
+    {
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-30T00:00:00+00:00"));
+        var inner = new RecordingFileApplication { Clock = time, LeaseDuration = TimeSpan.FromMinutes(5) };
+        var contained = Create(inner, time);
+        var path = $"{InstanceRoot}/world.zip";
+
+        for (var opened = 0; opened < ContainedPluginFileApplication.MaximumConcurrentSessions; opened++)
+        {
+            var admitted = await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None);
+            Assert.True(admitted.IsOk(out _));
+        }
+
+        var atCap = await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None);
+        Assert.True(atCap.IsErr(out var capError));
+        Assert.Equal("plugin.file.session_limit", capError!.Code);
+
+        time.Advance(TimeSpan.FromMinutes(6));
+
+        var reopened = await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None);
+        Assert.True(reopened.IsOk(out _));
+        Assert.Equal(
+            ContainedPluginFileApplication.MaximumConcurrentSessions,
+            inner.ClosedDownloads.Count);
+    }
+
+    /// <summary>
+    /// A clock past <c>ExpiresAt</c> is a reason to ask the inner application, never the answer. If it
+    /// reports anything other than success or already-gone the handle is still live, so the slot must
+    /// stay held — otherwise a plugin holds more live handles than the cap by simply waiting.
+    /// </summary>
+    [Fact]
+    public async Task ALapsedLeaseTheInnerStillHoldsKeepsItsSlot()
+    {
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-30T00:00:00+00:00"));
+        var inner = new RecordingFileApplication { Clock = time, LeaseDuration = TimeSpan.FromMinutes(5) };
+        var contained = Create(inner, time);
+        var path = $"{InstanceRoot}/world.zip";
+
+        for (var opened = 0; opened < ContainedPluginFileApplication.MaximumConcurrentSessions; opened++)
+            Assert.True(
+                (await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None))
+                .IsOk(out _));
+
+        time.Advance(TimeSpan.FromMinutes(6));
+        inner.TerminateFailure = new ConflictDaemonError("test.busy", "the handle is still in use");
+
+        var refused = await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None);
+
+        Assert.True(refused.IsErr(out var error));
+        Assert.Equal("plugin.file.session_limit", error!.Code);
+        Assert.Empty(inner.ClosedDownloads);
+    }
+
+    /// <summary>
     /// The coordinator expires sessions on its own schedule. A close that reports the session
     /// already gone is terminal, so the slot must be returned rather than pinned until the plugin
     /// stops.
@@ -722,6 +787,18 @@ public sealed class PluginFileContainmentTests
     private static ContainedPluginFileApplication Create(IFileApplication inner, TimeSpan releaseDeadline) =>
         new(inner, new CatalogSnapshotSource(CatalogedInstance), releaseDeadline: releaseDeadline);
 
+    private static ContainedPluginFileApplication Create(IFileApplication inner, TimeProvider timeProvider) =>
+        new(inner, new CatalogSnapshotSource(CatalogedInstance), timeProvider: timeProvider);
+
+    private sealed class ManualTimeProvider(DateTimeOffset start) : TimeProvider
+    {
+        private DateTimeOffset _now = start;
+
+        public override DateTimeOffset GetUtcNow() => _now;
+
+        internal void Advance(TimeSpan delta) => _now += delta;
+    }
+
     private sealed class CatalogSnapshotSource : IInstanceSnapshotSource
     {
         private readonly StatePublisher<InstanceCatalogSnapshot> _publisher;
@@ -759,6 +836,17 @@ public sealed class PluginFileContainmentTests
         /// </summary>
         internal TaskCompletionSource? ReleaseGate { get; set; }
 
+        /// <summary>
+        /// When set, every terminal release fails with this error and keeps the session live, the way
+        /// a coordinator that has not actually let go of the handle would answer.
+        /// </summary>
+        internal DaemonError? TerminateFailure { get; set; }
+
+        /// <summary>The clock the minted leases are dated against.</summary>
+        internal TimeProvider Clock { get; set; } = TimeProvider.System;
+
+        internal TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
+
         internal Action? OnOpenEntered { get; set; }
 
         internal int CallCount => Volatile.Read(ref _callCount);
@@ -792,7 +880,7 @@ public sealed class PluginFileContainmentTests
             var sessionId = Guid.NewGuid();
             _liveDownloads[sessionId] = 0;
             return Result.Ok<DownloadSession, DaemonError>(
-                new DownloadSession(sessionId, 1, new string('a', 64), 1, DateTimeOffset.UtcNow.AddMinutes(5)));
+                new DownloadSession(sessionId, 1, new string('a', 64), 1, Clock.GetUtcNow() + LeaseDuration));
         }
 
         public Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
@@ -808,6 +896,8 @@ public sealed class PluginFileContainmentTests
             Interlocked.Increment(ref _callCount);
             if (ReleaseGate is { } gate)
                 await gate.Task.ConfigureAwait(false);
+            if (TerminateFailure is { } failure)
+                return Result.Err<Unit, DaemonError>(failure);
             if (!_liveDownloads.TryRemove(sessionId, out _))
                 return Result.Err<Unit, DaemonError>(SessionNotFound(sessionId));
 
@@ -859,7 +949,7 @@ public sealed class PluginFileContainmentTests
             var sessionId = Guid.NewGuid();
             _liveUploads[sessionId] = 0;
             return Result.Ok<UploadSession, DaemonError>(
-                new UploadSession(sessionId, 1, DateTimeOffset.UtcNow.AddMinutes(5)));
+                new UploadSession(sessionId, 1, Clock.GetUtcNow() + LeaseDuration));
         }
 
         public Task<Result<Unit, DaemonError>> WriteUploadChunkAsync(
@@ -880,6 +970,8 @@ public sealed class PluginFileContainmentTests
             Interlocked.Increment(ref _callCount);
             if (ReleaseGate is { } gate)
                 await gate.Task.ConfigureAwait(false);
+            if (TerminateFailure is { } failure)
+                return Result.Err<Unit, DaemonError>(failure);
             if (!_liveUploads.TryRemove(sessionId, out _))
                 return Result.Err<Unit, DaemonError>(SessionNotFound(sessionId));
 

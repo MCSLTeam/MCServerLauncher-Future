@@ -88,8 +88,12 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     private readonly IInstanceSnapshotSource? _instances;
     private readonly string _allowedRoot;
     private readonly object _gate = new();
-    private readonly HashSet<Guid> _downloadSessions = [];
-    private readonly HashSet<Guid> _uploadSessions = [];
+
+    // The lease the coordinator minted, not just its id: a slot is only reclaimable if we can tell
+    // that the session behind it has already expired underneath us.
+    private readonly Dictionary<Guid, DateTimeOffset> _downloadSessions = [];
+    private readonly Dictionary<Guid, DateTimeOffset> _uploadSessions = [];
+    private readonly TimeProvider _timeProvider;
     private readonly TaskCompletionSource _quiesced = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TimeSpan _releaseDeadline;
     private int _reservations;
@@ -105,9 +109,11 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         IFileApplication inner,
         IInstanceSnapshotSource? instances,
         string? allowedRoot = null,
-        TimeSpan? releaseDeadline = null)
+        TimeSpan? releaseDeadline = null,
+        TimeProvider? timeProvider = null)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+        _timeProvider = timeProvider ?? TimeProvider.System;
         // A missing catalog is not a reason to widen: with nothing to confirm an instance exists,
         // every path fails the membership check and the whole surface is refused.
         _instances = instances;
@@ -140,7 +146,7 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         return await OpenSessionAsync(
             SessionKind.Download,
             () => _inner.OpenDownloadAsync(request, cancellationToken),
-            static session => session.SessionId);
+            static session => (session.SessionId, session.ExpiresAt));
     }
 
     public Task<Result<DownloadChunk, DaemonError>> ReadDownloadChunkAsync(
@@ -221,7 +227,7 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         return await OpenSessionAsync(
             SessionKind.Upload,
             () => _inner.OpenUploadAsync(request, cancellationToken),
-            static session => session.SessionId);
+            static session => (session.SessionId, session.ExpiresAt));
     }
 
     public Task<Result<Unit, DaemonError>> WriteUploadChunkAsync(
@@ -336,9 +342,9 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         Guid[] uploads;
         lock (_gate)
         {
-            downloads = [.. _downloadSessions];
+            downloads = [.. _downloadSessions.Keys];
             _downloadSessions.Clear();
-            uploads = [.. _uploadSessions];
+            uploads = [.. _uploadSessions.Keys];
             _uploadSessions.Clear();
         }
 
@@ -369,10 +375,22 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     private async Task<Result<TSession, DaemonError>> OpenSessionAsync<TSession>(
         SessionKind kind,
         Func<Task<Result<TSession, DaemonError>>> open,
-        Func<TSession, Guid> identify)
+        Func<TSession, (Guid Id, DateTimeOffset ExpiresAt)> identify)
         where TSession : notnull
     {
         var refusal = TryReserve();
+        // The coordinator expires sessions on its own schedule and tells nobody, so a lease it has
+        // already dropped still occupies a slot here until the plugin happens to close it. Reconcile
+        // those against the inner application before refusing, and retry admission once: a plugin
+        // that let its sessions expire rather than closing them should not be capped for the rest of
+        // its life. Only on the cap — a revoked facade has nothing to reclaim and must stay shut.
+        if (refusal is not null &&
+            refusal.Code == SessionLimitCode &&
+            await ReclaimExpiredSessionsAsync().ConfigureAwait(false))
+        {
+            refusal = TryReserve();
+        }
+
         if (refusal is not null)
             return Result.Err<TSession, DaemonError>(refusal);
 
@@ -393,14 +411,64 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             return result;
         }
 
-        var sessionId = identify(session!);
-        if (TryRegister(kind, sessionId))
+        var (sessionId, expiresAt) = identify(session!);
+        if (TryRegister(kind, sessionId, expiresAt))
             return result;
 
         // Revocation began while this open was in flight. The inner session exists but nothing owns
         // it any more, so close it here rather than leave it pinned until expiry.
         await SuppressAsync(() => TerminateAsync(kind, sessionId));
         return Result.Err<TSession, DaemonError>(SessionsRevoked());
+    }
+
+    /// <summary>
+    /// Terminates the leases that have already lapsed and returns whether any slot came back.
+    /// </summary>
+    /// <remarks>
+    /// The inner application is the authority, so a slot is released only on <c>Ok</c> or
+    /// <c>NotFound</c> — the same rule the plugin-driven close follows. A lapsed lease is a reason to
+    /// <em>ask</em>, never the answer: a clock past <c>ExpiresAt</c> does not prove the coordinator
+    /// let go, and freeing the slot on the timestamp alone would let a plugin hold more live handles
+    /// than the cap by simply waiting.
+    /// </remarks>
+    private async Task<bool> ReclaimExpiredSessionsAsync()
+    {
+        var now = _timeProvider.GetUtcNow();
+        (SessionKind Kind, Guid Id)[] lapsed;
+        lock (_gate)
+        {
+            lapsed =
+            [
+                .. _downloadSessions
+                    .Where(lease => lease.Value <= now)
+                    .Select(lease => (SessionKind.Download, lease.Key)),
+                .. _uploadSessions
+                    .Where(lease => lease.Value <= now)
+                    .Select(lease => (SessionKind.Upload, lease.Key))
+            ];
+        }
+
+        var reclaimed = false;
+        foreach (var (kind, sessionId) in lapsed)
+        {
+            Result<Unit, DaemonError> result;
+            try
+            {
+                result = await TerminateAsync(kind, sessionId).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                continue;
+            }
+
+            if (result.IsErr(out var error) && error!.Kind != DaemonErrorKind.NotFound)
+                continue;
+
+            Forget(kind, sessionId);
+            reclaimed = true;
+        }
+
+        return reclaimed;
     }
 
     /// <summary>
@@ -459,7 +527,7 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         }
     }
 
-    private bool TryRegister(SessionKind kind, Guid sessionId)
+    private bool TryRegister(SessionKind kind, Guid sessionId, DateTimeOffset expiresAt)
     {
         lock (_gate)
         {
@@ -470,7 +538,7 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
                 return false;
             }
 
-            Sessions(kind).Add(sessionId);
+            Sessions(kind)[sessionId] = expiresAt;
             return true;
         }
     }
@@ -479,7 +547,7 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     {
         lock (_gate)
         {
-            return Sessions(kind).Contains(sessionId);
+            return Sessions(kind).ContainsKey(sessionId);
         }
     }
 
@@ -491,7 +559,7 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         }
     }
 
-    private HashSet<Guid> Sessions(SessionKind kind) =>
+    private Dictionary<Guid, DateTimeOffset> Sessions(SessionKind kind) =>
         kind == SessionKind.Download ? _downloadSessions : _uploadSessions;
 
     private void SignalQuiescedWhenSettled()
@@ -656,8 +724,10 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         new("plugin.file.session_not_owned",
             "The file session was not opened by this plugin.");
 
+    private const string SessionLimitCode = "plugin.file.session_limit";
+
     private static ConflictDaemonError SessionLimitReached() =>
-        new("plugin.file.session_limit",
+        new(SessionLimitCode,
             $"A plugin may hold at most {MaximumConcurrentSessions} concurrent file sessions.");
 
     private static ConflictDaemonError SessionsRevoked() =>
