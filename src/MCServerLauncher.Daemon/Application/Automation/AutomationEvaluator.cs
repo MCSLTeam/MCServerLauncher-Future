@@ -364,14 +364,20 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             return TriggerEvaluation.Quiet("metric history does not cover the window start (retention or startup)");
         }
 
-        if (now - samples[^1].Timestamp > interval * 2)
+        // At exactly two intervals a whole cadence went unobserved, so the boundary belongs inside
+        // the hole. Spacing is a backstop rather than the primary evidence: a coalesced or late tick
+        // widens the spacing without losing a sample, and a lost sample can land on either side of
+        // the threshold, so the sampler's durable gap records are what actually mark a hole. Being
+        // fail-closed here only ever refuses to fire, which is the safe direction for a trigger that
+        // restarts or stops an instance.
+        if (now - samples[^1].Timestamp >= interval * 2)
         {
             return TriggerEvaluation.Quiet("metric history stops before the window end");
         }
 
         for (var index = 1; index < samples.Length; index++)
         {
-            if (samples[index].Timestamp - samples[index - 1].Timestamp > interval * 2)
+            if (samples[index].Timestamp - samples[index - 1].Timestamp >= interval * 2)
             {
                 return TriggerEvaluation.Quiet("metric history has an unobserved stretch in the window");
             }
