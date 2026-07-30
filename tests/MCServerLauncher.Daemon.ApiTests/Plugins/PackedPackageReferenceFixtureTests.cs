@@ -2,6 +2,7 @@ using System.Diagnostics;
 
 namespace MCServerLauncher.Daemon.ApiTests.Plugins;
 
+[Collection(PackageContractTests.DotNetCliCollectionName)]
 public sealed class PackedPackageReferenceFixtureTests
 {
     [Fact]

@@ -1,14 +1,29 @@
 # Preview-2 Package Pin
 
-Status: internal baseline `2.0.0-preview.4` (2026-07-29) for MCP-6+.
-No Release exists for `preview.4`, and none is planned. `2.0.0-preview.2` was
+Status: internal baseline `2.0.0-preview.5` (2026-07-30) for MCP-6+.
+No Release exists for `preview.5`, and none is planned. `2.0.0-preview.2` was
 published as a Release on 2026-07-24 and is superseded — it is history, not a
-supported baseline, and preview.3/.4 deliberately did not follow it. SDK-9b
+supported baseline, and preview.3/.4/.5 deliberately did not follow it. SDK-9b
 closes the Preview-2 gate as an **internal implementation and test acceptance
 state only**; public package distribution (GitHub Release assets or nuget.org)
 requires explicitly reopening SDK-9a/9b via the staged conditions in the spec.
 Decision source: `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`,
 sections 1, 10, and 12. Preview-1 history: `docs/preview1-package-pin.md`.
+
+## Why preview.5 and not preview.4
+
+`2.0.0-preview.4` was recorded before monitoring stored disk, responsiveness and
+lifecycle events, so `MCServerLauncher.Common` gained public contract surface
+after its fingerprint was taken. Re-recording a fingerprint under the same
+version is exactly what the NU1403 rule below forbids, so the baseline moves to
+`preview.5` rather than being re-cut in place.
+
+Only `MCServerLauncher.Common`'s payload actually changed. `PackageVersion` is a
+NuGet-level version and does not feed the assembly's informational version, so
+`MCServerLauncher.Daemon.API`, `MCServerLauncher.Daemon.Plugin.Sdk`, the packed
+generator, `NuGet.Versioning` and every `buildTransitive` asset are byte-identical
+to their `preview.4` entries. Two versions carrying the same payload is harmless;
+it is the reverse that breaks a locked restore.
 
 ## Why preview.4 and not preview.3
 
@@ -23,17 +38,17 @@ that mix caches (NU1403), which is the same reason preview.2 was retired.
 
 | Package id | Version |
 |---|---|
-| `MCServerLauncher.Daemon.Plugin.Sdk` | `2.0.0-preview.4` |
-| `MCServerLauncher.Daemon.API` | `2.0.0-preview.4` |
-| `MCServerLauncher.Common` | `2.0.0-preview.4` |
+| `MCServerLauncher.Daemon.Plugin.Sdk` | `2.0.0-preview.5` |
+| `MCServerLauncher.Daemon.API` | `2.0.0-preview.5` |
+| `MCServerLauncher.Common` | `2.0.0-preview.5` |
 
 Consumers MUST pin exact versions, without floating ranges, and should use a
 lockfile.
 
 ### Dependency pins in packages
 
-- `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [2.0.0-preview.4]`
-- `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [2.0.0-preview.4]`
+- `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [2.0.0-preview.5]`
+- `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [2.0.0-preview.5]`
 - `MCServerLauncher.Daemon.Plugin.Sdk` embeds both the generator and its
   `NuGet.Versioning.dll` analyzer dependency.
 - `MCServerLauncher.Daemon.Plugin.Sdk` carries `buildTransitive` props and
@@ -49,6 +64,17 @@ consumer build or runtime path, plus every `buildTransitive` asset.
 Built from branch `feat/sdk-preview-2` with .NET SDK `10.0.201`; reproducibility
 requires that exact SDK. `global.json` pins it for both local and CI builds.
 
+`MCSLPinBuildRoot` must be spelled with the platform separator, as the PowerShell
+below produces. The pin-mode `PathMap` maps that root to a stable prefix, and a
+root spelled with forward slashes on Windows does not match the paths MSBuild
+actually generates, so the mapping silently fails and the un-mapped absolute path
+lands in the payload — giving a fingerprint that depends on where the build ran and
+matches nothing. With the separator right, the fingerprint is independent of the
+root, which `PinnedPayloadsIgnoreOrdinaryReleaseBuildState` proves by packing twice
+into different roots. `PinnedPayloadHashesMatchTheAcceptanceRecord` compares a fresh
+pack against the table below on every run, so this record cannot go stale silently
+again.
+
 The `buildTransitive` assets are packed as verbatim byte copies, so their nupkg
 entry hash is the hash of the checked-out file. `.gitattributes` declares those
 paths `text eol=lf`, so derive their fingerprints from the committed blob rather
@@ -59,20 +85,20 @@ one written by a client that ignores it, carries CRLF and hashes differently:
 git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props | sha256sum
 ```
 
-### `MCServerLauncher.Common.2.0.0-preview.4.nupkg`
+### `MCServerLauncher.Common.2.0.0-preview.5.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `fc2c69f6c1cf01bc3f8d891835e6fd196b0b2e3ae82c5ac62533f8812a3e2420` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `07103770fe3fb9eefd0db0fc2b8ac07bdaae2b90a04ce09907e1a02617835fd4` |
 
-### `MCServerLauncher.Daemon.API.2.0.0-preview.4.nupkg`
+### `MCServerLauncher.Daemon.API.2.0.0-preview.5.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
 | `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `9c3eff44e6a5b5b4620d6a46a92bb778cb415cfcf764ea0d0ac0439bd3c03c3d` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
-### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg`
+### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
@@ -98,8 +124,9 @@ dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugi
 
 Preview-2 completes the grantable feature *vocabulary* — every feature name a
 manifest may declare is now implemented except `event.subscribe`. It does not
-follow that every domain behind those names is feature-complete: monitoring and
-automation ship a subset of their planned surface (see "Scope delivered" below).
+follow that every domain behind those names is feature-complete: automation ships
+a subset of its planned surface (see "Scope delivered" below). Monitoring metrics
+are now complete; its triggers are not.
 Implemented and grantable for admission:
 
 | Feature | Risk |
@@ -147,14 +174,15 @@ A `grant_level` of Medium now admits 17 features; Low admits 7.
 
 ## Scope delivered vs planned
 
-The feature-application plan specifies more monitoring and automation surface
-than Preview-2 ships. The gap is deliberate and bounded; it is recorded here
-rather than left implicit so the delivered state is not mistaken for the planned
-one.
+The feature-application plan specifies more automation surface than Preview-2
+ships. The gap is deliberate and bounded; it is recorded here rather than left
+implicit so the delivered state is not mistaken for the planned one. The
+monitoring metrics row closed in `preview.5`, which is why that baseline exists:
+the three items it lists were deferred when `preview.4` was recorded.
 
 | Area | Delivered | Planned but deferred |
 |---|---|---|
-| Monitoring metrics | system CPU, memory used/total, per-instance status | disk, responsiveness, significant events |
+| Monitoring metrics | system CPU, memory used/total, per-instance status, disk total/free, per-instance responsiveness, lifecycle events | — |
 | Automation triggers | `crash-loop`, `unexpected-exit`, `sustained-metric`, `maintenance-window` | unresponsive, disk, duration |
 | Automation actions | `restart-instance`, `stop-instance`, `notification`, `confirmation-plan` | maintenance-state, restart-suppression, diagnostics, explicit-audit |
 
@@ -166,7 +194,7 @@ with acceptance criteria rather than folded into this baseline.
 ## Consumer pin
 
 ```xml
-<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.4" />
+<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.5" />
 ```
 
 Local-feed restore requires the three nupkgs above and nuget.org for

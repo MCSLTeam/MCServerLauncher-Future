@@ -587,7 +587,8 @@ assets. Where that stands per version:
 |---|---|
 | `2.0.0-preview.2` | **Published** — Release `2.0.0-preview.2`, 2026-07-24, carries all three nupkgs. Superseded; retained as history, not a supported baseline. |
 | `2.0.0-preview.3` | Not published. Frozen Preview-1 baseline, consumed by the MCP repo through a local feed. |
-| `2.0.0-preview.4` | Not published. Preview-2 internal baseline, same local-feed consumption. |
+| `2.0.0-preview.4` | Not published. Superseded Preview-2 internal baseline: recorded before monitoring stored disk, responsiveness and lifecycle events, so its `MCServerLauncher.Common` fingerprint stopped describing the tree. |
+| `2.0.0-preview.5` | Not published. Preview-2 internal baseline, same local-feed consumption. Only `MCServerLauncher.Common`'s payload differs from `.4`; every other packed entry is byte-identical. |
 
 So publication is **suspended from `.3` onward**, not retroactively denied. An
 earlier revision of this amendment claimed no Release existed for any of the
