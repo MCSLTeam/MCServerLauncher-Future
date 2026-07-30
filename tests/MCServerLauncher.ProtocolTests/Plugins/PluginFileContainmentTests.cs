@@ -556,6 +556,93 @@ public sealed class PluginFileContainmentTests
     }
 
     /// <summary>
+    /// A Windows 8.3 short name is a second name for the same file, and it need not contain a tilde,
+    /// so no name-shape rule can recognise one. Planting <c>CFGXJSON.JSN</c> on the instance config
+    /// needs no elevation and works even on a volume with 8.3 auto-generation switched off, so the
+    /// deny-list has to be applied to the canonicalised path rather than the spelling the caller sent.
+    /// </summary>
+    [Fact]
+    public async Task ATildeFreeShortNameCannotReachADaemonOwnedFile()
+    {
+        // 8.3 short names are an NTFS feature; there is nothing to alias elsewhere.
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        var instanceDirectory = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "daemon",
+            "instances",
+            CatalogedInstance.ToString());
+        Directory.CreateDirectory(instanceDirectory);
+        var config = Path.Combine(instanceDirectory, "daemon_instance.json");
+        File.WriteAllText(config, "{}");
+
+        // Asserted rather than skipped: if the alias cannot be planted the test is vacuous, and a
+        // vacuous pass would hide the regression this exists to catch. Measured to succeed unelevated
+        // on NTFS whether or not the volume has 8.3 auto-generation enabled.
+        Assert.True(
+            TryPlantShortName(config, "CFGXJSON.JSN"),
+            "could not plant a short name, so this test proves nothing on this volume");
+
+        try
+        {
+            var inner = new RecordingFileApplication();
+            var contained = Create(inner);
+
+            var read = await contained.GetFileInfoAsync(
+                new PathRequest($"{InstanceRoot}/CFGXJSON.JSN"),
+                CancellationToken.None);
+
+            Assert.True(read.IsErr(out var error));
+            Assert.Equal("plugin.file.out_of_containment", error!.Code);
+            Assert.Equal(0, inner.CallCount);
+        }
+        finally
+        {
+            // This is the only test here that writes a real instance directory under the daemon root.
+            // Leaving a daemon_instance.json behind would be state another test could scan.
+            Directory.Delete(instanceDirectory, true);
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateFileW(
+        string path,
+        uint access,
+        uint share,
+        IntPtr security,
+        uint disposition,
+        uint flags,
+        IntPtr template);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern bool SetFileShortName(IntPtr file, string shortName);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    private static bool TryPlantShortName(string path, string shortName)
+    {
+        const uint delete = 0x00010000;
+        const uint shareAll = 7;
+        const uint openExisting = 3;
+        const uint backupSemantics = 0x02000000;
+
+        var handle = CreateFileW(path, delete, shareAll, IntPtr.Zero, openExisting, backupSemantics, IntPtr.Zero);
+        if (handle == new IntPtr(-1))
+            return false;
+
+        try
+        {
+            return SetFileShortName(handle, shortName);
+        }
+        finally
+        {
+            CloseHandle(handle);
+        }
+    }
+
+    /// <summary>
     /// The coordinator expires sessions on its own schedule and tells nobody, so the facade cannot
     /// learn a lease lapsed by being told. A plugin that lets its whole budget expire instead of
     /// closing it must not be capped for the rest of its life: reaching the cap has to make the
