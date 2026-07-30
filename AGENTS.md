@@ -135,6 +135,7 @@ MCServerLauncher-Future/
 
 - `generators/MCServerLauncher.Daemon.Plugin.Generators` produces plugin manifest and adapter code and is packed into the SDK package under `analyzers/dotnet/cs`. It is current, not transitional.
 - The transitional V1 action generator it is sometimes confused with is already deleted. `tools/VerifyNoV1Runtime.ps1` asserts it stays deleted, and that gate passes — do not go looking for a V1 generator to remove.
+- Every project reaching the generator must leave `TargetFramework` undefined for it. The generator is single-targeted, so the SDK builds it with that property removed, and the solution builds it as a member the same way; a reach path that adds the property produces a second MSBuild project instance writing the same `obj/` and `bin/`, which fails intermittently as `CS0006`, `CS2012`, `MSB3713` or `MSB3030`. Do not add `SetTargetFramework` to a `ProjectReference` pointing at it, and do not pass `TargetFramework` from an `<MSBuild>` task. `ProjectConfigurationTests.PluginGenerator_IsReachedWithTheSameGlobalPropertiesFromEveryProject` fails if either appears.
 
 ### Tests And Benchmarks
 
