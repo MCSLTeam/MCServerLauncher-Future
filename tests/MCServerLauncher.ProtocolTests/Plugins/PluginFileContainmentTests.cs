@@ -568,11 +568,15 @@ public sealed class PluginFileContainmentTests
         if (!OperatingSystem.IsWindows())
             return;
 
+        // A fresh id, not the shared CatalogedInstance: this is the only test here that writes a real
+        // directory under the daemon root, other test classes create instances in that same tree, and
+        // xunit runs classes in parallel. A fixed name would be shared mutable state between them.
+        var instanceId = Guid.NewGuid();
         var instanceDirectory = Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory,
             "daemon",
             "instances",
-            CatalogedInstance.ToString());
+            instanceId.ToString());
         Directory.CreateDirectory(instanceDirectory);
         var config = Path.Combine(instanceDirectory, "daemon_instance.json");
         File.WriteAllText(config, "{}");
@@ -587,10 +591,10 @@ public sealed class PluginFileContainmentTests
         try
         {
             var inner = new RecordingFileApplication();
-            var contained = Create(inner);
+            var contained = new ContainedPluginFileApplication(inner, new CatalogSnapshotSource(instanceId));
 
             var read = await contained.GetFileInfoAsync(
-                new PathRequest($"{InstanceRoot}/CFGXJSON.JSN"),
+                new PathRequest($"instances/{instanceId}/CFGXJSON.JSN"),
                 CancellationToken.None);
 
             Assert.True(read.IsErr(out var error));
