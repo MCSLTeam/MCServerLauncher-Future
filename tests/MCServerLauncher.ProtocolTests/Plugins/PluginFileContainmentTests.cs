@@ -490,6 +490,72 @@ public sealed class PluginFileContainmentTests
     }
 
     /// <summary>
+    /// A registered session whose inner release never returns must not hold the revocation open. The
+    /// deadline has to span the drain and not only the wait for in-flight opens: a download close
+    /// hashes the file and an upload cancel disposes a staging stream, so either can park on a
+    /// stalled volume — which is the failure this revocation exists to prevent, and every caller is
+    /// on a stop or shutdown path that is itself deadline-bounded.
+    /// </summary>
+    [Fact]
+    public async Task AWedgedInnerReleaseDoesNotHoldTheRevocationOpen()
+    {
+        var inner = new RecordingFileApplication();
+        var contained = Create(inner, TimeSpan.FromMilliseconds(200));
+        var path = $"{InstanceRoot}/world.zip";
+        Assert.True(
+            (await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None)).IsOk(out _));
+
+        inner.ReleaseGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var release = contained.ReleaseSessionsAsync();
+        // Generous, so a slow agent cannot pass this by accident: the point is that the release
+        // returns without the gate ever being opened, not that it returns quickly.
+        var settled = await Task.WhenAny(release, Task.Delay(TimeSpan.FromSeconds(30)));
+        Assert.Same(release, settled);
+        await release;
+
+        // Admission is shut even though the inner handle is still pinned.
+        var refused = await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None);
+        Assert.True(refused.IsErr(out var error));
+        Assert.Equal("plugin.file.sessions_revoked", error!.Code);
+
+        // The sweep is held rather than dropped, so the handle still comes back when the stalled
+        // call finally returns.
+        Assert.False(contained.PendingRelease.IsCompleted);
+        inner.ReleaseGate.SetResult();
+        await contained.PendingRelease;
+        Assert.Single(inner.ClosedDownloads);
+    }
+
+    /// <summary>
+    /// A second revocation must join the first sweep. The first clears the tracked sets before its
+    /// first inner call, so a second drain would either find nothing to release or release a
+    /// straggler twice.
+    /// </summary>
+    [Fact]
+    public async Task ASecondRevocationJoinsTheFirstSweep()
+    {
+        var inner = new RecordingFileApplication();
+        var contained = Create(inner, TimeSpan.FromMilliseconds(200));
+        var path = $"{InstanceRoot}/world.zip";
+        Assert.True(
+            (await contained.OpenDownloadAsync(new DownloadOpenRequest(path), CancellationToken.None)).IsOk(out _));
+
+        inner.ReleaseGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await contained.ReleaseSessionsAsync();
+        var firstSweep = contained.PendingRelease;
+        await contained.ReleaseSessionsAsync();
+
+        Assert.Same(firstSweep, contained.PendingRelease);
+        inner.ReleaseGate.SetResult();
+        await contained.PendingRelease;
+        Assert.Single(inner.ClosedDownloads);
+        // The fake counts the open too, so two calls is one open plus exactly one close: the second
+        // revocation added no inner traffic of its own.
+        Assert.Equal(2, inner.CallCount);
+    }
+
+    /// <summary>
     /// The coordinator expires sessions on its own schedule. A close that reports the session
     /// already gone is terminal, so the slot must be returned rather than pinned until the plugin
     /// stops.
@@ -653,6 +719,9 @@ public sealed class PluginFileContainmentTests
     private static ContainedPluginFileApplication Create(IFileApplication inner) =>
         new(inner, new CatalogSnapshotSource(CatalogedInstance));
 
+    private static ContainedPluginFileApplication Create(IFileApplication inner, TimeSpan releaseDeadline) =>
+        new(inner, new CatalogSnapshotSource(CatalogedInstance), releaseDeadline: releaseDeadline);
+
     private sealed class CatalogSnapshotSource : IInstanceSnapshotSource
     {
         private readonly StatePublisher<InstanceCatalogSnapshot> _publisher;
@@ -683,6 +752,12 @@ public sealed class PluginFileContainmentTests
         /// hold several opens past admission at once.
         /// </summary>
         internal TaskCompletionSource? OpenGate { get; set; }
+
+        /// <summary>
+        /// When set, every terminal release parks on this barrier after being counted, so a test can
+        /// hold a drain the way a stalled volume would. The session stays live until it is released.
+        /// </summary>
+        internal TaskCompletionSource? ReleaseGate { get; set; }
 
         internal Action? OnOpenEntered { get; set; }
 
@@ -724,18 +799,20 @@ public sealed class PluginFileContainmentTests
             DownloadChunkRequest request,
             CancellationToken cancellationToken) => Fail<DownloadChunk>();
 
-        public Task<Result<Unit, DaemonError>> CloseDownloadAsync(
+        public async Task<Result<Unit, DaemonError>> CloseDownloadAsync(
             Guid sessionId,
             CancellationToken cancellationToken)
         {
             // Mirrors FileSessionCoordinator: a cancelled token throws before the session is removed.
             cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref _callCount);
+            if (ReleaseGate is { } gate)
+                await gate.Task.ConfigureAwait(false);
             if (!_liveDownloads.TryRemove(sessionId, out _))
-                return Task.FromResult(Result.Err<Unit, DaemonError>(SessionNotFound(sessionId)));
+                return Result.Err<Unit, DaemonError>(SessionNotFound(sessionId));
 
             ClosedDownloads.Enqueue(sessionId);
-            return Task.FromResult(Result.Ok<Unit, DaemonError>(default));
+            return Result.Ok<Unit, DaemonError>(default);
         }
 
         public Task<Result<Unit, DaemonError>> CreateDirectoryAsync(
@@ -797,15 +874,17 @@ public sealed class PluginFileContainmentTests
             Guid sessionId,
             CancellationToken cancellationToken) => EndUpload(sessionId, cancellationToken);
 
-        private Task<Result<Unit, DaemonError>> EndUpload(Guid sessionId, CancellationToken cancellationToken)
+        private async Task<Result<Unit, DaemonError>> EndUpload(Guid sessionId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref _callCount);
+            if (ReleaseGate is { } gate)
+                await gate.Task.ConfigureAwait(false);
             if (!_liveUploads.TryRemove(sessionId, out _))
-                return Task.FromResult(Result.Err<Unit, DaemonError>(SessionNotFound(sessionId)));
+                return Result.Err<Unit, DaemonError>(SessionNotFound(sessionId));
 
             CanceledUploads.Enqueue(sessionId);
-            return Task.FromResult(Result.Ok<Unit, DaemonError>(default));
+            return Result.Ok<Unit, DaemonError>(default);
         }
 
         private async Task EnterOpenAsync()
