@@ -4,6 +4,7 @@ using MCServerLauncher.Daemon.API.Plugins;
 
 namespace MCServerLauncher.Daemon.ApiTests.Plugins;
 
+[Collection(PackageContractTests.DotNetCliCollectionName)]
 public sealed class ExternalCompileFixtureTests
 {
     [Fact]

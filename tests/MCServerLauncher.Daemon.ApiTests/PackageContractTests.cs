@@ -6,33 +6,45 @@ using System.Xml.Linq;
 
 namespace MCServerLauncher.Daemon.ApiTests;
 
+/// <summary>
+/// Serialises the test classes that shell out to <c>dotnet</c> against the repository. They pack,
+/// build and publish the same projects, so running two of them at once puts two MSBuild instances in
+/// one <c>obj</c> and <c>bin</c> — the failure is a sharing violation or a half-written output, and it
+/// is intermittent, which is the worst way to find out.
+/// </summary>
+[CollectionDefinition(PackageContractTests.DotNetCliCollectionName)]
+public sealed class DotNetCliCollection;
+
+[Collection(DotNetCliCollectionName)]
 public sealed class PackageContractTests
 {
+    internal const string DotNetCliCollectionName = "dotnet-cli";
+
     private static readonly PinnedPayload[] PinnedPayloads =
     [
         new(
-            "MCServerLauncher.Common.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Common.2.0.0-preview.5.nupkg",
             "lib/net10.0/MCServerLauncher.Common.dll"),
         new(
-            "MCServerLauncher.Daemon.API.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.API.2.0.0-preview.5.nupkg",
             "lib/net10.0/MCServerLauncher.Daemon.API.dll"),
         new(
-            "MCServerLauncher.Daemon.API.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.API.2.0.0-preview.5.nupkg",
             "buildTransitive/MCServerLauncher.Daemon.API.targets"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg",
             "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg",
             "analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg",
             "analyzers/dotnet/cs/NuGet.Versioning.dll"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg",
             "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props"),
         new(
-            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg",
+            "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg",
             "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets")
     ];
 
@@ -80,7 +92,7 @@ public sealed class PackageContractTests
                     StringComparer.Ordinal);
 
             Assert.Equal(3, dependencies.Count);
-            Assert.Equal("[2.0.0-preview.4]", dependencies["MCServerLauncher.Common"]);
+            Assert.Equal("[2.0.0-preview.5]", dependencies["MCServerLauncher.Common"]);
             Assert.Equal("[0.10.1]", dependencies["RustyOptions"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.Logging.Abstractions"]);
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.API.dll");
@@ -141,7 +153,7 @@ public sealed class PackageContractTests
             var metadata = nuspec.Descendants(ns + "metadata").Single();
 
             Assert.Equal("MCServerLauncher.Common", (string?)metadata.Element(ns + "id"));
-            Assert.Equal("2.0.0-preview.4", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("2.0.0-preview.5", (string?)metadata.Element(ns + "version"));
             Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
             Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
             Assert.Equal("GPL-3.0-only", metadata.Element(ns + "license")?.Value);
@@ -200,12 +212,12 @@ public sealed class PackageContractTests
                     StringComparer.Ordinal);
 
             Assert.Equal(2, dependencies.Count);
-            Assert.Equal("[2.0.0-preview.4]", dependencies["MCServerLauncher.Daemon.API"]);
+            Assert.Equal("[2.0.0-preview.5]", dependencies["MCServerLauncher.Daemon.API"]);
             Assert.Equal("[10.0.9]", dependencies["Microsoft.Extensions.DependencyInjection"]);
 
             var metadata = nuspec.Descendants(ns + "metadata").Single();
             Assert.Equal("MCServerLauncher.Daemon.Plugin.Sdk", (string?)metadata.Element(ns + "id"));
-            Assert.Equal("2.0.0-preview.4", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("2.0.0-preview.5", (string?)metadata.Element(ns + "version"));
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll");
             Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
             Assert.Contains(package.Entries, entry => entry.FullName == "buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props");
@@ -251,6 +263,51 @@ public sealed class PackageContractTests
                 "RustyOptions/0.10.1"
             ],
             packages);
+    }
+
+    /// <summary>
+    /// The acceptance record is worth something only if something compares it against a real
+    /// artifact.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="PinnedPayloadsIgnoreOrdinaryReleaseBuildState" /> proves two fresh packs agree with
+    /// each other, which is structurally incapable of noticing the document going stale — and it did:
+    /// the recorded <c>MCServerLauncher.Common</c> fingerprint stopped describing the tree the moment
+    /// monitoring gained public contract surface, while every test stayed green. Parsing the document
+    /// is deliberate: a constant in this file would be a second copy of the record, free to drift from
+    /// the one a reviewer actually reads.
+    /// </remarks>
+    [Fact]
+    public async Task PinnedPayloadHashesMatchTheAcceptanceRecord()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var documented = ReadDocumentedPinnedPayloadHashes(repositoryRoot);
+        var root = Path.Combine(Path.GetTempPath(), $"mcsl-pin-record-{Guid.NewGuid():N}");
+        var packages = Path.Combine(root, "packages");
+
+        try
+        {
+            await PackPinnedClosureAsync(repositoryRoot, packages, Path.Combine(root, "pin-build"));
+            var actual = ReadPinnedPayloadHashes(packages);
+
+            Assert.Equal(PinnedPayloads.Length, documented.Count);
+            foreach (var payload in PinnedPayloads)
+            {
+                var key = $"{payload.PackageName}|{payload.EntryName}";
+                Assert.True(
+                    documented.ContainsKey(key),
+                    $"docs/preview2-package-pin.md records no fingerprint for '{key}'.");
+                Assert.True(
+                    string.Equals(documented[key], actual[key], StringComparison.Ordinal),
+                    $"docs/preview2-package-pin.md is stale for '{key}': "
+                    + $"recorded {documented[key]}, packed {actual[key]}.");
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
@@ -353,7 +410,7 @@ public sealed class PackageContractTests
             "MCServerLauncher.Daemon.Plugin.Generators",
             "Release",
             "netstandard2.0");
-        var packagePath = Path.Combine(packageOutput, "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.4.nupkg");
+        var packagePath = Path.Combine(packageOutput, "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg");
         using var package = ZipFile.OpenRead(packagePath);
 
         AssertPackageEntryMatchesFile(
@@ -379,6 +436,42 @@ public sealed class PackageContractTests
         using var buildOutput = File.OpenRead(buildOutputPath);
         var buildHash = Convert.ToHexString(SHA256.HashData(buildOutput));
         Assert.Equal(buildHash, packageHash);
+    }
+
+    /// <summary>
+    /// Reads the fingerprint tables out of <c>docs/preview2-package-pin.md</c>: each
+    /// <c>### `&lt;package&gt;.nupkg`</c> heading opens a table whose rows are entry and SHA-256.
+    /// </summary>
+    private static Dictionary<string, string> ReadDocumentedPinnedPayloadHashes(string repositoryRoot)
+    {
+        var documentPath = Path.Combine(repositoryRoot, "docs", "preview2-package-pin.md");
+        var hashes = new Dictionary<string, string>(StringComparer.Ordinal);
+        string? package = null;
+
+        foreach (var line in File.ReadLines(documentPath))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("### `", StringComparison.Ordinal) &&
+                trimmed.EndsWith(".nupkg`", StringComparison.Ordinal))
+            {
+                package = trimmed[5..^1];
+                continue;
+            }
+
+            if (package is null || !trimmed.StartsWith("| `", StringComparison.Ordinal))
+                continue;
+
+            var cells = trimmed.Trim('|').Split('|');
+            if (cells.Length != 2)
+                continue;
+
+            var entry = cells[0].Trim().Trim('`');
+            var hash = cells[1].Trim().Trim('`');
+            if (entry.Length > 0 && hash.Length == 64)
+                hashes[$"{package}|{entry}"] = hash;
+        }
+
+        return hashes;
     }
 
     private static Dictionary<string, string> ReadPinnedPayloadHashes(string packageOutput)
